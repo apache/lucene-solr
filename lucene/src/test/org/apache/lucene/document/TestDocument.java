@@ -1,5 +1,6 @@
 package org.apache.lucene.document;
 
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -274,18 +275,15 @@ public class TestDocument extends LuceneTestCase {
     assertEquals("did not see all IDs", 7, result);
   }
   
-  public void testFieldSetValueChangeBinary() {
-    Field field1 = new BinaryField("field1", new byte[0]);
-    Field field2 = new Field("field2", "", TextField.TYPE_STORED);
+  // LUCENE-3616
+  public void testInvalidFields() {
     try {
-      field1.setValue("abc");
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    try {
-      field2.setValue(new byte[0]);
-      fail("did not hit expected exception");
+      new Field("foo", new Tokenizer() {
+        @Override
+        public boolean incrementToken() {
+          return false;
+        }}, StringField.TYPE_STORED);
+      fail("did not hit expected exc");
     } catch (IllegalArgumentException iae) {
       // expected
     }

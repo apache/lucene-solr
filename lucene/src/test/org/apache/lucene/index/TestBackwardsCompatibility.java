@@ -540,8 +540,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", customType2));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", customType2));
     // add numeric fields, to test if flex preserves encoding
-    doc.add(new NumericField("trieInt", 4, NumericField.DataType.INT).setIntValue(id));
-    doc.add(new NumericField("trieLong", 4, NumericField.DataType.LONG).setLongValue(id));
+    doc.add(new NumericField("trieInt", id));
+    doc.add(new NumericField("trieLong", (long) id));
     writer.addDocument(doc);
   }
 

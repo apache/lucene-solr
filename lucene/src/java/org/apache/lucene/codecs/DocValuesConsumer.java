@@ -19,9 +19,8 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.lucene40.values.Writer;
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
@@ -112,9 +111,40 @@ public abstract class DocValuesConsumer {
     final Source source = reader.getDirectSource();
     assert source != null;
     int docID = docBase;
-    FieldType ft = new FieldType(StringField.TYPE_UNSTORED);
-    ft.setDocValueType(reader.type());
-    final Field scratchField = new Field("", "", ft);
+    final DocValues.Type type = reader.type();
+    final Field scratchField;
+    switch(type) {
+    case VAR_INTS:
+      scratchField = new DocValuesField("", (long) 0, type);
+      break;
+    case FIXED_INTS_16:
+      scratchField = new DocValuesField("", (short) 0, type);
+      break;
+    case FIXED_INTS_32:
+      scratchField = new DocValuesField("", 0, type);
+      break;
+    case FIXED_INTS_64:
+      scratchField = new DocValuesField("", (long) 0, type);
+      break;
+    case FIXED_INTS_8:
+      scratchField = new DocValuesField("", (byte) 0, type);
+      break;
+    case FLOAT_32:
+      scratchField = new DocValuesField("", (float) 0, type);
+      break;
+    case FLOAT_64:
+      scratchField = new DocValuesField("", (double) 0, type);
+      break;
+    case BYTES_FIXED_STRAIGHT:
+    case BYTES_FIXED_DEREF:
+    case BYTES_VAR_STRAIGHT:
+    case BYTES_VAR_DEREF:
+      scratchField = new DocValuesField("", new BytesRef(), type);
+      break;
+    default:
+      assert false;
+      scratchField = null;
+    }
     for (int i = 0; i < docCount; i++) {
       if (liveDocs == null || liveDocs.get(i)) {
         mergeDoc(scratchField, source, docID++, i);

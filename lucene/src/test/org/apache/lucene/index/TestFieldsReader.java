@@ -244,37 +244,35 @@ public class TestFieldsReader extends LuceneTestCase {
         // float/double
         if (random.nextBoolean()) {
           final float f = random.nextFloat();
-          nf = new NumericField("nf", NumericField.getFieldType(NumericField.DataType.FLOAT, true));
-          nf.setFloatValue(f);
           answer = Float.valueOf(f);
+          nf = new NumericField("nf", answer, NumericField.getFieldType(NumericField.DataType.FLOAT, true));
           typeAnswer = NumericField.DataType.FLOAT;
         } else {
           final double d = random.nextDouble();
-          nf = new NumericField("nf", NumericField.getFieldType(NumericField.DataType.DOUBLE, true));
-          nf.setDoubleValue(d);
           answer = Double.valueOf(d);
+          nf = new NumericField("nf", answer, NumericField.getFieldType(NumericField.DataType.DOUBLE, true));
           typeAnswer = NumericField.DataType.DOUBLE;
         }
       } else {
         // int/long
         if (random.nextBoolean()) {
           final int i = random.nextInt();
-          nf = new NumericField("nf", NumericField.getFieldType(NumericField.DataType.INT, true));
-          nf.setIntValue(i);
           answer = Integer.valueOf(i);
+          nf = new NumericField("nf", answer, NumericField.getFieldType(NumericField.DataType.INT, true));
           typeAnswer = NumericField.DataType.INT;
         } else {
           final long l = random.nextLong();
-          nf = new NumericField("nf", NumericField.getFieldType(NumericField.DataType.LONG, true));
-          nf.setLongValue(l);
           answer = Long.valueOf(l);
+          nf = new NumericField("nf", answer, NumericField.getFieldType(NumericField.DataType.LONG, true));
           typeAnswer = NumericField.DataType.LONG;
         }
       }
       doc.add(nf);
       answers[id] = answer;
       typeAnswers[id] = typeAnswer;
-      doc.add(new NumericField("id", Integer.MAX_VALUE, NumericField.DataType.INT).setIntValue(id));
+      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.INT, false));
+      ft.setNumericPrecisionStep(Integer.MAX_VALUE);
+      doc.add(new NumericField("id", id, ft));
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();

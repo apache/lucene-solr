@@ -37,6 +37,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util._TestUtil;
 
 public class TestIndexableField extends LuceneTestCase {
@@ -93,6 +94,11 @@ public class TestIndexableField extends LuceneTestCase {
       @Override
       public NumericField.DataType numericType() {
         return counter%10 == 9 ? DataType.INT : null;
+      }
+
+      @Override
+      public int numericPrecisionStep() {
+        return NumericUtils.PRECISION_STEP_DEFAULT;
       }
     };
 

@@ -73,8 +73,7 @@ final class NormsConsumer extends InvertedDocEndConsumer {
             } else if (fi.isIndexed) {
               anythingFlushed = true;
               final DocValuesConsumer valuesConsumer = newConsumer(new PerDocWriteState(state), fi);
-              final DocValuesField value = new DocValuesField("", Type.BYTES_FIXED_STRAIGHT);
-              value.setBytes(new BytesRef(new byte[] {0x00}));
+              final DocValuesField value = new DocValuesField("", new BytesRef(new byte[] {0x0}), Type.BYTES_FIXED_STRAIGHT);
               valuesConsumer.add(state.numDocs-1, value);
               valuesConsumer.finish(state.numDocs);
             }

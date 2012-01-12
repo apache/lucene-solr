@@ -21,7 +21,6 @@ package org.apache.solr.response.transform;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.schema.FieldType;
 
 import java.util.Set;
@@ -67,7 +66,7 @@ public abstract class BaseEditorialTransformer extends TransformerWithContext {
     String key;
     Object field = doc.get(idFieldName);
     if (field instanceof NumericField){
-      key = ((Field)field).stringValue();
+      key = ((Field)field).numericValue().toString();
       key = ft.readableToIndexed(key);
     } else if (field instanceof Field){
       key = ((Field)field).stringValue();

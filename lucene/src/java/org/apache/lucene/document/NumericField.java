@@ -18,9 +18,6 @@ package org.apache.lucene.document;
  */
 
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.util.NumericUtils;
@@ -35,20 +32,20 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * int value:
  * 
  * <pre>
- * document.add(new NumericField(name).setIntValue(value));
+ * document.add(new NumericField(name, value));
  * </pre>
  * 
  * For optimal performance, re-use the <code>NumericField</code> and
  * {@link Document} instance for more than one document:
  * 
  * <pre>
- *  NumericField field = new NumericField(name);
+ *  NumericField field = new NumericField(name, NumericField.DataType.INT);
  *  Document document = new Document();
  *  document.add(field);
  * 
  *  for(all documents) {
  *    ...
- *    field.setIntValue(value)
+ *    field.setValue(value)
  *    writer.addDocument(document);
  *    ...
  *  }
@@ -136,10 +133,8 @@ public final class NumericField extends Field {
   /** Data type of the value in {@link NumericField}.
    * @since 3.2
    */
-  public static enum DataType { INT, LONG, FLOAT, DOUBLE }
-
-  private transient NumericTokenStream numericTS;
-  private final int precisionStep;
+  // nocommit promote to oal.index
+  public static enum DataType {INT, LONG, FLOAT, DOUBLE}
 
   // nocommit -- we can precompute static array indexed by
   // type.ord()?  and give them names ... TYPE_INT_STORED, etc.
@@ -157,225 +152,70 @@ public final class NumericField extends Field {
     return ft;
   }
 
-  // nocommit: add sugar ctors taking native type value & inferring
-  // DataType from it...
-
-  /** Creates an int NumericField with the provided value. */
+  /** Creates an int NumericField with the provided value
+   *  and default <code>precisionStep</code> {@link
+   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
   public NumericField(String name, int value) {
-    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(DataType.INT, false));
-    setIntValue(value);
-  }
-
-  /** Creates a long NumericField with the provided value. */
-  public NumericField(String name, long value) {
-    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(DataType.LONG, false));
-    setLongValue(value);
-  }
-
-  /** Creates a float NumericField with the provided value. */
-  public NumericField(String name, float value) {
-    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(DataType.FLOAT, false));
-    setFloatValue(value);
-  }
-
-  /** Creates a double NumericField with the provided value. */
-  public NumericField(String name, double value) {
-    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(DataType.DOUBLE, false));
-    setDoubleValue(value);
-  }
-  
-  /**
-   * Creates a field for numeric values using the default
-   * <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
-   * The instance is not yet initialized with a numeric value, before indexing a
-   * document containing this field, set a value using the various set
-   * <em>???</em>Value() methods. This constructor creates an indexed, but not
-   * stored field.
-   * 
-   * @param name
-   *          the field name
-   */
-  public NumericField(String name, DataType type) {
-    this(name, NumericUtils.PRECISION_STEP_DEFAULT, getFieldType(type, false));
-  }
-  
-  /**
-   * Creates a field for numeric values using the default
-   * <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
-   * The instance is not yet initialized with a numeric value, before indexing a
-   * document containing this field, set a value using the various set
-   * <em>???</em>Value() methods.
-   * 
-   * @param name
-   *          the field name
-   * @param type
-   *          if the defualt field should be altered, e.g. stored, 
-   *          {@link Document#getField} then returns {@code NumericField} 
-   *          instances on search results, or indexed using 
-   *          {@link NumericTokenStream}
-   */
-  public NumericField(String name, FieldType type) {
-    this(name, NumericUtils.PRECISION_STEP_DEFAULT, type);
-  }
-  
-  /**
-   * Creates a field for numeric values with the specified
-   * <code>precisionStep</code>. The instance is not yet initialized with a
-   * numeric value, before indexing a document containing this field, set a
-   * value using the various set<em>???</em>Value() methods. This constructor
-   * creates an indexed, but not stored field.
-   * 
-   * @param name
-   *          the field name
-   * @param precisionStep
-   *          the used <a
-   *          href="../search/NumericRangeQuery.html#precisionStepDesc"
-   *          >precision step</a>
-   */
-  public NumericField(String name, int precisionStep, DataType type) {
-    this(name, precisionStep, getFieldType(type, false));
-  }
-  
-  /**
-   * Creates a field for numeric values with the specified
-   * <code>precisionStep</code>. The instance is not yet initialized with a
-   * numeric value, before indexing a document containing this field, set a
-   * value using the various set<em>???</em>Value() methods.
-   * 
-   * @param name
-   *          the field name
-   * @param precisionStep
-   *          the used <a
-   *          href="../search/NumericRangeQuery.html#precisionStepDesc"
-   *          >precision step</a>
-   * @param type
-   *          if the default field should be altered, e.g. stored, 
-   *          {@link Document#getField} then returns {@code NumericField} 
-   *          instances on search results, or indexed using 
-   *          {@link NumericTokenStream}
-   */
-  public NumericField(String name, int precisionStep, FieldType type) {
-    super(name, type);
-    if (type.numericType() == null) {
-      throw new IllegalArgumentException("FieldType.numericType() is null");
-    }
-    if (precisionStep < 1) {
-      throw new IllegalArgumentException("precisionStep must be >=1");
-    }
-    this.precisionStep = precisionStep;
-  }
-  
-  /** Returns a {@link NumericTokenStream} for indexing the numeric value. */
-  public TokenStream tokenStream(Analyzer analyzer) {
-    if (!type.indexed()) return null;
-    if (numericTS == null) {
-      // lazy init the TokenStream as it is heavy to instantiate
-      // (attributes,...),
-      // if not needed (stored field loading)
-      numericTS = new NumericTokenStream(precisionStep);
-      // initialize value in TokenStream
-      final Number val = (Number) fieldsData;
-      switch (type.numericType()) {
-      case INT:
-        numericTS.setIntValue(val.intValue());
-        break;
-      case LONG:
-        numericTS.setLongValue(val.longValue());
-        break;
-      case FLOAT:
-        numericTS.setFloatValue(val.floatValue());
-        break;
-      case DOUBLE:
-        numericTS.setDoubleValue(val.doubleValue());
-        break;
-      default:
-        assert false : "Should never get here";
-      }
-    }
-    return numericTS;
-  }
-  
-  /**
-   * Returns the numeric value as a string. It is recommended to
-   * use {@link Document#getField} instead that returns {@code NumericField}
-   * instances. You can then use {@link #numericValue} to return the stored
-   * value.
-   */
-  @Override
-  public String stringValue() {
-    return (fieldsData == null) ? null : fieldsData.toString();
-  }
-  
-  /** Returns the precision step. */
-  public int getPrecisionStep() {
-    return precisionStep;
-  }
-  
-  /**
-   * Initializes the field with the supplied <code>long</code> value.
-   * 
-   * @param value
-   *          the numeric value
-   * @return this instance, because of this you can use it the following way:
-   *         <code>document.add(new NumericField(name, precisionStep).setLongValue(value))</code>
-   */
-  public NumericField setLongValue(final long value) {
-    if (type.numericType() != DataType.LONG) {
-      throw new IllegalArgumentException("cannot set long value when FieldType.numericType() is " + type.numericType());
-    }
-    if (numericTS != null) numericTS.setLongValue(value);
-    fieldsData = Long.valueOf(value);
-    return this;
-  }
-  
-  /**
-   * Initializes the field with the supplied <code>int</code> value.
-   * 
-   * @param value
-   *          the numeric value
-   * @return this instance, because of this you can use it the following way:
-   *         <code>document.add(new NumericField(name, precisionStep).setIntValue(value))</code>
-   */
-  public NumericField setIntValue(final int value) {
-    if (type.numericType() != DataType.INT) {
-      throw new IllegalArgumentException("cannot set int value when FieldType.numericType() is " + type.numericType());
-    }
-    if (numericTS != null) numericTS.setIntValue(value);
+    super(name, getFieldType(DataType.INT, false));
     fieldsData = Integer.valueOf(value);
-    return this;
   }
-  
-  /**
-   * Initializes the field with the supplied <code>double</code> value.
-   * 
-   * @param value
-   *          the numeric value
-   * @return this instance, because of this you can use it the following way:
-   *         <code>document.add(new NumericField(name, precisionStep).setDoubleValue(value))</code>
-   */
-  public NumericField setDoubleValue(final double value) {
-    if (type.numericType() != DataType.DOUBLE) {
-      throw new IllegalArgumentException("cannot set double value when FieldType.numericType() is " + type.numericType());
-    }
-    if (numericTS != null) numericTS.setDoubleValue(value);
-    fieldsData = Double.valueOf(value);
-    return this;
+
+  /** Creates a long NumericField with the provided value.
+   *  and default <code>precisionStep</code> {@link
+   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
+  public NumericField(String name, long value) {
+    super(name, getFieldType(DataType.LONG, false));
+    fieldsData = Long.valueOf(value);
   }
-  
-  /**
-   * Initializes the field with the supplied <code>float</code> value.
-   * 
-   * @param value
-   *          the numeric value
-   * @return this instance, because of this you can use it the following way:
-   *         <code>document.add(new NumericField(name, precisionStep).setFloatValue(value))</code>
-   */
-  public NumericField setFloatValue(final float value) {
-    if (type.numericType() != DataType.FLOAT) {
-      throw new IllegalArgumentException("cannot set float value when FieldType.numericType() is " + type.numericType());
-    }
-    if (numericTS != null) numericTS.setFloatValue(value);
+
+  /** Creates a float NumericField with the provided value.
+   *  and default <code>precisionStep</code> {@link
+   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
+  public NumericField(String name, float value) {
+    super(name, getFieldType(DataType.FLOAT, false));
     fieldsData = Float.valueOf(value);
-    return this;
+  }
+
+  /** Creates a double NumericField with the provided value.
+   *  and default <code>precisionStep</code> {@link
+   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
+  public NumericField(String name, double value) {
+    super(name, getFieldType(DataType.DOUBLE, false));
+    fieldsData = Double.valueOf(value);
+  }
+  
+  public NumericField(String name, Number value, FieldType type) {
+    super(name, type);
+    final NumericField.DataType numericType = type.numericType();
+    if (numericType == null) {
+      throw new IllegalArgumentException("FieldType.numericType() cannot be null");
+    }
+
+    switch(numericType) {
+    case INT:
+      if (!(value instanceof Integer)) {
+        throw new IllegalArgumentException("value must be an Integer but got " + value);
+      }
+      break;
+    case LONG:
+      if (!(value instanceof Long)) {
+        throw new IllegalArgumentException("value must be a Long but got " + value);
+      }
+      break;
+    case FLOAT:
+      if (!(value instanceof Float)) {
+        throw new IllegalArgumentException("value must be a Float but got " + value);
+      }
+      break;
+    case DOUBLE:
+      if (!(value instanceof Double)) {
+        throw new IllegalArgumentException("value must be a Double but got " + value);
+      }
+      break;
+    default:
+      assert false : "Should never get here";
+    }
+
+    fieldsData = value;
   }
 }

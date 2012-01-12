@@ -16,7 +16,6 @@ package org.apache.lucene.document;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.Reader;
 import java.util.Comparator;
 
 import org.apache.lucene.index.IndexableFieldType;
@@ -31,14 +30,16 @@ import org.apache.lucene.util.BytesRef;
  * example usage, adding an int value:
  * 
  * <pre>
- * document.add(new DocValuesField(name).setInt(value));
+ * DocValuesField field = new DocValuesField(name, DocValues.Type.VAR_INTS);
+ * field.setInt(value);
+ * document.add(field);
  * </pre>
  * 
  * For optimal performance, re-use the <code>DocValuesField</code> and
  * {@link Document} instance for more than one document:
  * 
  * <pre>
- *  DocValuesField field = new DocValuesField(name);
+ *  DocValuesField field = new DocValuesField(name, DocValues.Type.VAR_INTS);
  *  Document document = new Document();
  *  document.add(field);
  * 
@@ -73,185 +74,119 @@ import org.apache.lucene.util.BytesRef;
 
 public class DocValuesField extends Field {
 
-  protected BytesRef bytes;
-  protected Number numberValue;
   protected Comparator<BytesRef> bytesComparator;
 
-  // nocommit sugar ctors taking byte, short, int, etc.?
-
-  /**
-   * Creates a new {@link DocValuesField} with the given name.
-   */
-  public DocValuesField(String name, DocValues.Type docValueType) {
+  public DocValuesField(String name, BytesRef bytes, DocValues.Type docValueType) {
     super(name, new FieldType());
-    if (docValueType == null) {
-      throw new NullPointerException("docValueType cannot be null");
+    // nocommit use enumset
+    if (docValueType != DocValues.Type.BYTES_FIXED_STRAIGHT &&
+        docValueType != DocValues.Type.BYTES_FIXED_DEREF &&
+        docValueType != DocValues.Type.BYTES_VAR_STRAIGHT &&
+        docValueType != DocValues.Type.BYTES_VAR_DEREF &&
+        docValueType != DocValues.Type.BYTES_FIXED_SORTED &&
+        docValueType != DocValues.Type.BYTES_VAR_SORTED) {
+      throw new IllegalArgumentException("docValueType must be BYTE_FIXED_STRAIGHT, BYTE_FIXED_DEREF, BYTES_VAR_STRAIGHT, BYTES_VAR_DEREF, BYTES_FIXED_SORTED or BYTES_VAR_SORTED; got " + docValueType);
     }
+    fieldsData = bytes;
     FieldType ft = (FieldType) type;
     ft.setDocValueType(docValueType);
     ft.freeze();
   }
 
-  public DocValuesField(String name, IndexableFieldType type) {
+  public DocValuesField(String name, byte value, DocValues.Type docValueType) {
+    super(name, new FieldType());
+    // nocommit use enumset
+    if (docValueType != DocValues.Type.VAR_INTS &&
+        docValueType != DocValues.Type.FIXED_INTS_8 &&
+        docValueType != DocValues.Type.FIXED_INTS_16 &&
+        docValueType != DocValues.Type.FIXED_INTS_32 &&
+        docValueType != DocValues.Type.FIXED_INTS_64) {
+      throw new IllegalArgumentException("docValueType must be VAR_INTS, FIXED_INTS_8/16/32/64; got " + docValueType);
+    }
+    FieldType ft = (FieldType) type;
+    ft.setDocValueType(docValueType);
+    ft.freeze();
+    fieldsData = Byte.valueOf(value);
+  }
+
+  public DocValuesField(String name, short value, DocValues.Type docValueType) {
+    super(name, new FieldType());
+    // nocommit use enumset
+    if (docValueType != DocValues.Type.VAR_INTS &&
+        docValueType != DocValues.Type.FIXED_INTS_8 &&
+        docValueType != DocValues.Type.FIXED_INTS_16 &&
+        docValueType != DocValues.Type.FIXED_INTS_32 &&
+        docValueType != DocValues.Type.FIXED_INTS_64) {
+      throw new IllegalArgumentException("docValueType must be VAR_INTS, FIXED_INTS_8/16/32/64; got " + docValueType);
+    }
+    FieldType ft = (FieldType) type;
+    ft.setDocValueType(docValueType);
+    ft.freeze();
+    fieldsData = Short.valueOf(value);
+  }
+
+  public DocValuesField(String name, int value, DocValues.Type docValueType) {
+    super(name, new FieldType());
+    // nocommit use enumset
+    if (docValueType != DocValues.Type.VAR_INTS &&
+        docValueType != DocValues.Type.FIXED_INTS_8 &&
+        docValueType != DocValues.Type.FIXED_INTS_16 &&
+        docValueType != DocValues.Type.FIXED_INTS_32 &&
+        docValueType != DocValues.Type.FIXED_INTS_64) {
+      throw new IllegalArgumentException("docValueType must be VAR_INTS, FIXED_INTS_8/16/32/64; got " + docValueType);
+    }
+    FieldType ft = (FieldType) type;
+    ft.setDocValueType(docValueType);
+    ft.freeze();
+    fieldsData = Integer.valueOf(value);
+  }
+
+  public DocValuesField(String name, long value, DocValues.Type docValueType) {
+    super(name, new FieldType());
+    // nocommit use enumset
+    if (docValueType != DocValues.Type.VAR_INTS &&
+        docValueType != DocValues.Type.FIXED_INTS_8 &&
+        docValueType != DocValues.Type.FIXED_INTS_16 &&
+        docValueType != DocValues.Type.FIXED_INTS_32 &&
+        docValueType != DocValues.Type.FIXED_INTS_64) {
+      throw new IllegalArgumentException("docValueType must be VAR_INTS, FIXED_INTS_8/16/32/64; got " + docValueType);
+    }
+    FieldType ft = (FieldType) type;
+    ft.setDocValueType(docValueType);
+    ft.freeze();
+    fieldsData = Long.valueOf(value);
+  }
+
+  public DocValuesField(String name, float value, DocValues.Type docValueType) {
+    super(name, new FieldType());
+    if (docValueType != DocValues.Type.FLOAT_32 &&
+        docValueType != DocValues.Type.FLOAT_64) {
+      throw new IllegalArgumentException("docValueType must be FLOAT_32/64; got " + docValueType);
+    }
+    FieldType ft = (FieldType) type;
+    ft.setDocValueType(docValueType);
+    ft.freeze();
+    fieldsData = Float.valueOf(value);
+  }
+
+  public DocValuesField(String name, double value, DocValues.Type docValueType) {
+    super(name, new FieldType());
+    if (docValueType != DocValues.Type.FLOAT_32 &&
+        docValueType != DocValues.Type.FLOAT_64) {
+      throw new IllegalArgumentException("docValueType must be FLOAT_32/64; got " + docValueType);
+    }
+    FieldType ft = (FieldType) type;
+    ft.setDocValueType(docValueType);
+    ft.freeze();
+    fieldsData = Double.valueOf(value);
+  }
+
+  // nocommit need static or dynamic type checking here:
+  public DocValuesField(String name, Object value, IndexableFieldType type) {
     super(name, type);
     if (type.docValueType() == null) {
       throw new NullPointerException("docValueType cannot be null");
     }
-  }
-
-  /**
-   * Sets the given <code>long</code> value.
-   */
-  public void setInt(long value) {
-    // nocommit assert type matches
-    numberValue = value;
-  }
-
-  /**
-   * Sets the given <code>int</code> value.
-   */
-  public void setInt(int value) {
-    // nocommit assert type matches
-    numberValue = value;
-  }
-
-  /**
-   * Sets the given <code>short</code> value.
-   */
-  public void setInt(short value) {
-    // nocommit assert type matches
-    numberValue = value;
-  }
-
-  /**
-   * Sets the given <code>byte</code> value.
-   */
-  public void setInt(byte value) {
-    // nocommit assert type matches
-    numberValue = value;
-  }
-
-  /**
-   * Sets the given <code>float</code> value.
-   */
-  public void setFloat(float value) {
-    // nocommit assert type matches
-    numberValue = value;
-  }
-
-  /**
-   * Sets the given <code>double</code> value.
-   */
-  public void setFloat(double value) {
-    // nocommit assert type matches
-    numberValue = value;
-  }
-
-  /**
-   * Sets the given {@link BytesRef} value.
-   */
-  public void setBytes(BytesRef value) {
-    bytes = value;
-  }
-
-  /**
-   * Sets the given {@link BytesRef} value, the field's {@link Type} and the
-   * field's comparator. If the {@link Comparator} is set to <code>null</code>
-   * the default for the given {@link Type} is used instead.
-   * 
-   * @throws IllegalArgumentException
-   *           if the value or the type are null
-   */
-  // nocommit what to do w/ comparator...
-  /*
-  public void setBytes(BytesRef value, DocValues.Type type, Comparator<BytesRef> comp) {
-    if (value == null) {
-      throw new IllegalArgumentException("value must not be null");
-    }
-    setDocValuesType(type);
-    if (bytes == null) {
-      bytes = BytesRef.deepCopyOf(value);
-    } else {
-      bytes.copyBytes(value);
-    }
-    bytesComparator = comp;
-  }
-  */
-
-  @Override
-  public BytesRef binaryValue() {
-    return bytes;
-  }
-
-  /**
-   * Returns the set {@link BytesRef} comparator or <code>null</code> if not set
-   */
-  /*
-  public Comparator<BytesRef> bytesComparator() {
-    return bytesComparator;
-  }
-  */
-
-  @Override
-  public Number numericValue() {
-    return numberValue;
-  }
-
-  /**
-   * Sets the {@link BytesRef} comparator for this field. If the field has a
-   * numeric {@link Type} the comparator will be ignored.
-   */
-  /*
-  public void setBytesComparator(Comparator<BytesRef> comp) {
-    this.bytesComparator = comp;
-  }
-  */
-
-  /**
-   * Returns always <code>null</code>
-   */
-  @Override
-  public Reader readerValue() {
-    return null;
-  }
-
-  @Override
-  public String toString() {
-    final String value;
-    switch (type.docValueType()) {
-    case BYTES_FIXED_DEREF:
-    case BYTES_FIXED_STRAIGHT:
-    case BYTES_VAR_DEREF:
-    case BYTES_VAR_STRAIGHT:
-    case BYTES_FIXED_SORTED:
-    case BYTES_VAR_SORTED:
-      // don't use to unicode string this is not necessarily unicode here
-      value = "bytes: " + bytes.toString();
-      break;
-    case FIXED_INTS_16:
-      value = "int16: " + numberValue;
-      break;
-    case FIXED_INTS_32:
-      value = "int32: " + numberValue;
-      break;
-    case FIXED_INTS_64:
-      value = "int64: " + numberValue;
-      break;
-    case FIXED_INTS_8:
-      value = "int8: " + numberValue;
-      break;
-    case VAR_INTS:
-      value = "vint: " + numberValue;
-      break;
-    case FLOAT_32:
-      value = "float32: " + numberValue;
-      break;
-    case FLOAT_64:
-      value = "float64: " + numberValue;
-      break;
-    default:
-      throw new IllegalArgumentException("unknown type: " + type);
-    }
-    return "<" + name() + ": DocValuesField " + value + ">";
+    fieldsData = value;
   }
 }

@@ -22,19 +22,26 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A field is a section of a Document. Each field has three
+ * Expert: directly creata a field for a document.  Most
+ * users should use one of the sugar subclasses {@link
+ * NumericField}, {@link DocValuesField}, {@link
+ * StringField}, {@link TextField}, {@link BinaryField}.
+ *
+ * <p/> A field is a section of a Document. Each field has three
  * parts: name, type andvalue. Values may be text
  * (String, Reader or pre-analyzed TokenStream), binary
  * (byte[]), or numeric (a Number).  Fields are optionally stored in the
  * index, so that they may be returned with hits on the document.
+ *
  * <p/>
  * NOTE: the field type is an {@link IndexableFieldType}.  Making changes
  * to the state of the IndexableFieldType will impact any
@@ -45,14 +52,17 @@ public class Field implements IndexableField {
   
   protected final IndexableFieldType type;
   protected final String name;
-  // the data object for all different kind of field values
+
+  // Field's value:
   protected Object fieldsData;
 
-  // nocommit why not stuffed into fieldsData...?  hmm are you
-  // allowed to have field value *and* tokenStream?... messy
-  // pre-analyzed tokenStream for indexed fields
+  // Pre-analyzed tokenStream for indexed fields; this is
+  // separate from fieldsData because you are allowed to
+  // have both; eg maybe field has a String value but you
+  // customize how it's tokenized:
   protected TokenStream tokenStream;
-  // length/offset for all primitive types
+
+  protected transient NumericTokenStream numericTokenStream;
 
   protected float boost = 1.0f;
 
@@ -61,15 +71,21 @@ public class Field implements IndexableField {
     this.type = type;
   }
   
+  /**
+   * Create field with Reader value.
+   */
   public Field(String name, Reader reader, IndexableFieldType type) {
     if (name == null) {
-      throw new NullPointerException("name cannot be null");
+      throw new IllegalArgumentException("name cannot be null");
     }
     if (reader == null) {
       throw new NullPointerException("reader cannot be null");
     }
+    if (type.stored()) {
+      throw new IllegalArgumentException("fields with a Reader value cannot be stored");
+    }
     if (type.indexed() && !type.tokenized()) {
-      throw new IllegalArgumentException("Non-tokenized fields must use String values");
+      throw new IllegalArgumentException("non-tokenized fields must use String values");
     }
     
     this.name = name;
@@ -77,21 +93,21 @@ public class Field implements IndexableField {
     this.type = type;
   }
 
+  /**
+   * Create field with TokenStream value.
+   */
   public Field(String name, TokenStream tokenStream, IndexableFieldType type) {
     if (name == null) {
-      throw new NullPointerException("name cannot be null");
+      throw new IllegalArgumentException("name cannot be null");
     }
     if (tokenStream == null) {
       throw new NullPointerException("tokenStream cannot be null");
     }
-    if (!type.indexed()) {
-      throw new IllegalArgumentException("TokenStream fields must be indexed");
+    if (!type.indexed() || !type.tokenized()) {
+      throw new IllegalArgumentException("TokenStream fields must be indexed and tokenized");
     }
     if (type.stored()) {
       throw new IllegalArgumentException("TokenStream fields cannot be stored");
-    }
-    if (type.indexed() && !type.tokenized()) {
-      throw new IllegalArgumentException("Non-tokenized fields must use String values");
     }
     
     this.name = name;
@@ -100,28 +116,41 @@ public class Field implements IndexableField {
     this.type = type;
   }
   
+  /**
+   * Create field with binary value.
+   */
   public Field(String name, byte[] value, IndexableFieldType type) {
     this(name, value, 0, value.length, type);
   }
 
+  /**
+   * Create field with binary value.
+   */
   public Field(String name, byte[] value, int offset, int length, IndexableFieldType type) {
     this(name, new BytesRef(value, offset, length), type);
   }
 
-  // nocommit numerics ctors too
-
+  /**
+   * Create field with binary value.
+   *
+   * <p>NOTE: the provided BytesRef is not copied so be sure
+   * not to change it until you're done with this field.
+   */
   public Field(String name, BytesRef bytes, IndexableFieldType type) {
-    if (type.indexed() && !type.tokenized()) {
-      throw new IllegalArgumentException("Non-tokenized fields must use String values");
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
     }
-
+    if (type.indexed()) {
+      throw new IllegalArgumentException("Fields with BytesRef values cannot be indexed");
+    }
     this.fieldsData = bytes;
     this.type = type;
     this.name = name;
   }
 
-  // nocommit test case for LUCENE-3616 (and other invalid combos)
-  
+  /**
+   * Create field with String value.
+   */
   public Field(String name, String value, IndexableFieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
@@ -130,8 +159,6 @@ public class Field implements IndexableField {
       throw new IllegalArgumentException("value cannot be null");
     }
     if (!type.stored() && !type.indexed()) {
-      // nocommit... but it could be DocValue'd (only) tand
-      // that's ok...?
       throw new IllegalArgumentException("it doesn't make sense to have a field that "
         + "is neither indexed nor stored");
     }
@@ -144,8 +171,6 @@ public class Field implements IndexableField {
     this.name = name;
     this.fieldsData = value;
   }
-
-  // nocommit Object getValue()?
 
   /**
    * The value of the field as a String, or null. If null, the Reader value or
@@ -190,9 +215,8 @@ public class Field implements IndexableField {
    * </p>
    */
   public void setValue(String value) {
-    if (isBinary()) {
-      throw new IllegalArgumentException(
-          "cannot set a String value on a binary field");
+    if (!(fieldsData instanceof String)) {
+      throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to String");
     }
     fieldsData = value;
   }
@@ -202,13 +226,8 @@ public class Field implements IndexableField {
    * href="#setValue(java.lang.String)">setValue(String)</a>.
    */
   public void setValue(Reader value) {
-    if (isBinary()) {
-      throw new IllegalArgumentException(
-          "cannot set a Reader value on a binary field");
-    }
-    if (type.stored()) {
-      throw new IllegalArgumentException(
-          "cannot set a Reader value on a stored field");
+    if (!(fieldsData instanceof Reader)) {
+      throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Reader");
     }
     fieldsData = value;
   }
@@ -217,23 +236,85 @@ public class Field implements IndexableField {
    * Expert: change the value of this field. See <a
    * href="#setValue(java.lang.String)">setValue(String)</a>.
    */
-  // nocommit why not setValue(bytesref)...?
   public void setValue(byte[] value) {
-    if (!isBinary()) {
-      throw new IllegalArgumentException(
-          "cannot set a byte[] value on a non-binary field");
-    }
-    fieldsData = new BytesRef(value);
+    setValue(new BytesRef(value));
   }
 
-  // nocommit jdocs warning that we hold ref
+  /**
+   * Expert: change the value of this field. See <a
+   * href="#setValue(java.lang.String)">setValue(String)</a>.
+   *
+   * <p>NOTE: the provided BytesRef is not copied so be sure
+   * not to change it until you're done with this field.
+   */
   public void setValue(BytesRef value) {
+    if (!(fieldsData instanceof BytesRef)) {
+      throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to BytesRef");
+    }
+    if (type.indexed()) {
+      throw new IllegalArgumentException("cannot set a Reader value on an indexed field");
+    }
     fieldsData = value;
   }
 
-  // nocommit jdocs
-  public void setValue(Number value) {
-    fieldsData = value;
+  public void setValue(byte value) {
+    if (!(fieldsData instanceof Byte)) {
+      throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Byte");
+    }
+    if (numericTokenStream != null) {
+      numericTokenStream.setIntValue((int) value);
+    }
+    fieldsData = Byte.valueOf(value);
+  }
+
+  public void setValue(short value) {
+    if (!(fieldsData instanceof Short)) {
+      throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Short");
+    }
+    if (numericTokenStream != null) {
+      numericTokenStream.setIntValue((int) value);
+    }
+    fieldsData = Short.valueOf(value);
+  }
+
+  public void setValue(int value) {
+    if (!(fieldsData instanceof Integer)) {
+      throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Integer");
+    }
+    if (numericTokenStream != null) {
+      numericTokenStream.setIntValue(value);
+    }
+    fieldsData = Integer.valueOf(value);
+  }
+
+  public void setValue(long value) {
+    if (!(fieldsData instanceof Long)) {
+      throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Long");
+    }
+    if (numericTokenStream != null) {
+      numericTokenStream.setLongValue(value);
+    }
+    fieldsData = Long.valueOf(value);
+  }
+
+  public void setValue(float value) {
+    if (!(fieldsData instanceof Float)) {
+      throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Float");
+    }
+    if (numericTokenStream != null) {
+      numericTokenStream.setFloatValue(value);
+    }
+    fieldsData = Float.valueOf(value);
+  }
+
+  public void setValue(double value) {
+    if (!(fieldsData instanceof Double)) {
+      throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Double");
+    }
+    if (numericTokenStream != null) {
+      numericTokenStream.setDoubleValue(value);
+    }
+    fieldsData = Double.valueOf(value);
   }
 
   /**
@@ -243,8 +324,10 @@ public class Field implements IndexableField {
    */
   public void setTokenStream(TokenStream tokenStream) {
     if (!type.indexed() || !type.tokenized()) {
-      throw new IllegalArgumentException(
-          "cannot set token stream on non indexed and tokenized field");
+      throw new IllegalArgumentException("TokenStream fields must be indexed and tokenized");
+    }
+    if (type.numericType() != null) {
+      throw new IllegalArgumentException("cannot set private TokenStream on numeric fields");
     }
     this.tokenStream = tokenStream;
   }
@@ -286,17 +369,11 @@ public class Field implements IndexableField {
   }
 
   public BytesRef binaryValue() {
-    if (!isBinary()) {
-      return null;
-    } else {
+    if (fieldsData instanceof BytesRef) {
       return (BytesRef) fieldsData;
+    } else {
+      return null;
     }
-  }
-  
-  /** methods from inner IndexableFieldType */
-  
-  public boolean isBinary() {
-    return fieldsData instanceof BytesRef;
   }
   
   /** Prints a Field for human consumption. */
@@ -316,7 +393,7 @@ public class Field implements IndexableField {
     return result.toString();
   }
   
-  /** Returns FieldType for this field. */
+  /** Returns the {@link IndexableFieldType} for this field. */
   public IndexableFieldType fieldType() {
     return type;
   }
@@ -327,6 +404,38 @@ public class Field implements IndexableField {
   public TokenStream tokenStream(Analyzer analyzer) throws IOException {
     if (!fieldType().indexed()) {
       return null;
+    }
+
+    final NumericField.DataType numericType = fieldType().numericType();
+    if (numericType != null) {
+      if (numericTokenStream == null) {
+        // lazy init the TokenStream as it is heavy to instantiate
+        // (attributes,...) if not needed (stored field loading)
+        numericTokenStream = new NumericTokenStream(type.numericPrecisionStep());
+        // initialize value in TokenStream
+        final Number val = (Number) fieldsData;
+        switch (numericType) {
+        case INT:
+          numericTokenStream.setIntValue(val.intValue());
+          break;
+        case LONG:
+          numericTokenStream.setLongValue(val.longValue());
+          break;
+        case FLOAT:
+          numericTokenStream.setFloatValue(val.floatValue());
+          break;
+        case DOUBLE:
+          numericTokenStream.setDoubleValue(val.doubleValue());
+          break;
+        default:
+          assert false : "Should never get here";
+        }
+      } else {
+        // OK -- previously cached and we already updated if
+        // setters were called.
+      }
+
+      return numericTokenStream;
     }
 
     if (!fieldType().tokenized()) {
@@ -365,6 +474,6 @@ public class Field implements IndexableField {
       return analyzer.tokenStream(name(), new StringReader(stringValue()));
     }
 
-    throw new IllegalArgumentException("Field must have either TokenStream, String or Reader value");
+    throw new IllegalArgumentException("Field must have either TokenStream, String, Reader or Number value");
   }
 }

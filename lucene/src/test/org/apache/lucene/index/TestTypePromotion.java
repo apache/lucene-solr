@@ -168,7 +168,36 @@ public class TestTypePromotion extends LuceneTestCase {
   public void index(IndexWriter writer,
       Type valueType, long[] values, int offset, int num)
       throws CorruptIndexException, IOException {
-    DocValuesField valField =  new DocValuesField("promote", valueType);
+    final DocValuesField valField;
+    switch (valueType) {
+    case FIXED_INTS_8:
+    case FIXED_INTS_16:
+    case FIXED_INTS_32:
+      valField =  new DocValuesField("promote", 0, valueType);
+      break;
+    case VAR_INTS:
+    case FIXED_INTS_64:
+      valField =  new DocValuesField("promote", (long) 0, valueType);
+      break;
+    case FLOAT_64:
+      valField =  new DocValuesField("promote", (double) 0, valueType);
+      break;
+    case FLOAT_32:
+      valField =  new DocValuesField("promote", (float) 0, valueType);
+      break;
+    case BYTES_FIXED_DEREF:
+    case BYTES_FIXED_SORTED:
+    case BYTES_FIXED_STRAIGHT:
+    case BYTES_VAR_DEREF:
+    case BYTES_VAR_SORTED:
+    case BYTES_VAR_STRAIGHT:
+      valField =  new DocValuesField("promote", new BytesRef(), valueType);
+      break;
+    default:
+      fail("unexpected value " + valueType);
+      valField = null;
+    }
+
     BytesRef ref = new BytesRef(new byte[] { 1, 2, 3, 4 });
     for (int i = offset; i < offset + num; i++) {
       Document doc = new Document();
@@ -176,40 +205,40 @@ public class TestTypePromotion extends LuceneTestCase {
       switch (valueType) {
       case VAR_INTS:
         values[i] = random.nextInt();
-        valField.setInt(values[i]);
+        valField.setValue(values[i]);
         break;
       case FIXED_INTS_16:
         values[i] = random.nextInt(Short.MAX_VALUE);
-        valField.setInt((short) values[i]);
+        valField.setValue((short) values[i]);
         break;
       case FIXED_INTS_32:
         values[i] = random.nextInt();
-        valField.setInt((int) values[i]);
+        valField.setValue((int) values[i]);
         break;
       case FIXED_INTS_64:
         values[i] = random.nextLong();
-        valField.setInt(values[i]);
+        valField.setValue(values[i]);
         break;
       case FLOAT_64:
         double nextDouble = random.nextDouble();
         values[i] = Double.doubleToRawLongBits(nextDouble);
-        valField.setFloat(nextDouble);
+        valField.setValue(nextDouble);
         break;
       case FLOAT_32:
         final float nextFloat = random.nextFloat();
         values[i] = Double.doubleToRawLongBits(nextFloat);
-        valField.setFloat(nextFloat);
+        valField.setValue(nextFloat);
         break;
       case FIXED_INTS_8:
          values[i] = (byte) i;
-        valField.setInt((byte)values[i]);
+        valField.setValue((byte)values[i]);
         break;
       case BYTES_FIXED_DEREF:
       case BYTES_FIXED_SORTED:
       case BYTES_FIXED_STRAIGHT:
         values[i] = random.nextLong();
         BytesRefUtils.copyLong(ref, values[i]);
-        valField.setBytes(ref);
+        valField.setValue(ref);
         break;
       case BYTES_VAR_DEREF:
       case BYTES_VAR_SORTED:
@@ -221,7 +250,7 @@ public class TestTypePromotion extends LuceneTestCase {
           BytesRefUtils.copyLong(ref, random.nextLong());
           values[i] = BytesRefUtils.asLong(ref);
         }
-        valField.setBytes(ref);
+        valField.setValue(ref);
         break;
 
       default:

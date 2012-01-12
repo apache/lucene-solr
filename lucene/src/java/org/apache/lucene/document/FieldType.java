@@ -20,6 +20,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.util.NumericUtils;
 
 public class FieldType implements IndexableFieldType {
 
@@ -34,6 +35,7 @@ public class FieldType implements IndexableFieldType {
   private DocValues.Type docValueType;
   private NumericField.DataType numericType;
   private boolean frozen;
+  private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
 
   public FieldType(IndexableFieldType ref) {
     this.indexed = ref.indexed();
@@ -159,6 +161,19 @@ public class FieldType implements IndexableFieldType {
     return numericType;
   }
 
+  public void setNumericPrecisionStep(int precisionStep) {
+    checkIfFrozen();
+    if (precisionStep < 1) {
+      throw new IllegalArgumentException("precisionStep must be >= 1 (got " + precisionStep + ")");
+    }
+    this.numericPrecisionStep = precisionStep;
+  }
+
+  @Override
+  public int numericPrecisionStep() {
+    return numericPrecisionStep;
+  }
+
   /** Prints a Field for human consumption. */
   @Override
   public final String toString() {
@@ -197,9 +212,16 @@ public class FieldType implements IndexableFieldType {
         result.append(",indexOptions=");
         result.append(indexOptions);
       }
+      if (numericType != null) {
+        result.append(",numericType=");
+        result.append(numericType);
+        result.append(",numericPrecisionStep=");
+        result.append(numericPrecisionStep);
+      }
     }
     if (docValueType != null) {
-      result.append(",docValueType=" + docValueType);
+      result.append(",docValueType=");
+      result.append(docValueType);
     }
     
     return result.toString();

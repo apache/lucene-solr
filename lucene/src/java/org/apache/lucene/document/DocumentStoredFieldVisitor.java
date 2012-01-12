@@ -74,25 +74,25 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   @Override
   public void intField(FieldInfo fieldInfo, int value) {
     FieldType ft = NumericField.getFieldType(NumericField.DataType.INT, true);
-    doc.add(new NumericField(fieldInfo.name, ft).setIntValue(value));
+    doc.add(new NumericField(fieldInfo.name, Integer.valueOf(value), ft));
   }
 
   @Override
   public void longField(FieldInfo fieldInfo, long value) {
     FieldType ft = NumericField.getFieldType(NumericField.DataType.LONG, true);
-    doc.add(new NumericField(fieldInfo.name, ft).setLongValue(value));
+    doc.add(new NumericField(fieldInfo.name, Long.valueOf(value), ft));
   }
 
   @Override
   public void floatField(FieldInfo fieldInfo, float value) {
     FieldType ft = NumericField.getFieldType(NumericField.DataType.FLOAT, true);
-    doc.add(new NumericField(fieldInfo.name, ft).setFloatValue(value));
+    doc.add(new NumericField(fieldInfo.name, Float.valueOf(value), ft));
   }
 
   @Override
   public void doubleField(FieldInfo fieldInfo, double value) {
     FieldType ft = NumericField.getFieldType(NumericField.DataType.DOUBLE, true);
-    doc.add(new NumericField(fieldInfo.name, ft).setDoubleValue(value));
+    doc.add(new NumericField(fieldInfo.name, Double.valueOf(value), ft));
   }
 
   @Override

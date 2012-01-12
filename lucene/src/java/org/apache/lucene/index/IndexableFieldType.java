@@ -58,4 +58,7 @@ public interface IndexableFieldType {
    * non-null then the field's value will be indexed
    * numerically. */
   public NumericField.DataType numericType();
+
+  /** Precision step for numeric field. */
+  public int numericPrecisionStep();
 }
