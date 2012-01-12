@@ -363,7 +363,7 @@ public class SolrCmdDistributor {
               error.node = sreq.node;
               response.errors.add(error);
               response.sreq = sreq;
-              SolrException.logOnce(SolrCore.log, "shard update error "
+              SolrException.log(SolrCore.log, "shard update error "
                   + sreq.node, sreq.exception);
             }
           }

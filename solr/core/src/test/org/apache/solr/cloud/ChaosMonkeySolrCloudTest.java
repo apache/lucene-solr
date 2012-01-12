@@ -109,6 +109,9 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
       indexThread.join();
     }
        
+    // nocommit
+    printLayout();
+    
     for (StopableIndexingThread indexThread : threads) {
       assertEquals(0, indexThread.getFails());
     }

@@ -37,7 +37,7 @@ class ConnectionManager implements Watcher {
   private KeeperState state;
   private boolean connected;
 
-  private ZkClientConnectionStrategy connectionStrategy;
+  private final ZkClientConnectionStrategy connectionStrategy;
 
   private String zkServerAddress;
 
@@ -78,17 +78,24 @@ class ConnectionManager implements Watcher {
       log.info("Attempting to reconnect to recover relationship with ZooKeeper...");
 
       try {
-        connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this, new ZkClientConnectionStrategy.ZkUpdate() {
-          @Override
-          public void update(SolrZooKeeper keeper) throws InterruptedException, TimeoutException, IOException {
-           waitForConnected(SolrZkClient.DEFAULT_CLIENT_CONNECT_TIMEOUT);
-           client.updateKeeper(keeper);
-           if(onReconnect != null) {
-             onReconnect.command();
-           }
-           ConnectionManager.this.connected = true;
-          }
-        });
+        connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this,
+            new ZkClientConnectionStrategy.ZkUpdate() {
+              @Override
+              public void update(SolrZooKeeper keeper)
+                  throws InterruptedException, TimeoutException, IOException {
+                synchronized (connectionStrategy) {
+                  waitForConnected(SolrZkClient.DEFAULT_CLIENT_CONNECT_TIMEOUT);
+                  client.updateKeeper(keeper);
+                  if (onReconnect != null) {
+                    onReconnect.command();
+                  }
+                  synchronized (ConnectionManager.this) {
+                    ConnectionManager.this.connected = true;
+                  }
+                }
+                
+              }
+            });
       } catch (Exception e) {
         log.error("", e);
       }

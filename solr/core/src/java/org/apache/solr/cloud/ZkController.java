@@ -164,6 +164,10 @@ public final class ZkController {
           public void command() {
             try {
               // we need to create all of our lost watches
+              Overseer.createClientNodes(zkClient, getNodeName());
+
+              ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
+              overseerElector.joinElection(context);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
               // re register all descriptors
