@@ -872,7 +872,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     Set<String> theShards = shardToClient.keySet();
     String failMessage = null;
     for (String shard : theShards) {
-      failMessage = checkShardConsistency(shard, verbose);
+      String shardFailMessage = checkShardConsistency(shard, verbose);
+      if (shardFailMessage != null && failMessage == null) {
+        failMessage = shardFailMessage;
+      }
     }   
     
     if (failMessage != null) {
