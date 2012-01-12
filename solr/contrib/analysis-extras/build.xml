@@ -27,21 +27,23 @@
 
   <path id="classpath">
   	<pathelement path="${analyzers-icu.jar}"/>
+        <pathelement path="${analyzers-kuromoji.jar}"/>
   	<pathelement path="${analyzers-smartcn.jar}"/>
   	<pathelement path="${analyzers-stempel.jar}"/>
     <path refid="solr.base.classpath"/>
   </path>
 
   <target name="module-jars-to-solr"
-          depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel">
+          depends="jar-analyzers-icu, jar-analyzers-kuromoji, jar-analyzers-smartcn, jar-analyzers-stempel">
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset file="${analyzers-icu.jar}"/>
+      <fileset file="${analyzers-kuromoji.jar}"/>
       <fileset file="${analyzers-smartcn.jar}"/>
       <fileset file="${analyzers-stempel.jar}"/>
     </copy>
   </target>
 
-  <target name="compile-core" depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel, solr-contrib-build.compile-core"/>
+  <target name="compile-core" depends="jar-analyzers-icu, jar-analyzers-kuromoji, jar-analyzers-smartcn, jar-analyzers-stempel, solr-contrib-build.compile-core"/>
   <target name="dist" depends="module-jars-to-solr, common-solr.dist"/>
 </project>

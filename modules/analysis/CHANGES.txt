@@ -42,6 +42,11 @@ API Changes
    since they prevent reuse.  Both Analyzers should be configured at instantiation.
    (Chris Male)
 
+ * LUCENE-3305: Added SegmentingTokenizerBase, which breaks text into sentences
+   with BreakIterator and allows subclasses to decompose sentences into words, or
+   use the sentence boundary information for other reasons (e.g. attribute/position increment)
+   (Robert Muir)
+
 New Features
 
  * LUCENE-2341: A new analyzer/ filter: Morfologik - a dictionary-driven lemmatizer 
@@ -108,6 +113,9 @@ New Features
 
  * LUCENE-3414: Added HunspellStemFilter which uses a provided pure Java implementation of the 
    Hunspell algorithm. (Chris Male)
+
+ * LUCENE-3305: Added Kuromoji morphological analyzer for Japanese.
+   (Christian Moen, Masaru Hasegawa, Simon Willnauer, Uwe Schindler, Robert Muir)
 
 Build
 

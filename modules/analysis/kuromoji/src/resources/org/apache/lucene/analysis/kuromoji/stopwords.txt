@@ -1,0 +1,13 @@
+# short set of japanese stopwords
+いう
+する
+人物
+さま
+すること
+ため
+もの
+おいて
+なる
+できる
+おく
+ある

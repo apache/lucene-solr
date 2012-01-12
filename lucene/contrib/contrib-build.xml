@@ -196,6 +196,17 @@
     <property name="analyzers-stempel.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-kuromoji.jar" value="${common.dir}/../modules/analysis/build/kuromoji/lucene-analyzers-kuromoji-${version}.jar"/>
+  <target name="check-analyzers-kuromoji-uptodate" unless="analyzers-kuromoji.uptodate">
+    <module-uptodate name="analysis/kuromoji" jarfile="${analyzers-kuromoji.jar}" property="analyzers-kuromoji.uptodate"/>
+  </target>
+  <target name="jar-analyzers-kuromoji" unless="analyzers-kuromoji.uptodate" depends="check-analyzers-kuromoji-uptodate">
+  	<ant dir="${common.dir}/../modules/analysis/kuromoji" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-kuromoji.uptodate" value="true"/>
+  </target>
+
   <property name="grouping.jar" value="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"/>
   <target name="check-grouping-uptodate" unless="grouping.uptodate">
     <module-uptodate name="grouping" jarfile="${grouping.jar}" property="grouping.uptodate"/>
