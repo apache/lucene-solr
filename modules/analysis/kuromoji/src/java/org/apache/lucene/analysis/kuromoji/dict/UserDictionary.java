@@ -35,11 +35,13 @@ import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 public final class UserDictionary implements Dictionary {
   
+  // phrase text -> phrase ID
   private final TokenInfoFST fst;
   
-  // holds wordid offset, length
+  // holds wordid, length, length... indexed by phrase ID
   private final int segmentations[][];
-  // holds readings and POS
+  
+  // holds readings and POS, indexed by wordid
   private final String data[];
   
   private static final int CUSTOM_DICTIONARY_WORD_ID_OFFSET = 100000000;
