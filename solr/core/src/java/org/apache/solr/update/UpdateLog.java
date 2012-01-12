@@ -153,7 +153,7 @@ public class UpdateLog implements PluginInfoInitialized {
         oldLog = new TransactionLog( f, null, true );
         addOldLog(oldLog);
       } catch (Exception e) {
-        log.warn("Failure to open existing log file " + f, e);
+        SolrException.log(log, "Failure to open existing log file (non fatal) "+f, e);
         f.delete();
       }
     }

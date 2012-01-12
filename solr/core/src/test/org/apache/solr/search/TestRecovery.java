@@ -439,9 +439,12 @@ public class TestRecovery extends SolrTestCaseJ4 {
       raf.writeChars("This is a trashed log file that really shouldn't work at all, but we'll see...");
       raf.close();
 
+      ignoreException("Failure to open existing");
       createCore();
       // we should still be able to get the list of versions (not including the trashed log file)
       assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, start)));
+      resetExceptionIgnores();
+
 
 
 
