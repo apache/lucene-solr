@@ -102,8 +102,13 @@ public  class LeaderElector {
           break;
         }
       }
+      int index = i - 2;
+      if (index < 0) {
+        log.warn("Our node is no longer in line to be leader");
+        return;
+      }
       try {
-        zkClient.getData(holdElectionPath + "/" + seqs.get(i - 2),
+        zkClient.getData(holdElectionPath + "/" + seqs.get(index),
             new Watcher() {
               
               @Override

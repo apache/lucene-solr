@@ -82,6 +82,10 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
+    // we cannot do delete by query
+    // as it's not supported for recovery
+    //del("*:*");
+    
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
     int threadCount = atLeast(2);
     for (int i = 0; i < threadCount; i++) {

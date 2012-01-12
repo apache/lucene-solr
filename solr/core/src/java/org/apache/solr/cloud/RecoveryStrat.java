@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
@@ -52,10 +51,6 @@ public class RecoveryStrat {
 
   private volatile boolean close = false;
   
-  private final AtomicInteger recoveryAttempts = new AtomicInteger();
-  private final AtomicInteger recoverySuccesses = new AtomicInteger();
-  
-  
   // for now, just for tests
   public interface RecoveryListener {
     public void startRecovery();
@@ -70,10 +65,7 @@ public class RecoveryStrat {
   
   // TODO: we want to be pretty noisy if we don't properly recover?
   public void recover(final SolrCore core) {
-    
-    log.info("Start recovery process");
-    if (recoveryListener != null) recoveryListener.startRecovery();
-    
+   
     final ZkController zkController = core.getCoreDescriptor()
         .getCoreContainer().getZkController();
     final ZkStateReader zkStateReader = zkController.getZkStateReader();
@@ -82,11 +74,22 @@ public class RecoveryStrat {
         + core.getName();
     final CloudDescriptor cloudDesc = core.getCoreDescriptor()
         .getCloudDescriptor();
+ 
+    core.getUpdateHandler().getSolrCoreState().recoveryRequests.incrementAndGet();
+    try {
+      log.info("Start recovery process");
+      if (recoveryListener != null) recoveryListener.startRecovery();
+
+      zkController.publishAsRecoverying(baseUrl, cloudDesc, shardZkNodeName,
+          core.getName());
+    } catch (Exception e) {
+      log.error("", e);
+      core.getUpdateHandler().getSolrCoreState().recoveryRequests.decrementAndGet();
+      recoveryFailed(core, zkController, baseUrl, shardZkNodeName,
+          cloudDesc);
+      return;
+    }
     
-    zkController.publishAsRecoverying(baseUrl, cloudDesc, shardZkNodeName, core.getName());
-    
-    // TODO: we should really track if a recovery is already attempting and if it is, interrupt it
-    // and start again...
     Thread thread = new Thread() {
       {
         setDaemon(true);
@@ -99,14 +102,11 @@ public class RecoveryStrat {
           UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
           if (ulog == null) return;
 
-          // TODO: consider any races issues here
-          // was checking state first, but there is a race..
           ulog.bufferUpdates();  
           boolean replayed = false;
           boolean succesfulRecovery = false;
           int retries = 0;
           while (!succesfulRecovery && !close) {
-            recoveryAttempts.incrementAndGet();
             try {
               ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
                   cloudDesc.getCollectionName(), cloudDesc.getShardId());
@@ -116,13 +116,16 @@ public class RecoveryStrat {
               replay(core);
               replayed = true;
               
-              zkController
-                  .publishAsActive(baseUrl, cloudDesc, shardZkNodeName, core.getName());
+              // if there are pending recovery requests, don't advert as active
+              if (core.getUpdateHandler().getSolrCoreState().recoveryRequests
+                  .get() == 1) {
+                zkController.publishAsActive(baseUrl, cloudDesc,
+                    shardZkNodeName, core.getName());
+              }
               
               if (recoveryListener != null) recoveryListener.finishedRecovery();
 
               succesfulRecovery = true;
-              recoverySuccesses.incrementAndGet();
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
               log.error("Recovery was interrupted", e);
@@ -138,6 +141,9 @@ public class RecoveryStrat {
                   log.warn("", e);
                 }
               }
+              if (succesfulRecovery) {
+                core.getUpdateHandler().getSolrCoreState().recoveryRequests.decrementAndGet();
+              }
             }
             
             if (!succesfulRecovery) {
@@ -148,10 +154,8 @@ public class RecoveryStrat {
               retries++;
               if (retries >= MAX_RETRIES) {
                 // TODO: for now, give up after 10 tries - should we do more?
-                log.error("Recovery failed - I give up.");
-                zkController.publishAsRecoveryFailed(baseUrl, cloudDesc,
-                    shardZkNodeName, core.getName());
-                close = true;
+                recoveryFailed(core, zkController, baseUrl, shardZkNodeName,
+                    cloudDesc);
               }
               
               try {
@@ -181,6 +185,15 @@ public class RecoveryStrat {
       }
     };
     thread.start();
+  }
+  
+  private void recoveryFailed(final SolrCore core,
+      final ZkController zkController, final String baseUrl,
+      final String shardZkNodeName, final CloudDescriptor cloudDesc) {
+    log.error("Recovery failed - I give up.");
+    zkController.publishAsRecoveryFailed(baseUrl, cloudDesc,
+        shardZkNodeName, core.getName());
+    close = true;
   }
   
   private void replicate(SolrCore core, String shardZkNodeName, ZkNodeProps leaderprops, String baseUrl)
@@ -217,7 +230,8 @@ public class RecoveryStrat {
       ReplicationHandler replicationHandler = (ReplicationHandler) handler;
       
       if (replicationHandler == null) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Skipping recovery, no /replication handler found");
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+            "Skipping recovery, no " + REPLICATION_HANDLER + " handler found");
       }
       
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
@@ -235,13 +249,5 @@ public class RecoveryStrat {
 
   public void setRecoveryListener(RecoveryListener recoveryListener) {
     this.recoveryListener = recoveryListener;
-  }
-
-  public AtomicInteger getRecoveryAttempts() {
-    return recoveryAttempts;
-  }
-
-  public AtomicInteger getRecoverySuccesses() {
-    return recoverySuccesses;
   }
 }

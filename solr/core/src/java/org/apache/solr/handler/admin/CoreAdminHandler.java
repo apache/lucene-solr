@@ -622,10 +622,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
           break;
         }
         
-        if (retry++ == 10) {
+        if (retry++ == 30) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
               "I was asked to prep for recovery for " + nodeName
-                  + " but she is not in a recovery state");
+                  + " but she is not in a recovery state - state: " + state);
         }
 
         Thread.sleep(1000);
@@ -636,7 +636,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         // kept it from sending the update to be buffered -
         // pause for a while to let any outstanding updates finish
 
-        Thread.sleep(1500);
+        Thread.sleep(2000);
         
         UpdateRequestProcessorChain processorChain = core
             .getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(
