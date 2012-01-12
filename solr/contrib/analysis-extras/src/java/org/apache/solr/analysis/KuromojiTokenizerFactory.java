@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.Locale;
@@ -35,10 +36,27 @@ import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
+/**
+ * Factory for {@link KuromojiTokenizer}.  
+ * <pre class="prettyprint">
+ * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.KuromojiTokenizerFactory"
+ *       mode=NORMAL
+ *       user-dictionary=user.txt
+ *       user-dictionary-encoding=UTF-8
+ *     /&gt;
+ *     &lt;filter class="solr.KuromojiBaseFormFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;
+ * </pre>
+ */
 public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements ResourceLoaderAware {
   private static final String MODE = "mode";
   
   private static final String USER_DICT_PATH = "user-dictionary";
+  
+  private static final String USER_DICT_ENCODING = "user-dictionary-encoding";
 
   private Segmenter segmenter;
   
@@ -49,8 +67,12 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements Re
     try {
       if (userDictionaryPath != null) {
         InputStream stream = loader.openResource(userDictionaryPath);
+        String encoding = args.get(USER_DICT_ENCODING);
+        if (encoding == null) {
+          encoding = IOUtils.UTF_8;
+        }
         // note: we could allow for other encodings here as an argument
-        CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+        CharsetDecoder decoder = Charset.forName(encoding).newDecoder()
             .onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT);
         Reader reader = new InputStreamReader(stream, decoder);
