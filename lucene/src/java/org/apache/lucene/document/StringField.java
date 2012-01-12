@@ -59,7 +59,7 @@ public final class StringField extends Field {
   public StringField(String name, String value) {
     super(name, value, TYPE_UNSTORED);
   }
-  
+
   @Override
   public String stringValue() {
     return (fieldsData == null) ? null : fieldsData.toString();
