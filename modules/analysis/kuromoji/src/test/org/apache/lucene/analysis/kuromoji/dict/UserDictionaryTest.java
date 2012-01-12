@@ -70,17 +70,23 @@ public class UserDictionaryTest extends LuceneTestCase {
   @Test
   public void testReadings() throws IOException {
     UserDictionary dictionary = readDict();
-    int wordIdNihon = 100000000; // wordId of 日本 in 日本経済新聞
+    int[][] result = dictionary.lookup("日本経済新聞".toCharArray(), 0, 6);
+    assertEquals(3, result.length);
+    int wordIdNihon = result[0][0]; // wordId of 日本 in 日本経済新聞
     assertEquals("ニホン", dictionary.getReading(wordIdNihon));
     
-    int wordIdAsashoryu = 100000006; // wordId for 朝青龍
+    result = dictionary.lookup("朝青龍".toCharArray(), 0, 3);
+    assertEquals(1, result.length);
+    int wordIdAsashoryu = result[0][0]; // wordId for 朝青龍
     assertEquals("アサショウリュウ", dictionary.getReading(wordIdAsashoryu));
   }
   
   @Test
   public void testPartOfSpeech() throws IOException {
     UserDictionary dictionary = readDict();
-    int wordIdKeizai = 100000001; // wordId of 経済 in 日本経済新聞
+    int[][] result = dictionary.lookup("日本経済新聞".toCharArray(), 0, 6);
+    assertEquals(3, result.length);
+    int wordIdKeizai = result[1][0]; // wordId of 経済 in 日本経済新聞
     assertEquals("カスタム名詞", dictionary.getPartOfSpeech(wordIdKeizai));
   }
   
