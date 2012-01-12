@@ -64,6 +64,9 @@ Bug Fixes
    This way if the synonym token is used for highlighting, it will
    cover all tokens it had matched.  (Koji Sekiguchi, Robert Muir,
    Mike McCandless)
+
+ * LUCENE-3686: CategoryEnhancement must override Object.equals(Object).
+   (Sivan Yogev via Shai Erera)
  
 Documentation
 
