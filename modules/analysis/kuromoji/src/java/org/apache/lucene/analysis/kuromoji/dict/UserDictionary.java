@@ -18,24 +18,20 @@ package org.apache.lucene.analysis.kuromoji.dict;
  */
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.kuromoji.util.CSVUtil;
-import org.apache.lucene.util.IOUtils;
 
 public final class UserDictionary implements Dictionary {
   
   private final TreeMap<String, int[]> entries = new TreeMap<String, int[]>();
   
-  private final HashMap<Integer, String> featureEntries = new HashMap<Integer, String>();
+  private final String featureEntries[];
   
   private static final int CUSTOM_DICTIONARY_WORD_ID_OFFSET = 100000000;
   
@@ -45,27 +41,11 @@ public final class UserDictionary implements Dictionary {
   
   public static final int RIGHT_ID = 5;
   
-  public UserDictionary(String filename) throws IOException {
-    IOException priorE = null;
-    final InputStream is = new FileInputStream(filename);
-    try {
-      final Reader r = new InputStreamReader(is, IOUtils.CHARSET_UTF_8);
-      read(r);
-    } catch (IOException ioe) {
-      priorE = ioe;
-    } finally {
-      IOUtils.closeWhileHandlingException(priorE, is);
-    }
-  }
-  
   public UserDictionary(Reader reader) throws IOException {
-    read(reader);
-  }
-  
-  private void read(Reader reader) throws IOException {
     BufferedReader br = new BufferedReader(reader);
     String line = null;
     int wordId = CUSTOM_DICTIONARY_WORD_ID_OFFSET;
+    List<String> featureEntries = new ArrayList<String>();
     while ((line = br.readLine()) != null) {
       // Remove comments
       line = line.replaceAll("#.*$", "");
@@ -88,11 +68,12 @@ public final class UserDictionary implements Dictionary {
       wordIdAndLength[0] = wordId;
       for (int i = 0; i < segmentation.length; i++) {
         wordIdAndLength[i + 1] = segmentation[i].length();
-        featureEntries.put(wordId, readings[i] + INTERNAL_SEPARATOR + pos);
+        featureEntries.add(readings[i] + INTERNAL_SEPARATOR + pos);
         wordId++;
       }
       entries.put(values[0], wordIdAndLength);
     }
+    this.featureEntries = featureEntries.toArray(new String[featureEntries.size()]);
   }
   
   /**
@@ -189,7 +170,7 @@ public final class UserDictionary implements Dictionary {
   }
   
   private String[] getAllFeaturesArray(int wordId) {
-    String allFeatures = featureEntries.get(wordId);
+    String allFeatures = featureEntries[wordId-CUSTOM_DICTIONARY_WORD_ID_OFFSET];
     if(allFeatures == null) {
       return null;
     }

@@ -17,33 +17,44 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer;
 import org.apache.lucene.analysis.kuromoji.Segmenter;
 import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.analysis.BaseTokenizerFactory;
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.plugin.ResourceLoaderAware;
 
-public class KuromojiTokenizerFactory extends BaseTokenizerFactory{
+public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements ResourceLoaderAware {
   private static final String MODE = "mode";
   
   private static final String USER_DICT_PATH = "user-dictionary";
-  
+
   private Segmenter segmenter;
   
   @Override
-  public void init(Map<String,String> args) {
-    this.args = args;
+  public void inform(ResourceLoader loader) {
     Mode mode = args.get(MODE) != null ? Mode.valueOf(args.get(MODE).toUpperCase(Locale.ENGLISH)) : Mode.NORMAL;
     String userDictionaryPath = args.get(USER_DICT_PATH);
     try {
       if (userDictionaryPath != null) {
-        this.segmenter = new Segmenter(new UserDictionary(userDictionaryPath), mode);
+        InputStream stream = loader.openResource(userDictionaryPath);
+        // note: we could allow for other encodings here as an argument
+        CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT);
+        Reader reader = new InputStreamReader(stream, decoder);
+        this.segmenter = new Segmenter(new UserDictionary(reader), mode);
       } else {
         this.segmenter = new Segmenter(mode);
       }

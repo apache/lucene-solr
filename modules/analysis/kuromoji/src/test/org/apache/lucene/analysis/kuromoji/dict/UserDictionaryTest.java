@@ -75,9 +75,6 @@ public class UserDictionaryTest extends LuceneTestCase {
     
     int wordIdAsashoryu = 100000006; // wordId for 朝青龍
     assertEquals("アサショウリュウ", dictionary.getReading(wordIdAsashoryu));
-    
-    int wordIdNotExist = 1;
-    assertNull(dictionary.getReading(wordIdNotExist));
   }
   
   @Test
