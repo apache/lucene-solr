@@ -293,7 +293,7 @@ public class Viterbi {
    * @param startSizeArr
    * @param endSizeArr
    */
-  private void processUserDictionary(char text[], int offset, int len, ViterbiNode[][] startIndexArr, ViterbiNode[][] endIndexArr, int[] startSizeArr, int[] endSizeArr) {
+  private void processUserDictionary(char text[], int offset, int len, ViterbiNode[][] startIndexArr, ViterbiNode[][] endIndexArr, int[] startSizeArr, int[] endSizeArr) throws IOException {
     int[][] result = userDictionary.lookup(text, offset, len);
     for(int[] segmentation : result) {
       int wordId = segmentation[0];

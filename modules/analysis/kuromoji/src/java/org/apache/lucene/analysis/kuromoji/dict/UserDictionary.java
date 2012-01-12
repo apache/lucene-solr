@@ -21,17 +21,26 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.kuromoji.util.CSVUtil;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 public final class UserDictionary implements Dictionary {
   
-  private final TreeMap<String, int[]> entries = new TreeMap<String, int[]>();
+  private final TokenInfoFST fst;
   
-  private final String featureEntries[];
+  // holds wordid offset, length
+  private final int segmentations[][];
+  // holds readings and POS
+  private final String data[];
   
   private static final int CUSTOM_DICTIONARY_WORD_ID_OFFSET = 100000000;
   
@@ -45,7 +54,9 @@ public final class UserDictionary implements Dictionary {
     BufferedReader br = new BufferedReader(reader);
     String line = null;
     int wordId = CUSTOM_DICTIONARY_WORD_ID_OFFSET;
-    List<String> featureEntries = new ArrayList<String>();
+    List<String[]> featureEntries = new ArrayList<String[]>();
+ 
+    // text, segmentation, readings, POS
     while ((line = br.readLine()) != null) {
       // Remove comments
       line = line.replaceAll("#.*$", "");
@@ -55,6 +66,28 @@ public final class UserDictionary implements Dictionary {
         continue;
       }
       String[] values = CSVUtil.parse(line);
+      featureEntries.add(values);
+    }
+    
+    // TODO: should we allow multiple segmentations per input 'phrase'?
+    // the old treemap didn't support this either, and i'm not sure if its needed/useful?
+
+    Collections.sort(featureEntries, new Comparator<String[]>() {
+      @Override
+      public int compare(String[] left, String[] right) {
+        return left[0].compareTo(right[0]);
+     }
+    });
+    
+    List<String> data = new ArrayList<String>(featureEntries.size());
+    List<int[]> segmentations = new ArrayList<int[]>(featureEntries.size());
+    
+    PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton(true);
+    Builder<Long> fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE2, fstOutput);
+    IntsRef scratch = new IntsRef();
+    long ord = 0;
+    
+    for (String[] values : featureEntries) {
       String[] segmentation = values[1].replaceAll("  *", " ").split(" ");
       String[] readings = values[2].replaceAll("  *", " ").split(" ");
       String pos = values[3];
@@ -68,12 +101,23 @@ public final class UserDictionary implements Dictionary {
       wordIdAndLength[0] = wordId;
       for (int i = 0; i < segmentation.length; i++) {
         wordIdAndLength[i + 1] = segmentation[i].length();
-        featureEntries.add(readings[i] + INTERNAL_SEPARATOR + pos);
+        data.add(readings[i] + INTERNAL_SEPARATOR + pos);
         wordId++;
       }
-      entries.put(values[0], wordIdAndLength);
+      // add mapping to FST
+      String token = values[0];
+      scratch.grow(token.length());
+      scratch.length = token.length();
+      for (int i = 0; i < token.length(); i++) {
+        scratch.ints[i] = (int) token.charAt(i);
+      }
+      fstBuilder.add(scratch, fstOutput.get(ord));
+      segmentations.add(wordIdAndLength);
+      ord++;
     }
-    this.featureEntries = featureEntries.toArray(new String[featureEntries.size()]);
+    this.fst = new TokenInfoFST(fstBuilder.finish(), false);
+    this.data = data.toArray(new String[data.size()]);
+    this.segmentations = segmentations.toArray(new int[segmentations.size()][]);
   }
   
   /**
@@ -83,20 +127,26 @@ public final class UserDictionary implements Dictionary {
    * @param len length of text
    * @return array of {wordId, position, length}
    */
-  public int[][] lookup(char[] chars, int off, int len) {
-    // TODO: this method should be more efficient.
-    String text = new String(chars, off, len);
+  public int[][] lookup(char[] chars, int off, int len) throws IOException {
+    // TODO: can we avoid this treemap/toIndexArray?
     TreeMap<Integer, int[]> result = new TreeMap<Integer, int[]>(); // index, [length, length...]
     
-    for (String keyword : entries.descendingKeySet()) {
-      int offset = 0;
-      int position = text.indexOf(keyword, offset);
-      while (offset < text.length() && position >= 0) {
-        if(!result.containsKey(position)){
-          result.put(position, entries.get(keyword));
+    FST.Arc<Long> arc = new FST.Arc<Long>();
+    int end = off + len;
+    for (int startOffset = off; startOffset < end; startOffset++) {
+      arc = fst.getFirstArc(arc);
+      int output = 0;
+      int remaining = end - startOffset;
+      for (int i = 0; i < remaining; i++) {
+        int ch = chars[startOffset+i];
+        if (fst.findTargetArc(ch, arc, arc, i == 0) == null) {
+          break; // continue to next position
         }
-        offset += position + keyword.length();
-        position = text.indexOf(keyword, offset);
+        output += arc.output.intValue();
+        if (arc.isFinal()) {
+          output += arc.nextFinalOutput.intValue();
+          result.put(startOffset-off, segmentations[output]);
+        }
       }
     }
     
@@ -170,7 +220,7 @@ public final class UserDictionary implements Dictionary {
   }
   
   private String[] getAllFeaturesArray(int wordId) {
-    String allFeatures = featureEntries[wordId-CUSTOM_DICTIONARY_WORD_ID_OFFSET];
+    String allFeatures = data[wordId-CUSTOM_DICTIONARY_WORD_ID_OFFSET];
     if(allFeatures == null) {
       return null;
     }
