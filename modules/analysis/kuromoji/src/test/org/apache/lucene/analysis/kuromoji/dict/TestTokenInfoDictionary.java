@@ -32,6 +32,8 @@ public class TestTokenInfoDictionary extends LuceneTestCase {
     // just for debugging
     int numTerms = 0;
     int numWords = 0;
+    int lastWordId = -1;
+    int lastSourceId = -1;
     TokenInfoDictionary tid = TokenInfoDictionary.getInstance();
     ConnectionCosts matrix = ConnectionCosts.getInstance();
     FST<Long> fst = tid.getFST().getInternalFST();
@@ -48,10 +50,16 @@ public class TestTokenInfoDictionary extends LuceneTestCase {
       assertTrue(UnicodeUtil.validUTF16String(new String(chars)));
       
       Long output = mapping.output;
-      tid.lookupWordIds(output.intValue(), scratch);
+      int sourceId = output.intValue();
+      // we walk in order, terms, sourceIds, and wordIds should always be increasing
+      assertTrue(sourceId > lastSourceId);
+      lastSourceId = sourceId;
+      tid.lookupWordIds(sourceId, scratch);
       for (int i = 0; i < scratch.length; i++) {
         numWords++;
         int wordId = scratch.ints[scratch.offset+i];
+        assertTrue(wordId > lastWordId);
+        lastWordId = wordId;
          
         String baseForm = tid.getBaseForm(wordId);
         assertTrue(baseForm == null || UnicodeUtil.validUTF16String(baseForm));
