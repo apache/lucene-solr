@@ -58,14 +58,11 @@ public class SolrException extends RuntimeException {
   public boolean logged=false;
 
   public SolrException(ErrorCode code, String msg) {
-    super(msg);
-    this.code=code.code;
+    this(code, msg, null, false);
   }
   
   public SolrException(ErrorCode code, String msg, boolean alreadyLogged) {
-    super(msg);
-    this.code=code.code;
-    this.logged=alreadyLogged;
+    this(code, msg, null, alreadyLogged);
   }
 
   public SolrException(ErrorCode code, String msg, Throwable th, boolean alreadyLogged) {
@@ -75,13 +72,11 @@ public class SolrException extends RuntimeException {
   }
 
   public SolrException(ErrorCode code, String msg, Throwable th) {
-    this(code,msg,th,true);
+    this(code, msg, th, (th instanceof SolrException) ? ((SolrException)th).logged : false);
   }
 
   public SolrException(ErrorCode code, Throwable th) {
-    super(th);
-    this.code=code.code;
-    logged=true;
+    this(code, null, th, (th instanceof SolrException) ? ((SolrException)th).logged : false);
   }
   
   /**
