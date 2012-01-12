@@ -185,7 +185,7 @@ public class Viterbi {
         int length = leftNode.getLength();
         for (int i = length - 1; i >= 0; i--) {
           int charLen = 1;
-          if (i >= 0 && Character.isLowSurrogate(surfaceForm[offset+i])) {
+          if (i > 0 && Character.isLowSurrogate(surfaceForm[offset+i])) {
             i--;
             charLen = 2;
           }
