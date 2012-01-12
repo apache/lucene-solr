@@ -67,9 +67,18 @@ public class Field implements IndexableField {
   protected float boost = 1.0f;
 
   protected Field(String name, IndexableFieldType type) {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
     this.name = name;
+    if (type == null) {
+      throw new IllegalArgumentException("type cannot be null");
+    }
     this.type = type;
   }
+
+  // nocommit ctors taking Object as fieldsData...?  ctors
+  // taking numbers...?  then why have NumericField...?
   
   /**
    * Create field with Reader value.
@@ -77,6 +86,9 @@ public class Field implements IndexableField {
   public Field(String name, Reader reader, IndexableFieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
+    }
+    if (type == null) {
+      throw new IllegalArgumentException("type cannot be null");
     }
     if (reader == null) {
       throw new NullPointerException("reader cannot be null");
@@ -339,8 +351,6 @@ public class Field implements IndexableField {
   public float boost() {
     return boost;
   }
-
-  // nocommit move set/getInt/Float/Long up here?  or just get/setNumber
 
   /** Sets the boost factor hits on this field.  This value will be
    * multiplied into the score of all hits on this this field of this

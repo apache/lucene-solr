@@ -136,9 +136,6 @@ public final class NumericField extends Field {
   // nocommit promote to oal.index
   public static enum DataType {INT, LONG, FLOAT, DOUBLE}
 
-  // nocommit -- we can precompute static array indexed by
-  // type.ord()?  and give them names ... TYPE_INT_STORED, etc.
-
   /** @lucene.experimental */
   public static FieldType getFieldType(DataType type, boolean stored) {
     final FieldType ft = new FieldType();
@@ -152,11 +149,16 @@ public final class NumericField extends Field {
     return ft;
   }
 
+  private static final FieldType INT_TYPE = getFieldType(DataType.INT, false);
+  private static final FieldType LONG_TYPE = getFieldType(DataType.LONG, false);
+  private static final FieldType FLOAT_TYPE = getFieldType(DataType.FLOAT, false);
+  private static final FieldType DOUBLE_TYPE = getFieldType(DataType.DOUBLE, false);
+
   /** Creates an int NumericField with the provided value
    *  and default <code>precisionStep</code> {@link
    *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
   public NumericField(String name, int value) {
-    super(name, getFieldType(DataType.INT, false));
+    super(name, INT_TYPE);
     fieldsData = Integer.valueOf(value);
   }
 
@@ -164,7 +166,7 @@ public final class NumericField extends Field {
    *  and default <code>precisionStep</code> {@link
    *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
   public NumericField(String name, long value) {
-    super(name, getFieldType(DataType.LONG, false));
+    super(name, LONG_TYPE);
     fieldsData = Long.valueOf(value);
   }
 
@@ -172,7 +174,7 @@ public final class NumericField extends Field {
    *  and default <code>precisionStep</code> {@link
    *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
   public NumericField(String name, float value) {
-    super(name, getFieldType(DataType.FLOAT, false));
+    super(name, FLOAT_TYPE);
     fieldsData = Float.valueOf(value);
   }
 
@@ -180,7 +182,7 @@ public final class NumericField extends Field {
    *  and default <code>precisionStep</code> {@link
    *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
   public NumericField(String name, double value) {
-    super(name, getFieldType(DataType.DOUBLE, false));
+    super(name, DOUBLE_TYPE);
     fieldsData = Double.valueOf(value);
   }
   

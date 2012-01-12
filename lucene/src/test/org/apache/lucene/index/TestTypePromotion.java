@@ -1,5 +1,22 @@
 package org.apache.lucene.index;
 
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with this
+ * work for additional information regarding copyright ownership. The ASF
+ * licenses this file to You under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Random;
@@ -19,22 +36,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Before;
 
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with this
- * work for additional information regarding copyright ownership. The ASF
- * licenses this file to You under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 public class TestTypePromotion extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
@@ -171,19 +172,25 @@ public class TestTypePromotion extends LuceneTestCase {
     final DocValuesField valField;
     switch (valueType) {
     case FIXED_INTS_8:
+      valField = new DocValuesField("promote", (byte) 0, valueType);
+      break;
     case FIXED_INTS_16:
+      valField = new DocValuesField("promote", (short) 0, valueType);
+      break;
     case FIXED_INTS_32:
-      valField =  new DocValuesField("promote", 0, valueType);
+      valField = new DocValuesField("promote", 0, valueType);
       break;
     case VAR_INTS:
+      valField = new DocValuesField("promote", 0L, valueType);
+      break;
     case FIXED_INTS_64:
-      valField =  new DocValuesField("promote", (long) 0, valueType);
+      valField = new DocValuesField("promote", (long) 0, valueType);
       break;
     case FLOAT_64:
-      valField =  new DocValuesField("promote", (double) 0, valueType);
+      valField = new DocValuesField("promote", (double) 0, valueType);
       break;
     case FLOAT_32:
-      valField =  new DocValuesField("promote", (float) 0, valueType);
+      valField = new DocValuesField("promote", (float) 0, valueType);
       break;
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_SORTED:
@@ -191,7 +198,7 @@ public class TestTypePromotion extends LuceneTestCase {
     case BYTES_VAR_DEREF:
     case BYTES_VAR_SORTED:
     case BYTES_VAR_STRAIGHT:
-      valField =  new DocValuesField("promote", new BytesRef(), valueType);
+      valField = new DocValuesField("promote", new BytesRef(), valueType);
       break;
     default:
       fail("unexpected value " + valueType);
@@ -230,7 +237,7 @@ public class TestTypePromotion extends LuceneTestCase {
         valField.setValue(nextFloat);
         break;
       case FIXED_INTS_8:
-         values[i] = (byte) i;
+        values[i] = (byte) i;
         valField.setValue((byte)values[i]);
         break;
       case BYTES_FIXED_DEREF:
@@ -297,7 +304,7 @@ public class TestTypePromotion extends LuceneTestCase {
       // once in a while use addIndexes
       Directory dir_2 = newDirectory() ;
       IndexWriter writer_2 = new IndexWriter(dir_2,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+                       newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       index(writer_2,
           randomValueType(random.nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random), values, num_1, num_2);
       writer_2.commit();

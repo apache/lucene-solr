@@ -23,9 +23,11 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -91,6 +93,18 @@ public class TestCartesian extends LuceneTestCase {
     }
   }
   
+  private static final FieldType latLongType = new FieldType();
+  static {
+    latLongType.setIndexed(true);
+    latLongType.setStored(true);
+    latLongType.setTokenized(true);
+    latLongType.setOmitNorms(true);
+    latLongType.setIndexOptions(IndexOptions.DOCS_ONLY);
+    latLongType.setNumericType(NumericField.DataType.DOUBLE);
+    latLongType.setNumericPrecisionStep(Integer.MAX_VALUE);
+    latLongType.freeze();
+  }
+  
   private void addPoint(IndexWriter writer, String name, double lat, double lng) throws IOException{
     
     Document doc = new Document();
@@ -98,8 +112,8 @@ public class TestCartesian extends LuceneTestCase {
     doc.add(newField("name", name, TextField.TYPE_STORED));
     
     // convert the lat / long to lucene fields
-    doc.add(new NumericField(latField, lat, NumericField.getFieldType(NumericField.DataType.DOUBLE, true)));
-    doc.add(new NumericField(lngField, lng, NumericField.getFieldType(NumericField.DataType.DOUBLE, true)));
+    doc.add(new NumericField(latField, lat, latLongType));
+    doc.add(new NumericField(lngField, lng, latLongType));
     
     // add a default meta field to make searching all documents easy 
     doc.add(newField("metafile", "doc", TextField.TYPE_STORED));
@@ -107,7 +121,7 @@ public class TestCartesian extends LuceneTestCase {
     int ctpsize = ctps.size();
     for (int i =0; i < ctpsize; i++){
       CartesianTierPlotter ctp = ctps.get(i);
-      doc.add(new NumericField(ctp.getTierFieldName(), ctp.getTierBoxId(lat, lng), NumericField.getFieldType(NumericField.DataType.DOUBLE, true)));
+      doc.add(new NumericField(ctp.getTierFieldName(), ctp.getTierBoxId(lat, lng), latLongType));
       
       doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), StringField.TYPE_STORED));
     }

@@ -60,5 +60,7 @@ public interface IndexableFieldType {
   public NumericField.DataType numericType();
 
   /** Precision step for numeric field. */
+  // nocommit: should this be in FT not IFT...?
+  // but... Field holds an IFT yet needs precisionStep...
   public int numericPrecisionStep();
 }
