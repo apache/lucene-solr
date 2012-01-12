@@ -183,8 +183,13 @@ public class Viterbi {
         char[] surfaceForm = leftNode.getSurfaceForm();
         int offset = leftNode.getOffset();
         int length = leftNode.getLength();
-        for (int i = length; i > 0; i--) {
-          ViterbiNode uniGramNode = new ViterbiNode(unigramWordId, surfaceForm, offset + i - 1, 1, unigramLeftId, unigramRightId, unigramWordCost, leftNode.getStartIndex() + i - 1, Type.UNKNOWN);
+        for (int i = length - 1; i >= 0; i--) {
+          int charLen = 1;
+          if (i >= 0 && Character.isLowSurrogate(surfaceForm[offset+i])) {
+            i--;
+            charLen = 2;
+          }
+          ViterbiNode uniGramNode = new ViterbiNode(unigramWordId, surfaceForm, offset + i, charLen, unigramLeftId, unigramRightId, unigramWordCost, leftNode.getStartIndex() + i, Type.UNKNOWN);
           result.addFirst(uniGramNode);
         }
       } else {
