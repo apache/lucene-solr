@@ -340,7 +340,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
 
     if (r.nextBoolean()) {
       // don't set shards, let that be figured out from the cloud state
-      params.set("distrib", "true");
     } else {
       // use shard ids rather than physical locations
       StringBuilder sb = new StringBuilder();
@@ -350,7 +349,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         sb.append("shard" + (i+1));
       }
       params.set("shards", sb.toString());
-      params.set("distrib", "true");
     }
   }
   
@@ -496,7 +494,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     commit();
     
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("distrib", "true");
     params.add("q", t1 + ":originalcontent");
     QueryResponse results = clients.get(0).query(params);
     assertEquals(1, results.getResults().getNumFound());
@@ -611,7 +608,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     // try adding a doc with CloudSolrServer
     cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
     SolrQuery query = new SolrQuery("*:*");
-    query.add("distrib", "true");
     long numFound1 = cloudClient.query(query).getResults().getNumFound();
     
     SolrInputDocument doc = new SolrInputDocument();
@@ -844,9 +840,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         live = true;
       }
       if (verbose) System.out.println(" live:" + live);
-      boolean active = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.ACTIVE);
-      if (verbose) System.out.println(" num:" + num + "\n" + (active ? "recovering" : ""));
+
+      if (verbose) System.out.println(" num:" + num + "\n");
       
+      boolean active = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.ACTIVE);
       if (active && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
           failMessage = shard + " is not consistent, expected:" + lastNum
@@ -891,7 +888,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(client));
           boolean active = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.ACTIVE);
           if (active) {
-            cnt += client.query(new SolrQuery("*:*")).getResults()
+            SolrQuery query = new SolrQuery("*:*");
+            query.set("distrib", false);
+            cnt += client.query(query).getResults()
                 .getNumFound();
             break;
           }
@@ -904,7 +903,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       }
     }
     SolrQuery q = new SolrQuery("*:*");
-    q.set("distrib", true);
     long cloudClientDocs = cloudClient.query(q).getResults().getNumFound();
     assertEquals(
         "adding up the # of docs on each shard does not match the control - cloud client returns:"
@@ -965,7 +963,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     if (verbose) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     SolrQuery query = new SolrQuery("*:*");
-    query.add("distrib", "true");
     assertEquals("Doc Counts do not add up", controlCount, cloudClient.query(query).getResults().getNumFound());
   }
   

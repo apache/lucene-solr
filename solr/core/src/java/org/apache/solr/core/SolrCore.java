@@ -475,20 +475,6 @@ public final class SolrCore implements SolrInfoMBean {
   }
   
   /**
-   * 
-   * @param dataDir
-   * @param schema
-   * @throws SAXException 
-   * @throws IOException 
-   * @throws ParserConfigurationException 
-   * 
-   * @since solr 1.0
-   */
-  public SolrCore(String dataDir, IndexSchema schema) throws ParserConfigurationException, IOException, SAXException {
-    this(null, dataDir, new SolrConfig(), schema, null);
-  }
-  
-  /**
    * Creates a new core and register it in the list of cores.
    * If a core with the same name already exists, it will be stopped and replaced by this one.
    *

@@ -506,7 +506,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient  = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
-    ElectionContext ec = new OverseerElectionContext(address, zkClient, reader);
+    ElectionContext ec = new OverseerElectionContext(address.replaceAll("/", "_"), zkClient, reader);
     overseerElector.setup(ec);
     overseerElector.joinElection(ec);
     return zkClient;

@@ -147,6 +147,11 @@ public final class ZkController {
       String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
  
+    if (localHostContext.contains("/")) {
+      throw new IllegalArgumentException("localHostContext ("
+          + localHostContext + ") should not contain a /");
+    }
+    
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
@@ -445,6 +450,7 @@ public final class ZkController {
     log.info("Attempting to update " + ZkStateReader.CLUSTER_STATE + " version "
         + null);
     CloudState state = CloudState.load(zkClient, zkStateReader.getCloudState().getLiveNodes());
+
     final String shardZkNodeName = getNodeName() + "_" + coreName;
     
     // checkRecovery will have updated the shardId if it already exists...

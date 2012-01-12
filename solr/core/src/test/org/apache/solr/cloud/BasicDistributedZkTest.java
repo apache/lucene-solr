@@ -58,7 +58,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
     if (r.nextBoolean()) {
       // don't set shards, let that be figured out from the cloud state
-      params.set("distrib", "true");
     } else {
       // use shard ids rather than physical locations
       StringBuilder sb = new StringBuilder();
@@ -68,7 +67,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
         sb.append("shard" + (i + 3));
       }
       params.set("shards", sb.toString());
-      params.set("distrib", "true");
     }
   }
   

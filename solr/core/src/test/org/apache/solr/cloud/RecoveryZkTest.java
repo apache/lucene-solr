@@ -99,7 +99,7 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     assertEquals(client1Docs, client2Docs);
  
     // won't always pass yet...
-    //query("q", "*:*", "distrib", true, "sort", "id desc");
+    //query("q", "*:*", "sort", "id desc");
   }
   
   protected void indexDoc(SolrInputDocument doc) throws IOException,

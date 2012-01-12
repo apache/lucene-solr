@@ -376,9 +376,10 @@ public class ZkStateReader {
     return getLeaderUrl(collection, shard, 1000);
   }
   
-  public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException, KeeperException {
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderProps(collection,shard));
-    
+  public String getLeaderUrl(String collection, String shard, int timeout)
+      throws InterruptedException, KeeperException {
+    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderProps(collection,
+        shard, timeout));
     return props.getCoreUrl();
   }
   

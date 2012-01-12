@@ -199,7 +199,6 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     commit();
     
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("distrib", "true");
     params.add("q", t1 + ":originalcontent");
     QueryResponse results = clients.get(0).query(params);
     assertEquals(1, results.getResults().getNumFound());
@@ -281,13 +280,11 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     commit();
     
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("distrib", "true");
     params.add("q", t1 + ":thenewupdatestuff");
     QueryResponse res = clients.get(0).query(params);
     assertEquals(0, res.getResults().getNumFound());
     
     params = new ModifiableSolrParams();
-    params.add("distrib", "true");
     params.add("q", t1 + ":theupdatestuff");
     res = clients.get(0).query(params);
     assertEquals(1, res.getResults().getNumFound());
@@ -295,7 +292,6 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
 
   private QueryResponse query(SolrServer server) throws SolrServerException {
     SolrQuery query = new SolrQuery("*:*");
-    query.setParam("distrib", true);
     return server.query(query);
   }
   

@@ -351,8 +351,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     for (int i = 0; i < q.length; i += 2) {
       params.add(q[i].toString(), q[i + 1].toString());
     }
+    // nocommit: look into why passing true causes fails
+    params.set("distrib", "false");
     final QueryResponse controlRsp = controlClient.query(params);
 
+    params.remove("distrib");
     setDistributedParams(params);
 
     QueryResponse rsp = queryServer(params);

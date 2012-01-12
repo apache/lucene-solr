@@ -207,7 +207,8 @@ public class QueryComponent extends SearchComponent
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
 
-    rb.isDistrib = params.getBool("distrib",false);
+    rb.isDistrib = params.getBool("distrib", req.getCore().getCoreDescriptor()
+        .getCoreContainer().isZooKeeperAware());
     String shards = params.get(ShardParams.SHARDS);
 
     // for back compat, a shards param with URLs like localhost:8983/solr will mean that this

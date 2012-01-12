@@ -21,7 +21,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -56,7 +59,7 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertEquals("Mergefactor was not picked up", ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
     
     lrf.args.put(CommonParams.VERSION, "2.2");
-    assertQ("test query on empty index", req("qlkciyopsbgzyvkylsjhchghjrdf"),
+    assertQ("test query on empty index", request("qlkciyopsbgzyvkylsjhchghjrdf"),
         "//result[@numFound='0']");
 
     // test escaping of ";"
@@ -64,29 +67,29 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertU("adding doc#42", adoc("id", "42", "val_s", "aa;bb"));
     assertU("does commit work?", commit());
 
-    assertQ("backslash escaping semicolon", req("id:42 AND val_s:aa\\;bb"),
+    assertQ("backslash escaping semicolon", request("id:42 AND val_s:aa\\;bb"),
         "//*[@numFound='1']", "//int[@name='id'][.='42']");
 
-    assertQ("quote escaping semicolon", req("id:42 AND val_s:\"aa;bb\""),
+    assertQ("quote escaping semicolon", request("id:42 AND val_s:\"aa;bb\""),
         "//*[@numFound='1']", "//int[@name='id'][.='42']");
 
-    assertQ("no escaping semicolon", req("id:42 AND val_s:aa"),
+    assertQ("no escaping semicolon", request("id:42 AND val_s:aa"),
         "//*[@numFound='0']");
 
     assertU(delI("42"));
     assertU(commit());
-    assertQ(req("id:42"), "//*[@numFound='0']");
+    assertQ(request("id:42"), "//*[@numFound='0']");
 
     // test overwrite default of true
 
     assertU(adoc("id", "42", "val_s", "AAA"));
     assertU(adoc("id", "42", "val_s", "BBB"));
     assertU(commit());
-    assertQ(req("id:42"), "//*[@numFound='1']", "//str[.='BBB']");
+    assertQ(request("id:42"), "//*[@numFound='1']", "//str[.='BBB']");
     assertU(adoc("id", "42", "val_s", "CCC"));
     assertU(adoc("id", "42", "val_s", "DDD"));
     assertU(commit());
-    assertQ(req("id:42"), "//*[@numFound='1']", "//str[.='DDD']");
+    assertQ(request("id:42"), "//*[@numFound='1']", "//str[.='DDD']");
 
     // test deletes
     String[] adds = new String[] { add(doc("id", "101"), "overwrite", "true"),
@@ -118,23 +121,23 @@ public class BasicZkTest extends AbstractZkTestCase {
             zkController.getNodeName()));
 
     // test maxint
-    assertQ(req("q", "id:[100 TO 110]", "rows", "2147483647"),
+    assertQ(request("q", "id:[100 TO 110]", "rows", "2147483647"),
         "//*[@numFound='4']");
 
     // test big limit
-    assertQ(req("q", "id:[100 TO 111]", "rows", "1147483647"),
+    assertQ(request("q", "id:[100 TO 111]", "rows", "1147483647"),
         "//*[@numFound='4']");
 
-    assertQ(req("id:[100 TO 110]"), "//*[@numFound='4']");
+    assertQ(request("id:[100 TO 110]"), "//*[@numFound='4']");
     assertU(delI("102"));
     assertU(commit());
-    assertQ(req("id:[100 TO 110]"), "//*[@numFound='3']");
+    assertQ(request("id:[100 TO 110]"), "//*[@numFound='3']");
     assertU(delI("105"));
     assertU(commit());
-    assertQ(req("id:[100 TO 110]"), "//*[@numFound='2']");
+    assertQ(request("id:[100 TO 110]"), "//*[@numFound='2']");
     assertU(delQ("id:[100 TO 110]"));
     assertU(commit());
-    assertQ(req("id:[100 TO 110]"), "//*[@numFound='0']");
+    assertQ(request("id:[100 TO 110]"), "//*[@numFound='0']");
     
    
     
@@ -151,6 +154,15 @@ public class BasicZkTest extends AbstractZkTestCase {
       
     }
     
+  }
+  
+  public SolrQueryRequest request(String... q) {
+    LocalSolrQueryRequest req = lrf.makeRequest(q);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(req.getParams());
+    params.set("distrib", false);
+    req.setParams(params);
+    return req;
   }
   
   @AfterClass
