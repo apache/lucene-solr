@@ -148,8 +148,13 @@ public class UpdateLog implements PluginInfoInitialized {
 
     TransactionLog oldLog = null;
     for (String oldLogName : tlogFiles) {
-      // TODO: what about an uncompleted tlog file?
-      oldLog = new TransactionLog( new File(tlogDir, oldLogName), null, true );
+      File f = new File(tlogDir, oldLogName);
+      try {
+        oldLog = new TransactionLog( f, null, true );
+      } catch (IOException e) {
+        log.warn("Failure to open existing log file " + f, e);
+        f.delete();
+      }
       addOldLog(oldLog);
     }
     newestLogOnStartup = oldLog;
@@ -542,7 +547,11 @@ public class UpdateLog implements PluginInfoInitialized {
   private void ensureLog() {
     if (tlog == null) {
       String newLogName = String.format("%s.%019d", TLOG_NAME, id);
-      tlog = new TransactionLog(new File(tlogDir, newLogName), globalStrings);
+      try {
+        tlog = new TransactionLog(new File(tlogDir, newLogName), globalStrings);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can't open new tlog!", e);
+      }
     }
   }
 

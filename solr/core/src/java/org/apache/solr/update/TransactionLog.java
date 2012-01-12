@@ -124,11 +124,11 @@ public class TransactionLog {
   }
 
 
-  TransactionLog(File tlogFile, Collection<String> globalStrings) {
+  TransactionLog(File tlogFile, Collection<String> globalStrings) throws IOException {
     this(tlogFile, globalStrings, false);
   }
 
-  TransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
+  TransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) throws IOException {
     try {
       if (debug) {
         log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size=" + tlogFile.length() + ", openExisting=" + openExisting);
