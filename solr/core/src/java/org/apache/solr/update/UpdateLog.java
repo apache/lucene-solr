@@ -151,11 +151,11 @@ public class UpdateLog implements PluginInfoInitialized {
       File f = new File(tlogDir, oldLogName);
       try {
         oldLog = new TransactionLog( f, null, true );
-      } catch (IOException e) {
+        addOldLog(oldLog);
+      } catch (Exception e) {
         log.warn("Failure to open existing log file " + f, e);
         f.delete();
       }
-      addOldLog(oldLog);
     }
     newestLogOnStartup = oldLog;
 

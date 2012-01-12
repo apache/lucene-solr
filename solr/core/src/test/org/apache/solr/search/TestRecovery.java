@@ -30,6 +30,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.RandomAccessFile;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
@@ -426,6 +427,25 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       // previous logs should be gone now
       assertEquals(1, UpdateLog.getLogList(logDir).length);
+
+      //
+      // test that a corrupt tlog file doesn't stop us
+      //
+      addDocs(1, start, new LinkedList<Long>()); // don't add this to the versions list because we are going to lose it...
+      h.close();
+      files = UpdateLog.getLogList(logDir);
+      Arrays.sort(files);
+      RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
+      raf.writeChars("This is a trashed log file that really shouldn't work at all, but we'll see...");
+      raf.close();
+
+      createCore();
+      // we should still be able to get the list of versions (not including the trashed log file)
+      assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, start)));
+
+
+
+
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
