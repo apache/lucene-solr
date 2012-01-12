@@ -132,7 +132,8 @@ public final class UserDictionary implements Dictionary {
   public int[][] lookup(char[] chars, int off, int len) throws IOException {
     // TODO: can we avoid this treemap/toIndexArray?
     TreeMap<Integer, int[]> result = new TreeMap<Integer, int[]>(); // index, [length, length...]
-    
+    boolean found = false; // true if we found any results
+
     FST.Arc<Long> arc = new FST.Arc<Long>();
     int end = off + len;
     for (int startOffset = off; startOffset < end; startOffset++) {
@@ -148,12 +149,15 @@ public final class UserDictionary implements Dictionary {
         if (arc.isFinal()) {
           output += arc.nextFinalOutput.intValue();
           result.put(startOffset-off, segmentations[output]);
+          found = true;
         }
       }
     }
     
-    return toIndexArray(result);
+    return found ? toIndexArray(result) : EMPTY_RESULT;
   }
+  
+  private static final int[][] EMPTY_RESULT = new int[0][];
   
   /**
    * Convert Map of index and wordIdAndLength to array of {wordId, index, length}
