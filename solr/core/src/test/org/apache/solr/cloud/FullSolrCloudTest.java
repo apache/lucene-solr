@@ -828,7 +828,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       if (verbose) System.out.println("PROPS:" + props);
       
       try {
-        num = client.query(new SolrQuery("*:*")).getResults().getNumFound();
+        SolrQuery query = new SolrQuery("*:*");
+        query.set("distrib", false);
+        num = client.query(query).getResults().getNumFound();
       } catch (SolrServerException e) {
         if (verbose) System.out.println("error contacting client: " + e.getMessage() + "\n");
         continue;
@@ -956,7 +958,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       long count = 0;
       String currentState = clientToInfo.get(new CloudSolrServerClient(client)).get(ZkStateReader.STATE_PROP);
       if (currentState != null && currentState.equals(ZkStateReader.ACTIVE)) {
-        count = client.query(new SolrQuery("*:*")).getResults().getNumFound();
+        SolrQuery query = new SolrQuery("*:*");
+        query.set("distrib", false);
+        count = client.query(query).getResults().getNumFound();
       }
 
       if (verbose) System.out.println("client docs:" + count + "\n\n");
