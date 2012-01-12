@@ -197,6 +197,7 @@ New Features
 * SOLR-2992: Add support for IndexWriter.prepareCommit() via prepareCommit=true
   on update URLs. (yonik)
 
+* SOLR-2906: Added LFU cache options to Solr. (Shawn Heisey via Erick Erickson)
 
 Optimizations
 ----------------------
@@ -423,6 +424,8 @@ New Features
   Solr will use it as the root name for all MBeans Solr exposes via
   JMX.  The default root name is "solr" followed by the core name.
   (Constantijn Visinescu, hossman)
+  
+* SOLR-2906: Added LFU cache options to Solr. (Shawn Heisey via Erick Erickson)
 
 Optimizations
 ----------------------
