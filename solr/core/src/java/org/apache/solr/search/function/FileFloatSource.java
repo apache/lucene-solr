@@ -255,10 +255,9 @@ public class FileFloatSource extends ValueSource {
         String key = line.substring(0, delimIndex);
         String val = line.substring(delimIndex+1, endIndex);
 
-        idType.readableToIndexed(key, internalKey);
-
         float fval;
         try {
+          idType.readableToIndexed(key, internalKey);
           fval=Float.parseFloat(val);
         } catch (Exception e) {
           if (++otherErrors<=10) {

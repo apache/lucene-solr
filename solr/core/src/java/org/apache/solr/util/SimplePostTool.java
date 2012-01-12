@@ -44,7 +44,7 @@ public class SimplePostTool {
   private static final String DEFAULT_OPTIMIZE = "no";
   private static final String DEFAULT_OUT = "no";
 
-  private static final String DEFAULT_DATA_TYPE = "application/xml";
+  public static final String DEFAULT_DATA_TYPE = "application/xml";
 
   private static final String DATA_MODE_FILES = "files";
   private static final String DATA_MODE_ARGS = "args";
@@ -89,6 +89,7 @@ public class SimplePostTool {
     }
 
     OutputStream out = null;
+    final String type = System.getProperty("type", DEFAULT_DATA_TYPE);
 
     URL u = null;
     try {
@@ -111,7 +112,7 @@ public class SimplePostTool {
       if (DATA_MODE_FILES.equals(mode)) {
         if (0 < args.length) {
           info("POSTing files to " + u + "..");
-          t.postFiles(args, 0, out);
+          t.postFiles(args, 0, out, type);
         } else {
           info("No files specified. (Use -h for help)");
         }
@@ -120,13 +121,13 @@ public class SimplePostTool {
         if (0 < args.length) {
           info("POSTing args to " + u + "..");
           for (String a : args) {
-            t.postData(SimplePostTool.stringToStream(a), null, out);
+            t.postData(SimplePostTool.stringToStream(a), null, out, type);
           }
         }
         
       } else if (DATA_MODE_STDIN.equals(mode)) {
         info("POSTing stdin to " + u + "..");
-        t.postData(System.in, null, out);
+        t.postData(System.in, null, out, type);
       }
       if ("yes".equals(System.getProperty("commit",DEFAULT_COMMIT))) {
         info("COMMITting Solr index changes..");
@@ -142,15 +143,24 @@ public class SimplePostTool {
       fatal("RuntimeException " + e);
     }
   }
- 
-  /** Post all filenames provided in args, return the number of files posted*/
+
+  /**
+   * @deprecated use {@link #postData(InputStream, Integer, OutputStream, String)} instead
+   */
+  @Deprecated
   int postFiles(String [] args,int startIndexInArgs, OutputStream out) {
+    final String type = System.getProperty("type", DEFAULT_DATA_TYPE);
+    return postFiles(args, startIndexInArgs, out, type);
+  }
+  
+  /** Post all filenames provided in args, return the number of files posted*/
+  int postFiles(String [] args,int startIndexInArgs, OutputStream out, String type) {
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
       File srcFile = new File(args[j]);
       if (srcFile.canRead()) {
         info("POSTing file " + srcFile.getName());
-        postFile(srcFile, out);
+        postFile(srcFile, out, type);
         filesPosted++;
       } else {
         warn("Cannot read input file: " + srcFile);
@@ -199,16 +209,24 @@ public class SimplePostTool {
   }
 
   /**
+   * @deprecated use {@link #postFile(File, OutputStream, String)} instead
+   */
+  public void postFile(File file, OutputStream output) {
+    final String type = System.getProperty("type", DEFAULT_DATA_TYPE);
+    postFile(file, output, type);
+  }
+  
+  /**
    * Opens the file and posts it's contents to the solrUrl,
    * writes to response to output.
    * @throws UnsupportedEncodingException 
    */
-  public void postFile(File file, OutputStream output) {
+  public void postFile(File file, OutputStream output, String type) {
 
     InputStream is = null;
     try {
       is = new FileInputStream(file);
-      postData(is, (int)file.length(), output);
+      postData(is, (int)file.length(), output, type);
     } catch (IOException e) {
       fatal("Can't open/read file: " + file);
     } finally {
@@ -224,7 +242,7 @@ public class SimplePostTool {
    * Performs a simple get on the given URL
    * @param url
    */
-  public void doGet(String url) {
+  public static void doGet(String url) {
     try {
       doGet(new URL(url));
     } catch (MalformedURLException e) {
@@ -236,7 +254,7 @@ public class SimplePostTool {
    * Performs a simple get on the given URL
    * @param url
    */
-  public void doGet(URL url) {
+  public static void doGet(URL url) {
     try {
       HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
       if (HttpURLConnection.HTTP_OK != urlc.getResponseCode()) {
@@ -249,12 +267,19 @@ public class SimplePostTool {
   }
 
   /**
+   * @deprecated use {@link #postData(InputStream, Integer, OutputStream, String)} instead
+   */
+  @Deprecated
+  public void postData(InputStream data, Integer length, OutputStream output) {
+    final String type = System.getProperty("type", DEFAULT_DATA_TYPE);
+    postData(data, length, output, type);
+  }
+  
+  /**
    * Reads data from the data stream and posts it to solr,
    * writes to the response to output
    */
-  public void postData(InputStream data, Integer length, OutputStream output) {
-
-    final String type = System.getProperty("type", DEFAULT_DATA_TYPE);
+  public void postData(InputStream data, Integer length, OutputStream output, String type) {
 
     HttpURLConnection urlc = null;
     try {
@@ -308,7 +333,7 @@ public class SimplePostTool {
     }
   }
 
-  private static InputStream stringToStream(String s) {
+  public static InputStream stringToStream(String s) {
     InputStream is = null;
     try {
       is = new ByteArrayInputStream(s.getBytes("UTF-8"));
@@ -320,7 +345,7 @@ public class SimplePostTool {
 
   /**
    * Pipes everything from the source to the dest.  If dest is null, 
-   * then everything is read fro msource and thrown away.
+   * then everything is read from source and thrown away.
    */
   private static void pipe(InputStream source, OutputStream dest) throws IOException {
     byte[] buf = new byte[1024];

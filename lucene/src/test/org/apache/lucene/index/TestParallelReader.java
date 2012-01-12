@@ -18,14 +18,12 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -75,12 +73,12 @@ public class TestParallelReader extends LuceneTestCase {
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(dir1));
     pr.add(IndexReader.open(dir2));
-    Collection<String> fieldNames = pr.getFieldNames(IndexReader.FieldOption.ALL);
-    assertEquals(4, fieldNames.size());
-    assertTrue(fieldNames.contains("f1"));
-    assertTrue(fieldNames.contains("f2"));
-    assertTrue(fieldNames.contains("f3"));
-    assertTrue(fieldNames.contains("f4"));
+    FieldInfos fieldInfos = pr.getFieldInfos();
+    assertEquals(4, fieldInfos.size());
+    assertNotNull(fieldInfos.fieldInfo("f1"));
+    assertNotNull(fieldInfos.fieldInfo("f2"));
+    assertNotNull(fieldInfos.fieldInfo("f3"));
+    assertNotNull(fieldInfos.fieldInfo("f4"));
     pr.close();
     dir1.close();
     dir2.close();

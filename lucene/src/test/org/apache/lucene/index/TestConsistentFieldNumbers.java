@@ -296,8 +296,6 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         Field expected = getField(Integer.parseInt(fi.name));
         assertEquals(expected.fieldType().indexed(), fi.isIndexed);
         assertEquals(expected.fieldType().storeTermVectors(), fi.storeTermVector);
-        assertEquals(expected.fieldType().storeTermVectorPositions(), fi.storePositionWithTermVector);
-        assertEquals(expected.fieldType().storeTermVectorOffsets(), fi.storeOffsetWithTermVector);
       }
     }
 

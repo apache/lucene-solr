@@ -94,7 +94,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     // test that the norms are not present in the segment if
     // omitNorms is true
-    for (FieldInfo fi : reader.fieldInfos()) {
+    for (FieldInfo fi : reader.getFieldInfos()) {
       if (fi.isIndexed) {
         assertTrue(fi.omitNorms == !reader.hasNorms(fi.name));
       }
@@ -327,7 +327,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     _TestUtil.checkIndex(dir);
 
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir));
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     // f1
     assertFalse("f1 should have no norms", reader.hasNorms("f1"));
     assertEquals("omitTermFreqAndPositions field bit should not be set for f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").indexOptions);

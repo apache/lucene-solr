@@ -78,7 +78,7 @@ public class JSONTestUtil {
   public static String match(String path, String input, String expected, double delta) throws Exception {
     Object inputObj = ObjectBuilder.fromJSON(input);
     Object expectObj = ObjectBuilder.fromJSON(expected);
-    return matchObj(path, inputObj, expectObj);
+    return matchObj(path, inputObj, expectObj, delta);
   }
 
   /**
@@ -88,7 +88,7 @@ public class JSONTestUtil {
    * @param delta tollerance allowed in comparing float/double values
    */
   public static String matchObj(String path, Object input, Object expected, double delta) throws Exception {
-    CollectionTester tester = new CollectionTester(input);
+    CollectionTester tester = new CollectionTester(input,delta);
     boolean reversed = path.startsWith("!");
     String positivePath = reversed ? path.substring(1) : path;
     if (!tester.seek(positivePath) ^ reversed) {
@@ -181,19 +181,16 @@ class CollectionTester {
 
       // make an exception for some numerics
       if ((expected instanceof Integer && val instanceof Long || expected instanceof Long && val instanceof Integer)
-          && ((Number)expected).longValue() == ((Number)val).longValue())
-      {
+          && ((Number)expected).longValue() == ((Number)val).longValue()) {
         return true;
-      } else if ((expected instanceof Float && val instanceof Double || expected instanceof Double && val instanceof Float)) {
+      } else if ((expected instanceof Double || expected instanceof Float) && (val instanceof Double || val instanceof Float)) {
         double a = ((Number)expected).doubleValue();
         double b = ((Number)val).doubleValue();
         if (Double.compare(a,b) == 0) return true;
         if (Math.abs(a-b) < delta) return true;
-        return false;
-      } else {
-        setErr("mismatch: '" + expected + "'!='" + val + "'");
-        return false;
       }
+      setErr("mismatch: '" + expected + "'!='" + val + "'");
+      return false;
     }
 
     // setErr("unknown expected type " + expected.getClass().getName());

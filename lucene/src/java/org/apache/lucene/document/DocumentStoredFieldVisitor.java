@@ -64,8 +64,6 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   public void stringField(FieldInfo fieldInfo, String value) throws IOException {
     final FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setStoreTermVectors(fieldInfo.storeTermVector);
-    ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
-    ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
     ft.setStoreTermVectors(fieldInfo.storeTermVector);
     ft.setIndexed(fieldInfo.isIndexed);
     ft.setOmitNorms(fieldInfo.omitNorms);

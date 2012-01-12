@@ -112,7 +112,7 @@ public class TestPayloads extends LuceneTestCase {
         writer.close();
 
       SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
-        FieldInfos fi = reader.fieldInfos();
+        FieldInfos fi = reader.getFieldInfos();
         assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
         assertFalse("Payload field bit should not be set.", fi.fieldInfo("f3").storePayloads);
@@ -139,7 +139,7 @@ public class TestPayloads extends LuceneTestCase {
         writer.close();
 
       reader = getOnlySegmentReader(IndexReader.open(ram));
-        fi = reader.fieldInfos();
+        fi = reader.getFieldInfos();
         assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f3").storePayloads);

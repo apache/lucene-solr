@@ -719,6 +719,11 @@ Changes in backwards compatibility policy
   instead of vInt; this can make FSTs smaller and faster, but it is a
   break in the binary format so if you had built and saved any FSTs
   then you need to rebuild them. (Robert Muir, Mike McCandless)
+
+* LUCENE-3679: The expert IndexReader.getFieldNames(FieldOption) API
+  has been removed and replaced with the experimental getFieldInfos
+  API.  All IndexReader subclasses must implement getFieldInfos.
+  (Mike McCandless)
   
 Security fixes
 

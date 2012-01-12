@@ -69,8 +69,6 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         byte bits = input.readByte();
         boolean isIndexed = (bits & Lucene40FieldInfosWriter.IS_INDEXED) != 0;
         boolean storeTermVector = (bits & Lucene40FieldInfosWriter.STORE_TERMVECTOR) != 0;
-        boolean storePositionsWithTermVector = (bits & Lucene40FieldInfosWriter.STORE_POSITIONS_WITH_TERMVECTOR) != 0;
-        boolean storeOffsetWithTermVector = (bits & Lucene40FieldInfosWriter.STORE_OFFSET_WITH_TERMVECTOR) != 0;
         boolean omitNorms = (bits & Lucene40FieldInfosWriter.OMIT_NORMS) != 0;
         boolean storePayloads = (bits & Lucene40FieldInfosWriter.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
@@ -147,7 +145,6 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
           }
         }
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          storePositionsWithTermVector, storeOffsetWithTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType);
       }
 

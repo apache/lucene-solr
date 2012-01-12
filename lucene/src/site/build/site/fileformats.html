@@ -1740,10 +1740,6 @@ document.write("Last Published: " + document.lastModified);
                             without term vectors.
                         </li>
                         
-<li>If the third lowest-order bit is set (0x04), term positions are stored with the term vectors.</li>
-                        
-<li>If the fourth lowest-order bit is set (0x08), term offsets are stored with the term vectors.</li>
-                        
 <li>If the fifth lowest-order bit is set (0x10), norms are omitted for the indexed field.</li>
                         
 <li>If the sixth lowest-order bit is set (0x20), payloads are stored for the indexed field.</li>
@@ -1908,7 +1904,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N106F0"></a><a name="Term Dictionary"></a>
+<a name="N106EA"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -2100,7 +2096,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10774"></a><a name="Frequencies"></a>
+<a name="N1076E"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -2228,7 +2224,7 @@ document.write("Last Published: " + document.lastModified);
                    entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
                    to entry 31 on level 0.                   
                 </p>
-<a name="N107FC"></a><a name="Positions"></a>
+<a name="N107F6"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -2298,7 +2294,7 @@ document.write("Last Published: " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N10838"></a><a name="Normalization Factors"></a>
+<a name="N10832"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>There's a single .nrm file containing all norms:
                 </p>
@@ -2378,7 +2374,7 @@ document.write("Last Published: " + document.lastModified);
                 </p>
 <p>Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N10889"></a><a name="Term Vectors"></a>
+<a name="N10883"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <p>
 		  Term Vector support is an optional on a field by
@@ -2514,7 +2510,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10925"></a><a name="Deleted Documents"></a>
+<a name="N1091F"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2578,7 +2574,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1095F"></a><a name="Limitations"></a>
+<a name="N10959"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>

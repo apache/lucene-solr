@@ -23,7 +23,6 @@ import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -552,16 +551,16 @@ public class CheckIndex {
         if (reader.maxDoc() != info.docCount)
           throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.docCount);
 
-        // Test getFieldNames()
+        // Test getFieldInfos()
         if (infoStream != null) {
           infoStream.print("    test: fields..............");
         }         
-        Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
-        msg("OK [" + fieldNames.size() + " fields]");
-        segInfoStat.numFields = fieldNames.size();
+        FieldInfos fieldInfos = reader.getFieldInfos();
+        msg("OK [" + fieldInfos.size() + " fields]");
+        segInfoStat.numFields = fieldInfos.size();
         
         // Test Field Norms
-        segInfoStat.fieldNormStatus = testFieldNorms(fieldNames, reader);
+        segInfoStat.fieldNormStatus = testFieldNorms(fieldInfos, reader);
 
         // Test the Term Index
         segInfoStat.termIndexStatus = testTermIndex(reader);
@@ -631,7 +630,7 @@ public class CheckIndex {
   /**
    * Test field norms.
    */
-  private Status.FieldNormStatus testFieldNorms(Collection<String> fieldNames, SegmentReader reader) {
+  private Status.FieldNormStatus testFieldNorms(FieldInfos fieldInfos, SegmentReader reader) {
     final Status.FieldNormStatus status = new Status.FieldNormStatus();
 
     try {
@@ -639,29 +638,27 @@ public class CheckIndex {
       if (infoStream != null) {
         infoStream.print("    test: field norms.........");
       }
-      FieldInfos infos = reader.fieldInfos();
       DocValues dv;
-      for (final String fieldName : fieldNames) {
-        FieldInfo info = infos.fieldInfo(fieldName);
-        if (reader.hasNorms(fieldName)) {
-          dv = reader.normValues(fieldName);
+      for (FieldInfo info : fieldInfos) {
+        if (reader.hasNorms(info.name)) {
+          dv = reader.normValues(info.name);
           assert dv != null;
           if (dv.getSource().hasArray()) {
             Object array = dv.getSource().getArray();
             if (Array.getLength(array) != reader.maxDoc()) {
-              throw new RuntimeException("norms for field: " + fieldName + " are of the wrong size");
+              throw new RuntimeException("norms for field: " + info.name + " are of the wrong size");
             }
           }
           if (!info.isIndexed || info.omitNorms) {
-            throw new RuntimeException("field: " + fieldName + " should omit norms but has them!");
+            throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
           }
           ++status.totFields;
         } else {
-          if (reader.normValues(fieldName) != null) {
-            throw new RuntimeException("field: " + fieldName + " should omit norms but has them!");
+          if (reader.normValues(info.name) != null) {
+            throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
           }
           if (info.isIndexed && !info.omitNorms) {
-            throw new RuntimeException("field: " + fieldName + " should have norms but omits them!");
+            throw new RuntimeException("field: " + info.name + " should have norms but omits them!");
           }
         }
       }

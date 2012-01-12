@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -35,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -516,13 +516,24 @@ public class TestDuelingCodecs extends LuceneTestCase {
       assertFields(leftFields, rightFields, rarely());
     }
   }
+
+  private static Set<String> getDVFields(IndexReader reader) {
+    Set<String> fields = new HashSet<String>();
+    for(FieldInfo fi : ReaderUtil.getMergedFieldInfos(reader)) {
+      if (fi.hasDocValues()) {
+        fields.add(fi.name);
+      }
+    }
+
+    return fields;
+  }
   
   /**
    * checks that docvalues across all fields are equivalent
    */
   public void assertDocValues(IndexReader leftReader, IndexReader rightReader) throws Exception {
-    Set<String> leftValues = new HashSet<String>(leftReader.getFieldNames(FieldOption.DOC_VALUES));
-    Set<String> rightValues = new HashSet<String>(rightReader.getFieldNames(FieldOption.DOC_VALUES));
+    Set<String> leftValues = getDVFields(leftReader);
+    Set<String> rightValues = getDVFields(rightReader);
     assertEquals(info, leftValues, rightValues);
 
     for (String field : leftValues) {

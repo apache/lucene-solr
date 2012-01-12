@@ -273,7 +273,7 @@ valued. -->
                stored="false" indexed="true"
                class="solr.ExternalFileField" valType="float"/>
 
-    <fieldType name="eff_tfloat" keyField="id" defVal="0"
+    <fieldType name="eff_tfloat" keyField="eff_ti" defVal="0"
                stored="false" indexed="true"
                class="solr.ExternalFileField" valType="tfloat"/>
 
@@ -319,6 +319,8 @@ valued. -->
    <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
 
    <field name="signatureField" type="string" indexed="true" stored="false"/>
+
+   <field name="eff_trie" type="eff_tfloat" />
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

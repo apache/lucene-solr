@@ -18,19 +18,19 @@ package org.apache.lucene.index;
  */
 
 
-import org.apache.lucene.util.LuceneTestCase;
-
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
+
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 
 public class TestFilterIndexReader extends LuceneTestCase {
 
@@ -120,6 +120,11 @@ public class TestFilterIndexReader extends LuceneTestCase {
     @Override
     public Fields fields() throws IOException {
       return new TestFields(super.fields());
+    }
+
+    @Override
+    public FieldInfos getFieldInfos() {
+      return ReaderUtil.getMergedFieldInfos(in);
     }
   }
     

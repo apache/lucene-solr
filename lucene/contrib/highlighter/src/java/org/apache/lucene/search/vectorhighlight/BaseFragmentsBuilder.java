@@ -128,8 +128,6 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
         public void stringField(FieldInfo fieldInfo, String value) throws IOException {
           FieldType ft = new FieldType(TextField.TYPE_STORED);
           ft.setStoreTermVectors(fieldInfo.storeTermVector);
-          ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
-          ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
           fields.add(new Field(fieldInfo.name, value, ft));
         }
 

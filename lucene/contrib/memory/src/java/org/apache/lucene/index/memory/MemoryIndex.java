@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,13 +33,14 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -197,6 +197,8 @@ public class MemoryIndex {
   private static final float docBoost = 1.0f;
 
   private static final boolean DEBUG = false;
+
+  private final FieldInfos fieldInfos;
   
   /**
    * Sorts term entries into ascending order; also works for
@@ -232,6 +234,7 @@ public class MemoryIndex {
    */
   private MemoryIndex(boolean storeOffsets) {
     this.stride = storeOffsets ? 3 : 1;
+    fieldInfos = new FieldInfos();
   }
   
   /**
@@ -347,6 +350,8 @@ public class MemoryIndex {
       int numTokens = 0;
       int numOverlapTokens = 0;
       int pos = -1;
+
+      fieldInfos.addOrUpdate(fieldName, true);
       
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
@@ -392,7 +397,7 @@ public class MemoryIndex {
       }
     }
   }
-  
+
   /**
    * Creates and returns a searcher that can be used to execute arbitrary
    * Lucene queries and to collect the resulting query results as hits.
@@ -766,6 +771,11 @@ public class MemoryIndex {
     }
     
     @Override
+    public FieldInfos getFieldInfos() {
+      return fieldInfos;
+    }
+
+    @Override
     public int docFreq(String field, BytesRef term) {
       Info info = getInfo(field);
       int freq = 0;
@@ -1111,22 +1121,6 @@ public class MemoryIndex {
     @Override
     protected void doClose() {
       if (DEBUG) System.err.println("MemoryIndexReader.doClose");
-    }
-    
-    // lucene >= 1.9 (remove this method for lucene-1.4.3)
-    @Override
-    public Collection<String> getFieldNames(FieldOption fieldOption) {
-      if (DEBUG) System.err.println("MemoryIndexReader.getFieldNamesOption");
-      if (fieldOption == FieldOption.UNINDEXED) 
-        return Collections.<String>emptySet();
-      if (fieldOption == FieldOption.INDEXED_NO_TERMVECTOR) 
-        return Collections.<String>emptySet();
-      if (fieldOption == FieldOption.TERMVECTOR_WITH_OFFSET && stride == 1) 
-        return Collections.<String>emptySet();
-      if (fieldOption == FieldOption.TERMVECTOR_WITH_POSITION_OFFSET && stride == 1) 
-        return Collections.<String>emptySet();
-      
-      return Collections.unmodifiableSet(fields.keySet());
     }
 
     @Override
