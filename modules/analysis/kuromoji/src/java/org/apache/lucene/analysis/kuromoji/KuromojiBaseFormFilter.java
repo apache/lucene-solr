@@ -51,7 +51,7 @@ public final class KuromojiBaseFormFilter extends TokenFilter {
       if (!keywordAtt.isKeyword()) {
         String baseForm = basicFormAtt.getBaseForm();
         if (baseForm != null) {
-          termAtt.setEmpty().append(basicFormAtt.getBaseForm());
+          termAtt.setEmpty().append(baseForm);
         }
       }
       return true;
