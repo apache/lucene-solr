@@ -115,7 +115,7 @@ New Features
    Hunspell algorithm. (Chris Male)
 
  * LUCENE-3305: Added Kuromoji morphological analyzer for Japanese.
-   (Christian Moen, Masaru Hasegawa, Simon Willnauer, Uwe Schindler, Robert Muir)
+   (Christian Moen, Masaru Hasegawa, Simon Willnauer, Uwe Schindler, Mike McCandless, Robert Muir)
 
 Build
 
