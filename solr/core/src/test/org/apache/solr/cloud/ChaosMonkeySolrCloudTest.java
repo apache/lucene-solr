@@ -108,9 +108,6 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     for (StopableIndexingThread indexThread : threads) {
       indexThread.join();
     }
-       
-    // nocommit
-    printLayout();
     
     for (StopableIndexingThread indexThread : threads) {
       assertEquals(0, indexThread.getFails());
@@ -121,7 +118,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     // wait until there are no recoveries...
     waitForThingsToLevelOut();
 
-    checkShardConsistency(true);
+    checkShardConsistency(false);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
   }
