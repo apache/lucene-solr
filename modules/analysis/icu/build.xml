@@ -85,6 +85,9 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
       	<path refid="additional.dependencies"/>
       	<pathelement location="${build.dir}/classes/tools"/>
       </classpath>
+      <assertions>
+        <enable package="org.apache.lucene"/>
+      </assertions>
       <arg value="${rbbi.src.dir}"/>
       <arg value="${rbbi.dst.dir}"/>
     </java>
@@ -104,6 +107,9 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
       	<path refid="additional.dependencies"/>
       	<pathelement location="${build.dir}/classes/tools"/>
       </classpath>
+      <assertions>
+        <enable package="org.apache.lucene"/>
+      </assertions>
     </java>
   </target>
 			
