@@ -255,7 +255,6 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     doTestOffsets("X < &zz >X &# < X > < &l > &g < X");
   }
   
-  @Ignore("broken offsets: see LUCENE-2208")
   public void testRandom() throws Exception {
     Analyzer analyzer = new Analyzer() {
 
