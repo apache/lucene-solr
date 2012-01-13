@@ -672,19 +672,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
 //        
 //      }
       
-      try {
-        RefCounted<SolrIndexSearcher> searchHolder = core.getSearcher();
-        SolrIndexSearcher searcher = searchHolder.get();
-        try {
-          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " to replicate (2) "
-              + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
-        } finally {
-          searchHolder.decref();
-        }
-      } catch (Exception e) {
-        
-      }
-      
     } finally {
       if (core != null) {
         core.close();
