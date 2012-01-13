@@ -20,6 +20,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.util.NumericUtils;
 
 public class FieldType implements IndexableFieldType {
@@ -37,7 +38,7 @@ public class FieldType implements IndexableFieldType {
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
 
-  public FieldType(IndexableFieldType ref) {
+  public FieldType(FieldType ref) {
     this.indexed = ref.indexed();
     this.stored = ref.stored();
     this.tokenized = ref.tokenized();
@@ -156,7 +157,10 @@ public class FieldType implements IndexableFieldType {
     numericType = type;
   }
 
-  @Override
+  /** Numeric {@link NumericField.DataType}; if
+   *  non-null then the field's value will be indexed
+   *  numerically so that {@link NumericRangeQuery} can be
+   *  used at search time. */
   public NumericField.DataType numericType() {
     return numericType;
   }
@@ -169,7 +173,7 @@ public class FieldType implements IndexableFieldType {
     this.numericPrecisionStep = precisionStep;
   }
 
-  @Override
+  /** Precision step for numeric field. */
   public int numericPrecisionStep() {
     return numericPrecisionStep;
   }

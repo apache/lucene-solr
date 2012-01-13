@@ -500,7 +500,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
     assertEquals(info, leftField.binaryValue(), rightField.binaryValue());
     assertEquals(info, leftField.stringValue(), rightField.stringValue());
     assertEquals(info, leftField.numericValue(), rightField.numericValue());
-    assertEquals(info, leftField.fieldType().numericType(), rightField.fieldType().numericType());
     // TODO: should we check the FT at all?
   }
   

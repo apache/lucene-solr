@@ -48,7 +48,7 @@ public final class TextField extends Field {
     TYPE_STORED.freeze();
   }
 
-  // nocommit how to sugar term vectors...?
+  // TODO: add sugar for term vectors...?
 
   /** Creates a new un-stored TextField */
   public TextField(String name, Reader reader) {

@@ -381,15 +381,15 @@ public class TestDocValues extends LuceneTestCase {
   }
 
   public void testFloats4() throws IOException {
-    runTestFloats(Type.FLOAT_32, 0.00001);
+    runTestFloats(Type.FLOAT_32);
   }
 
-  private void runTestFloats(Type type, double delta) throws IOException {
+  private void runTestFloats(Type type) throws IOException {
     DocValueHolder valueHolder = new DocValueHolder();
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
     DocValuesConsumer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), type);
-    final int NUM_VALUES = 777 + random.nextInt(777);;
+    final int NUM_VALUES = 777 + random.nextInt(777);
     final double[] values = new double[NUM_VALUES];
     for (int i = 0; i < NUM_VALUES; i++) {
       final double v = type == Type.FLOAT_32 ? random.nextFloat() : random
@@ -413,7 +413,7 @@ public class TestDocValues extends LuceneTestCase {
   }
 
   public void testFloats8() throws IOException {
-    runTestFloats(Type.FLOAT_64, 0.0);
+    runTestFloats(Type.FLOAT_64);
   }
   
 
@@ -459,14 +459,6 @@ public class TestDocValues extends LuceneTestCase {
     public BytesRef binaryValue() {
       return bytes;
     }
-
-    // nocommit
-    /*
-    @Override
-    public Comparator<BytesRef> bytesComparator() {
-      return comp;
-    }
-    */
 
     @Override
     public Number numericValue() {

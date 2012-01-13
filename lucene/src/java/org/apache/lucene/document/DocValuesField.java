@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -115,6 +114,7 @@ public class DocValuesField extends Field {
     fieldsData = bytes;
   }
 
+  /*
   public DocValuesField(String name, byte value, DocValues.Type docValueType) {
     super(name, getFieldType(docValueType));
     if (!INTS.contains(docValueType)) {
@@ -130,6 +130,7 @@ public class DocValuesField extends Field {
     }
     fieldsData = Short.valueOf(value);
   }
+  */
 
   public DocValuesField(String name, int value, DocValues.Type docValueType) {
     super(name, getFieldType(docValueType));
@@ -163,26 +164,5 @@ public class DocValuesField extends Field {
       throw new IllegalArgumentException("docValueType must be FLOAT_32/64; got " + docValueType);
     }
     fieldsData = Double.valueOf(value);
-  }
-
-  // nocommit maybe leave this to Field ctor...?
-  public DocValuesField(String name, Object value, IndexableFieldType type) {
-    super(name, type);
-    if (type.docValueType() == null) {
-      throw new IllegalArgumentException("docValueType cannot be null");
-    }
-    if (value == null) {
-      throw new IllegalArgumentException("value cannot be null");
-    }
-    if (BYTES.contains(type.docValueType())) {
-      if (!(value instanceof BytesRef)) {
-        throw new IllegalArgumentException("value is not a BytesRef (got: " + value.getClass() + ")");
-      }
-    } else {
-      if (!(value instanceof Number)) {
-        throw new IllegalArgumentException("value is not a Number (got: " + value.getClass() + ")");
-      }
-    }
-    fieldsData = value;
   }
 }

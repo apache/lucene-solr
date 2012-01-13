@@ -26,15 +26,16 @@ import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * Expert: directly creata a field for a document.  Most
- * users should use one of the sugar subclasses {@link
+ * users should use one of the sugar subclasses: {@link
  * NumericField}, {@link DocValuesField}, {@link
- * StringField}, {@link TextField}, {@link BinaryField}.
+ * StringField}, {@link TextField}, {@link StoredField}.
  *
  * <p/> A field is a section of a Document. Each field has three
  * parts: name, type andvalue. Values may be text
@@ -49,8 +50,8 @@ import org.apache.lucene.util.BytesRef;
  * changes be made after Field instantiation.
  */
 public class Field implements IndexableField {
-  
-  protected final IndexableFieldType type;
+
+  protected final FieldType type;
   protected final String name;
 
   // Field's value:
@@ -66,7 +67,7 @@ public class Field implements IndexableField {
 
   protected float boost = 1.0f;
 
-  protected Field(String name, IndexableFieldType type) {
+  protected Field(String name, FieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
@@ -77,13 +78,10 @@ public class Field implements IndexableField {
     this.type = type;
   }
 
-  // nocommit ctors taking Object as fieldsData...?  ctors
-  // taking numbers...?  then why have NumericField...?
-  
   /**
    * Create field with Reader value.
    */
-  public Field(String name, Reader reader, IndexableFieldType type) {
+  public Field(String name, Reader reader, FieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
@@ -108,7 +106,7 @@ public class Field implements IndexableField {
   /**
    * Create field with TokenStream value.
    */
-  public Field(String name, TokenStream tokenStream, IndexableFieldType type) {
+  public Field(String name, TokenStream tokenStream, FieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
@@ -131,14 +129,14 @@ public class Field implements IndexableField {
   /**
    * Create field with binary value.
    */
-  public Field(String name, byte[] value, IndexableFieldType type) {
+  public Field(String name, byte[] value, FieldType type) {
     this(name, value, 0, value.length, type);
   }
 
   /**
    * Create field with binary value.
    */
-  public Field(String name, byte[] value, int offset, int length, IndexableFieldType type) {
+  public Field(String name, byte[] value, int offset, int length, FieldType type) {
     this(name, new BytesRef(value, offset, length), type);
   }
 
@@ -148,7 +146,7 @@ public class Field implements IndexableField {
    * <p>NOTE: the provided BytesRef is not copied so be sure
    * not to change it until you're done with this field.
    */
-  public Field(String name, BytesRef bytes, IndexableFieldType type) {
+  public Field(String name, BytesRef bytes, FieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
@@ -163,7 +161,7 @@ public class Field implements IndexableField {
   /**
    * Create field with String value.
    */
-  public Field(String name, String value, IndexableFieldType type) {
+  public Field(String name, String value, FieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
@@ -182,6 +180,54 @@ public class Field implements IndexableField {
     this.type = type;
     this.name = name;
     this.fieldsData = value;
+  }
+
+  /**
+   * Create field with an int value.
+   */
+  public Field(String name, int value, FieldType type) {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    this.type = type;
+    this.name = name;
+    this.fieldsData = Integer.valueOf(value);
+  }
+
+  /**
+   * Create field with an long value.
+   */
+  public Field(String name, long value, FieldType type) {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    this.type = type;
+    this.name = name;
+    this.fieldsData = Long.valueOf(value);
+  }
+
+  /**
+   * Create field with a float value.
+   */
+  public Field(String name, float value, FieldType type) {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    this.type = type;
+    this.name = name;
+    this.fieldsData = Float.valueOf(value);
+  }
+
+  /**
+   * Create field with a double value.
+   */
+  public Field(String name, double value, FieldType type) {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    this.type = type;
+    this.name = name;
+    this.fieldsData = Double.valueOf(value);
   }
 
   /**
@@ -269,6 +315,7 @@ public class Field implements IndexableField {
     fieldsData = value;
   }
 
+  /*
   public void setValue(byte value) {
     if (!(fieldsData instanceof Byte)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Byte");
@@ -288,6 +335,7 @@ public class Field implements IndexableField {
     }
     fieldsData = Short.valueOf(value);
   }
+  */
 
   public void setValue(int value) {
     if (!(fieldsData instanceof Integer)) {
@@ -403,8 +451,8 @@ public class Field implements IndexableField {
     return result.toString();
   }
   
-  /** Returns the {@link IndexableFieldType} for this field. */
-  public IndexableFieldType fieldType() {
+  /** Returns the {@link FieldType} for this field. */
+  public FieldType fieldType() {
     return type;
   }
 
@@ -565,7 +613,7 @@ public class Field implements IndexableField {
     /** Expert: Index the field's value without an Analyzer,
      * and also disable the indexing of norms.  Note that you
      * can also separately enable/disable norms by calling
-     * {@link Field#setOmitNorms}.  No norms means that
+     * {@link FieldType#setOmitNorms}.  No norms means that
      * index-time field and document boosting and field
      * length normalization are disabled.  The benefit is
      * less memory usage as norms take up one byte of RAM
@@ -833,7 +881,7 @@ public class Field implements IndexableField {
   /**
    * Create a tokenized and indexed field that is not stored. Term vectors will
    * not be stored.  The Reader is read only when the Document is added to the index,
-   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Document)}
+   * i.e. you may not close the Reader until {@link IndexWriter#addDocument}
    * has been called.
    * 
    * @param name The name of the field
@@ -850,7 +898,7 @@ public class Field implements IndexableField {
   /**
    * Create a tokenized and indexed field that is not stored, optionally with 
    * storing term vectors.  The Reader is read only when the Document is added to the index,
-   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Document)}
+   * i.e. you may not close the Reader until {@link IndexWriter#addDocument}
    * has been called.
    * 
    * @param name The name of the field
@@ -869,7 +917,7 @@ public class Field implements IndexableField {
    * Create a tokenized and indexed field that is not stored. Term vectors will
    * not be stored. This is useful for pre-analyzed fields.
    * The TokenStream is read only when the Document is added to the index,
-   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument(Document)}
+   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument}
    * has been called.
    * 
    * @param name The name of the field
@@ -887,7 +935,7 @@ public class Field implements IndexableField {
    * Create a tokenized and indexed field that is not stored, optionally with 
    * storing term vectors.  This is useful for pre-analyzed fields.
    * The TokenStream is read only when the Document is added to the index,
-   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument(Document)}
+   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument}
    * has been called.
    * 
    * @param name The name of the field
@@ -908,7 +956,7 @@ public class Field implements IndexableField {
    * @param name The name of the field
    * @param value The binary value
    *
-   * @deprecated Use {@link BinaryField} instead.
+   * @deprecated Use {@link StoredField} instead.
    */
   @Deprecated
   public Field(String name, byte[] value) {
@@ -923,7 +971,7 @@ public class Field implements IndexableField {
    * @param offset Starting offset in value where this Field's bytes are
    * @param length Number of bytes to use for this Field, starting at offset
    *
-   * @deprecated Use {@link BinaryField} instead.
+   * @deprecated Use {@link StoredField} instead.
    */
   @Deprecated
   public Field(String name, byte[] value, int offset, int length) {

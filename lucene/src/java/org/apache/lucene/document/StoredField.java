@@ -1,5 +1,7 @@
 package org.apache.lucene.document;
 
+import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.search.IndexSearcher; // javadocs
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -20,7 +22,7 @@ import org.apache.lucene.util.BytesRef;
  */
 
 /** A field whose value is stored so that {@link
- *  IndexSearcher.doc} and {@link IndexReader.doc} will
+ *  IndexSearcher#doc} and {@link IndexReader#document} will
  *  return the field and its value. */
 public final class StoredField extends Field {
 

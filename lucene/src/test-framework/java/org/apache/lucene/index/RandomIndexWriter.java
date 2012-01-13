@@ -25,8 +25,8 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.search.Query;
@@ -172,7 +172,10 @@ public class RandomIndexWriter implements Closeable {
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
     if ("Lucene3x".equals(codec.getName()) || doc.getField(name) != null)
         return;
-    final Object value;
+    FieldType ft = new FieldType();
+    ft.setDocValueType(type);
+    ft.freeze();
+    final Field f;
     switch (type) {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_STRAIGHT:
@@ -186,41 +189,38 @@ public class RandomIndexWriter implements Closeable {
         fixedRef.grow(fixedBytesLength);
         fixedRef.length = fixedBytesLength;
       }
-      value = fixedRef;
+      f = new Field(name, fixedRef, ft);
       break;
     case BYTES_VAR_DEREF:
     case BYTES_VAR_STRAIGHT:
     case BYTES_VAR_SORTED:
-      value = new BytesRef(_TestUtil.randomUnicodeString(random, 200));
+      f = new Field(name, new BytesRef(_TestUtil.randomUnicodeString(random, 200)), ft);
       break;
     case FLOAT_32:
-      value = random.nextFloat();
+      f = new Field(name, random.nextFloat(), ft);
       break;
     case FLOAT_64:
-      value = random.nextDouble();
+      f = new Field(name, random.nextDouble(), ft);
       break;
     case VAR_INTS:
-      value = random.nextLong();
+      f = new Field(name, random.nextLong(), ft);
       break;
     case FIXED_INTS_16:
-      value = random.nextInt(Short.MAX_VALUE);
+      f = new Field(name, random.nextInt(Short.MAX_VALUE), ft);
       break;
     case FIXED_INTS_32:
-      value =random.nextInt();
+      f = new Field(name, random.nextInt(), ft);
       break;
     case FIXED_INTS_64:
-      value = random.nextLong();
+      f = new Field(name, random.nextLong(), ft);
       break;
     case FIXED_INTS_8:
-      value = random.nextInt(128);
+      f = new Field(name, random.nextInt(128), ft);
       break;
     default:
       throw new IllegalArgumentException("no such type: " + type);
     }
-    FieldType ft = new FieldType();
-    ft.setDocValueType(type);
-    ft.freeze();
-    doc.add(new DocValuesField(name, value, ft));
+    doc.add(f);
   }
 
   private void maybeCommit() throws IOException {
