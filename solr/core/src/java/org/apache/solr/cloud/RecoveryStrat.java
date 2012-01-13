@@ -277,18 +277,18 @@ public class RecoveryStrat {
       if (recoveryListener != null) recoveryListener.finishedReplication();
       
       // nocommit
-      try {
-        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
-        SolrIndexSearcher searcher = searchHolder.get();
-        try {
-          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replicated "
-              + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " from " + leaderUrl + " gen:" + core.getDeletionPolicy().getLatestCommit().getGeneration() + " data:" + core.getDataDir());
-        } finally {
-          searchHolder.decref();
-        }
-      } catch (Exception e) {
-        
-      }
+//      try {
+//        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+//        SolrIndexSearcher searcher = searchHolder.get();
+//        try {
+//          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replicated "
+//              + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " from " + leaderUrl + " gen:" + core.getDeletionPolicy().getLatestCommit().getGeneration() + " data:" + core.getDataDir());
+//        } finally {
+//          searchHolder.decref();
+//        }
+//      } catch (Exception e) {
+//        
+//      }
     }
   }
   
