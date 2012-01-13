@@ -309,6 +309,114 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
 
+  @Test
+  public void testDropBuffered() throws Exception {
+
+    DirectUpdateHandler2.commitOnClose = false;
+    final Semaphore logReplay = new Semaphore(0);
+    final Semaphore logReplayFinish = new Semaphore(0);
+
+    UpdateLog.testing_logReplayHook = new Runnable() {
+      @Override
+      public void run() {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+
+    UpdateLog.testing_logReplayFinishHook = new Runnable() {
+      @Override
+      public void run() {
+        logReplayFinish.release();
+      }
+    };
+
+
+    SolrQueryRequest req = req();
+    UpdateHandler uhandler = req.getCore().getUpdateHandler();
+    UpdateLog ulog = uhandler.getUpdateLog();
+
+    try {
+      clearIndex();
+      assertU(commit());
+
+      assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
+      ulog.bufferUpdates();
+      assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+      Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
+      assertTrue(rinfoFuture == null);
+      assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
+
+      ulog.bufferUpdates();
+      assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+
+      // simulate updates from a leader
+      updateJ(jsonAdd(sdoc("id","1", "_version_","101")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","2", "_version_","102")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","3", "_version_","103")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      assertTrue(ulog.dropBufferedUpdates());
+      ulog.bufferUpdates();
+      updateJ(jsonAdd(sdoc("id", "4", "_version_","104")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id", "5", "_version_","105")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      logReplay.release(1000);
+      rinfoFuture = ulog.applyBufferedUpdates();
+      UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
+      assertEquals(2, rinfo.adds);
+
+      assertJQ(req("qt","/get", "getVersions","2")
+          ,"=={'versions':[105,104]}"
+      );
+
+      // this time add some docs first before buffering starts (so tlog won't be at pos 0)
+      updateJ(jsonAdd(sdoc("id","100", "_version_","200")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","101", "_version_","201")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      ulog.bufferUpdates();
+      updateJ(jsonAdd(sdoc("id","103", "_version_","203")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","104", "_version_","204")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      assertTrue(ulog.dropBufferedUpdates());
+      ulog.bufferUpdates();
+      updateJ(jsonAdd(sdoc("id","105", "_version_","205")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","106", "_version_","206")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      rinfoFuture = ulog.applyBufferedUpdates();
+      rinfo = rinfoFuture.get();
+      assertEquals(2, rinfo.adds);
+
+      assertJQ(req("q", "*:*", "sort","_version_ asc", "fl","id,_version_")
+          , "/response/docs==["
+          + "{'id':'4','_version_':104}"
+          + ",{'id':'5','_version_':105}"
+          + ",{'id':'100','_version_':200}"
+          + ",{'id':'101','_version_':201}"
+          + ",{'id':'105','_version_':205}"
+          + ",{'id':'106','_version_':206}"
+          +"]"
+      );
+
+      assertJQ(req("qt","/get", "getVersions","6")
+          ,"=={'versions':[206,205,201,200,105,104]}"
+      );
+
+
+      assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+
+      req().close();
+    }
+
+  }
+
+
   // make sure that on a restart, versions don't start too low
   @Test
   public void testVersionsOnRestart() throws Exception {

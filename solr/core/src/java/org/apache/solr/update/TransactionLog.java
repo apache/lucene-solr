@@ -72,6 +72,9 @@ public class TransactionLog {
   List<String> globalStringList = new ArrayList<String>();
   final boolean debug = log.isDebugEnabled();
 
+  long snapshot_size;
+  int snapshot_numRecords;
+  
   // write a BytesRef as a byte array
   JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
     @Override
@@ -192,7 +195,30 @@ public class TransactionLog {
     }
     return true;
   }
+
+  /** takes a snapshot of the current position and number of records
+   * for later possible rollback, and returns the position */
+  public long snapshot() {
+    synchronized (this) {
+      snapshot_size = fos.size();
+      snapshot_numRecords = numRecords;
+      return snapshot_size;
+    }    
+  }
   
+  // This could mess with any readers or reverse readers that are open, or anything that might try to do a log lookup.
+  // This should only be used to roll back buffered updates, not actually applied updates.
+  public void rollback(long pos) throws IOException {
+    synchronized (this) {
+      assert snapshot_size == pos;
+      fos.flush();
+      raf.setLength(pos);
+      fos.setWritten(pos);
+      assert fos.size() == pos;
+      numRecords = snapshot_numRecords;
+    }
+  }
+
 
   public long writeData(Object o) {
     LogCodec codec = new LogCodec();

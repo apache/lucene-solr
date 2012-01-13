@@ -153,7 +153,7 @@ public class UpdateLog implements PluginInfoInitialized {
         oldLog = new TransactionLog( f, null, true );
         addOldLog(oldLog);
       } catch (Exception e) {
-        SolrException.log(log, "Failure to open existing log file (non fatal) "+f, e);
+        SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
         f.delete();
       }
     }
@@ -717,7 +717,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
       // since we blocked updates, this synchronization shouldn't strictly be necessary.
       synchronized (this) {
-        recoveryInfo.positionOfStart = tlog == null ? 0 : tlog.position();
+        recoveryInfo.positionOfStart = tlog == null ? 0 : tlog.snapshot();
       }
 
       state = State.BUFFERING;
@@ -725,6 +725,35 @@ public class UpdateLog implements PluginInfoInitialized {
       versionInfo.unblockUpdates();
     }
   }
+
+  /** Returns true if we were able to drop buffered updates and return to the ACTIVE state */
+  public boolean dropBufferedUpdates() {
+    versionInfo.blockUpdates();
+    try {
+      if (state != State.BUFFERING) return false;
+
+      if (log.isInfoEnabled()) {
+        log.info("Dropping buffered updates " + this);
+      }
+
+      // since we blocked updates, this synchronization shouldn't strictly be necessary.
+      synchronized (this) {
+        if (tlog != null) {
+          tlog.rollback(recoveryInfo.positionOfStart);
+        }
+      }
+
+      state = State.ACTIVE;
+    } catch (IOException e) {
+      SolrException.log(log,"Error attempting to roll back log", e);
+      return false;
+    }
+    finally {
+      versionInfo.unblockUpdates();
+    }
+    return true;
+  }
+
 
   /** Returns the Future to wait on, or null if no replay was needed */
   public Future<RecoveryInfo> applyBufferedUpdates() {
