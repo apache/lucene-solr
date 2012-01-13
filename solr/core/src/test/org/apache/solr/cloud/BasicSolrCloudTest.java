@@ -246,7 +246,7 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     
     commit();
     
-    checkShardConsistency(false);
+    checkShardConsistency();
   }
   
   private void testOptimisticUpdate(QueryResponse results) throws Exception {

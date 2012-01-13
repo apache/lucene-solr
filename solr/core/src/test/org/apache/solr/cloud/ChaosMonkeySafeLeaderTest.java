@@ -31,7 +31,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
+public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
@@ -69,7 +69,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     resetExceptionIgnores();
   }
   
-  public ChaosMonkeySolrCloudTest() {
+  public ChaosMonkeySafeLeaderTest() {
     super();
     shardCount = atLeast(6);
     sliceCount = atLeast(2);
@@ -94,7 +94,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
       indexThread.start();
     }
     
-    chaosMonkey.startTheMonkey();
+    chaosMonkey.startTheMonkey(false);
     
     Thread.sleep(atLeast(8000));
     
@@ -118,7 +118,7 @@ public class ChaosMonkeySolrCloudTest extends FullSolrCloudTest {
     // wait until there are no recoveries...
     waitForThingsToLevelOut();
 
-    checkShardConsistency(false);
+    checkShardConsistency();
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
   }

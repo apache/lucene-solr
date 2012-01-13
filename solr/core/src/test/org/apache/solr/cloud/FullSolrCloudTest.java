@@ -861,10 +861,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   protected void checkShardConsistency() throws Exception {
-    checkShardConsistency(false);
+    checkShardConsistency(true, false);
   }
   
-  protected void checkShardConsistency(boolean verbose) throws Exception {
+  protected void checkShardConsistency(boolean checkVsControl, boolean verbose) throws Exception {
     long docs = controlClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     if (verbose) System.out.println("Control Docs:" + docs);
     

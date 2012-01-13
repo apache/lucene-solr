@@ -47,7 +47,6 @@ public class ChaosMonkey {
 
   private static final int CONLOSS_PERCENT = 3; //30%
   private static final int EXPIRE_PERCENT = 4; //40%
-  private static final boolean DONTKILLLEADER = true;
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   
   private ZkTestServer zkServer;
@@ -63,6 +62,7 @@ public class ChaosMonkey {
   private Map<String,List<SolrServer>> shardToClient;
   private boolean expireSessions;
   private boolean causeConnectionLoss;
+  private boolean killLeaders;
   
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
@@ -92,7 +92,7 @@ public class ChaosMonkey {
   public void expireRandomSession() throws KeeperException, InterruptedException {
     String sliceName = getRandomSlice();
     
-    JettySolrRunner jetty = getRandomJetty(sliceName, DONTKILLLEADER);
+    JettySolrRunner jetty = getRandomJetty(sliceName, killLeaders);
     if (jetty != null) {
       expireSession(jetty);
       expires.incrementAndGet();
@@ -102,7 +102,7 @@ public class ChaosMonkey {
   public void randomConnectionLoss() throws KeeperException, InterruptedException {
     String sliceName = getRandomSlice();
     
-    JettySolrRunner jetty = getRandomJetty(sliceName, DONTKILLLEADER);
+    JettySolrRunner jetty = getRandomJetty(sliceName, killLeaders);
     if (jetty != null) {
       causeConnectionLoss(jetty);
       connloss.incrementAndGet();
@@ -210,7 +210,7 @@ public class ChaosMonkey {
   }
   
   public JettySolrRunner stopRandomShard(String slice) throws Exception {
-    JettySolrRunner jetty = getRandomJetty(slice, DONTKILLLEADER);
+    JettySolrRunner jetty = getRandomJetty(slice, killLeaders);
     if (jetty != null) {
       stopJetty(jetty);
     }
@@ -235,14 +235,14 @@ public class ChaosMonkey {
   }
   
   public JettySolrRunner killRandomShard(String slice) throws Exception {
-    JettySolrRunner jetty = getRandomJetty(slice, DONTKILLLEADER);
+    JettySolrRunner jetty = getRandomJetty(slice, killLeaders);
     if (jetty != null) {
       killJetty(jetty);
     }
     return jetty;
   }
   
-  public JettySolrRunner getRandomJetty(String slice, boolean dontkillleader) throws KeeperException, InterruptedException {
+  public JettySolrRunner getRandomJetty(String slice, boolean killLeader) throws KeeperException, InterruptedException {
     // get latest cloud state
     zkStateReader.updateCloudState(true);
     Slice theShards = zkStateReader.getCloudState().getSlices(collection)
@@ -298,7 +298,7 @@ public class ChaosMonkey {
     
     ZkNodeProps leader = zkStateReader.getLeaderProps(collection, slice);
     
-    if (dontkillleader && leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)) {
+    if (!killLeader && leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)) {
       // we don't kill leaders...
       return null;
     }
@@ -320,7 +320,8 @@ public class ChaosMonkey {
   
   // synchronously starts and stops shards randomly, unless there is only one
   // active shard up for a slice or if there is one active and others recovering
-  public void startTheMonkey() {
+  public void startTheMonkey(boolean killLeaders) {
+    this.killLeaders = killLeaders;
     stop = false;
     new Thread() {
       private List<JettySolrRunner> deadPool = new ArrayList<JettySolrRunner>();
