@@ -455,6 +455,9 @@ Bug Fixes
 * SOLR-3024: Fixed JSONTestUtil.matchObj, in previous releases it was not 
   respecting the 'delta' arg (David Smiley via hossman)
   
+* SOLR-2542: Fixed DIH Context variables which were broken for all scopes other 
+  then SCOPE_ENTITY (Linbin Chen & Frank Wesemann via hossman)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)

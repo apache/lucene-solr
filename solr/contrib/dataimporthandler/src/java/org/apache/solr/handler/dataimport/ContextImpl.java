@@ -155,7 +155,7 @@ public class ContextImpl extends Context {
 
   private void putVal(String name, Object val, Map map) {
     if(val == null) map.remove(name);
-    else entitySession.put(name, val);
+    else map.put(name, val);
   }
 
   @Override
