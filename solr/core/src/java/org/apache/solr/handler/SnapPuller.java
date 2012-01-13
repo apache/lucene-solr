@@ -258,11 +258,7 @@ public class SnapPuller {
       }
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
-      if (latestVersion == 0L && !force) {
-        //there is nothing to be replicated
-        successfulInstall = true;
-        return true;
-      }
+
       IndexCommit commit;
       RefCounted<SolrIndexSearcher> searcherRefCounted = null;
       try {
@@ -276,10 +272,25 @@ public class SnapPuller {
         if (searcherRefCounted != null)
           searcherRefCounted.decref();
       }
+      
+      if (latestVersion == 0L) {
+        if (force && commit.getVersion() != 0) {
+          // since we won't get the files for an empty index,
+          // we just clear ours and commit
+          core.getUpdateHandler().getSolrCoreState().getIndexWriter(core).deleteAll();
+          SolrQueryRequest req = new LocalSolrQueryRequest(core,
+              new ModifiableSolrParams());
+          core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+        }
+        
+        //there is nothing to be replicated
+        successfulInstall = true;
+        return true;
+      }
+      
       if (commit.getVersion() == latestVersion && commit.getGeneration() == latestGeneration) {
         //master and slave are already in sync just return
         LOG.info("Slave in sync with master.");
-        System.out.println("SLAVE IN SYNC:" + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
         successfulInstall = true;
         return true;
       }
