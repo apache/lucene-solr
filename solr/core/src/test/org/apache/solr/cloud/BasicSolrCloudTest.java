@@ -297,7 +297,6 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
   
   @Override
   public void tearDown() throws Exception {
-    printLayout();
     super.tearDown();
   }
 
