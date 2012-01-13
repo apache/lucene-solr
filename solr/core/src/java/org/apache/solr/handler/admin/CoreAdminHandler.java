@@ -623,15 +623,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
             cloudState.getSlice(cloudDescriptor.getCollectionName(),
                 cloudDescriptor.getShardId()).getShards().get(coreNodeName);
         state = nodeProps.get(ZkStateReader.STATE_PROP);
+        boolean live = cloudState.liveNodesContain(nodeName);
         if (nodeProps != null && state.equals(ZkStateReader.RECOVERING)
-            && cloudState.liveNodesContain(nodeName)) {
+            && live) {
           break;
         }
         
         if (retry++ == 30) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
               "I was asked to prep for recovery for " + nodeName
-                  + " but she is not live or not in a recovery state - state: " + state);
+                  + " but she is not live or not in a recovery state - state: " + state + " live:" + live);
         }
         
         Thread.sleep(1000);
