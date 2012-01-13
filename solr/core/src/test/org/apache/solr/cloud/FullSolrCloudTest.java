@@ -883,36 +883,40 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       fail(failMessage);
     }
     
-    // now check that the right # are on each shard
-    theShards = shardToClient.keySet();
-    int cnt = 0;
-    for (String s : theShards) {
-      int times = shardToClient.get(s).size();
-      for (int i = 0; i < times; i++) {
-        try {
-          SolrServer client = shardToClient.get(s).get(i);
-          ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(client));
-          boolean active = props.get(ZkStateReader.STATE_PROP).equals(ZkStateReader.ACTIVE);
-          if (active) {
-            SolrQuery query = new SolrQuery("*:*");
-            query.set("distrib", false);
-            cnt += client.query(query).getResults()
-                .getNumFound();
-            break;
-          }
-        } catch(SolrServerException e) {
-          // if we have a problem, try the next one
-          if (i == times - 1) {
-            throw e;
+    if (checkVsControl) {
+      // now check that the right # are on each shard
+      theShards = shardToClient.keySet();
+      int cnt = 0;
+      for (String s : theShards) {
+        int times = shardToClient.get(s).size();
+        for (int i = 0; i < times; i++) {
+          try {
+            SolrServer client = shardToClient.get(s).get(i);
+            ZkNodeProps props = clientToInfo.get(new CloudSolrServerClient(
+                client));
+            boolean active = props.get(ZkStateReader.STATE_PROP).equals(
+                ZkStateReader.ACTIVE);
+            if (active) {
+              SolrQuery query = new SolrQuery("*:*");
+              query.set("distrib", false);
+              cnt += client.query(query).getResults().getNumFound();
+              break;
+            }
+          } catch (SolrServerException e) {
+            // if we have a problem, try the next one
+            if (i == times - 1) {
+              throw e;
+            }
           }
         }
       }
+      
+      SolrQuery q = new SolrQuery("*:*");
+      long cloudClientDocs = cloudClient.query(q).getResults().getNumFound();
+      assertEquals(
+          "adding up the # of docs on each shard does not match the control - cloud client returns:"
+              + cloudClientDocs, docs, cnt);
     }
-    SolrQuery q = new SolrQuery("*:*");
-    long cloudClientDocs = cloudClient.query(q).getResults().getNumFound();
-    assertEquals(
-        "adding up the # of docs on each shard does not match the control - cloud client returns:"
-            + cloudClientDocs, docs, cnt);
   }
 
   private SolrServer getClient(String nodeName) {
