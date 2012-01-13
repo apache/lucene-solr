@@ -1016,7 +1016,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     return rsp;
   }
   
-  // TODO: also do some deletes
   class StopableIndexingThread extends Thread {
     private volatile boolean stop = false;
     private final int startI;
