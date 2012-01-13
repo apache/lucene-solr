@@ -19,12 +19,14 @@ package org.apache.solr.handler.admin;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrat;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -590,16 +592,18 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
   }
   
-  protected void handlePrepRecoveryAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, InterruptedException {
+  protected void handlePrepRecoveryAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws IOException, InterruptedException {
     final SolrParams params = req.getParams();
-
+    
     String cname = params.get(CoreAdminParams.CORE);
     if (cname == null) {
       cname = "";
     }
-
+    
     String nodeName = params.get("nodeName");
-
+    String coreNodeName = params.get("coreNodeName");
+    
     SolrCore core = coreContainer.getCore(cname);
     if (core == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "core not found:" + cname);
@@ -612,51 +616,75 @@ public class CoreAdminHandler extends RequestHandlerBase {
         // to accept updates
         CloudDescriptor cloudDescriptor = core.getCoreDescriptor()
             .getCloudDescriptor();
-        ZkNodeProps nodeProps = coreContainer
+        CloudState cloudState = coreContainer
             .getZkController()
-            .getCloudState()
-            .getSlice(cloudDescriptor.getCollectionName(),
-                cloudDescriptor.getShardId()).getShards().get(nodeName);
+            .getCloudState();
+        ZkNodeProps nodeProps = 
+            cloudState.getSlice(cloudDescriptor.getCollectionName(),
+                cloudDescriptor.getShardId()).getShards().get(coreNodeName);
         state = nodeProps.get(ZkStateReader.STATE_PROP);
-        if (nodeProps != null && state.equals(ZkStateReader.RECOVERING)) {
+        if (nodeProps != null && state.equals(ZkStateReader.RECOVERING)
+            && cloudState.liveNodesContain(nodeName)) {
           break;
         }
         
         if (retry++ == 30) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
               "I was asked to prep for recovery for " + nodeName
-                  + " but she is not in a recovery state - state: " + state);
+                  + " but she is not live or not in a recovery state - state: " + state);
         }
-
+        
         Thread.sleep(1000);
       }
       
-      if (core != null) {
-        // small safety net for any updates that started with state that
-        // kept it from sending the update to be buffered -
-        // pause for a while to let any outstanding updates finish
-
-        Thread.sleep(2000);
+      // small safety net for any updates that started with state that
+      // kept it from sending the update to be buffered -
+      // pause for a while to let any outstanding updates finish
+      
+      Thread.sleep(4000);
+      
+      UpdateRequestProcessorChain processorChain = core
+          .getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(
+              params, log));
+      
+      ModifiableSolrParams reqParams = new ModifiableSolrParams(req.getParams());
+      reqParams.set(DistributedUpdateProcessor.COMMIT_END_POINT, "true");
+      
+      SolrQueryRequest sqr = new LocalSolrQueryRequest(core, reqParams);
+      UpdateRequestProcessor processor = processorChain.createProcessor(sqr,
+          new SolrQueryResponse());
+      CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
+      
+      processor.processCommit(cuc);
+      processor.finish();
+      
+      // nocommit
+//      try {
+//        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+//        SolrIndexSearcher searcher = searchHolder.get();
+//        try {
+//          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " to replicate "
+//              + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " gen:" + core.getDeletionPolicy().getLatestCommit().getGeneration()  + " data:" + core.getDataDir());
+//        } finally {
+//          searchHolder.decref();
+//        }
+//      } catch (Exception e) {
+//        
+//      }
+      
+      try {
+        RefCounted<SolrIndexSearcher> searchHolder = core.getSearcher();
+        SolrIndexSearcher searcher = searchHolder.get();
+        try {
+          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " to replicate (2) "
+              + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+        } finally {
+          searchHolder.decref();
+        }
+      } catch (Exception e) {
         
-        UpdateRequestProcessorChain processorChain = core
-            .getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(
-                params, log));
-
-        ModifiableSolrParams reqParams = new ModifiableSolrParams(
-            req.getParams());
-        reqParams.set(DistributedUpdateProcessor.COMMIT_END_POINT, "true");
-        
-        SolrQueryRequest sqr = new LocalSolrQueryRequest(core, reqParams);
-        UpdateRequestProcessor processor = processorChain.createProcessor(sqr,
-            new SolrQueryResponse());
-        CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
-        
-        processor.processCommit(cuc);
-        processor.finish();
-      } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find core:  "
-            + core);
       }
+      
     } finally {
       if (core != null) {
         core.close();

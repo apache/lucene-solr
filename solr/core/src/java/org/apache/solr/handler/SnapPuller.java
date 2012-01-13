@@ -159,7 +159,7 @@ public class SnapPuller {
         }
         try {
           executorStartTime = System.currentTimeMillis();
-          replicationHandler.doFetch(null);
+          replicationHandler.doFetch(null, false);
         } catch (Exception e) {
           LOG.error("Exception in fetching index", e);
         }
@@ -244,7 +244,8 @@ public class SnapPuller {
   @SuppressWarnings("unchecked")
   boolean successfulInstall = false;
 
-  boolean fetchLatestIndex(SolrCore core) throws IOException {
+  boolean fetchLatestIndex(SolrCore core, boolean force) throws IOException {
+    successfulInstall = false;
     replicationStartTime = System.currentTimeMillis();
     try {
       //get the current 'replicateable' index version in the master
@@ -257,9 +258,10 @@ public class SnapPuller {
       }
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
-      if (latestVersion == 0L) {
+      if (latestVersion == 0L && !force) {
         //there is nothing to be replicated
-        return false;
+        successfulInstall = true;
+        return true;
       }
       IndexCommit commit;
       RefCounted<SolrIndexSearcher> searcherRefCounted = null;
@@ -275,9 +277,11 @@ public class SnapPuller {
           searcherRefCounted.decref();
       }
       if (commit.getVersion() == latestVersion && commit.getGeneration() == latestGeneration) {
-        //master and slave are alsready in sync just return
+        //master and slave are already in sync just return
         LOG.info("Slave in sync with master.");
-        return false;
+        System.out.println("SLAVE IN SYNC:" + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
+        successfulInstall = true;
+        return true;
       }
       LOG.info("Master's version: " + latestVersion + ", generation: " + latestGeneration);
       LOG.info("Slave's version: " + commit.getVersion() + ", generation: " + commit.getGeneration());
@@ -294,7 +298,7 @@ public class SnapPuller {
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generateion of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index direcory to be created and all the files need to be copied
-      boolean isFullCopyNeeded = commit.getGeneration() >= latestGeneration;
+      boolean isFullCopyNeeded = commit.getVersion() >= latestVersion || force;
       File tmpIndexDir = createTempindexDir(core);
       if (isIndexStale())
         isFullCopyNeeded = true;
@@ -336,6 +340,7 @@ public class SnapPuller {
         return successfulInstall;
       } catch (ReplicationHandlerException e) {
         LOG.error("User aborted Replication");
+        return false;
       } catch (SolrException e) {
         throw e;
       } catch (Exception e) {
@@ -344,9 +349,9 @@ public class SnapPuller {
         if (deleteTmpIdxDir) delTree(tmpIndexDir);
         else delTree(indexDir);
       }
-      return successfulInstall;
     } finally {
       if (!successfulInstall) {
+        System.out.println("replication failed handler:" + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
         logReplicationTimeAndConfFiles(null, successfulInstall);
       }
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;

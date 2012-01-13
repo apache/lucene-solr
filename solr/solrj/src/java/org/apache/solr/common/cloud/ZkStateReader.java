@@ -62,6 +62,7 @@ public class ZkStateReader {
   public static final String RECOVERING = "recovering";
   public static final String RECOVERY_FAILED = "recovery_failed";
   public static final String ACTIVE = "active";
+  public static final String DOWN = "down";
   
   private volatile CloudState cloudState;
 
@@ -165,50 +166,49 @@ public class ZkStateReader {
     // We need to fetch the current cluster state and the set of live nodes
     
     synchronized (getUpdateLock()) {
-     cmdExecutor.ensureExists(CLUSTER_STATE, zkClient);
-
-    
-    
-    log.info("Updating cluster state from ZooKeeper... ");
-
-    zkClient.exists(CLUSTER_STATE, new Watcher() {
-          
-          @Override
-          public void process(WatchedEvent event) {
-            log.info("A cluster state change has occurred");
-            try {
+      cmdExecutor.ensureExists(CLUSTER_STATE, zkClient);
+      
+      log.info("Updating cluster state from ZooKeeper... ");
+      
+      zkClient.exists(CLUSTER_STATE, new Watcher() {
+        
+        @Override
+        public void process(WatchedEvent event) {
+          log.info("A cluster state change has occurred");
+          try {
+            
+            // delayed approach
+            // ZkStateReader.this.updateCloudState(false, false);
+            synchronized (ZkStateReader.this.getUpdateLock()) {
+              // remake watch
+              final Watcher thisWatch = this;
+              byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, null,
+                  true);
               
-              // delayed approach
-              // ZkStateReader.this.updateCloudState(false, false);
-              synchronized (ZkStateReader.this.getUpdateLock()) {
-                // remake watch
-                final Watcher thisWatch = this;
-                byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, null, true);
-                
-                CloudState clusterState = CloudState.load(data,
-                    ZkStateReader.this.cloudState.getLiveNodes());
-                // update volatile
-                cloudState = clusterState;
-              }
-            } catch (KeeperException e) {
-              if (e.code() == KeeperException.Code.SESSIONEXPIRED
-                  || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-                log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
-                return;
-              }
-              log.error("", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                  "", e);
-            } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.warn("", e);
+              CloudState clusterState = CloudState.load(data,
+                  ZkStateReader.this.cloudState.getLiveNodes());
+              // update volatile
+              cloudState = clusterState;
+            }
+          } catch (KeeperException e) {
+            if (e.code() == KeeperException.Code.SESSIONEXPIRED
+                || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
               return;
-            } 
+            }
+            log.error("", e);
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          } catch (InterruptedException e) {
+            // Restore the interrupted status
+            Thread.currentThread().interrupt();
+            log.warn("", e);
+            return;
           }
-          
-        }, true);
-      }
+        }
+        
+      }, true);
+    }
    
     
     synchronized (ZkStateReader.this.getUpdateLock()) {

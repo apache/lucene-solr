@@ -129,6 +129,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
+      // nocommit
+      //System.out.println("The latest index gen is:" + commitPoint.getGeneration() + " " + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
       if (commitPoint != null && replicationEnabled.get()) {
         //
         // There is a race condition here.  The commit point may be changed / deleted by the time
@@ -163,7 +165,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       new Thread() {
         @Override
         public void run() {
-          doFetch(paramsCopy);
+          doFetch(paramsCopy, false);
         }
       }.start();
       rsp.add(STATUS, OK_STATUS);
@@ -271,10 +273,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile SnapPuller tempSnapPuller;
 
-  public void doFetch(SolrParams solrParams) {
+  public boolean doFetch(SolrParams solrParams, boolean force) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
     if (!snapPullLock.tryLock())
-      return;
+      return false;
     try {
       tempSnapPuller = snapPuller;
       if (masterUrl != null) {
@@ -282,13 +284,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         nl.remove(SnapPuller.POLL_INTERVAL);
         tempSnapPuller = new SnapPuller(nl, this, core);
       }
-      tempSnapPuller.fetchLatestIndex(core);
+      return tempSnapPuller.fetchLatestIndex(core, force);
     } catch (Exception e) {
       LOG.error("SnapPull failed ", e);
     } finally {
       tempSnapPuller = snapPuller;
       snapPullLock.unlock();
     }
+    return false;
   }
 
   boolean isReplicating() {
@@ -335,6 +338,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     long version = Long.parseLong(v);
     IndexCommit commit = core.getDeletionPolicy().getCommitPoint(version);
+    //nocommit
+    //System.out.println("ask for files for gen:" + commit.getGeneration() + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
     if (commit == null) {
       rsp.add("status", "invalid indexversion");
       return;

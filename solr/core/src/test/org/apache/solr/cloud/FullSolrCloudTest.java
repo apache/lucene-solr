@@ -559,8 +559,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
               + " live:"
               + cloudState.liveNodesContain(shard.getValue().get(
                   ZkStateReader.NODE_NAME_PROP)));
-          if (shard.getValue().get(ZkStateReader.STATE_PROP)
-              .equals(ZkStateReader.RECOVERING)
+          String state = shard.getValue().get(ZkStateReader.STATE_PROP);
+          if ((state.equals(ZkStateReader.RECOVERING) || state
+              .equals(ZkStateReader.DOWN))
               && cloudState.liveNodesContain(shard.getValue().get(
                   ZkStateReader.NODE_NAME_PROP))) {
             sawLiveRecovering = true;

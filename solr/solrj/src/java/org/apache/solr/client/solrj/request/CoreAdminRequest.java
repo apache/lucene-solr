@@ -92,17 +92,28 @@ public class CoreAdminRequest extends SolrRequest
   
   public static class PrepRecovery extends CoreAdminRequest {
     protected String nodeName;
-
+    protected String coreNodeName;
 
     public PrepRecovery() {
       action = CoreAdminAction.PREPRECOVERY;
     }
     
-    public void setNodeName(String nodeName) { this.nodeName = nodeName; }
-
-    public String getNodeName() { return nodeName; }
-
-
+    public void setNodeName(String nodeName) {
+      this.nodeName = nodeName;
+    }
+    
+    public String getNodeName() {
+      return nodeName;
+    }
+    
+    public String getCoreNodeName() {
+      return coreNodeName;
+    }
+    
+    public void setCoreNodeName(String coreNodeName) {
+      this.coreNodeName = coreNodeName;
+    }
+    
     @Override
     public SolrParams getParams() {
       if( action == null ) {
@@ -116,9 +127,14 @@ public class CoreAdminRequest extends SolrRequest
       if (nodeName != null) {
         params.set( "nodeName", nodeName);
       }
+      
+      if (coreNodeName != null) {
+        params.set( "coreNodeName", coreNodeName);
+      }
 
       return params;
     }
+
   }
   
   public static class RequestRecovery extends CoreAdminRequest {

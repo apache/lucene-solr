@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.PrepRecovery;
@@ -35,8 +36,10 @@ import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
+import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,8 +83,7 @@ public class RecoveryStrat {
       log.info("Start recovery process");
       if (recoveryListener != null) recoveryListener.startRecovery();
 
-      zkController.publishAsRecoverying(baseUrl, cloudDesc, shardZkNodeName,
-          core.getName());
+
     } catch (Exception e) {
       log.error("", e);
       core.getUpdateHandler().getSolrCoreState().recoveryRequests.decrementAndGet();
@@ -102,16 +104,20 @@ public class RecoveryStrat {
           UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
           if (ulog == null) return;
 
-          ulog.bufferUpdates();  
           boolean replayed = false;
           boolean succesfulRecovery = false;
           int retries = 0;
           while (!succesfulRecovery && !close) {
+            ulog.bufferUpdates();  
+            zkController.publishAsRecoverying(baseUrl, cloudDesc, shardZkNodeName,
+                core.getName());
+            replayed = false;
             try {
               ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
                   cloudDesc.getCollectionName(), cloudDesc.getShardId());
-              
-              replicate(core, shardZkNodeName, leaderprops, ZkCoreNodeProps.getCoreUrl(baseUrl, core.getName()));
+              // nocommit
+              // System.out.println("recover " + shardZkNodeName + " against " + leaderprops);
+              replicate(zkController.getNodeName(), core, shardZkNodeName, leaderprops, ZkCoreNodeProps.getCoreUrl(baseUrl, core.getName()));
               
               replay(core);
               replayed = true;
@@ -150,6 +156,7 @@ public class RecoveryStrat {
               // lets pause for a moment and we need to try again...
               // TODO: we don't want to retry for some problems?
               // Or do a fall off retry...
+              try {
               log.error("Recovery failed - trying again...");
               retries++;
               if (retries >= MAX_RETRIES) {
@@ -158,11 +165,19 @@ public class RecoveryStrat {
                     cloudDesc);
               }
               
+              zkController.publishAsDown(baseUrl, cloudDesc, shardZkNodeName,
+                  core.getName());
+              
+              } catch (Exception e) {
+                log.error("", e);
+              }
+              
               try {
                 Thread.sleep(500);
               } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
+                log.error("Recovery was interrupted", e);
+                retries = MAX_RETRIES;
               }
             }
           }
@@ -181,6 +196,21 @@ public class RecoveryStrat {
           // wait for replay
           future.get();
         }
+        
+        // nocommit
+//        try {
+//          RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+//          SolrIndexSearcher searcher = searchHolder.get();
+//          try {
+//            System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replayed "
+//                + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+//          } finally {
+//            searchHolder.decref();
+//          }
+//        } catch (Exception e) {
+//          
+//        }
+        
         return future;
       }
     };
@@ -196,7 +226,7 @@ public class RecoveryStrat {
     close = true;
   }
   
-  private void replicate(SolrCore core, String shardZkNodeName, ZkNodeProps leaderprops, String baseUrl)
+  private void replicate(String nodeName, SolrCore core, String shardZkNodeName, ZkNodeProps leaderprops, String baseUrl)
       throws SolrServerException, IOException {
     // start buffer updates to tran log
     // and do recovery - either replay via realtime get (eventually)
@@ -217,7 +247,8 @@ public class RecoveryStrat {
       PrepRecovery prepCmd = new PrepRecovery();
       prepCmd.setAction(CoreAdminAction.PREPRECOVERY);
       prepCmd.setCoreName(leaderCoreName);
-      prepCmd.setNodeName(shardZkNodeName);
+      prepCmd.setNodeName(nodeName);
+      prepCmd.setCoreNodeName(shardZkNodeName);
       
       server.request(prepCmd);
       
@@ -237,9 +268,27 @@ public class RecoveryStrat {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
       
-      replicationHandler.doFetch(solrParams);
+      boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making sure fore=true does not download files we already have
+
+      if (!success) {
+        throw new RuntimeException("Replication for recovery failed.");
+      }
       
       if (recoveryListener != null) recoveryListener.finishedReplication();
+      
+      // nocommit
+      try {
+        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+        SolrIndexSearcher searcher = searchHolder.get();
+        try {
+          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replicated "
+              + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " from " + leaderUrl + " gen:" + core.getDeletionPolicy().getLatestCommit().getGeneration() + " data:" + core.getDataDir());
+        } finally {
+          searchHolder.decref();
+        }
+      } catch (Exception e) {
+        
+      }
     }
   }
   

@@ -45,6 +45,8 @@ import org.mortbay.jetty.servlet.FilterHolder;
  */
 public class ChaosMonkey {
 
+  private static final int CONLOSS_PERCENT = 3; //30%
+  private static final int EXPIRE_PERCENT = 4; //40%
   private static final boolean DONTKILLLEADER = true;
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   
@@ -361,11 +363,11 @@ public class ChaosMonkey {
             
             int rnd = random.nextInt(10);
 
-            if (expireSessions && rnd < 3) {
+            if (expireSessions && rnd < EXPIRE_PERCENT) {
               expireRandomSession();
             } 
             
-            if (causeConnectionLoss && rnd < 2) {
+            if (causeConnectionLoss && rnd < CONLOSS_PERCENT) {
               randomConnectionLoss();
               randomConnectionLoss();
             }

@@ -170,9 +170,23 @@ public final class ZkController {
               overseerElector.joinElection(context);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
-              // re register all descriptors
               List<CoreDescriptor> descriptors = registerOnReconnect
                   .getCurrentDescriptors();
+              if (descriptors != null) {
+                // before registering as live, make sure everyone is in a
+                // recovery state
+                for (CoreDescriptor descriptor : descriptors) {
+                  final String shardZkNodeName = getNodeName() + "_"
+                      + descriptor.getName();
+                  publishAsDown(getBaseUrl(), descriptor.getCloudDescriptor(), shardZkNodeName,
+                      descriptor.getName());
+                }
+              }
+              
+              // we have to register as live first to pick up docs in the buffer
+              createEphemeralLiveNode();
+              
+              // re register all descriptors
               if (descriptors != null) {
                 for (CoreDescriptor descriptor : descriptors) {
                   // TODO: we need to think carefully about what happens when it was
@@ -181,10 +195,7 @@ public final class ZkController {
                   register(descriptor.getName(), descriptor, true);
                 }
               }
-              
-              // don't advertise as live until everyone has registered
-              createEphemeralLiveNode();
-
+  
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
@@ -465,7 +476,7 @@ public final class ZkController {
     props.put(ZkStateReader.CORE_PROP, coreName);
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
-    props.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
+    props.put(ZkStateReader.STATE_PROP, ZkStateReader.DOWN);
     if(shardId!=null) {
       props.put(ZkStateReader.SHARD_ID_PROP, shardId);
     }
@@ -595,13 +606,24 @@ public final class ZkController {
     publishState(cloudDesc, shardZkNodeName, coreName, finalProps);
   }
   
+  void publishAsDown(String baseUrl,
+      final CloudDescriptor cloudDesc, String shardZkNodeName, String coreName) {
+    Map<String,String> finalProps = new HashMap<String,String>();
+    finalProps.put(ZkStateReader.BASE_URL_PROP, baseUrl);
+    finalProps.put(ZkStateReader.CORE_PROP, coreName);
+    finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.DOWN);
+    finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
+    publishState(cloudDesc, shardZkNodeName, coreName, finalProps);
+  }
+  
   void publishAsRecoveryFailed(String baseUrl,
       final CloudDescriptor cloudDesc, String shardZkNodeName, String coreName) {
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.BASE_URL_PROP, baseUrl);
     finalProps.put(ZkStateReader.CORE_PROP, coreName);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
+    finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERY_FAILED);
     finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
     publishState(cloudDesc, shardZkNodeName, coreName, finalProps);
   }

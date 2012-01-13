@@ -737,7 +737,6 @@ public class UpdateLog implements PluginInfoInitialized {
     versionInfo.blockUpdates();
     try {
       if (state != State.BUFFERING) return null;
-      state = State.APPLYING_BUFFERED;
 
       // handle case when no log was even created because no updates
       // were received.
@@ -745,13 +744,14 @@ public class UpdateLog implements PluginInfoInitialized {
         state = State.ACTIVE;
         return null;
       }
-
+      tlog.incref();
+      state = State.APPLYING_BUFFERED;
     } finally {
       versionInfo.unblockUpdates();
     }
 
-    tlog.incref();
     if (recoveryExecutor.isShutdown()) {
+      tlog.decref();
       throw new RuntimeException("executor is not running...");
     }
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<RecoveryInfo>(recoveryExecutor);
