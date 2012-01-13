@@ -508,6 +508,18 @@ public class TestRecovery extends SolrTestCaseJ4 {
       resetExceptionIgnores();
       assertJQ(req("q","*:*") ,"/response/numFound==3");
 
+      //
+      // Now test that the bad log file doesn't mess up retrieving latest versions
+      //
+
+      updateJ(jsonAdd(sdoc("id","4", "_version_","104")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","5", "_version_","105")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","6", "_version_","106")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      // This currently skips the bad log file and also returns the version of the clearIndex (del *:*)
+      // assertJQ(req("qt","/get", "getVersions","6"), "/versions==[106,105,104]");
+      assertJQ(req("qt","/get", "getVersions","3"), "/versions==[106,105,104]");
+
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
