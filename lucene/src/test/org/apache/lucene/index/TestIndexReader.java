@@ -30,10 +30,10 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
-import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -297,7 +297,7 @@ public class TestIndexReader extends LuceneTestCase {
         writer.close();
         writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
         Document doc = new Document();
-        doc.add(new BinaryField("bin1", bin));
+        doc.add(new StoredField("bin1", bin));
         doc.add(new TextField("junk", "junk text"));
         writer.addDocument(doc);
         writer.close();

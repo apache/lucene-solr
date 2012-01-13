@@ -150,7 +150,11 @@ public class TestIndexableField extends LuceneTestCase {
 
     @Override
     public Number numericValue() {
-      return counter;
+      if (counter%10 == 9) {
+        return counter;
+      } else {
+        return null;
+      }
     }
 
     @Override
@@ -269,10 +273,7 @@ public class TestIndexableField extends LuceneTestCase {
               assertEquals((byte) (idx+counter), b.bytes[b.offset+idx]);
             }
           } else if (numeric) {
-            assertTrue(f instanceof NumericField);
-            final NumericField nf = (NumericField) f;
-            assertEquals(NumericField.DataType.INT, nf.fieldType().numericType());
-            assertEquals(counter, nf.numericValue().intValue());
+            assertEquals(counter, f.numericValue().intValue());
           } else {
             assert stringValue != null;
             assertEquals(stringValue, f.stringValue());

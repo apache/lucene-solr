@@ -27,6 +27,7 @@ import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -285,10 +286,8 @@ public class TestFieldsReader extends LuceneTestCase {
       for(int docID=0;docID<sub.numDocs();docID++) {
         final Document doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");
-        assertTrue("got f=" + f, f instanceof NumericField);
-        final NumericField nf = (NumericField) f;
-        assertEquals(answers[ids[docID]], nf.numericValue());
-        assertSame(typeAnswers[ids[docID]], nf.fieldType().numericType());
+        assertTrue("got f=" + f, f instanceof StoredField);
+        assertEquals(answers[ids[docID]], f.numericValue());
       }
     }
     r.close();

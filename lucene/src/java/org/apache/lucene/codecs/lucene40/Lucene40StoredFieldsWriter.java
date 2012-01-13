@@ -21,7 +21,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -51,11 +50,11 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   static final int FIELD_IS_NUMERIC_LONG = 2 << _NUMERIC_BIT_SHIFT;
   static final int FIELD_IS_NUMERIC_FLOAT = 3 << _NUMERIC_BIT_SHIFT;
   static final int FIELD_IS_NUMERIC_DOUBLE = 4 << _NUMERIC_BIT_SHIFT;
+
+  // the next possible bits are: 1 << 6; 1 << 7
   // currently unused: static final int FIELD_IS_NUMERIC_SHORT = 5 << _NUMERIC_BIT_SHIFT;
   // currently unused: static final int FIELD_IS_NUMERIC_BYTE = 6 << _NUMERIC_BIT_SHIFT;
 
-  // the next possible bits are: 1 << 6; 1 << 7
-  
   // Lucene 3.0: Removal of compressed fields
   static final int FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS = 2;
 
@@ -137,19 +136,19 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     // this way we don't bake into indexer all these
     // specific encodings for different fields?  and apps
     // can customize...
-    final NumericField.DataType numericType = field.fieldType().numericType();
-    if (numericType != null) {
-      switch (numericType) {
-        case INT:
-          bits |= FIELD_IS_NUMERIC_INT; break;
-        case LONG:
-          bits |= FIELD_IS_NUMERIC_LONG; break;
-        case FLOAT:
-          bits |= FIELD_IS_NUMERIC_FLOAT; break;
-        case DOUBLE:
-          bits |= FIELD_IS_NUMERIC_DOUBLE; break;
-        default:
-          assert false : "Should never get here";
+
+    Number number = field.numericValue();
+    if (number != null) {
+      if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
+        bits |= FIELD_IS_NUMERIC_INT;
+      } else if (number instanceof Long) {
+        bits |= FIELD_IS_NUMERIC_LONG;
+      } else if (number instanceof Float) {
+        bits |= FIELD_IS_NUMERIC_FLOAT;
+      } else if (number instanceof Double) {
+        bits |= FIELD_IS_NUMERIC_DOUBLE;
+      } else {
+        throw new IllegalArgumentException("cannot store numeric type " + number.getClass());
       }
       string = null;
       bytes = null;
@@ -160,6 +159,9 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
         string = null;
       } else {
         string = field.stringValue();
+        if (string == null) {
+          throw new IllegalArgumentException("field " + field.name() + " is stored but does not have binaryValue, stringValue nor numericValue");
+        }
       }
     }
 
@@ -172,20 +174,16 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       fieldsStream.writeString(field.stringValue());
     } else {
       final Number n = field.numericValue();
-      if (n == null) {
-        throw new IllegalArgumentException("field " + field.name() + " is stored but does not have binaryValue, stringValue nor numericValue");
-      }
-      switch (field.fieldType().numericType()) {
-        case INT:
-          fieldsStream.writeInt(n.intValue()); break;
-        case LONG:
-          fieldsStream.writeLong(n.longValue()); break;
-        case FLOAT:
-          fieldsStream.writeInt(Float.floatToIntBits(n.floatValue())); break;
-        case DOUBLE:
-          fieldsStream.writeLong(Double.doubleToLongBits(n.doubleValue())); break;
-        default:
-          assert false : "Should never get here";
+      if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
+        fieldsStream.writeInt(number.intValue());
+      } else if (number instanceof Long) {
+        fieldsStream.writeLong(number.longValue());
+      } else if (number instanceof Float) {
+        fieldsStream.writeInt(Float.floatToIntBits(number.floatValue()));
+      } else if (number instanceof Double) {
+        fieldsStream.writeLong(Double.doubleToLongBits(number.doubleValue()));
+      } else {
+        assert false;
       }
     }
   }

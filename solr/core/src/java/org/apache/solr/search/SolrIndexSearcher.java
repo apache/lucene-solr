@@ -23,7 +23,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.document.BinaryField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -418,7 +418,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
-      doc.add(new BinaryField(fieldInfo.name, value));
+      doc.add(new StoredField(fieldInfo.name, value));
     }
 
     @Override

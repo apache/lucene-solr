@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
@@ -99,48 +98,39 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
     newLine();
     
     write(TYPE);
-    final NumericField.DataType numericType = field.fieldType().numericType();
+    final Number n = field.numericValue();
 
-    if (numericType != null) {
-      switch (numericType) {
-        case INT:
-          write(TYPE_INT);
-          newLine();
+    if (n != null) {
+      if (n instanceof Byte || n instanceof Short || n instanceof Integer) {
+        write(TYPE_INT);
+        newLine();
           
-          write(VALUE);
-          write(Integer.toString(field.numericValue().intValue()));
-          newLine();
+        write(VALUE);
+        write(Integer.toString(n.intValue()));
+        newLine();
+      } else if (n instanceof Long) {
+        write(TYPE_LONG);
+        newLine();
+
+        write(VALUE);
+        write(Long.toString(n.longValue()));
+        newLine();
+      } else if (n instanceof Float) {
+        write(TYPE_FLOAT);
+        newLine();
           
-          break;
-        case LONG:
-          write(TYPE_LONG);
-          newLine();
+        write(VALUE);
+        write(Float.toString(n.floatValue()));
+        newLine();
+      } else if (n instanceof Double) {
+        write(TYPE_DOUBLE);
+        newLine();
           
-          write(VALUE);
-          write(Long.toString(field.numericValue().longValue()));
-          newLine();
-          
-          break;
-        case FLOAT:
-          write(TYPE_FLOAT);
-          newLine();
-          
-          write(VALUE);
-          write(Float.toString(field.numericValue().floatValue()));
-          newLine();
-          
-          break;
-        case DOUBLE:
-          write(TYPE_DOUBLE);
-          newLine();
-          
-          write(VALUE);
-          write(Double.toString(field.numericValue().doubleValue()));
-          newLine();
-          
-          break;
-        default:
-          assert false : "Should never get here";
+        write(VALUE);
+        write(Double.toString(n.doubleValue()));
+        newLine();
+      } else {
+        throw new IllegalArgumentException("cannot store numeric type " + n.getClass());
       }
     } else { 
       BytesRef bytes = field.binaryValue();

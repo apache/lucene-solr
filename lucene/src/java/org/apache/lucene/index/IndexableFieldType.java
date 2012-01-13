@@ -55,8 +55,10 @@ public interface IndexableFieldType {
   public DocValues.Type docValueType();
 
   /** Numeric {@link NumericField.DataType}; if
-   * non-null then the field's value will be indexed
-   * numerically. */
+   *  non-null then the field's value will be indexed
+   *  numerically so that {@link NumericRangeQuery} can be
+   *  used at search time. */
+  // nocommit: should this be in FT not IFT...?
   public NumericField.DataType numericType();
 
   /** Precision step for numeric field. */

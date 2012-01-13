@@ -104,9 +104,8 @@ public class TrieField extends org.apache.solr.schema.FieldType {
 
   @Override
   public Object toObject(IndexableField f) {
-    if (f.fieldType().numericType() != null) {
-      final Number val = f.numericValue();
-      if (val==null) return badFieldString(f);
+    final Number val = f.numericValue();
+    if (val != null) {
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {
       // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
@@ -405,10 +404,8 @@ public class TrieField extends org.apache.solr.schema.FieldType {
   @Override
   public String storedToIndexed(IndexableField f) {
     final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
-    if (f instanceof org.apache.lucene.document.NumericField) {
-      final Number val = ((org.apache.lucene.document.NumericField) f).numericValue();
-      if (val==null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
+    final Number val = f.numericValue();
+    if (val != null) {
       switch (type) {
         case INTEGER:
           NumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
