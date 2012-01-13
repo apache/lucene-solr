@@ -40,7 +40,8 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.SEEN_L
 
 public class TestRecovery extends SolrTestCaseJ4 {
   private static String SEEN_LEADER_VAL="true"; // value that means we've seen the leader and have version info (i.e. we are a non-leader replica)
-
+  private static int timeout=60;  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-tlog.xml","schema12.xml");
@@ -58,7 +59,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
         @Override
         public void run() {
           try {
-            logReplay.acquire();
+            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
@@ -103,7 +104,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("qt","/get", "getVersions",""+versions.size()),"/versions==" + versions);
 
       // wait until recovery has finished
-      assertTrue(logReplayFinish.tryAcquire(60, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
 
       assertJQ(req("q","*:*") ,"/response/numFound==2");
 
@@ -123,7 +124,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
       // wait until recovery has finished
-      assertTrue(logReplayFinish.tryAcquire(60, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
       assertJQ(req("q","*:*") ,"/response/numFound==4");
       assertJQ(req("q","id:2") ,"/response/numFound==0");
 
@@ -159,7 +160,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       @Override
       public void run() {
         try {
-          logReplay.acquire();
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -353,7 +354,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
         @Override
         public void run() {
           try {
-            logReplay.acquire();
+            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
@@ -416,7 +417,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
 
       logReplay.release(1000);
-      logReplayFinish.acquire();  // wait until replay has finished
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
 
       assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
 
@@ -429,7 +430,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(1, UpdateLog.getLogList(logDir).length);
 
       //
-      // test that a corrupt tlog file doesn't stop us
+      // test that a corrupt tlog file doesn't stop us from coming up, or seeing versions before that tlog file.
       //
       addDocs(1, start, new LinkedList<Long>()); // don't add this to the versions list because we are going to lose it...
       h.close();
@@ -445,9 +446,67 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("qt", "/get", "getVersions", "" + maxReq), "/versions==" + versions.subList(0, Math.min(maxReq, start)));
       resetExceptionIgnores();
 
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
+  }
 
+  //
+  // test that a partially written last tlog entry (that will cause problems for both reverse reading and for
+  // log replay) doesn't stop us from coming up, and from recovering the documents that were not cut off.
+  //
+  @Test
+  public void testTruncatedLog() throws Exception {
+    try {
+      DirectUpdateHandler2.commitOnClose = false;
+      final Semaphore logReplay = new Semaphore(0);
+      final Semaphore logReplayFinish = new Semaphore(0);
 
+      UpdateLog.testing_logReplayHook = new Runnable() {
+        @Override
+        public void run() {
+          try {
+            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
 
+      UpdateLog.testing_logReplayFinishHook = new Runnable() {
+        @Override
+        public void run() {
+          logReplayFinish.release();
+        }
+      };
+
+      File logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
+
+      clearIndex();
+      assertU(commit());
+
+      assertU(adoc("id","1"));
+      assertU(adoc("id","2"));
+      assertU(adoc("id","3"));
+
+      h.close();
+      String[] files = UpdateLog.getLogList(logDir);
+      Arrays.sort(files);
+      RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
+      raf.seek(raf.length());  // seek to end
+      raf.writeLong(0xffffffffffffffffL);
+      raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
+      raf.close();
+
+      logReplay.release(1000);
+      logReplayFinish.drainPermits();
+      ignoreException("OutOfBoundsException");  // this is what the corrupted log currently produces... subject to change.
+      createCore();
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      resetExceptionIgnores();
+      assertJQ(req("q","*:*") ,"/response/numFound==3");
 
     } finally {
       DirectUpdateHandler2.commitOnClose = true;

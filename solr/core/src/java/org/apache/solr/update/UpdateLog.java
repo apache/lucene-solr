@@ -792,7 +792,7 @@ public class UpdateLog implements PluginInfoInitialized {
     public void run() {
       try {
 
-        uhandler.core.log.warn("Starting log replay " + tlogReader);
+        uhandler.core.log.warn("Starting log replay " + translog + " active="+activeLog + "starting pos=" + recoveryInfo.positionOfStart);
 
         tlogReader = translog.getReader(recoveryInfo.positionOfStart);
 
@@ -819,6 +819,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
           try {
             if (testing_logReplayHook != null) testing_logReplayHook.run();
+            o = null;
             o = tlogReader.next();
             if (o == null && activeLog) {
               if (!finishing) {
@@ -844,6 +845,8 @@ public class UpdateLog implements PluginInfoInitialized {
           } catch (InterruptedException e) {
             SolrException.log(log,e);
           } catch (IOException e) {
+            SolrException.log(log,e);
+          } catch (Throwable e) {
             SolrException.log(log,e);
           }
 
@@ -917,7 +920,7 @@ public class UpdateLog implements PluginInfoInitialized {
             recoveryInfo.errors++;
             log.warn("Unexpected log entry or corrupt log.  Entry=" + o, cl);
             // would be caused by a corrupt transaction log
-          } catch (Exception ex) {
+          } catch (Throwable ex) {
             recoveryInfo.errors++;
             log.warn("Exception replaying log", ex);
             // something wrong with the request?
@@ -952,7 +955,7 @@ public class UpdateLog implements PluginInfoInitialized {
         tlogReader.close();
         translog.decref();
 
-      } catch (Exception e) {
+      } catch (Throwable e) {
         recoveryInfo.errors++;
         SolrException.log(log,e);
       } finally {
