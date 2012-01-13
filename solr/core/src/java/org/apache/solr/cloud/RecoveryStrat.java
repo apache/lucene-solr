@@ -140,11 +140,10 @@ public class RecoveryStrat {
               log.error("Error while trying to recover", t);
             } finally {
               if (!replayed) {
-                // TODO: try and bust out replay - better if we can drop buffer...
                 try {
-                  replay(core);
+                  ulog.dropBufferedUpdates();
                 } catch (Exception e) {
-                  log.warn("", e);
+                  log.error("", e);
                 }
               }
               if (succesfulRecovery) {
