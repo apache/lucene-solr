@@ -422,13 +422,13 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
 
 
 
-* LUCENE-2308: Separate IndexableFieldType from Field instances
+* LUCENE-2308,LUCENE-3453: Separate IndexableFieldType from Field instances
 
 With this change, the indexing details (indexed, tokenized, norms,
 indexOptions, stored, etc.) are moved into a separate FieldType
 instance (rather than being stored directly on the Field).
 
-This means you can create the IndexableFieldType instance once, up front,
+This means you can create the FieldType instance once, up front,
 for a given field, and then re-use that instance whenever you instantiate
 the Field.
 
@@ -439,15 +439,21 @@ Certain field types are pre-defined since they are common cases:
     IDS (does not index term frequency nor positions).  This field
     does not store its value, but exposes TYPE_STORED as well.
 
-  * BinaryField: a byte[] value that's only stored.
-
   * TextField: indexes and tokenizes a String, Reader or TokenStream
     value, without term vectors.  This field does not store its value,
     but exposes TYPE_STORED as well.
 
+  * StoredField: field that stores its value
+
+  * DocValuesField: indexes the value as a DocValues field
+
+  * NumericField: indexes the numeric value so that NumericRangeQuery
+    can be used at search-time.
+
 If your usage fits one of those common cases you can simply
-instantiate the above class.  To use the TYPE_STORED variant, do this
-instead:
+instantiate the above class.  If you need to store the value, you can
+add a separate StoredField to the document, or you can use
+TYPE_STORED for the field:
 
   Field f = new Field("field", "value", StringField.TYPE_STORED);
 
@@ -465,8 +471,13 @@ You can of course also create your own FieldType from scratch:
   t.setStored(true);
   t.setOmitNorms(true);
   t.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+  t.freeze();
 
 FieldType has a freeze() method to prevent further changes.
+
+There is also a deprecated transition API, providing the same Index,
+Store, TermVector enums from 3.x, and Field constructors taking these
+enums.
 
 When migrating from the 3.x API, if you did this before:
 
@@ -528,7 +539,7 @@ If you did this before (bytes is a byte[]):
 
 you can now do this:
 
-  new BinaryField("field", bytes)
+  new StoredField("field", bytes)
 
 * LUCENE-3396: Analyzer.tokenStream() and .reusableTokenStream() have been made final.
   It is now necessary to use Analyzer.TokenStreamComponents to define an analysis process.
