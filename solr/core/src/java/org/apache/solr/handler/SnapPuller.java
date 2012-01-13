@@ -362,7 +362,6 @@ public class SnapPuller {
       }
     } finally {
       if (!successfulInstall) {
-        System.out.println("replication failed handler:" + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
         logReplicationTimeAndConfFiles(null, successfulInstall);
       }
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
