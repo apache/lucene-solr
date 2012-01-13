@@ -109,10 +109,11 @@ public class RecoveryStrat {
           int retries = 0;
           while (!succesfulRecovery && !close) {
             ulog.bufferUpdates();  
-            zkController.publishAsRecoverying(baseUrl, cloudDesc, shardZkNodeName,
-                core.getName());
             replayed = false;
             try {
+              zkController.publishAsRecoverying(baseUrl, cloudDesc, shardZkNodeName,
+                  core.getName());
+              
               ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
                   cloudDesc.getCollectionName(), cloudDesc.getShardId());
               // nocommit
