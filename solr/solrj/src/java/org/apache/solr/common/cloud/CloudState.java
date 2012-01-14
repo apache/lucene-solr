@@ -37,14 +37,17 @@ public class CloudState implements JSONWriter.Writable {
 	private final Map<String, Map<String,Slice>> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
 	private final Set<String> liveNodes;
   
-  private HashPartitioner hp = new HashPartitioner();
+  private final HashPartitioner hp = new HashPartitioner();
   
   private final Map<String,RangeInfo> rangeInfos = new HashMap<String,RangeInfo>();
+  public Map<String,Map<String,ZkNodeProps>> leaders = new HashMap<String,Map<String,ZkNodeProps>>();
 
 
 	public CloudState() {
 		this.liveNodes = new HashSet<String>();
 		this.collectionStates = new HashMap<String,Map<String,Slice>>(0);
+		addRangeInfos(collectionStates.keySet());
+		getShardLeaders();
 	}
 
 	public CloudState(Set<String> liveNodes,
@@ -53,9 +56,48 @@ public class CloudState implements JSONWriter.Writable {
 		this.liveNodes.addAll(liveNodes);
 		this.collectionStates = new HashMap<String, Map<String,Slice>>(collectionStates.size());
 		this.collectionStates.putAll(collectionStates);
+		addRangeInfos(collectionStates.keySet());
+		getShardLeaders();
 	}
 
-	public Slice getSlice(String collection, String slice) {
+	private void getShardLeaders() {
+    Set<Entry<String,Map<String,Slice>>> collections = collectionStates.entrySet();
+    for (Entry<String,Map<String,Slice>> collection : collections) {
+      Map<String,Slice> state = collection.getValue();
+      Set<Entry<String,Slice>> slices = state.entrySet();
+      for (Entry<String,Slice> sliceEntry : slices) {
+        Slice slice = sliceEntry.getValue();
+        Map<String,ZkNodeProps> shards = slice.getShards();
+        Set<Entry<String,ZkNodeProps>> shardsEntries = shards.entrySet();
+        for (Entry<String,ZkNodeProps> shardEntry : shardsEntries) {
+          ZkNodeProps props = shardEntry.getValue();
+          if (props.containsKey(ZkStateReader.LEADER_PROP)) {
+            Map<String,ZkNodeProps> leadersForCollection = leaders.get(collection.getKey());
+            if (leadersForCollection == null) {
+              leadersForCollection = new HashMap<String,ZkNodeProps>();
+        
+              leaders.put(collection.getKey(), leadersForCollection);
+            }
+            leadersForCollection.put(sliceEntry.getKey(), props);
+          }
+        }
+      }
+    }
+  }
+	
+	public ZkNodeProps getLeader(String collection, String shard) {
+	  Map<String,ZkNodeProps> collectionLeaders = leaders.get(collection);
+	  if (collectionLeaders == null) return null;
+	  return collectionLeaders.get(shard);
+	}
+
+  private void addRangeInfos(Set<String> collections) {
+    for (String collection : collections) {
+      addRangeInfo(collection);
+    }
+  }
+
+  public Slice getSlice(String collection, String slice) {
 		if (collectionStates.containsKey(collection)
 				&& collectionStates.get(collection).containsKey(slice))
 			return collectionStates.get(collection).get(slice);
@@ -98,37 +140,36 @@ public class CloudState implements JSONWriter.Writable {
 	}
 	
 	public RangeInfo getRanges(String collection) {
-	  List<Range> ranges;
-    RangeInfo rangeInfo;
     // TODO: store this in zk
-    // we could double check lock?
-	  synchronized (rangeInfos) {
-      rangeInfo = rangeInfos.get(collection);
-      if (rangeInfo == null) {
-        rangeInfo = new RangeInfo();
-
-        Map<String,Slice> slices = getSlices(collection);
-        
-        if (slices == null) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find collection "
-              + collection + " in " + this);
-        }
-        
-        Set<String> shards = slices.keySet();
-        ArrayList<String> shardList = new ArrayList<String>(shards.size());
-        shardList.addAll(shards);
-        Collections.sort(shardList);
-        
-        ranges = hp.partitionRange(shards.size());
-        
-        rangeInfo.ranges = ranges;
-        rangeInfo.shardList = shardList;
-        rangeInfos.put(collection, rangeInfo);
-      }
-    }
+    RangeInfo rangeInfo = rangeInfos.get(collection);
 
 	  return rangeInfo;
 	}
+
+  private RangeInfo addRangeInfo(String collection) {
+    List<Range> ranges;
+    RangeInfo rangeInfo;
+    rangeInfo = new RangeInfo();
+
+    Map<String,Slice> slices = getSlices(collection);
+    
+    if (slices == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find collection "
+          + collection + " in " + this);
+    }
+    
+    Set<String> shards = slices.keySet();
+    ArrayList<String> shardList = new ArrayList<String>(shards.size());
+    shardList.addAll(shards);
+    Collections.sort(shardList);
+    
+    ranges = hp.partitionRange(shards.size());
+    
+    rangeInfo.ranges = ranges;
+    rangeInfo.shardList = shardList;
+    rangeInfos.put(collection, rangeInfo);
+    return rangeInfo;
+  }
 	
   public String getShard(int hash, String collection) {
     RangeInfo rangInfo = getRanges(collection);

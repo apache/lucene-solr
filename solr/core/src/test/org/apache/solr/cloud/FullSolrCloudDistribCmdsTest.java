@@ -19,8 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.SolrQuery;
@@ -46,7 +44,7 @@ import org.junit.BeforeClass;
 /**
  * Super basic testing, no shard restarting or anything.
  */
-public class BasicSolrCloudTest extends FullSolrCloudTest {
+public class FullSolrCloudDistribCmdsTest extends FullSolrCloudTest {
   
   
   @BeforeClass
@@ -54,7 +52,7 @@ public class BasicSolrCloudTest extends FullSolrCloudTest {
     
   }
   
-  public BasicSolrCloudTest() {
+  public FullSolrCloudDistribCmdsTest() {
     super();
     shardCount = 4;
     sliceCount = 2;

@@ -391,16 +391,10 @@ public class ZkStateReader {
     long timeoutAt = System.currentTimeMillis() + timeout;
     while (System.currentTimeMillis() < timeoutAt) {
       if (cloudState != null) {
-        final CloudState currentState = cloudState;
-        final Slice slice = currentState.getSlice(collection, shard);
-        if (slice != null) {
-          // TODO: we probably should also catch this while building the cloud state and offer a getLeader off each
-          // slice so that we do not have to search...
-          for (ZkNodeProps nodeProps : slice.getShards().values()) {
-            if (nodeProps.containsKey(ZkStateReader.LEADER_PROP)) {
-              return nodeProps;
-            }
-          }
+        final CloudState currentState = cloudState;      
+        final ZkNodeProps nodeProps = currentState.getLeader(collection, shard);
+        if (nodeProps != null) {
+          return nodeProps;
         }
       }
       Thread.sleep(50);

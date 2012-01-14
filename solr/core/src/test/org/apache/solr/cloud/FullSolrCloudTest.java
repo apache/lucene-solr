@@ -1018,10 +1018,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   class StopableIndexingThread extends Thread {
     private volatile boolean stop = false;
-    private final int startI;
-    private final List<Integer> deletes = new ArrayList<Integer>();
-    private final AtomicInteger fails = new AtomicInteger();
-    private boolean doDeletes;  
+    protected final int startI;
+    protected final List<Integer> deletes = new ArrayList<Integer>();
+    protected final AtomicInteger fails = new AtomicInteger();
+    protected boolean doDeletes;  
     
     public StopableIndexingThread(int startI, boolean doDeletes) {
       this.startI = startI;

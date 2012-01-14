@@ -322,6 +322,9 @@ public class ChaosMonkey {
   // active shard up for a slice or if there is one active and others recovering
   public void startTheMonkey(boolean killLeaders) {
     this.killLeaders = killLeaders;
+    
+    // TODO: when kill leaders is on, lets kill a higher percentage of leaders
+    
     stop = false;
     new Thread() {
       private List<JettySolrRunner> deadPool = new ArrayList<JettySolrRunner>();

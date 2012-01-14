@@ -18,12 +18,15 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.StreamingUpdateSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -73,8 +76,8 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
-    shardCount = atLeast(6);
-    sliceCount = atLeast(2);
+    shardCount = atLeast(9);
+    sliceCount = atLeast(3);
   }
   
   @Override
@@ -89,16 +92,22 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     //del("*:*");
     
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
-    int threadCount = atLeast(2);
-    for (int i = 0; i < threadCount; i++) {
+    int threadCount = atLeast(1);
+    int i = 0;
+    for (i = 0; i < threadCount; i++) {
       StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
       threads.add(indexThread);
       indexThread.start();
     }
     
+    FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
+        ((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), i * 50000, true);
+    threads.add(ftIndexThread);
+    ftIndexThread.start();
+    
     chaosMonkey.startTheMonkey(true);
     
-    Thread.sleep(atLeast(8000));
+    Thread.sleep(atLeast(15000));
     
     chaosMonkey.stopTheMonkey();
     
@@ -122,7 +131,11 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     // wait until there are no recoveries...
     waitForThingsToLevelOut();
 
-    checkShardConsistency(false, false);
+    checkShardConsistency(false, true);
+    
+    // ensure we have added more than 0 docs
+    long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    assertTrue(cloudClientDocs > 0);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
   }
@@ -155,10 +168,78 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   
   // skip the randoms - they can deadlock...
   protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    addFields(doc, "rnd_b", true);
+    SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);
   }
 
+  private SolrInputDocument getDoc(Object... fields) {
+    SolrInputDocument doc = new SolrInputDocument();
+    addFields(doc, fields);
+    addFields(doc, "rnd_b", true);
+    return doc;
+  }
+
+  class FullThrottleStopableIndexingThread extends StopableIndexingThread {
+    private volatile boolean stop = false;
+
+    private StreamingUpdateSolrServer suss;  
+    
+    public FullThrottleStopableIndexingThread(String serverUrl, int startI, boolean doDeletes) throws MalformedURLException {
+      super(startI, doDeletes);
+      setDaemon(true);
+      suss = new StreamingUpdateSolrServer(serverUrl, 10, 3);
+    }
+    
+    @Override
+    public void run() {
+      int i = startI;
+      int numDeletes = 0;
+      int numAdds = 0;
+
+      while (true && !stop) {
+        ++i;
+        
+        if (doDeletes && random.nextBoolean() && deletes.size() > 0) {
+          Integer delete = deletes.remove(0);
+          try {
+            numDeletes++;
+            suss.deleteById(Integer.toString(delete));
+          } catch (Exception e) {
+            System.err.println("REQUEST FAILED:");
+            e.printStackTrace();
+            fails.incrementAndGet();
+          }
+        }
+        
+        try {
+          numAdds++;
+          SolrInputDocument doc = getDoc(id, i, i1, 50, tlong, 50, t1,
+              "to come to the aid of their country.");
+          suss.add(doc);
+        } catch (Exception e) {
+          System.err.println("REQUEST FAILED:");
+          e.printStackTrace();
+          fails.incrementAndGet();
+        }
+        
+        if (doDeletes && random.nextBoolean()) {
+          deletes.add(i);
+        }
+        
+      }
+      
+      System.err.println("added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
+    }
+    
+    public void safeStop() {
+      stop = true;
+      suss.blockUntilFinished();
+    }
+
+    public int getFails() {
+      return fails.get();
+    }
+    
+  };
+  
 }
