@@ -96,37 +96,48 @@ Changes in backwards compatibility policy
 
 New Features
 
-* LUCENE-3596: DirectoryTaxonomyWriter extensions can override createIndexWriterConfig() 
-  and modify how its internal index writer is opened. (Doron Cohen)
+ * LUCENE-3596: DirectoryTaxonomyWriter extensions can override createIndexWriterConfig()
+   and modify how its internal index writer is opened. (Doron Cohen)
 
-* SOLR-2982: Added phonetic encoders to contrib/analyzers/phonetic:
-  Metaphone, Soundex, Caverphone, Beider-Morse, etc.  (Robert Muir)
+ * SOLR-2982: Added phonetic encoders to contrib/analyzers/phonetic:
+   Metaphone, Soundex, Caverphone, Beider-Morse, etc.  (Robert Muir)
 
-* LUCENE-2906: Added CJKBigramFilter that forms bigrams from StandardTokenizer or
-  ICUTokenizer CJK tokens, and CJKWidthFilter that normalizes halfwidth/fullwidth. 
-  This filter supports unicode supplementary characters and you can toggle whether 
-  bigrams are formed for each of Han/Hiragana/Katakana/Hangul independently. Deprecates
-  CJKTokenizer.  (Tom Burton-West, Robert Muir)
+ * LUCENE-2906: Added CJKBigramFilter that forms bigrams from StandardTokenizer or
+   ICUTokenizer CJK tokens, and CJKWidthFilter that normalizes halfwidth/fullwidth.
+   This filter supports unicode supplementary characters and you can toggle whether
+   bigrams are formed for each of Han/Hiragana/Katakana/Hangul independently. Deprecates
+   CJKTokenizer.  (Tom Burton-West, Robert Muir)
 
-* LUCENE-3634: IndexReader's static main method was moved to a new
-  tool, CompoundFileExtractor, in contrib/misc.  (Mike McCandless)
+ * LUCENE-3634: IndexReader's static main method was moved to a new
+   tool, CompoundFileExtractor, in contrib/misc.  (Mike McCandless)
 
-* LUCENE-3685: Add ToChildBlockJoinQuery and renamed previous
-  BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
-  joins in both parent to child and child to parent directions.
-  (Mike McCandless)
-  
+ * SOLR-3020: Add KeywordAttribute support to HunspellStemFilter. Terms marked as
+   keywords are not modified by the stemmer. (Simon Willnauer, Helge Jenssen)
+
+ * LUCENE-3305: Added Kuromoji morphological analyzer for Japanese.
+   (Christian Moen, Masaru Hasegawa, Simon Willnauer, Uwe Schindler, Mike McCandless, Robert Muir)
+
+ * LUCENE-3685: Add ToChildBlockJoinQuery and renamed previous
+   BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
+   joins in both parent to child and child to parent directions.
+   (Mike McCandless)
+
 API Changes
 
-* LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 
-  openIndexWriter parameter rather than just an open-mode. (Doron Cohen) 
-  
-* LUCENE-3606: FieldNormModifier was deprecated, because IndexReader's
-  setNorm() was deprecated. Furthermore, this class is broken, as it does
-  not take position overlaps into account while recalculating norms.
-  (Uwe Schindler, Robert Muir)
+ * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an
+   openIndexWriter parameter rather than just an open-mode. (Doron Cohen)
 
-Changes in runtime behavior:
+ * LUCENE-3606: FieldNormModifier was deprecated, because IndexReader's
+   setNorm() was deprecated. Furthermore, this class is broken, as it does
+   not take position overlaps into account while recalculating norms.
+   (Uwe Schindler, Robert Muir)
+
+ * LUCENE-3305: Added SegmentingTokenizerBase, which breaks text into sentences
+   with BreakIterator and allows subclasses to decompose sentences into words, or
+   use the sentence boundary information for other reasons (e.g. attribute/position increment)
+   (Robert Muir)
+
+Changes in runtime behavior
 
  * LUCENE-3626: PKIndexSplitter and MultiPassIndexSplitter now work
    per segment.  (Uwe Schindler)
@@ -149,10 +160,13 @@ Bug Fixes
    This way if the synonym token is used for highlighting, it will
    cover all tokens it had matched.  (Koji Sekiguchi, Robert Muir,
    Mike McCandless)
- 
+
+ * LUCENE-3686: CategoryEnhancement must override Object.equals(Object).
+   (Sivan Yogev via Shai Erera)
+
 Documentation
 
- * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly 
+ * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly
    stating the expected order of the arguments (David Smiley via hossman)
 
 ======================= Lucene 3.5.0 ================
