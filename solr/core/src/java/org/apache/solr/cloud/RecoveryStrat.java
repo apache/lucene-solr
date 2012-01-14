@@ -245,7 +245,6 @@ public class RecoveryStrat {
       
       CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderBaseUrl);
       PrepRecovery prepCmd = new PrepRecovery();
-      prepCmd.setAction(CoreAdminAction.PREPRECOVERY);
       prepCmd.setCoreName(leaderCoreName);
       prepCmd.setNodeName(nodeName);
       prepCmd.setCoreNodeName(shardZkNodeName);
