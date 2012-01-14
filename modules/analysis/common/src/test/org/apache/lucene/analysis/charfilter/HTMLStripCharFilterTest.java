@@ -33,8 +33,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.junit.Ignore;
 
-// nocommit
-@Ignore
 public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   //this is some text  here is a  link  and another  link . This is an entity: & plus a <.  Here is an &
