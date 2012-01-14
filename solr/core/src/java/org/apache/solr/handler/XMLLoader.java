@@ -116,8 +116,7 @@ class XMLLoader extends ContentStreamLoader {
 
             // First look for commitWithin parameter on the request, will be overwritten for individual <add>'s
             addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
-            
-            boolean overwrite = true;  // the default
+            boolean overwrite = params.getBool(UpdateParams.OVERWRITE, true);  // the default
 
             Boolean overwritePending = null;
             Boolean overwriteCommitted = null;

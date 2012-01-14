@@ -87,7 +87,7 @@ public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase
   }
 
   @Test
-  public void testCommitWithin() throws Exception
+  public void testRequestParams() throws Exception
   {
     String xml = 
       "<add>" +
@@ -97,7 +97,7 @@ public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase
       "  </doc>" +
       "</add>";
 
-    SolrQueryRequest req = req("commitWithin","100");
+    SolrQueryRequest req = req("commitWithin","100","overwrite","false");
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
 
@@ -105,8 +105,8 @@ public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase
     loader.load(req, rsp, new ContentStreamBase.StringStream(xml));
 
     AddUpdateCommand add = p.addCommands.get(0);
-    assertEquals(add.commitWithin, 100);
-
+    assertEquals(100, add.commitWithin);
+    assertEquals(true, add.allowDups);
     req.close();
   }
 
