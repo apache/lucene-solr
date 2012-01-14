@@ -77,7 +77,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.close();
 
     zkClient = new SolrZkClient(zkAddress, AbstractZkTestCase.TIMEOUT);
-    final ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor();
 
     Map<String,String> props = new HashMap<String,String>();
     props.put("configName", "conf1");
