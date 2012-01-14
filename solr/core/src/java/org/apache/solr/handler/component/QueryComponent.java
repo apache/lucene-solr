@@ -31,6 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
@@ -246,11 +247,36 @@ public class QueryComponent extends SearchComponent
 
         cloudState =  zkController.getCloudState();
 
-        // TODO: check "collection" for which collection(s) to search.. but for now, just default
-        // to the collection for this core.
         // This can be more efficient... we only record the name, even though we have the
         // shard info we need in the next step of mapping slice->shards
-        slices = cloudState.getSlices(cloudDescriptor.getCollectionName());
+        
+        // Stores the comma-separated list of specified collections.
+        // Eg: "collection1,collection2,collection3"
+        String collections = params.get("collection");
+        if (collections != null) {
+          // If there were one or more collections specified in the query, split
+          // each parameter and store as a seperate member of a List.
+          List<String> collectionList = StrUtils.splitSmart(collections, ",",
+              true);
+          
+          // First create an empty HashMap to add the slice info to.
+          slices = new HashMap<String,Slice>();
+          
+          // In turn, retrieve the slices that cover each collection from the
+          // cloud state and add them to the Map 'slices'.
+          for (int i = 0; i < collectionList.size(); i++) {
+            String collection = collectionList.get(i);
+            ClientUtils.appendMap(collection, slices, cloudState.getSlices(collection));
+          }
+        } else {
+          // If no collections were specified, default to the collection for
+          // this core.
+          slices = cloudState.getSlices(cloudDescriptor.getCollectionName());
+        }
+        
+        // Store the logical slices in the ResponseBuilder and create a new
+        // String array to hold the physical shards (which will be mapped
+        // later).
         rb.slices = slices.keySet().toArray(new String[slices.size()]);
         rb.shards = new String[rb.slices.length];
 

@@ -707,7 +707,7 @@ public final class ZkController {
 
             // if the config name wasn't passed in, use the default
             if (!collectionProps.containsKey(CONFIGNAME_PROP))
-              collectionProps.put(CONFIGNAME_PROP,  defaultConfigName);
+              getConfName(collection, collectionPath, collectionProps);
             
           } else if(System.getProperty("bootstrap_confdir") != null) {
             // if we are bootstrapping a collection, default the config for
@@ -726,33 +726,7 @@ public final class ZkController {
               collectionProps.put(CONFIGNAME_PROP,  defaultConfigName);
 
           } else {
-            // check for configName
-            log.info("Looking for collection configName");
-            int retry = 1;
-            for (; retry < 6; retry++) {
-              if (zkClient.exists(collectionPath, true)) {
-                ZkNodeProps cProps = ZkNodeProps.load(zkClient.getData(collectionPath, null, null, true));
-                if (cProps.containsKey(CONFIGNAME_PROP)) {
-                  break;
-                }
-              }
-              // if there is only one conf, use that
-              List<String> configNames = zkClient.getChildren(CONFIGS_ZKNODE, null, true);
-              if (configNames.size() == 1) {
-                // no config set named, but there is only 1 - use it
-                log.info("Only one config set found in zk - using it:" + configNames.get(0));
-                collectionProps.put(CONFIGNAME_PROP,  configNames.get(0));
-                break;
-              }
-              log.info("Could not find collection configName - pausing for 2 seconds and trying again - try: " + retry);
-              Thread.sleep(2000);
-            }
-            if (retry == 6) {
-              log.error("Could not find configName for collection " + collection);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR,
-                  "Could not find configName for collection " + collection);
-            }
+            getConfName(collection, collectionPath, collectionProps);
           }
           
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
@@ -777,6 +751,39 @@ public final class ZkController {
       }
     }
     
+  }
+
+
+  private void getConfName(String collection, String collectionPath,
+      Map<String,String> collectionProps) throws KeeperException,
+      InterruptedException {
+    // check for configName
+    log.info("Looking for collection configName");
+    int retry = 1;
+    for (; retry < 6; retry++) {
+      if (zkClient.exists(collectionPath, true)) {
+        ZkNodeProps cProps = ZkNodeProps.load(zkClient.getData(collectionPath, null, null, true));
+        if (cProps.containsKey(CONFIGNAME_PROP)) {
+          break;
+        }
+      }
+      // if there is only one conf, use that
+      List<String> configNames = zkClient.getChildren(CONFIGS_ZKNODE, null, true);
+      if (configNames.size() == 1) {
+        // no config set named, but there is only 1 - use it
+        log.info("Only one config set found in zk - using it:" + configNames.get(0));
+        collectionProps.put(CONFIGNAME_PROP,  configNames.get(0));
+        break;
+      }
+      log.info("Could not find collection configName - pausing for 2 seconds and trying again - try: " + retry);
+      Thread.sleep(2000);
+    }
+    if (retry == 6) {
+      log.error("Could not find configName for collection " + collection);
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not find configName for collection " + collection);
+    }
   }
   
   public ZkStateReader getZkStateReader() {

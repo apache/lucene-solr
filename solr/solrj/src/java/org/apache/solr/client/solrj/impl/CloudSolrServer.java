@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
@@ -41,6 +42,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.KeeperException;
 
 public class CloudSolrServer extends SolrServer {
@@ -118,7 +120,6 @@ public class CloudSolrServer extends SolrServer {
     }
   }
 
-
   @Override
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException {
     connect();
@@ -132,15 +133,18 @@ public class CloudSolrServer extends SolrServer {
       reqParams = new ModifiableSolrParams();
     }
     String collection = reqParams.get("collection", defaultCollection);
-
-    // TODO: allow multiple collections to be specified via comma separated list
-
-    Map<String,Slice> slices = cloudState.getSlices(collection);
     
-    if (slices == null) {
-      throw new RuntimeException("Could not find collection in zk: " + cloudState);
+    // Extract each comma separated collection name and store in a List.
+    List<String> collectionList = StrUtils.splitSmart(collection, ",", true);
+    
+    // Retrieve slices from the cloud state and, for each collection specified,
+    // add it to the Map of slices.
+    Map<String,Slice> slices = new HashMap<String,Slice>();
+    for (int i = 0; i < collectionList.size(); i++) {
+      String coll= collectionList.get(i);
+      ClientUtils.appendMap(coll, slices, cloudState.getSlices(coll));
     }
-    
+
     Set<String> liveNodes = cloudState.getLiveNodes();
 
     // IDEA: have versions on various things... like a global cloudState version
