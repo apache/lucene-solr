@@ -503,8 +503,8 @@ public class UpdateLog implements PluginInfoInitialized {
     }
 
     try {
-      if (tlog != null) {
-        tlog.finish(syncLevel);
+      if (currLog != null) {
+        currLog.finish(syncLevel);
       }
     } finally {
       currLog.decref();
