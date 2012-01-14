@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.kuromoji.KuromojiBaseFormFilter;
  */
 public class KuromojiBaseFormFilterFactory extends BaseTokenFilterFactory {
 
-  @Override
+  //@Override
   public TokenStream create(TokenStream input) {
     return new KuromojiBaseFormFilter(input);
   }

@@ -60,7 +60,7 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements Re
 
   private Segmenter segmenter;
   
-  @Override
+  //@Override
   public void inform(ResourceLoader loader) {
     Mode mode = args.get(MODE) != null ? Mode.valueOf(args.get(MODE).toUpperCase(Locale.ENGLISH)) : Mode.NORMAL;
     String userDictionaryPath = args.get(USER_DICT_PATH);
@@ -85,7 +85,7 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements Re
     }
   }
   
-  @Override
+  //@Override
   public Tokenizer create(Reader input) {
     return new KuromojiTokenizer(segmenter, input);
   }
