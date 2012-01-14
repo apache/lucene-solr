@@ -560,7 +560,7 @@ public class CoreContainer
       try {
         String collection = dcore.getCloudDescriptor().getCollectionName();
         zkController.createCollectionZkNode(dcore.getCloudDescriptor());
-        // zkController.createCollectionZkNode(collection);
+
         zkConfigName = zkController.readConfigName(collection);
         if (zkConfigName == null) {
           log.error("Could not find config name for collection:" + collection);
