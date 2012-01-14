@@ -34,6 +34,11 @@ New Features
 * LUCENE-3305: Added Kuromoji morphological analyzer for Japanese.
   (Christian Moen, Masaru Hasegawa, Simon Willnauer, Uwe Schindler, Mike McCandless, Robert Muir)
 
+* LUCENE-3685: Add ToChildBlockJoinQuery and renamed previous
+  BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
+  joins in both parent to child and child to parent directions.
+  (Mike McCandless)
+  
 API Changes
 
 * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 
@@ -138,11 +143,6 @@ New Features
    (next page, drill down, etc.) use the same searcher as before (Mike
    McCandless)
 
-* LUCENE-3685: Add ToChildBlockJoinQuery and renamed previous
-  BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
-  joins in both parent to child and child to parent directions.
-  (Mike McCandless)
-  
 API Changes
 
  * LUCENE-3431: Deprecated QueryAutoStopWordAnalyzer.addStopWords* since they
