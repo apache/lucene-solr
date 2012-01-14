@@ -17,12 +17,18 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.fst.Builder.UnCompiledNode;
 
 // TODO: if FST is pure prefix trie we can do a more compact
@@ -338,6 +344,24 @@ public class FST<T> {
     out.writeVInt(arcWithOutputCount);
     out.writeVInt(bytes.length);
     out.writeBytes(bytes, 0, bytes.length);
+  }
+  
+  /**
+   * Writes an automaton to a file. 
+   */
+  public void save(final File file) throws IOException {
+    boolean success = false;
+    OutputStream os = new BufferedOutputStream(new FileOutputStream(file));
+    try {
+      save(new OutputStreamDataOutput(os));
+      success = true;
+    } finally { 
+      if (success) { 
+        IOUtils.close(os);
+      } else {
+        IOUtils.closeWhileHandlingException(os); 
+      }
+    }
   }
 
   private void writeLabel(int v) throws IOException {

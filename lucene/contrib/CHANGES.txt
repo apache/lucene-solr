@@ -31,6 +31,9 @@ New Features
 * SOLR-3020: Add KeywordAttribute support to HunspellStemFilter. Terms marked as
   keywords are not modified by the stemmer. (Simon Willnauer, Helge Jenssen) 
 
+* LUCENE-3305: Added Kuromoji morphological analyzer for Japanese.
+  (Christian Moen, Masaru Hasegawa, Simon Willnauer, Uwe Schindler, Mike McCandless, Robert Muir)
+
 API Changes
 
 * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 
@@ -40,6 +43,11 @@ API Changes
   setNorm() was deprecated. Furthermore, this class is broken, as it does
   not take position overlaps into account while recalculating norms.
   (Uwe Schindler, Robert Muir)
+
+* LUCENE-3305: Added SegmentingTokenizerBase, which breaks text into sentences
+  with BreakIterator and allows subclasses to decompose sentences into words, or
+  use the sentence boundary information for other reasons (e.g. attribute/position increment)
+  (Robert Muir)
 
 Changes in runtime behavior
 

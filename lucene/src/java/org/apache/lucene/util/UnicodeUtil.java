@@ -745,4 +745,28 @@ public final class UnicodeUtil {
   public static void UTF8toUTF16(BytesRef bytesRef, CharsRef chars) {
     UTF8toUTF16(bytesRef.bytes, bytesRef.offset, bytesRef.length, chars);
   }
+  
+  public static boolean validUTF16String(CharSequence s) {
+    final int size = s.length();
+    for(int i=0;i<size;i++) {
+      char ch = s.charAt(i);
+      if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+        if (i < size-1) {
+          i++;
+          char nextCH = s.charAt(i);
+          if (nextCH >= UNI_SUR_LOW_START && nextCH <= UNI_SUR_LOW_END) {
+            // Valid surrogate pair
+          } else
+            // Unmatched high surrogate
+            return false;
+        } else
+          // Unmatched high surrogate
+          return false;
+      } else if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END)
+        // Unmatched low surrogate
+        return false;
+    }
+
+    return true;
+  }
 }

@@ -251,6 +251,7 @@
           <!-- Also remember to keep site.xml in sync.            -->
 
           <packageset dir="contrib/analyzers/common/src/java"/>
+          <packageset dir="contrib/analyzers/kuromoji/src/java"/>
           <packageset dir="contrib/analyzers/phonetic/src/java"/>
           <packageset dir="contrib/analyzers/smartcn/src/java"/>
           <packageset dir="contrib/analyzers/stempel/src/java"/>

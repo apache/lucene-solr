@@ -34,6 +34,7 @@
       <entry name="?*.xml" />
       <entry name="?*.xsl" />
       <entry name="?*.utf8" />
+      <entry name="?*.utf-8" />
       <entry name="?*.vm" />
       <entry name="?*.zip" />
       <entry name="README*" />

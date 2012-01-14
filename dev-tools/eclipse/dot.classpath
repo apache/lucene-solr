@@ -6,6 +6,9 @@
 	<classpathentry kind="src" path="lucene/contrib/analyzers/common/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/common/src/resources"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/common/src/test"/>
+        <classpathentry kind="src" path="lucene/contrib/analyzers/kuromoji/src/java"/>
+        <classpathentry kind="src" path="lucene/contrib/analyzers/kuromoji/src/resources"/>
+        <classpathentry kind="src" path="lucene/contrib/analyzers/kuromoji/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/phonetic/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/phonetic/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/java"/>
