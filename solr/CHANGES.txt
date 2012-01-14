@@ -427,6 +427,10 @@ New Features
   
 * SOLR-2906: Added LFU cache options to Solr. (Shawn Heisey via Erick Erickson)
 
+* SOLR-3036: Ability to specify overwrite=false on the URL for XML updates.
+  (Sami Siren via yonik)
+
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
@@ -435,6 +439,7 @@ Optimizations
 
 * SOLR-3012: Move System.getProperty("type") in postData() to main() and add type argument so that
   the client applications of SimplePostTool can set content type via method argument. (koji)
+
 
 Bug Fixes
 ----------------------

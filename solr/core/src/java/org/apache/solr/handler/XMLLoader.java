@@ -112,6 +112,7 @@ class XMLLoader extends ContentStreamLoader {
 
             // First look for commitWithin parameter on the request, will be overwritten for individual <add>'s
             addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+            addCmd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
             
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
