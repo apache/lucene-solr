@@ -56,12 +56,15 @@ import org.apache.lucene.util.FixedBitSet;
  * You can then use this Query as a clause with
  * other queries in the parent document space.</p>
  *
+ * <p>See {@link ToChildBlockJoinQuery} if you need to join
+ * in the reverse order.
+ *
  * <p>The child documents must be orthogonal to the parent
  * documents: the wrapped child query must never
  * return a parent document.</p>
  *
  * If you'd like to retrieve {@link TopGroups} for the
- * resulting query, use the {@link BlockJoinCollector}.
+ * resulting query, use the {@link ToParentBlockJoinCollector}.
  * Note that this is not necessary, ie, if you simply want
  * to collect the parent documents and don't need to see
  * which child documents matched under that parent, then
@@ -71,7 +74,7 @@ import org.apache.lucene.util.FixedBitSet;
  * matches, for example you OR a parent-only query with a
  * joined child-only query, then the resulting collected documents
  * will be correct, however the {@link TopGroups} you get
- * from {@link BlockJoinCollector} will not contain every
+ * from {@link ToParentBlockJoinCollector} will not contain every
  * child for parents that had matched.
  *
  * <p>See {@link org.apache.lucene.search.join} for an
@@ -80,9 +83,22 @@ import org.apache.lucene.util.FixedBitSet;
  * @lucene.experimental
  */
 
-public class BlockJoinQuery extends Query {
+public class ToParentBlockJoinQuery extends Query {
 
-  public static enum ScoreMode {None, Avg, Max, Total};
+  /** How to aggregate multiple child hit scores into a
+   *  single parent score. */
+  public static enum ScoreMode {
+    /** Do no scoring. */
+    None,
+    /** Parent hit's score is the average of all child
+        scores. */
+    Avg,
+    /** Parent hit's score is the max of all child
+        scores. */
+    Max,
+    /** Parent hit's score is the sum of all child
+        scores. */
+    Total};
 
   private final Filter parentsFilter;
   private final Query childQuery;
@@ -95,7 +111,15 @@ public class BlockJoinQuery extends Query {
   private final Query origChildQuery;
   private final ScoreMode scoreMode;
 
-  public BlockJoinQuery(Query childQuery, Filter parentsFilter, ScoreMode scoreMode) {
+  /** Create a ToParentBlockJoinQuery.
+   * 
+   * @param childQuery Query matching child documents.
+   * @param parentsFilter Filter (must produce FixedBitSet
+   * per-seegment) identifying the parent documents.
+   * @param scoreMode How to aggregate multiple child scores
+   * into a single parent score.
+   **/
+  public ToParentBlockJoinQuery(Query childQuery, Filter parentsFilter, ScoreMode scoreMode) {
     super();
     this.origChildQuery = childQuery;
     this.childQuery = childQuery;
@@ -103,7 +127,7 @@ public class BlockJoinQuery extends Query {
     this.scoreMode = scoreMode;
   }
 
-  private BlockJoinQuery(Query origChildQuery, Query childQuery, Filter parentsFilter, ScoreMode scoreMode) {
+  private ToParentBlockJoinQuery(Query origChildQuery, Query childQuery, Filter parentsFilter, ScoreMode scoreMode) {
     super();
     this.origChildQuery = origChildQuery;
     this.childQuery = childQuery;
@@ -267,9 +291,9 @@ public class BlockJoinQuery extends Query {
         //System.out.println("  c=" + nextChildDoc);
         if (pendingChildDocs.length == childDocUpto) {
           pendingChildDocs = ArrayUtil.grow(pendingChildDocs);
-          if (scoreMode != ScoreMode.None) {
-            pendingChildScores = ArrayUtil.grow(pendingChildScores);
-          }
+        }
+        if (scoreMode != ScoreMode.None && pendingChildScores.length == childDocUpto) {
+          pendingChildScores = ArrayUtil.grow(pendingChildScores);
         }
         pendingChildDocs[childDocUpto] = nextChildDoc;
         if (scoreMode != ScoreMode.None) {
@@ -362,7 +386,7 @@ public class BlockJoinQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     final Query childRewrite = childQuery.rewrite(reader);
     if (childRewrite != childQuery) {
-      Query rewritten = new BlockJoinQuery(childQuery,
+      Query rewritten = new ToParentBlockJoinQuery(childQuery,
                                 childRewrite,
                                 parentsFilter,
                                 scoreMode);
@@ -375,13 +399,13 @@ public class BlockJoinQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return "BlockJoinQuery ("+childQuery.toString()+")";
+    return "ToParentBlockJoinQuery ("+childQuery.toString()+")";
   }
 
   @Override
   public boolean equals(Object _other) {
-    if (_other instanceof BlockJoinQuery) {
-      final BlockJoinQuery other = (BlockJoinQuery) _other;
+    if (_other instanceof ToParentBlockJoinQuery) {
+      final ToParentBlockJoinQuery other = (ToParentBlockJoinQuery) _other;
       return origChildQuery.equals(other.origChildQuery) &&
         parentsFilter.equals(other.parentsFilter) &&
         scoreMode == other.scoreMode;
@@ -402,7 +426,7 @@ public class BlockJoinQuery extends Query {
 
   @Override
   public Object clone() {
-    return new BlockJoinQuery((Query) origChildQuery.clone(),
+    return new ToParentBlockJoinQuery((Query) origChildQuery.clone(),
                               parentsFilter,
                               scoreMode);
   }

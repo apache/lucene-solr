@@ -57,7 +57,7 @@ New Features
  * LUCENE-3527: Add LuceneLevenshteinDistance, which computes string distance in a compatible
    way as DirectSpellChecker. This can be used to merge top-N results from more than one
    SpellChecker.  (James Dyer via Robert Muir)
-  
+
 API Changes
 
  * LUCENE-2606: Changed RegexCapabilities interface to fix thread 
@@ -111,6 +111,11 @@ New Features
 * LUCENE-3634: IndexReader's static main method was moved to a new
   tool, CompoundFileExtractor, in contrib/misc.  (Mike McCandless)
 
+* LUCENE-3685: Add ToChildBlockJoinQuery and renamed previous
+  BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
+  joins in both parent to child and child to parent directions.
+  (Mike McCandless)
+  
 API Changes
 
 * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 
