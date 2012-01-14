@@ -12,19 +12,6 @@ API Changes
 
  * LUCENE-2413: Removed the AnalyzerUtil in common/miscellaneous.  (Robert Muir)
 
- * LUCENE-2167,LUCENE-2699,LUCENE-2763,LUCENE-2847: StandardTokenizer/Analyzer
-   in common/standard/ now implement the Word Break rules from the Unicode 6.0.0
-   Text Segmentation algorithm (UAX#29), covering the full range of Unicode code
-   points, including values from U+FFFF to U+10FFFF
-   
-   ClassicTokenizer/Analyzer retains the old (pre-Lucene 3.1) StandardTokenizer/
-   Analyzer implementation and behavior.  Only the Unicode Basic Multilingual
-   Plane (code points from U+0000 to U+FFFF) is covered.
-
-   UAX29URLEmailTokenizer tokenizes URLs and E-mail addresses according to the
-   relevant RFCs, in addition to implementing the UAX#29 Word Break rules.
-   (Steven Rowe, Robert Muir, Uwe Schindler)
-
  * LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
    can be generated. (Chris Harris via Steven Rowe)
    
@@ -42,18 +29,13 @@ API Changes
    since they prevent reuse.  Both Analyzers should be configured at instantiation.
    (Chris Male)
 
- * LUCENE-3305: Added SegmentingTokenizerBase, which breaks text into sentences
-   with BreakIterator and allows subclasses to decompose sentences into words, or
-   use the sentence boundary information for other reasons (e.g. attribute/position increment)
-   (Robert Muir)
-
 New Features
 
  * LUCENE-2341: A new analyzer/ filter: Morfologik - a dictionary-driven lemmatizer 
    (accurate stemmer) for Polish (includes morphosyntactic annotations).
    (Michał Dybizbański, Dawid Weiss)
 
- * LUCENE-2413: Consolidated Solr analysis components into common. 
+ * LUCENE-2413: Consolidated Lucene/Solr analysis components into common. 
    New features from Solr now available to Lucene users include:
    - o.a.l.analysis.commongrams: Constructs n-grams for frequently occurring terms
      and phrases. 
@@ -78,7 +60,7 @@ New Features
    - o.a.l.analysis.phonetic: Package for phonetic search, containing various
      phonetic encoders such as Double Metaphone.
 
-  * LUCENE-2413: Consolidated all Lucene analyzers into common.
+   Some existing analysis components changed packages:
     - o.a.l.analysis.KeywordAnalyzer -> o.a.l.analysis.core.KeywordAnalyzer
     - o.a.l.analysis.KeywordTokenizer -> o.a.l.analysis.core.KeywordTokenizer
     - o.a.l.analysis.LetterTokenizer -> o.a.l.analysis.core.LetterTokenizer
@@ -108,19 +90,6 @@ New Features
     - o.a.l.analysis.CharTokenizer -> o.a.l.analysis.util.CharTokenizer
     - o.a.l.util.CharacterUtils -> o.a.l.analysis.util.CharacterUtils
 
- * SOLR-1057: Add PathHierarchyTokenizer that represents file path hierarchies as synonyms of
-   /something, /something/something, /something/something/else. (Ryan McKinley, Koji Sekiguchi)
-
- * LUCENE-3414: Added HunspellStemFilter which uses a provided pure Java implementation of the 
-   Hunspell algorithm. (Chris Male)
-
- * LUCENE-3305: Added Kuromoji morphological analyzer for Japanese.
-   (Christian Moen, Masaru Hasegawa, Simon Willnauer, Uwe Schindler, Mike McCandless, Robert Muir)
-
-Build
-
- * LUCENE-2413: All analyzers in contrib/analyzers and contrib/icu were moved to the 
-   analysis module.  The 'smartcn' and 'stempel' components now depend on 'common'.  
-   (Robert Muir)
-
- * LUCENE-3376: Moved ReusableAnalyzerBase into lucene core. (Chris Male)
+   All analyzers in contrib/analyzers and contrib/icu were moved to the
+   analysis module.  The 'smartcn' and 'stempel' components now depend on 'common'.
+   (Chris Male, Robert Muir)

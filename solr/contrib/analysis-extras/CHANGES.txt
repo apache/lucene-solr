@@ -17,10 +17,10 @@ $Id$
   the Solr 3.x ICUCollationKeyFilterFactory, and also supports
   Locale-sensitive range queries.  (rmuir)
 
+==================  3.6.0 ==================
+
 * LUCENE-3305: Added Kuromoji morphological analyzer for Japanese.
   (Christian Moen, Masaru Hasegawa via Robert Muir)
-
-==================  3.6.0 ==================
 
 * SOLR-2919: Added parametric tailoring options to ICUCollationKeyFilterFactory.
   These can be used to customize range query/sort behavior, for example to
