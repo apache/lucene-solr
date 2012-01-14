@@ -475,11 +475,6 @@ New features
   QueryParser subclasses that overrode getRangeQuery will need to be changed
   to use the new getRangeQuery method.  (Andrew Schurman, Mark Miller, yonik)
 
-* LUCENE-995: The QueryParser now interprets * as an open end for range
-  queries.  Literal asterisks may be represented by quoting or escaping
-  (i.e. \* or "*")  Custom QueryParser subclasses overriding getRangeQuery()
-  will be passed null for any open endpoint. (Adriano Crestani, yonik)
-
 * LUCENE-2742: Add native per-field postings format support. Codec lets you now
   register a postings format for each field and which is in turn recorded 
   into the index. Postings formtas are maintained on a per-segment basis and be
@@ -762,6 +757,12 @@ New Features
 * LUCENE-3634: IndexReader's static main method was moved to a new
   tool, CompoundFileExtractor, in contrib/misc.  (Robert Muir, Mike
   McCandless)
+
+* LUCENE-995: The QueryParser now interprets * as an open end for range
+  queries.  Literal asterisks may be represented by quoting or escaping
+  (i.e. \* or "*")  Custom QueryParser subclasses overriding getRangeQuery()
+  will be passed null for any open endpoint. (Ingo Renner, Adriano
+  Crestani, yonik, Mike McCandless
   
 Bug fixes
 
