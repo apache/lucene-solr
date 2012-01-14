@@ -294,6 +294,10 @@ Bug Fixes
   
 * SOLR-1520: QueryElevationComponent now supports non-string ids (gsingers)
 
+* SOLR-3037: When using binary format in solrj the codec screws up parameters
+  (Sami Siren via yonik)
+
+
 Other Changes
 ----------------------
 
