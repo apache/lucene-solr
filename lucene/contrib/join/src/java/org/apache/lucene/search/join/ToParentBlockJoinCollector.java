@@ -56,7 +56,7 @@ import org.apache.lucene.util.ArrayUtil;
  *
  *  <p>You should only use this
  *  collector if one or more of the clauses in the query is
- *  a {@link BlockJoinQuery}.  This collector will find those query
+ *  a {@link ToParentBlockJoinQuery}.  This collector will find those query
  *  clauses and record the matching child documents for the
  *  top scoring parent documents.</p>
  *
@@ -66,11 +66,11 @@ import org.apache.lucene.util.ArrayUtil;
  *  parent table were indexed as a doc block.</p>
  *
  *  <p>For the simple star join you can retrieve the
- *  {@link TopGroups} instance containing each {@link BlockJoinQuery}'s
+ *  {@link TopGroups} instance containing each {@link ToParentBlockJoinQuery}'s
  *  matching child documents for the top parent groups,
  *  using {@link #getTopGroups}.  Ie,
  *  a single query, which will contain two or more
- *  {@link BlockJoinQuery}'s as clauses representing the star join,
+ *  {@link ToParentBlockJoinQuery}'s as clauses representing the star join,
  *  can then retrieve two or more {@link TopGroups} instances.</p>
  *
  *  <p>For nested joins, the query will run correctly (ie,
@@ -86,7 +86,7 @@ import org.apache.lucene.util.ArrayUtil;
  *
  * @lucene.experimental
  */
-public class BlockJoinCollector extends Collector {
+public class ToParentBlockJoinCollector extends Collector {
 
   private final Sort sort;
 
@@ -102,7 +102,7 @@ public class BlockJoinCollector extends Collector {
   private final boolean trackScores;
 
   private int docBase;
-  private BlockJoinQuery.BlockJoinScorer[] joinScorers = new BlockJoinQuery.BlockJoinScorer[0];
+  private ToParentBlockJoinQuery.BlockJoinScorer[] joinScorers = new ToParentBlockJoinQuery.BlockJoinScorer[0];
   private IndexReader currentReader;
   private Scorer scorer;
   private boolean queueFull;
@@ -111,9 +111,9 @@ public class BlockJoinCollector extends Collector {
   private int totalHitCount;
   private float maxScore = Float.NaN;
 
-  /*  Creates a BlockJoinCollector.  The provided sort must
+  /*  Creates a ToParentBlockJoinCollector.  The provided sort must
    *  not be null. */
-  public BlockJoinCollector(Sort sort, int numParentHits, boolean trackScores, boolean trackMaxScore) throws IOException {
+  public ToParentBlockJoinCollector(Sort sort, int numParentHits, boolean trackScores, boolean trackMaxScore) throws IOException {
     // TODO: allow null sort to be specialized to relevance
     // only collector
     this.sort = sort;
@@ -251,7 +251,7 @@ public class BlockJoinCollector extends Collector {
 
     //System.out.println("copyGroups parentDoc=" + og.doc);
     for(int scorerIDX = 0;scorerIDX < numSubScorers;scorerIDX++) {
-      final BlockJoinQuery.BlockJoinScorer joinScorer = joinScorers[scorerIDX];
+      final ToParentBlockJoinQuery.BlockJoinScorer joinScorer = joinScorers[scorerIDX];
       //System.out.println("  scorer=" + joinScorer);
       if (joinScorer != null) {
         og.counts[scorerIDX] = joinScorer.getChildCount();
@@ -283,6 +283,20 @@ public class BlockJoinCollector extends Collector {
     return false;
   }
 
+  private void enroll(ToParentBlockJoinQuery query, ToParentBlockJoinQuery.BlockJoinScorer scorer) {
+    final Integer slot = joinQueryID.get(query);
+    if (slot == null) {
+      joinQueryID.put(query, joinScorers.length);
+      //System.out.println("found JQ: " + query + " slot=" + joinScorers.length);
+      final ToParentBlockJoinQuery.BlockJoinScorer[] newArray = new ToParentBlockJoinQuery.BlockJoinScorer[1+joinScorers.length];
+      System.arraycopy(joinScorers, 0, newArray, 0, joinScorers.length);
+      joinScorers = newArray;
+      joinScorers[joinScorers.length-1] = scorer;
+    } else {
+      joinScorers[slot] = scorer;
+    }
+  }
+  
   @Override
   public void setScorer(Scorer scorer) {
     //System.out.println("C.setScorer scorer=" + scorer);
@@ -297,44 +311,30 @@ public class BlockJoinCollector extends Collector {
 
     // Find any BlockJoinScorers out there:
     scorer.visitScorers(new Scorer.ScorerVisitor<Query,Query,Scorer>() {
-        private void enroll(BlockJoinQuery query, BlockJoinQuery.BlockJoinScorer scorer) {
-          final Integer slot = joinQueryID.get(query);
-          if (slot == null) {
-            joinQueryID.put(query, joinScorers.length);
-            //System.out.println("found JQ: " + query + " slot=" + joinScorers.length);
-            final BlockJoinQuery.BlockJoinScorer[] newArray = new BlockJoinQuery.BlockJoinScorer[1+joinScorers.length];
-            System.arraycopy(joinScorers, 0, newArray, 0, joinScorers.length);
-            joinScorers = newArray;
-            joinScorers[joinScorers.length-1] = scorer;
-          } else {
-            joinScorers[slot] = scorer;
-          }
-        }
-
         @Override
         public void visitOptional(Query parent, Query child, Scorer scorer) {
           //System.out.println("visitOpt");
-          if (child instanceof BlockJoinQuery) {
-            enroll((BlockJoinQuery) child,
-                   (BlockJoinQuery.BlockJoinScorer) scorer);
+          if (child instanceof ToParentBlockJoinQuery) {
+            enroll((ToParentBlockJoinQuery) child,
+                   (ToParentBlockJoinQuery.BlockJoinScorer) scorer);
           }
         }
 
         @Override
         public void visitRequired(Query parent, Query child, Scorer scorer) {
           //System.out.println("visitReq parent=" + parent + " child=" + child + " scorer=" + scorer);
-          if (child instanceof BlockJoinQuery) {
-            enroll((BlockJoinQuery) child,
-                   (BlockJoinQuery.BlockJoinScorer) scorer);
+          if (child instanceof ToParentBlockJoinQuery) {
+            enroll((ToParentBlockJoinQuery) child,
+                   (ToParentBlockJoinQuery.BlockJoinScorer) scorer);
           }
         }
 
         @Override
         public void visitProhibited(Query parent, Query child, Scorer scorer) {
           //System.out.println("visitProh");
-          if (child instanceof BlockJoinQuery) {
-            enroll((BlockJoinQuery) child,
-                   (BlockJoinQuery.BlockJoinScorer) scorer);
+          if (child instanceof ToParentBlockJoinQuery) {
+            enroll((ToParentBlockJoinQuery) child,
+                   (ToParentBlockJoinQuery.BlockJoinScorer) scorer);
           }
         }
       });
@@ -387,7 +387,7 @@ public class BlockJoinCollector extends Collector {
    *  is not computed (will always be 0).  Returns null if
    *  no groups matched. */
   @SuppressWarnings("unchecked")
-  public TopGroups<Integer> getTopGroups(BlockJoinQuery query, Sort withinGroupSort, int offset, int maxDocsPerGroup, int withinGroupOffset, boolean fillSortFields) 
+  public TopGroups<Integer> getTopGroups(ToParentBlockJoinQuery query, Sort withinGroupSort, int offset, int maxDocsPerGroup, int withinGroupOffset, boolean fillSortFields) 
 
     throws IOException {
 

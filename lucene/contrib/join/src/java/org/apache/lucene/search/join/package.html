@@ -14,19 +14,25 @@
   parent documents, as Lucene does not currently record any information
   about doc blocks.</p>
 
-<p>At search time, use {@link org.apache.lucene.search.join.BlockJoinQuery} to remap
-  matches from any child {@link org.apache.lucene.search.Query} (ie, a query that matches only
-  child documents) up to the parent document space.  The resulting
-  {@link org.apache.lucene.search.join.BlockJoinQuery} can then be used as a clause in any query that
-  matches parent documents.</p>
+<p>At search time, use {@link
+  org.apache.lucene.search.join.ToParentBlockJoinQuery} to remap/join
+  matches from any child {@link org.apache.lucene.search.Query} (ie, a
+  query that matches only child documents) up to the parent document
+  space.  The
+  resulting query can then be used as a clause in any query that
+  matches parent.</p>
 
 <p>If you only care about the parent documents matching the query, you
   can use any collector to collect the parent hits, but if you'd also
   like to see which child documents match for each parent document,
-  use the {@link org.apache.lucene.search.join.BlockJoinCollector} to collect the hits. Once the
+  use the {@link org.apache.lucene.search.join.ToParentBlockJoinCollector} to collect the hits. Once the
   search is done, you retrieve a {@link
   org.apache.lucene.search.grouping.TopGroups} instance from the
-  {@link org.apache.lucene.search.join.BlockJoinCollector#getTopGroups} method.</p>
+  {@link org.apache.lucene.search.join.ToParentBlockJoinCollector#getTopGroups} method.</p>
 
+<p>To map/join in the opposite direction, use {@link
+  org.apache.lucene.search.join.ToChildBlockJoinQuery}.  This wraps
+  any query matching parent documents, creating the joined query
+  matching only child documents.
 </body>
 </html>
