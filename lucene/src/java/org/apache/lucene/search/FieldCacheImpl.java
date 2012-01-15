@@ -1043,7 +1043,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
         throw new UnsupportedOperationException();
       }
 

@@ -17,36 +17,38 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TermContext;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Collection;
+import java.util.LinkedList;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CannedAnalyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.io.Reader;
+import org.apache.lucene.util.TermContext;
 
 /**
  * This class tests the MultiPhraseQuery class.
@@ -329,68 +331,18 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     indexStore.close();
   }
 
-  private static class TokenAndPos {
-    public final String token;
-    public final int pos;
-    public TokenAndPos(String token, int pos) {
-      this.token = token;
-      this.pos = pos;
-    }
-  }
-
-  private static class CannedAnalyzer extends Analyzer {
-    private final TokenAndPos[] tokens;
-    
-    public CannedAnalyzer(TokenAndPos[] tokens) {
-      this.tokens = tokens;
-    }
-
-    @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new CannedTokenizer(tokens));
-    }
-  }
-
-  private static class CannedTokenizer extends Tokenizer {
-    private final TokenAndPos[] tokens;
-    private int upto = 0;
-    private int lastPos = 0;
-    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-
-    public CannedTokenizer(TokenAndPos[] tokens) {
-      this.tokens = tokens;
-    }
-
-    @Override
-    public final boolean incrementToken() throws IOException {
-      clearAttributes();      
-      if (upto < tokens.length) {
-        final TokenAndPos token = tokens[upto++];
-        termAtt.setEmpty();
-        termAtt.append(token.token);
-        posIncrAtt.setPositionIncrement(token.pos - lastPos);
-        lastPos = token.pos;
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    @Override
-    public void reset() throws IOException {
-      super.reset();
-      this.upto = 0;
-      this.lastPos = 0;
-    }
-  }
-
   public void testZeroPosIncr() throws IOException {
     Directory dir = new RAMDirectory();
-    final TokenAndPos[] tokens = new TokenAndPos[3];
-    tokens[0] = new TokenAndPos("a", 0);
-    tokens[1] = new TokenAndPos("b", 0);
-    tokens[2] = new TokenAndPos("c", 0);
+    final Token[] tokens = new Token[3];
+    tokens[0] = new Token();
+    tokens[0].append("a");
+    tokens[0].setPositionIncrement(1);
+    tokens[1] = new Token();
+    tokens[1].append("b");
+    tokens[1].setPositionIncrement(0);
+    tokens[2] = new Token();
+    tokens[2].append("c");
+    tokens[2].setPositionIncrement(0);
 
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new CannedAnalyzer(tokens));
     Document doc = new Document();
@@ -429,40 +381,47 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     dir.close();
   }
 
-  private final static TokenAndPos[] INCR_0_DOC_TOKENS = new TokenAndPos[] {
-      new TokenAndPos("x", 0),
-      new TokenAndPos("a", 1),
-      new TokenAndPos("1", 1),
-      new TokenAndPos("m", 2), // not existing, relying on slop=2
-      new TokenAndPos("b", 3),
-      new TokenAndPos("1", 3),
-      new TokenAndPos("n", 4), // not existing, relying on slop=2
-      new TokenAndPos("c", 5),
-      new TokenAndPos("y", 6)
+  private static Token makeToken(String text, int posIncr) {
+    final Token t = new Token();
+    t.append(text);
+    t.setPositionIncrement(posIncr);
+    return t;
+  }
+
+  private final static Token[] INCR_0_DOC_TOKENS = new Token[] {
+    makeToken("x", 1),
+    makeToken("a", 1),
+    makeToken("1", 0),
+    makeToken("m", 1),  // not existing, relying on slop=2
+    makeToken("b", 1),
+    makeToken("1", 0),
+    makeToken("n", 1), // not existing, relying on slop=2
+    makeToken("c", 1),
+    makeToken("y", 1)
   };
   
-  private final static TokenAndPos[] INCR_0_QUERY_TOKENS_AND = new TokenAndPos[] {
-      new TokenAndPos("a", 0),
-      new TokenAndPos("1", 0),
-      new TokenAndPos("b", 1),
-      new TokenAndPos("1", 1),
-      new TokenAndPos("c", 2)
+  private final static Token[] INCR_0_QUERY_TOKENS_AND = new Token[] {
+    makeToken("a", 1),
+    makeToken("1", 0),
+    makeToken("b", 1),
+    makeToken("1", 0),
+    makeToken("c", 1)
   };
   
-  private final static TokenAndPos[][] INCR_0_QUERY_TOKENS_AND_OR_MATCH = new TokenAndPos[][] {
-      { new TokenAndPos("a", 0) },
-      { new TokenAndPos("x", 0), new TokenAndPos("1", 0) },
-      { new TokenAndPos("b", 1) },
-      { new TokenAndPos("x", 1), new TokenAndPos("1", 1) },
-      { new TokenAndPos("c", 2) }
+  private final static Token[][] INCR_0_QUERY_TOKENS_AND_OR_MATCH = new Token[][] {
+    { makeToken("a", 1) },
+    { makeToken("x", 1), makeToken("1", 0) },
+    { makeToken("b", 2) },
+    { makeToken("x", 2), makeToken("1", 0) },
+    { makeToken("c", 3) }
   };
   
-  private final static TokenAndPos[][] INCR_0_QUERY_TOKENS_AND_OR_NO_MATCHN = new TokenAndPos[][] {
-      { new TokenAndPos("x", 0) },
-      { new TokenAndPos("a", 0), new TokenAndPos("1", 0) },
-      { new TokenAndPos("x", 1) },
-      { new TokenAndPos("b", 1), new TokenAndPos("1", 1) },
-      { new TokenAndPos("c", 2) }
+  private final static Token[][] INCR_0_QUERY_TOKENS_AND_OR_NO_MATCHN = new Token[][] {
+    { makeToken("x", 1) },
+    { makeToken("a", 1), makeToken("1", 0) },
+    { makeToken("x", 2) },
+    { makeToken("b", 2), makeToken("1", 0) },
+    { makeToken("c", 3) }
   };
   
   /**
@@ -515,8 +474,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
    */
   public void testZeroPosIncrSloppyPqAnd() throws IOException {
     final PhraseQuery pq = new PhraseQuery();
-    for (TokenAndPos tap : INCR_0_QUERY_TOKENS_AND) {
-      pq.add(new Term("field",tap.token), tap.pos);
+    int pos = -1;
+    for (Token tap : INCR_0_QUERY_TOKENS_AND) {
+      pos += tap.getPositionIncrement();
+      pq.add(new Term("field",tap.toString()), pos);
     }
     doTestZeroPosIncrSloppy(pq, 0);
     pq.setSlop(1);
@@ -530,8 +491,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
    */
   public void testZeroPosIncrSloppyMpqAnd() throws IOException {
     final MultiPhraseQuery mpq = new MultiPhraseQuery();
-    for (TokenAndPos tap : INCR_0_QUERY_TOKENS_AND) {
-      mpq.add(new Term[]{new Term("field",tap.token)}, tap.pos); //AND logic
+    int pos = -1;
+    for (Token tap : INCR_0_QUERY_TOKENS_AND) {
+      pos += tap.getPositionIncrement();
+      mpq.add(new Term[]{new Term("field",tap.toString())}, pos); //AND logic
     }
     doTestZeroPosIncrSloppy(mpq, 0);
     mpq.setSlop(1);
@@ -545,9 +508,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
    */
   public void testZeroPosIncrSloppyMpqAndOrMatch() throws IOException {
     final MultiPhraseQuery mpq = new MultiPhraseQuery();
-    for (TokenAndPos tap[] : INCR_0_QUERY_TOKENS_AND_OR_MATCH) {
+    for (Token tap[] : INCR_0_QUERY_TOKENS_AND_OR_MATCH) {
       Term[] terms = tapTerms(tap);
-      final int pos = tap[0].pos;
+      final int pos = tap[0].getPositionIncrement()-1;
       mpq.add(terms, pos); //AND logic in pos, OR across lines 
     }
     doTestZeroPosIncrSloppy(mpq, 0);
@@ -562,9 +525,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
    */
   public void testZeroPosIncrSloppyMpqAndOrNoMatch() throws IOException {
     final MultiPhraseQuery mpq = new MultiPhraseQuery();
-    for (TokenAndPos tap[] : INCR_0_QUERY_TOKENS_AND_OR_NO_MATCHN) {
+    for (Token tap[] : INCR_0_QUERY_TOKENS_AND_OR_NO_MATCHN) {
       Term[] terms = tapTerms(tap);
-      final int pos = tap[0].pos;
+      final int pos = tap[0].getPositionIncrement()-1;
       mpq.add(terms, pos); //AND logic in pos, OR across lines 
     }
     doTestZeroPosIncrSloppy(mpq, 0);
@@ -572,10 +535,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     doTestZeroPosIncrSloppy(mpq, 0);
   }
 
-  private Term[] tapTerms(TokenAndPos[] tap) {
+  private Term[] tapTerms(Token[] tap) {
     Term[] terms = new Term[tap.length];
     for (int i=0; i<terms.length; i++) {
-      terms[i] = new Term("field",tap[i].token);
+      terms[i] = new Term("field",tap[i].toString());
     }
     return terms;
   }

@@ -80,6 +80,8 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
           } else {
             throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format + " (resource: " + input + ")");
           }
+        } else if (format <= Lucene40FieldInfosWriter.FORMAT_FLEX && (bits & Lucene40FieldInfosWriter.STORE_OFFSETS_IN_POSTINGS) != 0) {
+          indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
         } else {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
         }

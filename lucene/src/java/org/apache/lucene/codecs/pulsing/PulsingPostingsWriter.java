@@ -115,6 +115,9 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   @Override
   public void setField(FieldInfo fieldInfo) {
     this.indexOptions = fieldInfo.indexOptions;
+    if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+      throw new IllegalArgumentException("this codec cannot index offsets: " + indexOptions);
+    }
     if (DEBUG) System.out.println("PW field=" + fieldInfo.name + " indexOptions=" + indexOptions);
     storePayloads = fieldInfo.storePayloads;
     wrappedPostingsWriter.setField(fieldInfo);
@@ -165,7 +168,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   }
 
   @Override
-  public void addPosition(int position, BytesRef payload) throws IOException {
+  public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
 
     if (DEBUG) System.out.println("PW       pos=" + position + " payload=" + (payload == null ? "null" : payload.length + " bytes"));
     if (pendingCount == pending.length) {
@@ -175,7 +178,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
     if (pendingCount == -1) {
       // We've already seen too many docs for this term --
       // just forward to our fallback writer
-      wrappedPostingsWriter.addPosition(position, payload);
+      wrappedPostingsWriter.addPosition(position, payload, -1, -1);
     } else {
       // buffer up
       final Position pos = pending[pendingCount++];
@@ -360,7 +363,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
     wrappedPostingsWriter.startTerm();
       
     // Flush all buffered docs
-    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+    if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
       Position doc = null;
       for(Position pos : pending) {
         if (doc == null) {
@@ -376,7 +379,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
           wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
         }
         if (DEBUG) System.out.println("PW:   wrapped.addPos pos=" + pos.pos);
-        wrappedPostingsWriter.addPosition(pos.pos, pos.payload);
+        wrappedPostingsWriter.addPosition(pos.pos, pos.payload, -1, -1);
       }
       //wrappedPostingsWriter.finishDoc();
     } else {

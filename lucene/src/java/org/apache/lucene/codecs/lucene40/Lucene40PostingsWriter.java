@@ -155,6 +155,10 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     */
     this.fieldInfo = fieldInfo;
     indexOptions = fieldInfo.indexOptions;
+    if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+      throw new IllegalArgumentException("this codec cannot index offsets");
+    }
+        
     storePayloads = fieldInfo.storePayloads;
     //System.out.println("  set init blockFreqStart=" + freqStart);
     //System.out.println("  set init blockProxStart=" + proxStart);
@@ -197,10 +201,18 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
 
   /** Add a new position & payload */
   @Override
-  public void addPosition(int position, BytesRef payload) throws IOException {
+  public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
     //if (DEBUG) System.out.println("SPW:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
     assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS: "invalid indexOptions: " + indexOptions;
     assert proxOut != null;
+
+    // TODO: when we add offsets... often
+    // endOffset-startOffset will be constant or near
+    // constant for all docs (eg if the term wasn't stemmed
+    // then this will usually be the utf16 length of the
+    // term); would be nice to write that length once up
+    // front and then not encode endOffset for each
+    // position..
 
     final int delta = position - lastPosition;
     

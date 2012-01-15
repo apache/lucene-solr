@@ -37,6 +37,7 @@ import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -197,6 +198,9 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
 
     @Override
     public TermsConsumer addField(FieldInfo field) {
+      if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+        throw new IllegalArgumentException("this codec cannot index offsets");
+      }
       RAMField ramField = new RAMField(field.name);
       postings.fieldToTerms.put(field.name, ramField);
       termsConsumer.reset(ramField);
@@ -265,7 +269,9 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void addPosition(int position, BytesRef payload) {
+    public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) {
+      assert startOffset == -1;
+      assert endOffset == -1;
       current.positions[posUpto] = position;
       if (payload != null && payload.length > 0) {
         if (current.payloads == null) {
@@ -388,7 +394,10 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) {
+      if (needsOffsets) {
+        return null;
+      }
       return new RAMDocsAndPositionsEnum(ramField.termToDocs.get(current), liveDocs);
     }
   }
@@ -491,6 +500,16 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public int nextPosition() {
       return current.positions[posUpto++];
+    }
+
+    @Override
+    public int startOffset() {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() {
+      return -1;
     }
 
     @Override

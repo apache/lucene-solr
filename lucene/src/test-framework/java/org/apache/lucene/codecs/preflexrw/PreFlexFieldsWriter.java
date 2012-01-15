@@ -88,6 +88,9 @@ class PreFlexFieldsWriter extends FieldsConsumer {
   @Override
   public TermsConsumer addField(FieldInfo field) throws IOException {
     assert field.number != -1;
+    if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+      throw new IllegalArgumentException("this codec cannot index offsets");
+    }
     //System.out.println("w field=" + field.name + " storePayload=" + field.storePayloads + " number=" + field.number);
     return new PreFlexTermsWriter(field);
   }
@@ -157,8 +160,10 @@ class PreFlexFieldsWriter extends FieldsConsumer {
       }
 
       @Override
-      public void addPosition(int position, BytesRef payload) throws IOException {
+      public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
         assert proxOut != null;
+        assert startOffset == -1;
+        assert endOffset == -1;
 
         //System.out.println("      w pos=" + position + " payl=" + payload);
         final int delta = position - lastPosition;

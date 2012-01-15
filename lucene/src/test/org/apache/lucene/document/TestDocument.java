@@ -347,7 +347,7 @@ public class TestDocument extends LuceneTestCase {
       assertEquals(2, tvs.getUniqueTermCount());
       TermsEnum tvsEnum = tvs.iterator(null);
       assertEquals(new BytesRef("abc"), tvsEnum.next());
-      final DocsAndPositionsEnum dpEnum = tvsEnum.docsAndPositions(null, null);
+      final DocsAndPositionsEnum dpEnum = tvsEnum.docsAndPositions(null, null, false);
       if (field.equals("tv")) {
         assertNull(dpEnum);
       } else {

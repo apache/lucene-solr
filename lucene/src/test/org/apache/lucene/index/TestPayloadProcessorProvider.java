@@ -155,7 +155,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     IndexReader reader = IndexReader.open(dir);
     try {
       int numPayloads = 0;
-      DocsAndPositionsEnum tpe = MultiFields.getTermPositionsEnum(reader, null, field, text);
+      DocsAndPositionsEnum tpe = MultiFields.getTermPositionsEnum(reader, null, field, text, false);
       while (tpe.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         tpe.nextPosition();
         if (tpe.hasPayload()) {

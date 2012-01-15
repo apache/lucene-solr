@@ -44,7 +44,7 @@ public final class Term implements Comparable<Term> {
     field = fld;
     this.bytes = bytes;
   }
-  
+
   /** Constructs a Term with the given field and text.
    * <p>Note that a null field or null text value results in undefined
    * behavior for most Lucene APIs that accept a Term parameter. */
@@ -132,4 +132,8 @@ public final class Term implements Comparable<Term> {
 
   @Override
   public final String toString() { return field + ":" + bytes.utf8ToString(); }
+
+  public Term deepCopyOf() {
+    return new Term(field, BytesRef.deepCopyOf(bytes));
+  }
 }

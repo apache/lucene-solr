@@ -122,6 +122,10 @@ public class RandomIndexWriter implements Closeable {
    * @see IndexWriter#addDocument(Iterable)
    */
   public <T extends IndexableField> void addDocument(final Iterable<T> doc) throws IOException {
+    addDocument(doc, w.getAnalyzer());
+  }
+
+  public <T extends IndexableField> void addDocument(final Iterable<T> doc, Analyzer a) throws IOException {
     if (doDocValues && doc instanceof Document) {
       randomPerDocFieldValues(r, (Document) doc);
     }
@@ -157,9 +161,9 @@ public class RandomIndexWriter implements Closeable {
             }
           };
         }
-        });
+        }, a);
     } else {
-      w.addDocument(doc);
+      w.addDocument(doc, a);
     }
     
     maybeCommit();

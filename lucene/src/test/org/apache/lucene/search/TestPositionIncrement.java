@@ -42,8 +42,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -102,7 +100,8 @@ public class TestPositionIncrement extends LuceneTestCase {
     DocsAndPositionsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
                                                                 MultiFields.getLiveDocs(searcher.getIndexReader()),
                                                                 "field",
-                                                                new BytesRef("1"));
+                                                                new BytesRef("1"),
+                                                                false);
     pos.nextDoc();
     // first token should be at position 0
     assertEquals(0, pos.nextPosition());
@@ -110,7 +109,8 @@ public class TestPositionIncrement extends LuceneTestCase {
     pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
                                            MultiFields.getLiveDocs(searcher.getIndexReader()),
                                            "field",
-                                           new BytesRef("2"));
+                                           new BytesRef("2"),
+                                           false);
     pos.nextDoc();
     // second token should be at position 2
     assertEquals(2, pos.nextPosition());
@@ -200,10 +200,6 @@ public class TestPositionIncrement extends LuceneTestCase {
     store.close();
   }
 
-  // stoplist that accepts case-insensitive "stop"
-  private static final CharacterRunAutomaton stopStopList = 
-    new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
-  
   public void testPayloadsPos0() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockPayloadAnalyzer());
@@ -217,7 +213,8 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     DocsAndPositionsEnum tp = r.termPositionsEnum(r.getLiveDocs(),
                                                   "content",
-                                                  new BytesRef("a"));
+                                                  new BytesRef("a"),
+                                                  false);
     
     int count = 0;
     assertTrue(tp.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS);

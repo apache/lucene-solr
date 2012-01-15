@@ -226,6 +226,10 @@ Changes in backwards compatibility policy
 * LUCENE-3640: Removed IndexSearcher.close(), because IndexSearcher no longer
   takes a Directory and no longer "manages" IndexReaders, it is a no-op.
   (Robert Muir)
+
+* LUCENE-3684: Add offsets into DocsAndPositionsEnum, and a few
+  FieldInfo.IndexOption: DOCS_AND_POSITIONS_AND_OFFSETS.  (Robert
+  Muir, Mike McCandless)
   
 Changes in Runtime Behavior
 

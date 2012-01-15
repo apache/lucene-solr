@@ -603,8 +603,8 @@ public class TestIndexReader extends LuceneTestCase {
 
         while(enum1.next() != null) {
           assertEquals("Different terms", enum1.term(), enum2.next());
-          DocsAndPositionsEnum tp1 = enum1.docsAndPositions(liveDocs, null);
-          DocsAndPositionsEnum tp2 = enum2.docsAndPositions(liveDocs, null);
+          DocsAndPositionsEnum tp1 = enum1.docsAndPositions(liveDocs, null, false);
+          DocsAndPositionsEnum tp2 = enum2.docsAndPositions(liveDocs, null, false);
 
           while(tp1.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             assertTrue(tp2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

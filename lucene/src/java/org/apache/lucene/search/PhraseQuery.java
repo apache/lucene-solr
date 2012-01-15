@@ -239,7 +239,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null);
+        DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null, false);
 
         // PhraseQuery on a field that did not index
         // positions.

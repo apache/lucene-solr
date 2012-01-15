@@ -74,7 +74,8 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader,
                                                                           MultiFields.getLiveDocs(reader),
                                                                           "preanalyzed",
-                                                                          new BytesRef("term1"));
+                                                                          new BytesRef("term1"),
+                                                                          false);
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(0, termPositions.nextPosition());
@@ -82,7 +83,8 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     termPositions = MultiFields.getTermPositionsEnum(reader,
                                                      MultiFields.getLiveDocs(reader),
                                                      "preanalyzed",
-                                                     new BytesRef("term2"));
+                                                     new BytesRef("term2"),
+                                                     false);
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(2, termPositions.freq());
     assertEquals(1, termPositions.nextPosition());
@@ -91,7 +93,8 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     termPositions = MultiFields.getTermPositionsEnum(reader,
                                                      MultiFields.getLiveDocs(reader),
                                                      "preanalyzed",
-                                                     new BytesRef("term3"));
+                                                     new BytesRef("term3"),
+                                                     false);
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());

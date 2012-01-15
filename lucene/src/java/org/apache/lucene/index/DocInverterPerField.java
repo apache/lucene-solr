@@ -73,8 +73,9 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       // tokenized.
       if (field.fieldType().indexed() && doInvert) {
 
-        if (i > 0)
+        if (i > 0) {
           fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);
+        }
 
         final TokenStream stream = field.tokenStream(docState.analyzer);
         // reset the TokenStream to the first token

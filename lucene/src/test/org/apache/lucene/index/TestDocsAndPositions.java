@@ -96,7 +96,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
   public DocsAndPositionsEnum getDocsAndPositions(IndexReader reader,
       BytesRef bytes, Bits liveDocs) throws IOException {
-      return reader.termPositionsEnum(null, fieldName, bytes);
+    return reader.termPositionsEnum(null, fieldName, bytes, false);
   }
 
   /**
@@ -358,7 +358,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexReader r = getOnlySegmentReader(reader);
-    DocsAndPositionsEnum disi = r.termPositionsEnum(null, "foo", new BytesRef("bar"));
+    DocsAndPositionsEnum disi = r.termPositionsEnum(null, "foo", new BytesRef("bar"), false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -366,7 +366,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator(null);
     assertTrue(te.seekExact(new BytesRef("bar"), true));
-    disi = te.docsAndPositions(null, disi);
+    disi = te.docsAndPositions(null, disi, false);
     docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

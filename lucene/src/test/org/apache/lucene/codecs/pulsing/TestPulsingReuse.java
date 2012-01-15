@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
-import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -70,7 +69,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     DocsAndPositionsEnum posReuse = null;
     te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
-      posReuse = te.docsAndPositions(null, posReuse);
+      posReuse = te.docsAndPositions(null, posReuse, false);
       allEnums.put(posReuse, true);
     }
     
@@ -112,7 +111,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     DocsAndPositionsEnum posReuse = null;
     te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
-      posReuse = te.docsAndPositions(null, posReuse);
+      posReuse = te.docsAndPositions(null, posReuse, false);
       allEnums.put(posReuse, true);
     }
     

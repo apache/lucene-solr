@@ -20,7 +20,6 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -185,7 +184,6 @@ public abstract class TermVectorsWriter implements Closeable {
     String lastFieldName = null;
 
     while((fieldName = fieldsEnum.next()) != null) {
-      
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
 
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
@@ -200,79 +198,79 @@ public abstract class TermVectorsWriter implements Closeable {
       if (numTerms == -1) {
         throw new IllegalStateException("vector.getUniqueTermCount() must be implemented (it returned -1)");
       }
-
-      final boolean positions;
-
-      OffsetAttribute offsetAtt;
-
       final TermsEnum termsEnum = terms.iterator(null);
 
       DocsAndPositionsEnum docsAndPositionsEnum = null;
 
-      if (termsEnum.next() != null) {
-        assert numTerms > 0;
-        docsAndPositionsEnum = termsEnum.docsAndPositions(null, null);
-        if (docsAndPositionsEnum != null) {
-          // has positions
-          positions = true;
-          if (docsAndPositionsEnum.attributes().hasAttribute(OffsetAttribute.class)) {
-            offsetAtt = docsAndPositionsEnum.attributes().getAttribute(OffsetAttribute.class);
-          } else {
-            offsetAtt = null;
-          }
-        } else {
-          positions = false;
-          offsetAtt = null;
-        }
-      } else {
-        // no terms in this field (hmm why is field present
-        // then...?)
-        assert numTerms == 0;
-        positions = false;
-        offsetAtt = null;
-      }
-      
-      startField(fieldInfo, numTerms, positions, offsetAtt != null);
+      boolean startedField = false;
 
-      int termCount = 1;
+      // NOTE: this is tricky, because TermVectors allow
+      // indexing offsets but NOT positions.  So we must
+      // lazily init the field by checking whether first
+      // position we see is -1 or not.
 
-      // NOTE: we already .next()'d the TermsEnum above, to
-      // peek @ first term to see if positions/offsets are
-      // present
-      while(true) {
+      int termCount = 0;
+      while(termsEnum.next() != null) {
+        termCount++;
+
         final int freq = (int) termsEnum.totalTermFreq();
-        startTerm(termsEnum.term(), freq);
 
-        if (positions || offsetAtt != null) {
-          DocsAndPositionsEnum dp = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
-          // TODO: add startOffset()/endOffset() to d&pEnum... this is insanity
-          if (dp != docsAndPositionsEnum) {
-            // producer didnt reuse, must re-pull attributes
-            if (offsetAtt != null) {
-              assert dp.attributes().hasAttribute(OffsetAttribute.class);
-              offsetAtt = dp.attributes().getAttribute(OffsetAttribute.class);
-            }
-          }
-          docsAndPositionsEnum = dp;
+        if (startedField) {
+          startTerm(termsEnum.term(), freq);
+        }
+
+        // TODO: we need a "query" API where we can ask (via
+        // flex API) what this term was indexed with...
+        // Both positions & offsets:
+        docsAndPositionsEnum = termsEnum.docsAndPositions(null, null, true);
+        final boolean hasOffsets;
+        boolean hasPositions = false;
+        if (docsAndPositionsEnum == null) {
+          // Fallback: no offsets
+          docsAndPositionsEnum = termsEnum.docsAndPositions(null, null, false);
+          hasOffsets = false;
+        } else {
+          hasOffsets = true;
+        }
+
+        if (docsAndPositionsEnum != null) {
           final int docID = docsAndPositionsEnum.nextDoc();
           assert docID != DocsEnum.NO_MORE_DOCS;
           assert docsAndPositionsEnum.freq() == freq;
 
           for(int posUpto=0; posUpto<freq; posUpto++) {
             final int pos = docsAndPositionsEnum.nextPosition();
-            final int startOffset = offsetAtt == null ? -1 : offsetAtt.startOffset();
-            final int endOffset = offsetAtt == null ? -1 : offsetAtt.endOffset();
-            
+            if (!startedField) {
+              assert numTerms > 0;
+              hasPositions = pos != -1;
+              startField(fieldInfo, numTerms, hasPositions, hasOffsets);
+              startTerm(termsEnum.term(), freq);
+              startedField = true;
+            }
+            final int startOffset;
+            final int endOffset;
+            if (hasOffsets) {
+              startOffset = docsAndPositionsEnum.startOffset();
+              endOffset = docsAndPositionsEnum.endOffset();
+              assert startOffset != -1;
+              assert endOffset != -1;
+            } else {
+              startOffset = -1;
+              endOffset = -1;
+            }
+            assert !hasPositions || pos >= 0;
             addPosition(pos, startOffset, endOffset);
           }
+        } else {
+          if (!startedField) {
+            assert numTerms > 0;
+            startField(fieldInfo, numTerms, hasPositions, hasOffsets);
+            startTerm(termsEnum.term(), freq);
+            startedField = true;
+          }
         }
-        
-        if (termsEnum.next() == null) {
-          assert termCount == numTerms;
-          break;
-        }
-        termCount++;
       }
+      assert termCount == numTerms;
     }
   }
 }

@@ -126,7 +126,7 @@ public class TokenSources {
   private static boolean hasPositions(Terms vector) throws IOException {
     final TermsEnum termsEnum = vector.iterator(null);
     if (termsEnum.next() != null) {
-      DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+      DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
       if (dpEnum != null) {
         int pos = dpEnum.nextPosition();
         if (pos >= 0) {
@@ -219,22 +219,21 @@ public class TokenSources {
     DocsAndPositionsEnum dpEnum = null;
     while ((text = termsEnum.next()) != null) {
 
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
-      if (dpEnum == null || (!dpEnum.attributes().hasAttribute(OffsetAttribute.class))) {
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
+      if (dpEnum == null) {
         throw new IllegalArgumentException(
             "Required TermVector Offset information was not found");
       }
 
       final String term = text.utf8ToString();
 
-      final OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
       dpEnum.nextDoc();
       final int freq = dpEnum.freq();
       for(int posUpto=0;posUpto<freq;posUpto++) {
         final int pos = dpEnum.nextPosition();
         final Token token = new Token(term,
-                                      offsetAtt.startOffset(),
-                                      offsetAtt.endOffset());
+                                      dpEnum.startOffset(),
+                                      dpEnum.endOffset());
         if (tokenPositionsGuaranteedContiguous && pos != -1) {
           // We have positions stored and a guarantee that the token position
           // information is contiguous

@@ -953,7 +953,10 @@ public class MemoryIndex {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) {
+        if (needsOffsets) {
+          return null;
+        }
         if (reuse == null || !(reuse instanceof MemoryDocsAndPositionsEnum)) {
           reuse = new MemoryDocsAndPositionsEnum();
         }
@@ -1063,6 +1066,16 @@ public class MemoryIndex {
       @Override
       public int nextPosition() {
         return positions.get(posUpto++);
+      }
+
+      @Override
+      public int startOffset() {
+        return -1;
+      }
+
+      @Override
+      public int endOffset() {
+        return -1;
       }
 
       @Override

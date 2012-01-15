@@ -176,8 +176,8 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-      return in.docsAndPositions(liveDocs, reuse);
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+      return in.docsAndPositions(liveDocs, reuse, needsOffsets);
     }
 
     @Override
@@ -256,6 +256,16 @@ public class FilterIndexReader extends IndexReader {
     @Override
     public int nextPosition() throws IOException {
       return in.nextPosition();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return in.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return in.endOffset();
     }
 
     @Override

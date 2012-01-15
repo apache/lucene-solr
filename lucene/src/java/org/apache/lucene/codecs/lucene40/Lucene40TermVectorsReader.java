@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -518,21 +517,20 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+      if (needsOffsets && !storeOffsets) {
+        return null;
+      }
+
       if (!storePositions && !storeOffsets) {
         return null;
       }
       
       TVDocsAndPositionsEnum docsAndPositionsEnum;
-      if (reuse != null) {
+      if (reuse != null && reuse instanceof TVDocsAndPositionsEnum) {
         docsAndPositionsEnum = (TVDocsAndPositionsEnum) reuse;
-        if (docsAndPositionsEnum.canReuse(storeOffsets)) {
-          docsAndPositionsEnum = (TVDocsAndPositionsEnum) reuse;
-        } else {
-          docsAndPositionsEnum = new TVDocsAndPositionsEnum(storeOffsets);
-        }
       } else {
-        docsAndPositionsEnum = new TVDocsAndPositionsEnum(storeOffsets);
+        docsAndPositionsEnum = new TVDocsAndPositionsEnum();
       }
       docsAndPositionsEnum.reset(liveDocs, positions, startOffsets, endOffsets);
       return docsAndPositionsEnum;
@@ -592,7 +590,6 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
   }
 
   private static class TVDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    private final OffsetAttribute offsetAtt;
     private boolean didNext;
     private int doc = -1;
     private int nextPos;
@@ -600,18 +597,6 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     private int[] positions;
     private int[] startOffsets;
     private int[] endOffsets;
-
-    public TVDocsAndPositionsEnum(boolean storeOffsets) {
-      if (storeOffsets) {
-        offsetAtt = attributes().addAttribute(OffsetAttribute.class);
-      } else {
-        offsetAtt = null;
-      }
-    }
-
-    public boolean canReuse(boolean storeOffsets) {
-      return storeOffsets == (offsetAtt != null);
-    }
 
     @Override
     public int freq() {
@@ -651,7 +636,6 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       this.liveDocs = liveDocs;
       this.positions = positions;
       this.startOffsets = startOffsets;
-      assert (offsetAtt != null) == (startOffsets != null);
       this.endOffsets = endOffsets;
       this.doc = -1;
       didNext = false;
@@ -673,16 +657,24 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       assert (positions != null && nextPos < positions.length) ||
         startOffsets != null && nextPos < startOffsets.length;
 
-      if (startOffsets != null) {
-        offsetAtt.setOffset(startOffsets[nextPos],
-                            endOffsets[nextPos]);
-      }
       if (positions != null) {
         return positions[nextPos++];
       } else {
         nextPos++;
         return -1;
       }
+    }
+
+    @Override
+    public int startOffset() {
+      assert startOffsets != null;
+      return startOffsets[nextPos-1];
+    }
+
+    @Override
+    public int endOffset() {
+      assert endOffsets != null;
+      return endOffsets[nextPos-1];
     }
   }
 

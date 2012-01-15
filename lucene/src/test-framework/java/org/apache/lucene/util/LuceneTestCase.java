@@ -1106,6 +1106,10 @@ public abstract class LuceneTestCase extends Assert {
       return new Field(name, value, type);
     }
 
+    // TODO: once all core & test codecs can index
+    // offsets, sometimes randomly turn on offsets if we are
+    // already indexing positions...
+
     FieldType newType = new FieldType(type);
     if (!newType.stored() && random.nextBoolean()) {
       newType.setStored(true); // randomly store it

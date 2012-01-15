@@ -966,7 +966,12 @@ public class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+      if (needsOffsets) {
+        // Pre-4.0 indices never have offsets:
+        return null;
+      }
+
       PreDocsAndPositionsEnum docsPosEnum;
       if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         return null;
@@ -1079,6 +1084,16 @@ public class Lucene3xFields extends FieldsProducer {
     public int nextPosition() throws IOException {
       assert docID != NO_MORE_DOCS;
       return pos.nextPosition();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
     }
 
     @Override

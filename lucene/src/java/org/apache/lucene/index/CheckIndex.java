@@ -289,6 +289,20 @@ public class CheckIndex {
     infoStream = null;
   }
 
+  private boolean crossCheckTermVectors;
+
+  /** If true, term vectors are compared against postings to
+   *  make sure they are the same.  This will likely
+   *  drastically increase time it takes to run CheckIndex! */
+  public void setCrossCheckTermVectors(boolean v) {
+    crossCheckTermVectors = v;
+  }
+
+  /** See {@link #setCrossCheckTermVectors}. */
+  public boolean getCrossCheckTermVectors() {
+    return crossCheckTermVectors;
+  }
+
   private boolean verbose;
 
   /** Set infoStream where messages should go.  If null, no
@@ -563,7 +577,7 @@ public class CheckIndex {
         segInfoStat.fieldNormStatus = testFieldNorms(fieldInfos, reader);
 
         // Test the Term Index
-        segInfoStat.termIndexStatus = testTermIndex(reader);
+        segInfoStat.termIndexStatus = testPostings(reader);
 
         // Test Stored Fields
         segInfoStat.storedFieldStatus = testStoredFields(info, reader, nf);
@@ -678,7 +692,11 @@ public class CheckIndex {
   /**
    * Test the term index.
    */
-  private Status.TermIndexStatus testTermIndex(SegmentReader reader) {
+  private Status.TermIndexStatus testPostings(SegmentReader reader) {
+
+    // TODO: we should go and verify term vectors match, if
+    // crossCheckTermVectors is on...
+
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
 
     final int maxDoc = reader.maxDoc();
@@ -760,7 +778,7 @@ public class CheckIndex {
 
           docs = termsEnum.docs(liveDocs, docs, false);
           docsAndFreqs = termsEnum.docs(liveDocs, docsAndFreqs, true);
-          postings = termsEnum.docsAndPositions(liveDocs, postings);
+          postings = termsEnum.docsAndPositions(liveDocs, postings, false);
 
           if (hasOrd) {
             long ord = -1;
@@ -890,7 +908,7 @@ public class CheckIndex {
           if (hasPositions) {
             for(int idx=0;idx<7;idx++) {
               final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-              postings = termsEnum.docsAndPositions(liveDocs, postings);
+              postings = termsEnum.docsAndPositions(liveDocs, postings, false);
               final int docID = postings.advance(skipDocID);
               if (docID == DocsEnum.NO_MORE_DOCS) {
                 break;
@@ -1256,7 +1274,10 @@ public class CheckIndex {
   private Status.TermVectorStatus testTermVectors(SegmentInfo info, SegmentReader reader, NumberFormat format) {
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
     
-    TermsEnum termsEnum = null;
+    // TODO: in theory we could test that term vectors have
+    // same terms/pos/offsets as the postings, but it'd be
+    // very slow...
+
     try {
       if (infoStream != null) {
         infoStream.print("    test: term vectors........");
@@ -1264,9 +1285,25 @@ public class CheckIndex {
 
       // TODO: maybe we can factor out testTermIndex and reuse here?
       DocsEnum docs = null;
-      DocsEnum docsAndFreqs = null;
       DocsAndPositionsEnum postings = null;
+
+      // Only used if crossCheckTermVectors is true:
+      DocsEnum postingsDocs = null;
+      DocsAndPositionsEnum postingsPostings = null;
+
       final Bits liveDocs = reader.getLiveDocs();
+
+      final Fields postingsFields;
+      // TODO: testTermsIndex
+      if (crossCheckTermVectors) {
+        postingsFields = reader.fields();
+      } else {
+        postingsFields = null;
+      }
+
+      TermsEnum termsEnum = null;
+      TermsEnum postingsTermsEnum = null;
+
       for (int j = 0; j < info.docCount; ++j) {
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
@@ -1290,6 +1327,16 @@ public class CheckIndex {
               
               Terms terms = tfv.terms(field);
               termsEnum = terms.iterator(termsEnum);
+
+              if (crossCheckTermVectors) {
+                Terms postingsTerms = postingsFields.terms(field);
+                if (postingsTerms == null) {
+                  throw new RuntimeException("vector field=" + field + " does not exist in postings; doc=" + j);
+                }
+                postingsTermsEnum = postingsTerms.iterator(postingsTermsEnum);
+              } else {
+                postingsTermsEnum = null;
+              }
               
               long tfvComputedTermCountForField = 0;
               long tfvComputedSumTotalTermFreq = 0;
@@ -1308,52 +1355,171 @@ public class CheckIndex {
                   throw new RuntimeException("totalTermFreq: " + totalTermFreq + " is out of bounds");
                 }
 
-                postings = termsEnum.docsAndPositions(null, postings);
+                final boolean hasPositions;
+                final boolean hasOffsets;
+                final boolean hasFreqs;
+
+                // TODO: really we need a reflection/query
+                // API so we can just ask what was indexed
+                // instead of "probing"...
+
+                // Try offsets:
+                postings = termsEnum.docsAndPositions(null, postings, true);
                 if (postings == null) {
-                  docsAndFreqs = termsEnum.docs(null, docsAndFreqs, true);
-                  if (docsAndFreqs == null) {
-                    docs = termsEnum.docs(null, docs, false);
+                  hasOffsets = false;
+                  // Try only positions:
+                  postings = termsEnum.docsAndPositions(null, postings, false);
+                  if (postings == null) {
+                    hasPositions = false;
+                    // Try docIDs & freqs:
+                    docs = termsEnum.docs(null, docs, true);
+                    if (docs == null) {
+                      // OK, only docIDs:
+                      hasFreqs = false;
+                      docs = termsEnum.docs(null, docs, false);
+                    } else {
+                      hasFreqs = true;
+                    }
                   } else {
-                    docs = docsAndFreqs;
+                    hasPositions = true;
+                    hasFreqs = true;
                   }
                 } else {
-                  docs = docsAndFreqs = postings;
+                  hasOffsets = true;
+                  // NOTE: may be a lie... but we accept -1 below
+                  hasPositions = true;
+                  hasFreqs = true;
                 }
 
-                final int doc = docs.nextDoc();
+                final DocsEnum docs2;
+                if (hasPositions || hasOffsets) {
+                  assert postings != null;
+                  docs2 = postings;
+                } else {
+                  assert docs != null;
+                  docs2 = docs;
+                }
+
+                final DocsEnum postingsDocs2;
+                final boolean postingsHasFreq;
+                if (crossCheckTermVectors) {
+                  if (!postingsTermsEnum.seekExact(term, true)) {
+                    throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
+                  }
+                  postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings, true);
+                  if (postingsPostings == null) {
+                    // Term vectors were indexed w/ offsets but postings were not
+                    postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings, false);
+                    if (postingsPostings == null) {
+                      postingsDocs = postingsTermsEnum.docs(null, postingsDocs, true);
+                      if (postingsDocs == null) {
+                        postingsHasFreq = false;
+                        postingsDocs = postingsTermsEnum.docs(null, postingsDocs, false);
+                        if (postingsDocs == null) {
+                          throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
+                        }
+                      } else {
+                        postingsHasFreq = true;
+                      }
+                    } else {
+                      postingsHasFreq = true;
+                    }
+                  } else {
+                    postingsHasFreq = true;
+                  }
+
+                  if (postingsPostings != null) {
+                    postingsDocs2 = postingsPostings;
+                  } else {
+                    postingsDocs2 = postingsDocs;
+                  }
+                  
+                  final int advanceDoc = postingsDocs2.advance(j);
+                  if (advanceDoc != j) {
+                    throw new RuntimeException("vector term=" + term + " field=" + field + ": doc=" + j + " was not found in postings (got: " + advanceDoc + ")");
+                  }
+                } else {
+                  postingsDocs2 = null;
+                  postingsHasFreq = false;
+                }
+
+                final int doc = docs2.nextDoc();
                   
                 if (doc != 0) {
                   throw new RuntimeException("vector for doc " + j + " didn't return docID=0: got docID=" + doc);
                 }
 
-                if (docsAndFreqs != null) {
-                  final int tf = docsAndFreqs.freq();
+                if (hasFreqs) {
+                  final int tf = docs2.freq();
                   if (tf <= 0) {
                     throw new RuntimeException("vector freq " + tf + " is out of bounds");
                   }
                   if (totalTermFreq != -1 && totalTermFreq != tf) {
                     throw new RuntimeException("vector totalTermFreq " + totalTermFreq + " != tf " + tf);
                   }
+                  if (crossCheckTermVectors && postingsHasFreq) {
+                    if (postingsDocs2.freq() != tf) {
+                      throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());
+                    }
+                  }
                   tfvComputedSumTotalTermFreq += tf;
                 
-                  if (postings != null) {
+                  if (hasPositions || hasOffsets) {
                     int lastPosition = -1;
+                    //int lastStartOffset = -1;
                     for (int i = 0; i < tf; i++) {
                       int pos = postings.nextPosition();
-                      if (pos != -1 && pos < 0) {
-                        throw new RuntimeException("vector position " + pos + " is out of bounds");
-                      }
+                      if (hasPositions) {
+                        if (pos != -1 && pos < 0) {
+                          throw new RuntimeException("vector position " + pos + " is out of bounds");
+                        }
+                        if (pos < lastPosition) {
+                          throw new RuntimeException("vector position " + pos + " < lastPos " + lastPosition);
+                        }
                     
-                      if (pos < lastPosition) {
-                        throw new RuntimeException("vector position " + pos + " < lastPos " + lastPosition);
+                        lastPosition = pos;
                       }
-                    
-                      lastPosition = pos;
+
+                      if (crossCheckTermVectors && postingsPostings != null) {
+                        int postingsPos = postingsPostings.nextPosition();
+                        if (pos != -1 && postingsPos != -1 && pos != postingsPos) {
+                          throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": pos=" + pos + " differs from postings pos=" + postingsPos);
+                        }
+                      }
+
+                      if (hasOffsets) {
+                        // Call the methods to at least make
+                        // sure they don't throw exc:
+                        final int startOffset = postings.startOffset();
+                        final int endOffset = postings.endOffset();
+                        // TODO: these are too anal...?
+                        /*
+                        if (endOffset < startOffset) {
+                          throw new RuntimeException("vector startOffset=" + startOffset + " is > endOffset=" + endOffset);
+                        }
+                        if (startOffset < lastStartOffset) {
+                          throw new RuntimeException("vector startOffset=" + startOffset + " is < prior startOffset=" + lastStartOffset);
+                        }
+                        lastStartOffset = startOffset;
+                        */
+
+                        if (crossCheckTermVectors && postingsPostings != null) {
+                          final int postingsStartOffset = postingsPostings.startOffset();
+
+                          final int postingsEndOffset = postingsPostings.endOffset();
+                          if (startOffset != -1 && postingsStartOffset != -1 && startOffset != postingsStartOffset) {
+                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": startOffset=" + startOffset + " differs from postings startOffset=" + postingsStartOffset);
+                          }
+                          if (endOffset != -1 && postingsEndOffset != -1 && endOffset != postingsEndOffset) {
+                            throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": endOffset=" + endOffset + " differs from postings endOffset=" + postingsEndOffset);
+                          }
+                        }
+                      }
                     }
                   }
                 }
                   
-                if (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+                if (docs2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                   throw new RuntimeException("vector for doc " + j + " references multiple documents!");
                 }
               }
@@ -1474,6 +1640,7 @@ public class CheckIndex {
   public static void main(String[] args) throws IOException, InterruptedException {
 
     boolean doFix = false;
+    boolean doCrossCheckTermVectors = false;
     Codec codec = Codec.getDefault(); // only used when fixing
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<String>();
@@ -1484,6 +1651,8 @@ public class CheckIndex {
       String arg = args[i];
       if ("-fix".equals(arg)) {
         doFix = true;
+      } else if ("-crossCheckTermVectors".equals(arg)) {
+        doCrossCheckTermVectors = true;
       } else if ("-codec".equals(arg)) {
         if (i == args.length-1) {
           System.out.println("ERROR: missing name for -codec option");
@@ -1519,9 +1688,10 @@ public class CheckIndex {
 
     if (indexPath == null) {
       System.out.println("\nERROR: index path not specified");
-      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y] [-dir-impl X]\n" +
+      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-crossCheckTermVectors] [-segment X] [-segment Y] [-dir-impl X]\n" +
                          "\n" +
                          "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
+                         "  -crossCheckTermVectors: verifies that term vectors match postings; THIS IS VERY SLOW!\n" +
                          "  -codec X: when fixing, codec to write the new segments_N file with\n" +
                          "  -verbose: print additional details\n" +
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
@@ -1570,6 +1740,7 @@ public class CheckIndex {
     }
 
     CheckIndex checker = new CheckIndex(dir);
+    checker.setCrossCheckTermVectors(doCrossCheckTermVectors);
     checker.setInfoStream(System.out, verbose);
 
     Status result = checker.checkIndex(onlySegments);

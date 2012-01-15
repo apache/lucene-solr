@@ -38,7 +38,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
   boolean doVectorOffsets;
 
   int maxNumPostings;
-  OffsetAttribute offsetAttribute = null;
+  OffsetAttribute offsetAttribute;
 
   public TermVectorsConsumerPerField(TermsHashPerField termsHashPerField, TermVectorsConsumer termsWriter, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;

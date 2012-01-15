@@ -62,7 +62,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
       SimpleTextUtil.writeNewline(out);
       
       for (FieldInfo fi : infos) {
-        assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
+        assert fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.storePayloads;
 
         SimpleTextUtil.write(out, NAME);
         SimpleTextUtil.write(out, fi.name, scratch);

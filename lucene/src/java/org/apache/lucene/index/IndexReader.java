@@ -788,9 +788,9 @@ public abstract class IndexReader implements Closeable {
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
    *  field & term.  This may return null, if either the
-   *  field or term does not exist, or, positions were not
-   *  indexed for this field. */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
+   *  field or term does not exist, or needsOffsets is
+   *  true but offsets were not indexed for this field. */
+  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, boolean needsOffsets) throws IOException {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
@@ -799,7 +799,7 @@ public abstract class IndexReader implements Closeable {
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
         if (termsEnum.seekExact(term, true)) {
-          return termsEnum.docsAndPositions(liveDocs, null);
+          return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
         }
       }
     }
@@ -830,8 +830,9 @@ public abstract class IndexReader implements Closeable {
    * Returns {@link DocsAndPositionsEnum} for the specified field and
    * {@link TermState}. This may return null, if either the field or the term
    * does not exists, the {@link TermState} is invalid for the underlying
-   * implementation, or positions were not indexed for this field. */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state) throws IOException {
+   * implementation, or needsOffsets is true but offsets
+   * were not indexed for this field. */
+  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsOffsets) throws IOException {
     assert state != null;
     assert field != null;
     final Fields fields = fields();
@@ -840,7 +841,7 @@ public abstract class IndexReader implements Closeable {
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
         termsEnum.seekExact(term, state);
-        return termsEnum.docsAndPositions(liveDocs, null);
+        return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
       }
     }
     return null;

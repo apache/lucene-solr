@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Set;
 
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -101,29 +100,19 @@ public class FieldTermStack {
       if (!termSet.contains(term)) {
         continue;
       }
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
       if (dpEnum == null) {
         // null snippet
         return;
       }
 
-      if (!dpEnum.attributes().hasAttribute(OffsetAttribute.class)) {
-        // null snippet
-        return;
-      }
       dpEnum.nextDoc();
-
-      final OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
 
       final int freq = dpEnum.freq();
       
       for(int i = 0;i < freq;i++) {
-        final int pos = dpEnum.nextPosition();
-        if (pos == -1) {
-          // null snippet
-          return;
-        }
-        termList.add(new TermInfo(term, offsetAtt.startOffset(), offsetAtt.endOffset(), pos));
+        int pos = dpEnum.nextPosition();
+        termList.add(new TermInfo(term, dpEnum.startOffset(), dpEnum.endOffset(), pos));
       }
     }
     

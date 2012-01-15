@@ -119,8 +119,7 @@ public abstract class TermsConsumer {
           }
         }
       }
-    } else {
-      assert mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    } else if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       if (postingsEnum == null) {
         postingsEnum = new MappingMultiDocsAndPositionsEnum();
       }
@@ -129,7 +128,41 @@ public abstract class TermsConsumer {
       while((term = termsEnum.next()) != null) {
         // We can pass null for liveDocs, because the
         // mapping enum will skip the non-live docs:
-        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn);
+        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn, false);
+        assert postingsEnumIn != null;
+        postingsEnum.reset(postingsEnumIn);
+        // set PayloadProcessor
+        if (mergeState.payloadProcessorProvider != null) {
+          for (int i = 0; i < mergeState.readers.size(); i++) {
+            if (mergeState.dirPayloadProcessor[i] != null) {
+              mergeState.currentPayloadProcessor[i] = mergeState.dirPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
+            }
+          }
+        }
+        final PostingsConsumer postingsConsumer = startTerm(term);
+        final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum, visitedDocs);
+        if (stats.docFreq > 0) {
+          finishTerm(term, stats);
+          sumTotalTermFreq += stats.totalTermFreq;
+          sumDFsinceLastAbortCheck += stats.docFreq;
+          sumDocFreq += stats.docFreq;
+          if (sumDFsinceLastAbortCheck > 60000) {
+            mergeState.checkAbort.work(sumDFsinceLastAbortCheck/5.0);
+            sumDFsinceLastAbortCheck = 0;
+          }
+        }
+      }
+    } else {
+      assert mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+      if (postingsEnum == null) {
+        postingsEnum = new MappingMultiDocsAndPositionsEnum();
+      }
+      postingsEnum.setMergeState(mergeState);
+      MultiDocsAndPositionsEnum postingsEnumIn = null;
+      while((term = termsEnum.next()) != null) {
+        // We can pass null for liveDocs, because the
+        // mapping enum will skip the non-live docs:
+        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn, true);
         assert postingsEnumIn != null;
         postingsEnum.reset(postingsEnumIn);
         // set PayloadProcessor
@@ -154,7 +187,6 @@ public abstract class TermsConsumer {
         }
       }
     }
-
     finish(sumTotalTermFreq, sumDocFreq, visitedDocs.cardinality());
   }
 }

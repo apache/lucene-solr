@@ -103,7 +103,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         IndexOptions indexOptions = IndexOptions.valueOf(readString(INDEXOPTIONS.length, scratch));
 
         hasVectors |= storeTermVector;
-        hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        hasProx |= isIndexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
         hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
         
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 

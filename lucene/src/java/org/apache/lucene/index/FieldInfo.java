@@ -38,13 +38,18 @@ public final class FieldInfo {
    * @lucene.experimental
    */
   public static enum IndexOptions { 
+    // NOTE: order is important here; FieldInfo uses this
+    // order to merge two conflicting IndexOptions (always
+    // "downgrades" by picking the lowest).
     /** only documents are indexed: term frequencies and positions are omitted */
     // TODO: maybe rename to just DOCS?
     DOCS_ONLY,
     /** only documents and term frequencies are indexed: positions are omitted */  
     DOCS_AND_FREQS,
-    /** full postings: documents, frequencies, and positions */
-    DOCS_AND_FREQS_AND_POSITIONS 
+    /** documents, frequencies and positions */
+    DOCS_AND_FREQS_AND_POSITIONS,
+    /** documents, frequencies, positions and offsets */
+    DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
   };
 
   /**
@@ -67,7 +72,7 @@ public final class FieldInfo {
       this.omitNorms = false;
       this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     }
-    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !storePayloads;
+    assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !storePayloads;
   }
   
   @Override
@@ -95,10 +100,13 @@ public final class FieldInfo {
       if (this.indexOptions != indexOptions) {
         // downgrade
         this.indexOptions = this.indexOptions.compareTo(indexOptions) < 0 ? this.indexOptions : indexOptions;
-        this.storePayloads = false;
+        if (this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+          // cannot store payloads if we don't store positions:
+          this.storePayloads = false;
+        }
       }
     }
-    assert this.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !this.storePayloads;
+    assert this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
   }
 
   void setDocValuesType(DocValues.Type v) {

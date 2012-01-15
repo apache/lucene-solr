@@ -294,7 +294,18 @@ public class SepPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs,
+                                               DocsAndPositionsEnum reuse, boolean needsOffsets)
+    throws IOException {
+
+    if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+      return null;
+    }
+
+    if (needsOffsets) {
+      return null;
+    }
+
     assert fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     final SepTermState termState = (SepTermState) _termState;
     SepDocsAndPositionsEnum postingsEnum;
@@ -711,6 +722,16 @@ public class SepPostingsReader extends PostingsReaderBase {
       pendingPosCount--;
       assert pendingPosCount >= 0;
       return position;
+    }
+
+    @Override
+    public int startOffset() {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() {
+      return -1;
     }
 
     private BytesRef payload;

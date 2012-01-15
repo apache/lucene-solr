@@ -283,7 +283,8 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader,
                                                                 MultiFields.getLiveDocs(reader),
                                                                 "content",
-                                                                new BytesRef("another"));
+                                                                new BytesRef("another"),
+                                                                false);
     assertTrue(tps.nextDoc() != DocsEnum.NO_MORE_DOCS);
     assertEquals(1, tps.freq());
     assertEquals(3, tps.nextPosition());

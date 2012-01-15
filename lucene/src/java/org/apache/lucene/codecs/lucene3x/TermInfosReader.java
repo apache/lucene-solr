@@ -215,7 +215,9 @@ public final class TermInfosReader {
 
   TermInfo seekEnum(SegmentTermEnum enumerator, Term term, boolean useCache) throws IOException {
     if (useCache) {
-      return seekEnum(enumerator, term, termsCache.get(new CloneableTerm(term)), useCache);
+      return seekEnum(enumerator, term,
+                      termsCache.get(new CloneableTerm(term.deepCopyOf())),
+                      useCache);
     } else {
       return seekEnum(enumerator, term, null, useCache);
     }
@@ -247,7 +249,8 @@ public final class TermInfosReader {
             // of terms in order
             if (tiOrd == null) {
               if (useCache) {
-                termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, enumerator.position));
+                termsCache.put(new CloneableTerm(term.deepCopyOf()),
+                               new TermInfoAndOrd(ti, enumerator.position));
               }
             } else {
               assert sameTermInfo(ti, tiOrd, enumerator);
@@ -279,7 +282,8 @@ public final class TermInfosReader {
       ti = enumerator.termInfo;
       if (tiOrd == null) {
         if (useCache) {
-          termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, enumerator.position));
+          termsCache.put(new CloneableTerm(term.deepCopyOf()),
+                         new TermInfoAndOrd(ti, enumerator.position));
         }
       } else {
         assert sameTermInfo(ti, tiOrd, enumerator);

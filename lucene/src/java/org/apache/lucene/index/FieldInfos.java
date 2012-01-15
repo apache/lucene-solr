@@ -185,7 +185,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
     // mutable FIs must check!
     for (FieldInfo fi : this) {
-      if (fi.isIndexed && fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      if (fi.isIndexed && fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
         return true;
       }
     }
@@ -430,7 +430,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       FieldInfo clone = (FieldInfo) (fieldInfo).clone();
       roFis.putInternal(clone);
       roFis.hasVectors |= clone.storeTermVector;
-      roFis.hasProx |= clone.isIndexed && clone.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      roFis.hasProx |= clone.isIndexed && clone.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       roFis.hasFreq |= clone.isIndexed && clone.indexOptions != IndexOptions.DOCS_ONLY;
     }
     return roFis;

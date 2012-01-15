@@ -241,11 +241,15 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-    if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
+                                               DocsAndPositionsEnum reuse, boolean needsOffsets)
+    throws IOException {
+
+    if (needsOffsets) {
+      // TODO: once we index offsets into postings fix this!
       return null;
     }
-    
+
     // TODO: refactor
     if (fieldInfo.storePayloads) {
       SegmentDocsAndPositionsAndPayloadsEnum docsEnum;
@@ -366,7 +370,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       
       start = count; // buffer is consumed
       
-      return doc = skipTo(target, liveDocs);
+      return doc = skipTo(target);
     }
     
     private final int binarySearch(int hi, int low, int target, int[] docs) {
@@ -448,7 +452,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
      
     }
 
-    private final int skipTo(int target, Bits liveDocs) throws IOException {
+    private final int skipTo(int target) throws IOException {
       if ((target - skipInterval) >= accum && limit >= skipMinimum) {
 
         // There are enough docs in the posting to have
@@ -841,6 +845,16 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       return position;
     }
 
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
+    }
+
     /** Returns the payload at this position, or null if no
      *  payload was indexed. */
     @Override
@@ -1072,6 +1086,16 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
       //System.out.println("StandardR.D&PE nextPos   return pos=" + position);
       return position;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return -1;
     }
 
     /** Returns the payload at this position, or null if no

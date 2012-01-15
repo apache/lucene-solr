@@ -188,6 +188,9 @@ public final class SepPostingsWriter extends PostingsWriterBase {
   public void setField(FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
     this.indexOptions = fieldInfo.indexOptions;
+    if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+      throw new IllegalArgumentException("this codec cannot index offsets");
+    }
     skipListWriter.setIndexOptions(indexOptions);
     storePayloads = indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS && fieldInfo.storePayloads;
   }
@@ -222,7 +225,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
 
   /** Add a new position & payload */
   @Override
-  public void addPosition(int position, BytesRef payload) throws IOException {
+  public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
     assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
 
     final int delta = position - lastPosition;

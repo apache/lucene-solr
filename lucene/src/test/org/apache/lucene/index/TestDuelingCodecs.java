@@ -260,17 +260,17 @@ public class TestDuelingCodecs extends LuceneTestCase {
       assertEquals(info, term, rightTermsEnum.next());
       assertTermStats(leftTermsEnum, rightTermsEnum);
       if (deep) {
-        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions),
-            rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions));
-        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions),
-            rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions));
+        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions, false),
+                                   rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions, false));
+        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions, false),
+                                   rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions, false));
 
         assertPositionsSkipping(leftTermsEnum.docFreq(), 
-            leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions),
-            rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions));
+                                leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions, false),
+                                rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions, false));
         assertPositionsSkipping(leftTermsEnum.docFreq(), 
-            leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions),
-            rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions));
+                                leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions, false),
+                                rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions, false));
 
         // with freqs:
         assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, true),
@@ -341,6 +341,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
       for (int i = 0; i < freq; i++) {
         assertEquals(info, leftDocs.nextPosition(), rightDocs.nextPosition());
         assertEquals(info, leftDocs.hasPayload(), rightDocs.hasPayload());
+        assertEquals(info, leftDocs.startOffset(), rightDocs.startOffset());
+        assertEquals(info, leftDocs.endOffset(), rightDocs.endOffset());
         if (leftDocs.hasPayload()) {
           assertEquals(info, leftDocs.getPayload(), rightDocs.getPayload());
         }

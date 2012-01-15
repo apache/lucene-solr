@@ -166,7 +166,7 @@ public class TestCodecs extends LuceneTestCase {
           totTF += positions[i].length;
           for(int j=0;j<positions[i].length;j++) {
             final PositionData pos = positions[i][j];
-            postingsConsumer.addPosition(pos.pos, pos.payload);
+            postingsConsumer.addPosition(pos.pos, pos.payload, -1, -1);
           }
           postingsConsumer.finishDoc();
         }
@@ -480,7 +480,7 @@ public class TestCodecs extends LuceneTestCase {
         if (field.omitTF) {
           this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random, termsEnum, null, null, false), false);
         } else {
-          this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
+          this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null, false), true);
         }
 
         // Test random seek by ord:
@@ -500,7 +500,7 @@ public class TestCodecs extends LuceneTestCase {
           if (field.omitTF) {
             this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random, termsEnum, null, null, false), false);
           } else {
-            this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
+            this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null, false), true);
           }
         }
 
@@ -552,7 +552,7 @@ public class TestCodecs extends LuceneTestCase {
             final DocsEnum docsAndFreqs;
             final DocsAndPositionsEnum postings;
             if (!field.omitTF) {
-              postings = termsEnum.docsAndPositions(null, null);
+              postings = termsEnum.docsAndPositions(null, null, false);
               if (postings != null) {
                 docs = docsAndFreqs = postings;
               } else {

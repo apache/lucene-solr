@@ -50,13 +50,15 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private final IndexInput in;
   private final FieldInfos fieldInfos;
 
-  final static BytesRef END     = SimpleTextFieldsWriter.END;
-  final static BytesRef FIELD   = SimpleTextFieldsWriter.FIELD;
-  final static BytesRef TERM    = SimpleTextFieldsWriter.TERM;
-  final static BytesRef DOC     = SimpleTextFieldsWriter.DOC;
-  final static BytesRef FREQ    = SimpleTextFieldsWriter.FREQ;
-  final static BytesRef POS     = SimpleTextFieldsWriter.POS;
-  final static BytesRef PAYLOAD = SimpleTextFieldsWriter.PAYLOAD;
+  final static BytesRef END          = SimpleTextFieldsWriter.END;
+  final static BytesRef FIELD        = SimpleTextFieldsWriter.FIELD;
+  final static BytesRef TERM         = SimpleTextFieldsWriter.TERM;
+  final static BytesRef DOC          = SimpleTextFieldsWriter.DOC;
+  final static BytesRef FREQ         = SimpleTextFieldsWriter.FREQ;
+  final static BytesRef POS          = SimpleTextFieldsWriter.POS;
+  final static BytesRef START_OFFSET = SimpleTextFieldsWriter.START_OFFSET;
+  final static BytesRef END_OFFSET   = SimpleTextFieldsWriter.END_OFFSET;
+  final static BytesRef PAYLOAD      = SimpleTextFieldsWriter.PAYLOAD;
 
   public SimpleTextFieldsReader(SegmentReadState state) throws IOException {
     in = state.dir.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
@@ -204,8 +206,16 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-      if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+
+      if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+        // Positions were not indexed
+        return null;
+      }
+
+      if (needsOffsets &&
+          indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+        // Offsets were not indexed
         return null;
       }
 
@@ -215,7 +225,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         docsAndPositionsEnum = new SimpleTextDocsAndPositionsEnum();
       } 
-      return docsAndPositionsEnum.reset(docsStart, liveDocs);
+      return docsAndPositionsEnum.reset(docsStart, liveDocs, indexOptions);
     }
     
     @Override
@@ -289,6 +299,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
           termFreq = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
         } else if (StringHelper.startsWith(scratch, POS)) {
           // skip termFreq++;
+        } else if (StringHelper.startsWith(scratch, START_OFFSET)) {
+          // skip
+        } else if (StringHelper.startsWith(scratch, END_OFFSET)) {
+          // skip
         } else if (StringHelper.startsWith(scratch, PAYLOAD)) {
           // skip
         } else {
@@ -325,6 +339,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final CharsRef scratchUTF16_2 = new CharsRef(10);
     private BytesRef payload;
     private long nextDocStart;
+    private boolean readOffsets;
+    private boolean readPositions;
+    private int startOffset = -1;
+    private int endOffset = -1;
 
     public SimpleTextDocsAndPositionsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
@@ -335,10 +353,12 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return in == inStart;
     }
 
-    public SimpleTextDocsAndPositionsEnum reset(long fp, Bits liveDocs) {
+    public SimpleTextDocsAndPositionsEnum reset(long fp, Bits liveDocs, IndexOptions indexOptions) {
       this.liveDocs = liveDocs;
       nextDocStart = fp;
       docID = -1;
+      readPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      readOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       return this;
     }
 
@@ -360,6 +380,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       while(true) {
         final long lineStart = in.getFilePointer();
         SimpleTextUtil.readLine(in, scratch);
+        //System.out.println("NEXT DOC: " + scratch.utf8ToString());
         if (StringHelper.startsWith(scratch, DOC)) {
           if (!first && (liveDocs == null || liveDocs.get(docID))) {
             nextDocStart = lineStart;
@@ -375,6 +396,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
           tf = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           posStart = in.getFilePointer();
         } else if (StringHelper.startsWith(scratch, POS)) {
+          // skip
+        } else if (StringHelper.startsWith(scratch, START_OFFSET)) {
+          // skip
+        } else if (StringHelper.startsWith(scratch, END_OFFSET)) {
           // skip
         } else if (StringHelper.startsWith(scratch, PAYLOAD)) {
           // skip
@@ -399,10 +424,27 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public int nextPosition() throws IOException {
-      SimpleTextUtil.readLine(in, scratch);
-      assert StringHelper.startsWith(scratch, POS): "got line=" + scratch.utf8ToString();
-      UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+POS.length, scratch.length-POS.length, scratchUTF16_2);
-      final int pos = ArrayUtil.parseInt(scratchUTF16_2.chars, 0, scratchUTF16_2.length);
+      final int pos;
+      if (readPositions) {
+        SimpleTextUtil.readLine(in, scratch);
+        assert StringHelper.startsWith(scratch, POS): "got line=" + scratch.utf8ToString();
+        UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+POS.length, scratch.length-POS.length, scratchUTF16_2);
+        pos = ArrayUtil.parseInt(scratchUTF16_2.chars, 0, scratchUTF16_2.length);
+      } else {
+        pos = -1;
+      }
+
+      if (readOffsets) {
+        SimpleTextUtil.readLine(in, scratch);
+        assert StringHelper.startsWith(scratch, START_OFFSET): "got line=" + scratch.utf8ToString();
+        UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+START_OFFSET.length, scratch.length-START_OFFSET.length, scratchUTF16_2);
+        startOffset = ArrayUtil.parseInt(scratchUTF16_2.chars, 0, scratchUTF16_2.length);
+        SimpleTextUtil.readLine(in, scratch);
+        assert StringHelper.startsWith(scratch, END_OFFSET): "got line=" + scratch.utf8ToString();
+        UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+END_OFFSET.length, scratch.length-END_OFFSET.length, scratchUTF16_2);
+        endOffset = ArrayUtil.parseInt(scratchUTF16_2.chars, 0, scratchUTF16_2.length);
+      }
+
       final long fp = in.getFilePointer();
       SimpleTextUtil.readLine(in, scratch);
       if (StringHelper.startsWith(scratch, PAYLOAD)) {
@@ -418,6 +460,16 @@ class SimpleTextFieldsReader extends FieldsProducer {
         in.seek(fp);
       }
       return pos;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return startOffset;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return endOffset;
     }
 
     @Override

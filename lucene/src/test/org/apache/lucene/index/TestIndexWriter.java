@@ -39,6 +39,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -899,7 +900,8 @@ public class TestIndexWriter extends LuceneTestCase {
     DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(s.getIndexReader(),
                                                                 MultiFields.getLiveDocs(s.getIndexReader()),
                                                                 "field",
-                                                                new BytesRef("a"));
+                                                                new BytesRef("a"),
+                                                                false);
 
     assertTrue(tps.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, tps.freq());
@@ -964,14 +966,14 @@ public class TestIndexWriter extends LuceneTestCase {
     Terms tpv = r.getTermVectors(0).terms("field");
     TermsEnum termsEnum = tpv.iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
     assertEquals(100, dpEnum.nextPosition());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+    dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
@@ -1634,7 +1636,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // Make sure position is still incremented when
     // massive term is skipped:
-    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"));
+    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"), false);
     assertEquals(0, tps.nextDoc());
     assertEquals(1, tps.freq());
     assertEquals(3, tps.nextPosition());
@@ -1760,5 +1762,28 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     w1.close();
     d.close();
+  }
+
+  public void testChangeIndexOptions() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir,
+                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+
+    FieldType docsAndFreqs = new FieldType(TextField.TYPE_UNSTORED);
+    docsAndFreqs.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+
+    FieldType docsOnly = new FieldType(TextField.TYPE_UNSTORED);
+    docsOnly.setIndexOptions(IndexOptions.DOCS_ONLY);
+
+    Document doc = new Document();
+    doc.add(new Field("field", "a b c", docsAndFreqs));
+    w.addDocument(doc);
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new Field("field", "a b c", docsOnly));
+    w.addDocument(doc);
+    w.close();
+    dir.close();
   }
 }

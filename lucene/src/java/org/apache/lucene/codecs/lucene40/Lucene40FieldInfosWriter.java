@@ -47,6 +47,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
   
   static final byte IS_INDEXED = 0x1;
   static final byte STORE_TERMVECTOR = 0x2;
+  static final byte STORE_OFFSETS_IN_POSTINGS = 0x4;
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
@@ -68,6 +69,8 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
         if (fi.storePayloads) bits |= STORE_PAYLOADS;
         if (fi.indexOptions == IndexOptions.DOCS_ONLY) {
           bits |= OMIT_TERM_FREQ_AND_POSITIONS;
+        } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
+          bits |= STORE_OFFSETS_IN_POSTINGS;
         } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS) {
           bits |= OMIT_POSITIONS;
         }
