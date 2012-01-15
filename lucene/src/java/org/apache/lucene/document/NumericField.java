@@ -74,7 +74,7 @@ import org.apache.lucene.util.NumericUtils;
  *
  * <p>By default, a <code>NumericField</code>'s value is not stored but
  * is indexed for range filtering and sorting.  You can use
- * {@link Field#Field(String,Number,FieldType)}
+ * {@link Field#Field(String,int,FieldType)}, etc.,
  * if you need to change these defaults.</p>
  *
  * <p>You may add the same field name as a <code>NumericField</code> to
