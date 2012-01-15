@@ -350,6 +350,10 @@ public final class ZkController {
     }
 
   }
+  
+  public boolean isConnected() {
+    return zkClient.isConnected();
+  }
 
   private void createEphemeralLiveNode() throws KeeperException,
       InterruptedException {

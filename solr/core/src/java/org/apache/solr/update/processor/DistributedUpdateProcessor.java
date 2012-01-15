@@ -18,7 +18,6 @@ package org.apache.solr.update.processor;
  */
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,6 @@ import java.util.Map.Entry;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -53,8 +51,8 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
-import org.apache.solr.update.SolrCmdDistributor.Response;
 import org.apache.solr.update.SolrCmdDistributor.Node;
+import org.apache.solr.update.SolrCmdDistributor.Response;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.update.UpdateHandler;
@@ -197,6 +195,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO: check for id field?
     int hash = 0;
     if (zkEnabled) {
+      zkCheck();
       hash = hash(cmd);
       nodes = setupRequest(hash);
     } else {
@@ -416,6 +415,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // even in non zk mode, tests simulate updates from a leader
       if(!zkEnabled) {
         isLeader = !req.getParams().getBool(SEEN_LEADER, false);
+      } else {
+        zkCheck();
       }
       
       processDeleteByQuery(cmd);
@@ -424,6 +425,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     int hash = 0;
     if (zkEnabled) {
+      zkCheck();
       hash = hash(cmd);
       nodes = setupRequest(hash);
     } else {
@@ -461,6 +463,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
       deleteResponse.add(scratch.toString(), cmd.getVersion());  // we're returning the version of the delete.. not the version of the doc we deleted.
     }
+  }
+
+  private void zkCheck() {
+    if (!zkController.isConnected()) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Cannot talk to ZooKeeper - Updates are disabled.");
+    }
+    
   }
 
   private boolean versionDelete(DeleteUpdateCommand cmd) throws IOException {
@@ -615,6 +624,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
+    if (zkEnabled) {
+      zkCheck();
+    }
+    
     if (vinfo != null) {
       vinfo.lockForUpdate();
     }
