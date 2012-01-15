@@ -271,22 +271,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * highlighted the index reader knows about.
    */
   public Collection<String> getStoredHighlightFieldNames() {
-    if (storedHighlightFieldNames == null) {
-      storedHighlightFieldNames = new LinkedList<String>();
-      for (String fieldName : fieldNames) {
-        try {
-          SchemaField field = schema.getField(fieldName);
-          if (field.stored() &&
-                  ((field.getType() instanceof org.apache.solr.schema.TextField) ||
-                  (field.getType() instanceof org.apache.solr.schema.StrField))) {
-            storedHighlightFieldNames.add(fieldName);
-          }
-        } catch (RuntimeException e) { // getField() throws a SolrException, but it arrives as a RuntimeException
+    synchronized (this) {
+      if (storedHighlightFieldNames == null) {
+        storedHighlightFieldNames = new LinkedList<String>();
+        for (String fieldName : fieldNames) {
+          try {
+            SchemaField field = schema.getField(fieldName);
+            if (field.stored() &&
+                ((field.getType() instanceof org.apache.solr.schema.TextField) ||
+                    (field.getType() instanceof org.apache.solr.schema.StrField))) {
+              storedHighlightFieldNames.add(fieldName);
+            }
+          } catch (RuntimeException e) { // getField() throws a SolrException, but it arrives as a RuntimeException
             log.warn("Field \"" + fieldName + "\" found in index, but not defined in schema.");
+          }
         }
       }
+      return storedHighlightFieldNames;
     }
-    return storedHighlightFieldNames;
   }
   //
   // Set default regenerators on filter and query caches if they don't have any
