@@ -110,7 +110,8 @@ public class FST<T> {
   T emptyOutput;
   private byte[] emptyOutputBytes;
 
-  private byte[] bytes;
+  // Not private to avoid synthetic access$NNN methods:
+  byte[] bytes;
   int byteUpto = 0;
 
   private int startNode = -1;
