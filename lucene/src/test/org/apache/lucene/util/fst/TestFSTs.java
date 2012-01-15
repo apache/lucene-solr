@@ -1050,6 +1050,7 @@ public class TestFSTs extends LuceneTestCase {
     }
     Terms terms = MultiFields.getTerms(r, "body");
     if (terms != null) {
+      final IntsRef scratchIntsRef = new IntsRef();
       final TermsEnum termsEnum = terms.iterator(null);
       if (VERBOSE) {
         System.out.println("TEST: got termsEnum=" + termsEnum);
@@ -1073,7 +1074,7 @@ public class TestFSTs extends LuceneTestCase {
         } else {
           output = termsEnum.docFreq();
         }
-        builder.add(term, outputs.get(output));
+        builder.add(Util.toIntsRef(term, scratchIntsRef), outputs.get(output));
         ord++;
         if (VERBOSE && ord % 100000 == 0 && LuceneTestCase.TEST_NIGHTLY) {
           System.out.println(ord + " terms...");
@@ -1373,7 +1374,7 @@ public class TestFSTs extends LuceneTestCase {
   public void testSingleString() throws Exception {
     final Outputs<Object> outputs = NoOutputs.getSingleton();
     final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, outputs);
-    b.add(new BytesRef("foobar"), outputs.getNoOutput());
+    b.add(Util.toIntsRef(new BytesRef("foobar"), new IntsRef()), outputs.getNoOutput());
     final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<Object>(b.finish());
     assertNull(fstEnum.seekFloor(new BytesRef("foo")));
     assertNull(fstEnum.seekCeil(new BytesRef("foobaz")));
@@ -1395,9 +1396,9 @@ public class TestFSTs extends LuceneTestCase {
     final BytesRef b = new BytesRef("b");
     final BytesRef c = new BytesRef("c");
 
-    builder.add(a, outputs.get(17));
-    builder.add(b, outputs.get(42));
-    builder.add(c, outputs.get(13824324872317238L));
+    builder.add(Util.toIntsRef(a, new IntsRef()), outputs.get(17));
+    builder.add(Util.toIntsRef(b, new IntsRef()), outputs.get(42));
+    builder.add(Util.toIntsRef(c, new IntsRef()), outputs.get(13824324872317238L));
 
     final FST<Long> fst = builder.finish();
 
@@ -1628,13 +1629,14 @@ public class TestFSTs extends LuceneTestCase {
 
         int line = 0;
         final BytesRef term = new BytesRef();
+        final IntsRef scratchIntsRef = new IntsRef();
         while (line < lines.length) {
           String w = lines[line++];
           if (w == null) {
             break;
           }
           term.copyChars(w);
-          b.add(term, nothing);
+          b.add(Util.toIntsRef(term, scratchIntsRef), nothing);
         }
         
         return b.finish();
@@ -1698,8 +1700,8 @@ public class TestFSTs extends LuceneTestCase {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
 
     final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE4, 2, 0, true, true, Integer.MAX_VALUE, outputs, null);
-    builder.add("stat", outputs.get(17));
-    builder.add("station", outputs.get(10));
+    builder.add(Util.toUTF32("stat", new IntsRef()), outputs.get(17));
+    builder.add(Util.toUTF32("station", new IntsRef()), outputs.get(10));
     final FST<Long> fst = builder.finish();
     //Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp/out.dot"));
     StringWriter w = new StringWriter();
@@ -1713,8 +1715,8 @@ public class TestFSTs extends LuceneTestCase {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
 
     final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null);
-    builder.add(new BytesRef("stat"), outputs.getNoOutput());
-    builder.add(new BytesRef("station"), outputs.getNoOutput());
+    builder.add(Util.toIntsRef(new BytesRef("stat"), new IntsRef()), outputs.getNoOutput());
+    builder.add(Util.toIntsRef(new BytesRef("station"), new IntsRef()), outputs.getNoOutput());
     final FST<Long> fst = builder.finish();
     StringWriter w = new StringWriter();
     //Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp/out.dot"));

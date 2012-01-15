@@ -19,7 +19,6 @@ package org.apache.lucene.util.fst;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
 
@@ -288,54 +287,6 @@ public class Builder<T> {
         }
       }
     }
-  }
-
-  private final IntsRef scratchIntsRef = new IntsRef(10);
-
-  public void add(BytesRef input, T output) throws IOException {
-    assert fst.getInputType() == FST.INPUT_TYPE.BYTE1;
-    scratchIntsRef.grow(input.length);
-    for(int i=0;i<input.length;i++) {
-      scratchIntsRef.ints[i] = input.bytes[i+input.offset] & 0xFF;
-    }
-    scratchIntsRef.length = input.length;
-    add(scratchIntsRef, output);
-  }
-
-  /** Sugar: adds the UTF32 codepoints from char[] slice.  FST
-   *  must be FST.INPUT_TYPE.BYTE4! */
-  public void add(char[] s, int offset, int length, T output) throws IOException {
-    assert fst.getInputType() == FST.INPUT_TYPE.BYTE4;
-    int charIdx = offset;
-    int intIdx = 0;
-    final int charLimit = offset + length;
-    while(charIdx < charLimit) {
-      scratchIntsRef.grow(intIdx+1);
-      final int utf32 = Character.codePointAt(s, charIdx);
-      scratchIntsRef.ints[intIdx] = utf32;
-      charIdx += Character.charCount(utf32);
-      intIdx++;
-    }
-    scratchIntsRef.length = intIdx;
-    add(scratchIntsRef, output);
-  }
-
-  /** Sugar: adds the UTF32 codepoints from CharSequence.  FST
-   *  must be FST.INPUT_TYPE.BYTE4! */
-  public void add(CharSequence s, T output) throws IOException {
-    assert fst.getInputType() == FST.INPUT_TYPE.BYTE4;
-    int charIdx = 0;
-    int intIdx = 0;
-    final int charLimit = s.length();
-    while(charIdx < charLimit) {
-      scratchIntsRef.grow(intIdx+1);
-      final int utf32 = Character.codePointAt(s, charIdx);
-      scratchIntsRef.ints[intIdx] = utf32;
-      charIdx += Character.charCount(utf32);
-      intIdx++;
-    }
-    scratchIntsRef.length = intIdx;
-    add(scratchIntsRef, output);
   }
 
   // for debugging

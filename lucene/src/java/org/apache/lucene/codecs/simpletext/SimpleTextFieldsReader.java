@@ -36,6 +36,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
@@ -44,6 +45,7 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
+import org.apache.lucene.util.fst.Util;
 
 class SimpleTextFieldsReader extends FieldsProducer {
 
@@ -529,11 +531,12 @@ class SimpleTextFieldsReader extends FieldsProducer {
       int docFreq = 0;
       long totalTermFreq = 0;
       OpenBitSet visitedDocs = new OpenBitSet();
+      final IntsRef scratchIntsRef = new IntsRef();
       while(true) {
         SimpleTextUtil.readLine(in, scratch);
         if (scratch.equals(END) || StringHelper.startsWith(scratch, FIELD)) {
           if (lastDocsStart != -1) {
-            b.add(lastTerm, new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,
+            b.add(Util.toIntsRef(lastTerm, scratchIntsRef), new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,
                                                                                    new PairOutputs.Pair<Long,Long>((long) docFreq,
                                                                                                                    posIntOutputs.get(totalTermFreq))));
             sumTotalTermFreq += totalTermFreq;
@@ -549,7 +552,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           totalTermFreq++;
         } else if (StringHelper.startsWith(scratch, TERM)) {
           if (lastDocsStart != -1) {
-            b.add(lastTerm, new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,
+            b.add(Util.toIntsRef(lastTerm, scratchIntsRef), new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,
                                                                                    new PairOutputs.Pair<Long,Long>((long) docFreq,
                                                                                                                    posIntOutputs.get(totalTermFreq))));
           }

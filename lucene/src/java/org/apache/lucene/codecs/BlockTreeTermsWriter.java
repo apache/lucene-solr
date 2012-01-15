@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -39,6 +39,7 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
+import org.apache.lucene.util.fst.Util;
 
 /*
   TODO:
@@ -244,6 +245,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     public final boolean hasTerms;
     public final boolean isFloor;
     public final int floorLeadByte;
+    private final IntsRef scratchIntsRef = new IntsRef();
 
     public PendingBlock(BytesRef prefix, long fp, boolean hasTerms, boolean isFloor, int floorLeadByte, List<FST<BytesRef>> subIndices) {
       super(false);
@@ -294,7 +296,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       final byte[] bytes = new byte[(int) scratchBytes.getFilePointer()];
       assert bytes.length > 0;
       scratchBytes.writeTo(bytes, 0);
-      indexBuilder.add(prefix, new BytesRef(bytes, 0, bytes.length));
+      indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef), new BytesRef(bytes, 0, bytes.length));
       scratchBytes.reset();
 
       // Copy over index for all sub-blocks
@@ -337,7 +339,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         //if (DEBUG) {
         //  System.out.println("      add sub=" + indexEnt.input + " " + indexEnt.input + " output=" + indexEnt.output);
         //}
-        builder.add(indexEnt.input, indexEnt.output);
+        builder.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), indexEnt.output);
       }
     }
   }
@@ -853,13 +855,15 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       return postingsWriter;
     }
 
+    private final IntsRef scratchIntsRef = new IntsRef();
+
     @Override
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
 
       assert stats.docFreq > 0;
       //if (DEBUG) System.out.println("BTTW.finishTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment + " df=" + stats.docFreq);
 
-      blockBuilder.add(text, noOutputs.getNoOutput());
+      blockBuilder.add(Util.toIntsRef(text, scratchIntsRef), noOutputs.getNoOutput());
       pending.add(new PendingTerm(BytesRef.deepCopyOf(text), stats));
       postingsWriter.finishTerm(stats);
       numTerms++;

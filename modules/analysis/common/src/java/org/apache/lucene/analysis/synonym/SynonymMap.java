@@ -33,9 +33,11 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Util;
 
 /**
  * A map of synonyms, keys and values are phrases.
@@ -262,6 +264,8 @@ public class SynonymMap {
       Set<CharsRef> keys = workingSet.keySet();
       CharsRef sortedKeys[] = keys.toArray(new CharsRef[keys.size()]);
       Arrays.sort(sortedKeys, CharsRef.getUTF16SortedAsUTF8Comparator());
+
+      final IntsRef scratchIntsRef = new IntsRef();
       
       //System.out.println("fmap.build");
       for (int keyIdx = 0; keyIdx < sortedKeys.length; keyIdx++) {
@@ -307,7 +311,7 @@ public class SynonymMap {
         
         scratch.length = scratchOutput.getPosition() - scratch.offset;
         //System.out.println("  add input=" + input + " output=" + scratch + " offset=" + scratch.offset + " length=" + scratch.length + " count=" + count);
-        builder.add(input, BytesRef.deepCopyOf(scratch));
+        builder.add(Util.toUTF32(input, scratchIntsRef), BytesRef.deepCopyOf(scratch));
       }
       
       FST<BytesRef> fst = builder.finish();

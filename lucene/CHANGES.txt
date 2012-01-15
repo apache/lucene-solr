@@ -723,6 +723,9 @@ Changes in backwards compatibility policy
   has been removed and replaced with the experimental getFieldInfos
   API.  All IndexReader subclasses must implement getFieldInfos.
   (Mike McCandless)
+
+* LUCENE-3695: Move confusing add(X) methods out of FST.Builder into
+  FST.Util.  (Robert Muir, Mike McCandless)
   
 Security fixes
 
