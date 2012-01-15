@@ -164,7 +164,8 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     return tvf;
   }
 
-  private void seekTvx(final int docNum) throws IOException {
+  // Not private to avoid synthetic access$NNN methods
+  void seekTvx(final int docNum) throws IOException {
     tvx.seek((docNum + docStoreOffset) * 16L + FORMAT_SIZE);
   }
 

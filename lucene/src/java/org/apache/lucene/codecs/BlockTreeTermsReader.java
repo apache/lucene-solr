@@ -1216,8 +1216,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
         //System.out.println();
         // computeBlockStats().print(System.out);
       }
-
-      private void initIndexInput() {
+      
+      // Not private to avoid synthetic access$NNN methods
+      void initIndexInput() {
         if (this.in == null) {
           this.in = (IndexInput) BlockTreeTermsReader.this.in.clone();
         }
