@@ -466,8 +466,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void zkCheck() {
-    if (!zkController.isConnected()) {
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Cannot talk to ZooKeeper - Updates are disabled.");
+    int retries = 10;
+    while (!zkController.isConnected()) {
+      
+      if (retries-- == 0) {
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Cannot talk to ZooKeeper - Updates are disabled.");
+      }
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
     }
     
   }
