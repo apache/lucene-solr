@@ -19,14 +19,15 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -58,18 +59,49 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
-    
+
+    final FieldType storedLong = NumericField.getFieldType(NumericField.DataType.LONG, true);
+
+    final FieldType storedLong8 = new FieldType(storedLong);
+    storedLong8.setNumericPrecisionStep(8);
+
+    final FieldType storedLong4 = new FieldType(storedLong);
+    storedLong4.setNumericPrecisionStep(4);
+
+    final FieldType storedLong6 = new FieldType(storedLong);
+    storedLong6.setNumericPrecisionStep(6);
+
+    final FieldType storedLong2 = new FieldType(storedLong);
+    storedLong2.setNumericPrecisionStep(2);
+
+    final FieldType storedLongNone = new FieldType(storedLong);
+    storedLongNone.setNumericPrecisionStep(Integer.MAX_VALUE);
+
+    final FieldType unstoredLong = NumericField.getFieldType(NumericField.DataType.LONG, false);
+
+    final FieldType unstoredLong8 = new FieldType(unstoredLong);
+    unstoredLong8.setNumericPrecisionStep(8);
+
+    final FieldType unstoredLong6 = new FieldType(unstoredLong);
+    unstoredLong6.setNumericPrecisionStep(6);
+
+    final FieldType unstoredLong4 = new FieldType(unstoredLong);
+    unstoredLong4.setNumericPrecisionStep(4);
+
+    final FieldType unstoredLong2 = new FieldType(unstoredLong);
+    unstoredLong2.setNumericPrecisionStep(2);
+
     NumericField
-      field8 = new NumericField("field8", 8, NumericField.TYPE_STORED),
-      field6 = new NumericField("field6", 6, NumericField.TYPE_STORED),
-      field4 = new NumericField("field4", 4, NumericField.TYPE_STORED),
-      field2 = new NumericField("field2", 2, NumericField.TYPE_STORED),
-      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, rarely() ? NumericField.TYPE_STORED : NumericField.TYPE_UNSTORED),
-      ascfield8 = new NumericField("ascfield8", 8, NumericField.TYPE_UNSTORED),
-      ascfield6 = new NumericField("ascfield6", 6, NumericField.TYPE_UNSTORED),
-      ascfield4 = new NumericField("ascfield4", 4, NumericField.TYPE_UNSTORED),
-      ascfield2 = new NumericField("ascfield2", 2, NumericField.TYPE_UNSTORED);
-    
+      field8 = new NumericField("field8", 0L, storedLong8),
+      field6 = new NumericField("field6", 0L, storedLong6),
+      field4 = new NumericField("field4", 0L, storedLong4),
+      field2 = new NumericField("field2", 0L, storedLong2),
+      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, 0L, storedLongNone),
+      ascfield8 = new NumericField("ascfield8", 0L, unstoredLong8),
+      ascfield6 = new NumericField("ascfield6", 0L, unstoredLong6),
+      ascfield4 = new NumericField("ascfield4", 0L, unstoredLong4),
+      ascfield2 = new NumericField("ascfield2", 0L, unstoredLong2);
+
     Document doc = new Document();
     // add fields, that have a distance to test general functionality
     doc.add(field8); doc.add(field6); doc.add(field4); doc.add(field2); doc.add(fieldNoTrie);
@@ -79,17 +111,17 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     // Add a series of noDocs docs with increasing long values, by updating the fields
     for (int l=0; l<noDocs; l++) {
       long val=distance*l+startOffset;
-      field8.setLongValue(val);
-      field6.setLongValue(val);
-      field4.setLongValue(val);
-      field2.setLongValue(val);
-      fieldNoTrie.setLongValue(val);
+      field8.setValue(val);
+      field6.setValue(val);
+      field4.setValue(val);
+      field2.setValue(val);
+      fieldNoTrie.setValue(val);
 
       val=l-(noDocs/2);
-      ascfield8.setLongValue(val);
-      ascfield6.setLongValue(val);
-      ascfield4.setLongValue(val);
-      ascfield2.setLongValue(val);
+      ascfield8.setValue(val);
+      ascfield6.setValue(val);
+      ascfield4.setValue(val);
+      ascfield2.setValue(val);
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -146,9 +178,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       assertNotNull(sd);
       assertEquals("Score doc count"+type, count, sd.length );
       Document doc=searcher.doc(sd[0].doc);
-      assertEquals("First doc"+type, 2*distance+startOffset, Long.parseLong(doc.get(field)) );
+      assertEquals("First doc"+type, 2*distance+startOffset, doc.getField(field).numericValue().longValue() );
       doc=searcher.doc(sd[sd.length-1].doc);
-      assertEquals("Last doc"+type, (1+count)*distance+startOffset, Long.parseLong(doc.get(field)) );
+      assertEquals("Last doc"+type, (1+count)*distance+startOffset, doc.getField(field).numericValue().longValue() );
     }
   }
 
@@ -206,9 +238,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", startOffset, Long.parseLong(doc.get(field)) );
+    assertEquals("First doc", startOffset, doc.getField(field).numericValue().longValue() );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (count-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
+    assertEquals("Last doc", (count-1)*distance+startOffset, doc.getField(field).numericValue().longValue() );
 
     q=NumericRangeQuery.newLongRange(field, precisionStep, null, upper, false, true);
     topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
@@ -216,9 +248,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
     doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", startOffset, Long.parseLong(doc.get(field)) );
+    assertEquals("First doc", startOffset, doc.getField(field).numericValue().longValue() );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (count-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
+    assertEquals("Last doc", (count-1)*distance+startOffset, doc.getField(field).numericValue().longValue() );
   }
   
   @Test
@@ -251,9 +283,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", count*distance+startOffset, Long.parseLong(doc.get(field)) );
+    assertEquals("First doc", count*distance+startOffset, doc.getField(field).numericValue().longValue() );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (noDocs-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
+    assertEquals("Last doc", (noDocs-1)*distance+startOffset, doc.getField(field).numericValue().longValue() );
 
     q=NumericRangeQuery.newLongRange(field, precisionStep, lower, null, true, false);
     topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
@@ -261,9 +293,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
     doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", count*distance+startOffset, Long.parseLong(doc.get(field)) );
+    assertEquals("First doc", count*distance+startOffset, doc.getField(field).numericValue().longValue() );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (noDocs-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
+    assertEquals("Last doc", (noDocs-1)*distance+startOffset, doc.getField(field).numericValue().longValue() );
   }
   
   @Test
@@ -292,23 +324,23 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
       newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
-    doc.add(new NumericField("double").setDoubleValue(Double.NEGATIVE_INFINITY));
-    doc.add(new NumericField("long").setLongValue(Long.MIN_VALUE));
+    doc.add(new NumericField("double", Double.NEGATIVE_INFINITY));
+    doc.add(new NumericField("long", Long.MIN_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("double").setDoubleValue(Double.POSITIVE_INFINITY));
-    doc.add(new NumericField("long").setLongValue(Long.MAX_VALUE));
+    doc.add(new NumericField("double", Double.POSITIVE_INFINITY));
+    doc.add(new NumericField("long", Long.MAX_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("double").setDoubleValue(0.0));
-    doc.add(new NumericField("long").setLongValue(0L));
+    doc.add(new NumericField("double", 0.0));
+    doc.add(new NumericField("long", 0L));
     writer.addDocument(doc);
     
     for (double d : TestNumericUtils.DOUBLE_NANs) {
       doc = new Document();
-      doc.add(new NumericField("double").setDoubleValue(d));
+      doc.add(new NumericField("double", d));
       writer.addDocument(doc);
     }
     
@@ -586,9 +618,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      long last=Long.parseLong(searcher.doc(sd[0].doc).get(field));
+      long last=searcher.doc(sd[0].doc).getField(field).numericValue().longValue();
       for (int j=1; j<sd.length; j++) {
-        long act=Long.parseLong(searcher.doc(sd[j].doc).get(field));
+        long act=searcher.doc(sd[j].doc).getField(field).numericValue().longValue();
         assertTrue("Docs should be sorted backwards", last>act );
         last=act;
       }

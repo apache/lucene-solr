@@ -104,9 +104,8 @@ public class TrieField extends org.apache.solr.schema.FieldType {
 
   @Override
   public Object toObject(IndexableField f) {
-    if (f.numeric()) {
-      final Number val = f.numericValue();
-      if (val==null) return badFieldString(f);
+    final Number val = f.numericValue();
+    if (val != null) {
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {
       // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
@@ -405,10 +404,8 @@ public class TrieField extends org.apache.solr.schema.FieldType {
   @Override
   public String storedToIndexed(IndexableField f) {
     final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
-    if (f instanceof org.apache.lucene.document.NumericField) {
-      final Number val = ((org.apache.lucene.document.NumericField) f).numericValue();
-      if (val==null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
+    final Number val = f.numericValue();
+    if (val != null) {
       switch (type) {
         case INTEGER:
           NumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
@@ -481,38 +478,60 @@ public class TrieField extends org.apache.solr.schema.FieldType {
     ft.setIndexed(indexed);
     ft.setOmitNorms(field.omitNorms());
     ft.setIndexOptions(getIndexOptions(field, value.toString()));
-    
-    final org.apache.lucene.document.NumericField f = new org.apache.lucene.document.NumericField(field.getName(), precisionStep, ft);
+
+    switch (type) {
+      case INTEGER:
+        ft.setNumericType(NumericField.DataType.INT);
+        break;
+      case FLOAT:
+        ft.setNumericType(NumericField.DataType.FLOAT);
+        break;
+      case LONG:
+        ft.setNumericType(NumericField.DataType.LONG);
+        break;
+      case DOUBLE:
+        ft.setNumericType(NumericField.DataType.DOUBLE);
+        break;
+      case DATE:
+        ft.setNumericType(NumericField.DataType.LONG);
+        break;
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
+    }
+    ft.setNumericPrecisionStep(precisionStep);
+
+    final org.apache.lucene.document.NumericField f;
+
     switch (type) {
       case INTEGER:
         int i = (value instanceof Number)
           ? ((Number)value).intValue()
           : Integer.parseInt(value.toString());
-        f.setIntValue(i);
+        f = new org.apache.lucene.document.NumericField(field.getName(), i, ft);
         break;
       case FLOAT:
         float fl = (value instanceof Number)
           ? ((Number)value).floatValue()
           : Float.parseFloat(value.toString());
-        f.setFloatValue(fl);
+        f = new org.apache.lucene.document.NumericField(field.getName(), fl, ft);
         break;
       case LONG:
         long l = (value instanceof Number)
           ? ((Number)value).longValue()
           : Long.parseLong(value.toString());
-        f.setLongValue(l);
+        f = new org.apache.lucene.document.NumericField(field.getName(), l, ft);
         break;
       case DOUBLE:
         double d = (value instanceof Number)
           ? ((Number)value).doubleValue()
           : Double.parseDouble(value.toString());
-        f.setDoubleValue(d);
+        f = new org.apache.lucene.document.NumericField(field.getName(), d, ft);
         break;
       case DATE:
         Date date = (value instanceof Date)
           ? ((Date)value)
           : dateField.parseMath(null, value.toString());
-        f.setLongValue(date.getTime());
+        f = new org.apache.lucene.document.NumericField(field.getName(), date.getTime(), ft);
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);

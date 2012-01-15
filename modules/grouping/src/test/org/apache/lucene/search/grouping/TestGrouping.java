@@ -171,9 +171,7 @@ public class TestGrouping extends LuceneTestCase {
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
     doc.add(new Field(groupField, value, TextField.TYPE_STORED));
     if (canUseIDV) {
-      DocValuesField valuesField = new DocValuesField(groupField);
-      valuesField.setBytes(new BytesRef(value), Type.BYTES_VAR_SORTED);
-      doc.add(valuesField);
+      doc.add(new DocValuesField(groupField, new BytesRef(value), Type.BYTES_VAR_SORTED));
     }
   }
 
@@ -593,7 +591,7 @@ public class TestGrouping extends LuceneTestCase {
         }
         doc.add(newField("sort1", groupValue.sort1.utf8ToString(), StringField.TYPE_UNSTORED));
         doc.add(newField("sort2", groupValue.sort2.utf8ToString(), StringField.TYPE_UNSTORED));
-        doc.add(new NumericField("id").setIntValue(groupValue.id));
+        doc.add(new NumericField("id", groupValue.id));
         doc.add(newField("content", groupValue.content, TextField.TYPE_UNSTORED));
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
       }
@@ -705,7 +703,7 @@ public class TestGrouping extends LuceneTestCase {
 
       Document doc = new Document();
       Document docNoGroup = new Document();
-      DocValuesField idvGroupField = new DocValuesField("group");
+      DocValuesField idvGroupField = new DocValuesField("group", new BytesRef(), Type.BYTES_VAR_SORTED);
       if (canUseIDV) {
         doc.add(idvGroupField);
       }
@@ -721,7 +719,7 @@ public class TestGrouping extends LuceneTestCase {
       Field content = newField("content", "", TextField.TYPE_UNSTORED);
       doc.add(content);
       docNoGroup.add(content);
-      NumericField id = new NumericField("id");
+      NumericField id = new NumericField("id", 0);
       doc.add(id);
       docNoGroup.add(id);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
@@ -747,13 +745,13 @@ public class TestGrouping extends LuceneTestCase {
         if (groupDoc.group != null) {
           group.setValue(groupDoc.group.utf8ToString());
           if (canUseIDV) {
-            idvGroupField.setBytes(BytesRef.deepCopyOf(groupDoc.group), Type.BYTES_VAR_SORTED);
+            idvGroupField.setValue(BytesRef.deepCopyOf(groupDoc.group));
           }
         }
         sort1.setValue(groupDoc.sort1.utf8ToString());
         sort2.setValue(groupDoc.sort2.utf8ToString());
         content.setValue(groupDoc.content);
-        id.setIntValue(groupDoc.id);
+        id.setValue(groupDoc.id);
         if (groupDoc.group == null) {
           w.addDocument(docNoGroup);
         } else {

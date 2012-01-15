@@ -81,7 +81,7 @@ public class BinaryField extends FieldType  {
       len = buf.length;
     }
 
-    Field f = new org.apache.lucene.document.BinaryField(field.getName(), buf, offset, len);
+    Field f = new org.apache.lucene.document.StoredField(field.getName(), buf, offset, len);
     f.setBoost(boost);
     return f;
   }

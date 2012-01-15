@@ -22,8 +22,6 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.BytesRef;
 
 // TODO: how to handle versioning here...?
@@ -37,17 +35,16 @@ import org.apache.lucene.util.BytesRef;
 
 public interface IndexableField {
 
-  // TODO: add attrs to this API?
-
   /** Field name */
   public String name();
 
-  // NOTE: if doc/field impl has the notion of "doc level boost"
-  // it must be multiplied in w/ this field's boost
-
+  /** {@link IndexableFieldType} describing the properties
+   * of this field. */
+  public IndexableFieldType fieldType();
+  
   /** Field boost (you must pre-multiply in any doc boost). */
   public float boost();
-  
+
   /** Non-null if this field has a binary value */
   public BytesRef binaryValue();
 
@@ -57,29 +54,8 @@ public interface IndexableField {
   /** Non-null if this field has a Reader value */
   public Reader readerValue();
 
-  // Numeric field:
-  /** True if this field is numeric */
-  public boolean numeric();
-
-  /** Numeric {@link org.apache.lucene.document.NumericField.DataType}; only used if
-   * the field is numeric */
-  public NumericField.DataType numericDataType();
-
-  /** Numeric value; only used if the field is numeric */
+  /** Non-null if this field hasa numeric value */
   public Number numericValue();
-
-  /**
-   * Returns the IndexableFieldType describing the properties of this field
-   *
-   * @return IndexableFieldType for this field
-   */
-  public IndexableFieldType fieldType();
-  
-  /** Non-null if doc values should be indexed */
-  public DocValue docValue();
-
-  /** DocValues type; only used if docValue is non-null */
-  public DocValues.Type docValueType();
 
   /**
    * Creates the TokenStream used for indexing this field.  If appropriate,

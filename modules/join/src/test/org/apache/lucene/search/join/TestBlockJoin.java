@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -58,7 +59,8 @@ public class TestBlockJoin extends LuceneTestCase {
   private Document makeJob(String skill, int year) {
     Document job = new Document();
     job.add(newField("skill", skill, StringField.TYPE_STORED));
-    job.add(new NumericField("year", NumericField.TYPE_STORED).setIntValue(year));
+    job.add(new NumericField("year", year));
+    job.add(new StoredField("year", year));
     return job;
   }
 
@@ -66,7 +68,7 @@ public class TestBlockJoin extends LuceneTestCase {
   private Document makeQualification(String qualification, int year) {
     Document job = new Document();
     job.add(newField("qualification", qualification, StringField.TYPE_STORED));
-    job.add(new NumericField("year").setIntValue(year));
+    job.add(new NumericField("year", year));
     return job;
   }
 
@@ -147,7 +149,7 @@ public class TestBlockJoin extends LuceneTestCase {
     childDoc = s.doc(hits.scoreDocs[0].doc);
     //System.out.println("CHILD = " + childDoc + " docID=" + hits.scoreDocs[0].doc);
     assertEquals("java", childDoc.get("skill"));
-    assertEquals(2007, ((NumericField) childDoc.getField("year")).numericValue());
+    assertEquals(2007, ((StoredField) childDoc.getField("year")).numericValue());
     assertEquals("Lisa", getParentDoc(r, parentsFilter, hits.scoreDocs[0].doc).get("name"));
     r.close();
     dir.close();

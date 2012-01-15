@@ -22,12 +22,12 @@ import java.util.Arrays;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.index.DocValue;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -133,8 +133,8 @@ class PreFlexNormsConsumer extends PerDocConsumer {
     }
     
     @Override
-    public void add(int docID, DocValue docValue) throws IOException {
-      add(docID, docValue.getBytes());
+    public void add(int docID, IndexableField docValue) throws IOException {
+      add(docID, docValue.binaryValue());
     }
     
     protected void add(int docID, BytesRef value) throws IOException {

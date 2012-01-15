@@ -386,7 +386,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     Highlighter highlighter = new Highlighter(this, scorer);
     
     for (int i = 0; i < hits.totalHits; i++) {
-      String text = searcher.doc(hits.scoreDocs[i].doc).get(NUMERIC_FIELD_NAME);
+      String text = searcher.doc(hits.scoreDocs[i].doc).getField(NUMERIC_FIELD_NAME).numericValue().toString();
       TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
@@ -1738,25 +1738,21 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       addDoc(writer, text);
     }
     Document doc = new Document();
-    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
-    nfield.setIntValue(1);
-    doc.add(nfield);
+    doc.add(new NumericField(NUMERIC_FIELD_NAME, 1, NumericField.getFieldType(NumericField.DataType.INT, true)));
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
-    nfield.setIntValue(3);
+
     doc = new Document();
-    doc.add(nfield);
+    doc.add(new NumericField(NUMERIC_FIELD_NAME, 3, NumericField.getFieldType(NumericField.DataType.INT, true)));
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
-    nfield.setIntValue(5);
+
     doc = new Document();
-    doc.add(nfield);
+    doc.add(new NumericField(NUMERIC_FIELD_NAME, 5, NumericField.getFieldType(NumericField.DataType.INT, true)));
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
-    nfield.setIntValue(7);
+
     doc = new Document();
-    doc.add(nfield);
+    doc.add(new NumericField(NUMERIC_FIELD_NAME, 7, NumericField.getFieldType(NumericField.DataType.INT, true)));
     writer.addDocument(doc, analyzer);
+
     writer.forceMerge(1);
     writer.close();
     reader = IndexReader.open(ramDir);

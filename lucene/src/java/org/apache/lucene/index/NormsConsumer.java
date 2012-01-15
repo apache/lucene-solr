@@ -39,11 +39,9 @@ import org.apache.lucene.util.IOUtils;
 final class NormsConsumer extends InvertedDocEndConsumer {
   private final NormsFormat normsFormat;
   private PerDocConsumer consumer;
-  private final DocumentsWriterPerThread dwpt;
   
   public NormsConsumer(DocumentsWriterPerThread dwpt) {
     normsFormat = dwpt.codec.normsFormat();
-    this.dwpt = dwpt;
   }
 
   @Override
@@ -75,8 +73,7 @@ final class NormsConsumer extends InvertedDocEndConsumer {
             } else if (fi.isIndexed) {
               anythingFlushed = true;
               final DocValuesConsumer valuesConsumer = newConsumer(new PerDocWriteState(state), fi);
-              final DocValuesField value = new DocValuesField("");
-              value.setBytes(new BytesRef(new byte[] {0x00}), Type.BYTES_FIXED_STRAIGHT);
+              final DocValuesField value = new DocValuesField("", new BytesRef(new byte[] {0x0}), Type.BYTES_FIXED_STRAIGHT);
               valuesConsumer.add(state.numDocs-1, value);
               valuesConsumer.finish(state.numDocs);
             }

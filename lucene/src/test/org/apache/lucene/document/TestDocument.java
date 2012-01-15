@@ -1,17 +1,5 @@
 package org.apache.lucene.document;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,6 +17,26 @@ import org.apache.lucene.util.LuceneTestCase;
  * limitations under the License.
  */
 
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+
+
 /**
  * Tests {@link Document} class.
  */
@@ -43,8 +51,8 @@ public class TestDocument extends LuceneTestCase {
     FieldType ft = new FieldType();
     ft.setStored(true);
     IndexableField stringFld = new Field("string", binaryVal, ft);
-    IndexableField binaryFld = new BinaryField("binary", binaryVal.getBytes());
-    IndexableField binaryFld2 = new BinaryField("binary", binaryVal2.getBytes());
+    IndexableField binaryFld = new StoredField("binary", binaryVal.getBytes());
+    IndexableField binaryFld2 = new StoredField("binary", binaryVal2.getBytes());
     
     doc.add(stringFld);
     doc.add(binaryFld);
@@ -274,20 +282,82 @@ public class TestDocument extends LuceneTestCase {
     assertEquals("did not see all IDs", 7, result);
   }
   
-  public void testFieldSetValueChangeBinary() {
-    Field field1 = new BinaryField("field1", new byte[0]);
-    Field field2 = new Field("field2", "", TextField.TYPE_STORED);
+  // LUCENE-3616
+  public void testInvalidFields() {
     try {
-      field1.setValue("abc");
-      fail("did not hit expected exception");
+      new Field("foo", new Tokenizer() {
+        @Override
+        public boolean incrementToken() {
+          return false;
+        }}, StringField.TYPE_STORED);
+      fail("did not hit expected exc");
     } catch (IllegalArgumentException iae) {
       // expected
     }
-    try {
-      field2.setValue(new byte[0]);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
+  }
+
+  // LUCENE-3682
+  public void testTransitionAPI() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+
+    Document doc = new Document();
+    doc.add(new Field("stored", "abc", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field("stored_indexed", "abc xyz", Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(new Field("stored_tokenized", "abc xyz", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("indexed", "abc xyz", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(new Field("tokenized", "abc xyz", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new Field("tokenized_reader", new StringReader("abc xyz")));
+    doc.add(new Field("tokenized_tokenstream", w.w.getAnalyzer().tokenStream("tokenized_tokenstream", new StringReader("abc xyz"))));
+    doc.add(new Field("binary", new byte[10]));
+    doc.add(new Field("tv", "abc xyz", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
+    doc.add(new Field("tv_pos", "abc xyz", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+    doc.add(new Field("tv_off", "abc xyz", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
+    doc.add(new Field("tv_pos_off", "abc xyz", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.close();
+
+    doc = r.document(0);
+    // 4 stored fields
+    assertEquals(4, doc.getFields().size());
+    assertEquals("abc", doc.get("stored"));
+    assertEquals("abc xyz", doc.get("stored_indexed"));
+    assertEquals("abc xyz", doc.get("stored_tokenized"));
+    final BytesRef br = doc.getBinaryValue("binary");
+    assertNotNull(br);
+    assertEquals(10, br.length);
+
+    IndexSearcher s = new IndexSearcher(r);
+    assertEquals(1, s.search(new TermQuery(new Term("stored_indexed", "abc xyz")), 1).totalHits);
+    assertEquals(1, s.search(new TermQuery(new Term("stored_tokenized", "abc")), 1).totalHits);
+    assertEquals(1, s.search(new TermQuery(new Term("stored_tokenized", "xyz")), 1).totalHits);
+    assertEquals(1, s.search(new TermQuery(new Term("indexed", "abc xyz")), 1).totalHits);
+    assertEquals(1, s.search(new TermQuery(new Term("tokenized", "abc")), 1).totalHits);
+    assertEquals(1, s.search(new TermQuery(new Term("tokenized", "xyz")), 1).totalHits);
+    assertEquals(1, s.search(new TermQuery(new Term("tokenized_reader", "abc")), 1).totalHits);
+    assertEquals(1, s.search(new TermQuery(new Term("tokenized_reader", "xyz")), 1).totalHits);
+    assertEquals(1, s.search(new TermQuery(new Term("tokenized_tokenstream", "abc")), 1).totalHits);
+    assertEquals(1, s.search(new TermQuery(new Term("tokenized_tokenstream", "xyz")), 1).totalHits);
+
+    for(String field : new String[] {"tv", "tv_pos", "tv_off", "tv_pos_off"}) {
+      Fields tvFields = r.getTermVectors(0);
+      Terms tvs = tvFields.terms(field);
+      assertNotNull(tvs);
+      assertEquals(2, tvs.getUniqueTermCount());
+      TermsEnum tvsEnum = tvs.iterator(null);
+      assertEquals(new BytesRef("abc"), tvsEnum.next());
+      final DocsAndPositionsEnum dpEnum = tvsEnum.docsAndPositions(null, null);
+      if (field.equals("tv")) {
+        assertNull(dpEnum);
+      } else {
+        assertNotNull(dpEnum);
+      }
+      assertEquals(new BytesRef("xyz"), tvsEnum.next());
+      assertNull(tvsEnum.next());
     }
+
+    r.close();
+    dir.close();
   }
 }

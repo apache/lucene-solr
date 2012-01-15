@@ -109,8 +109,8 @@ public class DocMaker implements Closeable {
         fields.put(ID_FIELD, new Field(ID_FIELD, "", StringField.TYPE_STORED));
         fields.put(NAME_FIELD, new Field(NAME_FIELD, "", ft));
 
-        numericFields.put(DATE_MSEC_FIELD, new NumericField(DATE_MSEC_FIELD));
-        numericFields.put(TIME_SEC_FIELD, new NumericField(TIME_SEC_FIELD));
+        numericFields.put(DATE_MSEC_FIELD, new NumericField(DATE_MSEC_FIELD, 0L));
+        numericFields.put(TIME_SEC_FIELD, new NumericField(TIME_SEC_FIELD, 0));
         
         doc = new Document();
       } else {
@@ -138,15 +138,34 @@ public class DocMaker implements Closeable {
       return f;
     }
 
-    NumericField getNumericField(String name) {
-      if (!reuseFields) {
-        return new NumericField(name);
+    NumericField getNumericField(String name, NumericField.DataType type) {
+      NumericField f;
+      if (reuseFields) {
+        f = numericFields.get(name);
+      } else {
+        f = null;
       }
-
-      NumericField f = numericFields.get(name);
+      
       if (f == null) {
-        f = new NumericField(name);
-        numericFields.put(name, f);
+        switch(type) {
+        case INT:
+          f = new NumericField(name, 0);
+          break;
+        case LONG:
+          f = new NumericField(name, 0L);
+          break;
+        case FLOAT:
+          f = new NumericField(name, 0.0f);
+          break;
+        case DOUBLE:
+          f = new NumericField(name, 0.0);
+          break;
+        default:
+          assert false;
+        }
+        if (reuseFields) {
+          numericFields.put(name, f);
+        }
       }
       return f;
     }
@@ -249,15 +268,15 @@ public class DocMaker implements Closeable {
       date = new Date();
     }
 
-    NumericField dateField = ds.getNumericField(DATE_MSEC_FIELD);
-    dateField.setLongValue(date.getTime());
+    NumericField dateField = ds.getNumericField(DATE_MSEC_FIELD, NumericField.DataType.LONG);
+    dateField.setValue(date.getTime());
     doc.add(dateField);
 
     util.cal.setTime(date);
     final int sec = util.cal.get(Calendar.HOUR_OF_DAY)*3600 + util.cal.get(Calendar.MINUTE)*60 + util.cal.get(Calendar.SECOND);
 
-    NumericField timeSecField = ds.getNumericField(TIME_SEC_FIELD);
-    timeSecField.setIntValue(sec);
+    NumericField timeSecField = ds.getNumericField(TIME_SEC_FIELD, NumericField.DataType.INT);
+    timeSecField.setValue(sec);
     doc.add(timeSecField);
     
     // Set TITLE_FIELD

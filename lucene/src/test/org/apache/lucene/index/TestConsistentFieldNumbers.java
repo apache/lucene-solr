@@ -20,10 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
@@ -189,7 +189,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
                 : NoMergePolicy.COMPOUND_FILES));
         Document d = new Document();
         d.add(new Field("f1", "d2 first field", TextField.TYPE_STORED));
-        d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
+        d.add(new StoredField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = new SegmentInfos();
@@ -212,7 +212,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         Document d = new Document();
         d.add(new Field("f1", "d3 first field", TextField.TYPE_STORED));
         d.add(new Field("f2", "d3 second field", TextField.TYPE_STORED));
-        d.add(new BinaryField("f3", new byte[] { 1, 2, 3, 4, 5 }));
+        d.add(new StoredField("f3", new byte[] { 1, 2, 3, 4, 5 }));
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = new SegmentInfos();

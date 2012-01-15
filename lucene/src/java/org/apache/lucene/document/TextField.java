@@ -48,6 +48,8 @@ public final class TextField extends Field {
     TYPE_STORED.freeze();
   }
 
+  // TODO: add sugar for term vectors...?
+
   /** Creates a new un-stored TextField */
   public TextField(String name, Reader reader) {
     super(name, reader, TextField.TYPE_UNSTORED);

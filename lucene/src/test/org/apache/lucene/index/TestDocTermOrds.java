@@ -124,8 +124,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      NumericField idField = new NumericField("id");
-      doc.add(idField.setIntValue(id));
+      doc.add(new NumericField("id", id));
       
       final int termCount = _TestUtil.nextInt(random, 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -221,8 +220,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      NumericField idField = new NumericField("id");
-      doc.add(idField.setIntValue(id));
+      doc.add(new NumericField("id", id));
       
       final int termCount = _TestUtil.nextInt(random, 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {

@@ -123,9 +123,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
     doc.add(new Field(groupField, value, TextField.TYPE_STORED));
     if (canUseIDV) {
-      DocValuesField valuesField = new DocValuesField(groupField);
-      valuesField.setBytes(new BytesRef(value), Type.BYTES_VAR_SORTED);
-      doc.add(valuesField);
+      doc.add(new DocValuesField(groupField, new BytesRef(value), Type.BYTES_VAR_SORTED));
     }
   }
 

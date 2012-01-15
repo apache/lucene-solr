@@ -20,16 +20,17 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
@@ -54,18 +55,18 @@ public class TestDocValuesScoring extends LuceneTestCase {
     Document doc = new Document();
     Field field = newField("foo", "", TextField.TYPE_UNSTORED);
     doc.add(field);
-    DocValuesField dvField = new DocValuesField("foo_boost");
+    DocValuesField dvField = new DocValuesField("foo_boost", 0.0f, DocValues.Type.FLOAT_32);
     doc.add(dvField);
     Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
     doc.add(field2);
     
     field.setValue("quick brown fox");
     field2.setValue("quick brown fox");
-    dvField.setFloat(2f); // boost x2
+    dvField.setValue(2f); // boost x2
     iw.addDocument(doc);
     field.setValue("jumps over lazy brown dog");
     field2.setValue("jumps over lazy brown dog");
-    dvField.setFloat(4f); // boost x4
+    dvField.setValue(4f); // boost x4
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();

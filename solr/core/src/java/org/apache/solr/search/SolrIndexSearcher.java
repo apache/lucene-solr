@@ -23,7 +23,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.document.BinaryField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -420,7 +420,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
-      doc.add(new BinaryField(fieldInfo.name, value));
+      doc.add(new StoredField(fieldInfo.name, value));
     }
 
     @Override
@@ -436,30 +436,30 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void intField(FieldInfo fieldInfo, int value) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.INT, true));
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setIntValue(value));
+      doc.add(new NumericField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void longField(FieldInfo fieldInfo, long value) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.LONG, true));
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setLongValue(value));
+      doc.add(new NumericField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void floatField(FieldInfo fieldInfo, float value) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.FLOAT, true));
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setFloatValue(value));
+      doc.add(new NumericField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void doubleField(FieldInfo fieldInfo, double value) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.DOUBLE, true));
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setDoubleValue(value));
+      doc.add(new NumericField(fieldInfo.name, value, ft));
     }
   }
 

@@ -21,15 +21,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.*;
@@ -37,10 +32,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -51,7 +46,6 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -927,7 +921,7 @@ public class TestIndexWriter extends LuceneTestCase {
       b[i] = (byte) (i+77);
 
     Document doc = new Document();
-    Field f = new BinaryField("binary", b, 10, 17);
+    Field f = new StoredField("binary", b, 10, 17);
     byte[] bx = f.binaryValue().bytes;
     assertTrue(bx != null);
     assertEquals(50, bx.length);
@@ -1183,11 +1177,11 @@ public class TestIndexWriter extends LuceneTestCase {
 
     Document doc = new Document();
 
-    FieldType customType = new FieldType(BinaryField.TYPE_STORED);
+    FieldType customType = new FieldType(StoredField.TYPE);
     customType.setTokenized(true);
-    customType.setIndexed(true);
     
     Field f = new Field("binary", b, 10, 17, customType);
+    customType.setIndexed(true);
     f.setTokenStream(new MockTokenizer(new StringReader("doc1field1"), MockTokenizer.WHITESPACE, false));
 
     FieldType customType2 = new FieldType(TextField.TYPE_STORED);

@@ -25,14 +25,10 @@ import java.util.Iterator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.NumericField.DataType;
-import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -85,6 +81,11 @@ public class TestIndexableField extends LuceneTestCase {
       public FieldInfo.IndexOptions indexOptions() {
         return FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       }
+
+      @Override
+      public DocValues.Type docValueType() {
+        return null;
+      }
     };
 
     public MyField(int counter) {
@@ -117,7 +118,7 @@ public class TestIndexableField extends LuceneTestCase {
     @Override
     public String stringValue() {
       final int fieldID = counter%10;
-      if (fieldID != 3 && fieldID != 7 && fieldID != 9) {
+      if (fieldID != 3 && fieldID != 7) {
         return "text " + counter;
       } else {
         return null;
@@ -133,20 +134,9 @@ public class TestIndexableField extends LuceneTestCase {
       }
     }
 
-    // Numeric field:
-    @Override
-    public boolean numeric() {
-      return counter%10 == 9;
-    }
-
-    @Override
-    public DataType numericDataType() {
-      return DataType.INT;
-    }
-
     @Override
     public Number numericValue() {
-      return counter;
+      return null;
     }
 
     @Override
@@ -154,24 +144,10 @@ public class TestIndexableField extends LuceneTestCase {
       return fieldType;
     }
 
-    // TODO: randomly enable doc values
-    @Override
-    public DocValue docValue() {
-      return null;
-    }
-
-    @Override
-    public DocValues.Type docValueType() {
-      return null;
-    }
-
     @Override
     public TokenStream tokenStream(Analyzer analyzer) throws IOException {
-      if (numeric()) {
-        return new NumericField(name()).setIntValue(counter).tokenStream(analyzer);
-      }
       return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
-          analyzer.tokenStream(name(), new StringReader(stringValue()));
+        analyzer.tokenStream(name(), new StringReader(stringValue()));
     }
   }
 
@@ -253,7 +229,6 @@ public class TestIndexableField extends LuceneTestCase {
         final boolean stored = (counter&1) == 0 || fieldID == 3;
         final boolean binary = fieldID == 3;
         final boolean indexed = fieldID != 3;
-        final boolean numeric = fieldID == 9;
 
         final String stringValue;
         if (fieldID != 3 && fieldID != 9) {
@@ -274,11 +249,6 @@ public class TestIndexableField extends LuceneTestCase {
             for(int idx=0;idx<10;idx++) {
               assertEquals((byte) (idx+counter), b.bytes[b.offset+idx]);
             }
-          } else if (numeric) {
-            assertTrue(f instanceof NumericField);
-            final NumericField nf = (NumericField) f;
-            assertEquals(NumericField.DataType.INT, nf.numericDataType());
-            assertEquals(counter, nf.numericValue().intValue());
           } else {
             assert stringValue != null;
             assertEquals(stringValue, f.stringValue());
@@ -314,26 +284,19 @@ public class TestIndexableField extends LuceneTestCase {
             assertTrue(vectors == null || vectors.terms(name) == null);
           }
 
-          if (numeric) {
-            NumericRangeQuery nrq = NumericRangeQuery.newIntRange(name, counter, counter, true, true);
-            final TopDocs hits2 = s.search(nrq, 1);
-            assertEquals(1, hits2.totalHits);
-            assertEquals(docID, hits2.scoreDocs[0].doc);
-          } else {
-            BooleanQuery bq = new BooleanQuery();
-            bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
-            bq.add(new TermQuery(new Term(name, "text")), BooleanClause.Occur.MUST);
-            final TopDocs hits2 = s.search(bq, 1);
-            assertEquals(1, hits2.totalHits);
-            assertEquals(docID, hits2.scoreDocs[0].doc);
+          BooleanQuery bq = new BooleanQuery();
+          bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
+          bq.add(new TermQuery(new Term(name, "text")), BooleanClause.Occur.MUST);
+          final TopDocs hits2 = s.search(bq, 1);
+          assertEquals(1, hits2.totalHits);
+          assertEquals(docID, hits2.scoreDocs[0].doc);
 
-            bq = new BooleanQuery();
-            bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
-            bq.add(new TermQuery(new Term(name, ""+counter)), BooleanClause.Occur.MUST);
-            final TopDocs hits3 = s.search(bq, 1);
-            assertEquals(1, hits3.totalHits);
-            assertEquals(docID, hits3.scoreDocs[0].doc);
-          }
+          bq = new BooleanQuery();
+          bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
+          bq.add(new TermQuery(new Term(name, ""+counter)), BooleanClause.Occur.MUST);
+          final TopDocs hits3 = s.search(bq, 1);
+          assertEquals(1, hits3.totalHits);
+          assertEquals(docID, hits3.scoreDocs[0].doc);
         }
 
         counter++;

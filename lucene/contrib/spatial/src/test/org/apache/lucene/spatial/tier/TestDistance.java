@@ -20,17 +20,19 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.store.Directory;
 
 
 public class TestDistance extends LuceneTestCase {
@@ -58,6 +60,18 @@ public class TestDistance extends LuceneTestCase {
     directory.close();
     super.tearDown();
   }
+
+  private static final FieldType latLongType = new FieldType();
+  static {
+    latLongType.setIndexed(true);
+    latLongType.setStored(true);
+    latLongType.setTokenized(true);
+    latLongType.setOmitNorms(true);
+    latLongType.setIndexOptions(IndexOptions.DOCS_ONLY);
+    latLongType.setNumericType(NumericField.DataType.DOUBLE);
+    latLongType.setNumericPrecisionStep(Integer.MAX_VALUE);
+    latLongType.freeze();
+  }
   
   private void addPoint(IndexWriter writer, String name, double lat, double lng) throws IOException{
     
@@ -66,8 +80,8 @@ public class TestDistance extends LuceneTestCase {
     doc.add(newField("name", name, TextField.TYPE_STORED));
     
     // convert the lat / long to lucene fields
-    doc.add(new NumericField(latField, Integer.MAX_VALUE, NumericField.TYPE_STORED).setDoubleValue(lat));
-    doc.add(new NumericField(lngField, Integer.MAX_VALUE, NumericField.TYPE_STORED).setDoubleValue(lng));
+    doc.add(new NumericField(latField, lat, latLongType));
+    doc.add(new NumericField(lngField, lng, latLongType));
     
     // add a default meta field to make searching all documents easy 
     doc.add(newField("metafile", "doc", TextField.TYPE_STORED));

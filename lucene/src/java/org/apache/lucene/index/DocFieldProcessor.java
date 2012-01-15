@@ -26,11 +26,9 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
@@ -82,17 +80,19 @@ final class DocFieldProcessor extends DocConsumer {
     fieldsWriter.flush(state);
     consumer.flush(childFields, state);
 
+    for (DocValuesConsumerAndDocID consumer : docValues.values()) {
+      consumer.docValuesConsumer.finish(state.numDocs);
+    }
+
     // Important to save after asking consumer to flush so
     // consumer can alter the FieldInfo* if necessary.  EG,
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
     FieldInfosWriter infosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
     infosWriter.write(state.directory, state.segmentName, state.fieldInfos, IOContext.DEFAULT);
-    for (DocValuesConsumerAndDocID consumers : docValues.values()) {
-      consumers.docValuesConsumer.finish(state.numDocs);
-    }
+
     // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
-    IOUtils.close(perDocConsumers.values());
+    IOUtils.close(perDocConsumer);
   }
 
   @Override
@@ -112,7 +112,7 @@ final class DocFieldProcessor extends DocConsumer {
         field = next;
       }
     }
-    IOUtils.closeWhileHandlingException(perDocConsumers.values());
+    IOUtils.closeWhileHandlingException(perDocConsumer);
     // TODO add abort to PerDocConsumer!
     
     try {
@@ -132,7 +132,6 @@ final class DocFieldProcessor extends DocConsumer {
     }
     
     try {
-      PerDocConsumer perDocConsumer = perDocConsumers.get(0);
       if (perDocConsumer != null) {
         perDocConsumer.abort();  
       }
@@ -176,7 +175,7 @@ final class DocFieldProcessor extends DocConsumer {
     fieldHash = new DocFieldProcessorPerField[2];
     hashMask = 1;
     totalFieldCount = 0;
-    perDocConsumers.clear();
+    perDocConsumer = null;
     docValues.clear();
   }
 
@@ -270,9 +269,9 @@ final class DocFieldProcessor extends DocConsumer {
       if (field.fieldType().stored()) {
         fieldsWriter.addField(field, fp.fieldInfo);
       }
-      final DocValue docValue = field.docValue();
-      if (docValue != null) {
-        docValuesConsumer(field.docValueType(), docState, fp.fieldInfo).add(docState.docID, docValue);
+      final DocValues.Type dvType = field.fieldType().docValueType();
+      if (dvType != null) {
+        docValuesConsumer(dvType, docState, fp.fieldInfo).add(docState.docID, field);
       }
     }
 
@@ -310,6 +309,8 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   private static class DocValuesConsumerAndDocID {
+    // Only used to enforce that same DV field name is never
+    // added more than once per doc:
     public int docID;
     final DocValuesConsumer docValuesConsumer;
 
@@ -319,7 +320,7 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   final private Map<String, DocValuesConsumerAndDocID> docValues = new HashMap<String, DocValuesConsumerAndDocID>();
-  final private Map<Integer, PerDocConsumer> perDocConsumers = new HashMap<Integer, PerDocConsumer>();
+  private PerDocConsumer perDocConsumer;
 
   DocValuesConsumer docValuesConsumer(DocValues.Type valueType, DocState docState, FieldInfo fieldInfo) 
       throws IOException {
@@ -333,12 +334,9 @@ final class DocFieldProcessor extends DocConsumer {
       return docValuesConsumerAndDocID.docValuesConsumer;
     }
 
-    PerDocConsumer perDocConsumer = perDocConsumers.get(0);
     if (perDocConsumer == null) {
       PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState("");
-      DocValuesFormat dvFormat = docState.docWriter.codec.docValuesFormat();
-      perDocConsumer = dvFormat.docsConsumer(perDocWriteState);
-      perDocConsumers.put(0, perDocConsumer);
+      perDocConsumer = docState.docWriter.codec.docValuesFormat().docsConsumer(perDocWriteState);
     }
     DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
     fieldInfo.setDocValuesType(valueType);

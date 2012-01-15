@@ -23,13 +23,13 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.index.DocValue;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -130,8 +130,8 @@ public class SimpleTextNormsConsumer extends PerDocConsumer {
     }
 
     @Override
-    public void add(int docID, DocValue docValue) throws IOException {
-      add(docID, docValue.getBytes());
+    public void add(int docID, IndexableField docValue) throws IOException {
+      add(docID, docValue.binaryValue());
     }
     
     protected void add(int docID, BytesRef value) throws IOException {

@@ -211,7 +211,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       doc.add(group);
       DocValuesField valuesField = null;
       if (canUseIDV) {
-        valuesField = new DocValuesField("group");
+        valuesField = new DocValuesField("group", new BytesRef(), valueType);
         doc.add(valuesField);
       }
       Field sort1 = newField("sort1", "", StringField.TYPE_UNSTORED);
@@ -226,7 +226,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       Field content = newField("content", "", TextField.TYPE_UNSTORED);
       doc.add(content);
       docNoGroup.add(content);
-      NumericField id = new NumericField("id");
+      NumericField id = new NumericField("id", 0);
       doc.add(id);
       docNoGroup.add(id);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
@@ -257,14 +257,14 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         if (groupDoc.group != null) {
           group.setValue(groupDoc.group.utf8ToString());
           if (canUseIDV) {
-            valuesField.setBytes(new BytesRef(groupDoc.group.utf8ToString()), valueType);
+            valuesField.setValue(new BytesRef(groupDoc.group.utf8ToString()));
           }
         }
         sort1.setValue(groupDoc.sort1.utf8ToString());
         sort2.setValue(groupDoc.sort2.utf8ToString());
         sort3.setValue(groupDoc.sort3.utf8ToString());
         content.setValue(groupDoc.content);
-        id.setIntValue(groupDoc.id);
+        id.setValue(groupDoc.id);
         if (groupDoc.group == null) {
           w.addDocument(docNoGroup);
         } else {
@@ -527,9 +527,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, Type valueType) {
     doc.add(new Field(groupField, value, TextField.TYPE_STORED));
     if (canUseIDV) {
-      DocValuesField valuesField = new DocValuesField(groupField);
-      valuesField.setBytes(new BytesRef(value), valueType);
-      doc.add(valuesField);
+      doc.add(new DocValuesField(groupField, new BytesRef(value), valueType));
     }
   }
 
