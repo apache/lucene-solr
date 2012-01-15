@@ -434,6 +434,8 @@ New Features
 * SOLR-3036: Ability to specify overwrite=false on the URL for XML updates.
   (Sami Siren via yonik)
 
+* SOLR-2603: Add the encoding function for alternate fields in highlighting.
+  (Massimo Schiavon, koji)
 
 Optimizations
 ----------------------
