@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -16,6 +17,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.PeerSync;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -61,12 +64,14 @@ final class ShardLeaderElectionContext extends ElectionContext {
   private ZkStateReader zkStateReader;
   private String shardId;
   private String collection;
+  private SolrCore core;
 
-  public ShardLeaderElectionContext(final String shardId,
+  public ShardLeaderElectionContext(SolrCore core, final String shardId,
       final String collection, final String shardZkNodeName, ZkNodeProps props, ZkStateReader zkStateReader) {
     super(shardZkNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/"
         + shardId, ZkStateReader.getShardLeadersPath(collection, shardId),
         props);
+    this.core = core;
     this.zkClient = zkStateReader.getZkClient();
     this.zkStateReader = zkStateReader;
     this.shardId = shardId;
@@ -75,10 +80,14 @@ final class ShardLeaderElectionContext extends ElectionContext {
 
   @Override
   void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException {
-    if (weAreReplacement) {
+    System.out.println("run leader process");
+    System.out.println(weAreReplacement + " " + core);
+    // TODO: move sync stuff to a better spot
+    if (weAreReplacement && core != null) { // TODO: core can be null in tests
       if (zkClient.exists(leaderPath, true)) {
         zkClient.delete(leaderPath, -1, true);
       }
+      System.out.println("SYNC UP");
       syncReplicas();
     }
     try {
@@ -101,22 +110,32 @@ final class ShardLeaderElectionContext extends ElectionContext {
 //          + " - I need to request all of my replicas to go into sync mode");
       
       // first sync ourselves - we are the potential leader after all
-      sync(leaderProps);
-      
-      // sync everyone else
-      // TODO: we should do this in parallel
-      List<ZkCoreNodeProps> nodes = zkStateReader.getReplicaProps(collection, shardId,
-          leaderProps.get(ZkStateReader.NODE_NAME_PROP), leaderProps.get(ZkStateReader.CORE_PROP));
-      if (nodes != null) {
-        for (ZkCoreNodeProps node : nodes) {
-          try {
-            sync(node.getNodeProps());
-          } catch(Exception exception) {
-            exception.printStackTrace();
-            //nocommit
+      boolean success = sync(leaderProps);
+      if (success) {
+        System.out.println("Sync success");
+        // we are the leader - tell all of our replias to sync with us
+        
+        // sync everyone else
+        // TODO: we should do this in parallel at least
+        List<ZkCoreNodeProps> nodes = zkStateReader.getReplicaProps(collection, shardId,
+            leaderProps.get(ZkStateReader.NODE_NAME_PROP), leaderProps.get(ZkStateReader.CORE_PROP));
+        if (nodes != null) {
+          for (ZkCoreNodeProps node : nodes) {
+            try {
+              sync(leaderProps, node.getNodeProps());
+            } catch(Exception exception) {
+              exception.printStackTrace();
+              //nocommit
+            }
           }
         }
+      } else {
+        // nocommit: we cannot be the leader - go into recovery
+        // but what if no one can be the leader in a loop?
+        System.out.println("Sync failure");
       }
+      
+
       
     } catch (Exception e) {
       // nocommit
@@ -124,14 +143,14 @@ final class ShardLeaderElectionContext extends ElectionContext {
     }
   }
 
-  private void sync(ZkNodeProps props) throws MalformedURLException, SolrServerException,
+  private boolean sync(ZkNodeProps props) throws MalformedURLException, SolrServerException,
       IOException {
     List<ZkCoreNodeProps> nodes = zkStateReader.getReplicaProps(collection, shardId,
         props.get(ZkStateReader.NODE_NAME_PROP), props.get(ZkStateReader.CORE_PROP));
     
     if (nodes == null) {
       // I have no replicas
-      return;
+      return true;
     }
     
     List<String> syncWith = new ArrayList<String>();
@@ -140,16 +159,40 @@ final class ShardLeaderElectionContext extends ElectionContext {
     }
 
     // TODO: do we first everyone register as sync phase? get the overseer to do it?
-    QueryRequest qr = new QueryRequest(params("qt", "/get", "getVersions",
-        Integer.toString(1000), "sync",
-        StrUtils.join(Arrays.asList(syncWith), ',')));
-    CommonsHttpSolrServer server = null;
+    PeerSync peerSync = new PeerSync(core, syncWith, 1000);
+    return peerSync.sync();
+  }
+  
+  private void sync(ZkNodeProps leader, ZkNodeProps props)
+      throws MalformedURLException, SolrServerException, IOException {
+    List<ZkCoreNodeProps> nodes = zkStateReader.getReplicaProps(collection,
+        shardId, props.get(ZkStateReader.NODE_NAME_PROP),
+        props.get(ZkStateReader.CORE_PROP));
     
-    server = new CommonsHttpSolrServer(ZkCoreNodeProps.getCoreUrl(
-        props.get(ZkStateReader.BASE_URL_PROP),
-        props.get(ZkStateReader.CORE_PROP)));
-    
-    NamedList rsp = server.request(qr);
+    if (nodes == null) {
+      // I have no replicas
+      return;
+    }
+    ZkCoreNodeProps zkLeader = new ZkCoreNodeProps(leaderProps);
+    for (ZkCoreNodeProps node : nodes) {
+      try {
+        // TODO: do we first everyone register as sync phase? get the overseer
+        // to
+        // do
+        // it?
+        QueryRequest qr = new QueryRequest(params("qt", "/get", "getVersions",
+            Integer.toString(1000), "sync", StrUtils.join(
+                Collections.singletonList(zkLeader.getCoreUrl()), ',')));
+        CommonsHttpSolrServer server = null;
+        
+        server = new CommonsHttpSolrServer(node.getCoreUrl());
+        
+        NamedList rsp = server.request(qr);
+      } catch (Exception e) {
+        // nocommit
+        e.printStackTrace();
+      }
+    }
   }
   
   public static ModifiableSolrParams params(String... params) {

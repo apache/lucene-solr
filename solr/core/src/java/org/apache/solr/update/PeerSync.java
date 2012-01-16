@@ -149,6 +149,9 @@ public class PeerSync  {
   private void requestVersions(String replica) {
     SyncShardRequest sreq = new SyncShardRequest();
     sreq.purpose = 1;
+    // TODO: this sucks
+    if (replica.startsWith("http://"))
+      replica = replica.substring(7);
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();
@@ -160,6 +163,8 @@ public class PeerSync  {
 
   private boolean handleResponse(ShardResponse srsp) {
     if (srsp.getException() != null) {
+      // TODO: at least log???
+      // srsp.getException().printStackTrace(System.out);
       return false;
     }
 

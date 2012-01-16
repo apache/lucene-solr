@@ -187,7 +187,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
       super(startI, doDeletes);
       setDaemon(true);
       this.clients = clients;
-      suss = new StreamingUpdateSolrServer(((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), 10, 3);
+      suss = new StreamingUpdateSolrServer(((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), 10, 1);
     }
     
     @Override

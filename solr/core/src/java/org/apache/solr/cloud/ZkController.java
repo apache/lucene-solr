@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
@@ -508,23 +509,51 @@ public final class ZkController {
         props.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_PROP,
         props.get(ZkStateReader.CORE_PROP), ZkStateReader.NODE_NAME_PROP,
         props.get(ZkStateReader.NODE_NAME_PROP));
-
-    ElectionContext context = new ShardLeaderElectionContext(shardId,
-        collection, shardZkNodeName, leaderProps, zkStateReader);
-    
-    leaderElector.setup(context);
-    leaderElector.joinElection(context);
-    
-    String leaderUrl = zkStateReader.getLeaderUrl(collection, cloudDesc.getShardId(), 15000);
     
     SolrCore core = null;
+    
+    CoreContainer cc = desc.getCoreContainer();
+    if (cc != null) { // CoreContainer only null in tests
+      try {
+        core = cc.getCore(desc.getName());
+        checkRecovery(coreName, desc, recoverReloadedCores, baseUrl, cloudDesc,
+            collection, shardZkNodeName, shardId, leaderProps, core, cc);
+      } finally {
+        if (core != null) {
+          core.close();
+        }
+      }
+    }
+    
+    // make sure we have an update cluster state right away
+    zkStateReader.updateCloudState(true);
+
+    return shardId;
+  }
+
+
+  private void checkRecovery(String coreName, final CoreDescriptor desc,
+      boolean recoverReloadedCores, final String baseUrl,
+      final CloudDescriptor cloudDesc, final String collection,
+      final String shardZkNodeName, String shardId, ZkNodeProps leaderProps,
+      SolrCore core, CoreContainer cc) throws InterruptedException,
+      KeeperException, IOException, ExecutionException {
     try {
+      ElectionContext context = new ShardLeaderElectionContext(core, shardId,
+          collection, shardZkNodeName, leaderProps, zkStateReader);
+      
+      leaderElector.setup(context);
+      leaderElector.joinElection(context);
+      
+      String leaderUrl = zkStateReader.getLeaderUrl(collection,
+          cloudDesc.getShardId(), 15000);
+      
       boolean doRecovery = true;
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
       log.info("We are " + ourUrl + " and leader is " + leaderUrl);
       if (leaderUrl.equals(ourUrl)) {
         doRecovery = false;
-
+        
         // recover from local transaction log and wait for it to complete before
         // going active
         // TODO: should this be moved to another thread? To recoveryStrat?
@@ -535,38 +564,28 @@ public final class ZkController {
         // leader until my local replay is done. But this replay is only needed
         // on the leader - replicas
         // will do recovery anyway
-        CoreContainer cc = desc.getCoreContainer();
-        if (cc != null) { // TODO: CoreContainer only null in tests?
-          core = cc.getCore(desc.getName());
-          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-          if (!core.isReloaded() && ulog != null) {
-            Future<UpdateLog.RecoveryInfo> recoveryFuture = core
-                .getUpdateHandler().getUpdateLog().recoverFromLog();
-            if (recoveryFuture != null) {
-              recoveryFuture.get(); // NOTE: this could potentially block for
-                                    // minutes or more!
-              // TODO: public as recovering in the mean time?
-            }
+        
+        core = cc.getCore(desc.getName());
+        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+        if (!core.isReloaded() && ulog != null) {
+          Future<UpdateLog.RecoveryInfo> recoveryFuture = core
+              .getUpdateHandler().getUpdateLog().recoverFromLog();
+          if (recoveryFuture != null) {
+            recoveryFuture.get(); // NOTE: this could potentially block for
+                                  // minutes or more!
+            // TODO: public as recovering in the mean time?
           }
         }
         
         // publish new props
         publishAsActive(baseUrl, cloudDesc, shardZkNodeName, coreName);
       } else {
-        CoreContainer cc = desc.getCoreContainer();
-        // CoreContainer can be null for some tests...
-        if (cc != null) {
-          core = cc.getCore(desc.getName());
-          
-          if (core.isReloaded() && !recoverReloadedCores) {
-            doRecovery = false;
-          }
-          
-        } else {
-          log.warn("Cannot recover without access to CoreContainer");
-          return shardId;
-        }
         
+        core = cc.getCore(desc.getName());
+        
+        if (core.isReloaded() && !recoverReloadedCores) {
+          doRecovery = false;
+        }
       }
       
       if (doRecovery && !SKIP_AUTO_RECOVERY) {
@@ -578,11 +597,6 @@ public final class ZkController {
         core.close();
       }
     }
-    
-    // make sure we have an update cluster state right away
-    zkStateReader.updateCloudState(true);
-
-    return shardId;
   }
 
 
