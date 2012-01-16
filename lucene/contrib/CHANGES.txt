@@ -58,6 +58,8 @@ New Features
    way as DirectSpellChecker. This can be used to merge top-N results from more than one
    SpellChecker.  (James Dyer via Robert Muir)
 
+ * LUCENE-3602: Added query time joining under the join module. (Martijn van Groningen, Michael McCandless)
+
 API Changes
 
  * LUCENE-2606: Changed RegexCapabilities interface to fix thread 
