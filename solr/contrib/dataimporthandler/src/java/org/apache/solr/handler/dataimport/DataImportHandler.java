@@ -115,7 +115,6 @@ public class DataImportHandler extends RequestHandlerBase implements
         }
       }
     } catch (Throwable e) {
-      SolrConfig.severeErrors.add(e);
       LOG.error( DataImporter.MSG.LOAD_EXP, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               DataImporter.MSG.INVALID_CONFIG, e);

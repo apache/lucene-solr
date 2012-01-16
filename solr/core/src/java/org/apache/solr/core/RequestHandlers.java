@@ -169,11 +169,8 @@ final class RequestHandlers {
         }
         log.info("created "+info.name+": " + info.className);
       } catch (Exception ex) {
-          SolrConfig.severeErrors.add( ex );
-          SolrException e = new SolrException
+          throw new SolrException
             (ErrorCode.SERVER_ERROR, "RequestHandler init failure", ex);
-          SolrException.logOnce(log,null,e);
-          throw e;
       }
     }
 

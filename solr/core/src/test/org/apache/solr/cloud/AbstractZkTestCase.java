@@ -105,7 +105,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
       printLayout(zkServer.getZkHost());
     }
 
-    SolrConfig.severeErrors.clear();
     super.tearDown();
   }
   

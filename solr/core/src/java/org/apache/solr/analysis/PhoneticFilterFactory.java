@@ -111,7 +111,7 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
       }
     } 
     catch (Exception e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error initializing: "+name + "/"+clazz, e , false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error initializing: "+name + "/"+clazz, e);
     }
   }
   

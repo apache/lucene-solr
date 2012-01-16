@@ -182,7 +182,7 @@ public class Config {
       return o;
 
     } catch (XPathExpressionException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + path +" for " + name,e,false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + path +" for " + name,e);
     }
   }
 
@@ -208,12 +208,12 @@ public class Config {
 
     } catch (XPathExpressionException e) {
       SolrException.log(log,"Error in xpath",e);
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e,false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e);
     } catch (SolrException e) {
       throw(e);
     } catch (Throwable e) {
       SolrException.log(log,"Error in xpath",e);
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e,false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
     }
   }
 
@@ -306,7 +306,7 @@ public class Config {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
         "Invalid luceneMatchVersion '" + matchVersion +
         "', valid values are: " + Arrays.toString(Version.values()) +
-        " or a string in format 'V.V'", iae, false);    
+        " or a string in format 'V.V'", iae);
     }
     
     if (version == Version.LUCENE_CURRENT && !versionWarningAlreadyLogged.getAndSet(true)) {

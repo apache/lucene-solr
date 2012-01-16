@@ -573,7 +573,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     try {
       solrCoreState.decref();
     } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "", e, false);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "", e);
     }
   }
 

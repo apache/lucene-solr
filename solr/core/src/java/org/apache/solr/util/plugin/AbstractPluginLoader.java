@@ -167,8 +167,6 @@ public abstract class AbstractPluginLoader<T>
           SolrException e = new SolrException
             (ErrorCode.SERVER_ERROR,
              "Plugin init failure for " + type + ":" + ex.getMessage(), ex);
-          SolrConfig.severeErrors.add( e );
-          SolrException.logOnce(log,null,e);
           throw e;
         }
       }
@@ -182,8 +180,6 @@ public abstract class AbstractPluginLoader<T>
       catch( Exception ex ) {
         SolrException e = new SolrException
           (ErrorCode.SERVER_ERROR, "Plugin Initializing failure for " + type, ex);
-        SolrConfig.severeErrors.add( e );
-        SolrException.logOnce(log,null,e);
         throw e;
       }
     }
@@ -232,8 +228,6 @@ public abstract class AbstractPluginLoader<T>
     } catch (Exception ex) {
       SolrException e = new SolrException
         (ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
-      SolrConfig.severeErrors.add( e );
-      SolrException.logOnce(log,null,e);
       throw e;
     }
 
@@ -244,8 +238,6 @@ public abstract class AbstractPluginLoader<T>
       } catch (Exception ex) {
         SolrException e = new SolrException
           (ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
-        SolrConfig.severeErrors.add( e );
-        SolrException.logOnce(log,null,e);
         throw e;
       }
     }

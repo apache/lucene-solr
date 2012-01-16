@@ -208,10 +208,8 @@ public class SimpleFacets {
       facetResponse.add("facet_ranges", getFacetRangeCounts());
 
     } catch (IOException e) {
-      SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (ParseException e) {
-      SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
     return facetResponse;

@@ -414,7 +414,7 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +cast.getName(), e, false);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +cast.getName(), e);
     }
   }
   
@@ -436,11 +436,11 @@ public final class SolrCore implements SolrInfoMBean {
             return (T)con.newInstance(this, updateHandler);
           } 
         }
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " could not find proper constructor for " +class1.getName(), false);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " could not find proper constructor for " +class1.getName());
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +class1.getName(), e, false);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +class1.getName(), e);
     }
   }
 
@@ -616,7 +616,7 @@ public final class SolrCore implements SolrInfoMBean {
       latch.countDown();//release the latch, otherwise we block trying to do the close.  This should be fine, since counting down on a latch of 0 is still fine
       //close down the searcher and any other resources, if it exists, as this is not recoverable
       close();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e, false);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
     } finally {
       // allow firstSearcher events to fire and make sure it is released
       latch.countDown();
@@ -1099,7 +1099,7 @@ public final class SolrCore implements SolrInfoMBean {
         String msg="Error opening new searcher. exceeded limit of maxWarmingSearchers="+maxWarmingSearchers + ", try again later.";
         log.warn(logid+""+ msg);
         // HTTP 503==service unavailable, or 409==Conflict
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,msg,true);
+        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,msg);
       } else if (onDeckSearchers > 1) {
         log.info(logid+"PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
       }
@@ -1220,7 +1220,7 @@ public final class SolrCore implements SolrInfoMBean {
                       try {
                         newSearcher.warm(currSearcher);
                       } catch (Throwable e) {
-                        SolrException.logOnce(log,null,e);
+                        SolrException.log(log, null, e);
                       }
                       return null;
                     }
@@ -1248,7 +1248,7 @@ public final class SolrCore implements SolrInfoMBean {
                           listener.newSearcher(newSearcher,null);
                         }
                       } catch (Throwable e) {
-                        SolrException.logOnce(log,null,e);
+                        SolrException.log(log, null, e);
                       }
                       return null;
                     }
@@ -1276,7 +1276,7 @@ public final class SolrCore implements SolrInfoMBean {
                           listener.newSearcher(newSearcher, currSearcher);
                         }
                       } catch (Throwable e) {
-                        SolrException.logOnce(log,null,e);
+                        SolrException.log(log, null, e);
                       }
                       return null;
                     }
@@ -1309,7 +1309,7 @@ public final class SolrCore implements SolrInfoMBean {
                         decrementOnDeckCount[0]=false;
                         registerSearcher(newSearchHolder);
                       } catch (Throwable e) {
-                        SolrException.logOnce(log,null,e);
+                        SolrException.log(log, null, e);
                       } finally {
                         // we are all done with the old searcher we used
                         // for warming...
@@ -1340,7 +1340,7 @@ public final class SolrCore implements SolrInfoMBean {
       return returnSearcher ? newSearchHolder : null;
 
     } catch (Exception e) {
-      SolrException.logOnce(log,null,e);
+      SolrException.log(log, null, e);
       if (currSearcherHolder != null) currSearcherHolder.decref();
 
       synchronized (searcherLock) {
@@ -1454,7 +1454,7 @@ public final class SolrCore implements SolrInfoMBean {
       
       if (log.isWarnEnabled()) log.warn(logid + msg + ":" + req);
       
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg, true);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
     }
     // setup response header and handle request
     final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
@@ -1525,7 +1525,7 @@ public final class SolrCore implements SolrInfoMBean {
 
 
   final public static void log(Throwable e) {
-    SolrException.logOnce(log,null,e);
+    SolrException.log(log, null, e);
   }
 
   
@@ -1579,11 +1579,8 @@ public final class SolrCore implements SolrInfoMBean {
         }
         log.info("created "+info.name+": " + info.className);
       } catch (Exception ex) {
-          SolrConfig.severeErrors.add( ex );
-          SolrException e = new SolrException
+          throw new SolrException
             (SolrException.ErrorCode.SERVER_ERROR, "QueryResponseWriter init failure", ex);
-          SolrException.logOnce(log,null,e);
-          throw e;
       }
     }
 

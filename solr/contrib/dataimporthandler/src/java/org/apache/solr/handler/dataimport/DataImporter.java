@@ -225,7 +225,6 @@ public class DataImporter {
       config.readFromXml((Element) elems.item(0));
       LOG.info("Data Configuration loaded successfully");
     } catch (Exception e) {
-      SolrConfig.severeErrors.add(e);
       throw new DataImportHandlerException(SEVERE,
               "Exception occurred while initializing context", e);
     }

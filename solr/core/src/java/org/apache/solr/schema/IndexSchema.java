@@ -386,7 +386,7 @@ public final class IndexSchema {
 
         FieldType ft = fieldTypes.get(type);
         if (ft==null) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown fieldtype '" + type + "' specified on field " + name,false);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown fieldtype '" + type + "' specified on field " + name);
         }
 
         Map<String,String> args = DOMUtil.toMapExcept(attrs, "name", "type");
@@ -401,10 +401,7 @@ public final class IndexSchema {
           if( old != null ) {
             String msg = "[schema.xml] Duplicate field definition for '"
               + f.getName() + "' [[["+old.toString()+"]]] and [[["+f.toString()+"]]]";
-            SolrException t = new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg );
-            SolrException.logOnce(log,null,t);
-            SolrConfig.severeErrors.add( t );
-            throw t;
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg );
           }
           log.debug("field defined: " + f);
           if( f.getDefaultValue() != null ) {
@@ -553,12 +550,10 @@ public final class IndexSchema {
         aware.inform(this);
       }
     } catch (SolrException e) {
-      SolrConfig.severeErrors.add( e );
       throw e;
     } catch(Exception e) {
       // unexpected exception...
-      SolrConfig.severeErrors.add( e );
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Schema Parsing Failed: " + e.getMessage(), e,false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Schema Parsing Failed: " + e.getMessage(), e);
     }
 
     // create the field analyzers
@@ -574,10 +569,7 @@ public final class IndexSchema {
       String msg = "[schema.xml] Duplicate DynamicField definition for '"
               + f.getName() + "'";
 
-      SolrException t = new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
-      SolrException.logOnce(log, null, t);
-      SolrConfig.severeErrors.add(t);
-      throw t;
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
     }
   }
 

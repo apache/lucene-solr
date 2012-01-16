@@ -390,6 +390,12 @@ Other Changes
   
 * SOLR-2607: Removed deprecated client/ruby directory, which included solr-ruby and flare.
   (ehatcher)
+  
+* Solr-3032: logOnce from SolrException logOnce and all the supporting
+  structure is gone. abortOnConfugrationError is also gone as it is no longer referenced.
+  Errors should be caught and logged at the top-most level or logged and NOT propagated up the 
+  chain. (Erick Erickson)
+
 
 Documentation
 ----------------------
@@ -476,6 +482,10 @@ Other Changes
 * SOLR-2920: Refactor frequent conditional use of DefaultSolrParams and 
   AppendedSolrParams into factory methods.
   (David Smiley via hossman)
+
+* Solr-3032: Deprecate logOnce from SolrException logOnce and all the supporting
+  structure will disappear in 4.0. Errors should be caught and logged at the
+  top-most level or logged and NOT propagated up the chain. (Erick Erickson)
 
 Build
 ----------------------

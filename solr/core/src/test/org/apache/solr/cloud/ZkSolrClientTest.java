@@ -234,7 +234,6 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    SolrConfig.severeErrors.clear();
     super.tearDown();
   }
   

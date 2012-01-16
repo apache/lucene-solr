@@ -84,42 +84,18 @@ public class SolrDispatchFilter implements Filter
   {
     log.info("SolrDispatchFilter.init()");
 
-    boolean abortOnConfigurationError = true;
     CoreContainer.Initializer init = createInitializer();
     try {
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
 
       this.cores = init.initialize();
-      abortOnConfigurationError = init.isAbortOnConfigurationError();
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
       // catch this so our filter still works
-      log.error( "Could not start Solr. Check solr/home property and the logs", t);
-      SolrConfig.severeErrors.add( t );
+      log.error( "Could not start Solr. Check solr/home property and the logs");
       SolrCore.log( t );
-    }
-
-    // Optionally abort if we found a sever error
-    if( abortOnConfigurationError && SolrConfig.severeErrors.size() > 0 ) {
-      StringWriter sw = new StringWriter();
-      PrintWriter out = new PrintWriter( sw );
-      out.println( "Severe errors in solr configuration.\n" );
-      out.println( "Check your log files for more detailed information on what may be wrong.\n" );
-      for( Throwable t : SolrConfig.severeErrors ) {
-        out.println( "-------------------------------------------------------------" );
-        t.printStackTrace( out );
-      }
-      out.flush();
-
-      // Servlet containers behave slightly differently if you throw an exception during 
-      // initialization.  Resin will display that error for every page, jetty prints it in
-      // the logs, but continues normally.  (We will see a 404 rather then the real error)
-      // rather then leave the behavior undefined, lets cache the error and spit it out 
-      // for every request.
-      abortErrorMessage = sw.toString();
-      //throw new ServletException( abortErrorMessage );
     }
 
     log.info("SolrDispatchFilter.init() done");
@@ -366,7 +342,7 @@ public class SolrDispatchFilter implements Filter
       ex.printStackTrace(new PrintWriter(sw));
       trace = "\n\n"+sw.toString();
 
-      SolrException.logOnce(log,null,ex );
+      SolrException.log(log, null, ex);
 
       // non standard codes have undefined results with various servers
       if( code < 100 ) {

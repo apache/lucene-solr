@@ -100,7 +100,7 @@ public class ValueSourceAugmenter extends DocTransformer
         doc.setField( name, val );
       }
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "exception at docid " + docid + " for valuesource " + valueSource, e, false);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "exception at docid " + docid + " for valuesource " + valueSource, e);
     }
   }
 }

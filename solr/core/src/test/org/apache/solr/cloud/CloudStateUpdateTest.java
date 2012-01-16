@@ -312,7 +312,6 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     System.clearProperty("zkHost");
     System.clearProperty("hostPort");
     System.clearProperty("CLOUD_UPDATE_DELAY");
-    SolrConfig.severeErrors.clear();
   }
 
   private void addShardToZk(SolrZkClient zkClient, String shardsPath,
