@@ -75,7 +75,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
     try {
       long nextNormSeek = NORMS_HEADER.length; //skip header (header unused for now)
       for (FieldInfo fi : fields) {
-        if (fi.isIndexed && !fi.omitNorms) {
+        if (fi.normsPresent()) {
           String fileName = getNormFilename(segmentName, normGen, fi.number);
           Directory d = hasSeparateNorms(normGen, fi.number) ? separateNormsDir : dir;
         
@@ -161,7 +161,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
   
   static final class NormSource extends Source {
     protected NormSource(byte[] bytes) {
-      super(Type.BYTES_FIXED_STRAIGHT);
+      super(Type.FIXED_INTS_8);
       this.bytes = bytes;
     }
 
@@ -173,6 +173,11 @@ class Lucene3xNormsProducer extends PerDocProducer {
       ref.offset = docID;
       ref.length = 1;
       return ref;
+    }
+
+    @Override
+    public long getInt(int docID) {
+      return bytes[docID];
     }
 
     @Override
@@ -192,6 +197,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
     // like first FI that has norms but doesn't have separate norms?
     final String normsFileName = IndexFileNames.segmentFileName(info.name, "", NORMS_EXTENSION);
     if (dir.fileExists(normsFileName)) {
+      // only needed to do this in 3x - 4x can decide if the norms are present
       files.add(normsFileName);
     }
   }
@@ -231,7 +237,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
 
     @Override
     public Type type() {
-      return Type.BYTES_FIXED_STRAIGHT;
+      return Type.FIXED_INTS_8;
     }
     
     byte[] bytes() throws IOException {

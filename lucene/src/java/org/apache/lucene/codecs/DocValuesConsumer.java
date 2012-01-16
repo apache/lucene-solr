@@ -115,23 +115,13 @@ public abstract class DocValuesConsumer {
     final Field scratchField;
     switch(type) {
     case VAR_INTS:
-      scratchField = new DocValuesField("", (long) 0, type);
-      break;
     case FIXED_INTS_16:
-      scratchField = new DocValuesField("", (short) 0, type);
-      break;
     case FIXED_INTS_32:
-      scratchField = new DocValuesField("", 0, type);
-      break;
     case FIXED_INTS_64:
-      scratchField = new DocValuesField("", (long) 0, type);
-      break;
     case FIXED_INTS_8:
-      scratchField = new DocValuesField("", (byte) 0, type);
+      scratchField = new DocValuesField("", (long) 0, type);
       break;
     case FLOAT_32:
-      scratchField = new DocValuesField("", (float) 0, type);
-      break;
     case FLOAT_64:
       scratchField = new DocValuesField("", (double) 0, type);
       break;

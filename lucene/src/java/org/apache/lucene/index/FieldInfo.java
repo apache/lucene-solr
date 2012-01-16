@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.index.DocValues.Type;
+
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,11 +26,12 @@ public final class FieldInfo {
   public final int number;
 
   public boolean isIndexed;
-  private DocValues.Type docValues;
+  private DocValues.Type docValueType;
 
   // True if any document indexed term vectors
   public boolean storeTermVector;
 
+  private DocValues.Type normType;
   public boolean omitNorms; // omit norms associated with indexed fields  
   public IndexOptions indexOptions;
   public boolean storePayloads; // whether this field stores payloads together with term positions
@@ -56,21 +59,23 @@ public final class FieldInfo {
    * @lucene.experimental
    */
   public FieldInfo(String name, boolean isIndexed, int number, boolean storeTermVector, 
-            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues) {
+            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normsType) {
     this.name = name;
     this.isIndexed = isIndexed;
     this.number = number;
-    this.docValues = docValues;
+    this.docValueType = docValues;
     if (isIndexed) {
       this.storeTermVector = storeTermVector;
       this.storePayloads = storePayloads;
       this.omitNorms = omitNorms;
       this.indexOptions = indexOptions;
+      this.normType = !omitNorms ? normsType : null;
     } else { // for non-indexed fields, leave defaults
       this.storeTermVector = false;
       this.storePayloads = false;
       this.omitNorms = false;
       this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      this.normType = null;
     }
     assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !storePayloads;
   }
@@ -78,7 +83,7 @@ public final class FieldInfo {
   @Override
   public Object clone() {
     return new FieldInfo(name, isIndexed, number, storeTermVector,
-                         omitNorms, storePayloads, indexOptions, docValues);
+                         omitNorms, storePayloads, indexOptions, docValueType, normType);
   }
 
   // should only be called by FieldInfos#addOrUpdate
@@ -109,27 +114,44 @@ public final class FieldInfo {
     assert this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
   }
 
-  void setDocValuesType(DocValues.Type v) {
-    if (docValues == null) {
-      docValues = v;
-    }
-  }
-  
-  public void resetDocValuesType(DocValues.Type v) {
-    if (docValues != null) {
-      docValues = v;
+  void setDocValuesType(DocValues.Type type, boolean force) {
+    if (docValueType == null || force) {
+      docValueType = type;
+    } else if (type != docValueType) {
+      throw new IllegalArgumentException("DocValues type already set to " + docValueType + " but was: " + type);
     }
   }
   
   public boolean hasDocValues() {
-    return docValues != null;
+    return docValueType != null;
   }
 
   public DocValues.Type getDocValuesType() {
-    return docValues;
+    return docValueType;
+  }
+  
+  public DocValues.Type getNormType() {
+    return normType;
   }
 
   public void setStoreTermVectors() {
     storeTermVector = true;
   }
+
+  public void setNormValueType(Type type, boolean force) {
+    if (normType == null || force) {
+      normType = type;
+    } else if (type != normType) {
+      throw new IllegalArgumentException("Norm type already set to " + normType);
+    }
+  }
+  
+  public boolean omitNorms() {
+    return omitNorms;
+  }
+  
+  public boolean normsPresent() {
+    return isIndexed && !omitNorms && normType != null;
+  }
+  
 }

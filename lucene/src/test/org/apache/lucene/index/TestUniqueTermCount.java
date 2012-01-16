@@ -102,8 +102,8 @@ public class TestUniqueTermCount extends LuceneTestCase {
   class TestSimilarity extends DefaultSimilarity {
 
     @Override
-    public byte computeNorm(FieldInvertState state) {
-      return (byte) state.getUniqueTermCount();
+    public void computeNorm(FieldInvertState state, Norm norm) {
+      norm.setByte((byte) state.getUniqueTermCount());
     }
   }
 }

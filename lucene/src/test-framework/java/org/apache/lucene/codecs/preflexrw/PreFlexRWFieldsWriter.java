@@ -36,7 +36,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-class PreFlexFieldsWriter extends FieldsConsumer {
+class PreFlexRWFieldsWriter extends FieldsConsumer {
 
   private final TermInfosWriter termsOut;
   private final IndexOutput freqOut;
@@ -44,7 +44,7 @@ class PreFlexFieldsWriter extends FieldsConsumer {
   private final Lucene40SkipListWriter skipListWriter;
   private final int totalNumDocs;
 
-  public PreFlexFieldsWriter(SegmentWriteState state) throws IOException {
+  public PreFlexRWFieldsWriter(SegmentWriteState state) throws IOException {
     termsOut = new TermInfosWriter(state.directory,
                                    state.segmentName,
                                    state.fieldInfos,
@@ -89,7 +89,7 @@ class PreFlexFieldsWriter extends FieldsConsumer {
   public TermsConsumer addField(FieldInfo field) throws IOException {
     assert field.number != -1;
     if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-      throw new UnsupportedOperationException("this codec cannot index offsets");
+      throw new IllegalArgumentException("this codec cannot index offsets");
     }
     //System.out.println("w field=" + field.name + " storePayload=" + field.storePayloads + " number=" + field.number);
     return new PreFlexTermsWriter(field);
@@ -164,7 +164,6 @@ class PreFlexFieldsWriter extends FieldsConsumer {
         assert proxOut != null;
         assert startOffset == -1;
         assert endOffset == -1;
-
         //System.out.println("      w pos=" + position + " payl=" + payload);
         final int delta = position - lastPosition;
         lastPosition = position;

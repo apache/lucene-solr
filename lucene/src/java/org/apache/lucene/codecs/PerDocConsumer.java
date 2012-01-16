@@ -52,7 +52,10 @@ public abstract class PerDocConsumer implements Closeable {
         for (int i = 0; i < docValues.length; i++) {
           docValues[i] = getDocValuesForMerge(mergeState.readers.get(i).reader, fieldInfo);
         }
-        final DocValuesConsumer docValuesConsumer = addValuesField(getDocValuesType(fieldInfo), fieldInfo);
+        Type docValuesType = getDocValuesType(fieldInfo);
+        assert docValuesType != null;
+        
+        final DocValuesConsumer docValuesConsumer = addValuesField(docValuesType, fieldInfo);
         assert docValuesConsumer != null;
         docValuesConsumer.merge(mergeState, docValues);
       }

@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -383,13 +384,13 @@ public class Field implements IndexableField {
    * document.
    *
    * <p>The boost is used to compute the norm factor for the field.  By
-   * default, in the {@link org.apache.lucene.search.similarities.Similarity#computeNorm(FieldInvertState)} method, 
+   * default, in the {@link org.apache.lucene.search.similarities.Similarity#computeNorm(FieldInvertState, Norm)} method, 
    * the boost value is multiplied by the length normalization factor and then
    * rounded by {@link org.apache.lucene.search.similarities.DefaultSimilarity#encodeNormValue(float)} before it is stored in the
    * index.  One should attempt to ensure that this product does not overflow
    * the range of that encoding.
    *
-   * @see org.apache.lucene.search.similarities.Similarity#computeNorm(FieldInvertState)
+   * @see org.apache.lucene.search.similarities.Similarity#computeNorm(FieldInvertState, Norm)
    * @see org.apache.lucene.search.similarities.DefaultSimilarity#encodeNormValue(float)
    */
   public void setBoost(float boost) {

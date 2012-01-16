@@ -72,12 +72,12 @@ public class Lucene40NormsFormat extends NormsFormat {
 
     @Override
     protected boolean canLoad(FieldInfo info) {
-      return !info.omitNorms && info.isIndexed;
+      return info.normsPresent();
     }
 
     @Override
     protected Type getDocValuesType(FieldInfo info) {
-      return Type.BYTES_FIXED_STRAIGHT;
+      return info.getNormType();
     }
 
     @Override
@@ -102,23 +102,24 @@ public class Lucene40NormsFormat extends NormsFormat {
 
     @Override
     protected boolean canMerge(FieldInfo info) {
-      return !info.omitNorms && info.isIndexed;
+      return info.normsPresent();
     }
 
     @Override
     protected Type getDocValuesType(FieldInfo info) {
-      return Type.BYTES_FIXED_STRAIGHT;
+      return info.getNormType();
     }
     
     public static void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
-      // see the comment in all the other codecs... its bogus that we do fileExists here, but its 
-      // a harder problem since fieldinfos are never 'cleaned'
       final String normsFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION);
-      if (dir.fileExists(normsFileName)) {
-        final String normsEntriesFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-        assert dir.fileExists(normsEntriesFileName);
-        files.add(normsFileName);
-        files.add(normsEntriesFileName);
+      FieldInfos fieldInfos = segmentInfo.getFieldInfos();
+      for (FieldInfo fieldInfo : fieldInfos) {
+        if (fieldInfo.normsPresent()) {
+          final String normsEntriesFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+          files.add(normsFileName);
+          files.add(normsEntriesFileName);
+          return;
+        }
       }
     }
   }

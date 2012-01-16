@@ -94,17 +94,20 @@ public class SimpleTextNormsConsumer extends PerDocConsumer {
 
   @Override
   protected boolean canMerge(FieldInfo info) {
-    return !info.omitNorms && info.isIndexed;
+    return info.normsPresent();
   }
 
   @Override
   protected Type getDocValuesType(FieldInfo info) {
-    return Type.BYTES_FIXED_STRAIGHT;
+    return info.getNormType();
   }
 
   @Override
   public DocValuesConsumer addValuesField(Type type, FieldInfo fieldInfo)
       throws IOException {
+    if (type != Type.FIXED_INTS_8) {
+      throw new UnsupportedOperationException("Codec only supports single byte norm values. Type give: " + type);
+    }
     return new SimpleTextNormsDocValuesConsumer(fieldInfo);
   }
 
@@ -131,10 +134,10 @@ public class SimpleTextNormsConsumer extends PerDocConsumer {
 
     @Override
     public void add(int docID, IndexableField docValue) throws IOException {
-      add(docID, docValue.binaryValue());
+      add(docID, docValue.numericValue().longValue());
     }
     
-    protected void add(int docID, BytesRef value) throws IOException {
+    public void add(int docID, long value) {
       if (docIDs.length <= upto) {
         assert docIDs.length == upto;
         docIDs = ArrayUtil.grow(docIDs, 1 + upto);
@@ -143,8 +146,8 @@ public class SimpleTextNormsConsumer extends PerDocConsumer {
         assert norms.length == upto;
         norms = ArrayUtil.grow(norms, 1 + upto);
       }
-      assert value.length == 1;
-      norms[upto] = value.bytes[value.offset];
+      norms[upto] = (byte) value;
+      
       docIDs[upto] = docID;
       upto++;
     }
@@ -281,7 +284,7 @@ public class SimpleTextNormsConsumer extends PerDocConsumer {
     FieldInfos fieldInfos = info.getFieldInfos();
     
     for (FieldInfo fieldInfo : fieldInfos) {
-      if (!fieldInfo.omitNorms && fieldInfo.isIndexed) {
+      if (fieldInfo.normsPresent()) {
         files.add(IndexFileNames.segmentFileName(info.name, "",
             NORMS_EXTENSION));  
         break;

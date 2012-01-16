@@ -339,7 +339,7 @@ final class DocFieldProcessor extends DocConsumer {
       perDocConsumer = docState.docWriter.codec.docValuesFormat().docsConsumer(perDocWriteState);
     }
     DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
-    fieldInfo.setDocValuesType(valueType);
+    fieldInfo.setDocValuesType(valueType, false);
 
     docValuesConsumerAndDocID = new DocValuesConsumerAndDocID(docValuesConsumer);
     docValuesConsumerAndDocID.docID = docState.docID;

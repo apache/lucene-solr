@@ -622,6 +622,11 @@ New features
 * LUCENE-3628: Norms are represented as DocValues. IndexReader exposes
   a #normValues(String) method to obtain norms per field. (Simon Willnauer) 
 
+* LUCENE-3687: Similarity#computeNorm(FieldInvertState, Norm) allows to compute
+  norm values or arbitrary precision. Instead of returning a fixed single byte
+  value, custom similarities can now set a integer, float or byte value to the
+  given Norm object. (Simon Willnauer)  
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

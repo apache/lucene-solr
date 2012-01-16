@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -346,8 +347,11 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     FieldInvertState state = new FieldInvertState();
     state.setBoost(1.0f);
     state.setLength(4);
+    Norm norm = new Norm();
+    similarity.computeNorm(state, norm);
+    float nrm = similarity.decodeNormValue(norm.field().numericValue().byteValue());
     assertQ(req("fl","*,score","q", "{!func}norm(a_t)", "fq","id:2"),
-        "//float[@name='score']='" + similarity.decodeNormValue(similarity.computeNorm(state))  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
+        "//float[@name='score']='" + nrm  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
 
     // test that ord and rord are working on a global index basis, not just
     // at the segment level (since Lucene 2.9 has switched to per-segment searching)

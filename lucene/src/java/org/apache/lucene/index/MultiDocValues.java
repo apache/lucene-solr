@@ -49,8 +49,9 @@ public class MultiDocValues extends DocValues {
     
     public boolean stopLoadingOnNull(IndexReader reader, String field) throws IOException {
       // for norms we drop all norms if one leaf reader has no norms and the field is present
-      Fields fields = reader.fields();
-      return (fields != null && fields.terms(field) != null);
+      FieldInfos fieldInfos = reader.getFieldInfos();
+      FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+      return fieldInfo != null && fieldInfo.omitNorms;
     }
   };
 

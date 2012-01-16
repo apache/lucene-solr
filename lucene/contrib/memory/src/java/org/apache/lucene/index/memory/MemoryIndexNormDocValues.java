@@ -17,6 +17,7 @@ package org.apache.lucene.index.memory;
  */
 import java.io.IOException;
 
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.BytesRef;
 
@@ -51,21 +52,56 @@ class MemoryIndexNormDocValues extends DocValues {
     return 1;
   }
 
-  public static class SingleByteSource extends Source {
+  public static class SingleValueSource extends Source {
 
-    private final byte[] bytes;
+    private final Number numericValue;
+    private final BytesRef binaryValue;
 
-    protected SingleByteSource(byte[] bytes) {
-      super(Type.BYTES_FIXED_STRAIGHT);
-      this.bytes = bytes;
+    protected SingleValueSource(Norm norm) {
+      super(norm.type());
+      this.numericValue = norm.field().numericValue();
+      this.binaryValue = norm.field().binaryValue();
+    }
+
+    @Override
+    public long getInt(int docID) {
+      switch (type) {
+      case FIXED_INTS_16:
+      case FIXED_INTS_32:
+      case FIXED_INTS_64:
+      case FIXED_INTS_8:
+      case VAR_INTS:
+        assert numericValue != null;
+        return numericValue.longValue();
+      }
+      return super.getInt(docID);
+    }
+
+    @Override
+    public double getFloat(int docID) {
+      switch (type) {
+      case FLOAT_32:
+      case FLOAT_64:
+        assert numericValue != null;
+        return numericValue.floatValue();
+      }
+      return super.getFloat(docID);
     }
 
     @Override
     public BytesRef getBytes(int docID, BytesRef ref) {
-      ref.bytes = bytes;
-      ref.offset = docID;
-      ref.length = 1;
-      return ref;
+      switch (type) {
+      case BYTES_FIXED_DEREF:
+      case BYTES_FIXED_SORTED:
+      case BYTES_FIXED_STRAIGHT:
+      case BYTES_VAR_DEREF:
+      case BYTES_VAR_SORTED:
+      case BYTES_VAR_STRAIGHT:
+        assert binaryValue != null;
+        ref.copyBytes(binaryValue);
+        return ref;
+      }
+      return super.getBytes(docID, ref);
     }
 
     @Override
@@ -75,9 +111,33 @@ class MemoryIndexNormDocValues extends DocValues {
 
     @Override
     public Object getArray() {
-      return bytes;
+      switch (type) {
+      case BYTES_FIXED_DEREF:
+      case BYTES_FIXED_SORTED:
+      case BYTES_FIXED_STRAIGHT:
+      case BYTES_VAR_DEREF:
+      case BYTES_VAR_SORTED:
+      case BYTES_VAR_STRAIGHT:
+        return binaryValue.bytes;
+      case FIXED_INTS_16:
+        return new short[] { numericValue.shortValue() };
+      case FIXED_INTS_32:
+        return new int[] { numericValue.intValue() };
+      case FIXED_INTS_64:
+        return new long[] { numericValue.longValue() };
+      case FIXED_INTS_8:
+        return new byte[] { numericValue.byteValue() };
+      case VAR_INTS:
+        return new long[] { numericValue.longValue() };
+      case FLOAT_32:
+        return new float[] { numericValue.floatValue() };
+      case FLOAT_64:
+        return new double[] { numericValue.doubleValue() };
+      default:
+        throw new IllegalArgumentException("unknown type " + type);
+      }
+
     }
-    
   }
 
 }

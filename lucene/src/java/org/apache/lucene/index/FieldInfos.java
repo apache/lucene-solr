@@ -268,7 +268,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                   boolean omitNorms) {
-    addOrUpdate(name, isIndexed, storeTermVector, omitNorms, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null);
+    addOrUpdate(name, isIndexed, storeTermVector, omitNorms, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, null);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -284,8 +284,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param indexOptions if term freqs should be omitted for this field
    */
   synchronized public FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
-                       boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues) {
-    return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues);
+                       boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
+    return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
   }
 
   // NOTE: this method does not carry over termVector
@@ -301,32 +301,37 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     // be updated by maybe FreqProxTermsWriterPerField:
     return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
                                fieldType.omitNorms(), false,
-                               fieldType.indexOptions(), null);
+                               fieldType.indexOptions(), null, null);
   }
 
   synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
       boolean storeTermVector,
-      boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues) {
+      boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
     if (globalFieldNumbers == null) {
       throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
     }
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
       final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
-      fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues);
+      fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
     } else {
       fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
-      fi.setDocValuesType(docValues);
+      if (docValues != null) {
+        fi.setDocValuesType(docValues, true);
+      }
+      if (normType != null) {
+        fi.setNormValueType(normType, true);
+      }
     }
     version++;
     return fi;
   }
-
+  
   synchronized public FieldInfo add(FieldInfo fi) {
     // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
     return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed, fi.storeTermVector,
                fi.omitNorms, fi.storePayloads,
-               fi.indexOptions, fi.getDocValuesType());
+               fi.indexOptions, fi.getDocValuesType(), fi.getNormType());
   }
   
   /*
@@ -334,12 +339,12 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
                                 boolean storeTermVector, boolean omitNorms, boolean storePayloads,
-                                IndexOptions indexOptions, DocValues.Type docValuesType) {
+                                IndexOptions indexOptions, DocValues.Type docValuesType, DocValues.Type normType) {
     // don't check modifiable here since we use that to initially build up FIs
     if (globalFieldNumbers != null) {
       globalFieldNumbers.setIfNotSet(fieldNumber, name);
     } 
-    final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType);
+    final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType);
     putInternal(fi);
     return fi;
   }

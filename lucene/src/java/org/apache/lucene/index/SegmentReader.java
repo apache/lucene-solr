@@ -198,7 +198,7 @@ public final class SegmentReader extends IndexReader {
   public boolean hasNorms(String field) {
     ensureOpen();
     FieldInfo fi = core.fieldInfos.fieldInfo(field);
-    return fi != null && fi.isIndexed && !fi.omitNorms;
+    return fi.normsPresent();
   }
 
   /** @lucene.internal */

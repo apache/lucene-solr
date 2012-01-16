@@ -22,9 +22,9 @@ import java.util.Arrays;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
@@ -34,14 +34,13 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
  * Writes and Merges Lucene 3.x norms format
  * @lucene.experimental
  */
-class PreFlexNormsConsumer extends PerDocConsumer {
+class PreFlexRWNormsConsumer extends PerDocConsumer {
   
   /** norms header placeholder */
   private static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1};
@@ -62,7 +61,7 @@ class PreFlexNormsConsumer extends PerDocConsumer {
 
   private NormsWriter writer;
   
-  public PreFlexNormsConsumer(Directory directory, String segment, IOContext context){
+  public PreFlexRWNormsConsumer(Directory directory, String segment, IOContext context){
     this.directory = directory;
     this.segment = segment;
     this.context = context;
@@ -79,10 +78,23 @@ class PreFlexNormsConsumer extends PerDocConsumer {
       writer.finish();
     }
   }
+  
+  @Override
+  protected boolean canMerge(FieldInfo info) {
+    return info.normsPresent();
+  }
+
+  @Override
+  protected Type getDocValuesType(FieldInfo info) {
+    return info.getNormType();
+  }
 
   @Override
   public DocValuesConsumer addValuesField(Type type, FieldInfo fieldInfo)
       throws IOException {
+    if (type != Type.FIXED_INTS_8) {
+      throw new UnsupportedOperationException("Codec only supports single byte norm values. Type give: " + type);
+    }
     return new Lucene3xNormsDocValuesConsumer(fieldInfo);
   }
   
@@ -134,10 +146,10 @@ class PreFlexNormsConsumer extends PerDocConsumer {
     
     @Override
     public void add(int docID, IndexableField docValue) throws IOException {
-      add(docID, docValue.binaryValue());
+      add(docID, docValue.numericValue().longValue());
     }
     
-    protected void add(int docID, BytesRef value) throws IOException {
+    protected void add(int docID, long value) {
       if (docIDs.length <= upto) {
         assert docIDs.length == upto;
         docIDs = ArrayUtil.grow(docIDs, 1 + upto);
@@ -146,8 +158,7 @@ class PreFlexNormsConsumer extends PerDocConsumer {
         assert norms.length == upto;
         norms = ArrayUtil.grow(norms, 1 + upto);
       }
-      assert value.length == 1;
-      norms[upto] = value.bytes[value.offset];
+      norms[upto] = (byte) value;
       
       docIDs[upto] = docID;
       upto++;
@@ -217,7 +228,7 @@ class PreFlexNormsConsumer extends PerDocConsumer {
     public void merge(MergeState mergeState) throws IOException {
       int numMergedDocs = 0;
       for (FieldInfo fi : mergeState.fieldInfos) {
-        if (fi.isIndexed && !fi.omitNorms) {
+        if (fi.normsPresent()) {
           startField(fi);
           int numMergedDocsForField = 0;
           for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {

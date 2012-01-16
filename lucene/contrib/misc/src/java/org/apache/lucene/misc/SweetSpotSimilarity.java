@@ -19,6 +19,7 @@ package org.apache.lucene.misc;
 
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.Norm;
 
 /**
  * A similarity with a lengthNorm that provides for a "plateau" of
@@ -106,7 +107,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * discountOverlaps is true by default or true for this
    * specific field. */
   @Override
-  public byte computeNorm(FieldInvertState state) {
+  public void computeNorm(FieldInvertState state, Norm norm) {
     final int numTokens;
 
     if (discountOverlaps)
@@ -114,7 +115,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
     else
       numTokens = state.getLength();
 
-    return encodeNormValue(state.getBoost() * computeLengthNorm(numTokens));
+    norm.setByte(encodeNormValue(state.getBoost() * computeLengthNorm(numTokens)));
   }
 
   /**

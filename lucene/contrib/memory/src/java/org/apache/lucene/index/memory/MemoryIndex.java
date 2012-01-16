@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -48,7 +49,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.memory.MemoryIndexNormDocValues.SingleByteSource;
+import org.apache.lucene.index.memory.MemoryIndexNormDocValues.SingleValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -1157,8 +1158,9 @@ public class MemoryIndex {
         int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
         float boost = info != null ? info.getBoost() : 1.0f; 
         FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
-        byte norm = fieldSim.computeNorm(invertState);
-        SingleByteSource singleByteSource = new SingleByteSource(new byte[] {norm});
+        Norm norm = new Norm();
+        fieldSim.computeNorm(invertState, norm);
+        SingleValueSource singleByteSource = new SingleValueSource(norm);
         norms = new MemoryIndexNormDocValues(singleByteSource);
         // cache it for future reuse
         cachedNormValues = norms;

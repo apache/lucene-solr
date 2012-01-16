@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.preflexrw;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
@@ -29,6 +30,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class PreFlexRWCodec extends Lucene3xCodec {
   private final PostingsFormat postings = new PreFlexRWPostingsFormat();
   private final NormsFormat norms = new PreFlexRWNormsFormat();
+  private final FieldInfosFormat fieldInfos = new PreFlexRWFieldInfosFormat();
   
   @Override
   public PostingsFormat postingsFormat() {
@@ -45,6 +47,15 @@ public class PreFlexRWCodec extends Lucene3xCodec {
       return norms;
     } else {
       return super.normsFormat();
+    }
+  }
+
+  @Override
+  public FieldInfosFormat fieldInfosFormat() {
+    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+      return fieldInfos;
+    } else {
+      return super.fieldInfosFormat();
     }
   }
 }

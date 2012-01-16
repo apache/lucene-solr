@@ -37,6 +37,7 @@ import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -324,9 +325,9 @@ public class TestPayloadTermQuery extends LuceneTestCase {
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //Make everything else 1 so we see the effect of the payload
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        @Override
-        public byte computeNorm(FieldInvertState state) {
-          return encodeNormValue(state.getBoost());
+        @Override 
+        public void computeNorm(FieldInvertState state, Norm norm) {
+          norm.setByte(encodeNormValue(state.getBoost()));
         }
 
         @Override

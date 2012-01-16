@@ -191,9 +191,18 @@ final class SegmentMerger {
   }
 
   private void mergeFieldInfos() throws IOException {
+    mergeDocValuesAndNormsFieldInfos();
+    // write the merged infos
+    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat()
+        .getFieldInfosWriter();
+    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
+  }
+
+  public void mergeDocValuesAndNormsFieldInfos() throws IOException {
     // mapping from all docvalues fields found to their promoted types
     // this is because FieldInfos does not store the valueSize
     Map<FieldInfo,TypePromoter> docValuesTypes = new HashMap<FieldInfo,TypePromoter>();
+    Map<FieldInfo,TypePromoter> normValuesTypes = new HashMap<FieldInfo,TypePromoter>();
 
     for (MergeState.IndexReaderAndLiveDocs readerAndLiveDocs : mergeState.readers) {
       final IndexReader reader = readerAndLiveDocs.reader;
@@ -205,28 +214,44 @@ final class SegmentMerger {
           TypePromoter previous = docValuesTypes.get(merged);
           docValuesTypes.put(merged, mergeDocValuesType(previous, reader.docValues(fi.name))); 
         }
-      }
-    }
-    
-    // update any promoted doc values types:
-    for (Map.Entry<FieldInfo,TypePromoter> e : docValuesTypes.entrySet()) {
-      FieldInfo fi = e.getKey();
-      TypePromoter promoter = e.getValue();
-      if (promoter == null) {
-        fi.resetDocValuesType(null);
-      } else {
-        assert promoter != TypePromoter.getIdentityPromoter();
-        if (fi.getDocValuesType() != promoter.type()) {
-          // reset the type if we got promoted
-          fi.resetDocValuesType(promoter.type());
+        if (fi.normsPresent()) {
+          TypePromoter previous = normValuesTypes.get(merged);
+          normValuesTypes.put(merged, mergeDocValuesType(previous, reader.normValues(fi.name))); 
         }
       }
     }
-    
-    // write the merged infos
-    FieldInfosWriter fieldInfosWriter = codec.fieldInfosFormat().getFieldInfosWriter();
-    fieldInfosWriter.write(directory, segment, mergeState.fieldInfos, context);
+    updatePromoted(normValuesTypes, true);
+    updatePromoted(docValuesTypes, false);
   }
+  
+  protected void updatePromoted(Map<FieldInfo,TypePromoter> infoAndPromoter, boolean norms) {
+    // update any promoted doc values types:
+    for (Map.Entry<FieldInfo,TypePromoter> e : infoAndPromoter.entrySet()) {
+      FieldInfo fi = e.getKey();
+      TypePromoter promoter = e.getValue();
+      if (promoter == null) {
+        if (norms) {
+          fi.setNormValueType(null, true);
+        } else {
+          fi.setDocValuesType(null, true);
+        }
+      } else {
+        assert promoter != TypePromoter.getIdentityPromoter();
+        if (norms) {
+          if (fi.getNormType() != promoter.type()) {
+            // reset the type if we got promoted
+            fi.setNormValueType(promoter.type(), true);
+          }  
+        } else {
+          if (fi.getDocValuesType() != promoter.type()) {
+            // reset the type if we got promoted
+            fi.setDocValuesType(promoter.type(), true);
+          }
+        }
+      }
+    }
+  }
+
 
   /**
    *

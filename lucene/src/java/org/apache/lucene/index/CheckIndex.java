@@ -671,7 +671,7 @@ public class CheckIndex {
           if (reader.normValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
           }
-          if (info.isIndexed && !info.omitNorms) {
+          if (info.normsPresent()) {
             throw new RuntimeException("field: " + info.name + " should have norms but omits them!");
           }
         }

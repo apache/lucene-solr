@@ -1,4 +1,5 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,21 +16,34 @@ package org.apache.lucene.codecs.preflexrw;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
 
-import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.codecs.lucene3x.Lucene3xNormsFormat;
-import org.apache.lucene.index.PerDocWriteState;
+import java.io.IOException;
+import java.util.Set;
+
+import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.FieldInfosReader;
+import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
 
 /**
- * @lucene.internal
  * @lucene.experimental
  */
-public class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
-
+public class Lucene3xFieldInfosFormat extends FieldInfosFormat {
+  private final FieldInfosReader reader = new Lucene3xFieldInfosReader();
+  
   @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new PreFlexRWNormsConsumer(state.directory, state.segmentName, state.context);
+  public FieldInfosReader getFieldInfosReader() throws IOException {
+    return reader;
   }
 
+  @Override
+  public FieldInfosWriter getFieldInfosWriter() throws IOException {
+    throw new IllegalArgumentException("this codec can only be used for reading");
+  }
+
+  @Override
+  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    Lucene3xFieldInfosReader.files(dir, info, files);
+  }
 }

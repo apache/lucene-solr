@@ -24,9 +24,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 // TODO FI: norms could actually be stored as doc store
@@ -69,13 +67,12 @@ final class NormsConsumer extends InvertedDocEndConsumer {
           if (!fi.omitNorms) {
             if (toWrite != null && toWrite.initialized()) {
               anythingFlushed = true;
-              toWrite.flush(state.numDocs);
+              final Type type = toWrite.flush(state.numDocs);
+              assert fi.getNormType() == type;
             } else if (fi.isIndexed) {
               anythingFlushed = true;
-              final DocValuesConsumer valuesConsumer = newConsumer(new PerDocWriteState(state), fi);
-              final DocValuesField value = new DocValuesField("", new BytesRef(new byte[] {0x0}), Type.BYTES_FIXED_STRAIGHT);
-              valuesConsumer.add(state.numDocs-1, value);
-              valuesConsumer.finish(state.numDocs);
+              assert fi.getNormType() == null;
+              fi.setNormValueType(null, false);
             }
           }
         }
@@ -107,12 +104,12 @@ final class NormsConsumer extends InvertedDocEndConsumer {
   }
   
   DocValuesConsumer newConsumer(PerDocWriteState perDocWriteState,
-      FieldInfo fieldInfo) throws IOException {
+      FieldInfo fieldInfo, Type type) throws IOException {
     if (consumer == null) {
       consumer = normsFormat.docsConsumer(perDocWriteState);
     }
-    DocValuesConsumer addValuesField = consumer.addValuesField(
-        Type.BYTES_FIXED_STRAIGHT, fieldInfo);
+    DocValuesConsumer addValuesField = consumer.addValuesField(type, fieldInfo);
     return addValuesField;
   }
+  
 }

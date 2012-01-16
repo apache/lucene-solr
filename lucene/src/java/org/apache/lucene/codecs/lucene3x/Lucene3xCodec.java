@@ -30,7 +30,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
@@ -56,7 +55,7 @@ public class Lucene3xCodec extends Codec {
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
   
   // TODO: this should really be a different impl
-  private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
+  private final FieldInfosFormat fieldInfosFormat = new Lucene3xFieldInfosFormat();
 
   // TODO: this should really be a different impl
   // also if we want preflex to *really* be read-only it should throw exception for the writer?

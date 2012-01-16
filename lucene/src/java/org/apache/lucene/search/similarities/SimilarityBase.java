@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -234,13 +235,13 @@ public abstract class SimilarityBase extends Similarity {
 
   /** Encodes the document length in the same way as {@link TFIDFSimilarity}. */
   @Override
-  public byte computeNorm(FieldInvertState state) {
+  public void computeNorm(FieldInvertState state, Norm norm) {
     final float numTerms;
     if (discountOverlaps)
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength() / state.getBoost();
-    return encodeNormValue(state.getBoost(), numTerms);
+    norm.setByte(encodeNormValue(state.getBoost(), numTerms));
   }
   
   /** Decodes a normalization factor (document length) stored in an index.

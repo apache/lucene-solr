@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.preflexrw;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -29,22 +28,27 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
 /**
+ * @lucene.internal
  * @lucene.experimental
  */
-public class Lucene40FieldInfosWriter extends FieldInfosWriter {
+public class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
+  // TODO move to test-framework preflex RW?
   
   /** Extension of field infos */
   static final String FIELD_INFOS_EXTENSION = "fnm";
   
-  // per-field codec support, records index values for fields
-  static final int FORMAT_START = -4;
+  // First used in 2.9; prior to 2.9 there was no format header
+  static final int FORMAT_START = -2;
+  // First used in 3.4: omit only positional information
+  static final int FORMAT_OMIT_POSITIONS = -3;
+  
+  static final int FORMAT_PREFLEX_RW = Integer.MIN_VALUE;
 
   // whenever you add a new format, make it 1 smaller (negative version logic)!
-  static final int FORMAT_CURRENT = FORMAT_START;
+  static final int FORMAT_CURRENT = FORMAT_OMIT_POSITIONS;
   
   static final byte IS_INDEXED = 0x1;
   static final byte STORE_TERMVECTOR = 0x2;
-  static final byte STORE_OFFSETS_IN_POSTINGS = 0x4;
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
@@ -55,7 +59,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
     try {
-      output.writeVInt(FORMAT_CURRENT);
+      output.writeVInt(FORMAT_PREFLEX_RW);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
         assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
@@ -66,61 +70,25 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
         if (fi.storePayloads) bits |= STORE_PAYLOADS;
         if (fi.indexOptions == IndexOptions.DOCS_ONLY) {
           bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-        } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
-          bits |= STORE_OFFSETS_IN_POSTINGS;
         } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS) {
           bits |= OMIT_POSITIONS;
         }
         output.writeString(fi.name);
+        /*
+         * we need to write the field number since IW tries
+         * to stabelize the field numbers across segments so the
+         * FI ordinal is not necessarily equivalent to the field number 
+         */
         output.writeInt(fi.number);
         output.writeByte(bits);
-
-        // pack the DV types in one byte
-        final byte dv = docValuesByte(fi.getDocValuesType());
-        final byte nrm = docValuesByte(fi.getNormType());
-        assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
-        byte val = (byte) (0xff & ((nrm << 4) | dv));
-        output.writeByte(val);
+        if (fi.isIndexed && !fi.omitNorms) {
+          // to allow null norm types we need to indicate if norms are written 
+          // only in RW case
+          output.writeByte((byte) (fi.getNormType() == null ? 0 : 1));
+        }
       }
     } finally {
       output.close();
-    }
-  }
-
-  public byte docValuesByte(Type type) {
-    if (type == null) {
-      return 0;
-    } else {
-      switch(type) {
-      case VAR_INTS:
-        return 1;
-      case FLOAT_32:
-        return 2;
-      case FLOAT_64:
-        return 3;
-      case BYTES_FIXED_STRAIGHT:
-        return 4;
-      case BYTES_FIXED_DEREF:
-        return 5;
-      case BYTES_VAR_STRAIGHT:
-        return 6;
-      case BYTES_VAR_DEREF:
-        return 7;
-      case FIXED_INTS_16:
-        return 8;
-      case FIXED_INTS_32:
-        return 9;
-      case FIXED_INTS_64:
-        return 10;
-      case FIXED_INTS_8:
-        return 11;
-      case BYTES_FIXED_SORTED:
-        return 12;
-      case BYTES_VAR_SORTED:
-        return 13;
-      default:
-        throw new IllegalStateException("unhandled indexValues type " + type);
-      }
     }
   }
   

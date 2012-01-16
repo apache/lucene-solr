@@ -65,7 +65,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
 
       for (int i = 0; i < size; i++) {
         String name = input.readString();
-        final int fieldNumber = format <= Lucene40FieldInfosWriter.FORMAT_FLEX? input.readInt():i;
+        final int fieldNumber = input.readInt();
         byte bits = input.readByte();
         boolean isIndexed = (bits & Lucene40FieldInfosWriter.IS_INDEXED) != 0;
         boolean storeTermVector = (bits & Lucene40FieldInfosWriter.STORE_TERMVECTOR) != 0;
@@ -75,12 +75,8 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         if ((bits & Lucene40FieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_ONLY;
         } else if ((bits & Lucene40FieldInfosWriter.OMIT_POSITIONS) != 0) {
-          if (format <= Lucene40FieldInfosWriter.FORMAT_OMIT_POSITIONS) {
-            indexOptions = IndexOptions.DOCS_AND_FREQS;
-          } else {
-            throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format + " (resource: " + input + ")");
-          }
-        } else if (format <= Lucene40FieldInfosWriter.FORMAT_FLEX && (bits & Lucene40FieldInfosWriter.STORE_OFFSETS_IN_POSTINGS) != 0) {
+          indexOptions = IndexOptions.DOCS_AND_FREQS;
+        } else if ((bits & Lucene40FieldInfosWriter.STORE_OFFSETS_IN_POSTINGS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
         } else {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
@@ -95,59 +91,12 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         hasVectors |= storeTermVector;
         hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
         hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
-        DocValues.Type docValuesType = null;
-        if (format <= Lucene40FieldInfosWriter.FORMAT_FLEX) {
-          final byte b = input.readByte();
-          switch(b) {
-            case 0:
-              docValuesType = null;
-              break;
-            case 1:
-              docValuesType = DocValues.Type.VAR_INTS;
-              break;
-            case 2:
-              docValuesType = DocValues.Type.FLOAT_32;
-              break;
-            case 3:
-              docValuesType = DocValues.Type.FLOAT_64;
-              break;
-            case 4:
-              docValuesType = DocValues.Type.BYTES_FIXED_STRAIGHT;
-              break;
-            case 5:
-              docValuesType = DocValues.Type.BYTES_FIXED_DEREF;
-              break;
-            case 6:
-              docValuesType = DocValues.Type.BYTES_VAR_STRAIGHT;
-              break;
-            case 7:
-              docValuesType = DocValues.Type.BYTES_VAR_DEREF;
-              break;
-            case 8:
-              docValuesType = DocValues.Type.FIXED_INTS_16;
-              break;
-            case 9:
-              docValuesType = DocValues.Type.FIXED_INTS_32;
-              break;
-            case 10:
-              docValuesType = DocValues.Type.FIXED_INTS_64;
-              break;
-            case 11:
-              docValuesType = DocValues.Type.FIXED_INTS_8;
-              break;
-            case 12:
-              docValuesType = DocValues.Type.BYTES_FIXED_SORTED;
-              break;
-            case 13:
-              docValuesType = DocValues.Type.BYTES_VAR_SORTED;
-              break;
-        
-            default:
-              throw new IllegalStateException("unhandled indexValues type " + b);
-          }
-        }
+        // DV Types are packed in one byte
+        byte val = input.readByte();
+        final DocValues.Type docValuesType = getDocValuesType((byte) (val & 0x0F));
+        final DocValues.Type normsType = getDocValuesType((byte) ((val >>> 4) & 0x0F));
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType);
+          omitNorms, storePayloads, indexOptions, docValuesType, normsType);
       }
 
       if (input.getFilePointer() != input.length()) {
@@ -157,6 +106,42 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
       return new FieldInfos(infos, hasFreq, hasProx, hasVectors);
     } finally {
       input.close();
+    }
+  }
+
+  public DocValues.Type getDocValuesType(
+      final byte b) {
+    switch(b) {
+      case 0:
+        return null;
+      case 1:
+        return DocValues.Type.VAR_INTS;
+      case 2:
+        return DocValues.Type.FLOAT_32;
+      case 3:
+        return DocValues.Type.FLOAT_64;
+      case 4:
+        return DocValues.Type.BYTES_FIXED_STRAIGHT;
+      case 5:
+        return DocValues.Type.BYTES_FIXED_DEREF;
+      case 6:
+        return DocValues.Type.BYTES_VAR_STRAIGHT;
+      case 7:
+        return DocValues.Type.BYTES_VAR_DEREF;
+      case 8:
+        return DocValues.Type.FIXED_INTS_16;
+      case 9:
+        return DocValues.Type.FIXED_INTS_32;
+      case 10:
+        return DocValues.Type.FIXED_INTS_64;
+      case 11:
+        return DocValues.Type.FIXED_INTS_8;
+      case 12:
+        return DocValues.Type.BYTES_FIXED_SORTED;
+      case 13:
+        return DocValues.Type.BYTES_VAR_SORTED;
+      default:
+        throw new IllegalStateException("unhandled indexValues type " + b);
     }
   }
   

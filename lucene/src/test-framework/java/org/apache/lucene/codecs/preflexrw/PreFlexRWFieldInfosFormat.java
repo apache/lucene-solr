@@ -1,4 +1,5 @@
 package org.apache.lucene.codecs.preflexrw;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,19 +18,24 @@ package org.apache.lucene.codecs.preflexrw;
  */
 import java.io.IOException;
 
-import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.codecs.lucene3x.Lucene3xNormsFormat;
-import org.apache.lucene.index.PerDocWriteState;
+import org.apache.lucene.codecs.FieldInfosReader;
+import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.codecs.lucene3x.Lucene3xFieldInfosFormat;
 
 /**
+ * 
  * @lucene.internal
  * @lucene.experimental
  */
-public class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
+public class PreFlexRWFieldInfosFormat extends Lucene3xFieldInfosFormat {
 
   @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new PreFlexRWNormsConsumer(state.directory, state.segmentName, state.context);
+  public FieldInfosReader getFieldInfosReader() throws IOException {
+    return new PreFlexRWFieldInfosReader();
   }
 
+  @Override
+  public FieldInfosWriter getFieldInfosWriter() throws IOException {
+    return new PreFlexRWFieldInfosWriter();
+  }
 }

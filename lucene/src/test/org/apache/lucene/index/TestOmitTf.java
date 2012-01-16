@@ -44,8 +44,7 @@ public class TestOmitTf extends LuceneTestCase {
     public float coord(int overlap, int maxOverlap) { return 1.0f; }
     public Similarity get(String field) {
       return new TFIDFSimilarity() {
-
-        @Override public byte computeNorm(FieldInvertState state) { return encodeNormValue(state.getBoost()); }
+        @Override public void computeNorm(FieldInvertState state, Norm norm) { norm.setByte(encodeNormValue(state.getBoost())); }
         @Override public float tf(float freq) { return freq; }
         @Override public float sloppyFreq(int distance) { return 2.0f; }
         @Override public float idf(int docFreq, int numDocs) { return 1.0f; }

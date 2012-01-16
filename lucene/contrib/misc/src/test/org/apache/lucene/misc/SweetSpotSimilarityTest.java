@@ -24,12 +24,24 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.FieldInvertState;
+
 
 /**
  * Test of the SweetSpotSimilarity
  */
 public class SweetSpotSimilarityTest extends LuceneTestCase {
+  
+  public static float computeAndDecodeNorm(SweetSpotSimilarity decode, Similarity encode, FieldInvertState state) {
+    return decode.decodeNormValue(computeAndGetNorm(encode, state));
+  }
+  
+  public static byte computeAndGetNorm(Similarity s, FieldInvertState state) {
+    Norm norm = new Norm();
+    s.computeNorm(state, norm);
+    return norm.field().numericValue().byteValue();
+  }
 
   public void testSweetSpotComputeNorm() {
   
@@ -45,9 +57,13 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     invertState.setBoost(1.0f);
     for (int i = 1; i < 1000; i++) {
       invertState.setLength(i);
+      Norm lNorm = new Norm();
+      Norm rNorm = new Norm();
+      d.computeNorm(invertState, lNorm);
+      s.computeNorm(invertState, rNorm);
       assertEquals("base case: i="+i,
-                   d.computeNorm(invertState),
-                   s.computeNorm(invertState),
+                   computeAndGetNorm(d, invertState),
+                   computeAndGetNorm(s, invertState),
                    0.0f);
     }
 
@@ -59,15 +75,15 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
       invertState.setLength(i);
       assertEquals("3,10: spot i="+i,
                    1.0f,
-                   ss.decodeNormValue(s.computeNorm(invertState)),
+                   computeAndDecodeNorm(ss, ss, invertState),
                    0.0f);
     }
   
     for (int i = 10; i < 1000; i++) {
       invertState.setLength(i-9);
-      final byte normD = d.computeNorm(invertState);
+      final byte normD = computeAndGetNorm(d, invertState);
       invertState.setLength(i);
-      final byte normS = s.computeNorm(invertState);
+      final byte normS = computeAndGetNorm(s, invertState);
       assertEquals("3,10: 10<x : i="+i,
                    normD,
                    normS,
@@ -105,14 +121,14 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
       invertState.setLength(i);
       assertEquals("f: 3,10: spot i="+i,
                    1.0f,
-                   ss.decodeNormValue(sp.get("foo").computeNorm(invertState)),
+                   computeAndDecodeNorm(ss, sp.get("foo"), invertState),
                    0.0f);
     }
     for (int i = 10; i < 1000; i++) {
       invertState.setLength(i-9);
-      final byte normD = d.computeNorm(invertState);
+      final byte normD = computeAndGetNorm(d, invertState);
       invertState.setLength(i);
-      final byte normS = sp.get("foo").computeNorm(invertState);
+      final byte normS = computeAndGetNorm(sp.get("foo"), invertState);
       assertEquals("f: 3,10: 10<x : i="+i,
                    normD,
                    normS,
@@ -122,21 +138,21 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
       invertState.setLength(i);
       assertEquals("f: 8,13: spot i="+i,
                    1.0f,
-                   ss.decodeNormValue(sp.get("bar").computeNorm(invertState)),
+                   computeAndDecodeNorm(ss, sp.get("bar"), invertState),
                    0.0f);
     }
     for (int i = 6; i <=9; i++) {
       invertState.setLength(i);
       assertEquals("f: 6,9: spot i="+i,
                    1.0f,
-                   ss.decodeNormValue(sp.get("yak").computeNorm(invertState)),
+                   computeAndDecodeNorm(ss, sp.get("yak"), invertState),
                    0.0f);
     }
     for (int i = 13; i < 1000; i++) {
       invertState.setLength(i-12);
-      final byte normD = d.computeNorm(invertState);
+      final byte normD = computeAndGetNorm(d, invertState);
       invertState.setLength(i);
-      final byte normS = sp.get("bar").computeNorm(invertState);
+      final byte normS = computeAndGetNorm(sp.get("bar"), invertState);
       assertEquals("f: 8,13: 13<x : i="+i,
                    normD,
                    normS,
@@ -144,9 +160,9 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     }
     for (int i = 9; i < 1000; i++) {
       invertState.setLength(i-8);
-      final byte normD = d.computeNorm(invertState);
+      final byte normD = computeAndGetNorm(d, invertState);
       invertState.setLength(i);
-      final byte normS = sp.get("yak").computeNorm(invertState);
+      final byte normS = computeAndGetNorm(sp.get("yak"), invertState);
       assertEquals("f: 6,9: 9<x : i="+i,
                    normD,
                    normS,
@@ -158,8 +174,8 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
 
     for (int i = 9; i < 1000; i++) {
       invertState.setLength(i);
-      final byte normSS = sp.get("a").computeNorm(invertState);
-      final byte normS = sp.get("b").computeNorm(invertState);
+      final byte normSS = computeAndGetNorm(sp.get("a"), invertState);
+      final byte normS = computeAndGetNorm(sp.get("b"), invertState);
       assertTrue("s: i="+i+" : a="+normSS+
                  " < b="+normS,
                  normSS < normS);
