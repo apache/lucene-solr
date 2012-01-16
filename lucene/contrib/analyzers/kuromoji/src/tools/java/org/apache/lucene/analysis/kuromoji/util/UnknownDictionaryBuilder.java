@@ -33,7 +33,7 @@ import java.util.List;
 import org.apache.lucene.analysis.kuromoji.dict.CharacterDefinition;
 
 public class UnknownDictionaryBuilder {
-  private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,-,*,*,*,*,*,*,*,*";
+  private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,記号,一般,*,*,*,*,*,*,*";
   
   private String encoding = "euc-jp";
   
@@ -73,9 +73,7 @@ public class UnknownDictionaryBuilder {
       // even though the unknown dictionary returns hardcoded null here.
       final String[] parsed = CSVUtil.parse(line + ",*,*"); // Probably we don't need to validate entry
       lines.add(parsed);
-      dictionary.noteInflection(parsed); // for completeness; I think unk.def has no inflections...
     }
-    dictionary.finalizeInflections(); // should also be no-op
     
     Collections.sort(lines, new Comparator<String[]>() {
       public int compare(String[] left, String[] right) {
