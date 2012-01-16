@@ -153,11 +153,12 @@ public class PeerSync  {
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt","/get");
+    sreq.params.set("distrib",false);
     sreq.params.set("getVersions",nUpdates);
     shardHandler.submit(sreq, replica, sreq.params);
   }
 
-  private boolean  handleResponse(ShardResponse srsp) {
+  private boolean handleResponse(ShardResponse srsp) {
     if (srsp.getException() != null) {
       return false;
     }
@@ -235,6 +236,7 @@ public class PeerSync  {
     sreq.purpose = 0;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt","/get");
+    sreq.params.set("distrib",false);
     sreq.params.set("getUpdates", StrUtils.join(toRequest, ','));
     sreq.responses.clear();  // needs to be zeroed for correct correlation to occur
 
@@ -361,6 +363,7 @@ public class PeerSync  {
       sreq.shards = new String[]{replica};
       sreq.params = new ModifiableSolrParams();
       sreq.params.set("qt","/get");
+      sreq.params.set("distrib", false);
       sreq.params.set("getVersions",nUpdates);
       shardHandler.submit(sreq, replica, sreq.params);
     }

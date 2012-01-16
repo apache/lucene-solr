@@ -94,8 +94,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   protected ChaosMonkey chaosMonkey;
   protected volatile ZkStateReader zkStateReader;
 
+  private Map<String,SolrServer> shardToLeaderClient = new HashMap<String,SolrServer>();
+  private Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<String,CloudJettyRunner>();
 
-  
   class CloudJettyRunner {
     JettySolrRunner jetty;
     String nodeName;
@@ -179,9 +180,11 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         zkStateReader.createClusterStateWatchersAndUpdate();
       }
       
-      chaosMonkey = new ChaosMonkey(zkServer, zkStateReader, DEFAULT_COLLECTION, shardToJetty, shardToClient, random);
+      chaosMonkey = new ChaosMonkey(zkServer, zkStateReader,
+          DEFAULT_COLLECTION, shardToJetty, shardToClient, shardToLeaderClient, shardToLeaderJetty,
+          random);
     }
-    
+
     // wait until shards have started registering...
     while(!zkStateReader.getCloudState().getCollections().contains(DEFAULT_COLLECTION)) {
       Thread.sleep(500);
@@ -294,6 +297,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             CloudSolrServerClient csc = new CloudSolrServerClient();
             csc.client = client;
             csc.shardName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
+            boolean isLeader = shard.getValue().containsKey(ZkStateReader.LEADER_PROP);
             clientToInfo.put(csc, shard.getValue());
             List<SolrServer> list = shardToClient.get(slice.getKey());
             if (list == null) {
@@ -301,6 +305,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
               shardToClient.put(slice.getKey(), list);
             }
             list.add(client);
+            
+            if (isLeader) {
+              shardToLeaderClient.put(slice.getKey(), client);
+            }
           }
         }
       }
@@ -324,11 +332,15 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
               list = new ArrayList<CloudJettyRunner>();
               shardToJetty.put(slice.getKey(), list);
             }
+            boolean isLeader = shard.getValue().containsKey(ZkStateReader.LEADER_PROP);
             CloudJettyRunner cjr = new CloudJettyRunner();
             cjr.jetty = jetty;
             cjr.nodeName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
             cjr.shardName = shard.getKey();
             list.add(cjr);
+            if (isLeader) {
+              shardToLeaderJetty.put(shard.getKey(), cjr);
+            }
           }
         }
       }

@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.StreamingUpdateSolrServer;
 import org.apache.solr.common.SolrInputDocument;
@@ -35,7 +37,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
-@Ignore
 public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   
   @BeforeClass
@@ -59,6 +60,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     ignoreException("org\\.mortbay\\.jetty\\.EofException");
     ignoreException("java\\.lang\\.InterruptedException");
     ignoreException("java\\.nio\\.channels\\.ClosedByInterruptException");
+    ignoreException("Failure to open existing log file \\(non fatal\\)");
     
     
     // sometimes we cannot get the same port
@@ -70,14 +72,15 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   @Override
   @After
   public void tearDown() throws Exception {
+    printLayout();
     super.tearDown();
     resetExceptionIgnores();
   }
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
-    shardCount = atLeast(9);
-    sliceCount = atLeast(3);
+    shardCount = atLeast(2);
+    sliceCount = 2;
   }
   
   @Override
@@ -101,7 +104,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     }
     
     FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
-        ((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), i * 50000, true);
+        clients, i * 50000, true);
     threads.add(ftIndexThread);
     ftIndexThread.start();
     
@@ -130,7 +133,14 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     
     // wait until there are no recoveries...
     waitForThingsToLevelOut();
+    
+    // make sure we again have leaders for each shard
+    for (int j = 1; j < sliceCount; j++) {
+      zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
+    }
 
+    commit();
+    
     checkShardConsistency(false, true);
     
     // ensure we have added more than 0 docs
@@ -181,13 +191,15 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
 
   class FullThrottleStopableIndexingThread extends StopableIndexingThread {
     private volatile boolean stop = false;
-
-    private StreamingUpdateSolrServer suss;  
+    int clientIndex = 0;
+    private StreamingUpdateSolrServer suss;
+    private List<SolrServer> clients;  
     
-    public FullThrottleStopableIndexingThread(String serverUrl, int startI, boolean doDeletes) throws MalformedURLException {
+    public FullThrottleStopableIndexingThread(List<SolrServer> clients, int startI, boolean doDeletes) throws MalformedURLException {
       super(startI, doDeletes);
       setDaemon(true);
-      suss = new StreamingUpdateSolrServer(serverUrl, 10, 3);
+      this.clients = clients;
+      suss = new StreamingUpdateSolrServer(((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), 10, 3);
     }
     
     @Override
@@ -205,6 +217,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
             numDeletes++;
             suss.deleteById(Integer.toString(delete));
           } catch (Exception e) {
+            changeUrlOnError(e);
             System.err.println("REQUEST FAILED:");
             e.printStackTrace();
             fails.incrementAndGet();
@@ -213,10 +226,18 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
         
         try {
           numAdds++;
-          SolrInputDocument doc = getDoc(id, i, i1, 50, tlong, 50, t1,
-              "to come to the aid of their country.");
+          SolrInputDocument doc = getDoc(
+              id,
+              i,
+              i1,
+              50,
+              tlong,
+              50,
+              t1,
+              "Saxon heptarchies that used to rip around so in old times and raise Cain.  My, you ought to seen old Henry the Eight when he was in bloom.  He WAS a blossom.  He used to marry a new wife every day, and chop off her head next morning.  And he would do it just as indifferent as if ");
           suss.add(doc);
         } catch (Exception e) {
+          changeUrlOnError(e);
           System.err.println("REQUEST FAILED:");
           e.printStackTrace();
           fails.incrementAndGet();
@@ -228,7 +249,21 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
         
       }
       
-      System.err.println("added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
+      System.err.println("FT added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
+    }
+
+    private void changeUrlOnError(Exception e) {
+      if (e instanceof ConnectException) {
+        clientIndex++;
+        if (clientIndex > clients.size() - 1) {
+          clientIndex = 0;
+        }
+        try {
+          suss = new StreamingUpdateSolrServer(((CommonsHttpSolrServer) clients.get(clientIndex)).getBaseURL(), 30, 3);
+        } catch (MalformedURLException e1) {
+          e1.printStackTrace();
+        }
+      }
     }
     
     public void safeStop() {

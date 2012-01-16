@@ -17,16 +17,27 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Properties;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrat;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -35,28 +46,26 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.*;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.NumberUtils;
-import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.util.NumberUtils;
+import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Properties;
 
 /**
  *
@@ -176,6 +185,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
         
         case REQUESTRECOVERY: {
           this.handleRequestRecoveryAction(req, rsp);
+          break;
+        }
+        
+        case DISTRIBURL: {
+          this.handleDistribUrlAction(req, rsp);
           break;
         }
         
@@ -679,6 +693,33 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
     }
   }
+  
+  protected void handleDistribUrlAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws IOException, InterruptedException, SolrServerException {
+    SolrParams params = req.getParams();
+    
+    SolrParams required = params.required();
+    String path = required.get("path");
+    String shard = params.get("shard");
+    String collection = required.get("collection");
+    
+    SolrCore core = req.getCore();
+    ZkController zkController = core.getCoreDescriptor().getCoreContainer()
+        .getZkController();
+    if (shard != null) {
+      List<ZkCoreNodeProps> replicas = zkController.getZkStateReader().getReplicaProps(
+          collection, shard, zkController.getNodeName(), core.getName());
+      
+      for (ZkCoreNodeProps node : replicas) {
+        CommonsHttpSolrServer server = new CommonsHttpSolrServer(node.getCoreUrl() + path);
+        QueryRequest qr = new QueryRequest();
+        server.request(qr);
+      }
+
+    }
+    
+    // nocommit: no shard?
+  }
 
   protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<Object>();
@@ -719,6 +760,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
     return path;
   }
 
+  public static ModifiableSolrParams params(String... params) {
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    for (int i=0; i<params.length; i+=2) {
+      msp.add(params[i], params[i+1]);
+    }
+    return msp;
+  }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 

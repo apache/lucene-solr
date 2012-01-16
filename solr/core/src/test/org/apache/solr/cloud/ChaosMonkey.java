@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.net.BindException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -63,12 +64,18 @@ public class ChaosMonkey {
   private boolean expireSessions;
   private boolean causeConnectionLoss;
   private boolean killLeaders;
+  private Map<String,SolrServer> shardToLeaderClient;
+  private Map<String,CloudJettyRunner> shardToLeaderJetty;
   
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
-      Map<String,List<SolrServer>> shardToClient, Random random) {
+      Map<String,List<SolrServer>> shardToClient,
+      Map<String,SolrServer> shardToLeaderClient,
+      Map<String,CloudJettyRunner> shardToLeaderJetty, Random random) {
     this.shardToJetty = shardToJetty;
     this.shardToClient = shardToClient;
+    this.shardToLeaderClient = shardToLeaderClient;
+    this.shardToLeaderJetty = shardToLeaderJetty;
     this.zkServer = zkServer;
     this.zkStateReader = zkStateReader;
     this.collection = collection;
@@ -129,23 +136,17 @@ public class ChaosMonkey {
   }
 
   public void stopJetty(JettySolrRunner jetty) throws Exception {
-    if (jetty.isRunning()) {
-      stops.incrementAndGet();
-    }
-    
     stop(jetty);
+    stops.incrementAndGet();
   }
 
   public void killJetty(JettySolrRunner jetty) throws Exception {
-    if (jetty.isRunning()) {
-      stops.incrementAndGet();
-    }
-    
     kill(jetty);
-
+    stops.incrementAndGet();
   }
   
   public static void stop(JettySolrRunner jetty) throws Exception {
+    
     // get a clean shutdown so that no dirs are left open...
     FilterHolder fh = jetty.getDispatchFilter();
     if (fh != null) {
@@ -154,10 +155,7 @@ public class ChaosMonkey {
         sdf.destroy();
       }
     }
-    
-    if (!jetty.isStopped()) {
-      jetty.stop();
-    }
+    jetty.stop();
     
     if (!jetty.isStopped()) {
       throw new RuntimeException("could not stop jetty");
@@ -165,9 +163,9 @@ public class ChaosMonkey {
   }
   
   public static void kill(JettySolrRunner jetty) throws Exception {
-    if (!jetty.isStopped()) {
-      jetty.stop();
-    }
+
+    jetty.stop();
+    
     
     FilterHolder fh = jetty.getDispatchFilter();
     if (fh != null) {
@@ -291,18 +289,31 @@ public class ChaosMonkey {
       return null;
     }
     
-    // get random shard
-    List<CloudJettyRunner> jetties = shardToJetty.get(slice);
-    int index = random.nextInt(jetties.size() - 1);
-    JettySolrRunner jetty = jetties.get(index).jetty;
-    
-    ZkNodeProps leader = zkStateReader.getLeaderProps(collection, slice);
-    
-    if (!killLeader && leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)) {
-      // we don't kill leaders...
-      return null;
+    int chance = random.nextInt(10);
+    JettySolrRunner jetty;
+    if (chance <= 8 && killLeader) {
+      // if killLeader, really aggressively go after leaders
+      Collection<CloudJettyRunner> leaders = shardToLeaderJetty.values();
+      List<CloudJettyRunner> leadersList = new ArrayList<CloudJettyRunner>(leaders.size());
+     
+      leadersList.addAll(leaders);
+
+      int index = random.nextInt(leadersList.size());
+      jetty = leadersList.get(index).jetty;
+    } else {
+      // get random shard
+      List<CloudJettyRunner> jetties = shardToJetty.get(slice);
+      int index = random.nextInt(jetties.size());
+      jetty = jetties.get(index).jetty;
+      
+      ZkNodeProps leader = zkStateReader.getLeaderProps(collection, slice);
+      boolean isLeader = leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName);
+      if (!killLeader && isLeader) {
+        // we don't kill leaders...
+        return null;
+      }
     }
-    
+ 
     return jetty;
   }
   
@@ -333,8 +344,8 @@ public class ChaosMonkey {
       public void run() {
         while (!stop) {
           try {
-            Thread.sleep(500);
-            
+            Thread.sleep(300);
+ 
             if (random.nextBoolean()) {
              if (!deadPool.isEmpty()) {
                int index = random.nextInt(deadPool.size());

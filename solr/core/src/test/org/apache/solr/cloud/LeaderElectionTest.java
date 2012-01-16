@@ -44,7 +44,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   static final int TIMEOUT = 30000;
   private ZkTestServer server;
   private SolrZkClient zkClient;
-  
+  ZkStateReader zkStateReader;
   private Map<Integer,Thread> seqToThread;
   
   private volatile boolean stopStress = false;
@@ -72,6 +72,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
     AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
     zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+    zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer,Thread>());
   }
   
@@ -82,10 +83,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private volatile boolean stop;
     private volatile boolean electionDone = false;
     private final ZkNodeProps props;
+
     
     public ClientThread(int nodeNumber) throws Exception {
       super("Thread-" + nodeNumber);
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+    
       this.nodeNumber = nodeNumber;
       props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, Integer.toString(nodeNumber), ZkStateReader.CORE_PROP, "");
     }
@@ -96,7 +99,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         LeaderElector elector = new LeaderElector(zkClient);
         
         ElectionContext context = new ShardLeaderElectionContext("shard1",
-            "collection1", Integer.toString(nodeNumber), props, zkClient);
+            "collection1", Integer.toString(nodeNumber), props, zkStateReader);
         
         try {
           elector.setup(context);
@@ -139,7 +142,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   public void testBasic() throws Exception {
     LeaderElector elector = new LeaderElector(zkClient);
     ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr/", ZkStateReader.CORE_PROP, "");
-    ElectionContext context = new ShardLeaderElectionContext("shard2", "collection1", "dummynode1", props, zkClient);
+    ElectionContext context = new ShardLeaderElectionContext("shard2", "collection1", "dummynode1", props, zkStateReader);
     elector.setup(context);
     elector.joinElection(context);
     assertEquals("http://127.0.0.1/solr/", getLeaderUrl("collection1", "shard2"));
@@ -198,9 +201,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ((ClientThread) seqToThread.get(1)).close();
     ((ClientThread) seqToThread.get(3)).close();
     
-    leaderThread = getLeaderThread();
-    
     // whoever the leader is, should be the n_2 seq
+    
+    // nocommit
+    Thread.sleep(1000);
+    
+    leaderThread = getLeaderThread();
     assertEquals(2, threads.get(leaderThread).seq);
     
     // kill n_5, 2, 6, 7, and 8
@@ -210,6 +216,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ((ClientThread) seqToThread.get(7)).close();
     ((ClientThread) seqToThread.get(8)).close();
     
+    // nocommit
+    Thread.sleep(1000);
     leaderThread = getLeaderThread();
     
     // whoever the leader is, should be the n_9 seq
@@ -343,11 +351,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     printLayout(server.getZkAddress());
     
-    
-    System.out.println("leader thread:" + getLeaderThread());
+
     int seq = threads.get(getLeaderThread()).getSeq();
-    System.out.println("Seq:" + seq);
-    System.out.println("Node:" + threads.get(getLeaderThread()).getNodeNumber());
     
     assertFalse("seq is -1 and we may have a zombie leader", seq == -1);
     

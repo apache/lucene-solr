@@ -400,17 +400,20 @@ public class SolrCmdDistributor {
     public abstract boolean checkRetry();
     public abstract String getCoreName();
     public abstract String getBaseUrl();
+    public abstract ZkCoreNodeProps getNodeProps();
   }
 
   public static class StdNode extends Node {
     protected String url;
     protected String baseUrl;
     protected String coreName;
+    private ZkCoreNodeProps nodeProps;
 
     public StdNode(ZkCoreNodeProps nodeProps) {
       this.url = nodeProps.getCoreUrl();
       this.baseUrl = nodeProps.getBaseUrl();
       this.coreName = nodeProps.getCoreName();
+      this.nodeProps = nodeProps;
     }
     
     @Override
@@ -464,6 +467,10 @@ public class SolrCmdDistributor {
         if (other.url != null) return false;
       } else if (!url.equals(other.url)) return false;
       return true;
+    }
+
+    public ZkCoreNodeProps getNodeProps() {
+      return nodeProps;
     }
   }
 }

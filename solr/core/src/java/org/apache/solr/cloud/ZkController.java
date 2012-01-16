@@ -48,6 +48,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.SolrCmdDistributor.Node;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -504,9 +505,12 @@ public final class ZkController {
 
     // we only put a subset of props into the leader node
     ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        props.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_PROP, props.get(ZkStateReader.CORE_PROP));
+        props.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_PROP,
+        props.get(ZkStateReader.CORE_PROP), ZkStateReader.NODE_NAME_PROP,
+        props.get(ZkStateReader.NODE_NAME_PROP));
 
-    ElectionContext context = new ShardLeaderElectionContext(shardId, collection, shardZkNodeName, leaderProps, zkClient);
+    ElectionContext context = new ShardLeaderElectionContext(shardId,
+        collection, shardZkNodeName, leaderProps, zkStateReader);
     
     leaderElector.setup(context);
     leaderElector.joinElection(context);

@@ -82,7 +82,7 @@ public  class LeaderElector {
    * @throws IOException 
    * @throws UnsupportedEncodingException
    */
-  private void checkIfIamLeader(final int seq, final ElectionContext context) throws KeeperException,
+  private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement) throws KeeperException,
       InterruptedException, IOException {
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
@@ -91,7 +91,7 @@ public  class LeaderElector {
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
     if (seq <= intSeqs.get(0)) {
-      runIamLeaderProcess(context);
+      runIamLeaderProcess(context, replacement);
     } else {
       // I am not the leader - watch the node below me
       int i = 1;
@@ -115,7 +115,7 @@ public  class LeaderElector {
               public void process(WatchedEvent event) {
                 // am I the next leader?
                 try {
-                  checkIfIamLeader(seq, context);
+                  checkIfIamLeader(seq, context, true);
                 } catch (KeeperException e) {
                   log.warn("", e);
                   
@@ -134,14 +134,15 @@ public  class LeaderElector {
       } catch (KeeperException e) {
         // we couldn't set our watch - the node before us may already be down?
         // we need to check if we are the leader again
-        checkIfIamLeader(seq, context);
+        checkIfIamLeader(seq, context, true);
       }
     }
   }
 
-  protected void runIamLeaderProcess(final ElectionContext context) throws KeeperException,
+  protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
       InterruptedException {
-    context.runLeaderProcess();
+
+    context.runLeaderProcess(weAreReplacement);
   }
   
   /**
@@ -244,7 +245,7 @@ public  class LeaderElector {
       }
     }
     int seq = getSeq(leaderSeqPath);
-    checkIfIamLeader(seq, context);
+    checkIfIamLeader(seq, context, false);
     
     return seq;
   }

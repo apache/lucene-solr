@@ -88,7 +88,8 @@ public interface CoreAdminParams
     ALIAS,
     MERGEINDEXES,
     PREPRECOVERY, 
-    REQUESTRECOVERY;
+    REQUESTRECOVERY, 
+    DISTRIBURL;
     
     public static CoreAdminAction get( String p )
     {

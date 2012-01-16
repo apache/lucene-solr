@@ -152,11 +152,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
             collection, shardId));
         
-        String leaderNodeName = leaderProps.getNodeName();
-        
-        String nodeName = zkController.getNodeName();
-        
-        isLeader = nodeName.equals(leaderNodeName);
+        String leaderNodeName = leaderProps.getCoreNodeName();
+        String coreName = req.getCore().getName();
+        String coreNodeName = zkController.getNodeName() + "_" + coreName;
+        isLeader = coreNodeName.equals(leaderNodeName);
         
         if (req.getParams().getBool(SEEN_LEADER, false)) {
           // we are coming from the leader, just go local - add no urls
@@ -165,7 +164,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // that means I want to forward onto my replicas...
           // so get the replicas...
           forwardToLeader = false;
-          nodes = getReplicaNodes(req, collection, shardId, nodeName);
+          List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
+              .getReplicaProps(collection, shardId, zkController.getNodeName(),
+                  coreName);
+          if (replicaProps != null) {
+            nodes = new ArrayList<Node>(replicaProps.size());
+            for (ZkCoreNodeProps props : replicaProps) {
+              nodes.add(new StdNode(props));
+            }
+          }
+          
         } else {
           // I need to forward onto the leader...
           nodes = new ArrayList<Node>(1);
@@ -682,37 +690,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (next != null && nodes == null) next.finish();
   }
  
-  private List<Node> getReplicaNodes(SolrQueryRequest req, String collection,
-      String shardId, String thisNodeName) {
-    CloudState cloudState = req.getCore().getCoreDescriptor()
-        .getCoreContainer().getZkController().getCloudState();
 
-    Map<String,Slice> slices = cloudState.getSlices(collection);
-    if (slices == null) {
-      throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find collection in zk: " + cloudState);
-    }
-    
-    Slice replicas = slices.get(shardId);
-    if (replicas == null) {
-      throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find shardId in zk: " + shardId);
-    }
-    
-    Map<String,ZkNodeProps> shardMap = replicas.getShards();
-    List<Node> nodes = new ArrayList<Node>(shardMap.size());
-
-    for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
-      ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
-      String nodeName = nodeProps.getNodeName();
-      if (cloudState.liveNodesContain(nodeName) && !nodeName.equals(thisNodeName)) {
-        nodes.add(new StdNode(nodeProps));
-      }
-    }
-    if (nodes.size() == 0) {
-      // no replicas - go local
-      return null;
-    }
-    return nodes;
-  }
   
   private List<Node> getReplicaUrls(SolrQueryRequest req, String collection, String shardZkNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()

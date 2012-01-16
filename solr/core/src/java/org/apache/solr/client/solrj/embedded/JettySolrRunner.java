@@ -95,19 +95,24 @@ public class JettySolrRunner {
       SocketConnector connector = new SocketConnector();
       connector.setPort(port);
       connector.setReuseAddress(true);
-      QueuedThreadPool threadPool = (QueuedThreadPool) connector.getThreadPool();
-      if (threadPool != null) {
-        threadPool.setMaxStopTimeMs(100);
+      if (!stopAtShutdown) {
+        QueuedThreadPool threadPool = (QueuedThreadPool) connector
+            .getThreadPool();
+        if (threadPool != null) {
+          threadPool.setMaxStopTimeMs(0);
+        }
       }
-      server.setConnectors(new Connector[] { connector });
+      server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new HashSessionIdManager(new Random()));
     } else {
-      for (Connector connector : server.getConnectors()) {
-        if (connector instanceof SocketConnector) {
-          QueuedThreadPool threadPool = (QueuedThreadPool) ((SocketConnector) connector)
-              .getThreadPool();
-          if (threadPool != null) {
-            threadPool.setMaxStopTimeMs(100);
+      if (!stopAtShutdown) {
+        for (Connector connector : server.getConnectors()) {
+          if (connector instanceof SocketConnector) {
+            QueuedThreadPool threadPool = (QueuedThreadPool) ((SocketConnector) connector)
+                .getThreadPool();
+            if (threadPool != null) {
+              threadPool.setMaxStopTimeMs(0);
+            }
           }
         }
       }

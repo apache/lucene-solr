@@ -62,5 +62,13 @@ public class ZkCoreNodeProps {
     return nodeProps.toString();
   }
 
+  public String getCoreNodeName() {
+    return getNodeName() + "_" + getCoreName();
+  }
+
+  public ZkNodeProps getNodeProps() {
+    return nodeProps;
+  }
+
 
 }

@@ -18,9 +18,12 @@ package org.apache.solr.common.cloud;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,6 +39,7 @@ import org.apache.noggit.JSONParser;
 import org.apache.noggit.JSONWriter;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -406,6 +410,46 @@ public class ZkStateReader {
     return COLLECTIONS_ZKNODE + "/" + collection + "/"
         + SHARD_LEADERS_ZKNODE + (shardId != null ? ("/" + shardId)
         : "");
+  }
+  
+  public List<ZkCoreNodeProps> getReplicaProps(String collection,
+      String shardId, String thisNodeName, String coreName) {
+    CloudState cloudState = this.cloudState;
+    if (cloudState == null) {
+      return null;
+    }
+    Map<String,Slice> slices = cloudState.getSlices(collection);
+    if (slices == null) {
+      throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
+          "Could not find collection in zk: " + collection + " "
+              + cloudState.getCollections());
+    }
+    
+    Slice replicas = slices.get(shardId);
+    if (replicas == null) {
+      throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find shardId in zk: " + shardId);
+    }
+    
+    Map<String,ZkNodeProps> shardMap = replicas.getShards();
+    List<ZkCoreNodeProps> nodes = new ArrayList<ZkCoreNodeProps>(shardMap.size());
+
+    for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
+      ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
+      String coreNodeName = nodeProps.getNodeName() + "_" + coreName;
+      if (cloudState.liveNodesContain(thisNodeName) && !coreNodeName.equals(thisNodeName + "_" + coreName)) {
+        nodes.add(nodeProps);
+      }
+    }
+    if (nodes.size() == 0) {
+      // no replicas - go local
+      return null;
+    }
+
+    return nodes;
+  }
+
+  public SolrZkClient getZkClient() {
+    return zkClient;
   }
   
 }
