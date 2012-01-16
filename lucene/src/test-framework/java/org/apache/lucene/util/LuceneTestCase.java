@@ -914,12 +914,14 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     if (r.nextBoolean()) {
+      int maxNumThreadStates = rarely(r) ? _TestUtil.nextInt(r, 5, 20) // crazy value
+          : _TestUtil.nextInt(r, 1, 4); // reasonable value
       if (rarely(r)) {
-        // crazy value
-        c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(_TestUtil.nextInt(r, 5, 20)));
+        // random thread pool
+        c.setIndexerThreadPool(new RandomDocumentsWriterPerThreadPool(maxNumThreadStates, r));
       } else {
-        // reasonable value
-        c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(_TestUtil.nextInt(r, 1, 4)));
+        // random thread pool
+        c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(maxNumThreadStates));
       }
     }
 
