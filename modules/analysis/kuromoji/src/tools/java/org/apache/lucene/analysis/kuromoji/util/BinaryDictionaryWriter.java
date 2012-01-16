@@ -26,11 +26,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
@@ -45,11 +40,7 @@ public abstract class BinaryDictionaryWriter {
   private int targetMapEndOffset = 0, lastWordId = -1, lastSourceId = -1;
   private int[] targetMap = new int[8192];
   private int[] targetMapOffsets = new int[8192];
-  private final List<String> posDict = new ArrayList<String>();
-  private final Map<String,Integer> posDictLookup = new HashMap<String,Integer>();
-  
-  private final List<String> inflDict = new ArrayList<String>();
-  private final Map<String,Integer> inflDictLookup = new HashMap<String,Integer>();
+  private final ArrayList<String> posDict = new ArrayList<String>();
 
   public BinaryDictionaryWriter(Class<? extends BinaryDictionary> implClazz, int size) {
     this.implClazz = implClazz;
@@ -78,35 +69,20 @@ public abstract class BinaryDictionaryWriter {
         sb.append(part);
       }
     }
-    String pos = sb.toString();
-    Integer posIndex = posDictLookup.get(pos);
-    if (posIndex == null) {
-      posIndex = posDict.size();
-      posDict.add(pos);
-      posDictLookup.put(pos, posIndex);
-      assert posDict.size() == posDictLookup.size();
-    }
+    
+    String posData = sb.toString();
     
     sb.setLength(0);
-    sb.append(CSVUtil.quoteEscape(entry[8]));
+    sb.append(CSVUtil.quoteEscape(posData));
     sb.append(',');
-    sb.append(CSVUtil.quoteEscape(entry[9]));
-    String inflData = sb.toString();
-    
-    Integer inflIndex = Integer.MAX_VALUE;
-    int hasInflData;
-    if ("*,*".equals(inflData)) {
-      hasInflData = 0; // no inflection data
-    } else {
-      hasInflData = 1;
-      inflIndex = inflDictLookup.get(inflData);
-      if (inflIndex == null) {
-        inflIndex = inflDict.size();
-        inflDict.add(inflData);
-        inflDictLookup.put(inflData, inflIndex);
-        assert inflDict.size() == inflDictLookup.size();
-      }
+    if (!"*".equals(entry[8])) {
+      sb.append(CSVUtil.quoteEscape(entry[8]));
     }
+    sb.append(',');
+    if (!"*".equals(entry[9])) {
+      sb.append(CSVUtil.quoteEscape(entry[9]));
+    }
+    String fullPOSData = sb.toString();
     
     String baseForm = entry[10];
     String reading = entry[11];
@@ -114,28 +90,40 @@ public abstract class BinaryDictionaryWriter {
     
     // extend buffer if necessary
     int left = buffer.remaining();
-    // worst case: three short, 4 bytes, one vint and features (all as utf-16)
-    int worstCase = 6 + 4 + 2 + 2*(baseForm.length() + reading.length() + pronunciation.length());
+    // worst case: two short, 3 bytes, and features (all as utf-16)
+    int worstCase = 4 + 3 + 2*(baseForm.length() + reading.length() + pronunciation.length());
     if (worstCase > left) {
       ByteBuffer newBuffer = ByteBuffer.allocate(ArrayUtil.oversize(buffer.limit() + worstCase - left, 1));
       buffer.flip();
       newBuffer.put(buffer);
       buffer = newBuffer;
     }
+
+    int flags = 0;
+    if (!("*".equals(baseForm) || baseForm.equals(entry[0]))) {
+      flags |= BinaryDictionary.HAS_BASEFORM;
+    }
+    if (!pronunciation.equals(reading)) {
+      flags |= BinaryDictionary.HAS_PRONUNCIATION;
+    }
+
+    assert leftId == rightId;
+    assert leftId < 8192; // there are still unused bits
+    // add pos mapping
+    int toFill = 1+leftId - posDict.size();
+    for (int i = 0; i < toFill; i++) {
+      posDict.add(null);
+    }
     
-    buffer.putShort(leftId);
-    buffer.putShort(rightId);
+    String existing = posDict.get(leftId);
+    assert existing == null || existing.equals(fullPOSData);
+    posDict.set(leftId, fullPOSData);
+    
+    buffer.putShort((short)(leftId << 2 | flags));
     buffer.putShort(wordCost);
-    assert posIndex.intValue() < 128;
-    buffer.put((byte) (posIndex.intValue() << 1 | hasInflData));
-    
-    int pronunciationIsReading = pronunciation.equals(reading) ? 1 : 0;
-    
-    if ("*".equals(baseForm) || baseForm.equals(entry[0])) {
-      buffer.put((byte)pronunciationIsReading); // base form is the same as surface form
-    } else {
-      assert baseForm.length() < 128;
-      buffer.put((byte)(baseForm.length() << 1 | pronunciationIsReading));
+
+    if ((flags & BinaryDictionary.HAS_BASEFORM) != 0) {
+      buffer.put((byte) baseForm.length());
       for (int i = 0; i < baseForm.length(); i++) {
         buffer.putChar(baseForm.charAt(i));
       }
@@ -151,7 +139,7 @@ public abstract class BinaryDictionaryWriter {
       }
     }
     
-    if (pronunciationIsReading == 0) {
+    if ((flags & BinaryDictionary.HAS_PRONUNCIATION) != 0) {
       if (isKatakana(pronunciation)) {
         buffer.put((byte) (pronunciation.length() << 1 | 1));
         writeKatakana(pronunciation);
@@ -160,17 +148,6 @@ public abstract class BinaryDictionaryWriter {
         for (int i = 0; i < pronunciation.length(); i++) {
           buffer.putChar(pronunciation.charAt(i));
         }
-      }
-    }
-    
-    if (hasInflData > 0) {
-      int key = inflIndex.intValue();
-      assert key < 32768; // note there are really like 300 of these...
-      if (key < 128) {
-        buffer.put((byte) key);
-      } else {
-        buffer.put((byte) ((key & 0x7f) | 0x80));
-        buffer.put((byte) (key >>> 7));
       }
     }
     
@@ -229,7 +206,6 @@ public abstract class BinaryDictionaryWriter {
     writeDictionary(baseName + BinaryDictionary.DICT_FILENAME_SUFFIX);
     writeTargetMap(baseName + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX);
     writePosDict(baseName + BinaryDictionary.POSDICT_FILENAME_SUFFIX);
-    writeInflDict(baseName + BinaryDictionary.INFLDICT_FILENAME_SUFFIX);
   }
   
   // TODO: maybe this int[] should instead be the output to the FST...
@@ -271,26 +247,17 @@ public abstract class BinaryDictionaryWriter {
       CodecUtil.writeHeader(out, BinaryDictionary.POSDICT_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(posDict.size());
       for (String s : posDict) {
-        out.writeString(s);
-      }
-    } finally {
-      os.close();
-    }
-  }
-  
-  protected void writeInflDict(String filename) throws IOException {
-    new File(filename).getParentFile().mkdirs();
-    OutputStream os = new FileOutputStream(filename);
-    try {
-      os = new BufferedOutputStream(os);
-      final DataOutput out = new OutputStreamDataOutput(os);
-      CodecUtil.writeHeader(out, BinaryDictionary.INFLDICT_HEADER, BinaryDictionary.VERSION);
-      out.writeVInt(inflDict.size());
-      for (String s : inflDict) {
-        String data[] = CSVUtil.parse(s);
-        assert data.length == 2 : "malformed inflection: " + s;
-        out.writeString(data[0]);
-        out.writeString(data[1]);
+        if (s == null) {
+          out.writeByte((byte)0);
+          out.writeByte((byte)0);
+          out.writeByte((byte)0);
+        } else {
+          String data[] = CSVUtil.parse(s);
+          assert data.length == 3 : "malformed pos/inflection: " + s;
+          out.writeString(data[0]);
+          out.writeString(data[1]);
+          out.writeString(data[2]);
+        }
       }
     } finally {
       os.close();
@@ -313,59 +280,4 @@ public abstract class BinaryDictionaryWriter {
       os.close();
     }
   }
-  
-  // TODO: the below is messy, but makes the dictionary smaller.
-  // we track frequencies of inflections so the highest-freq ones have smaller indexes.
-
-  /** optional: notes inflection seen in the data up front */
-  public void noteInflection(String entry[]) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(CSVUtil.quoteEscape(entry[8]));
-    sb.append(',');
-    sb.append(CSVUtil.quoteEscape(entry[9]));
-    String s = sb.toString();
-    if ("*,*".equals(s)) {
-      return; // no inflection data
-    }
-    Integer freq = notedInflections.get(s);
-    if (freq == null) {
-      freq = 0;
-    }
-    notedInflections.put(s, freq+1);
-  }
-  
-  /** prepopulates inflection mapping by frequency */
-  public void finalizeInflections() {
-    InflectionAndFreq freqs[] = new InflectionAndFreq[notedInflections.size()];
-    int upto = 0;
-    for (Map.Entry<String,Integer> e : notedInflections.entrySet()) {
-      freqs[upto++] = new InflectionAndFreq(e.getKey(), e.getValue());
-    }
-    Arrays.sort(freqs, Collections.reverseOrder());
-    for (int i = 0; i < upto; i++) {
-      inflDict.add(freqs[i].inflection);
-      inflDictLookup.put(freqs[i].inflection, i);
-    }
-  }
-  
-  static class InflectionAndFreq implements Comparable<InflectionAndFreq> {
-    String inflection;
-    int freq;
-    
-    InflectionAndFreq(String s, int i) {
-      this.inflection = s;
-      this.freq = i;
-    }
-    
-    public int compareTo(InflectionAndFreq other) {
-      int cmp = freq - other.freq;
-      if (cmp == 0) {
-        return inflection.compareTo(other.inflection);
-      } else {
-        return cmp;
-      }
-    }
-  }
-  
-  private HashMap<String,Integer> notedInflections = new HashMap<String,Integer>();
 }

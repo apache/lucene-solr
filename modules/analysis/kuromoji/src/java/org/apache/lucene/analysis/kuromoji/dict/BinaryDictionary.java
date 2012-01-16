@@ -37,12 +37,10 @@ public abstract class BinaryDictionary implements Dictionary {
   public static final String DICT_FILENAME_SUFFIX = "$buffer.dat";
   public static final String TARGETMAP_FILENAME_SUFFIX = "$targetMap.dat";
   public static final String POSDICT_FILENAME_SUFFIX = "$posDict.dat";
-  public static final String INFLDICT_FILENAME_SUFFIX = "$inflDict.dat";
   
   public static final String DICT_HEADER = "kuromoji_dict";
   public static final String TARGETMAP_HEADER = "kuromoji_dict_map";
   public static final String POSDICT_HEADER = "kuromoji_dict_pos";
-  public static final String INFLDICT_HEADER = "kuromoji_dict_infl";
   public static final int VERSION = 1;
   
   private final ByteBuffer buffer;
@@ -52,7 +50,7 @@ public abstract class BinaryDictionary implements Dictionary {
   private final String[] inflFormDict;
   
   protected BinaryDictionary() throws IOException {
-    InputStream mapIS = null, dictIS = null, posIS = null, inflIS = null;
+    InputStream mapIS = null, dictIS = null, posIS = null;
     IOException priorE = null;
     int[] targetMapOffsets = null, targetMap = null;
     String[] posDict = null;
@@ -85,25 +83,24 @@ public abstract class BinaryDictionary implements Dictionary {
       posIS = new BufferedInputStream(posIS);
       in = new InputStreamDataInput(posIS);
       CodecUtil.checkHeader(in, POSDICT_HEADER, VERSION, VERSION);
-      posDict = new String[in.readVInt()];
-      for (int j = 0; j < posDict.length; j++) {
+      int posSize = in.readVInt();
+      posDict = new String[posSize];
+      inflTypeDict = new String[posSize];
+      inflFormDict = new String[posSize];
+      for (int j = 0; j < posSize; j++) {
         posDict[j] = in.readString();
+        inflTypeDict[j] = in.readString();
+        inflFormDict[j] = in.readString();
+        // this is how we encode null inflections
+        if (inflTypeDict[j].length() == 0) {
+          inflTypeDict[j] = null;
+        }
+        if (inflFormDict[j].length() == 0) {
+          inflFormDict[j] = null;
+        }
       }
       posIS.close(); posIS = null;
       
-      inflIS = getResource(INFLDICT_FILENAME_SUFFIX);
-      inflIS = new BufferedInputStream(inflIS);
-      in = new InputStreamDataInput(inflIS);
-      CodecUtil.checkHeader(in, INFLDICT_HEADER, VERSION, VERSION);
-      int length = in.readVInt();
-      inflTypeDict = new String[length];
-      inflFormDict = new String[length];
-      for (int j = 0; j < length; j++) {
-        inflTypeDict[j] = in.readString();
-        inflFormDict[j] = in.readString();
-      }
-      inflIS.close(); inflIS = null;
-
       dictIS = getResource(DICT_FILENAME_SUFFIX);
       // no buffering here, as we load in one large buffer
       in = new InputStreamDataInput(dictIS);
@@ -120,7 +117,7 @@ public abstract class BinaryDictionary implements Dictionary {
     } catch (IOException ioe) {
       priorE = ioe;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, mapIS, posIS, inflIS, dictIS);
+      IOUtils.closeWhileHandlingException(priorE, mapIS, posIS, dictIS);
     }
     
     this.targetMap = targetMap;
@@ -152,27 +149,27 @@ public abstract class BinaryDictionary implements Dictionary {
   
   @Override	
   public int getLeftId(int wordId) {
-    return buffer.getShort(wordId);
+    return buffer.getShort(wordId) >>> 2;
   }
   
   @Override
   public int getRightId(int wordId) {
-    return buffer.getShort(wordId + 2);	// Skip left id
+    return buffer.getShort(wordId) >>> 2;
   }
   
   @Override
   public int getWordCost(int wordId) {
-    return buffer.getShort(wordId + 4);	// Skip left id and right id
+    return buffer.getShort(wordId + 2);	// Skip id
   }
 
   @Override
   public String getBaseForm(int wordId) {
-    int offset = baseFormOffset(wordId);
-    int length = (buffer.get(offset++) & 0xff) >>> 1;
-    if (length == 0) {
-      return null; // same as surface form
-    } else {
+    if (hasBaseFormData(wordId)) {
+      int offset = baseFormOffset(wordId);
+      int length = buffer.get(offset++) & 0xff;
       return readString(offset, length, false);
+    } else {
+      return null;
     }
   }
   
@@ -185,8 +182,7 @@ public abstract class BinaryDictionary implements Dictionary {
   
   @Override
   public String getPartOfSpeech(int wordId) {
-    int posIndex = buffer.get(posOffset(wordId)) & 0xff; // read index into posDict
-    return posDict[posIndex >>> 1];
+    return posDict[getLeftId(wordId)];
   }
   
   @Override
@@ -202,28 +198,26 @@ public abstract class BinaryDictionary implements Dictionary {
   
   @Override
   public String getInflectionType(int wordId) {
-    int index = getInflectionIndex(wordId);
-    return index < 0 ? null : inflTypeDict[index];
+    return inflTypeDict[getLeftId(wordId)];
   }
 
   @Override
   public String getInflectionForm(int wordId) {
-    int index = getInflectionIndex(wordId);
-    return index < 0 ? null : inflFormDict[index];
-  }
-  
-  private static int posOffset(int wordId) {
-    return wordId + 6;
+    return inflFormDict[getLeftId(wordId)];
   }
   
   private static int baseFormOffset(int wordId) {
-    return wordId + 7;
+    return wordId + 4;
   }
   
   private int readingOffset(int wordId) {
     int offset = baseFormOffset(wordId);
-    int baseFormLength = buffer.get(offset++) & 0xfe; // mask away pronunciation bit
-    return offset + baseFormLength;
+    if (hasBaseFormData(wordId)) {
+      int baseFormLength = buffer.get(offset++) & 0xff;
+      return offset + (baseFormLength << 1);
+    } else {
+      return offset;
+    }
   }
   
   private int pronunciationOffset(int wordId) {
@@ -238,41 +232,12 @@ public abstract class BinaryDictionary implements Dictionary {
     return offset + readingLength;
   }
   
+  private boolean hasBaseFormData(int wordId) {
+    return (buffer.getShort(wordId) & HAS_BASEFORM) != 0;
+  }
+  
   private boolean hasPronunciationData(int wordId) {
-    int baseFormData = buffer.get(baseFormOffset(wordId)) & 0xff;
-    return (baseFormData & 1) == 0;
-  }
-  
-  private boolean hasInflectionData(int wordId) {
-    int posData = buffer.get(posOffset(wordId)) & 0xff;
-    return (posData & 1) == 1;
-  }
-  
-  private int getInflectionIndex(int wordId) {
-    if (!hasInflectionData(wordId)) {
-      return -1; // common case: no inflection data
-    }
-    
-    // skip past reading/pronunciation at the end
-    int offset = hasPronunciationData(wordId) ? pronunciationOffset(wordId) : readingOffset(wordId);
-    int endData = buffer.get(offset++) & 0xff;
-    
-    final int endLength;
-    if ((endData & 1) == 0) {
-      endLength = endData & 0xfe; // UTF-16: mask off kana bit
-    } else {
-      endLength = endData >>> 1;
-    }
-    
-    offset += endLength;
-    
-    byte b = buffer.get(offset++);
-    int i = b & 0x7F;
-    if ((b & 0x80) == 0) return i;
-    b = buffer.get(offset++);
-    i |= (b & 0x7F) << 7;
-    assert ((b & 0x80) == 0);
-    return i;
+    return (buffer.getShort(wordId) & HAS_PRONUNCIATION) != 0;
   }
   
   private String readString(int offset, int length, boolean kana) {
@@ -288,4 +253,9 @@ public abstract class BinaryDictionary implements Dictionary {
     }
     return new String(text);
   }
+  
+  /** flag that the entry has baseform data. otherwise its not inflected (same as surface form) */
+  public static final int HAS_BASEFORM = 1;
+  /** flag that the entry has pronunciation data. otherwise pronunciation is the reading */
+  public static final int HAS_PRONUNCIATION = 2;
 }

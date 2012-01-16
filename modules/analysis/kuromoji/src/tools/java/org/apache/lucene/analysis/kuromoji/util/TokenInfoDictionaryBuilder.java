@@ -101,7 +101,6 @@ public class TokenInfoDictionaryBuilder {
         }
         
         String[] formatted = formatEntry(entry);
-        dictionary.noteInflection(formatted);
         lines.add(formatted);
         
         // NFKC normalize dictionary entry
@@ -115,13 +114,10 @@ public class TokenInfoDictionaryBuilder {
           }
           
           formatted = formatEntry(normalizedEntry);
-          dictionary.noteInflection(formatted);
           lines.add(formatted);
         }
       }
     }
-    
-    dictionary.finalizeInflections();
     
     System.out.println("  sort...");
 
