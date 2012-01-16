@@ -199,7 +199,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public TermsConsumer addField(FieldInfo field) {
       if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-        throw new IllegalArgumentException("this codec cannot index offsets");
+        throw new UnsupportedOperationException("this codec cannot index offsets");
       }
       RAMField ramField = new RAMField(field.name);
       postings.fieldToTerms.put(field.name, ramField);

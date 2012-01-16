@@ -156,7 +156,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     this.fieldInfo = fieldInfo;
     indexOptions = fieldInfo.indexOptions;
     if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-      throw new IllegalArgumentException("this codec cannot index offsets");
+      throw new UnsupportedOperationException("this codec cannot index offsets");
     }
         
     storePayloads = fieldInfo.storePayloads;

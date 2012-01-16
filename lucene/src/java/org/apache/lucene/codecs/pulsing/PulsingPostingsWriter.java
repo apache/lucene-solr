@@ -116,7 +116,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   public void setField(FieldInfo fieldInfo) {
     this.indexOptions = fieldInfo.indexOptions;
     if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-      throw new IllegalArgumentException("this codec cannot index offsets: " + indexOptions);
+      throw new UnsupportedOperationException("this codec cannot index offsets: " + indexOptions);
     }
     if (DEBUG) System.out.println("PW field=" + fieldInfo.name + " indexOptions=" + indexOptions);
     storePayloads = fieldInfo.storePayloads;

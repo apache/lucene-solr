@@ -189,7 +189,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
     this.fieldInfo = fieldInfo;
     this.indexOptions = fieldInfo.indexOptions;
     if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-      throw new IllegalArgumentException("this codec cannot index offsets");
+      throw new UnsupportedOperationException("this codec cannot index offsets");
     }
     skipListWriter.setIndexOptions(indexOptions);
     storePayloads = indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS && fieldInfo.storePayloads;
