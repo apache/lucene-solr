@@ -477,6 +477,10 @@ Other Changes
   AppendedSolrParams into factory methods.
   (David Smiley via hossman)
 
+Build
+----------------------
+* SOLR-2487: Add build target to package war without slf4j jars (janhoy)
+
 ==================  3.5.0  ==================
 
 New Features
