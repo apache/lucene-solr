@@ -54,7 +54,7 @@ public final class CSVUtil {
         String value = sb.toString();
         value = unQuoteUnEscape(value);
         result.add(value);
-        sb = new StringBuilder();
+        sb.setLength(0);
         continue;
       }
       
@@ -75,13 +75,17 @@ public final class CSVUtil {
     String result = original;
     
     // Unquote
-    Matcher m = QUOTE_REPLACE_PATTERN.matcher(original);
-    if(m.matches()) {
-      result = m.group(1);
-    }
+    if (result.indexOf('\"') >= 0) {
+      Matcher m = QUOTE_REPLACE_PATTERN.matcher(original);
+      if(m.matches()) {
+        result = m.group(1);
+      }
     
-    // Unescape
-    result = result.replaceAll(ESCAPED_QUOTE, "\"");
+      // Unescape
+      if (result.indexOf(ESCAPED_QUOTE) >= 0) {
+        result = result.replace(ESCAPED_QUOTE, "\"");
+      }
+    }
     
     return result;
     
@@ -92,7 +96,11 @@ public final class CSVUtil {
    * @param original
    */
   public static String quoteEscape(String original) {
-    String result = original.replaceAll("\"", ESCAPED_QUOTE);
+    String result = original;
+    
+    if (result.indexOf('\"') >= 0) {
+      result.replace("\"", ESCAPED_QUOTE);
+    }
     if(result.indexOf(COMMA) >= 0) {
       result = "\"" + result + "\"";
     }
