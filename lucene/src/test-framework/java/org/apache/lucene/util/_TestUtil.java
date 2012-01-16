@@ -155,9 +155,13 @@ public class _TestUtil {
    *  issues are hit, a RuntimeException is thrown; else,
    *  true is returned. */
   public static CheckIndex.Status checkIndex(Directory dir) throws IOException {
+    return checkIndex(dir, true);
+  }
+
+  public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
-    checker.setCrossCheckTermVectors(true);
+    checker.setCrossCheckTermVectors(crossCheckTermVectors);
     checker.setInfoStream(new PrintStream(bos), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     if (indexStatus == null || indexStatus.clean == false) {

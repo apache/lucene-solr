@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -134,6 +135,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
    */
   public void testFilterIndexReader() throws Exception {
     Directory directory = newDirectory();
+
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
     Document d1 = new Document();
@@ -151,6 +153,10 @@ public class TestFilterIndexReader extends LuceneTestCase {
     writer.close();
 
     Directory target = newDirectory();
+
+    // We mess with the postings so this can fail:
+    ((MockDirectoryWrapper) target).setCrossCheckTermVectorsOnClose(false);
+
     writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     IndexReader reader = new TestReader(IndexReader.open(directory));
     writer.addIndexes(reader);
