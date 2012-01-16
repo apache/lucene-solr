@@ -79,7 +79,11 @@ public class SolrConfig extends Config {
 
   /**
    * Singleton keeping track of configuration errors
+   * Simply going away in 4.x
+   * @deprecated should simply be removed from code, this funcitonality is handled now by
+   * logging from the top-most leve.
    */
+  @Deprecated
   public static final Collection<Throwable> severeErrors = new HashSet<Throwable>();
 
   /** Creates a default instance from the solrconfig.xml. */

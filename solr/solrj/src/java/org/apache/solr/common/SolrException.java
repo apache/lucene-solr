@@ -54,17 +54,31 @@ public class SolrException extends RuntimeException {
       return UNKNOWN;
     }
   };
-  
+
+  /**
+   * @deprecated Logging should now occur from the top-most level, making this unnecessary in 4.x
+   */
+  @Deprecated
   public boolean logged=false;
 
   public SolrException(ErrorCode code, String msg) {
     this(code, msg, null, false);
   }
-  
+
+  /**
+   * @deprecated Logging should now occur from the top-most level, making this unnecessary in 4.x.
+   * use {@link #SolrException(ErrorCode, String)}
+   */
+  @Deprecated
   public SolrException(ErrorCode code, String msg, boolean alreadyLogged) {
     this(code, msg, null, alreadyLogged);
   }
 
+  /**
+   * @deprecated Logging should now occur from the top-most level, making this unnecessary in 4.x
+   * use {@link #SolrException(ErrorCode, String, Throwable)}
+   */
+  @Deprecated
   public SolrException(ErrorCode code, String msg, Throwable th, boolean alreadyLogged) {
     super(msg,th);
     this.code=code.code;
@@ -160,6 +174,9 @@ public class SolrException extends RuntimeException {
     log.error(stackTrace);
   }
 
+  /**
+   * @deprecated use {@link #log(Logger, String, Throwable)}
+   */
   public static void logOnce(Logger log, String msg, Throwable e) {
     if (e instanceof SolrException) {
       if(((SolrException)e).logged) return;
