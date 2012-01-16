@@ -58,6 +58,8 @@ New Features
    way as DirectSpellChecker. This can be used to merge top-N results from more than one
    SpellChecker.  (James Dyer via Robert Muir)
 
+ * LUCENE-3496: Support grouping by DocValues. (Martijn van Groningen)
+
  * LUCENE-3602: Added query time joining under the join module. (Martijn van Groningen, Michael McCandless)
 
 API Changes
@@ -77,16 +79,24 @@ API Changes
 
  * LUCENE-3308: DuplicateFilter keepMode and processingMode have been converted to
    enums DuplicateFilter.KeepMode and DuplicateFilter.ProcessingMode repsectively.
+
+ * LUCENE-3483: Move Function grouping collectors from Solr to grouping module.
+   (Martijn van Groningen)
    
-* LUCENE-3606: FieldNormModifier was deprecated, because IndexReader's
-  setNorm() was deprecated. Furthermore, this class is broken, as it does
-  not take position overlaps into account while recalculating norms.
-  (Uwe Schindler, Robert Muir)
+ * LUCENE-3606: FieldNormModifier was deprecated, because IndexReader's
+   setNorm() was deprecated. Furthermore, this class is broken, as it does
+   not take position overlaps into account while recalculating norms.
+   (Uwe Schindler, Robert Muir)
 
 Bug Fixes
 
  * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
    not lowercasing the key before checking for the tag (Adriano Crestani)
+
+Optimizations
+
+* LUCENE-3468: Replaced last() and remove() with pollLast() in
+             FirstPassGroupingCollector (Martijn van Groningen)
 
 ======================= Lucene 3.6.0 ================
 
