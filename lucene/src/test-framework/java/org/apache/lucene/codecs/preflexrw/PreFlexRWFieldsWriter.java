@@ -89,7 +89,7 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
   public TermsConsumer addField(FieldInfo field) throws IOException {
     assert field.number != -1;
     if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-      throw new IllegalArgumentException("this codec cannot index offsets");
+      throw new UnsupportedOperationException("this codec cannot index offsets");
     }
     //System.out.println("w field=" + field.name + " storePayload=" + field.storePayloads + " number=" + field.number);
     return new PreFlexTermsWriter(field);
