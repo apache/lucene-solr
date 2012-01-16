@@ -110,9 +110,6 @@ public class NIOFSDirectory extends FSDirectory {
 
     private ByteBuffer byteBuf; // wraps the buffer for NIO
 
-    private byte[] otherBuffer;
-    private ByteBuffer otherByteBuf;
-
     final FileChannel channel;
 
     public NIOFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
@@ -157,22 +154,7 @@ public class NIOFSDirectory extends FSDirectory {
         byteBuf.limit(len);
         bb = byteBuf;
       } else {
-        if (offset == 0) {
-          if (otherBuffer != b) {
-            // Now wrap this other buffer; with compound
-            // file, we are repeatedly called with its
-            // buffer, so we wrap it once and then re-use it
-            // on subsequent calls
-            otherBuffer = b;
-            otherByteBuf = ByteBuffer.wrap(b);
-          } else
-            otherByteBuf.clear();
-          otherByteBuf.limit(len);
-          bb = otherByteBuf;
-        } else {
-          // Always wrap when offset != 0
-          bb = ByteBuffer.wrap(b, offset, len);
-        }
+        bb = ByteBuffer.wrap(b, offset, len);
       }
 
       int readOffset = bb.position();
