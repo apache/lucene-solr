@@ -35,7 +35,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
   public void setUp() throws Exception {
     super.setUp();
     log.info("####SETUP_START " + getName());
-    
+    createTempDir();
     ignoreException("java.nio.channels.ClosedChannelException");
     
     String zkDir = testDir.getAbsolutePath() + File.separator

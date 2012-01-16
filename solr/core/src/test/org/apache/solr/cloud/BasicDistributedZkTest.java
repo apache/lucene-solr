@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -319,7 +320,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
           ((CommonsHttpSolrServer) client).getBaseURL());
       Create createCmd = new Create();
       createCmd.setCoreName(collection);
-      createCmd.setDataDir(collection);
+      createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator + collection);
       server.request(createCmd);
       collectionClients.add(createNewSolrServer(collection,
           ((CommonsHttpSolrServer) client).getBaseURL()));
