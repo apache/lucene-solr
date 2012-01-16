@@ -1036,6 +1036,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     protected boolean doDeletes;  
     
     public StopableIndexingThread(int startI, boolean doDeletes) {
+      super("StopableIndexingThread");
       this.startI = startI;
       this.doDeletes = doDeletes;
       setDaemon(true);

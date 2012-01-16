@@ -63,7 +63,7 @@ public class ChaosMonkey {
   private Map<String,List<SolrServer>> shardToClient;
   private boolean expireSessions;
   private boolean causeConnectionLoss;
-  private boolean killLeaders;
+  private boolean aggressivelyKillLeaders;
   private Map<String,SolrServer> shardToLeaderClient;
   private Map<String,CloudJettyRunner> shardToLeaderJetty;
   
@@ -99,7 +99,7 @@ public class ChaosMonkey {
   public void expireRandomSession() throws KeeperException, InterruptedException {
     String sliceName = getRandomSlice();
     
-    JettySolrRunner jetty = getRandomJetty(sliceName, killLeaders);
+    JettySolrRunner jetty = getRandomJetty(sliceName, aggressivelyKillLeaders);
     if (jetty != null) {
       expireSession(jetty);
       expires.incrementAndGet();
@@ -109,7 +109,7 @@ public class ChaosMonkey {
   public void randomConnectionLoss() throws KeeperException, InterruptedException {
     String sliceName = getRandomSlice();
     
-    JettySolrRunner jetty = getRandomJetty(sliceName, killLeaders);
+    JettySolrRunner jetty = getRandomJetty(sliceName, aggressivelyKillLeaders);
     if (jetty != null) {
       causeConnectionLoss(jetty);
       connloss.incrementAndGet();
@@ -208,7 +208,7 @@ public class ChaosMonkey {
   }
   
   public JettySolrRunner stopRandomShard(String slice) throws Exception {
-    JettySolrRunner jetty = getRandomJetty(slice, killLeaders);
+    JettySolrRunner jetty = getRandomJetty(slice, aggressivelyKillLeaders);
     if (jetty != null) {
       stopJetty(jetty);
     }
@@ -233,14 +233,14 @@ public class ChaosMonkey {
   }
   
   public JettySolrRunner killRandomShard(String slice) throws Exception {
-    JettySolrRunner jetty = getRandomJetty(slice, killLeaders);
+    JettySolrRunner jetty = getRandomJetty(slice, aggressivelyKillLeaders);
     if (jetty != null) {
       killJetty(jetty);
     }
     return jetty;
   }
   
-  public JettySolrRunner getRandomJetty(String slice, boolean killLeader) throws KeeperException, InterruptedException {
+  public JettySolrRunner getRandomJetty(String slice, boolean aggressivelyKillLeaders) throws KeeperException, InterruptedException {
     // get latest cloud state
     zkStateReader.updateCloudState(true);
     Slice theShards = zkStateReader.getCloudState().getSlices(collection)
@@ -291,7 +291,7 @@ public class ChaosMonkey {
     
     int chance = random.nextInt(10);
     JettySolrRunner jetty;
-    if (chance <= 8 && killLeader) {
+    if (chance <= 8 && aggressivelyKillLeaders) {
       // if killLeader, really aggressively go after leaders
       Collection<CloudJettyRunner> leaders = shardToLeaderJetty.values();
       List<CloudJettyRunner> leadersList = new ArrayList<CloudJettyRunner>(leaders.size());
@@ -308,10 +308,10 @@ public class ChaosMonkey {
       
       ZkNodeProps leader = zkStateReader.getLeaderProps(collection, slice);
       boolean isLeader = leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName);
-      if (!killLeader && isLeader) {
+      if (!aggressivelyKillLeaders && isLeader) {
         // we don't kill leaders...
         return null;
-      }
+      } 
     }
  
     return jetty;
@@ -332,7 +332,7 @@ public class ChaosMonkey {
   // synchronously starts and stops shards randomly, unless there is only one
   // active shard up for a slice or if there is one active and others recovering
   public void startTheMonkey(boolean killLeaders) {
-    this.killLeaders = killLeaders;
+    this.aggressivelyKillLeaders = killLeaders;
     
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
     
