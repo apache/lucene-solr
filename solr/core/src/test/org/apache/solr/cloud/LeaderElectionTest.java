@@ -44,7 +44,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   static final int TIMEOUT = 30000;
   private ZkTestServer server;
   private SolrZkClient zkClient;
-  ZkStateReader zkStateReader;
+  private ZkStateReader zkStateReader;
   private Map<Integer,Thread> seqToThread;
   
   private volatile boolean stopStress = false;
@@ -83,12 +83,13 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private volatile boolean stop;
     private volatile boolean electionDone = false;
     private final ZkNodeProps props;
+    private ZkStateReader zkStateReader;
 
     
     public ClientThread(int nodeNumber) throws Exception {
       super("Thread-" + nodeNumber);
-      zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
-    
+      this.zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+      this.zkStateReader = new ZkStateReader(zkClient);
       this.nodeNumber = nodeNumber;
       props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, Integer.toString(nodeNumber), ZkStateReader.CORE_PROP, "");
     }
@@ -96,10 +97,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     @Override
     public void run() {
       
-        LeaderElector elector = new LeaderElector(zkClient);
+        LeaderElector elector = new LeaderElector(ClientThread.this.zkClient);
         
         ElectionContext context = new ShardLeaderElectionContext("shard1",
-            "collection1", Integer.toString(nodeNumber), props, zkStateReader);
+            "collection1", Integer.toString(nodeNumber), props, this.zkStateReader);
         
         try {
           elector.setup(context);
@@ -109,7 +110,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         } catch (InterruptedException e) {
           return;
         } catch (Throwable e) {
-          e.printStackTrace();
+          //e.printStackTrace();
         }
         
       while (!stop) {
@@ -148,16 +149,20 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     assertEquals("http://127.0.0.1/solr/", getLeaderUrl("collection1", "shard2"));
   }
   
-  private String getLeaderUrl(final String collection, final String slice) throws KeeperException, InterruptedException {
-    int iterCount=30;
+  private String getLeaderUrl(final String collection, final String slice)
+      throws KeeperException, InterruptedException {
+    int iterCount = 30;
     while (iterCount-- > 0)
       try {
-      byte[] data = zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null, true);
-      ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
-      return leaderProps.getCoreUrl();
-    } catch (NoNodeException e) {
-      Thread.sleep(100);
-    }
+        byte[] data = zkClient.getData(
+            ZkStateReader.getShardLeadersPath(collection, slice), null, null,
+            true);
+        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(
+            ZkNodeProps.load(data));
+        return leaderProps.getCoreUrl();
+      } catch (NoNodeException e) {
+        Thread.sleep(100);
+      }
     throw new RuntimeException("Could not get leader props");
   }
 
@@ -197,14 +202,22 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     
     // kill n_0, 1, 3 and 4
     ((ClientThread) seqToThread.get(0)).close();
+    
+    waitForLeader(threads, 1);
+    
+    leaderThread = getLeaderThread();
+    
+    // whoever the leader is, should be the n_1 seq
+    
+    assertEquals(1, threads.get(leaderThread).seq);
+    
     ((ClientThread) seqToThread.get(4)).close();
     ((ClientThread) seqToThread.get(1)).close();
     ((ClientThread) seqToThread.get(3)).close();
     
     // whoever the leader is, should be the n_2 seq
     
-    // nocommit
-    Thread.sleep(1000);
+    waitForLeader(threads, 2);
     
     leaderThread = getLeaderThread();
     assertEquals(2, threads.get(leaderThread).seq);
@@ -216,8 +229,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ((ClientThread) seqToThread.get(7)).close();
     ((ClientThread) seqToThread.get(8)).close();
     
-    // nocommit
-    Thread.sleep(1000);
+    waitForLeader(threads, 9);
     leaderThread = getLeaderThread();
     
     // whoever the leader is, should be the n_9 seq
@@ -233,11 +245,25 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       thread.join();
     }
     
-    //printLayout(server.getZkAddress());
+  }
+
+  private void waitForLeader(List<ClientThread> threads, int seq)
+      throws KeeperException, InterruptedException {
+    int leaderThread;
+    int tries = 0;
+    leaderThread = getLeaderThread();
+    while (threads.get(leaderThread).seq < seq) {
+      leaderThread = getLeaderThread();
+      if (tries++ > 50) {
+        break;
+      }
+      Thread.sleep(200);
+    }
   }
 
   private int getLeaderThread() throws KeeperException, InterruptedException {
-    return Integer.parseInt(getLeaderUrl("collection1", "shard1").replaceAll("/", ""));
+    String leaderUrl = getLeaderUrl("collection1", "shard1");
+    return Integer.parseInt(leaderUrl.replaceAll("/", ""));
   }
   
   @Test
@@ -347,10 +373,6 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     killThread.join();
     
     scheduler.shutdownNow();
-    
-
-    printLayout(server.getZkAddress());
-    
 
     int seq = threads.get(getLeaderThread()).getSeq();
     
@@ -370,7 +392,6 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   
   @Override
   public void tearDown() throws Exception {
-    printLayout(server.getZkAddress());
     zkClient.close();
     server.shutdown();
     SolrConfig.severeErrors.clear();

@@ -86,7 +86,7 @@ final class ShardLeaderElectionContext extends ElectionContext {
           leaderProps == null ? null : ZkStateReader.toJSON(leaderProps),
           CreateMode.EPHEMERAL, true);
     } catch (NodeExistsException e) {
-      // if a previous leader ephemeral exists for some reason, try and remove it
+      // if a previous leader ephemeral still exists for some reason, try and remove it
       zkClient.delete(leaderPath, -1, true);
       zkClient.makePath(leaderPath,
           leaderProps == null ? null : ZkStateReader.toJSON(leaderProps),

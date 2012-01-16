@@ -35,7 +35,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   
@@ -53,18 +52,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // we expect this time of exception as shards go up and down...
-    ignoreException("shard update error ");
-    ignoreException("Connection refused");
-    ignoreException("interrupted waiting for shard update response");
-    ignoreException("org\\.mortbay\\.jetty\\.EofException");
-    ignoreException("java\\.lang\\.InterruptedException");
-    ignoreException("java\\.nio\\.channels\\.ClosedByInterruptException");
-    ignoreException("Failure to open existing log file \\(non fatal\\)");
-    
-    
-    // sometimes we cannot get the same port
-    ignoreException("java\\.net\\.BindException: Address already in use");
+    // TODO use @Noisy annotation as we expect lots of exceptions
     
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
@@ -79,7 +67,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
-    shardCount = atLeast(2);
+    shardCount = atLeast(3);
     sliceCount = 2;
   }
   
@@ -95,7 +83,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     //del("*:*");
     
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
-    int threadCount = atLeast(1);
+    int threadCount = 1;
     int i = 0;
     for (i = 0; i < threadCount; i++) {
       StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
@@ -110,7 +98,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     
     chaosMonkey.startTheMonkey(true);
     
-    Thread.sleep(atLeast(15000));
+    Thread.sleep(atLeast(10000));
     
     chaosMonkey.stopTheMonkey();
     
@@ -259,6 +247,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
           clientIndex = 0;
         }
         try {
+          suss.shutdown();
           suss = new StreamingUpdateSolrServer(((CommonsHttpSolrServer) clients.get(clientIndex)).getBaseURL(), 30, 3);
         } catch (MalformedURLException e1) {
           e1.printStackTrace();
@@ -268,7 +257,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     
     public void safeStop() {
       stop = true;
-      suss.blockUntilFinished();
+      suss.shutdownNow();
     }
 
     public int getFails() {
