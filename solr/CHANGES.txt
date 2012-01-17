@@ -31,7 +31,7 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.3.3
 
 
-Upgrading from Solr 3.5-dev
+Upgrading from Solr 3.6-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -113,9 +113,6 @@ New Features
   
 * SOLR-2335: New 'field("...")' function syntax for refering to complex 
   field names (containing whitespace or special characters) in functions.
-
-* SOLR-1709: Distributed support for Date and Numeric Range Faceting
-  (Peter Sturge, David Smiley, hossman)
 
 * SOLR-2383: /browse improvements: generalize range and date facet display
   (Jan Høydahl via yonik)
@@ -437,6 +434,9 @@ New Features
   consistency, and is also propagated to shards in distributed search.
   Adding a parameter NOW=<time_in_ms> to the request will override the
   current time.  (Peter Sturge, yonik, Simon Willnauer)
+  
+* SOLR-1709: Distributed support for Date and Numeric Range Faceting
+  (Peter Sturge, David Smiley, hossman, Simon Willnauer)
 
 Optimizations
 ----------------------
