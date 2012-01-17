@@ -168,7 +168,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: top reader");
     }
-    verify(r, idToOrds, termsArray, null);
+    verify(new SlowMultiReaderWrapper(r), idToOrds, termsArray, null);
 
     FieldCache.DEFAULT.purge(r);
 
@@ -285,7 +285,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: top reader");
       }
-      verify(r, idToOrdsPrefix, termsArray, prefixRef);
+      verify(new SlowMultiReaderWrapper(r), idToOrdsPrefix, termsArray, prefixRef);
     }
 
     FieldCache.DEFAULT.purge(r);

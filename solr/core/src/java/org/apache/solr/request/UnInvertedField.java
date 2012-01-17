@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
@@ -484,7 +485,7 @@ public class UnInvertedField extends DocTermOrds {
     for (String f : facet) {
       SchemaField facet_sf = searcher.getSchema().getField(f);
       try {
-        si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), f);
+        si = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(searcher.getIndexReader()), f);
       }
       catch (IOException e) {
         throw new RuntimeException("failed to open field cache for: " + f, e);

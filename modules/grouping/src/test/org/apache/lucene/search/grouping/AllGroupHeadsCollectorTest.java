@@ -276,7 +276,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       w.close();
 
       // NOTE: intentional but temporary field cache insanity!
-      final int[] docIdToFieldId = FieldCache.DEFAULT.getInts(r, "id", false);
+      final int[] docIdToFieldId = FieldCache.DEFAULT.getInts(new SlowMultiReaderWrapper(r), "id", false);
       final int[] fieldIdToDocID = new int[numDocs];
       for (int i = 0; i < docIdToFieldId.length; i++) {
         int fieldId = docIdToFieldId[i];

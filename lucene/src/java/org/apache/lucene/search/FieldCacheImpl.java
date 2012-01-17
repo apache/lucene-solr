@@ -30,7 +30,6 @@ import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.TermState;
@@ -162,12 +161,29 @@ class FieldCacheImpl implements FieldCache {
       FieldCacheImpl.this.purge(owner);
     }
   };
+  
+  private void initReader(IndexReader reader) {
+    if (reader instanceof SegmentReader) {
+      ((SegmentReader) reader).addCoreClosedListener(purgeCore);
+    } else if (reader.getSequentialSubReaders() != null) {
+      throw new UnsupportedOperationException("Please use SlowMultiReaderWrapper, if you really need a top level FieldCache");
+    } else {
+      // we have a slow reader of some sort, try to register a purge event
+      // rather than relying on gc:
+      Object key = reader.getCoreCacheKey();
+      if (key instanceof IndexReader) {
+        ((IndexReader)key).addReaderClosedListener(new IndexReader.ReaderClosedListener() {
+          @Override
+          public void onClose(IndexReader reader) {
+            FieldCache.DEFAULT.purge(reader);
+          }
+        }); 
+      }
+    }
+  }
 
   /** Expert: Internal cache. */
   abstract static class Cache {
-    Cache() {
-      this.wrapper = null;
-    }
 
     Cache(FieldCacheImpl wrapper) {
       this.wrapper = wrapper;
@@ -198,11 +214,7 @@ class FieldCacheImpl implements FieldCache {
           // First time this reader is using FieldCache
           innerCache = new HashMap<Entry,Object>();
           readerCache.put(readerKey, innerCache);
-          if (reader instanceof SegmentReader) {
-            ((SegmentReader) reader).addCoreClosedListener(wrapper.purgeCore);
-          } else {
-            reader.addReaderClosedListener(wrapper.purgeReader);
-          }
+          wrapper.initReader(reader);
         }
         if (innerCache.get(key) == null) {
           innerCache.put(key, value);
@@ -223,11 +235,7 @@ class FieldCacheImpl implements FieldCache {
           // First time this reader is using FieldCache
           innerCache = new HashMap<Entry,Object>();
           readerCache.put(readerKey, innerCache);
-          if (reader instanceof SegmentReader) {
-            ((SegmentReader) reader).addCoreClosedListener(wrapper.purgeCore);
-          } else {
-            reader.addReaderClosedListener(wrapper.purgeReader);           
-          }
+          wrapper.initReader(reader);
           value = null;
         } else {
           value = innerCache.get(key);
@@ -339,7 +347,7 @@ class FieldCacheImpl implements FieldCache {
       }
       final int maxDoc = reader.maxDoc();
       final byte[] retArray = new byte[maxDoc];
-      Terms terms = MultiFields.getTerms(reader, field);
+      Terms terms = reader.terms(field);
       FixedBitSet docsWithField = null;
       if (terms != null) {
         if (setDocsWithField) {
@@ -412,7 +420,7 @@ class FieldCacheImpl implements FieldCache {
       }
       final int maxDoc = reader.maxDoc();
       final short[] retArray = new short[maxDoc];
-      Terms terms = MultiFields.getTerms(reader, field);
+      Terms terms = reader.terms(field);
       FixedBitSet docsWithField = null;
       if (terms != null) {
         if (setDocsWithField) {
@@ -511,7 +519,7 @@ class FieldCacheImpl implements FieldCache {
       final int maxDoc = reader.maxDoc();
       int[] retArray = null;
 
-      Terms terms = MultiFields.getTerms(reader, field);
+      Terms terms = reader.terms(field);
       FixedBitSet docsWithField = null;
       if (terms != null) {
         if (setDocsWithField) {
@@ -583,7 +591,7 @@ class FieldCacheImpl implements FieldCache {
     throws IOException {
       final String field = entryKey.field;      
       FixedBitSet res = null;
-      Terms terms = MultiFields.getTerms(reader, field);
+      Terms terms = reader.terms(field);
       final int maxDoc = reader.maxDoc();
       if (terms != null) {
         final int termsDocCount = terms.getDocCount();
@@ -661,7 +669,7 @@ class FieldCacheImpl implements FieldCache {
       final int maxDoc = reader.maxDoc();
       float[] retArray = null;
 
-      Terms terms = MultiFields.getTerms(reader, field);
+      Terms terms = reader.terms(field);
       FixedBitSet docsWithField = null;
       if (terms != null) {
         if (setDocsWithField) {
@@ -749,7 +757,7 @@ class FieldCacheImpl implements FieldCache {
       final int maxDoc = reader.maxDoc();
       long[] retArray = null;
 
-      Terms terms = MultiFields.getTerms(reader, field);
+      Terms terms = reader.terms(field);
       FixedBitSet docsWithField = null;
       if (terms != null) {
         if (setDocsWithField) {
@@ -838,7 +846,7 @@ class FieldCacheImpl implements FieldCache {
       final int maxDoc = reader.maxDoc();
       double[] retArray = null;
 
-      Terms terms = MultiFields.getTerms(reader, field);
+      Terms terms = reader.terms(field);
       FixedBitSet docsWithField = null;
       if (terms != null) {
         if (setDocsWithField) {
@@ -1086,7 +1094,7 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
 
-      Terms terms = MultiFields.getTerms(reader, entryKey.field);
+      Terms terms = reader.terms(entryKey.field);
 
       final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
 
@@ -1231,7 +1239,7 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(IndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
 
-      Terms terms = MultiFields.getTerms(reader, entryKey.field);
+      Terms terms = reader.terms(entryKey.field);
 
       final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
 

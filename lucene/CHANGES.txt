@@ -230,6 +230,10 @@ Changes in backwards compatibility policy
 * LUCENE-3684: Add offsets into DocsAndPositionsEnum, and a few
   FieldInfo.IndexOption: DOCS_AND_POSITIONS_AND_OFFSETS.  (Robert
   Muir, Mike McCandless)
+
+* LUCENE-3646: FieldCacheImpl now throws UOE on non-atomic IndexReaders. If
+  you really want a top-level fieldcache, use SlowMultiReaderWrapper.
+  (Robert Muir)
   
 Changes in Runtime Behavior
 

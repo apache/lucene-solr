@@ -636,12 +636,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("wrong number of hits", 34, hits.length);
       
       // check decoding into field cache
-      int[] fci = FieldCache.DEFAULT.getInts(searcher.getIndexReader(), "trieInt", false);
+      int[] fci = FieldCache.DEFAULT.getInts(new SlowMultiReaderWrapper(searcher.getIndexReader()), "trieInt", false);
       for (int val : fci) {
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
-      long[] fcl = FieldCache.DEFAULT.getLongs(searcher.getIndexReader(), "trieLong", false);
+      long[] fcl = FieldCache.DEFAULT.getLongs(new SlowMultiReaderWrapper(searcher.getIndexReader()), "trieLong", false);
       for (long val : fcl) {
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }

@@ -98,7 +98,8 @@ public class TestFieldCache extends LuceneTestCase {
       }
       writer.addDocument(doc);
     }
-    reader = writer.getReader();
+    IndexReader r = writer.getReader();
+    reader = new SlowMultiReaderWrapper(r);
     writer.close();
   }
 
@@ -293,8 +294,9 @@ public class TestFieldCache extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(500));
     IndexReader r = IndexReader.open(writer, true);
-    FieldCache.DEFAULT.getTerms(r, "foobar");
-    FieldCache.DEFAULT.getTermsIndex(r, "foobar");
+    SlowMultiReaderWrapper reader = new SlowMultiReaderWrapper(r);
+    FieldCache.DEFAULT.getTerms(reader, "foobar");
+    FieldCache.DEFAULT.getTermsIndex(reader, "foobar");
     writer.close();
     r.close();
     dir.close();

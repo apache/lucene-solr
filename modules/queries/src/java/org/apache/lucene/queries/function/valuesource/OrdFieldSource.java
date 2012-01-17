@@ -19,6 +19,7 @@ package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
@@ -61,11 +62,12 @@ public class OrdFieldSource extends ValueSource {
   }
 
 
+  // TODO: this is trappy? perhaps this query instead should make you pass a slow reader yourself?
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
     final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader;
-    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(topReader, field);
+    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(topReader), field);
     return new IntDocValues(this) {
       protected String toTerm(String readableValue) {
         return readableValue;
