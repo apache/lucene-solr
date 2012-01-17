@@ -184,6 +184,10 @@ public class PeerSync  {
     SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
     sreq.reportedVersions =  otherVersions;
 
+    if (otherVersions.size() == 0) {
+      return true;
+    }
+
     Collections.sort(otherVersions, absComparator);
 
     long otherHigh = percentile(otherVersions, .2f);
