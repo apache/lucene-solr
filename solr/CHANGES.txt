@@ -96,11 +96,6 @@ New Features
   SOLR-2799: Update CloudState incrementally rather than always reading the data at each zk 
   node. (Jamie Johnson via Mark Miller)
 
-* SOLR-1729: Evaluation of NOW for date math is done only once per request for
-  consistency, and is also propagated to shards in distributed search.
-  Adding a parameter NOW=<time_in_ms> to the request will override the
-  current time.  (Peter Sturge, yonik)
-
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
   as results. 
@@ -437,6 +432,11 @@ New Features
 
 * SOLR-2603: Add the encoding function for alternate fields in highlighting.
   (Massimo Schiavon, koji)
+  
+* SOLR-1729: Evaluation of NOW for date math is done only once per request for
+  consistency, and is also propagated to shards in distributed search.
+  Adding a parameter NOW=<time_in_ms> to the request will override the
+  current time.  (Peter Sturge, yonik, Simon Willnauer)
 
 Optimizations
 ----------------------
