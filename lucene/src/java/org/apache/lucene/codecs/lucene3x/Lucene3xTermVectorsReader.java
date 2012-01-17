@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +44,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-public class Lucene40TermVectorsReader extends TermVectorsReader {
+public class Lucene3xTermVectorsReader extends TermVectorsReader {
 
   // NOTE: if you make a new format, it must be larger than
   // the current format
@@ -55,26 +54,26 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
   // NOTE: always change this if you switch to a new format!
   // whenever you add a new format, make it 1 larger (positive version logic)!
-  static final int FORMAT_CURRENT = FORMAT_UTF8_LENGTH_IN_BYTES;
+  public static final int FORMAT_CURRENT = FORMAT_UTF8_LENGTH_IN_BYTES;
   
   // when removing support for old versions, leave the last supported version here
-  static final int FORMAT_MINIMUM = FORMAT_UTF8_LENGTH_IN_BYTES;
+  public static final int FORMAT_MINIMUM = FORMAT_UTF8_LENGTH_IN_BYTES;
 
   //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
   static final int FORMAT_SIZE = 4;
 
-  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
+  public static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
 
-  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
+  public static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
   
   /** Extension of vectors fields file */
-  static final String VECTORS_FIELDS_EXTENSION = "tvf";
+  public static final String VECTORS_FIELDS_EXTENSION = "tvf";
 
   /** Extension of vectors documents file */
-  static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
+  public static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
 
   /** Extension of vectors index file */
-  static final String VECTORS_INDEX_EXTENSION = "tvx";
+  public static final String VECTORS_INDEX_EXTENSION = "tvx";
 
   private FieldInfos fieldInfos;
 
@@ -83,23 +82,29 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
   private IndexInput tvf;
   private int size;
   private int numTotalDocs;
+
+  // The docID offset where our docs begin in the index
+  // file.  This will be 0 if we have our own private file.
+  private int docStoreOffset;
   
   private final int format;
 
   // used by clone
-  Lucene40TermVectorsReader(FieldInfos fieldInfos, IndexInput tvx, IndexInput tvd, IndexInput tvf, int size, int numTotalDocs, int format) {
+  Lucene3xTermVectorsReader(FieldInfos fieldInfos, IndexInput tvx, IndexInput tvd, IndexInput tvf, int size, int numTotalDocs, int docStoreOffset, int format) {
     this.fieldInfos = fieldInfos;
     this.tvx = tvx;
     this.tvd = tvd;
     this.tvf = tvf;
     this.size = size;
     this.numTotalDocs = numTotalDocs;
+    this.docStoreOffset = docStoreOffset;
     this.format = format;
   }
     
-  public Lucene40TermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
+  public Lucene3xTermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
     throws CorruptIndexException, IOException {
-    final String segment = si.name;
+    final String segment = si.getDocStoreSegment();
+    final int docStoreOffset = si.getDocStoreOffset();
     final int size = si.docCount;
     
     boolean success = false;
@@ -120,8 +125,17 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
       numTotalDocs = (int) (tvx.length() >> 4);
 
-      this.size = numTotalDocs;
-      assert size == 0 || numTotalDocs == size;
+      if (-1 == docStoreOffset) {
+        this.docStoreOffset = 0;
+        this.size = numTotalDocs;
+        assert size == 0 || numTotalDocs == size;
+      } else {
+        this.docStoreOffset = docStoreOffset;
+        this.size = size;
+        // Verify the file is long enough to hold all of our
+        // docs
+        assert numTotalDocs >= size + docStoreOffset: "numTotalDocs=" + numTotalDocs + " size=" + size + " docStoreOffset=" + docStoreOffset;
+      }
 
       this.fieldInfos = fieldInfos;
       success = true;
@@ -137,70 +151,9 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     }
   }
 
-  // Used for bulk copy when merging
-  IndexInput getTvdStream() {
-    return tvd;
-  }
-
-  // Used for bulk copy when merging
-  IndexInput getTvfStream() {
-    return tvf;
-  }
-
   // Not private to avoid synthetic access$NNN methods
   void seekTvx(final int docNum) throws IOException {
-    tvx.seek(docNum * 16L + FORMAT_SIZE);
-  }
-
-  boolean canReadRawDocs() {
-    // we can always read raw docs, unless the term vectors
-    // didn't exist
-    return format != 0;
-  }
-
-  /** Retrieve the length (in bytes) of the tvd and tvf
-   *  entries for the next numDocs starting with
-   *  startDocID.  This is used for bulk copying when
-   *  merging segments, if the field numbers are
-   *  congruent.  Once this returns, the tvf & tvd streams
-   *  are seeked to the startDocID. */
-  final void rawDocs(int[] tvdLengths, int[] tvfLengths, int startDocID, int numDocs) throws IOException {
-
-    if (tvx == null) {
-      Arrays.fill(tvdLengths, 0);
-      Arrays.fill(tvfLengths, 0);
-      return;
-    }
-
-    seekTvx(startDocID);
-
-    long tvdPosition = tvx.readLong();
-    tvd.seek(tvdPosition);
-
-    long tvfPosition = tvx.readLong();
-    tvf.seek(tvfPosition);
-
-    long lastTvdPosition = tvdPosition;
-    long lastTvfPosition = tvfPosition;
-
-    int count = 0;
-    while (count < numDocs) {
-      final int docID = startDocID + count + 1;
-      assert docID <= numTotalDocs;
-      if (docID < numTotalDocs)  {
-        tvdPosition = tvx.readLong();
-        tvfPosition = tvx.readLong();
-      } else {
-        tvdPosition = tvd.length();
-        tvfPosition = tvf.length();
-        assert count == numDocs-1;
-      }
-      tvdLengths[count] = (int) (tvdPosition-lastTvdPosition);
-      tvfLengths[count] = (int) (tvfPosition-lastTvfPosition);
-      count++;
-      lastTvdPosition = tvdPosition;
-      lastTvfPosition = tvfPosition;
-    }
+    tvx.seek((docNum + docStoreOffset) * 16L + FORMAT_SIZE);
   }
 
   private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException
@@ -381,7 +334,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
     // NOTE: tvf is pre-positioned by caller
     public TVTermsEnum() throws IOException {
-      this.origTVF = Lucene40TermVectorsReader.this.tvf;
+      this.origTVF = Lucene3xTermVectorsReader.this.tvf;
       tvf = (IndexInput) origTVF.clone();
     }
 
@@ -696,14 +649,23 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       cloneTvf = (IndexInput) tvf.clone();
     }
     
-    return new Lucene40TermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, format);
+    return new Lucene3xTermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, docStoreOffset, format);
   }
   
   public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     if (info.getHasVectors()) {
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_INDEX_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_FIELDS_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_DOCUMENTS_EXTENSION));
+      if (info.getDocStoreOffset() != -1) {
+        assert info.getDocStoreSegment() != null;
+        if (!info.getDocStoreIsCompoundFile()) {
+          files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_INDEX_EXTENSION));
+          files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_FIELDS_EXTENSION));
+          files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_DOCUMENTS_EXTENSION));
+        }
+      } else {
+        files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_FIELDS_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_DOCUMENTS_EXTENSION));
+      }
     }
   }
 }

@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.preflexrw;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -31,6 +32,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   private final PostingsFormat postings = new PreFlexRWPostingsFormat();
   private final NormsFormat norms = new PreFlexRWNormsFormat();
   private final FieldInfosFormat fieldInfos = new PreFlexRWFieldInfosFormat();
+  private final TermVectorsFormat termVectors = new PreFlexRWTermVectorsFormat();
   
   @Override
   public PostingsFormat postingsFormat() {
@@ -56,6 +58,15 @@ public class PreFlexRWCodec extends Lucene3xCodec {
       return fieldInfos;
     } else {
       return super.fieldInfosFormat();
+    }
+  }
+
+  @Override
+  public TermVectorsFormat termVectorsFormat() {
+    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+      return termVectors;
+    } else {
+      return super.termVectorsFormat();
     }
   }
 }
