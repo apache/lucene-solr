@@ -173,6 +173,9 @@ class FieldCacheImpl implements FieldCache {
       Object key = reader.getCoreCacheKey();
       if (key instanceof IndexReader) {
         ((IndexReader)key).addReaderClosedListener(purgeReader); 
+      } else {
+        // last chance
+        reader.addReaderClosedListener(purgeReader); 				
       }
     }
   }
