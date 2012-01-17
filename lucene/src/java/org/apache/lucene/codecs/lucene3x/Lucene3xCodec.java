@@ -54,7 +54,6 @@ public class Lucene3xCodec extends Codec {
   // TODO: this should really be a different impl
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
   
-  // TODO: this should really be a different impl
   private final FieldInfosFormat fieldInfosFormat = new Lucene3xFieldInfosFormat();
 
   // TODO: this should really be a different impl
