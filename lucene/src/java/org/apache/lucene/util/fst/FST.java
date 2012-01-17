@@ -368,7 +368,7 @@ public class FST<T> {
       }
     }
   }
-  
+
   /**
    * Reads an automaton from a file. 
    */
@@ -670,8 +670,7 @@ public class FST<T> {
     }
   }
 
-  // Not private because NodeHash needs access:
-  Arc<T> readFirstRealArc(int address, Arc<T> arc) throws IOException {
+  public Arc<T> readFirstRealArc(int address, Arc<T> arc) throws IOException {
 
     final BytesReader in = getBytesReader(address);
 
@@ -754,7 +753,9 @@ public class FST<T> {
     return readLabel(in);
   }
 
-  Arc<T> readNextRealArc(Arc<T> arc, final BytesReader in) throws IOException {
+  /** Never returns null, but you should never call this if
+   *  arc.isLast() is true. */
+  public Arc<T> readNextRealArc(Arc<T> arc, final BytesReader in) throws IOException {
     // this is a continuing arc in a fixed array
     if (arc.bytesPerArc != 0) {
       // arcs are at fixed entries
@@ -932,7 +933,7 @@ public class FST<T> {
   public int getArcWithOutputCount() {
     return arcWithOutputCount;
   }
-  
+
   public void setAllowArrayArcs(boolean v) {
     allowArrayArcs = v;
   }
@@ -986,7 +987,7 @@ public class FST<T> {
     }
   }
 
-  final BytesReader getBytesReader(int pos) {
+  public final BytesReader getBytesReader(int pos) {
     // TODO: maybe re-use via ThreadLocal?
     return new BytesReader(pos);
   }

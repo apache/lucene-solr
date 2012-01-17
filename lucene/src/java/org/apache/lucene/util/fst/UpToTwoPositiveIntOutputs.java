@@ -25,7 +25,7 @@ import org.apache.lucene.store.DataOutput;
 /**
  * Holds one or two longs for each input term.  If it's a
  * single output, Long is returned; else, TwoLongs.  Order
- * is preseved in the TwoLongs case, ie .first is the first
+ * is preserved in the TwoLongs case, ie .first is the first
  * input/output added to Builder, and .second is the
  * second.  You cannot store 0 output with this (that's
  * reserved to mean "no output")!
