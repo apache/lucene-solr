@@ -154,6 +154,14 @@ Changes in runtime behavior
  * LUCENE-3626: PKIndexSplitter and MultiPassIndexSplitter now work
    per segment.  (Uwe Schindler)
 
+Optimizations
+
+* SOLR-2888: FSTSuggester refactoring: internal storage is now UTF-8, 
+  external sorting (on disk) prevents OOMs even with large data sets
+  (the bottleneck is now FST construction), code cleanups and API cleanups.
+  You should use FSTCompletionLookup (the old FSTLookup impl is deprecated).
+  (Dawid Weiss, Robert Muir)
+
 Bug Fixes
 
  * LUCENE-3600: BlockJoinQuery now supports parent docs that have no
