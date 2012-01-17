@@ -89,7 +89,7 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="kuromoji analysis module" type="JUnit" factoryName="JUnit">
-      <module name="morfologik" />
+      <module name="kuromoji" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/kuromoji-idea" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
