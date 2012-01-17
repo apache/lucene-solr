@@ -17,6 +17,9 @@
 
 package org.apache.solr.util;
 
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+
 import java.util.Date;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -198,7 +201,6 @@ public class DateMathParser  {
   public DateMathParser(TimeZone tz, Locale l) {
     zone = tz;
     loc = l;
-    setNow(new Date());
   }
 
   /** Redefines this instance's concept of "now" */
@@ -208,6 +210,15 @@ public class DateMathParser  {
   
   /** Returns a cloned of this instance's concept of "now" */
   public Date getNow() {
+    if (now == null) {
+      SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
+      if (reqInfo == null) {
+        // fall back to current time if no request info set
+        now = new Date();
+      } else {
+        now = reqInfo.getNOW();
+      }
+    }
     return (Date) now.clone();
   }
 

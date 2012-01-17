@@ -32,6 +32,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -137,6 +138,7 @@ public class EmbeddedSolrServer extends SolrServer
       req = _parser.buildRequestFrom( core, params, request.getContentStreams() );
       req.getContext().put( "path", path );
       SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       core.execute( handler, req, rsp );
       if( rsp.getException() != null ) {
         throw new SolrServerException( rsp.getException() );
@@ -153,11 +155,9 @@ public class EmbeddedSolrServer extends SolrServer
       throw new SolrServerException( ex );
     }
     finally {
-      try {
         if (req != null) req.close();
-      } finally {
         core.close();
-      }
+        SolrRequestInfo.clearRequestInfo();
     }
   }
   

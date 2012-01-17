@@ -159,10 +159,11 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   {
     // int sleep = req.getParams().getInt("sleep",0);
     // if (sleep > 0) {log.error("SLEEPING for " + sleep);  Thread.sleep(sleep);}
-    ResponseBuilder rb = new ResponseBuilder();
-    rb.req = req;
-    rb.rsp = rsp;
-    rb.components = components;
+    ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
+    if (rb.requestInfo != null) {
+      rb.requestInfo.setResponseBuilder(rb);
+    }
+
     rb.setDebug(req.getParams().getBool(CommonParams.DEBUG_QUERY, false));
 
     final RTimer timer = rb.isDebug() ? new RTimer() : null;
@@ -253,6 +254,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
               params.remove("indent");
               params.remove(CommonParams.HEADER_ECHO_PARAMS);
               params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request
+              if (rb.requestInfo != null) {
+                // we could try and detect when this is needed, but it could be tricky
+                params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));
+              }
               String shardHandler = req.getParams().get(ShardParams.SHARDS_QT);
               if (shardHandler == null) {
                 params.remove(CommonParams.QT);

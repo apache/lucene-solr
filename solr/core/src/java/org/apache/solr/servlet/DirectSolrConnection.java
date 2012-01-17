@@ -36,6 +36,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -57,7 +58,6 @@ public class DirectSolrConnection
   
   /**
    * Initialize using the static singleton SolrCore.getSolrCore().
-   * 
    * @deprecated use {@link #DirectSolrConnection(SolrCore)}
    */
   @Deprecated
@@ -178,6 +178,7 @@ public class DirectSolrConnection
     try {
       req = parser.buildRequestFrom( core, params, streams );
       SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));     
       core.execute( handler, req, rsp );
       if( rsp.getException() != null ) {
         throw rsp.getException();
@@ -192,6 +193,7 @@ public class DirectSolrConnection
       if (req != null) {
         req.close();
       }
+      SolrRequestInfo.clearRequestInfo(); 
     }
   }
   
