@@ -71,7 +71,6 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements Re
         if (encoding == null) {
           encoding = IOUtils.UTF_8;
         }
-        // note: we could allow for other encodings here as an argument
         CharsetDecoder decoder = Charset.forName(encoding).newDecoder()
             .onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT);
