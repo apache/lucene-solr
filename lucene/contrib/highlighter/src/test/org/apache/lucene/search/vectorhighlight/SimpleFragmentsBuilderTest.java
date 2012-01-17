@@ -37,11 +37,11 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   public void test1TermIndex() throws Exception {
     FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "a" );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "<b>a</b> ", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "<b>a</b>", sfb.createFragment( reader, 0, F, ffl ) );
 
     // change tags
     sfb = new SimpleFragmentsBuilder( new String[]{ "[" }, new String[]{ "]" } );
-    assertEquals( "[a] ", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "[a]", sfb.createFragment( reader, 0, F, ffl ) );
   }
   
   public void test2Frags() throws Exception {
@@ -51,7 +51,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     // 3 snippets requested, but should be 2
     assertEquals( 2, f.length );
     assertEquals( "<b>a</b> b b b b b b b b b b", f[0] );
-    assertEquals( "b b <b>a</b> b <b>a</b> b ", f[1] );
+    assertEquals( "b b <b>a</b> b <b>a</b> b", f[1] );
   }
   
   public void test3Frags() throws Exception {
@@ -65,7 +65,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     assertEquals( 3, f.length );
     assertEquals( "<b>a</b> b b b b b b b b b b", f[0] );
     assertEquals( "b b <b>a</b> b <b>a</b> b b b b b c", f[1] );
-    assertEquals( "<b>c</b> <b>a</b> <b>a</b> b b ", f[2] );
+    assertEquals( "<b>c</b> <b>a</b> <b>a</b> b b", f[2] );
   }
   
   public void testTagsAndEncoder() throws Exception {
@@ -73,7 +73,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     String[] preTags = { "[" };
     String[] postTags = { "]" };
-    assertEquals( "&lt;h1&gt; [a] &lt;/h1&gt; ",
+    assertEquals( "&lt;h1&gt; [a] &lt;/h1&gt;",
         sfb.createFragment( reader, 0, F, ffl, preTags, postTags, new SimpleHTMLEncoder() ) );
   }
 
@@ -94,7 +94,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "a b c  <b>d</b> e ", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "a b c  <b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
   }
   
   public void test1PhraseLongMV() throws Exception {
@@ -119,7 +119,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "processing <b>speed</b>, the ", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "processing <b>speed</b>, the", sfb.createFragment( reader, 0, F, ffl ) );
   }
   
   public void testUnstoredField() throws Exception {
@@ -160,7 +160,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     sfb.setMultiValuedSeparator( '/' );
-    assertEquals( "abc/<b>defg</b>/hijkl/", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "abc/<b>defg</b>/hijkl", sfb.createFragment( reader, 0, F, ffl ) );
   }
   
   public void testMVSeparator() throws Exception {
@@ -173,6 +173,6 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     sfb.setMultiValuedSeparator( '/' );
-    assertEquals( " b c//<b>d</b> e/", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( " b c//<b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
   }
 }

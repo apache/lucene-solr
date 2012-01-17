@@ -166,7 +166,12 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
       buffer.append( values[index[0]++].stringValue() );
       buffer.append( getMultiValuedSeparator() );
     }
-    int eo = buffer.length() < endOffset ? buffer.length() : boundaryScanner.findEndOffset( buffer, endOffset );
+    int bufferLength = buffer.length();
+    // we added the multi value char to the last buffer, ignore it
+    if (values[index[0] - 1].fieldType().tokenized()) {
+      bufferLength--;
+    }
+    int eo = bufferLength < endOffset ? bufferLength : boundaryScanner.findEndOffset( buffer, endOffset );
     modifiedStartOffset[0] = boundaryScanner.findStartOffset( buffer, startOffset );
     return buffer.substring( modifiedStartOffset[0], eo );
   }

@@ -105,6 +105,11 @@ Changes in backwards compatibility policy
  * LUCENE-3626: The internal implementation classes in PKIndexSplitter
    and MultiPassIndexSplitter were made private as they now work
    per segment.  (Uwe Schindler)
+  
+Changes in Runtime Behavior
+
+ * LUCENE-3698: FastVectorHighlighter no longer adds a multi value separator
+   to the end of the highlighted text. (Shay Banon via Koji Sekiguchi)
 
 New Features
 
