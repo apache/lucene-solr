@@ -61,7 +61,7 @@ public class TestTokenInfoDictionary extends LuceneTestCase {
         assertTrue(wordId > lastWordId);
         lastWordId = wordId;
          
-        String baseForm = tid.getBaseForm(wordId);
+        String baseForm = tid.getBaseForm(wordId, chars, 0, chars.length);
         assertTrue(baseForm == null || UnicodeUtil.validUTF16String(baseForm));
         
         String inflectionForm = tid.getInflectionForm(wordId);
@@ -91,11 +91,11 @@ public class TestTokenInfoDictionary extends LuceneTestCase {
         // check that its actually an ipadic pos tag
         assertNotNull(ToStringUtil.getPOSTranslation(pos));
         
-        String pronunciation = tid.getPronunciation(wordId);
+        String pronunciation = tid.getPronunciation(wordId, chars, 0, chars.length);
         assertNotNull(pronunciation);
         assertTrue(UnicodeUtil.validUTF16String(pronunciation));
         
-        String reading = tid.getReading(wordId);
+        String reading = tid.getReading(wordId, chars, 0, chars.length);
         assertNotNull(reading);
         assertTrue(UnicodeUtil.validUTF16String(reading));
       }

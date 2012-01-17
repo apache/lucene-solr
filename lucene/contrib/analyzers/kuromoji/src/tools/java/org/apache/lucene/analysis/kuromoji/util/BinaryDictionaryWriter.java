@@ -103,12 +103,15 @@ public abstract class BinaryDictionaryWriter {
     if (!("*".equals(baseForm) || baseForm.equals(entry[0]))) {
       flags |= BinaryDictionary.HAS_BASEFORM;
     }
+    if (!reading.equals(toKatakana(entry[0]))) {
+      flags |= BinaryDictionary.HAS_READING;
+    }
     if (!pronunciation.equals(reading)) {
       flags |= BinaryDictionary.HAS_PRONUNCIATION;
     }
 
     assert leftId == rightId;
-    assert leftId < 8192; // there are still unused bits
+    assert leftId < 4096; // there are still unused bits
     // add pos mapping
     int toFill = 1+leftId - posDict.size();
     for (int i = 0; i < toFill; i++) {
@@ -119,27 +122,36 @@ public abstract class BinaryDictionaryWriter {
     assert existing == null || existing.equals(fullPOSData);
     posDict.set(leftId, fullPOSData);
     
-    buffer.putShort((short)(leftId << 2 | flags));
+    buffer.putShort((short)(leftId << 3 | flags));
     buffer.putShort(wordCost);
 
     if ((flags & BinaryDictionary.HAS_BASEFORM) != 0) {
-      buffer.put((byte) baseForm.length());
-      for (int i = 0; i < baseForm.length(); i++) {
+      assert baseForm.length() < 16;
+      int shared = sharedPrefix(entry[0], baseForm);
+      int suffix = baseForm.length() - shared;
+      buffer.put((byte) (shared << 4 | suffix));
+      for (int i = shared; i < baseForm.length(); i++) {
         buffer.putChar(baseForm.charAt(i));
       }
     }
     
-    if (isKatakana(reading)) {
-      buffer.put((byte) (reading.length() << 1 | 1));
-      writeKatakana(reading);
-    } else {
-      buffer.put((byte) (reading.length() << 1));
-      for (int i = 0; i < reading.length(); i++) {
-        buffer.putChar(reading.charAt(i));
+    if ((flags & BinaryDictionary.HAS_READING) != 0) {
+      if (isKatakana(reading)) {
+        buffer.put((byte) (reading.length() << 1 | 1));
+        writeKatakana(reading);
+      } else {
+        buffer.put((byte) (reading.length() << 1));
+        for (int i = 0; i < reading.length(); i++) {
+          buffer.putChar(reading.charAt(i));
+        }
       }
     }
     
     if ((flags & BinaryDictionary.HAS_PRONUNCIATION) != 0) {
+      // we can save 150KB here, but it makes the reader a little complicated.
+      // int shared = sharedPrefix(reading, pronunciation);
+      // buffer.put((byte) shared);
+      // pronunciation = pronunciation.substring(shared);
       if (isKatakana(pronunciation)) {
         buffer.put((byte) (pronunciation.length() << 1 | 1));
         writeKatakana(pronunciation);
@@ -168,6 +180,27 @@ public abstract class BinaryDictionaryWriter {
     for (int i = 0; i < s.length(); i++) {
       buffer.put((byte) (s.charAt(i) - 0x30A0));
     }
+  }
+  
+  private String toKatakana(String s) {
+    char text[] = new char[s.length()];
+    for (int i = 0; i < s.length(); i++) {
+      char ch = s.charAt(i);
+      if (ch > 0x3040 && ch < 0x3097) {
+        text[i] = (char)(ch + 0x60);
+      } else {
+        text[i] = ch;
+      }
+    }
+    return new String(text);
+  }
+  
+  public static int sharedPrefix(String left, String right) {
+    int len = left.length() < right.length() ? left.length() : right.length();
+    for (int i = 0; i < len; i++)
+      if (left.charAt(i) != right.charAt(i))
+        return i;
+    return len;
   }
   
   public void addMapping(int sourceId, int wordId) {

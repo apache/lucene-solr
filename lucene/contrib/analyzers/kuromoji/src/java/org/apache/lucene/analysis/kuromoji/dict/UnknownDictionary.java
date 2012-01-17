@@ -51,7 +51,7 @@ public final class UnknownDictionary extends BinaryDictionary {
   }
   
   @Override
-  public String getReading(int wordId) {
+  public String getReading(int wordId, char surface[], int off, int len) {
     return null;
   }
 
