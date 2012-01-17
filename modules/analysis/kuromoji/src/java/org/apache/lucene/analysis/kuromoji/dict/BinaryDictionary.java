@@ -149,12 +149,12 @@ public abstract class BinaryDictionary implements Dictionary {
   
   @Override	
   public int getLeftId(int wordId) {
-    return buffer.getShort(wordId) >>> 2;
+    return buffer.getShort(wordId) >>> 3;
   }
   
   @Override
   public int getRightId(int wordId) {
-    return buffer.getShort(wordId) >>> 2;
+    return buffer.getShort(wordId) >>> 3;
   }
   
   @Override
@@ -163,21 +163,42 @@ public abstract class BinaryDictionary implements Dictionary {
   }
 
   @Override
-  public String getBaseForm(int wordId) {
+  public String getBaseForm(int wordId, char surfaceForm[], int off, int len) {
     if (hasBaseFormData(wordId)) {
       int offset = baseFormOffset(wordId);
-      int length = buffer.get(offset++) & 0xff;
-      return readString(offset, length, false);
+      int data = buffer.get(offset++) & 0xff;
+      int prefix = data >>> 4;
+      int suffix = data & 0xF;
+      char text[] = new char[prefix+suffix];
+      System.arraycopy(surfaceForm, off, text, 0, prefix);
+      for (int i = 0; i < suffix; i++) {
+        text[prefix+i] = buffer.getChar(offset + (i << 1));
+      }
+      return new String(text);
     } else {
       return null;
     }
   }
   
   @Override
-  public String getReading(int wordId) {
-    int offset = readingOffset(wordId);
-    int readingData = buffer.get(offset++) & 0xff;
-    return readString(offset, readingData >>> 1, (readingData & 1) == 1);
+  public String getReading(int wordId, char surface[], int off, int len) {
+    if (hasReadingData(wordId)) {
+      int offset = readingOffset(wordId);
+      int readingData = buffer.get(offset++) & 0xff;
+      return readString(offset, readingData >>> 1, (readingData & 1) == 1);
+    } else {
+      // the reading is the surface form, with hiragana shifted to katakana
+      char text[] = new char[len];
+      for (int i = 0; i < len; i++) {
+        char ch = surface[off+i];
+        if (ch > 0x3040 && ch < 0x3097) {
+          text[i] = (char)(ch + 0x60);
+        } else {
+          text[i] = ch;
+        }
+      }
+      return new String(text);
+    }
   }
   
   @Override
@@ -186,13 +207,13 @@ public abstract class BinaryDictionary implements Dictionary {
   }
   
   @Override
-  public String getPronunciation(int wordId) {
+  public String getPronunciation(int wordId, char surface[], int off, int len) {
     if (hasPronunciationData(wordId)) {
       int offset = pronunciationOffset(wordId);
       int pronunciationData = buffer.get(offset++) & 0xff;
       return readString(offset, pronunciationData >>> 1, (pronunciationData & 1) == 1);
     } else {
-      return getReading(wordId); // same as the reading
+      return getReading(wordId, surface, off, len); // same as the reading
     }
   }
   
@@ -213,7 +234,7 @@ public abstract class BinaryDictionary implements Dictionary {
   private int readingOffset(int wordId) {
     int offset = baseFormOffset(wordId);
     if (hasBaseFormData(wordId)) {
-      int baseFormLength = buffer.get(offset++) & 0xff;
+      int baseFormLength = buffer.get(offset++) & 0xf;
       return offset + (baseFormLength << 1);
     } else {
       return offset;
@@ -221,19 +242,27 @@ public abstract class BinaryDictionary implements Dictionary {
   }
   
   private int pronunciationOffset(int wordId) {
-    int offset = readingOffset(wordId);
-    int readingData = buffer.get(offset++) & 0xff;
-    final int readingLength;
-    if ((readingData & 1) == 0) {
-      readingLength = readingData & 0xfe; // UTF-16: mask off kana bit
+    if (hasReadingData(wordId)) {
+      int offset = readingOffset(wordId);
+      int readingData = buffer.get(offset++) & 0xff;
+      final int readingLength;
+      if ((readingData & 1) == 0) {
+        readingLength = readingData & 0xfe; // UTF-16: mask off kana bit
+      } else {
+        readingLength = readingData >>> 1;
+      }
+      return offset + readingLength;
     } else {
-      readingLength = readingData >>> 1;
+      return readingOffset(wordId);
     }
-    return offset + readingLength;
   }
   
   private boolean hasBaseFormData(int wordId) {
     return (buffer.getShort(wordId) & HAS_BASEFORM) != 0;
+  }
+  
+  private boolean hasReadingData(int wordId) {
+    return (buffer.getShort(wordId) & HAS_READING) != 0;
   }
   
   private boolean hasPronunciationData(int wordId) {
@@ -256,6 +285,8 @@ public abstract class BinaryDictionary implements Dictionary {
   
   /** flag that the entry has baseform data. otherwise its not inflected (same as surface form) */
   public static final int HAS_BASEFORM = 1;
+  /** flag that the entry has reading data. otherwise reading is surface form converted to katakana */
+  public static final int HAS_READING = 2;
   /** flag that the entry has pronunciation data. otherwise pronunciation is the reading */
-  public static final int HAS_PRONUNCIATION = 2;
+  public static final int HAS_PRONUNCIATION = 4;
 }

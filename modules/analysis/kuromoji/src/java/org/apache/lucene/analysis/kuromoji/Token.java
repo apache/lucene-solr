@@ -75,14 +75,14 @@ public class Token {
    * @return reading. null if token doesn't have reading.
    */
   public String getReading() {
-    return dictionary.getReading(wordId);
+    return dictionary.getReading(wordId, surfaceForm, offset, length);
   }
   
   /**
    * @return pronunciation. null if token doesn't have pronunciation.
    */
   public String getPronunciation() {
-    return dictionary.getPronunciation(wordId);
+    return dictionary.getPronunciation(wordId, surfaceForm, offset, length);
   }
   
   /**
@@ -110,7 +110,7 @@ public class Token {
    * @return base form or null if token is not inflected
    */
   public String getBaseForm() {
-    return dictionary.getBaseForm(wordId);
+    return dictionary.getBaseForm(wordId, surfaceForm, offset, length);
   }
   
   /**

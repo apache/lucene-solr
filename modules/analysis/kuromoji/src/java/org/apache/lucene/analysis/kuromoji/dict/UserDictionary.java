@@ -196,7 +196,7 @@ public final class UserDictionary implements Dictionary {
   }
   
   @Override
-  public String getReading(int wordId) {
+  public String getReading(int wordId, char surface[], int off, int len) {
     return getFeature(wordId, 0);
   }
   
@@ -206,12 +206,12 @@ public final class UserDictionary implements Dictionary {
   }
   
   @Override
-  public String getBaseForm(int wordId) {
+  public String getBaseForm(int wordId, char surface[], int off, int len) {
     return null; // TODO: add support?
   }
   
   @Override
-  public String getPronunciation(int wordId) {
+  public String getPronunciation(int wordId, char surface[], int off, int len) {
     return null; // TODO: add support?
   }
   
