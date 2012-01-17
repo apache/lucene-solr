@@ -252,7 +252,7 @@ public class LBHttpSolrServer extends SolrServer {
         return rsp; // SUCCESS
       } catch (SolrException e) {
         // we retry on 404 or 403 or 503 - you can see this on solr shutdown
-        if (e.code() == 404 || e.code() == 403 || e.code() == 503) {
+        if (e.code() == 404 || e.code() == 403 || e.code() == 503 || e.code() == 500) {
           ex = addZombie(server, e);
         } else {
           // Server is alive but the request was likely malformed or invalid
@@ -287,7 +287,7 @@ public class LBHttpSolrServer extends SolrServer {
         return rsp; // SUCCESS
       } catch (SolrException e) {
         // we retry on 404 or 403 or 503 - you can see this on solr shutdown
-        if (e.code() == 404 || e.code() == 403 || e.code() == 503) {
+        if (e.code() == 404 || e.code() == 403 || e.code() == 503 || e.code() == 500) {
           ex = e;
           // already a zombie, no need to re-add
         } else {
