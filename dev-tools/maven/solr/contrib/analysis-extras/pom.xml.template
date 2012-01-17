@@ -54,7 +54,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-kuromoji</artifactId>
+      <artifactId>lucene-analyzers-kuromoji</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
