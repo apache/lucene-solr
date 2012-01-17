@@ -78,12 +78,17 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
     );
   }
 
+  /* Note this is really a stupid test just to see if things arent horribly slow.
+   * ideally the test would actually fail instead of hanging...
+   */
   public void testDecomposition5() throws Exception {
-    assertAnalyzesTo(analyzer, "くよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよ",
-      new String[] { "くよくよ", "くよくよ", "くよくよ", "くよくよ", "くよくよ", "くよくよ", "くよくよ", "くよくよ", "くよくよ", "くよくよ" },
-      new int[] { 0, 4, 8, 12, 16, 20, 24, 28, 32, 36},
-      new int[] { 4, 8, 12, 16, 20, 24, 28, 32, 36, 40 }
-    );
+    TokenStream ts = analyzer.tokenStream("bogus", new StringReader("くよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよ"));
+    ts.reset();
+    while (ts.incrementToken()) {
+      
+    }
+    ts.end();
+    ts.close();
   }
 
   /** Tests that sentence offset is incorporated into the resulting offsets */

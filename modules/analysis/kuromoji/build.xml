@@ -25,10 +25,18 @@
 	
   <property name="build.dir" location="../build/kuromoji" />
   <property name="dist.dir" location="../dist/kuromoji" />
+
+  <!-- default configuration: uses mecab-ipadic -->
   <property name="ipadic.version" value="mecab-ipadic-2.7.0-20070801" />
   <property name="dict.src.file" value="${ipadic.version}.tar.gz" />
-  <!-- <property name="dict.url" value="http://atilika.com/releases/mecab-ipadic/${dict.src.file}" /> -->
   <property name="dict.url" value="http://mecab.googlecode.com/files/${dict.src.file}"/>
+
+  <!-- alternative configuration: uses mecab-naist-jdic
+  <property name="ipadic.version" value="mecab-naist-jdic-0.6.3b-20111013" />
+  <property name="dict.src.file" value="${ipadic.version}.tar.gz" />
+  <property name="dict.url" value="http://sourceforge.jp/frs/redir.php?m=iij&amp;f=/naist-jdic/53500/${dict.src.file}"/>
+  -->
+  
   <property name="dict.src.dir" value="${build.dir}/${ipadic.version}" />
   <property name="dict.encoding" value="euc-jp"/>
   <property name="dict.format" value="ipadic"/>
