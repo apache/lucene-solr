@@ -65,6 +65,9 @@ New Features
   consistency, and is also propagated to shards in distributed search.
   Adding a parameter NOW=<time_in_ms> to the request will override the
   current time.  (Peter Sturge, yonik, Simon Willnauer)
+  
+* SOLR-1709: Distributed support for Date and Numeric Range Faceting
+  (Peter Sturge, David Smiley, hossman, Simon Willnauer)
 
 Optimizations
 ----------------------
