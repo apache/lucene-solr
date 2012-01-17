@@ -108,6 +108,9 @@ public class RecoveryStrat {
           boolean succesfulRecovery = false;
           int retries = 0;
           while (!succesfulRecovery && !close) {
+            if (core.getCoreDescriptor().getCoreContainer().isShutDown()) {
+              return;
+            }
             ulog.bufferUpdates();  
             replayed = false;
             try {
