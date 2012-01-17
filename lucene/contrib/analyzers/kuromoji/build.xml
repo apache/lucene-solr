@@ -116,6 +116,7 @@
   </target>
 
   <target name="compile-test" depends="contrib-build.compile-test, compile-tools-tests"/>
-  <target name="test" depends="contrib-build.test, test-tools"/>
+  <!-- TODO: not until we properly make 'test-tools' work with clover etc
+  <target name="test" depends="contrib-build.test, test-tools"/> -->
 
 </project>
