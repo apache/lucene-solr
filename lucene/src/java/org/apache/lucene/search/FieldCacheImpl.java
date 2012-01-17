@@ -172,12 +172,7 @@ class FieldCacheImpl implements FieldCache {
       // rather than relying on gc:
       Object key = reader.getCoreCacheKey();
       if (key instanceof IndexReader) {
-        ((IndexReader)key).addReaderClosedListener(new IndexReader.ReaderClosedListener() {
-          @Override
-          public void onClose(IndexReader reader) {
-            FieldCache.DEFAULT.purge(reader);
-          }
-        }); 
+        ((IndexReader)key).addReaderClosedListener(purgeReader); 
       }
     }
   }
