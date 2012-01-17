@@ -22,6 +22,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ContentStream;
@@ -190,7 +191,7 @@ public class DataImportHandler extends RequestHandlerBase implements
               IMPORT_CMD.equals(command)) {
 
         UpdateRequestProcessorChain processorChain =
-                req.getCore().getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(params, LOG));
+                req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
         UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
         SolrResourceLoader loader = req.getCore().getResourceLoader();
         SolrWriter sw = getSolrWriter(processor, loader, requestParams, req);

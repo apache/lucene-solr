@@ -37,17 +37,16 @@ public class UpdateParamsTest extends AbstractSolrTestCase {
   public String getSolrConfigFile() { return "solrconfig.xml"; }
 
   /**
-   * Tests that both update.chain and update.processor works
-   * NOTE: This test will fail when support for update.processor is removed and should then be removed
+   * Tests that only update.chain and not update.processor works (SOLR-2105)
    */
-  public void testUpdateProcessorParamDeprecation() throws Exception {
+  public void testUpdateProcessorParamDeprecationRemoved() throws Exception {
     SolrCore core = h.getCore();
     
     XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
     handler.init( null );
     
     MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
-    params.getMap().put(UpdateParams.UPDATE_CHAIN_DEPRECATED, "nonexistant");
+    params.getMap().put("update.processor", "nonexistant");
 
     // Add a single document
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -56,13 +55,13 @@ public class UpdateParamsTest extends AbstractSolrTestCase {
     // First check that the old param behaves as it should
     try {
     	handler.handleRequestBody(req, rsp);
-    	assertFalse("Faulty update.processor parameter (deprecated but should work) not causing an error - i.e. it is not detected", true);
+    	assertTrue("Old param update.processor should not have any effect anymore", true);
     } catch (Exception e) {
-    	assertEquals("Got wrong exception while testing update.chain", e.getMessage(), "unknown UpdateRequestProcessorChain: nonexistant");
+      assertFalse("Got wrong exception while testing update.chain", e.getMessage().equals("unknown UpdateRequestProcessorChain: nonexistant"));
     }
     
     // Then check that the new param behaves correctly
-    params.getMap().remove(UpdateParams.UPDATE_CHAIN_DEPRECATED);
+    params.getMap().remove("update.processor");
     params.getMap().put(UpdateParams.UPDATE_CHAIN, "nonexistant");    
     req.setParams(params);
     try {

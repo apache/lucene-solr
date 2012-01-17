@@ -34,9 +34,6 @@ public class XsltUpdateRequestHandler extends ContentStreamHandlerBase {
   public static Logger log = LoggerFactory.getLogger(XsltUpdateRequestHandler.class);
   public static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
-  public static final String UPDATE_PROCESSOR = "update.processor";
-
-
   public static final int XSLT_CACHE_DEFAULT = 60;
   private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
 
