@@ -90,7 +90,9 @@ import org.apache.lucene.store.OutputStreamDataOutput;
  * 
  * <p>"alphabetically" in any of the documentation above indicates utf16 codepoint order, 
  * nothing else.
+ * @deprecated Use {@link FSTCompletionLookup} instead.
  */
+@Deprecated
 public class FSTLookup extends Lookup {
 
   public FSTLookup() {

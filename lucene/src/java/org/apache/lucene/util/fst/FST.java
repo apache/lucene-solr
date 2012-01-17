@@ -17,14 +17,18 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CodecUtil;
@@ -361,6 +365,25 @@ public class FST<T> {
         IOUtils.close(os);
       } else {
         IOUtils.closeWhileHandlingException(os); 
+      }
+    }
+  }
+  
+  /**
+   * Reads an automaton from a file. 
+   */
+  public static <T> FST<T> read(File file, Outputs<T> outputs) throws IOException {
+    InputStream is = new BufferedInputStream(new FileInputStream(file));
+    boolean success = false;
+    try {
+      FST<T> fst = new FST<T>(new InputStreamDataInput(is), outputs);
+      success = true;
+      return fst;
+    } finally {
+      if (success) { 
+        IOUtils.close(is);
+      } else {
+        IOUtils.closeWhileHandlingException(is); 
       }
     }
   }

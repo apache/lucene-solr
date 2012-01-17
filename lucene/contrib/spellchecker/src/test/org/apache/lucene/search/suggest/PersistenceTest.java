@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest;
 import java.io.File;
 
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.fst.FSTLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
@@ -51,7 +52,7 @@ public class PersistenceTest extends LuceneTestCase {
   }
 
   public void testFSTPersistence() throws Exception {
-    runTest(FSTLookup.class, false);
+    runTest(FSTCompletionLookup.class, false);
   }
   
   private void runTest(Class<? extends Lookup> lookupClass,

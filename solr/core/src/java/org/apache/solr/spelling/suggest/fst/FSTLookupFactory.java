@@ -18,13 +18,13 @@ package org.apache.solr.spelling.suggest.fst;
  */
 
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.fst.FSTLookup;
+import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.LookupFactory;
 
 /**
- * Factory for {@link FSTLookup}
+ * Factory for {@link FSTCompletionLookup}
  */
 public class FSTLookupFactory extends LookupFactory {
 
@@ -55,6 +55,6 @@ public class FSTLookupFactory extends LookupFactory {
     ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
     : true;
 
-    return new FSTLookup(buckets, exactMatchFirst);
+    return new FSTCompletionLookup(buckets, exactMatchFirst);
   }
 }

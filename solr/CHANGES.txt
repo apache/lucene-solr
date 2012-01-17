@@ -70,6 +70,10 @@ Optimizations
 * SOLR-3012: Move System.getProperty("type") in postData() to main() and add type argument so that
   the client applications of SimplePostTool can set content type via method argument. (koji)
 
+* SOLR-2888: FSTSuggester refactoring: internal storage is now UTF-8, 
+  external sorting (on disk) prevents OOMs even with large data sets
+  (the bottleneck is now FST construction), code cleanups and API cleanups.
+  (Dawid Weiss, Robert Muir)
 
 Bug Fixes
 ----------------------
