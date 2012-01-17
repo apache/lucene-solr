@@ -735,6 +735,12 @@ Changes in backwards compatibility policy
 
 * LUCENE-3695: Move confusing add(X) methods out of FST.Builder into
   FST.Util.  (Robert Muir, Mike McCandless)
+
+* LUCENE-3701: Added an additional argument to the expert FST.Builder
+  ctor to take FreezeTail, which you can use to (very-expertly) customize
+  the FST construction process. Pass null if you want the default
+  behavior.  Added seekExact() to FSTEnum, and added FST.save/read 
+  from a File. (Mike McCandless, Dawid Weiss, Robert Muir)
   
 Security fixes
 
