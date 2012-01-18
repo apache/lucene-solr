@@ -111,6 +111,7 @@
   <!-- clover wants to run with -lib, otherwise we prefer a repeatable
        classpath -->
   <property name="javac.includeAntRuntime" value="${run.clover}"/>
+  <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
 
   <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
@@ -819,7 +820,7 @@
         <!-- <compilerarg line="-Xmaxwarns 10000000"/>
         <compilerarg line="-Xmaxerrs 10000000"/> -->
         <!-- for generics in Java 1.5: -->
-	<compilerarg line="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
+	<compilerarg line="${javac.args}"/>
       </javac>
     </sequential>
   </macrodef>
