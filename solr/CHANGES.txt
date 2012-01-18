@@ -484,6 +484,8 @@ Bug Fixes
 * SOLR-3042: Fixed Maven Jetty plugin configuration. 
   (David Smiley via Steve Rowe)
 
+* SOLR-2970: CSV ResponseWriter returns fields defined as stored=false in schema (janhoy)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
