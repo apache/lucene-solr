@@ -1341,9 +1341,22 @@ public class CheckIndex {
               long tfvComputedTermCountForField = 0;
               long tfvComputedSumTotalTermFreq = 0;
               
+              BytesRef lastTerm = null;
+              Comparator<BytesRef> termComp = terms.getComparator();
               BytesRef term = null;
               while ((term = termsEnum.next()) != null) {
                 tfvComputedTermCountForField++;
+                
+                // make sure terms arrive in order according to
+                // the comp
+                if (lastTerm == null) {
+                  lastTerm = BytesRef.deepCopyOf(term);
+                } else {
+                  if (termComp.compare(lastTerm, term) >= 0) {
+                    throw new RuntimeException("vector terms out of order for doc " + j + ": lastTerm=" + lastTerm + " term=" + term);
+                  }
+                  lastTerm.copyBytes(term);
+                }
                 
                 if (termsEnum.docFreq() != 1) {
                   throw new RuntimeException("vector docFreq for doc " + j + ", field " + field + ", term" + term + " != 1");
