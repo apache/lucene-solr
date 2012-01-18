@@ -3808,6 +3808,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     
     if (dropSegment) {
       readerPool.drop(merge.info);
+      deleter.deleteNewFiles(merge.info.files());
+      assert !segmentInfos.contains(merge.info);
     }
     
     if (infoStream != null) {
@@ -3825,7 +3827,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // disk, updating SegmentInfo, etc.:
     readerPool.clear(merge.segments);
     
-    if (merge.maxNumSegments != -1) {
+    if (merge.maxNumSegments != -1 && !dropSegment) {
       // cascade the forceMerge:
       if (!segmentsToMerge.containsKey(merge.info)) {
         segmentsToMerge.put(merge.info, Boolean.FALSE);
