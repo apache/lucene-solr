@@ -1,6 +1,7 @@
 package org.apache.lucene.search.similarities;
 
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -22,7 +23,7 @@ import org.apache.lucene.util.BytesRef;
 
 /** Expert: Default scoring implementation. */
 public class DefaultSimilarity extends TFIDFSimilarity {
-
+  
   /** Implemented as
    *  <code>state.getBoost()*lengthNorm(numTerms)</code>, where
    *  <code>numTerms</code> is {@link FieldInvertState#getLength()} if {@link
@@ -32,13 +33,13 @@ public class DefaultSimilarity extends TFIDFSimilarity {
    *
    *  @lucene.experimental */
   @Override
-  public byte computeNorm(FieldInvertState state) {
+  public void computeNorm(FieldInvertState state, Norm norm) {
     final int numTerms;
     if (discountOverlaps)
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength();
-    return encodeNormValue(state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms))));
+    norm.setByte(encodeNormValue(state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms)))));
   }
 
   /** Implemented as <code>sqrt(freq)</code>. */

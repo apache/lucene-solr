@@ -45,7 +45,6 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
         (ErrorCode.SERVER_ERROR, 
          "Unexpected error, expected error matching: " + errString, e);
     } finally {
-      SolrConfig.severeErrors.clear();
       deleteCore();
     }
     fail("Did not encounter any exception from: " + schema);

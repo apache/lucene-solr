@@ -655,8 +655,8 @@ public class DocTermOrds {
     }
 
     @Override    
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-      return termsEnum.docsAndPositions(liveDocs, reuse);
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+      return termsEnum.docsAndPositions(liveDocs, reuse, needsOffsets);
     }
 
     @Override

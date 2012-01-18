@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -39,7 +40,7 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     UpdateRequestProcessorChain processorChain =
-            req.getCore().getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(params, log));
+            req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
 
     UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
 

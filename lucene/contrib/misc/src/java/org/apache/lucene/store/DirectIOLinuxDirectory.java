@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * the License.
  */
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileInputStream;
@@ -340,7 +341,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
         throw new IOException(ioe.getMessage() + ": " + this, ioe);
       }
       if (n < 0) {
-        throw new IOException("eof: " + this);
+        throw new EOFException("read past EOF: " + this);
       }
       buffer.rewind();
     }

@@ -259,7 +259,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       //System.out.println("Term: " + term);
       assertEquals(testTerms[i], term);
 
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
       assertNotNull(dpEnum);
       int doc = dpEnum.docID();
       assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
@@ -270,18 +270,16 @@ public class TestTermVectorsReader extends LuceneTestCase {
       }
       assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
 
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
       doc = dpEnum.docID();
       assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
       assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
       assertNotNull(dpEnum);
-      final OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
-      assertNotNull(offsetAtt);
       assertEquals(dpEnum.freq(), positions[i].length);
       for (int j = 0; j < positions[i].length; j++) {
         assertEquals(positions[i][j], dpEnum.nextPosition());
-        assertEquals(j*10, offsetAtt.startOffset());
-        assertEquals(j*10 + testTerms[i].length(), offsetAtt.endOffset());
+        assertEquals(j*10, dpEnum.startOffset());
+        assertEquals(j*10 + testTerms[i].length(), dpEnum.endOffset());
       }
       assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
     }
@@ -315,7 +313,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       String term = text.utf8ToString();
       assertEquals(testTerms[i], term);
 
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
       assertNotNull(dpEnum);
       assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
       assertEquals(dpEnum.freq(), positions[i].length);
@@ -324,16 +322,14 @@ public class TestTermVectorsReader extends LuceneTestCase {
       }
       assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
 
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
       assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
-      final OffsetAttribute offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
-      assertNotNull(offsetAtt);
       assertNotNull(dpEnum);
       assertEquals(dpEnum.freq(), positions[i].length);
       for (int j = 0; j < positions[i].length; j++) {
         assertEquals(positions[i][j], dpEnum.nextPosition());
-        assertEquals(j*10, offsetAtt.startOffset());
-        assertEquals(j*10 + testTerms[i].length(), offsetAtt.endOffset());
+        assertEquals(j*10, dpEnum.startOffset());
+        assertEquals(j*10 + testTerms[i].length(), dpEnum.endOffset());
       }
       assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
     }

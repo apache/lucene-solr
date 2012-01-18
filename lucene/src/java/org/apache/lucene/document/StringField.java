@@ -51,12 +51,12 @@ public final class StringField extends Field {
     TYPE_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
     TYPE_STORED.freeze();
   }
-  
+
   /** Creates a new un-stored StringField */
   public StringField(String name, String value) {
     super(name, value, TYPE_UNSTORED);
   }
-  
+
   @Override
   public String stringValue() {
     return (fieldsData == null) ? null : fieldsData.toString();

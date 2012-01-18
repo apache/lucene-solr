@@ -50,7 +50,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     updateRequest.deleteById("id:5");
     updateRequest.deleteByQuery("2*");
     updateRequest.deleteByQuery("1*");
-
+    updateRequest.setParam("a", "b");
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", 1);
     doc.addField("desc", "one", 2.0f);
@@ -106,6 +106,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     Assert.assertEquals(updateUnmarshalled.getDeleteQuery().get(0) , 
                         updateRequest.getDeleteQuery().get(0));
 
+    assertEquals("b", updateUnmarshalled.getParams().get("a"));
   }
 
   @Test

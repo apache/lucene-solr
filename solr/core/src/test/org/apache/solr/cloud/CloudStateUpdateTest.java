@@ -249,7 +249,6 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     System.clearProperty("zkHost");
     System.clearProperty("hostPort");
     System.clearProperty("solrcloud.update.delay");
-    SolrConfig.severeErrors.clear();
   }
   
   private void printLayout(String zkHost) throws Exception {

@@ -155,8 +155,13 @@ public class _TestUtil {
    *  issues are hit, a RuntimeException is thrown; else,
    *  true is returned. */
   public static CheckIndex.Status checkIndex(Directory dir) throws IOException {
+    return checkIndex(dir, true);
+  }
+
+  public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
+    checker.setCrossCheckTermVectors(crossCheckTermVectors);
     checker.setInfoStream(new PrintStream(bos), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     if (indexStatus == null || indexStatus.clean == false) {
@@ -567,7 +572,10 @@ public class _TestUtil {
     if (random.nextBoolean()) {
       if (random.nextBoolean()) {
         // TODO: cast re-use to D&PE if we can...?
-        final DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null);
+        DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, true);
+        if (docsAndPositions == null) {
+          docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, false);
+        }
         if (docsAndPositions != null) {
           return docsAndPositions;
         }
@@ -586,7 +594,10 @@ public class _TestUtil {
     if (random.nextBoolean()) {
       if (random.nextBoolean()) {
         // TODO: cast re-use to D&PE if we can...?
-        final DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null);
+        DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, true);
+        if (docsAndPositions == null) {
+          docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, false);
+        }
         if (docsAndPositions != null) {
           return docsAndPositions;
         }

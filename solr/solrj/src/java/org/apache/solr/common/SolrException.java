@@ -54,57 +54,25 @@ public class SolrException extends RuntimeException {
       return UNKNOWN;
     }
   };
-  
-  public boolean logged=false;
 
   public SolrException(ErrorCode code, String msg) {
-    super(msg);
-    this.code=code.code;
+    this(code, msg, null);
   }
-  
-  public SolrException(ErrorCode code, String msg, boolean alreadyLogged) {
-    super(msg);
-    this.code=code.code;
-    this.logged=alreadyLogged;
-  }
-
-  public SolrException(ErrorCode code, String msg, Throwable th, boolean alreadyLogged) {
-    super(msg,th);
-    this.code=code.code;
-    logged=alreadyLogged;
-  }
-
   public SolrException(ErrorCode code, String msg, Throwable th) {
-    this(code,msg,th,true);
+    super(msg, th);
+    this.code = code.code;
   }
 
   public SolrException(ErrorCode code, Throwable th) {
-    super(th);
-    this.code=code.code;
-    logged=true;
+    this(code, null, th);
   }
   
-  /**
-   * @deprecated Use {@link #SolrException(ErrorCode,String)}.
-   */
-  @Deprecated
-  public SolrException(int code, String msg) {
-    super(msg);
-    this.code=code;
-  }
-  
-
   int code=0;
   public int code() { return code; }
 
 
-
-
   public void log(Logger log) { log(log,this); }
   public static void log(Logger log, Throwable e) {
-    if (e instanceof SolrException) {
-      ((SolrException)e).logged = true;
-    }
     String stackTrace = toStr(e);
     String ignore = doIgnore(stackTrace);
     if (ignore != null) {
@@ -116,9 +84,6 @@ public class SolrException extends RuntimeException {
   }
 
   public static void log(Logger log, String msg, Throwable e) {
-    if (e instanceof SolrException) {
-      ((SolrException)e).logged = true;
-    }
     String stackTrace = msg + ':' + toStr(e);
     String ignore = doIgnore(stackTrace);
     if (ignore != null) {
@@ -126,14 +91,6 @@ public class SolrException extends RuntimeException {
       return;
     }
     log.error(stackTrace);
-  }
-
-  public static void logOnce(Logger log, String msg, Throwable e) {
-    if (e instanceof SolrException) {
-      if(((SolrException)e).logged) return;
-    }
-    if (msg!=null) log(log,msg,e);
-    else log(log,e);
   }
   
   public static void log(Logger log, String msg) {
@@ -145,7 +102,6 @@ public class SolrException extends RuntimeException {
     }
     log.error(stackTrace);
   }
-
 
   // public String toString() { return toStr(this); }  // oops, inf loop
   @Override

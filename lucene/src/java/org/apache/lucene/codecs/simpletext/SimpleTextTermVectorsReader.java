@@ -26,11 +26,9 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -63,7 +61,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   private BytesRef scratch = new BytesRef();
   private CharsRef scratchUTF16 = new CharsRef();
   
-  public SimpleTextTermVectorsReader(Directory directory, SegmentInfo si, FieldInfos fieldInfos, IOContext context) throws IOException {
+  public SimpleTextTermVectorsReader(Directory directory, SegmentInfo si, IOContext context) throws IOException {
     boolean success = false;
     try {
       in = directory.openInput(IndexFileNames.segmentFileName(si.name, "", VECTORS_EXTENSION), context);
@@ -114,7 +112,8 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     for (int i = 0; i < numFields; i++) {
       readLine();
       assert StringHelper.startsWith(scratch, FIELD);
-      int fieldNumber = parseIntAt(FIELD.length);
+      // skip fieldNumber:
+      parseIntAt(FIELD.length);
       
       readLine();
       assert StringHelper.startsWith(scratch, FIELDNAME);
@@ -373,13 +372,16 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
       SimpleTVPostings postings = current.getValue();
       if (postings.positions == null && postings.startOffsets == null) {
         return null;
       }
+      if (needsOffsets && (postings.startOffsets == null || postings.endOffsets == null)) {
+        return null;
+      }
       // TODO: reuse
-      SimpleTVDocsAndPositionsEnum e = new SimpleTVDocsAndPositionsEnum(postings.startOffsets != null);
+      SimpleTVDocsAndPositionsEnum e = new SimpleTVDocsAndPositionsEnum();
       e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets);
       return e;
     }
@@ -436,7 +438,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   }
   
   private static class SimpleTVDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    private final OffsetAttribute offsetAtt;
     private boolean didNext;
     private int doc = -1;
     private int nextPos;
@@ -444,18 +445,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private int[] positions;
     private int[] startOffsets;
     private int[] endOffsets;
-
-    public SimpleTVDocsAndPositionsEnum(boolean storeOffsets) {
-      if (storeOffsets) {
-        offsetAtt = attributes().addAttribute(OffsetAttribute.class);
-      } else {
-        offsetAtt = null;
-      }
-    }
-
-    public boolean canReuse(boolean storeOffsets) {
-      return storeOffsets == (offsetAtt != null);
-    }
 
     @Override
     public int freq() {
@@ -495,7 +484,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       this.liveDocs = liveDocs;
       this.positions = positions;
       this.startOffsets = startOffsets;
-      assert (offsetAtt != null) == (startOffsets != null);
       this.endOffsets = endOffsets;
       this.doc = -1;
       didNext = false;
@@ -516,17 +504,22 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     public int nextPosition() {
       assert (positions != null && nextPos < positions.length) ||
         startOffsets != null && nextPos < startOffsets.length;
-
-      if (startOffsets != null) {
-        offsetAtt.setOffset(startOffsets[nextPos],
-                            endOffsets[nextPos]);
-      }
       if (positions != null) {
         return positions[nextPos++];
       } else {
         nextPos++;
         return -1;
       }
+    }
+
+    @Override
+    public int startOffset() {
+      return startOffsets[nextPos-1];
+    }
+
+    @Override
+    public int endOffset() {
+      return endOffsets[nextPos-1];
     }
   }
 }

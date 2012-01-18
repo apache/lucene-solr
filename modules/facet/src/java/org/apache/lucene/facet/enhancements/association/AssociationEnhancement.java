@@ -150,4 +150,17 @@ public class AssociationEnhancement implements CategoryEnhancement {
     return null;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    return (o instanceof AssociationEnhancement);
+  }
+  
+  @Override
+  public int hashCode() {
+    return super.hashCode();
+  }
+  
 }

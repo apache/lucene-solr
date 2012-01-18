@@ -216,7 +216,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error initializing QueryElevationComponent.", ex, false);
+          "Error initializing QueryElevationComponent.", ex);
     }
   }
 

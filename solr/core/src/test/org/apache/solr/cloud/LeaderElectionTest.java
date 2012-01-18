@@ -397,7 +397,6 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     zkClient.close();
     server.shutdown();
-    SolrConfig.severeErrors.clear();
     super.tearDown();
   }
   

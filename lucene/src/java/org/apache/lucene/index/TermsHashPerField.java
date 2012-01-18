@@ -293,7 +293,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
     @Override
     public int[] init() {
-      if(perField.postingsArray == null) {
+      if (perField.postingsArray == null) {
         perField.postingsArray = perField.consumer.createPostingsArray(2);
         bytesUsed.addAndGet(perField.postingsArray.size * perField.postingsArray.bytesPerPosting());
       }
@@ -305,8 +305,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       ParallelPostingsArray postingsArray = perField.postingsArray;
       final int oldSize = perField.postingsArray.size;
       postingsArray = perField.postingsArray = postingsArray.grow();
-      bytesUsed
-          .addAndGet((postingsArray.bytesPerPosting() * (postingsArray.size - oldSize)));
+      bytesUsed.addAndGet((postingsArray.bytesPerPosting() * (postingsArray.size - oldSize)));
       return postingsArray.textStarts;
     }
 

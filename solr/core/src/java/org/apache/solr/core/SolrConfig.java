@@ -69,14 +69,6 @@ public class SolrConfig extends Config {
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
 
 
-  /**
-   * Singleton keeping track of configuration errors
-   *
-   * @deprecated All exceptions encountered during config parsing are now thrown by the respective constructors, preventing initialization.
-   */
-  @Deprecated
-  public static final Collection<Throwable> severeErrors = new HashSet<Throwable>();
-
   /** Creates a default instance from the solrconfig.xml. */
   public SolrConfig()
   throws ParserConfigurationException, IOException, SAXException {

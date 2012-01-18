@@ -38,7 +38,7 @@ public class SimpleTextTermVectorsFormat extends TermVectorsFormat {
 
   @Override
   public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
-    return new SimpleTextTermVectorsReader(directory, segmentInfo, fieldInfos, context);
+    return new SimpleTextTermVectorsReader(directory, segmentInfo, context);
   }
 
   @Override

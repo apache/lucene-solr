@@ -697,16 +697,20 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-        //System.out.println("BTR.d&p this=" + this);
-        decodeMetaData();
-        if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+        if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+          // Positions were not indexed:
           return null;
-        } else {
-          DocsAndPositionsEnum dpe = postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse);
-          //System.out.println("  return d&pe=" + dpe);
-          return dpe;
         }
+
+        if (needsOffsets &&
+            fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+          // Offsets were not indexed:
+          return null;
+        }
+
+        decodeMetaData();
+        return postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse, needsOffsets);
       }
 
       @Override

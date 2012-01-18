@@ -55,7 +55,8 @@ public abstract class PostingsReaderBase implements Closeable {
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException;
+  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsAndPositionsEnum reuse,
+                                                        boolean needsOffsets) throws IOException;
 
   public abstract void close() throws IOException;
 

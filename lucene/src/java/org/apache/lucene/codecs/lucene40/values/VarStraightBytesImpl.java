@@ -22,21 +22,25 @@ import java.io.IOException;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesWriterBase;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
-import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedInts.ReaderIterator;
+import org.apache.lucene.util.packed.PackedInts;
 
 // Variable length byte[] per document, no sharing
 
@@ -93,21 +97,21 @@ class VarStraightBytesImpl {
     }
     
     @Override
-    protected void merge(SingleSubMergeState state) throws IOException {
+    protected void merge(DocValues readerIn, int docBase, int docCount, Bits liveDocs) throws IOException {
       merge = true;
       datOut = getOrCreateDataOut();
       boolean success = false;
       try {
-        if (state.liveDocs == null && state.reader instanceof VarStraightReader) {
+        if (liveDocs == null && readerIn instanceof VarStraightReader) {
           // bulk merge since we don't have any deletes
-          VarStraightReader reader = (VarStraightReader) state.reader;
+          VarStraightReader reader = (VarStraightReader) readerIn;
           final int maxDocs = reader.maxDoc;
           if (maxDocs == 0) {
             return;
           }
-          if (lastDocID+1 < state.docBase) {
-            fill(state.docBase, address);
-            lastDocID = state.docBase-1;
+          if (lastDocID+1 < docBase) {
+            fill(docBase, address);
+            lastDocID = docBase-1;
           }
           final long numDataBytes;
           final IndexInput cloneIdx = reader.cloneIndex();
@@ -137,7 +141,7 @@ class VarStraightBytesImpl {
             IOUtils.close(cloneData);  
           }
         } else {
-          super.merge(state);
+          super.merge(readerIn, docBase, docCount, liveDocs);
         }
         success = true;
       } finally {
@@ -148,10 +152,10 @@ class VarStraightBytesImpl {
     }
     
     @Override
-    protected void mergeDoc(int docID, int sourceDoc) throws IOException {
+    protected void mergeDoc(Field scratchField, Source source, int docID, int sourceDoc) throws IOException {
       assert merge;
       assert lastDocID < docID;
-      currentMergeSource.getBytes(sourceDoc, bytesRef);
+      source.getBytes(sourceDoc, bytesRef);
       if (bytesRef.length == 0) {
         return; // default
       }
@@ -226,7 +230,7 @@ class VarStraightBytesImpl {
   }
 
   public static class VarStraightReader extends BytesReaderBase {
-    private final int maxDoc;
+    final int maxDoc;
 
     VarStraightReader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_START, true, context, Type.BYTES_VAR_STRAIGHT);

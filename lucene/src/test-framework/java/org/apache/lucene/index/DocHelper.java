@@ -26,13 +26,13 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 
@@ -197,7 +197,7 @@ class DocHelper {
       LAZY_FIELD_BINARY_BYTES = "These are some binary field bytes".getBytes("UTF8");
     } catch (UnsupportedEncodingException e) {
     }
-    lazyFieldBinary = new BinaryField(LAZY_FIELD_BINARY_KEY, LAZY_FIELD_BINARY_BYTES);
+    lazyFieldBinary = new StoredField(LAZY_FIELD_BINARY_KEY, LAZY_FIELD_BINARY_BYTES);
     fields[fields.length - 2] = lazyFieldBinary;
     LARGE_LAZY_FIELD_TEXT = buffer.toString();
     largeLazyField = new Field(LARGE_LAZY_FIELD_KEY, LARGE_LAZY_FIELD_TEXT, customType);

@@ -23,13 +23,10 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.DocValue;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.BytesRef;
 
 /** Defers actually loading a field's value until you ask
@@ -121,24 +118,6 @@ public class LazyDocument {
     }
 
     @Override
-    public boolean numeric() {
-      if (num == 0) {
-        return getDocument().getField(name).numeric();
-      } else {
-        return getDocument().getFields(name)[num].numeric();
-      }
-    }
-
-    @Override
-    public DataType numericDataType() {
-      if (num == 0) {
-        return getDocument().getField(name).numericDataType();
-      } else {
-        return getDocument().getFields(name)[num].numericDataType();
-      }
-    }
-
-    @Override
     public Number numericValue() {
       if (num == 0) {
         return getDocument().getField(name).numericValue();
@@ -153,24 +132,6 @@ public class LazyDocument {
         return getDocument().getField(name).fieldType();
       } else {
         return getDocument().getFields(name)[num].fieldType();
-      }
-    }
-
-    @Override
-    public DocValue docValue() {
-      if (num == 0) {
-        return getDocument().getField(name).docValue();
-      } else {
-        return getDocument().getFields(name)[num].docValue();
-      }
-    }
-
-    @Override
-    public DocValues.Type docValueType() {
-      if (num == 0) {
-        return getDocument().getField(name).docValueType();
-      } else {
-        return getDocument().getFields(name)[num].docValueType();
       }
     }
 

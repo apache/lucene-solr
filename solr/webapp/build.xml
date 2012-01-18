@@ -20,6 +20,9 @@
 
   <import file="../common-build.xml"/>
 
+	<property name="exclude.from.war" value="" />
+  <property name="solr.war.suffix" value="" />
+	
   <!-- Checks that all JSP files in the webapp compile successfully using Jetty's Jasper -->
   <target name="test" depends="compile-test-solr-core">
     <property name="jsp.target" location="${dest}/jsp-temp" />
@@ -47,24 +50,24 @@
                     implementation.title="org.apache.solr"
                     spec.version="${solr.spec.version}"/>
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
-    <war destfile="${dist}/apache-solr-${version}.war"
+    <war destfile="${dist}/apache-solr-${version}${solr.war.suffix}.war"
          webxml="web/WEB-INF/web.xml"
          manifest="${dest}/META-INF/MANIFEST.MF">
-      <lib dir="${common-solr.dir}/lib">
+      <lib dir="${common-solr.dir}/lib" excludes="${exclude.from.war}">
         <exclude name="servlet-api*.jar" />
         <exclude name="easymock-*.jar" />
         <exclude name="junit-*.jar" />
         <exclude name="*.txt" />
         <exclude name="*.template" />
       </lib>
-      <lib dir="${lucene-libs}"/>
-      <lib dir="${dist}">
+      <lib dir="${lucene-libs}" excludes="${exclude.from.war}"/>
+      <lib dir="${dist}" excludes="${exclude.from.war}">
         <include name="apache-solr-solrj-${version}.jar" />
         <include name="apache-solr-core-${version}.jar" />
       </lib>
-      <fileset dir="${dest}/web"/> <!-- contribs' additions -->
-      <fileset dir="web" />
-      <metainf dir="${common-solr.dir}" includes="LICENSE.txt,NOTICE.txt"/>
+      <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
+      <fileset dir="web" excludes="${exclude.from.war}"/>
+      <metainf dir="${common-solr.dir}" includes="LICENSE.txt,NOTICE.txt" excludes="${exclude.from.war}"/>
     </war>
   </target>
 

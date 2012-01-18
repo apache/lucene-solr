@@ -430,7 +430,7 @@ public class CommonsHttpSolrServer extends SolrServer
         msg.append( method.getStatusText() );
         msg.append( "\n\n" );
         msg.append( "request: "+method.getURI() );
-        throw new SolrException(statusCode, java.net.URLDecoder.decode(msg.toString(), "UTF-8") );
+        throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), java.net.URLDecoder.decode(msg.toString(), "UTF-8") );
       }
 
       // Read the contents

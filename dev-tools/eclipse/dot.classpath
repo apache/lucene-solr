@@ -24,6 +24,9 @@
 	<classpathentry kind="src" path="modules/analysis/icu/src/java"/>
 	<classpathentry kind="src" path="modules/analysis/icu/src/resources"/>
 	<classpathentry kind="src" path="modules/analysis/icu/src/test"/>
+	<classpathentry kind="src" path="modules/analysis/kuromoji/src/java"/>
+	<classpathentry kind="src" path="modules/analysis/kuromoji/src/resources"/>
+	<classpathentry kind="src" path="modules/analysis/kuromoji/src/test"/>
 	<classpathentry kind="src" path="modules/analysis/phonetic/src/java"/>
 	<classpathentry kind="src" path="modules/analysis/phonetic/src/test"/>
 	<classpathentry kind="src" path="modules/analysis/smartcn/src/java"/>

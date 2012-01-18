@@ -215,10 +215,8 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-    if (field.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-      return null;
-    }
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse,
+                                               boolean needsOffsets) throws IOException {
     //System.out.println("D&P: field=" + field.name);
 
     final PulsingTermState termState = (PulsingTermState) _termState;
@@ -245,11 +243,12 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       return postings.reset(liveDocs, termState);
     } else {
       if (reuse instanceof PulsingDocsAndPositionsEnum) {
-        DocsAndPositionsEnum wrapped = wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, (DocsAndPositionsEnum) getOther(reuse));
+        DocsAndPositionsEnum wrapped = wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, (DocsAndPositionsEnum) getOther(reuse),
+                                                                              needsOffsets);
         setOther(wrapped, reuse); // wrapped.other = reuse
         return wrapped;
       } else {
-        return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, reuse);
+        return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, reuse, needsOffsets);
       }
     }
   }
@@ -484,6 +483,16 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
       //System.out.println("PR d&p nextPos return pos=" + position + " this=" + this);
       return position;
+    }
+
+    @Override
+    public int startOffset() {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() {
+      return -1;
     }
 
     private void skipPositions() throws IOException {

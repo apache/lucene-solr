@@ -126,6 +126,16 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
 
   @Override
+  public int startOffset() throws IOException {
+    return current.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return current.endOffset();
+  }
+
+  @Override
   public boolean hasPayload() {
     return current.hasPayload();
   }

@@ -18,19 +18,20 @@ package org.apache.lucene.index;
  */
 
 
-import org.apache.lucene.util.LuceneTestCase;
-
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
+
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 
 public class TestFilterIndexReader extends LuceneTestCase {
 
@@ -90,8 +91,8 @@ public class TestFilterIndexReader extends LuceneTestCase {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-        return new TestPositions(super.docsAndPositions(liveDocs, reuse == null ? null : ((FilterDocsAndPositionsEnum) reuse).in));
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+        return new TestPositions(super.docsAndPositions(liveDocs, reuse == null ? null : ((FilterDocsAndPositionsEnum) reuse).in, needsOffsets));
       }
     }
 
@@ -121,6 +122,11 @@ public class TestFilterIndexReader extends LuceneTestCase {
     public Fields fields() throws IOException {
       return new TestFields(super.fields());
     }
+
+    @Override
+    public FieldInfos getFieldInfos() {
+      return ReaderUtil.getMergedFieldInfos(in);
+    }
   }
     
   /**
@@ -129,6 +135,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
    */
   public void testFilterIndexReader() throws Exception {
     Directory directory = newDirectory();
+
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
     Document d1 = new Document();
@@ -146,6 +153,10 @@ public class TestFilterIndexReader extends LuceneTestCase {
     writer.close();
 
     Directory target = newDirectory();
+
+    // We mess with the postings so this can fail:
+    ((MockDirectoryWrapper) target).setCrossCheckTermVectorsOnClose(false);
+
     writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     IndexReader reader = new TestReader(IndexReader.open(directory));
     writer.addIndexes(reader);
@@ -161,7 +172,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seekCeil(new BytesRef("one")));
     
     DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getLiveDocs(reader),
-                                                            null);
+                                                            null, false);
     while (positions.nextDoc() != DocsEnum.NO_MORE_DOCS) {
       assertTrue((positions.docID() % 2) == 1);
     }

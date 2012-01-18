@@ -167,14 +167,14 @@ public final class MultiFields extends Fields {
   /** Returns {@link DocsAndPositionsEnum} for the specified
    *  field & term.  This may return null if the term does
    *  not exist or positions were not indexed. */
-  public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
+  public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term, boolean needsOffsets) throws IOException {
     assert field != null;
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
       if (termsEnum.seekExact(term, true)) {
-        return termsEnum.docsAndPositions(liveDocs, null);
+        return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
       }
     }
     return null;

@@ -51,7 +51,7 @@ public class TestOmitPositions extends LuceneTestCase {
     IndexReader reader = w.getReader();
     w.close();
     
-    assertNull(MultiFields.getTermPositionsEnum(reader, null, "foo", new BytesRef("test")));
+    assertNull(MultiFields.getTermPositionsEnum(reader, null, "foo", new BytesRef("test"), false));
     
     DocsEnum de = _TestUtil.docs(random, reader, "foo", new BytesRef("test"), null, null, true);
     while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -154,7 +154,7 @@ public class TestOmitPositions extends LuceneTestCase {
     writer.close();
 
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     // docs + docs = docs
     assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").indexOptions);
     // docs + docs/freqs = docs

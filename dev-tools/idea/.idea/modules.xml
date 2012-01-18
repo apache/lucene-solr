@@ -12,6 +12,7 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/sandbox/sandbox.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/common/analysis-common.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/icu/icu.iml" />
+      <module filepath="$PROJECT_DIR$/modules/analysis/kuromoji/kuromoji.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/morfologik/morfologik.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/phonetic/phonetic.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/smartcn/smartcn.iml" />

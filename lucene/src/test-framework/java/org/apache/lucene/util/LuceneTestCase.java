@@ -914,12 +914,14 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     if (r.nextBoolean()) {
+      int maxNumThreadStates = rarely(r) ? _TestUtil.nextInt(r, 5, 20) // crazy value
+          : _TestUtil.nextInt(r, 1, 4); // reasonable value
       if (rarely(r)) {
-        // crazy value
-        c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(_TestUtil.nextInt(r, 5, 20)));
+        // random thread pool
+        c.setIndexerThreadPool(new RandomDocumentsWriterPerThreadPool(maxNumThreadStates, r));
       } else {
-        // reasonable value
-        c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(_TestUtil.nextInt(r, 1, 4)));
+        // random thread pool
+        c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(maxNumThreadStates));
       }
     }
 
@@ -1105,6 +1107,10 @@ public abstract class LuceneTestCase extends Assert {
       // most of the time, don't modify the params
       return new Field(name, value, type);
     }
+
+    // TODO: once all core & test codecs can index
+    // offsets, sometimes randomly turn on offsets if we are
+    // already indexing positions...
 
     FieldType newType = new FieldType(type);
     if (!newType.stored() && random.nextBoolean()) {

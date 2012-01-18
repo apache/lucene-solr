@@ -27,13 +27,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_ONLY;
-import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_AND_FREQS;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
@@ -55,7 +53,9 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.lucene.index.DocsEnum;
+
+import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_AND_FREQS;
+import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_ONLY;
 
 /**
  * This handler exposes the internal lucene index.  It is inspired by and 
@@ -289,11 +289,15 @@ public class LukeRequestHandler extends RequestHandlerBase
     IndexReader reader = searcher.getIndexReader();
     IndexSchema schema = searcher.getSchema();
 
+    Set<String> fieldNames = new TreeSet<String>();
+    for(FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(reader)) {
+      fieldNames.add(fieldInfo.name);
+    }
+
     // Walk the term enum and keep a priority queue for each map in our set
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     Fields theFields = MultiFields.getFields(reader);
 
-    Set<String> fieldNames = new TreeSet<String>(reader.getFieldNames(IndexReader.FieldOption.ALL));
     for (String fieldName : fieldNames) {
       if (fields != null && ! fields.contains(fieldName)) {
         continue; // we're not interested in this term

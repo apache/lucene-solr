@@ -32,6 +32,7 @@ import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -95,11 +96,12 @@ public class SimpleTextNormsProducer extends PerDocProducer {
   }
   
   static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    // TODO: This is what SI always did... but we can do this cleaner?
-    // like first FI that has norms but doesn't have separate norms?
-    final String normsFileName = IndexFileNames.segmentFileName(info.name, "", SimpleTextNormsConsumer.NORMS_EXTENSION);
-    if (dir.fileExists(normsFileName)) {
-      files.add(normsFileName);
+    FieldInfos fieldInfos = info.getFieldInfos();
+    for (FieldInfo fieldInfo : fieldInfos) {
+      if (fieldInfo.normsPresent()) {
+        files.add(IndexFileNames.segmentFileName(info.name, "", SimpleTextNormsConsumer.NORMS_EXTENSION));
+        break;
+      }
     }
   }
   
@@ -130,7 +132,7 @@ public class SimpleTextNormsProducer extends PerDocProducer {
 
     @Override
     public Type type() {
-      return Type.BYTES_FIXED_STRAIGHT;
+      return Type.FIXED_INTS_8;
     }
 
     @Override
@@ -141,7 +143,7 @@ public class SimpleTextNormsProducer extends PerDocProducer {
   
   static final class Norm extends Source {
     protected Norm(byte[] bytes) {
-      super(Type.BYTES_FIXED_STRAIGHT);
+      super(Type.FIXED_INTS_8);
       this.bytes = bytes;
     }
     final byte bytes[];
@@ -152,6 +154,11 @@ public class SimpleTextNormsProducer extends PerDocProducer {
       ref.offset = docID;
       ref.length = 1;
       return ref;
+    }
+    
+    @Override
+    public long getInt(int docID) {
+      return bytes[docID];
     }
 
     @Override

@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -48,6 +49,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
   static final BytesRef STORETVOFF      =  new BytesRef("  term vector offsets ");
   static final BytesRef PAYLOADS        =  new BytesRef("  payloads ");
   static final BytesRef NORMS           =  new BytesRef("  norms ");
+  static final BytesRef NORMS_TYPE      =  new BytesRef("  norms type ");
   static final BytesRef DOCVALUES       =  new BytesRef("  doc values ");
   static final BytesRef INDEXOPTIONS    =  new BytesRef("  index options ");
   
@@ -62,7 +64,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
       SimpleTextUtil.writeNewline(out);
       
       for (FieldInfo fi : infos) {
-        assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
+        assert fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.storePayloads;
 
         SimpleTextUtil.write(out, NAME);
         SimpleTextUtil.write(out, fi.name, scratch);
@@ -80,14 +82,6 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.write(out, Boolean.toString(fi.storeTermVector), scratch);
         SimpleTextUtil.writeNewline(out);
         
-        SimpleTextUtil.write(out, STORETVPOS);
-        SimpleTextUtil.write(out, Boolean.toString(fi.storePositionWithTermVector), scratch);
-        SimpleTextUtil.writeNewline(out);
-
-        SimpleTextUtil.write(out, STORETVOFF);
-        SimpleTextUtil.write(out, Boolean.toString(fi.storeOffsetWithTermVector), scratch);
-        SimpleTextUtil.writeNewline(out);
-        
         SimpleTextUtil.write(out, PAYLOADS);
         SimpleTextUtil.write(out, Boolean.toString(fi.storePayloads), scratch);
         SimpleTextUtil.writeNewline(out);
@@ -96,12 +90,12 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.write(out, Boolean.toString(!fi.omitNorms), scratch);
         SimpleTextUtil.writeNewline(out);
         
+        SimpleTextUtil.write(out, NORMS_TYPE);
+        SimpleTextUtil.write(out, getDocValuesType(fi.getNormType()), scratch);
+        SimpleTextUtil.writeNewline(out);
+        
         SimpleTextUtil.write(out, DOCVALUES);
-        if (!fi.hasDocValues()) {
-          SimpleTextUtil.write(out, "false", scratch);
-        } else {
-          SimpleTextUtil.write(out, fi.getDocValuesType().toString(), scratch);
-        }
+        SimpleTextUtil.write(out, getDocValuesType(fi.getDocValuesType()), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, INDEXOPTIONS);
@@ -111,5 +105,9 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
     } finally {
       out.close();
     }
+  }
+  
+  private static String getDocValuesType(DocValues.Type type) {
+    return type == null ? "false" : type.toString();
   }
 }

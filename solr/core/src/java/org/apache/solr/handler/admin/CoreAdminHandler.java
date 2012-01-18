@@ -44,6 +44,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
@@ -265,7 +266,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
 
         UpdateRequestProcessorChain processorChain =
-                core.getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(params, log));
+                core.getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
         wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
         UpdateRequestProcessor processor =
                 processorChain.createProcessor(wrappedReq, rsp);
@@ -658,8 +659,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       Thread.sleep(4000);
       
       UpdateRequestProcessorChain processorChain = core
-          .getUpdateProcessingChain(SolrPluginUtils.resolveUpdateChainParam(
-              params, log));
+          .getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
       
       ModifiableSolrParams reqParams = new ModifiableSolrParams(req.getParams());
       reqParams.set(DistributedUpdateProcessor.COMMIT_END_POINT, "true");

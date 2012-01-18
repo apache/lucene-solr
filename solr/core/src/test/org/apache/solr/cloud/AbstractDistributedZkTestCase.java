@@ -83,7 +83,6 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     System.clearProperty("solr.test.sys.prop2");
     resetExceptionIgnores();
     super.tearDown();
-    SolrConfig.severeErrors.clear();
   }
   
   protected void printLayout() throws Exception {

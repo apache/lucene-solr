@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
@@ -106,39 +104,6 @@ public abstract class IndexReader implements Closeable {
         listener.onClose(this);
       }
     }
-  }
-
-  /**
-   * Constants describing field properties, for example used for
-   * {@link IndexReader#getFieldNames(FieldOption)}.
-   */
-  public static enum FieldOption {
-    /** All fields */
-    ALL,
-    /** All indexed fields */
-    INDEXED,
-    /** All fields that store payloads */
-    STORES_PAYLOADS,
-    /** All fields that omit tf */
-    OMIT_TERM_FREQ_AND_POSITIONS,
-    /** All fields that omit positions */
-    OMIT_POSITIONS,
-    /** All fields which are not indexed */
-    UNINDEXED,
-    /** All fields which are indexed with termvectors enabled */
-    INDEXED_WITH_TERMVECTOR,
-    /** All fields which are indexed but don't have termvectors enabled */
-    INDEXED_NO_TERMVECTOR,
-    /** All fields with termvectors enabled. Please note that only standard termvector fields are returned */
-    TERMVECTOR,
-    /** All fields with termvectors with position values enabled */
-    TERMVECTOR_WITH_POSITION,
-    /** All fields with termvectors with offset values enabled */
-    TERMVECTOR_WITH_OFFSET,
-    /** All fields with termvectors with offset values and position values enabled */
-    TERMVECTOR_WITH_POSITION_OFFSET,
-    /** All fields holding doc values */
-    DOC_VALUES
   }
 
   private volatile boolean closed;
@@ -823,9 +788,9 @@ public abstract class IndexReader implements Closeable {
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
    *  field & term.  This may return null, if either the
-   *  field or term does not exist, or, positions were not
-   *  indexed for this field. */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
+   *  field or term does not exist, or needsOffsets is
+   *  true but offsets were not indexed for this field. */
+  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, boolean needsOffsets) throws IOException {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
@@ -834,7 +799,7 @@ public abstract class IndexReader implements Closeable {
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
         if (termsEnum.seekExact(term, true)) {
-          return termsEnum.docsAndPositions(liveDocs, null);
+          return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
         }
       }
     }
@@ -865,8 +830,9 @@ public abstract class IndexReader implements Closeable {
    * Returns {@link DocsAndPositionsEnum} for the specified field and
    * {@link TermState}. This may return null, if either the field or the term
    * does not exists, the {@link TermState} is invalid for the underlying
-   * implementation, or positions were not indexed for this field. */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state) throws IOException {
+   * implementation, or needsOffsets is true but offsets
+   * were not indexed for this field. */
+  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsOffsets) throws IOException {
     assert state != null;
     assert field != null;
     final Fields fields = fields();
@@ -875,7 +841,7 @@ public abstract class IndexReader implements Closeable {
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
         termsEnum.seekExact(term, state);
-        return termsEnum.docsAndPositions(liveDocs, null);
+        return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
       }
     }
     return null;
@@ -897,15 +863,14 @@ public abstract class IndexReader implements Closeable {
   /** Implements close. */
   protected abstract void doClose() throws IOException;
 
-
   /**
-   * Get a list of unique field names that exist in this index and have the specified
-   * field option information.
-   * @param fldOption specifies which field option should be available for the returned fields
-   * @return Collection of Strings indicating the names of the fields.
-   * @see IndexReader.FieldOption
+   * Get the {@link FieldInfos} describing all fields in
+   * this reader.  NOTE: do not make any changes to the
+   * returned FieldInfos!
+   *
+   * @lucene.experimental
    */
-  public abstract Collection<String> getFieldNames(FieldOption fldOption);
+  public abstract FieldInfos getFieldInfos();
 
   /** Returns the {@link Bits} representing live (not
    *  deleted) docs.  A set bit indicates the doc ID has not

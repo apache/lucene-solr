@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -35,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -260,17 +260,17 @@ public class TestDuelingCodecs extends LuceneTestCase {
       assertEquals(info, term, rightTermsEnum.next());
       assertTermStats(leftTermsEnum, rightTermsEnum);
       if (deep) {
-        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions),
-            rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions));
-        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions),
-            rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions));
+        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions, false),
+                                   rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions, false));
+        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions, false),
+                                   rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions, false));
 
         assertPositionsSkipping(leftTermsEnum.docFreq(), 
-            leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions),
-            rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions));
+                                leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions, false),
+                                rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions, false));
         assertPositionsSkipping(leftTermsEnum.docFreq(), 
-            leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions),
-            rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions));
+                                leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions, false),
+                                rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions, false));
 
         // with freqs:
         assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, true),
@@ -341,6 +341,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
       for (int i = 0; i < freq; i++) {
         assertEquals(info, leftDocs.nextPosition(), rightDocs.nextPosition());
         assertEquals(info, leftDocs.hasPayload(), rightDocs.hasPayload());
+        assertEquals(info, leftDocs.startOffset(), rightDocs.startOffset());
+        assertEquals(info, leftDocs.endOffset(), rightDocs.endOffset());
         if (leftDocs.hasPayload()) {
           assertEquals(info, leftDocs.getPayload(), rightDocs.getPayload());
         }
@@ -500,8 +502,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
     assertEquals(info, leftField.binaryValue(), rightField.binaryValue());
     assertEquals(info, leftField.stringValue(), rightField.stringValue());
     assertEquals(info, leftField.numericValue(), rightField.numericValue());
-    assertEquals(info, leftField.numeric(), rightField.numeric());
-    assertEquals(info, leftField.numericDataType(), rightField.numericDataType());
     // TODO: should we check the FT at all?
   }
   
@@ -516,13 +516,24 @@ public class TestDuelingCodecs extends LuceneTestCase {
       assertFields(leftFields, rightFields, rarely());
     }
   }
+
+  private static Set<String> getDVFields(IndexReader reader) {
+    Set<String> fields = new HashSet<String>();
+    for(FieldInfo fi : ReaderUtil.getMergedFieldInfos(reader)) {
+      if (fi.hasDocValues()) {
+        fields.add(fi.name);
+      }
+    }
+
+    return fields;
+  }
   
   /**
    * checks that docvalues across all fields are equivalent
    */
   public void assertDocValues(IndexReader leftReader, IndexReader rightReader) throws Exception {
-    Set<String> leftValues = new HashSet<String>(leftReader.getFieldNames(FieldOption.DOC_VALUES));
-    Set<String> rightValues = new HashSet<String>(rightReader.getFieldNames(FieldOption.DOC_VALUES));
+    Set<String> leftValues = getDVFields(leftReader);
+    Set<String> rightValues = getDVFields(rightReader);
     assertEquals(info, leftValues, rightValues);
 
     for (String field : leftValues) {

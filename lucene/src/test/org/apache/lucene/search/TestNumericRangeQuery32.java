@@ -19,9 +19,10 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
@@ -58,15 +59,40 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
-  
+    
+    final FieldType storedInt = NumericField.getFieldType(NumericField.DataType.INT, true);
+
+    final FieldType storedInt8 = new FieldType(storedInt);
+    storedInt8.setNumericPrecisionStep(8);
+
+    final FieldType storedInt4 = new FieldType(storedInt);
+    storedInt4.setNumericPrecisionStep(4);
+
+    final FieldType storedInt2 = new FieldType(storedInt);
+    storedInt2.setNumericPrecisionStep(2);
+
+    final FieldType storedIntNone = new FieldType(storedInt);
+    storedIntNone.setNumericPrecisionStep(Integer.MAX_VALUE);
+
+    final FieldType unstoredInt = NumericField.getFieldType(NumericField.DataType.INT, false);
+
+    final FieldType unstoredInt8 = new FieldType(unstoredInt);
+    unstoredInt8.setNumericPrecisionStep(8);
+
+    final FieldType unstoredInt4 = new FieldType(unstoredInt);
+    unstoredInt4.setNumericPrecisionStep(4);
+
+    final FieldType unstoredInt2 = new FieldType(unstoredInt);
+    unstoredInt2.setNumericPrecisionStep(2);
+
     NumericField
-	    field8 = new NumericField("field8", 8, NumericField.TYPE_STORED),
-	    field4 = new NumericField("field4", 4, NumericField.TYPE_STORED),
-	    field2 = new NumericField("field2", 2, NumericField.TYPE_STORED),
-	    fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, rarely() ? NumericField.TYPE_STORED : NumericField.TYPE_UNSTORED),
-	    ascfield8 = new NumericField("ascfield8", 8, NumericField.TYPE_UNSTORED),
-	    ascfield4 = new NumericField("ascfield4", 4, NumericField.TYPE_UNSTORED),
-	    ascfield2 = new NumericField("ascfield2", 2, NumericField.TYPE_UNSTORED);
+      field8 = new NumericField("field8", 0, storedInt8),
+      field4 = new NumericField("field4", 0, storedInt4),
+      field2 = new NumericField("field2", 0, storedInt2),
+      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, 0, storedIntNone),
+      ascfield8 = new NumericField("ascfield8", 0, unstoredInt8),
+      ascfield4 = new NumericField("ascfield4", 0, unstoredInt4),
+      ascfield2 = new NumericField("ascfield2", 0, unstoredInt2);
     
     Document doc = new Document();
     // add fields, that have a distance to test general functionality
@@ -77,15 +103,15 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     // Add a series of noDocs docs with increasing int values
     for (int l=0; l<noDocs; l++) {
       int val=distance*l+startOffset;
-      field8.setIntValue(val);
-      field4.setIntValue(val);
-      field2.setIntValue(val);
-      fieldNoTrie.setIntValue(val);
+      field8.setValue(val);
+      field4.setValue(val);
+      field2.setValue(val);
+      fieldNoTrie.setValue(val);
 
       val=l-(noDocs/2);
-      ascfield8.setIntValue(val);
-      ascfield4.setIntValue(val);
-      ascfield2.setIntValue(val);
+      ascfield8.setValue(val);
+      ascfield4.setValue(val);
+      ascfield2.setValue(val);
       writer.addDocument(doc);
     }
   
@@ -143,9 +169,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       assertNotNull(sd);
       assertEquals("Score doc count"+type, count, sd.length );
       Document doc=searcher.doc(sd[0].doc);
-      assertEquals("First doc"+type, 2*distance+startOffset, Integer.parseInt(doc.get(field)) );
+      assertEquals("First doc"+type, 2*distance+startOffset, doc.getField(field).numericValue().intValue());
       doc=searcher.doc(sd[sd.length-1].doc);
-      assertEquals("Last doc"+type, (1+count)*distance+startOffset, Integer.parseInt(doc.get(field)) );
+      assertEquals("Last doc"+type, (1+count)*distance+startOffset, doc.getField(field).numericValue().intValue());
     }
   }
 
@@ -197,9 +223,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", startOffset, Integer.parseInt(doc.get(field)) );
+    assertEquals("First doc", startOffset, doc.getField(field).numericValue().intValue());
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (count-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );
+    assertEquals("Last doc", (count-1)*distance+startOffset, doc.getField(field).numericValue().intValue());
     
     q=NumericRangeQuery.newIntRange(field, precisionStep, null, upper, false, true);
     topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
@@ -207,9 +233,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
     doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", startOffset, Integer.parseInt(doc.get(field)) );
+    assertEquals("First doc", startOffset, doc.getField(field).numericValue().intValue());
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (count-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );
+    assertEquals("Last doc", (count-1)*distance+startOffset, doc.getField(field).numericValue().intValue());
   }
   
   @Test
@@ -237,9 +263,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", count*distance+startOffset, Integer.parseInt(doc.get(field)) );
+    assertEquals("First doc", count*distance+startOffset, doc.getField(field).numericValue().intValue());
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (noDocs-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );
+    assertEquals("Last doc", (noDocs-1)*distance+startOffset, doc.getField(field).numericValue().intValue());
 
     q=NumericRangeQuery.newIntRange(field, precisionStep, lower, null, true, false);
     topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
@@ -247,9 +273,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
     doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", count*distance+startOffset, Integer.parseInt(doc.get(field)) );
+    assertEquals("First doc", count*distance+startOffset, doc.getField(field).numericValue().intValue() );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (noDocs-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );
+    assertEquals("Last doc", (noDocs-1)*distance+startOffset, doc.getField(field).numericValue().intValue() );
   }
   
   @Test
@@ -273,23 +299,23 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
       newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
-    doc.add(new NumericField("float").setFloatValue(Float.NEGATIVE_INFINITY));
-    doc.add(new NumericField("int").setIntValue(Integer.MIN_VALUE));
+    doc.add(new NumericField("float", Float.NEGATIVE_INFINITY));
+    doc.add(new NumericField("int", Integer.MIN_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("float").setFloatValue(Float.POSITIVE_INFINITY));
-    doc.add(new NumericField("int").setIntValue(Integer.MAX_VALUE));
+    doc.add(new NumericField("float", Float.POSITIVE_INFINITY));
+    doc.add(new NumericField("int", Integer.MAX_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("float").setFloatValue(0.0f));
-    doc.add(new NumericField("int").setIntValue(0));
+    doc.add(new NumericField("float", 0.0f));
+    doc.add(new NumericField("int", 0));
     writer.addDocument(doc);
     
     for (float f : TestNumericUtils.FLOAT_NANs) {
       doc = new Document();
-      doc.add(new NumericField("float").setFloatValue(f));
+      doc.add(new NumericField("float", f));
       writer.addDocument(doc);
     }
     
@@ -552,9 +578,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      int last=Integer.parseInt(searcher.doc(sd[0].doc).get(field));
+      int last = searcher.doc(sd[0].doc).getField(field).numericValue().intValue();
       for (int j=1; j<sd.length; j++) {
-        int act=Integer.parseInt(searcher.doc(sd[j].doc).get(field));
+        int act = searcher.doc(sd[j].doc).getField(field).numericValue().intValue();
         assertTrue("Docs should be sorted backwards", last>act );
         last=act;
       }

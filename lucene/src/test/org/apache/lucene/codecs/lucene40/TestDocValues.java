@@ -18,17 +18,21 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Comparator;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.lucene40.values.Bytes;
 import org.apache.lucene.codecs.lucene40.values.Floats;
 import org.apache.lucene.codecs.lucene40.values.Ints;
-import org.apache.lucene.index.DocValue;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
@@ -175,9 +179,9 @@ public class TestDocValues extends LuceneTestCase {
       Directory dir = newDirectory();
       final Counter trackBytes = Counter.newCounter();
       DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.VAR_INTS, newIOContext(random));
-      valueHolder.intValue = minMax[i][0];
+      valueHolder.numberValue = minMax[i][0];
       w.add(0, valueHolder);
-      valueHolder.intValue = minMax[i][1];
+      valueHolder.numberValue = minMax[i][1];
       w.add(1, valueHolder);
       w.finish(2);
       assertEquals(0, trackBytes.get());
@@ -212,7 +216,7 @@ public class TestDocValues extends LuceneTestCase {
     final Counter trackBytes = Counter.newCounter();
     DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_8, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
-      valueHolder.intValue = (long) sourceArray[i];
+      valueHolder.numberValue = (long) sourceArray[i];
       w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
@@ -235,7 +239,7 @@ public class TestDocValues extends LuceneTestCase {
     final Counter trackBytes = Counter.newCounter();
     DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_16, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
-      valueHolder.intValue = (long) sourceArray[i];
+      valueHolder.numberValue = (long) sourceArray[i];
       w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
@@ -258,7 +262,7 @@ public class TestDocValues extends LuceneTestCase {
     final Counter trackBytes = Counter.newCounter();
     DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_64, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
-      valueHolder.intValue = sourceArray[i];
+      valueHolder.numberValue = sourceArray[i];
       w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
@@ -281,7 +285,7 @@ public class TestDocValues extends LuceneTestCase {
     final Counter trackBytes = Counter.newCounter();
     DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, Type.FIXED_INTS_32, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
-      valueHolder.intValue = (long) sourceArray[i];
+      valueHolder.numberValue = (long) sourceArray[i];
       w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
@@ -304,7 +308,7 @@ public class TestDocValues extends LuceneTestCase {
     final Counter trackBytes = Counter.newCounter();
     DocValuesConsumer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), Type.FLOAT_32);
     for (int i = 0; i < sourceArray.length; i++) {
-      valueHolder.floatValue = sourceArray[i];
+      valueHolder.numberValue = sourceArray[i];
       w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
@@ -327,7 +331,7 @@ public class TestDocValues extends LuceneTestCase {
     final Counter trackBytes = Counter.newCounter();
     DocValuesConsumer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), Type.FLOAT_64);
     for (int i = 0; i < sourceArray.length; i++) {
-      valueHolder.floatValue = sourceArray[i];
+      valueHolder.numberValue = sourceArray[i];
       w.add(i, valueHolder);
     }
     w.finish(sourceArray.length);
@@ -354,7 +358,7 @@ public class TestDocValues extends LuceneTestCase {
       DocValuesConsumer w = Ints.getWriter(dir, "test", trackBytes, type, newIOContext(random));
       for (int i = 0; i < NUM_VALUES; i++) {
         final long v = random.nextLong() % (1 + maxV);
-        valueHolder.intValue = values[i] = v;
+        valueHolder.numberValue = values[i] = v;
         w.add(i, valueHolder);
       }
       final int additionalDocs = 1 + random.nextInt(9);
@@ -377,20 +381,20 @@ public class TestDocValues extends LuceneTestCase {
   }
 
   public void testFloats4() throws IOException {
-    runTestFloats(Type.FLOAT_32, 0.00001);
+    runTestFloats(Type.FLOAT_32);
   }
 
-  private void runTestFloats(Type type, double delta) throws IOException {
+  private void runTestFloats(Type type) throws IOException {
     DocValueHolder valueHolder = new DocValueHolder();
     Directory dir = newDirectory();
     final Counter trackBytes = Counter.newCounter();
     DocValuesConsumer w = Floats.getWriter(dir, "test", trackBytes, newIOContext(random), type);
-    final int NUM_VALUES = 777 + random.nextInt(777);;
+    final int NUM_VALUES = 777 + random.nextInt(777);
     final double[] values = new double[NUM_VALUES];
     for (int i = 0; i < NUM_VALUES; i++) {
       final double v = type == Type.FLOAT_32 ? random.nextFloat() : random
           .nextDouble();
-      valueHolder.floatValue = values[i] = v;
+      valueHolder.numberValue = values[i] = v;
       w.add(i, valueHolder);
     }
     final int additionalValues = 1 + random.nextInt(10);
@@ -409,7 +413,7 @@ public class TestDocValues extends LuceneTestCase {
   }
 
   public void testFloats8() throws IOException {
-    runTestFloats(Type.FLOAT_64, 0.0);
+    runTestFloats(Type.FLOAT_64);
   }
   
 
@@ -431,31 +435,49 @@ public class TestDocValues extends LuceneTestCase {
     return getSource(values).asSortedSource();
   }
   
-  public static class DocValueHolder implements DocValue {
+  public static class DocValueHolder implements IndexableField {
     BytesRef bytes;
-    long intValue;
-    double floatValue;
+    Number numberValue;
     Comparator<BytesRef> comp;
+
     @Override
-    public BytesRef getBytes() {
+    public TokenStream tokenStream(Analyzer a) {
+      return null;
+    }
+
+    @Override
+    public float boost() {
+      return 0.0f;
+    }
+
+    @Override
+    public String name() {
+      return "test";
+    }
+
+    @Override
+    public BytesRef binaryValue() {
       return bytes;
     }
 
     @Override
-    public Comparator<BytesRef> bytesComparator() {
-      return comp;
+    public Number numericValue() {
+      return numberValue;
     }
 
     @Override
-    public double getFloat() {
-      return floatValue;
+    public String stringValue() {
+      return null;
     }
 
     @Override
-    public long getInt() {
-      return intValue;
+    public Reader readerValue() {
+      return null;
     }
-    
+
+    @Override
+    public IndexableFieldType fieldType() {
+      return null;
+    }
   }
-  
 }

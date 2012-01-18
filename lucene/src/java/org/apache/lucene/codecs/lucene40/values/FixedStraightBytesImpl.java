@@ -17,26 +17,28 @@ package org.apache.lucene.codecs.lucene40.values;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
-
 import java.io.IOException;
 
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesWriterBase;
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
+
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 // Simplest storage: stores fixed length byte[] per
 // document, with no dedup and no sorting.
@@ -69,12 +71,11 @@ class FixedStraightBytesImpl {
 
       if (size == -1) {
         if (bytes.length > BYTE_BLOCK_SIZE) {
-          throw new IllegalArgumentException("bytes arrays > " + Short.MAX_VALUE + " are not supported");
+          throw new IllegalArgumentException("bytes arrays > " + BYTE_BLOCK_SIZE + " are not supported");
         }
         size = bytes.length;
       } else if (bytes.length != size) {
-        throw new IllegalArgumentException("expected bytes size=" + size
-            + " but got " + bytes.length);
+        throw new IllegalArgumentException("byte[] length changed for BYTES_FIXED_STRAIGHT type (before=" + size + " now=" + bytes.length);
       }
       if (lastDocID+1 < docID) {
         advancePool(docID);
@@ -134,7 +135,7 @@ class FixedStraightBytesImpl {
 
 
     @Override
-    protected void merge(SingleSubMergeState state) throws IOException {
+    protected void merge(DocValues readerIn, int docBase, int docCount, Bits liveDocs) throws IOException {
       datOut = getOrCreateDataOut();
       boolean success = false;
       try {
@@ -142,8 +143,8 @@ class FixedStraightBytesImpl {
           datOut.writeInt(size);
         }
 
-        if (state.liveDocs == null && tryBulkMerge(state.reader)) {
-          FixedStraightReader reader = (FixedStraightReader) state.reader;
+        if (liveDocs == null && tryBulkMerge(readerIn)) {
+          FixedStraightReader reader = (FixedStraightReader) readerIn;
           final int maxDocs = reader.maxDoc;
           if (maxDocs == 0) {
             return;
@@ -155,9 +156,9 @@ class FixedStraightBytesImpl {
             throw new IllegalArgumentException("expected bytes size=" + size
                 + " but got " + reader.size);
            }
-          if (lastDocID+1 < state.docBase) {
-            fill(datOut, state.docBase);
-            lastDocID = state.docBase-1;
+          if (lastDocID+1 < docBase) {
+            fill(datOut, docBase);
+            lastDocID = docBase-1;
           }
           // TODO should we add a transfer to API to each reader?
           final IndexInput cloneData = reader.cloneData();
@@ -169,7 +170,7 @@ class FixedStraightBytesImpl {
         
           lastDocID += maxDocs;
         } else {
-          super.merge(state);
+          super.merge(readerIn, docBase, docCount, liveDocs);
         }
         success = true;
       } finally {
@@ -185,9 +186,9 @@ class FixedStraightBytesImpl {
     }
     
     @Override
-    protected void mergeDoc(int docID, int sourceDoc) throws IOException {
+    protected void mergeDoc(Field scratchField, Source source, int docID, int sourceDoc) throws IOException {
       assert lastDocID < docID;
-      setMergeBytes(sourceDoc);
+      setMergeBytes(source, sourceDoc);
       if (size == -1) {
         size = bytesRef.length;
         datOut.writeInt(size);
@@ -200,11 +201,9 @@ class FixedStraightBytesImpl {
       lastDocID = docID;
     }
     
-    protected void setMergeBytes(int sourceDoc) {
-      currentMergeSource.getBytes(sourceDoc, bytesRef);
+    protected void setMergeBytes(Source source, int sourceDoc) {
+      source.getBytes(sourceDoc, bytesRef);
     }
-
-
 
     // Fills up to but not including this docID
     private void fill(IndexOutput datOut, int docID) throws IOException {

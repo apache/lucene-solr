@@ -44,12 +44,12 @@ public abstract class PostingsConsumer {
     int docBase;
   }
 
-  /** Add a new position & payload.  A null payload means no
-   *  payload; a non-null payload with zero length also
-   *  means no payload.  Caller may reuse the {@link
-   *  BytesRef} for the payload between calls (method must
-   *  fully consume the payload). */
-  public abstract void addPosition(int position, BytesRef payload) throws IOException;
+  /** Add a new position & payload, and start/end offset.  A
+   *  null payload means no payload; a non-null payload with
+   *  zero length also means no payload.  Caller may reuse
+   *  the {@link BytesRef} for the payload between calls
+   *  (method must fully consume the payload). */
+  public abstract void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException;
 
   /** Called when we are done adding positions & payloads
    *  for each doc.  Not called  when the field omits term
@@ -88,7 +88,7 @@ public abstract class PostingsConsumer {
         df++;
         totTF += freq;
       }
-    } else {
+    } else if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
       while(true) {
         final int doc = postingsEnum.nextDoc();
@@ -107,7 +107,32 @@ public abstract class PostingsConsumer {
           } else {
             payload = null;
           }
-          this.addPosition(position, payload);
+          this.addPosition(position, payload, -1, -1);
+        }
+        this.finishDoc();
+        df++;
+      }
+    } else {
+      assert mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+      final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
+      while(true) {
+        final int doc = postingsEnum.nextDoc();
+        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
+        }
+        visitedDocs.set(doc);
+        final int freq = postingsEnum.freq();
+        this.startDoc(doc, freq);
+        totTF += freq;
+        for(int i=0;i<freq;i++) {
+          final int position = postingsEnum.nextPosition();
+          final BytesRef payload;
+          if (postingsEnum.hasPayload()) {
+            payload = postingsEnum.getPayload();
+          } else {
+            payload = null;
+          }
+          this.addPosition(position, payload, postingsEnum.startOffset(), postingsEnum.endOffset());
         }
         this.finishDoc();
         df++;

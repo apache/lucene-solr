@@ -607,7 +607,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     try {
       solrCoreState.decref(this);
     } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "", e, false);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "", e);
     }
   }
 

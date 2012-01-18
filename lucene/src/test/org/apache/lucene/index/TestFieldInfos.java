@@ -133,22 +133,15 @@ public class TestFieldInfos extends LuceneTestCase {
     }
     try {
       readOnly.addOrUpdate("bogus", random.nextBoolean(), random.nextBoolean(),
-          random.nextBoolean(), random.nextBoolean());
+          random.nextBoolean());
       fail("instance should be read only");
     } catch (IllegalStateException e) {
       // expected
     }
     try {
       readOnly.addOrUpdate("bogus", random.nextBoolean(), random.nextBoolean(),
-          random.nextBoolean(), random.nextBoolean(), random.nextBoolean());
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    try {
-      readOnly.addOrUpdate("bogus", random.nextBoolean(), random.nextBoolean(),
-          random.nextBoolean(), random.nextBoolean(), random.nextBoolean(),
-          random.nextBoolean(), random.nextBoolean() ? IndexOptions.DOCS_ONLY : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null);
+          random.nextBoolean(),
+          random.nextBoolean(), random.nextBoolean() ? IndexOptions.DOCS_ONLY : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, null);
       fail("instance should be read only");
     } catch (IllegalStateException e) {
       // expected

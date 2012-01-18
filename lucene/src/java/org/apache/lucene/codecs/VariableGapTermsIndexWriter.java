@@ -29,9 +29,11 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
+import org.apache.lucene.util.fst.Util;
 
 /**
  * Selects index terms according to provided pluggable
@@ -227,7 +229,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       ////System.out.println("VGW: field=" + fieldInfo.name);
 
       // Always put empty string in
-      fstBuilder.add(new BytesRef(), fstOutputs.get(termsFilePointer));
+      fstBuilder.add(new IntsRef(), fstOutputs.get(termsFilePointer));
       startTermsFilePointer = termsFilePointer;
     }
 
@@ -246,6 +248,8 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       }
     }
 
+    private final IntsRef scratchIntsRef = new IntsRef();
+
     @Override
     public void add(BytesRef text, TermStats stats, long termsFilePointer) throws IOException {
       if (text.length == 0) {
@@ -256,7 +260,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       final int lengthSave = text.length;
       text.length = indexedTermPrefixLength(lastTerm, text);
       try {
-        fstBuilder.add(text, fstOutputs.get(termsFilePointer));
+        fstBuilder.add(Util.toIntsRef(text, scratchIntsRef), fstOutputs.get(termsFilePointer));
       } finally {
         text.length = lengthSave;
       }

@@ -102,6 +102,16 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
   public int nextPosition() throws IOException {
     return current.nextPosition();
   }
+
+  @Override
+  public int startOffset() throws IOException {
+    return current.startOffset();
+  }
+  
+  @Override
+  public int endOffset() throws IOException {
+    return current.endOffset();
+  }
   
   @Override
   public BytesRef getPayload() throws IOException {

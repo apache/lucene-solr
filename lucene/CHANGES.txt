@@ -226,6 +226,14 @@ Changes in backwards compatibility policy
 * LUCENE-3640: Removed IndexSearcher.close(), because IndexSearcher no longer
   takes a Directory and no longer "manages" IndexReaders, it is a no-op.
   (Robert Muir)
+
+* LUCENE-3684: Add offsets into DocsAndPositionsEnum, and a few
+  FieldInfo.IndexOption: DOCS_AND_POSITIONS_AND_OFFSETS.  (Robert
+  Muir, Mike McCandless)
+
+* LUCENE-3646: FieldCacheImpl now throws UOE on non-atomic IndexReaders. If
+  you really want a top-level fieldcache, use SlowMultiReaderWrapper.
+  (Robert Muir)
   
 Changes in Runtime Behavior
 
@@ -475,11 +483,6 @@ New features
   QueryParser subclasses that overrode getRangeQuery will need to be changed
   to use the new getRangeQuery method.  (Andrew Schurman, Mark Miller, yonik)
 
-* LUCENE-995: The QueryParser now interprets * as an open end for range
-  queries.  Literal asterisks may be represented by quoting or escaping
-  (i.e. \* or "*")  Custom QueryParser subclasses overriding getRangeQuery()
-  will be passed null for any open endpoint. (Adriano Crestani, yonik)
-
 * LUCENE-2742: Add native per-field postings format support. Codec lets you now
   register a postings format for each field and which is in turn recorded 
   into the index. Postings formtas are maintained on a per-segment basis and be
@@ -623,6 +626,11 @@ New features
 * LUCENE-3628: Norms are represented as DocValues. IndexReader exposes
   a #normValues(String) method to obtain norms per field. (Simon Willnauer) 
 
+* LUCENE-3687: Similarity#computeNorm(FieldInvertState, Norm) allows to compute
+  norm values or arbitrary precision. Instead of returning a fixed single byte
+  value, custom similarities can now set a integer, float or byte value to the
+  given Norm object. (Simon Willnauer)  
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
@@ -714,6 +722,25 @@ Changes in backwards compatibility policy
   contrib/queryparser. If you have used those classes in your code
   just add the lucene-queryparser.jar file to your classpath.
   (Uwe Schindler)
+
+* LUCENE-3681: FST now stores labels for BYTE2 input type as 2 bytes
+  instead of vInt; this can make FSTs smaller and faster, but it is a
+  break in the binary format so if you had built and saved any FSTs
+  then you need to rebuild them. (Robert Muir, Mike McCandless)
+
+* LUCENE-3679: The expert IndexReader.getFieldNames(FieldOption) API
+  has been removed and replaced with the experimental getFieldInfos
+  API.  All IndexReader subclasses must implement getFieldInfos.
+  (Mike McCandless)
+
+* LUCENE-3695: Move confusing add(X) methods out of FST.Builder into
+  FST.Util.  (Robert Muir, Mike McCandless)
+
+* LUCENE-3701: Added an additional argument to the expert FST.Builder
+  ctor to take FreezeTail, which you can use to (very-expertly) customize
+  the FST construction process. Pass null if you want the default
+  behavior.  Added seekExact() to FSTEnum, and added FST.save/read 
+  from a File. (Mike McCandless, Dawid Weiss, Robert Muir)
   
 Security fixes
 
@@ -752,6 +779,12 @@ New Features
 * LUCENE-3634: IndexReader's static main method was moved to a new
   tool, CompoundFileExtractor, in contrib/misc.  (Robert Muir, Mike
   McCandless)
+
+* LUCENE-995: The QueryParser now interprets * as an open end for range
+  queries.  Literal asterisks may be represented by quoting or escaping
+  (i.e. \* or "*")  Custom QueryParser subclasses overriding getRangeQuery()
+  will be passed null for any open endpoint. (Ingo Renner, Adriano
+  Crestani, yonik, Mike McCandless
   
 Bug fixes
 

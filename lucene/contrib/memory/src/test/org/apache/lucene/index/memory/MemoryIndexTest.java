@@ -206,7 +206,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     MemoryIndex memory = new MemoryIndex();
     memory.addField("foo", "bar", analyzer);
     IndexReader reader = memory.createSearcher().getIndexReader();
-    DocsAndPositionsEnum disi = reader.termPositionsEnum(null, "foo", new BytesRef("bar"));
+    DocsAndPositionsEnum disi = reader.termPositionsEnum(null, "foo", new BytesRef("bar"), false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -214,7 +214,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     // now reuse and check again
     TermsEnum te = reader.terms("foo").iterator(null);
     assertTrue(te.seekExact(new BytesRef("bar"), true));
-    disi = te.docsAndPositions(null, disi);
+    disi = te.docsAndPositions(null, disi, false);
     docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

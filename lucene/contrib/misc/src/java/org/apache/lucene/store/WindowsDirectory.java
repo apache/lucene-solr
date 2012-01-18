@@ -97,7 +97,7 @@ public class WindowsDirectory extends FSDirectory {
       }
 
       if (bytesRead != length) {
-        throw new EOFException("Read past EOF (resource: " + this + ")");
+        throw new EOFException("read past EOF: " + this);
       }
     }
 

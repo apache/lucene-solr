@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
@@ -283,18 +282,17 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         termInfo.add("tf", freq);
       }
 
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum, fieldOptions.offsets);
+      boolean useOffsets = fieldOptions.offsets;
+      if (dpEnum == null) {
+        useOffsets = false;
+        dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
+      }
 
       boolean usePositions = false;
-      boolean useOffsets = false;
-      OffsetAttribute offsetAtt = null;
       if (dpEnum != null) {
         dpEnum.nextDoc();
         usePositions = fieldOptions.positions;
-        if (fieldOptions.offsets && dpEnum.attributes().hasAttribute(OffsetAttribute.class)) {
-          useOffsets = true;
-          offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
-        }
       }
 
       NamedList<Number> theOffsets = null;
@@ -317,8 +315,8 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           }
 
           if (theOffsets != null) {
-            theOffsets.add("start", offsetAtt.startOffset());
-            theOffsets.add("end", offsetAtt.endOffset());
+            theOffsets.add("start", dpEnum.startOffset());
+            theOffsets.add("end", dpEnum.endOffset());
           }
         }
       }

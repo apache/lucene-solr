@@ -195,7 +195,9 @@ public class JavaBinUpdateRequestCodec {
     NamedList nl = new NamedList();
     while (it.hasNext()) {
       String s = it.next();
-      nl.add(s, params.getParams(s));
+      for(String val: params.getParams(s)) {
+        nl.add(s, val);
+      }
     }
     return nl;
   }

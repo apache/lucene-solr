@@ -16,21 +16,22 @@ package org.apache.lucene.analysis.query;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.AnalyzerWrapper;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.Version;
-import org.apache.lucene.util.BytesRef;
-
 import java.io.IOException;
 import java.util.*;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.AnalyzerWrapper;
+import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.Version;
 
 /**
  * An {@link Analyzer} used primarily at query time to wrap another analyzer and provide a layer of protection
@@ -84,7 +85,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
       Analyzer delegate,
       IndexReader indexReader,
       int maxDocFreq) throws IOException {
-    this(matchVersion, delegate, indexReader, indexReader.getFieldNames(IndexReader.FieldOption.INDEXED), maxDocFreq);
+    this(matchVersion, delegate, indexReader, ReaderUtil.getIndexedFields(indexReader), maxDocFreq);
   }
 
   /**
@@ -104,7 +105,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
       Analyzer delegate,
       IndexReader indexReader,
       float maxPercentDocs) throws IOException {
-    this(matchVersion, delegate, indexReader, indexReader.getFieldNames(IndexReader.FieldOption.INDEXED), maxPercentDocs);
+    this(matchVersion, delegate, indexReader, ReaderUtil.getIndexedFields(indexReader), maxPercentDocs);
   }
 
   /**

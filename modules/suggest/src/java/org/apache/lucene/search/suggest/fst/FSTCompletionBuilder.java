@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.*;
 
 /**
@@ -219,11 +220,12 @@ public class FSTCompletionBuilder {
         shareMaxTailLength, outputs, null);
     
     BytesRef scratch = new BytesRef();
+    final IntsRef scratchIntsRef = new IntsRef();
     int count = 0;
     for (Iterator<BytesRef> i = sorter.iterator(); i.hasNext(); count++) {
       BytesRef entry = i.next();
       if (scratch.compareTo(entry) != 0) {
-        builder.add(entry, empty);
+        builder.add(Util.toIntsRef(entry, scratchIntsRef), empty);
         scratch.copyBytes(entry);
       }
     }

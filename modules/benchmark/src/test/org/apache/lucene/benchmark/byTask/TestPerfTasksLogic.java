@@ -51,6 +51,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
@@ -332,7 +333,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     Benchmark benchmark = execBenchmark(algLines);
 
     IndexReader r = IndexReader.open(benchmark.getRunData().getDirectory());
-    DocTermsIndex idx = FieldCache.DEFAULT.getTermsIndex(r, "country");
+    DocTermsIndex idx = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(r), "country");
     final int maxDoc = r.maxDoc();
     assertEquals(1000, maxDoc);
     BytesRef br = new BytesRef();

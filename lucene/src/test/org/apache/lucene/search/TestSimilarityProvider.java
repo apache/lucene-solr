@@ -25,6 +25,7 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
@@ -111,9 +112,10 @@ public class TestSimilarityProvider extends LuceneTestCase {
   }
   
   private class Sim1 extends TFIDFSimilarity {
+
     @Override
-    public byte computeNorm(FieldInvertState state) {
-      return encodeNormValue(1f);
+    public void computeNorm(FieldInvertState state, Norm norm) {
+      norm.setByte(encodeNormValue(1f));
     }
 
     @Override
@@ -138,9 +140,10 @@ public class TestSimilarityProvider extends LuceneTestCase {
   }
   
   private class Sim2 extends TFIDFSimilarity {
+    
     @Override
-    public byte computeNorm(FieldInvertState state) {
-      return encodeNormValue(10f);
+    public void computeNorm(FieldInvertState state, Norm norm) {
+      norm.setByte(encodeNormValue(10f));
     }
 
     @Override

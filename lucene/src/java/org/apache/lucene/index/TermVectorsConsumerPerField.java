@@ -38,7 +38,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
   boolean doVectorOffsets;
 
   int maxNumPostings;
-  OffsetAttribute offsetAttribute = null;
+  OffsetAttribute offsetAttribute;
 
   public TermVectorsConsumerPerField(TermsHashPerField termsHashPerField, TermVectorsConsumer termsWriter, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
@@ -118,9 +118,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
     final TermVectorsWriter tv = termsWriter.writer;
 
-    // TODO: we may want to make this sort in same order
-    // as Codec's terms dict?
-    final int[] termIDs = termsHashPerField.sortPostings(BytesRef.getUTF8SortedAsUnicodeComparator());
+    final int[] termIDs = termsHashPerField.sortPostings(tv.getComparator());
 
     tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets);
     
@@ -151,7 +149,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     termsHashPerField.reset();
 
     // commit the termVectors once successful success - FI will otherwise reset them
-    fieldInfo.setStoreTermVectors(doVectorPositions, doVectorOffsets);
+    fieldInfo.setStoreTermVectors();
   }
 
   void shrinkHash() {

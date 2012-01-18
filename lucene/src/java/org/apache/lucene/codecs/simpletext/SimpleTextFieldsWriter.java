@@ -35,13 +35,15 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   private final IndexOutput out;
   private final BytesRef scratch = new BytesRef(10);
 
-  final static BytesRef END     = new BytesRef("END");
-  final static BytesRef FIELD   = new BytesRef("field ");
-  final static BytesRef TERM    = new BytesRef("  term ");
-  final static BytesRef DOC     = new BytesRef("    doc ");
-  final static BytesRef FREQ    = new BytesRef("      freq ");
-  final static BytesRef POS     = new BytesRef("      pos ");
-  final static BytesRef PAYLOAD = new BytesRef("        payload ");
+  final static BytesRef END          = new BytesRef("END");
+  final static BytesRef FIELD        = new BytesRef("field ");
+  final static BytesRef TERM         = new BytesRef("  term ");
+  final static BytesRef DOC          = new BytesRef("    doc ");
+  final static BytesRef FREQ         = new BytesRef("      freq ");
+  final static BytesRef POS          = new BytesRef("      pos ");
+  final static BytesRef START_OFFSET = new BytesRef("      startOffset ");
+  final static BytesRef END_OFFSET   = new BytesRef("      endOffset ");
+  final static BytesRef PAYLOAD      = new BytesRef("        payload ");
 
   public SimpleTextFieldsWriter(SegmentWriteState state) throws IOException {
     final String fileName = SimpleTextPostingsFormat.getPostingsFileName(state.segmentName, state.segmentSuffix);
@@ -97,10 +99,19 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   private class SimpleTextPostingsWriter extends PostingsConsumer {
     private BytesRef term;
     private boolean wroteTerm;
-    private IndexOptions indexOptions;
+    private final IndexOptions indexOptions;
+    private final boolean writePositions;
+    private final boolean writeOffsets;
+
+    // for assert:
+    private int lastEndOffset = -1;
 
     public SimpleTextPostingsWriter(FieldInfo field) {
       this.indexOptions = field.indexOptions;
+      writePositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      writeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      //System.out.println("writeOffsets=" + writeOffsets);
+      //System.out.println("writePos=" + writePositions);
     }
 
     @Override
@@ -121,10 +132,10 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
         write(Integer.toString(termDocFreq));
         newline();
       }
+
+      lastEndOffset = -1;
     }
     
-    
-
     public PostingsConsumer reset(BytesRef term) {
       this.term = term;
       wroteTerm = false;
@@ -132,10 +143,25 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
     }
 
     @Override
-    public void addPosition(int position, BytesRef payload) throws IOException {
-      write(POS);
-      write(Integer.toString(position));
-      newline();
+    public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
+      if (writePositions) {
+        write(POS);
+        write(Integer.toString(position));
+        newline();
+      }
+
+      if (writeOffsets) {
+        assert endOffset >= startOffset;
+        assert startOffset >= lastEndOffset: "startOffset=" + startOffset + " lastEndOffset=" + lastEndOffset;
+        lastEndOffset = endOffset;
+        write(START_OFFSET);
+        write(Integer.toString(startOffset));
+        newline();
+        write(END_OFFSET);
+        write(Integer.toString(endOffset));
+        newline();
+      }
+
       if (payload != null && payload.length > 0) {
         assert payload.length != 0;
         write(PAYLOAD);

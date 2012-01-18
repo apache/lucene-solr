@@ -25,9 +25,9 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -50,11 +50,11 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   static final int FIELD_IS_NUMERIC_LONG = 2 << _NUMERIC_BIT_SHIFT;
   static final int FIELD_IS_NUMERIC_FLOAT = 3 << _NUMERIC_BIT_SHIFT;
   static final int FIELD_IS_NUMERIC_DOUBLE = 4 << _NUMERIC_BIT_SHIFT;
+
+  // the next possible bits are: 1 << 6; 1 << 7
   // currently unused: static final int FIELD_IS_NUMERIC_SHORT = 5 << _NUMERIC_BIT_SHIFT;
   // currently unused: static final int FIELD_IS_NUMERIC_BYTE = 6 << _NUMERIC_BIT_SHIFT;
 
-  // the next possible bits are: 1 << 6; 1 << 7
-  
   // Lucene 3.0: Removal of compressed fields
   static final int FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS = 2;
 
@@ -127,7 +127,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
         IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
   }
 
-  public final void writeField(FieldInfo info, IndexableField field) throws IOException {
+  public void writeField(FieldInfo info, IndexableField field) throws IOException {
     fieldsStream.writeVInt(info.number);
     int bits = 0;
     final BytesRef bytes;
@@ -136,18 +136,19 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     // this way we don't bake into indexer all these
     // specific encodings for different fields?  and apps
     // can customize...
-    if (field.numeric()) {
-      switch (field.numericDataType()) {
-        case INT:
-          bits |= FIELD_IS_NUMERIC_INT; break;
-        case LONG:
-          bits |= FIELD_IS_NUMERIC_LONG; break;
-        case FLOAT:
-          bits |= FIELD_IS_NUMERIC_FLOAT; break;
-        case DOUBLE:
-          bits |= FIELD_IS_NUMERIC_DOUBLE; break;
-        default:
-          assert false : "Should never get here";
+
+    Number number = field.numericValue();
+    if (number != null) {
+      if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
+        bits |= FIELD_IS_NUMERIC_INT;
+      } else if (number instanceof Long) {
+        bits |= FIELD_IS_NUMERIC_LONG;
+      } else if (number instanceof Float) {
+        bits |= FIELD_IS_NUMERIC_FLOAT;
+      } else if (number instanceof Double) {
+        bits |= FIELD_IS_NUMERIC_DOUBLE;
+      } else {
+        throw new IllegalArgumentException("cannot store numeric type " + number.getClass());
       }
       string = null;
       bytes = null;
@@ -158,6 +159,9 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
         string = null;
       } else {
         string = field.stringValue();
+        if (string == null) {
+          throw new IllegalArgumentException("field " + field.name() + " is stored but does not have binaryValue, stringValue nor numericValue");
+        }
       }
     }
 
@@ -169,21 +173,16 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     } else if (string != null) {
       fieldsStream.writeString(field.stringValue());
     } else {
-      final Number n = field.numericValue();
-      if (n == null) {
-        throw new IllegalArgumentException("field " + field.name() + " is stored but does not have binaryValue, stringValue nor numericValue");
-      }
-      switch (field.numericDataType()) {
-        case INT:
-          fieldsStream.writeInt(n.intValue()); break;
-        case LONG:
-          fieldsStream.writeLong(n.longValue()); break;
-        case FLOAT:
-          fieldsStream.writeInt(Float.floatToIntBits(n.floatValue())); break;
-        case DOUBLE:
-          fieldsStream.writeLong(Double.doubleToLongBits(n.doubleValue())); break;
-        default:
-          assert false : "Should never get here";
+      if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
+        fieldsStream.writeInt(number.intValue());
+      } else if (number instanceof Long) {
+        fieldsStream.writeLong(number.longValue());
+      } else if (number instanceof Float) {
+        fieldsStream.writeInt(Float.floatToIntBits(number.floatValue()));
+      } else if (number instanceof Double) {
+        fieldsStream.writeLong(Double.doubleToLongBits(number.doubleValue()));
+      } else {
+        assert false;
       }
     }
   }
@@ -193,7 +192,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
    *  document.  The stream IndexInput is the
    *  fieldsStream from which we should bulk-copy all
    *  bytes. */
-  public final void addRawDocuments(IndexInput stream, int[] lengths, int numDocs) throws IOException {
+  public void addRawDocuments(IndexInput stream, int[] lengths, int numDocs) throws IOException {
     long position = fieldsStream.getFilePointer();
     long start = position;
     for(int i=0;i<numDocs;i++) {

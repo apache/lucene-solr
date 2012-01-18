@@ -342,8 +342,7 @@ public class CoreContainer
     try {
       containerProperties = readProperties(cfg, ((NodeList) cfg.evaluate("solr", XPathConstants.NODESET)).item(0));
     } catch (Throwable e) {
-      SolrConfig.severeErrors.add(e);
-      SolrException.logOnce(log,null,e);
+      SolrException.log(log,null,e);
     }
 
     NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
@@ -403,8 +402,7 @@ public class CoreContainer
         register(name, core, false);
       }
       catch (Throwable ex) {
-        SolrConfig.severeErrors.add( ex );
-        SolrException.logOnce(log,null,ex);
+        SolrException.log(log,null,ex);
       }
     }
   }

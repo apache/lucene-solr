@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -330,8 +331,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
         //Make everything else 1 so we see the effect of the payload
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         @Override 
-        public byte computeNorm(FieldInvertState state) {
-          return encodeNormValue(state.getBoost());
+        public void computeNorm(FieldInvertState state, Norm norm) {
+          norm.setByte(encodeNormValue(state.getBoost()));
         }
 
         @Override 

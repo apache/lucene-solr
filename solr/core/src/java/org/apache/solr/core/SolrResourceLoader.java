@@ -406,7 +406,7 @@ public class SolrResourceLoader implements ResourceLoader
         }
       }
   
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e, false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
     }finally{
       //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
       // using a shortname
@@ -424,7 +424,7 @@ public class SolrResourceLoader implements ResourceLoader
     Class clazz = findClass(cname,subpackages);
     if( clazz == null ) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Can not find class: "+cname + " in " + classLoader, false);
+          "Can not find class: "+cname + " in " + classLoader);
     }
     
     Object obj = null;
@@ -433,7 +433,7 @@ public class SolrResourceLoader implements ResourceLoader
     } 
     catch (Exception e) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Error instantiating class: '" + clazz.getName()+"'", e, false );
+          "Error instantiating class: '" + clazz.getName()+"'", e);
     }
 
     if (!live) {
@@ -457,7 +457,7 @@ public class SolrResourceLoader implements ResourceLoader
     Class clazz = findClass(cname,subpackages);
     if( clazz == null ) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Can not find class: "+cname + " in " + classLoader, false);
+          "Can not find class: "+cname + " in " + classLoader);
     }
     
     Object obj = null;
@@ -467,7 +467,7 @@ public class SolrResourceLoader implements ResourceLoader
     } 
     catch (Exception e) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Error instantiating class: '" + clazz.getName()+"'", e, false );
+          "Error instantiating class: '" + clazz.getName()+"'", e);
     }
 
     if (!live) {
@@ -488,7 +488,7 @@ public class SolrResourceLoader implements ResourceLoader
     Class clazz = findClass(cName,subPackages);
     if( clazz == null ) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Can not find class: "+cName + " in " + classLoader, false);
+          "Can not find class: "+cName + " in " + classLoader);
     }
 
     Object obj = null;
@@ -499,7 +499,7 @@ public class SolrResourceLoader implements ResourceLoader
     }
     catch (Exception e) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Error instantiating class: '" + clazz.getName()+"'", e, false );
+          "Error instantiating class: '" + clazz.getName()+"'", e);
     }
 
     if (!live) {

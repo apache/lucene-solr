@@ -21,15 +21,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.*;
@@ -37,13 +32,14 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -51,7 +47,6 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -905,7 +900,8 @@ public class TestIndexWriter extends LuceneTestCase {
     DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(s.getIndexReader(),
                                                                 MultiFields.getLiveDocs(s.getIndexReader()),
                                                                 "field",
-                                                                new BytesRef("a"));
+                                                                new BytesRef("a"),
+                                                                false);
 
     assertTrue(tps.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, tps.freq());
@@ -927,7 +923,7 @@ public class TestIndexWriter extends LuceneTestCase {
       b[i] = (byte) (i+77);
 
     Document doc = new Document();
-    Field f = new BinaryField("binary", b, 10, 17);
+    Field f = new StoredField("binary", b, 10, 17);
     byte[] bx = f.binaryValue().bytes;
     assertTrue(bx != null);
     assertEquals(50, bx.length);
@@ -970,14 +966,14 @@ public class TestIndexWriter extends LuceneTestCase {
     Terms tpv = r.getTermVectors(0).terms("field");
     TermsEnum termsEnum = tpv.iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
     assertEquals(100, dpEnum.nextPosition());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+    dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
@@ -1183,11 +1179,11 @@ public class TestIndexWriter extends LuceneTestCase {
 
     Document doc = new Document();
 
-    FieldType customType = new FieldType(BinaryField.TYPE_STORED);
+    FieldType customType = new FieldType(StoredField.TYPE);
     customType.setTokenized(true);
-    customType.setIndexed(true);
     
     Field f = new Field("binary", b, 10, 17, customType);
+    customType.setIndexed(true);
     f.setTokenStream(new MockTokenizer(new StringReader("doc1field1"), MockTokenizer.WHITESPACE, false));
 
     FieldType customType2 = new FieldType(TextField.TYPE_STORED);
@@ -1640,7 +1636,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // Make sure position is still incremented when
     // massive term is skipped:
-    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"));
+    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"), false);
     assertEquals(0, tps.nextDoc());
     assertEquals(1, tps.freq());
     assertEquals(3, tps.nextPosition());
@@ -1679,7 +1675,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
 
-    FieldCache.DocTermsIndex dti = FieldCache.DEFAULT.getTermsIndex(reader, "content", random.nextBoolean());
+    FieldCache.DocTermsIndex dti = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(reader), "content", random.nextBoolean());
     assertEquals(5, dti.numOrd());                // +1 for null ord
     assertEquals(4, dti.size());
     assertEquals(bigTermBytesRef, dti.lookup(3, new BytesRef()));
@@ -1766,5 +1762,28 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     w1.close();
     d.close();
+  }
+
+  public void testChangeIndexOptions() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir,
+                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+
+    FieldType docsAndFreqs = new FieldType(TextField.TYPE_UNSTORED);
+    docsAndFreqs.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+
+    FieldType docsOnly = new FieldType(TextField.TYPE_UNSTORED);
+    docsOnly.setIndexOptions(IndexOptions.DOCS_ONLY);
+
+    Document doc = new Document();
+    doc.add(new Field("field", "a b c", docsAndFreqs));
+    w.addDocument(doc);
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new Field("field", "a b c", docsOnly));
+    w.addDocument(doc);
+    w.close();
+    dir.close();
   }
 }

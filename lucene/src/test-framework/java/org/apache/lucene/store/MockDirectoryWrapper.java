@@ -68,6 +68,7 @@ public class MockDirectoryWrapper extends Directory {
   boolean noDeleteOpenFile = true;
   boolean preventDoubleWrite = true;
   boolean checkIndexOnClose = true;
+  boolean crossCheckTermVectorsOnClose = true;
   boolean trackDiskUsage = false;
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
@@ -310,6 +311,15 @@ public class MockDirectoryWrapper extends Directory {
   public boolean getCheckIndexOnClose() {
     return checkIndexOnClose;
   }
+
+  public void setCrossCheckTermVectorsOnClose(boolean value) {
+    this.crossCheckTermVectorsOnClose = value;
+  }
+
+  public boolean getCrossCheckTermVectorsOnClose() {
+    return crossCheckTermVectorsOnClose;
+  }
+
   /**
    * If 0.0, no exceptions will be thrown.  Else this should
    * be a double 0.0 - 1.0.  We will randomly throw an
@@ -557,7 +567,7 @@ public class MockDirectoryWrapper extends Directory {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
         } 
-        _TestUtil.checkIndex(this);
+        _TestUtil.checkIndex(this, crossCheckTermVectorsOnClose);
 
         if (assertNoUnreferencedFilesOnClose) {
           // now look for unreferenced files:

@@ -418,7 +418,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
     MultiDocsAndPositionsEnum docsAndPositionsEnum;
     // Can only reuse if incoming enum is also a MultiDocsAndPositionsEnum
     if (reuse != null && reuse instanceof MultiDocsAndPositionsEnum) {
@@ -469,7 +469,7 @@ public final class MultiTermsEnum extends TermsEnum {
       }
 
       assert entry.index < docsAndPositionsEnum.subDocsAndPositionsEnum.length: entry.index + " vs " + docsAndPositionsEnum.subDocsAndPositionsEnum.length + "; " + subs.length;
-      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index]);
+      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index], needsOffsets);
 
       if (subPostings != null) {
         docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index] = subPostings;
@@ -479,8 +479,8 @@ public final class MultiTermsEnum extends TermsEnum {
       } else {
         if (entry.terms.docs(b, null, false) != null) {
           // At least one of our subs does not store
-          // positions -- we can't correctly produce a
-          // MultiDocsAndPositions enum
+          // offsets or positions -- we can't correctly
+          // produce a MultiDocsAndPositions enum
           return null;
         }
       }

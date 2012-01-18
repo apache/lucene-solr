@@ -60,22 +60,23 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
     BytesRef text;
     DocsAndPositionsEnum dpEnum = null;
     while((text = termsEnum.next()) != null) {
-      dpEnum = termsEnum.docsAndPositions(null, dpEnum);
+      dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
+      final boolean hasOffsets;
+      if (dpEnum == null) {
+        hasOffsets = false;
+        dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
+      } else {
+        hasOffsets = true;
+      }
       dpEnum.nextDoc();
       final int freq = dpEnum.freq();
-      final OffsetAttribute offsetAtt;
-      if (dpEnum.attributes().hasAttribute(OffsetAttribute.class)) {
-        offsetAtt = dpEnum.attributes().getAttribute(OffsetAttribute.class);
-      } else {
-        offsetAtt = null;
-      }
       for (int j = 0; j < freq; j++) {
         int pos = dpEnum.nextPosition();
         Token token;
-        if (offsetAtt != null) {
+        if (hasOffsets) {
           token = new Token(text.utf8ToString(),
-                            offsetAtt.startOffset(),
-                            offsetAtt.endOffset());
+                            dpEnum.startOffset(),
+                            dpEnum.endOffset());
         } else {
           token = new Token();
           token.setEmpty().append(text.utf8ToString());

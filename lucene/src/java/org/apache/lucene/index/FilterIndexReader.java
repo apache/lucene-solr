@@ -22,7 +22,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Comparator;
 
@@ -177,8 +176,8 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-      return in.docsAndPositions(liveDocs, reuse);
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+      return in.docsAndPositions(liveDocs, reuse, needsOffsets);
     }
 
     @Override
@@ -260,6 +259,16 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
+    public int startOffset() throws IOException {
+      return in.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return in.endOffset();
+    }
+
+    @Override
     public BytesRef getPayload() throws IOException {
       return in.getPayload();
     }
@@ -294,6 +303,11 @@ public class FilterIndexReader extends IndexReader {
     return in.getLiveDocs();
   }
   
+  @Override
+  public FieldInfos getFieldInfos() {
+    return in.getFieldInfos();
+  }
+
   @Override
   public Fields getTermVectors(int docID)
           throws IOException {
@@ -340,12 +354,6 @@ public class FilterIndexReader extends IndexReader {
   @Override
   protected void doClose() throws IOException {
     in.close();
-  }
-
-  @Override
-  public Collection<String> getFieldNames(IndexReader.FieldOption fieldNames) {
-    ensureOpen();
-    return in.getFieldNames(fieldNames);
   }
 
   @Override

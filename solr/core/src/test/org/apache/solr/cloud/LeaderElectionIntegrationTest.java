@@ -270,7 +270,6 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     System.clearProperty("hostPort");
     System.clearProperty("shard");
     System.clearProperty("solrcloud.update.delay");
-    SolrConfig.severeErrors.clear();
   }
   
   private void printLayout(String zkHost) throws Exception {

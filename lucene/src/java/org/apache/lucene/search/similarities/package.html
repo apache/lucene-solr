@@ -155,7 +155,7 @@ subclassing the Similarity, one can simply introduce a new basic model and tell
             matching term occurs. In these
             cases people have overridden Similarity to return 1 from the tf() method.</p></li>
         <li><p>Changing Length Normalization &mdash; By overriding
-            {@link org.apache.lucene.search.similarities.Similarity#computeNorm(FieldInvertState state)},
+            {@link org.apache.lucene.search.similarities.Similarity#computeNorm(FieldInvertState state, Norm)},
             it is possible to discount how the length of a field contributes
             to a score. In {@link org.apache.lucene.search.similarities.DefaultSimilarity},
             lengthNorm = 1 / (numTerms in field)^0.5, but if one changes this to be

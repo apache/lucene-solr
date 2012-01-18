@@ -45,7 +45,7 @@ public class PingRequestHandler extends RequestHandlerBase
     // Check if the service is available
     String healthcheck = core.getSolrConfig().get("admin/healthcheck/text()", null );
     if( healthcheck != null && !new File(healthcheck).exists() ) {
-      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Service disabled", true);
+      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Service disabled");
     }
     
     // Get the RequestHandler

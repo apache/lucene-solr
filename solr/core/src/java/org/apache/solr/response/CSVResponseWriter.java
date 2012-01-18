@@ -235,6 +235,7 @@ class CSVWriter extends TextResponseWriter {
 
     Collection<String> fields = returnFields.getLuceneFieldNames();
     Object responseObj = rsp.getValues().get("response");
+    boolean returnOnlyStored = false;
     if (fields==null) {
       if (responseObj instanceof SolrDocumentList) {
         // get the list of fields from the SolrDocumentList
@@ -251,6 +252,7 @@ class CSVWriter extends TextResponseWriter {
       } else {
         fields.remove("score");
       }
+      returnOnlyStored = true;
     }
 
     CSVSharedBufPrinter csvPrinterMV = new CSVSharedBufPrinter(mvWriter, mvStrategy);
@@ -268,9 +270,9 @@ class CSVWriter extends TextResponseWriter {
         FieldType ft = new StrField();
         sf = new SchemaField(field, ft);
       }
-
-      // if we got the list of fields from the index, only list stored fields
-      if (returnFields==null && sf != null && !sf.stored()) {
+      
+      // Return only stored fields, unless an explicit field list is specified
+      if (returnOnlyStored && sf != null && !sf.stored()) {
         continue;
       }
 

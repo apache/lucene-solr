@@ -44,8 +44,7 @@ public class TestOmitTf extends LuceneTestCase {
     public float coord(int overlap, int maxOverlap) { return 1.0f; }
     public Similarity get(String field) {
       return new TFIDFSimilarity() {
-
-        @Override public byte computeNorm(FieldInvertState state) { return encodeNormValue(state.getBoost()); }
+        @Override public void computeNorm(FieldInvertState state, Norm norm) { norm.setByte(encodeNormValue(state.getBoost())); }
         @Override public float tf(float freq) { return freq; }
         @Override public float sloppyFreq(int distance) { return 2.0f; }
         @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
@@ -101,7 +100,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.close();
 
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").indexOptions);
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
         
@@ -153,7 +152,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.close();
 
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").indexOptions);
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
         
@@ -196,7 +195,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.close();
 
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
-    FieldInfos fi = reader.fieldInfos();
+    FieldInfos fi = reader.getFieldInfos();
     assertEquals("OmitTermFreqAndPositions field bit should not be set.", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").indexOptions);
     assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
         

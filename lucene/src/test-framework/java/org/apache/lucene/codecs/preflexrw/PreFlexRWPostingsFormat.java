@@ -41,7 +41,7 @@ public class PreFlexRWPostingsFormat extends Lucene3xPostingsFormat {
   
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new PreFlexFieldsWriter(state);
+    return new PreFlexRWFieldsWriter(state);
   }
 
   @Override

@@ -881,13 +881,20 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
-        if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+        if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+          // Positions were not indexed:
           return null;
-        } else {
-          currentFrame.decodeMetaData();
-          return postingsReader.docsAndPositions(fieldInfo, currentFrame.termState, skipDocs, reuse);
         }
+
+        if (needsOffsets &&
+            fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+          // Offsets were not indexed:
+          return null;
+        }
+
+        currentFrame.decodeMetaData();
+        return postingsReader.docsAndPositions(fieldInfo, currentFrame.termState, skipDocs, reuse, needsOffsets);
       }
 
       private int getState() {
@@ -1216,8 +1223,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
         //System.out.println();
         // computeBlockStats().print(System.out);
       }
-
-      private void initIndexInput() {
+      
+      // Not private to avoid synthetic access$NNN methods
+      void initIndexInput() {
         if (this.in == null) {
           this.in = (IndexInput) BlockTreeTermsReader.this.in.clone();
         }
@@ -2095,17 +2103,21 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
-        assert !eof;
-        //System.out.println("BTR.d&p this=" + this);
-        if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+        if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+          // Positions were not indexed:
           return null;
-        } else {
-          currentFrame.decodeMetaData();
-          DocsAndPositionsEnum dpe = postingsReader.docsAndPositions(fieldInfo, currentFrame.state, skipDocs, reuse);
-          //System.out.println("  return d&pe=" + dpe);
-          return dpe;
         }
+
+        if (needsOffsets &&
+            fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+          // Offsets were not indexed:
+          return null;
+        }
+
+        assert !eof;
+        currentFrame.decodeMetaData();
+        return postingsReader.docsAndPositions(fieldInfo, currentFrame.state, skipDocs, reuse, needsOffsets);
       }
 
       @Override

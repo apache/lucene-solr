@@ -209,10 +209,8 @@ public class SimpleFacets {
       facetResponse.add("facet_ranges", getFacetRangeCounts());
 
     } catch (IOException e) {
-      SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (ParseException e) {
-      SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
     return facetResponse;
@@ -410,7 +408,7 @@ public class SimpleFacets {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
     NamedList<Integer> res = new NamedList<Integer>();
 
-    FieldCache.DocTermsIndex si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), fieldName);
+    FieldCache.DocTermsIndex si = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(searcher.getIndexReader()), fieldName);
 
     final BytesRef prefixRef;
     if (prefix == null) {

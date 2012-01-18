@@ -1,31 +1,5 @@
 package org.apache.lucene.index;
 
-import java.io.IOException;
-import java.util.EnumSet;
-import java.util.Random;
-
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene40.values.BytesRefUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DocValuesField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.NoMergePolicy;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Before;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -42,6 +16,26 @@ import org.junit.Before;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+import java.io.IOException;
+import java.util.EnumSet;
+import java.util.Random;
+
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene40.values.BytesRefUtils;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Before;
+
 public class TestTypePromotion extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
@@ -81,11 +75,11 @@ public class TestTypePromotion extends LuceneTestCase {
     int num_2 = atLeast(200);
     int num_3 = atLeast(200);
     long[] values = new long[num_1 + num_2 + num_3];
-    index(writer, new DocValuesField("promote"),
+    index(writer,
         randomValueType(types, random), values, 0, num_1);
     writer.commit();
     
-    index(writer, new DocValuesField("promote"),
+    index(writer,
         randomValueType(types, random), values, num_1, num_2);
     writer.commit();
     
@@ -96,7 +90,7 @@ public class TestTypePromotion extends LuceneTestCase {
       Directory dir_2 = newDirectory() ;
       IndexWriter writer_2 = new IndexWriter(dir_2,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      index(writer_2, new DocValuesField("promote"),
+      index(writer_2,
           randomValueType(types, random), values, num_1 + num_2, num_3);
       writer_2.commit();
       writer_2.close();
@@ -110,7 +104,7 @@ public class TestTypePromotion extends LuceneTestCase {
       }
       dir_2.close();
     } else {
-      index(writer, new DocValuesField("promote"),
+      index(writer,
           randomValueType(types, random), values, num_1 + num_2, num_3);
     }
 
@@ -172,9 +166,45 @@ public class TestTypePromotion extends LuceneTestCase {
     reader.close();
   }
 
-  public void index(IndexWriter writer, DocValuesField valField,
+  public void index(IndexWriter writer,
       Type valueType, long[] values, int offset, int num)
       throws CorruptIndexException, IOException {
+    final DocValuesField valField;
+    switch (valueType) {
+    case FIXED_INTS_8:
+      valField = new DocValuesField("promote", (byte) 0, valueType);
+      break;
+    case FIXED_INTS_16:
+      valField = new DocValuesField("promote", (short) 0, valueType);
+      break;
+    case FIXED_INTS_32:
+      valField = new DocValuesField("promote", 0, valueType);
+      break;
+    case VAR_INTS:
+      valField = new DocValuesField("promote", 0L, valueType);
+      break;
+    case FIXED_INTS_64:
+      valField = new DocValuesField("promote", (long) 0, valueType);
+      break;
+    case FLOAT_64:
+      valField = new DocValuesField("promote", (double) 0, valueType);
+      break;
+    case FLOAT_32:
+      valField = new DocValuesField("promote", (float) 0, valueType);
+      break;
+    case BYTES_FIXED_DEREF:
+    case BYTES_FIXED_SORTED:
+    case BYTES_FIXED_STRAIGHT:
+    case BYTES_VAR_DEREF:
+    case BYTES_VAR_SORTED:
+    case BYTES_VAR_STRAIGHT:
+      valField = new DocValuesField("promote", new BytesRef(), valueType);
+      break;
+    default:
+      fail("unexpected value " + valueType);
+      valField = null;
+    }
+
     BytesRef ref = new BytesRef(new byte[] { 1, 2, 3, 4 });
     for (int i = offset; i < offset + num; i++) {
       Document doc = new Document();
@@ -182,40 +212,40 @@ public class TestTypePromotion extends LuceneTestCase {
       switch (valueType) {
       case VAR_INTS:
         values[i] = random.nextInt();
-        valField.setInt(values[i]);
+        valField.setValue(values[i]);
         break;
       case FIXED_INTS_16:
         values[i] = random.nextInt(Short.MAX_VALUE);
-        valField.setInt((short) values[i], true);
+        valField.setValue((short) values[i]);
         break;
       case FIXED_INTS_32:
         values[i] = random.nextInt();
-        valField.setInt((int) values[i], true);
+        valField.setValue((int) values[i]);
         break;
       case FIXED_INTS_64:
         values[i] = random.nextLong();
-        valField.setInt(values[i], true);
+        valField.setValue(values[i]);
         break;
       case FLOAT_64:
         double nextDouble = random.nextDouble();
         values[i] = Double.doubleToRawLongBits(nextDouble);
-        valField.setFloat(nextDouble);
+        valField.setValue(nextDouble);
         break;
       case FLOAT_32:
         final float nextFloat = random.nextFloat();
         values[i] = Double.doubleToRawLongBits(nextFloat);
-        valField.setFloat(nextFloat);
+        valField.setValue(nextFloat);
         break;
       case FIXED_INTS_8:
-         values[i] = (byte) i;
-        valField.setInt((byte)values[i], true);
+        values[i] = (byte) i;
+        valField.setValue((byte)values[i]);
         break;
       case BYTES_FIXED_DEREF:
       case BYTES_FIXED_SORTED:
       case BYTES_FIXED_STRAIGHT:
         values[i] = random.nextLong();
         BytesRefUtils.copyLong(ref, values[i]);
-        valField.setBytes(ref, valueType);
+        valField.setValue(ref);
         break;
       case BYTES_VAR_DEREF:
       case BYTES_VAR_SORTED:
@@ -227,12 +257,11 @@ public class TestTypePromotion extends LuceneTestCase {
           BytesRefUtils.copyLong(ref, random.nextLong());
           values[i] = BytesRefUtils.asLong(ref);
         }
-        valField.setBytes(ref, valueType);
+        valField.setValue(ref);
         break;
 
       default:
         fail("unexpected value " + valueType);
-
       }
       doc.add(valField);
       writer.addDocument(doc);
@@ -267,7 +296,7 @@ public class TestTypePromotion extends LuceneTestCase {
     int num_1 = atLeast(200);
     int num_2 = atLeast(200);
     long[] values = new long[num_1 + num_2];
-    index(writer, new DocValuesField("promote"),
+    index(writer,
         randomValueType(INTEGERS, random), values, 0, num_1);
     writer.commit();
     
@@ -275,8 +304,8 @@ public class TestTypePromotion extends LuceneTestCase {
       // once in a while use addIndexes
       Directory dir_2 = newDirectory() ;
       IndexWriter writer_2 = new IndexWriter(dir_2,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      index(writer_2, new DocValuesField("promote"),
+                       newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+      index(writer_2,
           randomValueType(random.nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random), values, num_1, num_2);
       writer_2.commit();
       writer_2.close();
@@ -290,7 +319,7 @@ public class TestTypePromotion extends LuceneTestCase {
       }
       dir_2.close();
     } else {
-      index(writer, new DocValuesField("promote"),
+      index(writer,
           randomValueType(random.nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random), values, num_1, num_2);
       writer.commit();
     }

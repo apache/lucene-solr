@@ -17,22 +17,23 @@
 
 package org.apache.solr.search;
 
-import java.util.Random;
-import java.util.Arrays;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.OpenBitSetIterator;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSetIterator;
 
 /**
  *
@@ -357,6 +358,11 @@ public class TestDocSet extends LuceneTestCase {
       @Override
       public IndexReader[] getSequentialSubReaders() {
         return null;
+      }
+
+      @Override
+      public FieldInfos getFieldInfos() {
+        return new FieldInfos();
       }
     };
     return r;

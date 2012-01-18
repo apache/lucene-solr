@@ -68,9 +68,7 @@ public class TestParser extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newField("date", date, TextField.TYPE_STORED));
       doc.add(newField("contents", content, TextField.TYPE_STORED));
-      NumericField numericField = new NumericField("date2");
-      numericField.setIntValue(Integer.valueOf(date));
-      doc.add(numericField);
+      doc.add(new NumericField("date2", Integer.valueOf(date)));
       writer.addDocument(doc);
       line = d.readLine();
     }

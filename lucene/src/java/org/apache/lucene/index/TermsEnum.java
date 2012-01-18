@@ -160,12 +160,13 @@ public abstract class TermsEnum {
 
   /** Get {@link DocsAndPositionsEnum} for the current term.
    *  Do not call this when the enum is unpositioned.
-   *  This method will only return null if positions were
-   *  not indexed into the postings by this codec.
+   *  This method will only return null if needsOffsets is
+   *  true but offsets were not indexed.
    *  @param liveDocs unset bits are documents that should not
    *  be returned
-   *  @param reuse pass a prior DocsAndPositionsEnum for possible reuse */
-  public abstract DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException;
+   *  @param reuse pass a prior DocsAndPositionsEnum for possible reuse
+   *  @param needsOffsets true if offsets are required */
+  public abstract DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException;
 
   /**
    * Expert: Returns the TermsEnums internal state to position the TermsEnum
@@ -238,7 +239,7 @@ public abstract class TermsEnum {
     }
       
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) {
       throw new IllegalStateException("this method should never be called");
     }
       

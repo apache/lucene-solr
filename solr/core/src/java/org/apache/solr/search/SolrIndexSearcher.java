@@ -23,7 +23,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.document.BinaryField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -38,6 +38,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -182,7 +183,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     }
     optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
 
-    fieldNames = r.getFieldNames(IndexReader.FieldOption.ALL);
+    fieldNames = new HashSet<String>();
+    for(FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(r)) {
+      fieldNames.add(fieldInfo.name);
+    }
 
     // do this at the end since an exception in the constructor means we won't close    
     numOpens.incrementAndGet();
@@ -269,22 +273,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * highlighted the index reader knows about.
    */
   public Collection<String> getStoredHighlightFieldNames() {
-    if (storedHighlightFieldNames == null) {
-      storedHighlightFieldNames = new LinkedList<String>();
-      for (String fieldName : fieldNames) {
-        try {
-          SchemaField field = schema.getField(fieldName);
-          if (field.stored() &&
-                  ((field.getType() instanceof org.apache.solr.schema.TextField) ||
-                  (field.getType() instanceof org.apache.solr.schema.StrField))) {
-            storedHighlightFieldNames.add(fieldName);
-          }
-        } catch (RuntimeException e) { // getField() throws a SolrException, but it arrives as a RuntimeException
+    synchronized (this) {
+      if (storedHighlightFieldNames == null) {
+        storedHighlightFieldNames = new LinkedList<String>();
+        for (String fieldName : fieldNames) {
+          try {
+            SchemaField field = schema.getField(fieldName);
+            if (field.stored() &&
+                ((field.getType() instanceof org.apache.solr.schema.TextField) ||
+                    (field.getType() instanceof org.apache.solr.schema.StrField))) {
+              storedHighlightFieldNames.add(fieldName);
+            }
+          } catch (RuntimeException e) { // getField() throws a SolrException, but it arrives as a RuntimeException
             log.warn("Field \"" + fieldName + "\" found in index, but not defined in schema.");
+          }
         }
       }
+      return storedHighlightFieldNames;
     }
-    return storedHighlightFieldNames;
   }
   //
   // Set default regenerators on filter and query caches if they don't have any
@@ -416,15 +422,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
-      doc.add(new BinaryField(fieldInfo.name, value));
+      doc.add(new StoredField(fieldInfo.name, value));
     }
 
     @Override
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       final FieldType ft = new FieldType(TextField.TYPE_STORED);
       ft.setStoreTermVectors(fieldInfo.storeTermVector);
-      ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
-      ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
       ft.setStoreTermVectors(fieldInfo.storeTermVector);
       ft.setIndexed(fieldInfo.isIndexed);
       ft.setOmitNorms(fieldInfo.omitNorms);
@@ -434,30 +438,30 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void intField(FieldInfo fieldInfo, int value) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.INT, true));
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setIntValue(value));
+      doc.add(new NumericField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void longField(FieldInfo fieldInfo, long value) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.LONG, true));
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setLongValue(value));
+      doc.add(new NumericField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void floatField(FieldInfo fieldInfo, float value) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.FLOAT, true));
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setFloatValue(value));
+      doc.add(new NumericField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void doubleField(FieldInfo fieldInfo, double value) {
-      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.DOUBLE, true));
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, ft).setDoubleValue(value));
+      doc.add(new NumericField(fieldInfo.name, value, ft));
     }
   }
 

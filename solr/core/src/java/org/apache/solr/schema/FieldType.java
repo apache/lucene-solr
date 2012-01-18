@@ -246,7 +246,7 @@ public abstract class FieldType extends FieldProperties {
     try {
       val = toInternal(value.toString());
     } catch (RuntimeException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "'", e, false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "'", e);
     }
     if (val==null) return null;
 
@@ -465,12 +465,10 @@ public abstract class FieldType extends FieldProperties {
    * @see #getAnalyzer
    */
   public void setAnalyzer(Analyzer analyzer) {
-    SolrException e = new SolrException
+    throw new SolrException
       (ErrorCode.SERVER_ERROR,
        "FieldType: " + this.getClass().getSimpleName() + 
        " (" + typeName + ") does not support specifying an analyzer");
-    SolrException.logOnce(log,null,e);
-    throw e;
   }
 
   /**
@@ -487,12 +485,10 @@ public abstract class FieldType extends FieldProperties {
    * @see #getQueryAnalyzer
    */
   public void setQueryAnalyzer(Analyzer analyzer) {
-    SolrException e = new SolrException
+    throw new SolrException
       (ErrorCode.SERVER_ERROR,
        "FieldType: " + this.getClass().getSimpleName() +
        " (" + typeName + ") does not support specifying an analyzer");
-    SolrException.logOnce(log,null,e);
-    throw e;
   }
 
   /** @lucene.internal */

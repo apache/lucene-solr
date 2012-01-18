@@ -17,8 +17,11 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.search.NumericRangeQuery; // javadocs
+import org.apache.lucene.util.NumericUtils;
 
 public class FieldType implements IndexableFieldType {
 
@@ -30,9 +33,12 @@ public class FieldType implements IndexableFieldType {
   private boolean storeTermVectorPositions;
   private boolean omitNorms;
   private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+  private DocValues.Type docValueType;
+  private NumericField.DataType numericType;
   private boolean frozen;
+  private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
 
-  public FieldType(IndexableFieldType ref) {
+  public FieldType(FieldType ref) {
     this.indexed = ref.indexed();
     this.stored = ref.stored();
     this.tokenized = ref.tokenized();
@@ -41,6 +47,8 @@ public class FieldType implements IndexableFieldType {
     this.storeTermVectorPositions = ref.storeTermVectorPositions();
     this.omitNorms = ref.omitNorms();
     this.indexOptions = ref.indexOptions();
+    this.docValueType = ref.docValueType();
+    this.numericType = ref.numericType();
     // Do not copy frozen!
   }
   
@@ -49,7 +57,7 @@ public class FieldType implements IndexableFieldType {
 
   private void checkIfFrozen() {
     if (frozen) {
-      throw new IllegalStateException();
+      throw new IllegalStateException("this FieldType is already frozen and cannot be changed");
     }
   }
 
@@ -134,6 +142,42 @@ public class FieldType implements IndexableFieldType {
     this.indexOptions = value;
   }
 
+  public void setDocValueType(DocValues.Type type) {
+    checkIfFrozen();
+    docValueType = type;
+  }
+  
+  @Override
+  public DocValues.Type docValueType() {
+    return docValueType;
+  }
+
+  public void setNumericType(NumericField.DataType type) {
+    checkIfFrozen();
+    numericType = type;
+  }
+
+  /** Numeric {@link NumericField.DataType}; if
+   *  non-null then the field's value will be indexed
+   *  numerically so that {@link NumericRangeQuery} can be
+   *  used at search time. */
+  public NumericField.DataType numericType() {
+    return numericType;
+  }
+
+  public void setNumericPrecisionStep(int precisionStep) {
+    checkIfFrozen();
+    if (precisionStep < 1) {
+      throw new IllegalArgumentException("precisionStep must be >= 1 (got " + precisionStep + ")");
+    }
+    this.numericPrecisionStep = precisionStep;
+  }
+
+  /** Precision step for numeric field. */
+  public int numericPrecisionStep() {
+    return numericPrecisionStep;
+  }
+
   /** Prints a Field for human consumption. */
   @Override
   public final String toString() {
@@ -172,6 +216,16 @@ public class FieldType implements IndexableFieldType {
         result.append(",indexOptions=");
         result.append(indexOptions);
       }
+      if (numericType != null) {
+        result.append(",numericType=");
+        result.append(numericType);
+        result.append(",numericPrecisionStep=");
+        result.append(numericPrecisionStep);
+      }
+    }
+    if (docValueType != null) {
+      result.append(",docValueType=");
+      result.append(docValueType);
     }
     
     return result.toString();

@@ -17,18 +17,14 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.solr.common.ResourceLoader;
 
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RuleBasedCollator;
@@ -261,26 +257,6 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenTestCase {
         new KeywordTokenizer(new StringReader(germanOE)));
 
     assertCollatesToSame(tsUmlaut, tsOE);
-  }
-  
-  private class StringMockSolrResourceLoader implements ResourceLoader {
-    String text;
-
-    StringMockSolrResourceLoader(String text) {
-      this.text = text;
-    }
-
-    public List<String> getLines(String resource) throws IOException {
-      return null;
-    }
-
-    public Object newInstance(String cname, String... subpackages) {
-      return null;
-    }
-
-    public InputStream openResource(String resource) throws IOException {
-      return new ByteArrayInputStream(text.getBytes("UTF-8"));
-    }
   }
   
   private void assertCollatesToSame(TokenStream stream1, TokenStream stream2) throws IOException {

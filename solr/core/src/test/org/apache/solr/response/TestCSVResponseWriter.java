@@ -36,7 +36,8 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
 
   public static void createIndex() {
     assertU(adoc("id","1", "foo_i","-1", "foo_s","hi", "foo_l","12345678987654321", "foo_b","false", "foo_f","1.414","foo_d","-1.0E300","foo_dt","2000-01-02T03:04:05Z"));
-    assertU(adoc("id","2", "v_ss","hi",  "v_ss","there", "v2_ss","nice", "v2_ss","output"));
+    assertU(adoc("id","2", "v_ss","hi",  "v_ss","there", "v2_ss","nice", "v2_ss","output", "shouldbeunstored","foo"));
+    assertU(adoc("id","3", "shouldbeunstored","foo"));
     assertU(commit());
   }
 
@@ -97,6 +98,10 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     assertEquals("1,,hi\n2,\"hi,there\",\n"
     , h.query(req("q","id:[1 TO 2]", "wt","csv", "csv.header","false", "fl","id,v_ss,foo_s")));
 
+    // test SOLR-2970 not returning non-stored fields by default
+    assertEquals("id,foo_b,foo_d,foo_s,foo_f,foo_i,foo_dt,foo_l,v_ss,v2_ss\n"
+        , h.query(req("q","id:3", "wt","csv", "csv.header","true", "fl","*", "rows","0")));
+
 
     // now test SolrDocumentList
     SolrDocument d = new SolrDocument();
@@ -119,6 +124,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     d.addField("v2_ss","nice");
     d.addField("v2_ss","output");
     d.addField("score", "89.83");
+    d.addField("shouldbeunstored","foo");
 
     SolrDocumentList sdl = new SolrDocumentList();
     sdl.add(d1);

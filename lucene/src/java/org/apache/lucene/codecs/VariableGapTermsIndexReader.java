@@ -33,6 +33,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
@@ -187,6 +188,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
         if (indexDivisor > 1) {
           // subsample
+          final IntsRef scratchIntsRef = new IntsRef();
           final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
           final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
           final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
@@ -194,7 +196,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
           int count = indexDivisor;
           while((result = fstEnum.next()) != null) {
             if (count == indexDivisor) {
-              builder.add(result.input, result.output);
+              builder.add(Util.toIntsRef(result.input, scratchIntsRef), result.output);
               count = 0;
             }
             count++;

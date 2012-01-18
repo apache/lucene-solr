@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -122,10 +123,11 @@ public class BM25Similarity extends Similarity {
     }
   }
 
+
   @Override
-  public final byte computeNorm(FieldInvertState state) {
+  public final void computeNorm(FieldInvertState state, Norm norm) {
     final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
-    return encodeNormValue(state.getBoost(), numTerms);
+    norm.setByte(encodeNormValue(state.getBoost(), numTerms));
   }
 
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {

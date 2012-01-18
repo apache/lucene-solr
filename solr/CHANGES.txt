@@ -31,7 +31,7 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.3.4
 
 
-Upgrading from Solr 3.5-dev
+Upgrading from Solr 3.6-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -54,13 +54,14 @@ Upgrading from Solr 3.5-dev
   legacy behavior should set a default value for the 'mm' param in
   their solrconfig.xml file.
   
-* FacetComponent no longer catches and embeds exceptions occurred during facet
-  processing, it throws HTTP 400 or 500 exceptions instead.
-  
 * The VelocityResponseWriter is no longer built into the core.  Its JAR and
   dependencies now need to be added (via <lib> or solr/home lib inclusion),
   and it needs to be registered in solrconfig.xml like this:
     <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
+
+* The update request parameter to choose Update Request Processor Chain is 
+  renamed from "update.processor" to "update.chain". The old parameter was
+  deprecated but still working since Solr3.2, but is now removed entirely.
 
 Detailed Change List
 ----------------------
@@ -99,11 +100,6 @@ New Features
   SOLR-2799: Update CloudState incrementally rather than always reading the data at each zk 
   node. (Jamie Johnson via Mark Miller)
 
-* SOLR-1729: Evaluation of NOW for date math is done only once per request for
-  consistency, and is also propagated to shards in distributed search.
-  Adding a parameter NOW=<time_in_ms> to the request will override the
-  current time.  (Peter Sturge, yonik)
-
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
   as results. 
@@ -121,9 +117,6 @@ New Features
   
 * SOLR-2335: New 'field("...")' function syntax for refering to complex 
   field names (containing whitespace or special characters) in functions.
-
-* SOLR-1709: Distributed support for Date and Numeric Range Faceting
-  (Peter Sturge, David Smiley, hossman)
 
 * SOLR-2383: /browse improvements: generalize range and date facet display
   (Jan Høydahl via yonik)
@@ -200,14 +193,10 @@ New Features
 * SOLR-2992: Add support for IndexWriter.prepareCommit() via prepareCommit=true
   on update URLs. (yonik)
 
+* SOLR-2906: Added LFU cache options to Solr. (Shawn Heisey via Erick Erickson)
 
 Optimizations
 ----------------------
-
-* SOLR-2888: FSTSuggester refactoring: internal storage is now UTF-8, 
-  external sorting (on disk) prevents OOMs even with large data sets
-  (the bottleneck is now FST construction), code cleanups and API cleanups.
-  (Dawid Weiss, Robert Muir)
 
 * SOLR-1875: Per-segment field faceting for single valued string fields.
   Enable with facet.method=fcs, control the number of threads used with
@@ -295,6 +284,10 @@ Bug Fixes
   QueryElevationComponent fails to properly initialize (gsingers)
   
 * SOLR-1520: QueryElevationComponent now supports non-string ids (gsingers)
+
+* SOLR-3037: When using binary format in solrj the codec screws up parameters
+  (Sami Siren via yonik)
+
 
 Other Changes
 ----------------------
@@ -388,6 +381,15 @@ Other Changes
   
 * SOLR-2607: Removed deprecated client/ruby directory, which included solr-ruby and flare.
   (ehatcher)
+  
+* Solr-3032: logOnce from SolrException logOnce and all the supporting
+  structure is gone. abortOnConfugrationError is also gone as it is no longer referenced.
+  Errors should be caught and logged at the top-most level or logged and NOT propagated up the 
+  chain. (Erick Erickson)
+
+* SOLR-2105: Remove support for deprecated "update.processor" (since 3.2), in favor of 
+  "update.chain" (janhoy)
+
 
 Documentation
 ----------------------
@@ -396,6 +398,11 @@ Documentation
   (Eric Pugh and hossman)
   
 ==================  3.6.0  ==================
+
+Upgrading from Solr 3.5
+----------------------
+* As doGet() methods in SimplePostTool was changed to static, the client applications of this
+  class need to be recompiled.
 
 New Features
 ----------------------
@@ -421,13 +428,36 @@ New Features
   Solr will use it as the root name for all MBeans Solr exposes via
   JMX.  The default root name is "solr" followed by the core name.
   (Constantijn Visinescu, hossman)
+  
+* SOLR-2906: Added LFU cache options to Solr. (Shawn Heisey via Erick Erickson)
+
+* SOLR-3036: Ability to specify overwrite=false on the URL for XML updates.
+  (Sami Siren via yonik)
+
+* SOLR-2603: Add the encoding function for alternate fields in highlighting.
+  (Massimo Schiavon, koji)
+  
+* SOLR-1729: Evaluation of NOW for date math is done only once per request for
+  consistency, and is also propagated to shards in distributed search.
+  Adding a parameter NOW=<time_in_ms> to the request will override the
+  current time.  (Peter Sturge, yonik, Simon Willnauer)
+  
+* SOLR-1709: Distributed support for Date and Numeric Range Faceting
+  (Peter Sturge, David Smiley, hossman, Simon Willnauer)
 
 Optimizations
 ----------------------
-* SOLR-1931 Speedup for LukeRequestHandler and admin/schema browser. New parameter
+* SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
   reportDocCount defaults to 'false'. Old behavior still possible by specifying this as 'true'
   (Erick Erickson)
 
+* SOLR-3012: Move System.getProperty("type") in postData() to main() and add type argument so that
+  the client applications of SimplePostTool can set content type via method argument. (koji)
+
+* SOLR-2888: FSTSuggester refactoring: internal storage is now UTF-8, 
+  external sorting (on disk) prevents OOMs even with large data sets
+  (the bottleneck is now FST construction), code cleanups and API cleanups.
+  (Dawid Weiss, Robert Muir)
 
 Bug Fixes
 ----------------------
@@ -444,7 +474,18 @@ Bug Fixes
 
 * SOLR-2956: Fixed inconsistencies in the flags (and flag key) reported by 
   the LukeRequestHandler (hossman)
+
+* SOLR-3024: Fixed JSONTestUtil.matchObj, in previous releases it was not 
+  respecting the 'delta' arg (David Smiley via hossman)
   
+* SOLR-2542: Fixed DIH Context variables which were broken for all scopes other 
+  then SCOPE_ENTITY (Linbin Chen & Frank Wesemann via hossman)
+  
+* SOLR-3042: Fixed Maven Jetty plugin configuration. 
+  (David Smiley via Steve Rowe)
+
+* SOLR-2970: CSV ResponseWriter returns fields defined as stored=false in schema (janhoy)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
@@ -452,6 +493,14 @@ Other Changes
 * SOLR-2920: Refactor frequent conditional use of DefaultSolrParams and 
   AppendedSolrParams into factory methods.
   (David Smiley via hossman)
+
+* Solr-3032: Deprecate logOnce from SolrException logOnce and all the supporting
+  structure will disappear in 4.0. Errors should be caught and logged at the
+  top-most level or logged and NOT propagated up the chain. (Erick Erickson)
+
+Build
+----------------------
+* SOLR-2487: Add build target to package war without slf4j jars (janhoy)
 
 ==================  3.5.0  ==================
 
@@ -588,6 +637,9 @@ Upgrading from Solr 3.3
   "true" for consistent behavior with previous Solr versions.  This
   situation has now been fixed to cause an error on startup when these
   contradictory options.  See SOLR-2669.
+  
+* FacetComponent no longer catches and embeds exceptions occurred during facet
+  processing, it throws HTTP 400 or 500 exceptions instead.
 
 New Features
 ----------------------

@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -45,9 +43,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -544,8 +540,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", customType2));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", customType2));
     // add numeric fields, to test if flex preserves encoding
-    doc.add(new NumericField("trieInt", 4).setIntValue(id));
-    doc.add(new NumericField("trieLong", 4).setLongValue(id));
+    doc.add(new NumericField("trieInt", id));
+    doc.add(new NumericField("trieLong", (long) id));
     writer.addDocument(doc);
   }
 
@@ -640,12 +636,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("wrong number of hits", 34, hits.length);
       
       // check decoding into field cache
-      int[] fci = FieldCache.DEFAULT.getInts(searcher.getIndexReader(), "trieInt", false);
+      int[] fci = FieldCache.DEFAULT.getInts(new SlowMultiReaderWrapper(searcher.getIndexReader()), "trieInt", false);
       for (int val : fci) {
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
-      long[] fcl = FieldCache.DEFAULT.getLongs(searcher.getIndexReader(), "trieLong", false);
+      long[] fcl = FieldCache.DEFAULT.getLongs(new SlowMultiReaderWrapper(searcher.getIndexReader()), "trieLong", false);
       for (long val : fcl) {
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }
@@ -737,6 +733,17 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       dir.close();
     }
+  }
+  
+  public static final String surrogatesIndexName = "index.36.surrogates.zip";
+
+  public void testSurrogates() throws Exception {
+    File oldIndexDir = _TestUtil.getTempDir("surrogates");
+    _TestUtil.unzip(getDataFile(surrogatesIndexName), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    // TODO: more tests
+    _TestUtil.checkIndex(dir);
+    dir.close();
   }
 
 }

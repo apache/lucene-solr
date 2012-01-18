@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Closeable;
@@ -305,7 +306,7 @@ public abstract class Directory implements Closeable {
     protected void readInternal(byte[] b, int offset, int len) throws IOException {
       long start = getFilePointer();
       if(start + len > length)
-        throw new IOException("read past EOF");
+        throw new EOFException("read past EOF: " + this);
       base.seek(fileOffset + start);
       base.readBytes(b, offset, len, false);
     }
@@ -338,7 +339,7 @@ public abstract class Directory implements Closeable {
       if (numBytes > 0) {
         long start = getFilePointer();
         if (start + numBytes > length) {
-          throw new IOException("read past EOF");
+          throw new EOFException("read past EOF: " + this);
         }
         base.seek(fileOffset + start);
         base.copyBytes(out, numBytes);

@@ -86,7 +86,8 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
       counter = 0;
       DocsAndPositionsEnum tp = reader.termPositionsEnum(reader.getLiveDocs(),
                                                          term.field(),
-                                                         new BytesRef(term.text()));
+                                                         new BytesRef(term.text()),
+                                                         false);
 
       checkSkipTo(tp, 14, 185); // no skips
       checkSkipTo(tp, 17, 190); // one skip on level 0

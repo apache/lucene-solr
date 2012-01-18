@@ -18,10 +18,12 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -29,19 +31,18 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.lucene.util._TestUtil;
 
 public class TestIndexWriterReader extends LuceneTestCase {
   
@@ -780,7 +781,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     assertEquals(0, excs.size());
     r.close();
-    assertEquals(0, dir1.getOpenDeletedFiles().size());
+    final Collection<String> openDeletedFiles = dir1.getOpenDeletedFiles();
+    assertEquals("openDeleted=" + openDeletedFiles, 0, openDeletedFiles.size());
 
     writer.close();
 

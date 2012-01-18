@@ -51,10 +51,12 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Util;
 
 // TODO: would be nice to somehow allow this to act like
 // InstantiatedIndex, by never writing to disk; ie you write
@@ -131,7 +133,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public void addPosition(int pos, BytesRef payload) throws IOException {
+      public void addPosition(int pos, BytesRef payload, int startOffset, int endOffset) throws IOException {
         assert payload == null || field.storePayloads;
 
         if (VERBOSE) System.out.println("      addPos pos=" + pos + " payload=" + payload);
@@ -183,6 +185,8 @@ public class MemoryPostingsFormat extends PostingsFormat {
     private final BytesRef spare = new BytesRef();
     private byte[] finalBuffer = new byte[128];
 
+    private final IntsRef scratchIntsRef = new IntsRef();
+
     @Override
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
 
@@ -213,7 +217,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
           System.out.println("      " + Integer.toHexString(finalBuffer[i]&0xFF));
         }
       }
-      builder.add(text, BytesRef.deepCopyOf(spare));
+      builder.add(Util.toIntsRef(text, scratchIntsRef), BytesRef.deepCopyOf(spare));
       termCount++;
     }
 
@@ -249,6 +253,9 @@ public class MemoryPostingsFormat extends PostingsFormat {
     return new FieldsConsumer() {
       @Override
       public TermsConsumer addField(FieldInfo field) {
+        if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+          throw new UnsupportedOperationException("this codec cannot index offsets");
+        }
         if (VERBOSE) System.out.println("\naddField field=" + field.name);
         return new TermsWriter(out, field);
       }
@@ -328,7 +335,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
             assert freq > 0;
           }
 
-          if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+          if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
             // Skip positions
             for(int posUpto=0;posUpto<freq;posUpto++) {
               if (!storePayloads) {
@@ -501,6 +508,16 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
+    public int startOffset() {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() {
+      return -1;
+    }
+
+    @Override
     public BytesRef getPayload() {
       payloadRetrieved = true;
       return payload;
@@ -618,8 +635,14 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-      if (field.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
+
+      if (needsOffsets) {
+        // Not until we can index offsets...
+        return null;
+      }
+      
+      if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
         return null;
       }
       decodeMetaData();

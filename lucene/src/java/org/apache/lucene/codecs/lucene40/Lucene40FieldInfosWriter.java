@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -35,20 +36,15 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
   /** Extension of field infos */
   static final String FIELD_INFOS_EXTENSION = "fnm";
   
-  // First used in 2.9; prior to 2.9 there was no format header
-  static final int FORMAT_START = -2;
-  // First used in 3.4: omit only positional information
-  static final int FORMAT_OMIT_POSITIONS = -3;
   // per-field codec support, records index values for fields
-  static final int FORMAT_FLEX = -4;
+  static final int FORMAT_START = -4;
 
   // whenever you add a new format, make it 1 smaller (negative version logic)!
-  static final int FORMAT_CURRENT = FORMAT_FLEX;
+  static final int FORMAT_CURRENT = FORMAT_START;
   
   static final byte IS_INDEXED = 0x1;
   static final byte STORE_TERMVECTOR = 0x2;
-  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x4;
-  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x8;
+  static final byte STORE_OFFSETS_IN_POSTINGS = 0x4;
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
@@ -66,71 +62,65 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
         byte bits = 0x0;
         if (fi.isIndexed) bits |= IS_INDEXED;
         if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
-        if (fi.storePositionWithTermVector) bits |= STORE_POSITIONS_WITH_TERMVECTOR;
-        if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
         if (fi.omitNorms) bits |= OMIT_NORMS;
         if (fi.storePayloads) bits |= STORE_PAYLOADS;
-        if (fi.indexOptions == IndexOptions.DOCS_ONLY)
+        if (fi.indexOptions == IndexOptions.DOCS_ONLY) {
           bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-        else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS)
+        } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
+          bits |= STORE_OFFSETS_IN_POSTINGS;
+        } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS) {
           bits |= OMIT_POSITIONS;
+        }
         output.writeString(fi.name);
         output.writeInt(fi.number);
         output.writeByte(bits);
 
-        final byte b;
-
-        if (!fi.hasDocValues()) {
-          b = 0;
-        } else {
-          switch(fi.getDocValuesType()) {
-          case VAR_INTS:
-            b = 1;
-            break;
-          case FLOAT_32:
-            b = 2;
-            break;
-          case FLOAT_64:
-            b = 3;
-            break;
-          case BYTES_FIXED_STRAIGHT:
-            b = 4;
-            break;
-          case BYTES_FIXED_DEREF:
-            b = 5;
-            break;
-          case BYTES_VAR_STRAIGHT:
-            b = 6;
-            break;
-          case BYTES_VAR_DEREF:
-            b = 7;
-            break;
-          case FIXED_INTS_16:
-            b = 8;
-            break;
-          case FIXED_INTS_32:
-            b = 9;
-            break;
-          case FIXED_INTS_64:
-            b = 10;
-            break;
-          case FIXED_INTS_8:
-            b = 11;
-            break;
-          case BYTES_FIXED_SORTED:
-            b = 12;
-            break;
-          case BYTES_VAR_SORTED:
-            b = 13;
-            break;
-          default:
-            throw new IllegalStateException("unhandled indexValues type " + fi.getDocValuesType());
-          }
-        }
-        output.writeByte(b);
+        // pack the DV types in one byte
+        final byte dv = docValuesByte(fi.getDocValuesType());
+        final byte nrm = docValuesByte(fi.getNormType());
+        assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
+        byte val = (byte) (0xff & ((nrm << 4) | dv));
+        output.writeByte(val);
       }
     } finally {
       output.close();
+    }
+  }
+
+  public byte docValuesByte(Type type) {
+    if (type == null) {
+      return 0;
+    } else {
+      switch(type) {
+      case VAR_INTS:
+        return 1;
+      case FLOAT_32:
+        return 2;
+      case FLOAT_64:
+        return 3;
+      case BYTES_FIXED_STRAIGHT:
+        return 4;
+      case BYTES_FIXED_DEREF:
+        return 5;
+      case BYTES_VAR_STRAIGHT:
+        return 6;
+      case BYTES_VAR_DEREF:
+        return 7;
+      case FIXED_INTS_16:
+        return 8;
+      case FIXED_INTS_32:
+        return 9;
+      case FIXED_INTS_64:
+        return 10;
+      case FIXED_INTS_8:
+        return 11;
+      case BYTES_FIXED_SORTED:
+        return 12;
+      case BYTES_VAR_SORTED:
+        return 13;
+      default:
+        throw new IllegalStateException("unhandled indexValues type " + type);
+      }
     }
   }
   

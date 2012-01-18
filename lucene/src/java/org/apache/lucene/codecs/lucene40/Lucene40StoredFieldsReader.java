@@ -85,7 +85,6 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     } finally {
       idxStream.close();
     }
-  
   }
   
   // Used only by clone

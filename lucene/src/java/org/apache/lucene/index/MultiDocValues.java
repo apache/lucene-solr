@@ -46,6 +46,13 @@ public class MultiDocValues extends DocValues {
     public DocValues pull(IndexReader reader, String field) throws IOException {
       return reader.normValues(field);
     }
+    
+    public boolean stopLoadingOnNull(IndexReader reader, String field) throws IOException {
+      // for norms we drop all norms if one leaf reader has no norms and the field is present
+      FieldInfos fieldInfos = reader.getFieldInfos();
+      FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+      return fieldInfo != null && fieldInfo.omitNorms;
+    }
   };
 
   public static class DocValuesSlice {
@@ -64,6 +71,10 @@ public class MultiDocValues extends DocValues {
   private static class DocValuesPuller {
     public DocValues pull(IndexReader reader, String field) throws IOException {
       return reader.docValues(field);
+    }
+    
+    public boolean stopLoadingOnNull(IndexReader reader, String field) throws IOException {
+      return false;
     }
   }
 
@@ -123,12 +134,19 @@ public class MultiDocValues extends DocValues {
       // potentially incompatible types
       
       new ReaderUtil.Gather(r) {
+        boolean stop = false;
         @Override
         protected void add(int base, IndexReader r) throws IOException {
+          if (stop) {
+            return;
+          }
           final DocValues d = puller.pull(r, field);
           if (d != null) {
             TypePromoter incoming = TypePromoter.create(d.type(), d.getValueSize());
             promotedType[0] = promotedType[0].promote(incoming);
+          } else if (puller.stopLoadingOnNull(r, field)){
+            promotedType[0] = TypePromoter.getIdentityPromoter(); // set to identity to return null
+            stop = true;
           }
           slices.add(new DocValuesSlice(d, base, r.maxDoc()));
         }

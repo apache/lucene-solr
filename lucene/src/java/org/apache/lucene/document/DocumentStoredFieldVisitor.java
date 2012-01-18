@@ -57,15 +57,13 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
 
   @Override
   public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
-    doc.add(new BinaryField(fieldInfo.name, value));
+    doc.add(new StoredField(fieldInfo.name, value));
   }
 
   @Override
   public void stringField(FieldInfo fieldInfo, String value) throws IOException {
     final FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setStoreTermVectors(fieldInfo.storeTermVector);
-    ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
-    ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
     ft.setStoreTermVectors(fieldInfo.storeTermVector);
     ft.setIndexed(fieldInfo.isIndexed);
     ft.setOmitNorms(fieldInfo.omitNorms);
@@ -75,30 +73,22 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
 
   @Override
   public void intField(FieldInfo fieldInfo, int value) {
-    FieldType ft = new FieldType(NumericField.TYPE_STORED);
-    ft.setIndexed(fieldInfo.isIndexed);
-    doc.add(new NumericField(fieldInfo.name, ft).setIntValue(value));
+    doc.add(new StoredField(fieldInfo.name, value));
   }
 
   @Override
   public void longField(FieldInfo fieldInfo, long value) {
-    FieldType ft = new FieldType(NumericField.TYPE_STORED);
-    ft.setIndexed(fieldInfo.isIndexed);
-    doc.add(new NumericField(fieldInfo.name, ft).setLongValue(value));
+    doc.add(new StoredField(fieldInfo.name, value));
   }
 
   @Override
   public void floatField(FieldInfo fieldInfo, float value) {
-    FieldType ft = new FieldType(NumericField.TYPE_STORED);
-    ft.setIndexed(fieldInfo.isIndexed);
-    doc.add(new NumericField(fieldInfo.name, ft).setFloatValue(value));
+    doc.add(new StoredField(fieldInfo.name, value));
   }
 
   @Override
   public void doubleField(FieldInfo fieldInfo, double value) {
-    FieldType ft = new FieldType(NumericField.TYPE_STORED);
-    ft.setIndexed(fieldInfo.isIndexed);
-    doc.add(new NumericField(fieldInfo.name, ft).setDoubleValue(value));
+    doc.add(new StoredField(fieldInfo.name, value));
   }
 
   @Override

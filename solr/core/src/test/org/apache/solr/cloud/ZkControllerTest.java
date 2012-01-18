@@ -139,7 +139,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   
   @Override
   public void tearDown() throws Exception {
-    SolrConfig.severeErrors.clear();
     super.tearDown();
   }
   

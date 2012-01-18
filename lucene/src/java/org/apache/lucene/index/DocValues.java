@@ -493,6 +493,7 @@ public abstract class DocValues implements Closeable {
      * </p>
      */
     FIXED_INTS_64,
+
     /**
      * A 32 bit floating point value. By default there is no compression
      * applied. To fit custom float values into less than 32bit either a custom
@@ -507,6 +508,7 @@ public abstract class DocValues implements Closeable {
      * </p>
      */
     FLOAT_32,
+
     /**
      * 
      * A 64 bit floating point value. By default there is no compression
@@ -613,7 +615,6 @@ public abstract class DocValues implements Closeable {
      * @see SortedSource
      */
     BYTES_FIXED_SORTED
-    
   }
   
   /**

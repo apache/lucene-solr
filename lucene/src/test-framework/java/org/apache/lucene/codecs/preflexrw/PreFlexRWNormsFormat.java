@@ -21,11 +21,15 @@ import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.lucene3x.Lucene3xNormsFormat;
 import org.apache.lucene.index.PerDocWriteState;
 
+/**
+ * @lucene.internal
+ * @lucene.experimental
+ */
 public class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new PreFlexNormsConsumer(state.directory, state.segmentName, state.context);
+    return new PreFlexRWNormsConsumer(state.directory, state.segmentName, state.context);
   }
 
 }

@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -145,7 +146,7 @@ public class SimpleFSDirectory extends FSDirectory {
         int total = 0;
 
         if (position + len > end) {
-          throw new IOException("read past EOF: " + this);
+          throw new EOFException("read past EOF: " + this);
         }
 
         try {

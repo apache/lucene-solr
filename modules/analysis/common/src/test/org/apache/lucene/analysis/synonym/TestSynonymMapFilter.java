@@ -260,9 +260,16 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
           } else {
             outputs[matchIDX] = outputs[matchIDX] + "/" + synOutputs[synUpto++];
           }
-          if (synOutputs.length == 1) {
-            // Add endOffset
-            outputs[matchIDX] = outputs[matchIDX] + ":" + ((inputIDX*2) + syn.in.length());
+          final int endOffset;
+          if (matchIDX < numInputs) {
+            if (synOutputs.length == 1) {
+              // Add full endOffset
+              endOffset = (inputIDX*2) + syn.in.length();
+            } else {
+              // Add endOffset matching input token's
+              endOffset = (matchIDX*2) + 1;
+            }
+            outputs[matchIDX] = outputs[matchIDX] + ":" + endOffset;
           }
         }
       }

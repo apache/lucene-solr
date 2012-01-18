@@ -31,10 +31,8 @@ public final class Util {
   }
 
   /** Looks up the output for this input, or null if the
-   *  input is not accepted. FST must be
-   *  INPUT_TYPE.BYTE4. */
+   *  input is not accepted. */
   public static<T> T get(FST<T> fst, IntsRef input) throws IOException {
-    assert fst.inputType == FST.INPUT_TYPE.BYTE4;
 
     // TODO: would be nice not to alloc this on every lookup
     final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
@@ -59,77 +57,7 @@ public final class Util {
     }
   }
 
-  /** Logically casts input to UTF32 ints then looks up the output
-   *  or null if the input is not accepted.  FST must be
-   *  INPUT_TYPE.BYTE4.  */
-  public static<T> T get(FST<T> fst, char[] input, int offset, int length) throws IOException {
-    assert fst.inputType == FST.INPUT_TYPE.BYTE4;
-
-    // TODO: would be nice not to alloc this on every lookup
-    final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
-
-    int charIdx = offset;
-    final int charLimit = offset + length;
-
-    // Accumulate output as we go
-    final T NO_OUTPUT = fst.outputs.getNoOutput();
-    T output = NO_OUTPUT;
-    while(charIdx < charLimit) {
-      final int utf32 = Character.codePointAt(input, charIdx);
-      charIdx += Character.charCount(utf32);
-
-      if (fst.findTargetArc(utf32, arc, arc) == null) {
-        return null;
-      } else if (arc.output != NO_OUTPUT) {
-        output = fst.outputs.add(output, arc.output);
-      }
-    }
-
-    if (fst.findTargetArc(FST.END_LABEL, arc, arc) == null) {
-      return null;
-    } else if (arc.output != NO_OUTPUT) {
-      return fst.outputs.add(output, arc.output);
-    } else {
-      return output;
-    }
-  }
-
-
-  /** Logically casts input to UTF32 ints then looks up the output
-   *  or null if the input is not accepted.  FST must be
-   *  INPUT_TYPE.BYTE4.  */
-  public static<T> T get(FST<T> fst, CharSequence input) throws IOException {
-    assert fst.inputType == FST.INPUT_TYPE.BYTE4;
-    
-    // TODO: would be nice not to alloc this on every lookup
-    final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
-
-    int charIdx = 0;
-    final int charLimit = input.length();
-
-    // Accumulate output as we go
-    final T NO_OUTPUT = fst.outputs.getNoOutput();
-    T output = NO_OUTPUT;
-
-    while(charIdx < charLimit) {
-      final int utf32 = Character.codePointAt(input, charIdx);
-      charIdx += Character.charCount(utf32);
-
-      if (fst.findTargetArc(utf32, arc, arc) == null) {
-        return null;
-      } else if (arc.output != NO_OUTPUT) {
-        output = fst.outputs.add(output, arc.output);
-      }
-    }
-
-    if (fst.findTargetArc(FST.END_LABEL, arc, arc) == null) {
-      return null;
-    } else if (arc.output != NO_OUTPUT) {
-      return fst.outputs.add(output, arc.output);
-    } else {
-      return output;
-    }
-  }
+  // TODO: maybe a CharsRef version for BYTE2
 
   /** Looks up the output for this input, or null if the
    *  input is not accepted */
@@ -380,5 +308,52 @@ public final class Util {
     } else {
       return "0x" + Integer.toHexString(label);
     }
+  }
+
+  /** Decodes the Unicode codepoints from the provided
+   *  CharSequence and places them in the provided scratch
+   *  IntsRef, which must not be null, returning it. */
+  public static IntsRef toUTF32(CharSequence s, IntsRef scratch) {
+    int charIdx = 0;
+    int intIdx = 0;
+    final int charLimit = s.length();
+    while(charIdx < charLimit) {
+      scratch.grow(intIdx+1);
+      final int utf32 = Character.codePointAt(s, charIdx);
+      scratch.ints[intIdx] = utf32;
+      charIdx += Character.charCount(utf32);
+      intIdx++;
+    }
+    scratch.length = intIdx;
+    return scratch;
+  }
+
+  /** Decodes the Unicode codepoints from the provided
+   *  char[] and places them in the provided scratch
+   *  IntsRef, which must not be null, returning it. */
+  public static IntsRef toUTF32(char[] s, int offset, int length, IntsRef scratch) {
+    int charIdx = offset;
+    int intIdx = 0;
+    final int charLimit = offset + length;
+    while(charIdx < charLimit) {
+      scratch.grow(intIdx+1);
+      final int utf32 = Character.codePointAt(s, charIdx);
+      scratch.ints[intIdx] = utf32;
+      charIdx += Character.charCount(utf32);
+      intIdx++;
+    }
+    scratch.length = intIdx;
+    return scratch;
+  }
+
+  /** Just takes unsigned byte values from the BytesRef and
+   *  converts into an IntsRef. */
+  public static IntsRef toIntsRef(BytesRef input, IntsRef scratch) {
+    scratch.grow(input.length);
+    for(int i=0;i<input.length;i++) {
+      scratch.ints[i] = input.bytes[i+input.offset] & 0xFF;
+    }
+    scratch.length = input.length;
+    return scratch;
   }
 }

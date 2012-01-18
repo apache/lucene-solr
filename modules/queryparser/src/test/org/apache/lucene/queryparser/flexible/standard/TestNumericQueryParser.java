@@ -33,6 +33,7 @@ import java.util.TimeZone;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -192,17 +193,37 @@ public class TestNumericQueryParser extends LuceneTestCase {
     for (NumericField.DataType type : NumericField.DataType.values()) {
       numericConfigMap.put(type.name(), new NumericConfig(PRECISION_STEP,
           NUMBER_FORMAT, type));
-      
-      NumericField field = new NumericField(type.name(), PRECISION_STEP, NumericField.TYPE_STORED);
-      
+
+      FieldType ft = new FieldType(NumericField.getFieldType(type, true));
+      ft.setNumericPrecisionStep(PRECISION_STEP);
+      final NumericField field;
+
+      switch(type) {
+      case INT:
+        field = new NumericField(type.name(), 0, ft);
+        break;
+      case FLOAT:
+        field = new NumericField(type.name(), 0.0f, ft);
+        break;
+      case LONG:
+        field = new NumericField(type.name(), 0l, ft);
+        break;
+      case DOUBLE:
+        field = new NumericField(type.name(), 0.0, ft);
+        break;
+      default:
+        assert false;
+        field = null;
+      }
       numericFieldMap.put(type.name(), field);
       doc.add(field);
-      
     }
     
     numericConfigMap.put(DATE_FIELD_NAME, new NumericConfig(PRECISION_STEP,
         DATE_FORMAT, NumericField.DataType.LONG));
-    NumericField dateField = new NumericField(DATE_FIELD_NAME, PRECISION_STEP, NumericField.TYPE_STORED);
+    FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.LONG, true));
+    ft.setNumericPrecisionStep(PRECISION_STEP);
+    NumericField dateField = new NumericField(DATE_FIELD_NAME, 0l, ft);
     numericFieldMap.put(DATE_FIELD_NAME, dateField);
     doc.add(dateField);
     
@@ -264,24 +285,23 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     Number number = getNumberType(numberType, NumericField.DataType.DOUBLE
         .name());
-    numericFieldMap.get(NumericField.DataType.DOUBLE.name()).setDoubleValue(
+    numericFieldMap.get(NumericField.DataType.DOUBLE.name()).setValue(
         number.doubleValue());
     
     number = getNumberType(numberType, NumericField.DataType.INT.name());
-    numericFieldMap.get(NumericField.DataType.INT.name()).setIntValue(
+    numericFieldMap.get(NumericField.DataType.INT.name()).setValue(
         number.intValue());
     
     number = getNumberType(numberType, NumericField.DataType.LONG.name());
-    numericFieldMap.get(NumericField.DataType.LONG.name()).setLongValue(
+    numericFieldMap.get(NumericField.DataType.LONG.name()).setValue(
         number.longValue());
     
     number = getNumberType(numberType, NumericField.DataType.FLOAT.name());
-    numericFieldMap.get(NumericField.DataType.FLOAT.name()).setFloatValue(
+    numericFieldMap.get(NumericField.DataType.FLOAT.name()).setValue(
         number.floatValue());
     
     number = getNumberType(numberType, DATE_FIELD_NAME);
-    numericFieldMap.get(DATE_FIELD_NAME).setLongValue(number.longValue());
-    
+    numericFieldMap.get(DATE_FIELD_NAME).setValue(number.longValue());
   }
   
   private static int randomDateStyle(Random random) {

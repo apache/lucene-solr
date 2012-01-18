@@ -33,8 +33,6 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
   public static Logger log = LoggerFactory.getLogger(XmlUpdateRequestHandler.class);
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
-  public static final String UPDATE_PROCESSOR = "update.processor";
-
   // XML Constants
   public static final String ADD = "add";
   public static final String DELETE = "delete";

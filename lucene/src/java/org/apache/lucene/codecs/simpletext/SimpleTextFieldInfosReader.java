@@ -80,43 +80,35 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         boolean storeTermVector = Boolean.parseBoolean(readString(STORETV.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, STORETVPOS);
-        boolean storePositionsWithTermVector = Boolean.parseBoolean(readString(STORETVPOS.length, scratch));
-        
-        SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, STORETVOFF);
-        boolean storeOffsetWithTermVector = Boolean.parseBoolean(readString(STORETVOFF.length, scratch));
-        
-        SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, PAYLOADS);
         boolean storePayloads = Boolean.parseBoolean(readString(PAYLOADS.length, scratch));
         
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, NORMS);
         boolean omitNorms = !Boolean.parseBoolean(readString(NORMS.length, scratch));
-
+        
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch, NORMS_TYPE);
+        String nrmType = readString(NORMS_TYPE.length, scratch);
+        final DocValues.Type normsType = docValuesType(nrmType);
+        
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, DOCVALUES);
         String dvType = readString(DOCVALUES.length, scratch);
-        final DocValues.Type docValuesType;
+        final DocValues.Type docValuesType = docValuesType(dvType);
         
-        if ("false".equals(dvType)) {
-          docValuesType = null;
-        } else {
-          docValuesType = DocValues.Type.valueOf(dvType);
-        }
+        
         
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, INDEXOPTIONS);
         IndexOptions indexOptions = IndexOptions.valueOf(readString(INDEXOPTIONS.length, scratch));
 
         hasVectors |= storeTermVector;
-        hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        hasProx |= isIndexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
         hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
         
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          storePositionsWithTermVector, storeOffsetWithTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType);
+          omitNorms, storePayloads, indexOptions, docValuesType, normsType);
       }
 
       if (input.getFilePointer() != input.length()) {
@@ -126,6 +118,14 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
       return new FieldInfos(infos, hasFreq, hasProx, hasVectors);
     } finally {
       input.close();
+    }
+  }
+
+  public DocValues.Type docValuesType(String dvType) {
+    if ("false".equals(dvType)) {
+      return null;
+    } else {
+      return DocValues.Type.valueOf(dvType);
     }
   }
   

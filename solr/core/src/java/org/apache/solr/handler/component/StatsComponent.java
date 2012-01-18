@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -246,12 +247,13 @@ class SimpleStats {
     return res;
   }
   
+  // why does this use a top-level field cache?
   public NamedList<?> getFieldCacheStats(String fieldName, String[] facet ) {
     SchemaField sf = searcher.getSchema().getField(fieldName);
     
     FieldCache.DocTermsIndex si;
     try {
-      si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), fieldName);
+      si = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(searcher.getIndexReader()), fieldName);
     } 
     catch (IOException e) {
       throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
@@ -273,7 +275,7 @@ class SimpleStats {
           + "[" + facetFieldType + "]");
         }
       try {
-        facetTermsIndex = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), facetField);
+        facetTermsIndex = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(searcher.getIndexReader()), facetField);
       }
       catch (IOException e) {
         throw new RuntimeException( "failed to open field cache for: "

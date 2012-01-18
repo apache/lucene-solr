@@ -24,6 +24,7 @@ import org.apache.lucene.document.DocValuesField; // javadoc
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader; // javadoc
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.Terms; // javadoc
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
@@ -36,7 +37,6 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.spans.SpanQuery; // javadoc
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat; // javadoc
-import org.apache.lucene.util.TermContext;
 
 
 /** 
@@ -55,8 +55,8 @@ import org.apache.lucene.util.TermContext;
  * <a href="#querytime">query-time</a>.
  * <p>
  * <a name="indextime"/>
- * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
- * the Similarity implementation to return a per-document byte for the field that will 
+ * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState, Norm)}, allowing
+ * the Similarity implementation to set a per-document value for the field that will 
  * be later accessible via {@link IndexReader#normValues(String)}.  Lucene makes no assumption
  * about what is in this byte, but it is most useful for encoding length normalization 
  * information.
@@ -109,23 +109,24 @@ import org.apache.lucene.util.TermContext;
  * @lucene.experimental
  */
 public abstract class Similarity {
+  
   /**
    * Computes the normalization value for a field, given the accumulated
    * state of term processing for this field (see {@link FieldInvertState}).
    * 
-   * <p>Implementations should calculate a byte value based on the field
-   * state and then return that value.
+   * <p>Implementations should calculate a norm value based on the field
+   * state and set that value to the given {@link Norm}.
    *
    * <p>Matches in longer fields are less precise, so implementations of this
-   * method usually return smaller values when <code>state.getLength()</code> is large,
+   * method usually set smaller values when <code>state.getLength()</code> is large,
    * and larger values when <code>state.getLength()</code> is small.
    * 
    * @lucene.experimental
    * 
    * @param state current processing state for this field
-   * @return the calculated byte norm
+   * @param norm holds the computed norm value when this method returns
    */
-  public abstract byte computeNorm(FieldInvertState state);
+  public abstract void computeNorm(FieldInvertState state, Norm norm);
   
   /**
    * Compute any collection-level stats (e.g. IDF, average document length, etc) needed for scoring a query.

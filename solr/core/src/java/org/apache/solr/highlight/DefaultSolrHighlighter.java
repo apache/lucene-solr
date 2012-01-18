@@ -577,21 +577,23 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       String[] altTexts = listFields.toArray(new String[listFields.size()]);
 
       if (altTexts != null && altTexts.length > 0){
+        Encoder encoder = getEncoder(fieldName, params);
         int alternateFieldLen = params.getFieldInt(fieldName, HighlightParams.ALTERNATE_FIELD_LENGTH,0);
-        if( alternateFieldLen <= 0 ){
-          docSummaries.add(fieldName, altTexts);
-        }
-        else{
-          List<String> altList = new ArrayList<String>();
-          int len = 0;
-          for( String altText: altTexts ){
+        List<String> altList = new ArrayList<String>();
+        int len = 0;
+        for( String altText: altTexts ){
+          if( alternateFieldLen <= 0 ){
+            altList.add(encoder.encodeText(altText));
+          }
+          else{
             altList.add( len + altText.length() > alternateFieldLen ?
-                new String(altText.substring( 0, alternateFieldLen - len )) : altText );
+                encoder.encodeText(new String(altText.substring( 0, alternateFieldLen - len ))) :
+                encoder.encodeText(altText) );
             len += altText.length();
             if( len >= alternateFieldLen ) break;
           }
-          docSummaries.add(fieldName, altList);
         }
+        docSummaries.add(fieldName, altList);
       }
     }
   }
