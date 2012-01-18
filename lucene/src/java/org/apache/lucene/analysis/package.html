@@ -180,10 +180,24 @@ and proximity searches (though sentence identification is not provided by Lucene
   However an application might invoke Analysis of any text for testing or for any other purpose, something like:
 </p>
 <PRE class="prettyprint">
-    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_XY); // or any other analyzer
-    TokenStream ts = analyzer.tokenStream("myfield",new StringReader("some text goes here"));
-    while (ts.incrementToken()) {
-      System.out.println("token: "+ts));
+    Version matchVersion = Version.LUCENE_XY; // Substitute desired Lucene version for XY
+    Analyzer analyzer = new StandardAnalyzer(matchVersion); // or any other analyzer
+    TokenStream ts = analyzer.tokenStream("myfield", new StringReader("some text goes here"));
+    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    
+    try {
+      ts.reset(); // Resets this stream to the beginning. (Required)
+      while (ts.incrementToken()) {
+        // Use {@link org.apache.lucene.util.AttributeSource#reflectAsString(boolean)}
+        // for token stream debugging.
+        System.out.println("token: " + ts.reflectAsString(true));
+
+        System.out.println("token start offset: " + offsetAtt.startOffset());
+        System.out.println("  token end offset: " + offsetAtt.endOffset());
+      }
+      ts.end();   // Perform end-of-stream operations, e.g. set the final offset.
+    } finally {
+      ts.close(); // Release resources associated with this stream.
     }
 </PRE>
 <h2>Indexing Analysis vs. Search Analysis</h2>
@@ -457,15 +471,18 @@ public class MyAnalyzer extends Analyzer {
     // get the CharTermAttribute from the TokenStream
     CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
 
-    stream.reset();
+    try {
+      stream.reset();
     
-    // print all tokens until stream is exhausted
-    while (stream.incrementToken()) {
-      System.out.println(termAtt.toString());
+      // print all tokens until stream is exhausted
+      while (stream.incrementToken()) {
+        System.out.println(termAtt.toString());
+      }
+    
+      stream.end()
+    } finally {
+      stream.close();
     }
-    
-    stream.end()
-    stream.close();
   }
 }
 </pre>
@@ -667,7 +684,7 @@ public final class PartOfSpeechAttributeImpl extends AttributeImpl
 
   {@literal @Override}
   public void copyTo(AttributeImpl target) {
-    ((PartOfSpeechAttribute) target).pos = pos;
+    ((PartOfSpeechAttribute) target).setPartOfSpeech(pos);
   }
 }
 </pre>
@@ -746,16 +763,19 @@ to make use of the new PartOfSpeechAttribute and print it out:
     
     // get the PartOfSpeechAttribute from the TokenStream
     PartOfSpeechAttribute posAtt = stream.addAttribute(PartOfSpeechAttribute.class);
-    
-    stream.reset();
 
-    // print all tokens until stream is exhausted
-    while (stream.incrementToken()) {
-      System.out.println(termAtt.toString() + ": " + posAtt.getPartOfSpeech());
-    }
+    try {
+      stream.reset();
+
+      // print all tokens until stream is exhausted
+      while (stream.incrementToken()) {
+        System.out.println(termAtt.toString() + ": " + posAtt.getPartOfSpeech());
+      }
     
-    stream.end();
-    stream.close();
+      stream.end();
+    } finally {
+      stream.close();
+    }
   }
 </pre>
 The change that was made is to get the PartOfSpeechAttribute from the TokenStream and print out its contents in
