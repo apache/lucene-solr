@@ -118,9 +118,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
     final TermVectorsWriter tv = termsWriter.writer;
 
-    // TODO: we may want to make this sort in same order
-    // as Codec's terms dict?
-    final int[] termIDs = termsHashPerField.sortPostings(BytesRef.getUTF8SortedAsUnicodeComparator());
+    final int[] termIDs = termsHashPerField.sortPostings(tv.getComparator());
 
     tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets);
     

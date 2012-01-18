@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -265,11 +266,13 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
   private class TVTerms extends Terms {
     private final int numTerms;
     private final long tvfFPStart;
+    private final boolean unicodeSortOrder;
 
     public TVTerms(long tvfFP) throws IOException {
       tvf.seek(tvfFP);
       numTerms = tvf.readVInt();
       tvfFPStart = tvf.getFilePointer();
+      unicodeSortOrder = sortTermsByUnicode();
     }
 
     @Override
@@ -283,7 +286,7 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
       } else {
         termsEnum = new TVTermsEnum();
       }
-      termsEnum.reset(numTerms, tvfFPStart);
+      termsEnum.reset(numTerms, tvfFPStart, unicodeSortOrder);
       return termsEnum;
     }
 
@@ -310,27 +313,32 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
 
     @Override
     public Comparator<BytesRef> getComparator() {
-      // TODO: really indexer hardwires
-      // this...?  I guess codec could buffer and re-sort...
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
+      if (unicodeSortOrder) {
+        return BytesRef.getUTF8SortedAsUnicodeComparator();
+      } else {
+        return BytesRef.getUTF8SortedAsUTF16Comparator();
+      }
     }
   }
 
+  static class TermAndPostings {
+    BytesRef term;
+    int freq;
+    int[] positions;
+    int[] startOffsets;
+    int[] endOffsets;
+  }
+  
   private class TVTermsEnum extends TermsEnum {
+    private boolean unicodeSortOrder;
     private final IndexInput origTVF;
     private final IndexInput tvf;
     private int numTerms;
-    private int nextTerm;
-    private int freq;
-    private BytesRef lastTerm = new BytesRef();
-    private BytesRef term = new BytesRef();
+    private int currentTerm;
     private boolean storePositions;
     private boolean storeOffsets;
-    private long tvfFP;
-
-    private int[] positions;
-    private int[] startOffsets;
-    private int[] endOffsets;
+    
+    private TermAndPostings[] termAndPostings;
 
     // NOTE: tvf is pre-positioned by caller
     public TVTermsEnum() throws IOException {
@@ -342,37 +350,81 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
       return tvf == origTVF;
     }
 
-    public void reset(int numTerms, long tvfFPStart) throws IOException {
+    public void reset(int numTerms, long tvfFPStart, boolean unicodeSortOrder) throws IOException {
       this.numTerms = numTerms;
-      nextTerm = 0;
+      currentTerm = -1;
       tvf.seek(tvfFPStart);
       final byte bits = tvf.readByte();
       storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
       storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
-      tvfFP = 1+tvfFPStart;
-      positions = null;
-      startOffsets = null;
-      endOffsets = null;
+      this.unicodeSortOrder = unicodeSortOrder;
+      readVectors();
+      if (unicodeSortOrder) {
+        Arrays.sort(termAndPostings, new Comparator<TermAndPostings>() {
+          public int compare(TermAndPostings left, TermAndPostings right) {
+            return left.term.compareTo(right.term);
+          }
+        });
+      }
+    }
+    
+    private void readVectors() throws IOException {
+      termAndPostings = new TermAndPostings[numTerms];
+      BytesRef lastTerm = new BytesRef();
+      for (int i = 0; i < numTerms; i++) {
+        TermAndPostings t = new TermAndPostings();
+        BytesRef term = new BytesRef();
+        term.copyBytes(lastTerm);
+        final int start = tvf.readVInt();
+        final int deltaLen = tvf.readVInt();
+        term.length = start + deltaLen;
+        term.grow(term.length);
+        tvf.readBytes(term.bytes, start, deltaLen);
+        t.term = term;
+        int freq = tvf.readVInt();
+        t.freq = freq;
+        
+        if (storePositions) {
+          int positions[] = new int[freq];
+          int pos = 0;
+          for(int posUpto=0;posUpto<freq;posUpto++) {
+            pos += tvf.readVInt();
+            positions[posUpto] = pos;
+          }
+          t.positions = positions;
+        }
+
+        if (storeOffsets) {
+          int startOffsets[] = new int[freq];
+          int endOffsets[] = new int[freq];
+          int offset = 0;
+          for(int posUpto=0;posUpto<freq;posUpto++) {
+            startOffsets[posUpto] = offset + tvf.readVInt();
+            offset = endOffsets[posUpto] = startOffsets[posUpto] + tvf.readVInt();
+          }
+          t.startOffsets = startOffsets;
+          t.endOffsets = endOffsets;
+        }
+        lastTerm.copyBytes(term);
+        termAndPostings[i] = t;
+      }
     }
 
     // NOTE: slow!  (linear scan)
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache)
-      throws IOException {
-      if (nextTerm != 0 && text.compareTo(term) < 0) {
-        nextTerm = 0;
-        tvf.seek(tvfFP);
-      }
-
-      while (next() != null) {
-        final int cmp = text.compareTo(term);
+    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+      Comparator<BytesRef> comparator = getComparator();
+      for (int i = 0; i < numTerms; i++) {
+        int cmp = comparator.compare(text, termAndPostings[i].term);
         if (cmp < 0) {
+          currentTerm = i;
           return SeekStatus.NOT_FOUND;
         } else if (cmp == 0) {
+          currentTerm = i;
           return SeekStatus.FOUND;
         }
       }
-
+      currentTerm = termAndPostings.length;
       return SeekStatus.END;
     }
 
@@ -383,47 +435,15 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
 
     @Override
     public BytesRef next() throws IOException {
-      if (nextTerm >= numTerms) {
+      if (++currentTerm >= numTerms) {
         return null;
       }
-      term.copyBytes(lastTerm);
-      final int start = tvf.readVInt();
-      final int deltaLen = tvf.readVInt();
-      term.length = start + deltaLen;
-      term.grow(term.length);
-      tvf.readBytes(term.bytes, start, deltaLen);
-      freq = tvf.readVInt();
-
-      if (storePositions) {
-        // TODO: we could maybe reuse last array, if we can
-        // somehow be careful about consumer never using two
-        // D&PEnums at once...
-        positions = new int[freq];
-        int pos = 0;
-        for(int posUpto=0;posUpto<freq;posUpto++) {
-          pos += tvf.readVInt();
-          positions[posUpto] = pos;
-        }
-      }
-
-      if (storeOffsets) {
-        startOffsets = new int[freq];
-        endOffsets = new int[freq];
-        int offset = 0;
-        for(int posUpto=0;posUpto<freq;posUpto++) {
-          startOffsets[posUpto] = offset + tvf.readVInt();
-          offset = endOffsets[posUpto] = startOffsets[posUpto] + tvf.readVInt();
-        }
-      }
-
-      lastTerm.copyBytes(term);
-      nextTerm++;
-      return term;
+      return term();
     }
 
     @Override
     public BytesRef term() {
-      return term;
+      return termAndPostings[currentTerm].term;
     }
 
     @Override
@@ -438,7 +458,7 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
 
     @Override
     public long totalTermFreq() {
-      return freq;
+      return termAndPostings[currentTerm].freq;
     }
 
     @Override
@@ -449,7 +469,7 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
       } else {
         docsEnum = new TVDocsEnum();
       }
-      docsEnum.reset(liveDocs, freq);
+      docsEnum.reset(liveDocs, termAndPostings[currentTerm]);
       return docsEnum;
     }
 
@@ -469,15 +489,17 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
       } else {
         docsAndPositionsEnum = new TVDocsAndPositionsEnum();
       }
-      docsAndPositionsEnum.reset(liveDocs, positions, startOffsets, endOffsets);
+      docsAndPositionsEnum.reset(liveDocs, termAndPostings[currentTerm]);
       return docsAndPositionsEnum;
     }
 
     @Override
     public Comparator<BytesRef> getComparator() {
-      // TODO: really indexer hardwires
-      // this...?  I guess codec could buffer and re-sort...
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
+      if (unicodeSortOrder) {
+        return BytesRef.getUTF8SortedAsUnicodeComparator();
+      } else {
+        return BytesRef.getUTF8SortedAsUTF16Comparator();
+      }
     }
   }
 
@@ -518,9 +540,9 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
       }
     }
 
-    public void reset(Bits liveDocs, int freq) {
+    public void reset(Bits liveDocs, TermAndPostings termAndPostings) {
       this.liveDocs = liveDocs;
-      this.freq = freq;
+      this.freq = termAndPostings.freq;
       this.doc = -1;
       didNext = false;
     }
@@ -569,11 +591,11 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
       }
     }
 
-    public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets) {
+    public void reset(Bits liveDocs, TermAndPostings termAndPostings) {
       this.liveDocs = liveDocs;
-      this.positions = positions;
-      this.startOffsets = startOffsets;
-      this.endOffsets = endOffsets;
+      this.positions = termAndPostings.positions;
+      this.startOffsets = termAndPostings.startOffsets;
+      this.endOffsets = termAndPostings.endOffsets;
       this.doc = -1;
       didNext = false;
       nextPos = 0;
@@ -667,6 +689,15 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
         files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_DOCUMENTS_EXTENSION));
       }
     }
+  }
+  
+  // If this returns, we do the surrogates shuffle so that the
+  // terms are sorted by unicode sort order.  This should be
+  // true when segments are used for "normal" searching;
+  // it's only false during testing, to create a pre-flex
+  // index, using the test-only PreFlexRW.
+  protected boolean sortTermsByUnicode() {
+    return true;
   }
 }
 

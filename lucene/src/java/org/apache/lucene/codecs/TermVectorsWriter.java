@@ -19,6 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Comparator;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -273,4 +274,8 @@ public abstract class TermVectorsWriter implements Closeable {
       assert termCount == numTerms;
     }
   }
+  
+  /** Return the BytesRef Comparator used to sort terms
+   *  before feeding to this API. */
+  public abstract Comparator<BytesRef> getComparator() throws IOException;
 }

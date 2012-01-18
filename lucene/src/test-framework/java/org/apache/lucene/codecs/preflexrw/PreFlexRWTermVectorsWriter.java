@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.preflexrw;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.codecs.lucene3x.Lucene3xTermVectorsReader;
@@ -32,7 +33,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 
-// TODO: surrogates dance!
 public final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
   private final Directory directory;
   private final String segment;
@@ -212,5 +212,10 @@ public final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
     // the first exception encountered in this process
     IOUtils.close(tvx, tvd, tvf);
     tvx = tvd = tvf = null;
+  }
+  
+  @Override
+  public Comparator<BytesRef> getComparator() throws IOException {
+    return BytesRef.getUTF8SortedAsUTF16Comparator();
   }
 }

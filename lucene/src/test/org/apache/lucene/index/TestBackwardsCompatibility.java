@@ -734,5 +734,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       dir.close();
     }
   }
+  
+  public static final String surrogatesIndexName = "index.36.surrogates.zip";
+
+  public void testSurrogates() throws Exception {
+    File oldIndexDir = _TestUtil.getTempDir("surrogates");
+    _TestUtil.unzip(getDataFile(surrogatesIndexName), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    // TODO: more tests
+    _TestUtil.checkIndex(dir);
+    dir.close();
+  }
 
 }
