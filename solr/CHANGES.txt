@@ -110,6 +110,8 @@ Bug Fixes
 * SOLR-2542: Fixed DIH Context variables which were broken for all scopes other 
   then SCOPE_ENTITY (Linbin Chen & Frank Wesemann via hossman)
 
+* SOLR-2970: CSV ResponseWriter returns fields defined as stored=false in schema (janhoy)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
