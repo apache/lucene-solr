@@ -105,6 +105,21 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
         ,"=={'response':{'numFound':0,'start':0,'docs':[]}}"
     );
 
+
+    assertU(adoc("id","10"));
+    assertU(adoc("id","11"));
+    assertJQ(req("qt","/get","id","10", "fl","id")
+        ,"=={'doc':{'id':'10'}}"
+    );
+    assertU(delQ("id:10 abcdef"));
+    assertJQ(req("qt","/get","id","10")
+        ,"=={'doc':null}"
+    );
+    assertJQ(req("qt","/get","id","11", "fl","id")
+        ,"=={'doc':{'id':'11'}}"
+    );
+
+
   }
 
 

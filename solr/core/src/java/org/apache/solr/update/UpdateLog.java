@@ -17,24 +17,6 @@
 
 package org.apache.solr.update;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -45,14 +27,22 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
 
 /** @lucene.experimental */
 public class UpdateLog implements PluginInfoInitialized {
@@ -297,13 +287,29 @@ public class UpdateLog implements PluginInfoInitialized {
       long pos = -1;
       // don't log if we are replaying from another log
       if ((cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
-
         ensureLog();
-        // TODO: how to support realtime-get, optimistic concurrency, or anything else in this case?
-        // Maybe we shouldn't?
-        // realtime-get could just do a reopen of the searcher
-        // optimistic concurrency? Maybe we shouldn't support deleteByQuery w/ optimistic concurrency
         pos = tlog.writeDeleteByQuery(cmd);
+      }
+
+      // only change our caches if we are not buffering
+      if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
+        // given that we just did a delete-by-query, we don't know what documents were
+        // affected and hence we must purge our caches.
+        map.clear();
+
+        // oldDeletes.clear();
+
+        // We must cause a new IndexReader to be opened before anything looks at these caches again
+        // so that a cache miss will read fresh data.
+        //
+        // TODO: FUTURE: open a new searcher lazily for better throughput with delete-by-query commands
+        try {
+          RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
+          holder.decref();
+        } catch (Throwable e) {
+          SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
+        }
+
       }
 
       LogPtr ptr = new LogPtr(pos, cmd.getVersion());

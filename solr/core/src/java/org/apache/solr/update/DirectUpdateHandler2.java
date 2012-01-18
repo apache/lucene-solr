@@ -46,7 +46,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  *  TODO: add soft commitWithin support
@@ -240,14 +239,22 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
       
       boolean delAll = MatchAllDocsQuery.class == q.getClass();
-      
-      if (delAll) {
-        deleteAll();
-      } else {
-        solrCoreState.getIndexWriter(core).deleteDocuments(q);
-      }
 
-      if (ulog != null) ulog.deleteByQuery(cmd);
+      //
+      // synchronized to prevent deleteByQuery from running during the "open new searcher"
+      // part of a commit.  DBQ needs to signal that a fresh reader will be needed for
+      // a realtime view of the index.  When a new searcher is opened after a DBQ, that
+      // flag can be cleared.  If those thing happen concurrently, it's not thread safe.
+      //
+      synchronized (this) {
+        if (delAll) {
+          deleteAll();
+        } else {
+          solrCoreState.getIndexWriter(core).deleteDocuments(q);
+        }
+
+        if (ulog != null) ulog.deleteByQuery(cmd);
+      }
 
       madeIt = true;
       
@@ -422,25 +429,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
-  public SolrIndexSearcher reopenSearcher(SolrIndexSearcher previousSearcher) throws IOException {
-    
-    IndexReader currentReader = previousSearcher.getIndexReader();
-    IndexReader newReader;
-
-    IndexWriter writer = solrCoreState.getIndexWriter(core);
-    // SolrCore.verbose("start reopen from",previousSearcher,"writer=",writer);
-    newReader = IndexReader.openIfChanged(currentReader, writer, true);
-    // SolrCore.verbose("reopen result", newReader);
-    
-    if (newReader == null) {
-      currentReader.incRef();
-      newReader = currentReader;
-    }
-
-    return new SolrIndexSearcher(core, schema, "main", newReader, true, true, true, core.getDirectoryFactory());
-  }
-  
-  @Override
   public void newIndexWriter() throws IOException {
     solrCoreState.newIndexWriter(core);
   }
@@ -598,6 +586,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     return "DirectUpdateHandler2" + getStatistics();
   }
   
+  @Override
   public SolrCoreState getSolrCoreState() {
     return solrCoreState;
   }

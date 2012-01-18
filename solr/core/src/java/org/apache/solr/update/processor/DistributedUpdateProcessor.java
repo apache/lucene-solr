@@ -615,6 +615,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       doLocalDelete(cmd);
 
+      // since we don't know which documents were deleted, the easiest thing to do is to invalidate
+      // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the IndexReader
+      // (so cache misses will see up-to-date data)
+
     } finally {
       vinfo.unblockUpdates();
     }

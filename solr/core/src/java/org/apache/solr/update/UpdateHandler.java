@@ -122,16 +122,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     parseEventListeners();
     initLog();
   }
-  
-  /**
-   * Allows the UpdateHandler to create the SolrIndexSearcher after it
-   * has issued a 'softCommit'. 
-   * 
-   * @param previousSearcher
-   * @throws IOException
-   */
-  public abstract SolrIndexSearcher reopenSearcher(SolrIndexSearcher previousSearcher) throws IOException;
-  
+
   /**
    * Called when the Writer should be opened again - eg when replication replaces
    * all of the index files.

@@ -150,7 +150,7 @@ public class VersionInfo {
     // TODO: we could cache much of this and invalidate during a commit.
     // TODO: most DocValues classes are threadsafe - expose which.
 
-    RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(true);
+    RefCounted<SolrIndexSearcher> newestSearcher = core.getRealtimeSearcher();
     try {
       SolrIndexSearcher searcher = newestSearcher.get();
       long lookup = searcher.lookupId(idBytes);

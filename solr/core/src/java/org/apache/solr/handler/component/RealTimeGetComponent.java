@@ -153,7 +153,7 @@ public class RealTimeGetComponent extends SearchComponent
 
        // didn't find it in the update log, so it should be in the newest searcher opened
        if (searcher == null) {
-         searcherHolder =  req.getCore().getNewestSearcher(false);
+         searcherHolder = req.getCore().getRealtimeSearcher();
          searcher = searcherHolder.get();
        }
 
