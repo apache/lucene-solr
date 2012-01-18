@@ -71,6 +71,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public void testCreateNoCFS() throws IOException {
     createIndex("index.nocfs", false, false);
   }
+
+  public void testCreateSurrogates() throws IOException {
+    createSurrogatesIndex("index.surrogates");
+  }
   */
   
   /*
@@ -535,6 +539,35 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     
     dir.close();
     
+    return indexDir;
+  }
+  
+  // creates an index to check term order for 4.x's TestBackwardsCompatibility
+  public File createSurrogatesIndex(String dirName) throws IOException {
+    File indexDir = new File(LuceneTestCase.TEMP_DIR, dirName);
+    _TestUtil.rmDir(indexDir);
+    Directory dir = newFSDirectory(indexDir);
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    String alphabet[] = { "A", "a", "𝐁", "𝐛", "𝐂", "𝐜", "Ｄ", "ｄ" };
+    int maxLength = 4;
+    int max = (int) Math.pow(8, maxLength);
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < max; i++) {
+      sb.append(' ');
+      String s = Integer.toOctalString(i);
+      for (char c : s.toCharArray()) {
+        sb.append(alphabet[c-'0']);
+      }
+    }
+    Document doc = new Document();
+    // empty string
+    doc.add(new Field("foo", "", Field.Store.YES, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    // big string of surrogates
+    doc.add(new Field("foo", sb.toString(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    writer.addDocument(doc);
+    writer.close();
+    dir.close();
     return indexDir;
   }
 
