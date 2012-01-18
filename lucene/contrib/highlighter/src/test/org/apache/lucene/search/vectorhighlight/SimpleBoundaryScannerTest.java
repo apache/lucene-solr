@@ -36,6 +36,10 @@ public class SimpleBoundaryScannerTest extends LuceneTestCase {
     start = TEXT.indexOf("formance");
     int expected = TEXT.indexOf("high-performance");
     assertEquals(expected, scanner.findStartOffset(text, start));
+    
+    start = TEXT.indexOf("che");
+    expected = TEXT.indexOf("Apache");
+    assertEquals(expected, scanner.findStartOffset(text, start));
   }
 
   public void testFindEndOffset() throws Exception {
