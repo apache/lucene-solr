@@ -173,6 +173,6 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     sfb.setMultiValuedSeparator( '/' );
-    assertEquals( " b c//<b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "//a b c//<b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
   }
 }

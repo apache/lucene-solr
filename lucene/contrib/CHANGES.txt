@@ -189,6 +189,9 @@ Bug Fixes
  * LUCENE-3686: CategoryEnhancement must override Object.equals(Object).
    (Sivan Yogev via Shai Erera)
 
+ * LUCENE-3697: SimpleBoundaryScanner does not work well when highlighting
+   at the beginning of the text. (Shay Banon via Koji Sekiguchi)
+
 Documentation
 
  * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly
