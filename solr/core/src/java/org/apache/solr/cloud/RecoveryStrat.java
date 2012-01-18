@@ -20,8 +20,9 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.PrepRecovery;
@@ -30,29 +31,34 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
-import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RecoveryStrat {
-  private static final int MAX_RETRIES = 10;
-
+public class RecoveryStrat extends Thread {
+  private static final int MAX_RETRIES = 100;
+  private static final int START_TIMEOUT = 100;
+  
   private static final String REPLICATION_HANDLER = "/replication";
 
   private static Logger log = LoggerFactory.getLogger(RecoveryStrat.class);
-  
-  private volatile RecoveryListener recoveryListener;
 
   private volatile boolean close = false;
+
+
+  private ZkController zkController;
+  private String baseUrl;
+  private String coreZkNodeName;
+  private ZkStateReader zkStateReader;
+  private volatile String coreName;
+  private int retries;
+  private SolrCore core;
   
   // for now, just for tests
   public interface RecoveryListener {
@@ -61,164 +67,28 @@ public class RecoveryStrat {
     public void finishedRecovery();
   }
   
+  public RecoveryStrat(SolrCore core) {
+    this.core = core;
+    this.coreName = core.getName();
+    setDaemon(true);
+    
+    zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
+    zkStateReader = zkController.getZkStateReader();
+    baseUrl = zkController.getBaseUrl();
+    coreZkNodeName = zkController.getNodeName() + "_" + coreName;
+    
+  }
+  
   // make sure any threads stop retrying
   public void close() {
     close = true;
-  }
-  
-  // TODO: we want to be pretty noisy if we don't properly recover?
-  public void recover(final SolrCore core) {
-   
-    final ZkController zkController = core.getCoreDescriptor()
-        .getCoreContainer().getZkController();
-    final ZkStateReader zkStateReader = zkController.getZkStateReader();
-    final String baseUrl = zkController.getBaseUrl();
-    final String shardZkNodeName = zkController.getNodeName() + "_"
-        + core.getName();
-    final CloudDescriptor cloudDesc = core.getCoreDescriptor()
-        .getCloudDescriptor();
- 
-    core.getUpdateHandler().getSolrCoreState().recoveryRequests.incrementAndGet();
-    try {
-      log.info("Start recovery process");
-      if (recoveryListener != null) recoveryListener.startRecovery();
-
-
-    } catch (Exception e) {
-      log.error("", e);
-      core.getUpdateHandler().getSolrCoreState().recoveryRequests.decrementAndGet();
-      recoveryFailed(core, zkController, baseUrl, shardZkNodeName,
-          cloudDesc);
-      return;
-    }
+    interrupt();
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    if (ulog == null) return;
+    ulog.cancelApplyBufferedUpdates();
     
-    Thread thread = new Thread() {
-      {
-        setDaemon(true);
-      }
-      
-      @Override
-      public void run() {
-        synchronized (core.getUpdateHandler().getSolrCoreState().getRecoveryLock()) {
-          
-          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-          if (ulog == null) return;
-
-          boolean replayed = false;
-          boolean succesfulRecovery = false;
-          int retries = 0;
-          while (!succesfulRecovery && !close) {
-            if (core.getCoreDescriptor().getCoreContainer().isShutDown()) {
-              return;
-            }
-            ulog.bufferUpdates();  
-            replayed = false;
-            try {
-              zkController.publishAsRecoverying(baseUrl, cloudDesc, shardZkNodeName,
-                  core.getName());
-              
-              ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
-                  cloudDesc.getCollectionName(), cloudDesc.getShardId());
-              // nocommit
-              // System.out.println("recover " + shardZkNodeName + " against " + leaderprops);
-              replicate(zkController.getNodeName(), core, shardZkNodeName, leaderprops, ZkCoreNodeProps.getCoreUrl(baseUrl, core.getName()));
-              
-              replay(core);
-              replayed = true;
-              
-              // if there are pending recovery requests, don't advert as active
-              if (core.getUpdateHandler().getSolrCoreState().recoveryRequests
-                  .get() == 1) {
-                zkController.publishAsActive(baseUrl, cloudDesc,
-                    shardZkNodeName, core.getName());
-              }
-              
-              if (recoveryListener != null) recoveryListener.finishedRecovery();
-
-              succesfulRecovery = true;
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              log.error("Recovery was interrupted", e);
-              retries = MAX_RETRIES;
-            } catch (Throwable t) {
-              log.error("Error while trying to recover", t);
-            } finally {
-              if (!replayed) {
-                try {
-                  ulog.dropBufferedUpdates();
-                } catch (Exception e) {
-                  log.error("", e);
-                }
-              }
-              if (succesfulRecovery) {
-                core.getUpdateHandler().getSolrCoreState().recoveryRequests.decrementAndGet();
-              }
-            }
-            
-            if (!succesfulRecovery) {
-              // lets pause for a moment and we need to try again...
-              // TODO: we don't want to retry for some problems?
-              // Or do a fall off retry...
-              try {
-              log.error("Recovery failed - trying again...");
-              retries++;
-              if (retries >= MAX_RETRIES) {
-                // TODO: for now, give up after 10 tries - should we do more?
-                recoveryFailed(core, zkController, baseUrl, shardZkNodeName,
-                    cloudDesc);
-              }
-              
-              zkController.publishAsDown(baseUrl, cloudDesc, shardZkNodeName,
-                  core.getName());
-              
-              } catch (Exception e) {
-                log.error("", e);
-              }
-              
-              try {
-                Thread.sleep(500);
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("Recovery was interrupted", e);
-                retries = MAX_RETRIES;
-              }
-            }
-          }
-          log.info("Finished recovery process");
-        }
-      }
-      
-      private Future<RecoveryInfo> replay(final SolrCore core)
-          throws InterruptedException, ExecutionException {
-        Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog()
-            .applyBufferedUpdates();
-        if (future == null) {
-          // no replay needed\
-          log.info("No replay needed");
-        } else {
-          // wait for replay
-          future.get();
-        }
-        
-        // nocommit
-//        try {
-//          RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
-//          SolrIndexSearcher searcher = searchHolder.get();
-//          try {
-//            System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replayed "
-//                + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
-//          } finally {
-//            searchHolder.decref();
-//          }
-//        } catch (Exception e) {
-//          
-//        }
-        
-        return future;
-      }
-    };
-    thread.start();
   }
+
   
   private void recoveryFailed(final SolrCore core,
       final ZkController zkController, final String baseUrl,
@@ -253,7 +123,7 @@ public class RecoveryStrat {
       prepCmd.setCoreNodeName(shardZkNodeName);
       
       server.request(prepCmd);
-      
+      server.shutdown();
       
       // use rep handler directly, so we can do this sync rather than async
       SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
@@ -270,13 +140,12 @@ public class RecoveryStrat {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
       
+      if (close) retries = MAX_RETRIES; 
       boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making sure fore=true does not download files we already have
 
       if (!success) {
         throw new RuntimeException("Replication for recovery failed.");
       }
-      
-      if (recoveryListener != null) recoveryListener.finishedReplication();
       
       // nocommit
 //      try {
@@ -294,11 +163,118 @@ public class RecoveryStrat {
     }
   }
   
-  public RecoveryListener getRecoveryListener() {
-    return recoveryListener;
+  @Override
+  public void run() {
+    
+    boolean replayed = false;
+    boolean succesfulRecovery = false;
+    
+    while (!succesfulRecovery && !close && !isInterrupted()) {
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+      if (ulog == null) return;
+      
+      ulog.bufferUpdates();
+      replayed = false;
+      CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
+      try {
+        zkController.publish(core, ZkStateReader.RECOVERING);
+        
+        ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
+            cloudDesc.getCollectionName(), cloudDesc.getShardId());
+        // nocommit
+        // System.out.println("recover " + shardZkNodeName + " against " +
+        // leaderprops);
+        replicate(zkController.getNodeName(), core, coreZkNodeName,
+            leaderprops, ZkCoreNodeProps.getCoreUrl(baseUrl, coreName));
+        
+        replay(ulog);
+        replayed = true;
+        
+        // if there are pending recovery requests, don't advert as active
+        
+        zkController.publishAsActive(baseUrl, cloudDesc, coreZkNodeName,
+            coreName);
+        
+        succesfulRecovery = true;
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.warn("Recovery was interrupted", e);
+        retries = MAX_RETRIES;
+      } catch (Throwable t) {
+        SolrException.log(log, "Error while trying to recover", t);
+      } finally {
+        if (!replayed) {
+          try {
+            ulog.dropBufferedUpdates();
+          } catch (Exception e) {
+            log.error("", e);
+          }
+        }
+        
+      }
+      
+      if (!succesfulRecovery) {
+        // lets pause for a moment and we need to try again...
+        // TODO: we don't want to retry for some problems?
+        // Or do a fall off retry...
+        try {
+
+          SolrException.log(log, "Recovery failed - trying again...");
+          retries++;
+          if (retries >= MAX_RETRIES) {
+            // TODO: for now, give up after 10 tries - should we do more?
+            recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+                cloudDesc);
+            break;
+          }
+          
+          zkController.publishAsDown(baseUrl, cloudDesc, coreZkNodeName,
+              core.getName());
+          
+        } catch (Exception e) {
+          SolrException.log(log, "", e);
+        }
+        
+        try {
+          Thread.sleep(Math.min(START_TIMEOUT * retries, 60000));
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          log.warn("Recovery was interrupted", e);
+          retries = MAX_RETRIES;
+        }
+      }
+      
+      log.info("Finished recovery process");
+      
+    }
   }
 
-  public void setRecoveryListener(RecoveryListener recoveryListener) {
-    this.recoveryListener = recoveryListener;
+  private Future<RecoveryInfo> replay(UpdateLog ulog)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    Future<RecoveryInfo> future = ulog.applyBufferedUpdates();
+    if (future == null) {
+      // no replay needed\
+      log.info("No replay needed");
+    } else {
+      // wait for replay
+      future.get(5, TimeUnit.MINUTES); // nocommit
+    }
+    
+    // nocommit
+//    try {
+//      RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+//      SolrIndexSearcher searcher = searchHolder.get();
+//      try {
+//        System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replayed "
+//            + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+//      } finally {
+//        searchHolder.decref();
+//      }
+//    } catch (Exception e) {
+//      
+//    }
+    
+    return future;
   }
+
 }

@@ -64,8 +64,9 @@ public class FullSolrCloudDistribCmdsTest extends FullSolrCloudTest {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    waitForRecoveriesToFinish(VERBOSE);
+    waitForRecoveriesToFinish(true); // nocommit verbose
     
+    printLayout();
     // add a doc, update it, and delete it
     
     QueryResponse results;
@@ -149,6 +150,10 @@ public class FullSolrCloudDistribCmdsTest extends FullSolrCloudTest {
         try {
           index_specific(cloudClient, id, i);
         } catch (SolrException e) {
+          // expected
+          fails++;
+          break;
+        } catch (SolrServerException e) {
           // expected
           fails++;
           break;

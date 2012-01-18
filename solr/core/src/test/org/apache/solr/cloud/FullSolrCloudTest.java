@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -39,7 +37,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.RecoveryStrat.RecoveryListener;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CloudState;
@@ -48,7 +45,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -161,8 +157,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   public FullSolrCloudTest() {
     fixShardCount = true;
     
-    shardCount = 6;
-    sliceCount = 3;
+    shardCount = atLeast(4);
+    sliceCount = atLeast(2);
     // TODO: for now, turn off stress because it uses regular clients, and we 
     // need the cloud client because we kill servers
     stress = 0;
@@ -492,7 +488,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     indexr("id", docId + 1, t1, "slip this doc in");
     
-    waitForRecovery(cloudJetty.jetty);
+    waitForRecoveriesToFinish(false);
     
     checkShardConsistency("shard1");
     
@@ -539,7 +535,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       SolrServerException {
     JettySolrRunner newReplica = createJettys(1).get(0);
     
-    waitForRecovery(newReplica);
+    waitForRecoveriesToFinish(false);
     
     // new server should be part of first shard
     // how many docs are on the new shard?
@@ -547,7 +543,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       if (VERBOSE) System.out.println("total:" + client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
-    checkShardConsistency(SHARD2);
+    checkShardConsistency("shard1");
 
     assertDocCounts(VERBOSE);
   }
@@ -580,7 +576,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           }
         }
       }
-      if (!sawLiveRecovering || cnt == 90) {
+      if (!sawLiveRecovering || cnt == 10) {
         if (!sawLiveRecovering) {
           if (VERBOSE) System.out.println("no one is recoverying");
         } else {
@@ -596,6 +592,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
 
   private void brindDownShardIndexSomeDocsAndRecover() throws Exception,
       SolrServerException, IOException, InterruptedException {
+    
+    commit();
+    query("q", "*:*", "sort", "n_tl1 desc");
+    
     // kill a shard
     JettySolrRunner deadShard = chaosMonkey.stopShard(SHARD2, 0);
     
@@ -609,12 +609,20 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       // expected..
     }
     
+    commit();
+    query("q", "*:*", "sort", "n_tl1 desc");
+    
+//    long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+//    System.out.println("clouddocs:" + cloudClientDocs);
+    
     // try to index to a living shard at shard2
     // TODO: this can fail with connection refused !????
     index_specific(shardToClient.get(SHARD2).get(1), id, 1000, i1, 108, t1,
         "specific doc!");
 
     commit();
+    
+    checkShardConsistency(true, true);
     
     query("q", "*:*", "sort", "n_tl1 desc");
     
@@ -665,7 +673,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
 
     deadShard.start(true);
     
-    waitForRecovery(deadShard);
+    // make sure we have published we are recoverying
+    Thread.sleep(1500);
+    
+    waitForRecoveriesToFinish(false);
     
     List<SolrServer> s2c = shardToClient.get(SHARD2);
 
@@ -989,34 +1000,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     SolrQuery query = new SolrQuery("*:*");
     assertEquals("Doc Counts do not add up", controlCount, cloudClient.query(query).getResults().getNumFound());
   }
-  
-  protected void waitForRecovery(JettySolrRunner replica)
-      throws InterruptedException {
-    final CountDownLatch recoveryLatch = new CountDownLatch(1);
-    RecoveryStrat recoveryStrat = ((SolrDispatchFilter) replica.getDispatchFilter().getFilter()).getCores()
-        .getZkController().getRecoveryStrat();
-    
-    recoveryStrat.setRecoveryListener(new RecoveryListener() {
-      
-      @Override
-      public void startRecovery() {}
-      
-      @Override
-      public void finishedReplication() {}
-      
-      @Override
-      public void finishedRecovery() {
-        recoveryLatch.countDown();
-      }
-    });
-    
-    // wait for recovery to finish
-    // if it takes over n seconds, assume we didnt get our listener attached before
-    // recover started - it should be done before n though
-    if (!recoveryLatch.await(45, TimeUnit.SECONDS)) {
-      log.warn("Timed out waiting to be notified of replication");
-    }
-  }
 
   @Override
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {  
@@ -1099,6 +1082,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     if (VERBOSE) {
       super.printLayout();
     }
+    ((CommonsHttpSolrServer) controlClient).shutdown();
     if (cloudClient != null) {
       cloudClient.close();
     }
@@ -1134,6 +1118,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       String url = "http://localhost:" + port + context + "/" + DEFAULT_COLLECTION;
       CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
       s.setConnectionTimeout(100); // 1/10th sec
+      s.setSoTimeout(15000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;

@@ -97,7 +97,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) throws IOException {
     super(core);
     if (updateHandler instanceof DirectUpdateHandler2) {
-      this.solrCoreState = ((DirectUpdateHandler2)updateHandler).solrCoreState;
+      this.solrCoreState = ((DirectUpdateHandler2) updateHandler).solrCoreState;
     } else {
       // the impl has changed, so we cannot use the old state - decref it
       updateHandler.decref();

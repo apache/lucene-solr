@@ -139,6 +139,8 @@ public class CommonsHttpSolrServer extends SolrServer
    * with single-part requests.
    */
   private boolean useMultiPartPost;
+
+  private boolean shutdownHttpClient = false;
   
   /**  
    * @param solrServerUrl The URL of the Solr server.  For 
@@ -204,6 +206,7 @@ public class CommonsHttpSolrServer extends SolrServer
     }
 
     if (client == null) {
+      shutdownHttpClient  = true;
       _httpClient = new HttpClient(new MultiThreadedHttpConnectionManager()) ;
 
       // prevent retries  (note: this didn't work when set on mgr.. needed to be set on client)
@@ -668,5 +671,13 @@ public class CommonsHttpSolrServer extends SolrServer
     });
     req.setCommitWithin(commitWithinMs);
     return req.process(this);
+  }
+  
+  public void shutdown() {
+    if (shutdownHttpClient && _httpClient != null
+        && _httpClient.getHttpConnectionManager() instanceof MultiThreadedHttpConnectionManager) {
+      ((MultiThreadedHttpConnectionManager) _httpClient
+          .getHttpConnectionManager()).shutdown();
+    }
   }
 }

@@ -43,6 +43,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -286,7 +287,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       return tempSnapPuller.fetchLatestIndex(core, force);
     } catch (Exception e) {
-      LOG.error("SnapPull failed ", e);
+      SolrException.log(LOG, "SnapPull failed ", e);
     } finally {
       tempSnapPuller = snapPuller;
       snapPullLock.unlock();

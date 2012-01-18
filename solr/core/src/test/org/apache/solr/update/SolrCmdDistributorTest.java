@@ -26,13 +26,12 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.update.SolrCmdDistributor.Response;
 import org.apache.solr.update.SolrCmdDistributor.Node;
+import org.apache.solr.update.SolrCmdDistributor.Response;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
@@ -101,6 +100,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
     cmdDistrib.distribCommit(ccmd, nodes, params);
     cmdDistrib.finish();
+
     Response response = cmdDistrib.getResponse();
     
     assertEquals(response.errors.toString(), 0, response.errors.size());
@@ -115,7 +115,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     
     // add another 2 docs to control and 3 to client
-    
+    cmdDistrib = new SolrCmdDistributor();
     cmd.solrDoc = sdoc("id", 2);
     cmdDistrib.distribAdd(cmd, nodes, params);
     
@@ -148,10 +148,12 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     DeleteUpdateCommand dcmd = new DeleteUpdateCommand(null);
     dcmd.id = "2";
     
+    cmdDistrib = new SolrCmdDistributor();
     cmdDistrib.distribDelete(dcmd, nodes, params);
     
     cmdDistrib.distribCommit(ccmd, nodes, params);
     cmdDistrib.finish();
+
     response = cmdDistrib.getResponse();
     
     assertEquals(response.errors.toString(), 0, response.errors.size());

@@ -20,14 +20,23 @@ package org.apache.solr.update;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.solr.cloud.RecoveryStrat;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 
 public final class DefaultSolrCoreState extends SolrCoreState {
+ 
+  private final Object recoveryLock = new Object();
   private int refCnt = 1;
   private SolrIndexWriter indexWriter = null;
   private DirectoryFactory directoryFactory;
+ 
 
+ 
+
+  private boolean recoveryRunning;
+  private RecoveryStrat recoveryStrat;
+  
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
     this.directoryFactory = directoryFactory;
   }
@@ -86,6 +95,41 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   @Override
   public DirectoryFactory getDirectoryFactory() {
     return directoryFactory;
+  }
+
+  @Override
+  public void doRecovery(SolrCore core) {
+    cancelRecovery();
+    synchronized (recoveryLock) {
+      while (recoveryRunning) {
+        try {
+          recoveryLock.wait(1000);
+        } catch (InterruptedException e) {
+
+        }
+      }
+      
+      recoveryStrat = new RecoveryStrat(core);
+      recoveryStrat.start();
+      recoveryRunning = true;
+    }
+    
+  }
+  
+  @Override
+  public void cancelRecovery() {
+    synchronized (recoveryLock) {
+      if (recoveryStrat != null) {
+        recoveryStrat.close();
+        try {
+          recoveryStrat.join();
+        } catch (InterruptedException e) {
+          
+        }
+        recoveryRunning = false;
+        recoveryLock.notifyAll();
+      }
+    }
   }
   
 }

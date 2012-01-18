@@ -39,6 +39,7 @@ import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -433,6 +434,7 @@ public class CoreContainer
     synchronized(cores) {
       try {
         for(SolrCore core : cores.values()) {
+          core.getUpdateHandler().getSolrCoreState().cancelRecovery();
           if (!core.isClosed()) {
             core.close();
           }
@@ -515,6 +517,10 @@ public class CoreContainer
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
       } catch (Exception e) {
+        // if register fails, this is really bad - close the zkController to
+        // minimize any damage we can cause
+        zkController.publish(core, ZkStateReader.DOWN);
+        zkController.close();
         log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);

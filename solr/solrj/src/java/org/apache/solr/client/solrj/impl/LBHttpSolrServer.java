@@ -317,7 +317,7 @@ public class LBHttpSolrServer extends SolrServer {
     if (ex == null) {
       throw new SolrServerException("No live SolrServers available to handle this request");
     } else {
-      throw new SolrServerException("No live SolrServers available to handle this request", ex);
+      throw new SolrServerException("No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
     }
 
   }
@@ -399,6 +399,12 @@ public class LBHttpSolrServer extends SolrServer {
    */
   public void setSoTimeout(int timeout) {
     httpClient.getParams().setSoTimeout(timeout);
+  }
+  
+  public void shutdown() {
+    if (aliveCheckExecutor != null) {
+      aliveCheckExecutor.shutdownNow();
+    }
   }
 
   /**

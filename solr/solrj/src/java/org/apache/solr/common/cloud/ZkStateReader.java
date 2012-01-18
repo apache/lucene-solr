@@ -414,6 +414,11 @@ public class ZkStateReader {
   
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
       String shardId, String thisNodeName, String coreName) {
+    return getReplicaProps(collection, shardId, thisNodeName, coreName, null);
+  }
+  
+  public List<ZkCoreNodeProps> getReplicaProps(String collection,
+      String shardId, String thisNodeName, String coreName, String stateFilter) {
     CloudState cloudState = this.cloudState;
     if (cloudState == null) {
       return null;
@@ -437,7 +442,9 @@ public class ZkStateReader {
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
       String coreNodeName = nodeProps.getNodeName() + "_" + coreName;
       if (cloudState.liveNodesContain(thisNodeName) && !coreNodeName.equals(thisNodeName + "_" + coreName)) {
-        nodes.add(nodeProps);
+        if (stateFilter == null || stateFilter.equals(nodeProps.getState())) {
+          nodes.add(nodeProps);
+        }
       }
     }
     if (nodes.size() == 0) {

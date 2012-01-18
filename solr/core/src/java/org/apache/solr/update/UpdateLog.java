@@ -17,6 +17,24 @@
 
 package org.apache.solr.update;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -31,15 +49,10 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
 
 /** @lucene.experimental */
 public class UpdateLog implements PluginInfoInitialized {
@@ -104,6 +117,7 @@ public class UpdateLog implements PluginInfoInitialized {
   private SyncLevel defaultSyncLevel = SyncLevel.FLUSH;
 
   private volatile UpdateHandler uhandler;    // a core reload can change this reference!
+  private volatile boolean cancelApplyBufferUpdate;
 
 
   public static class LogPtr {
@@ -765,6 +779,7 @@ public class UpdateLog implements PluginInfoInitialized {
     // reading state and acting on it in the update processor
     versionInfo.blockUpdates();
     try {
+      cancelApplyBufferUpdate = false;
       if (state != State.BUFFERING) return null;
 
       // handle case when no log was even created because no updates
@@ -845,7 +860,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
         for(;;) {
           Object o = null;
-
+          if (cancelApplyBufferUpdate) break;
           try {
             if (testing_logReplayHook != null) testing_logReplayHook.run();
             o = null;
@@ -1000,9 +1015,14 @@ public class UpdateLog implements PluginInfoInitialized {
       if (testing_logReplayFinishHook != null) testing_logReplayFinishHook.run();
     }
   }
+  
+  public void cancelApplyBufferedUpdates() {
+    this.cancelApplyBufferUpdate = true;
+  }
 
-  ThreadPoolExecutor recoveryExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-      1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
+  ThreadPoolExecutor recoveryExecutor = new ThreadPoolExecutor(0,
+      Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+      new DefaultSolrThreadFactory("recoveryExecutor"));
 
 }
 

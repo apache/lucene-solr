@@ -28,6 +28,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -53,12 +55,14 @@ public class CloudSolrServer extends SolrServer {
   private String defaultCollection;
   private LBHttpSolrServer lbServer;
   Random rand = new Random();
-
+  private MultiThreadedHttpConnectionManager connManager;
   /**
    * @param zkHost The address of the zookeeper quorum containing the cloud state
    */
   public CloudSolrServer(String zkHost) throws MalformedURLException {
-      this(zkHost, new LBHttpSolrServer());
+      connManager = new MultiThreadedHttpConnectionManager();
+      this.zkHost = zkHost;
+      this.lbServer = new LBHttpSolrServer(new HttpClient(connManager));
   }
 
   /**
@@ -170,8 +174,8 @@ public class CloudSolrServer extends SolrServer {
     }
 
     Collections.shuffle(urlList, rand);
-    // System.out.println("########################## MAKING REQUEST TO " + urlList);
-    // TODO: set distrib=true if we detected more than one shard?
+    //System.out.println("########################## MAKING REQUEST TO " + urlList);
+ 
     LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, urlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);
     return rsp.getResponse();
@@ -184,6 +188,9 @@ public class CloudSolrServer extends SolrServer {
           zkStateReader.close();
         zkStateReader = null;
       }
+    }
+    if (connManager != null) {
+      connManager.shutdown();
     }
   }
 

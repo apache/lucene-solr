@@ -32,7 +32,6 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -46,7 +45,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Test;
@@ -231,7 +229,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void destroyServers() throws Exception {
     controlJetty.stop();
+    ((CommonsHttpSolrServer) controlClient).shutdown();
     for (JettySolrRunner jetty : jettys) jetty.stop();
+    for (SolrServer client : clients) ((CommonsHttpSolrServer) client).shutdown();
     clients.clear();
     jettys.clear();
   }

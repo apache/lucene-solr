@@ -18,7 +18,6 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.core.DirectoryFactory;
@@ -30,11 +29,6 @@ import org.apache.solr.core.SolrCore;
  * 
  */
 public abstract class SolrCoreState {
-  
-  // need a per core lock over reloads...
-  private final Object recoveryLock = new Object();
-  
-  public final AtomicInteger recoveryRequests = new AtomicInteger();
   
   /**
    * Force the creation of a new IndexWriter using the settings from the given
@@ -86,8 +80,8 @@ public abstract class SolrCoreState {
     public void closeWriter(IndexWriter writer) throws IOException;
   }
 
+  public abstract void doRecovery(SolrCore core);
+  
+  public abstract void cancelRecovery();
 
-  public Object getRecoveryLock() {
-    return recoveryLock;
-  }
 }

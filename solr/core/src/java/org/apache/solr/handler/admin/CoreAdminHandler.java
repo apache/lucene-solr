@@ -595,15 +595,14 @@ public class CoreAdminHandler extends RequestHandlerBase {
     if (cname == null) {
       cname = "";
     }
-    
     SolrCore core = coreContainer.getCore(cname);
     try {
-      RecoveryStrat recoveryStrat = new RecoveryStrat();
-      recoveryStrat.recover(core);
+      core.getUpdateHandler().getSolrCoreState().doRecovery(core);
     } finally {
       // no recoveryStrat close for now
       core.close();
     }
+    
   }
   
   protected void handlePrepRecoveryAction(SolrQueryRequest req,

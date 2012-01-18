@@ -88,6 +88,9 @@ public class JettySolrRunner {
     this.solrHome = solrHome;
     this.stopAtShutdown = stopAtShutdown;
     server.setStopAtShutdown(stopAtShutdown);
+    if (!stopAtShutdown) {
+      server.setGracefulShutdown(0);
+    }
     System.setProperty("solr.solr.home", solrHome);
     if (System.getProperty("jetty.testMode") != null) {
       // SelectChannelConnector connector = new SelectChannelConnector();

@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.SolrZooKeeper;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
@@ -595,8 +596,12 @@ public class SolrZkClient {
 
     for (String child : children) {
       if (!child.equals("quota")) {
-        printLayout(path + (path.equals("/") ? "" : "/") + child, indent + 1,
-            string);
+        try {
+          printLayout(path + (path.equals("/") ? "" : "/") + child, indent + 1,
+              string);
+        } catch (NoNodeException e) {
+          // must have gone away
+        }
       }
     }
 

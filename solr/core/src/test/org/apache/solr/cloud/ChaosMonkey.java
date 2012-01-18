@@ -291,7 +291,7 @@ public class ChaosMonkey {
     
     int chance = random.nextInt(10);
     JettySolrRunner jetty;
-    if (chance <= 8 && aggressivelyKillLeaders) {
+    if (chance <= 5 && aggressivelyKillLeaders) {
       // if killLeader, really aggressively go after leaders
       Collection<CloudJettyRunner> leaders = shardToLeaderJetty.values();
       List<CloudJettyRunner> leadersList = new ArrayList<CloudJettyRunner>(leaders.size());
@@ -331,7 +331,7 @@ public class ChaosMonkey {
   
   // synchronously starts and stops shards randomly, unless there is only one
   // active shard up for a slice or if there is one active and others recovering
-  public void startTheMonkey(boolean killLeaders) {
+  public void startTheMonkey(boolean killLeaders, final int roundPause) {
     this.aggressivelyKillLeaders = killLeaders;
     
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
@@ -344,7 +344,7 @@ public class ChaosMonkey {
       public void run() {
         while (!stop) {
           try {
-            Thread.sleep(300);
+            Thread.sleep(roundPause);
  
             if (random.nextBoolean()) {
              if (!deadPool.isEmpty()) {

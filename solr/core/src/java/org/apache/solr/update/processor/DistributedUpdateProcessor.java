@@ -629,7 +629,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
             .getZkController().getNodeName();
         String shardZkNodeName = nodeName + "_" + req.getCore().getName();
-        List<Node> nodes = getReplicaUrls(req, req.getCore().getCoreDescriptor()
+        List<Node> nodes = getCollectionUrls(req, req.getCore().getCoreDescriptor()
             .getCloudDescriptor().getCollectionName(), shardZkNodeName);
 
         if (nodes != null) {
@@ -672,7 +672,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
             .getZkController().getNodeName();
         String shardZkNodeName = nodeName + "_" + req.getCore().getName();
-        List<Node> nodes = getReplicaUrls(req, req.getCore().getCoreDescriptor()
+        List<Node> nodes = getCollectionUrls(req, req.getCore().getCoreDescriptor()
             .getCloudDescriptor().getCollectionName(), shardZkNodeName);
 
         if (nodes != null) {
@@ -692,7 +692,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
  
 
   
-  private List<Node> getReplicaUrls(SolrQueryRequest req, String collection, String shardZkNodeName) {
+  private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, String shardZkNodeName) {
     CloudState cloudState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getCloudState();
     List<Node> urls = new ArrayList<Node>();

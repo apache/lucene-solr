@@ -160,6 +160,13 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       
       leader = getLeader();
       int newLeaderPort = getLeaderPort(leader);
+      int retry = 0;
+      while (leaderPort == newLeaderPort) {
+        if (retry++ == 20) {
+          break;
+        }
+        Thread.sleep(1000);
+      }
       
       if (leaderPort == newLeaderPort) {
         fail("We didn't find a new leader! " + leaderPort + " was shutdown, but it's still showing as the leader");
@@ -216,7 +223,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       ZkNodeProps props;
       try {
         reader.updateCloudState(true);
-        props = reader.getLeaderProps("collection1", "shard1");
+        props = reader.getLeaderProps("collection1", "shard1", 500);
         leader = props.get(ZkStateReader.NODE_NAME_PROP);
         if (leader != null) {
           break;

@@ -319,7 +319,7 @@ public class QueryComponent extends SearchComponent
             for (ZkNodeProps nodeProps : sliceShards.values()) {
               ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
               if (!liveNodes.contains(coreNodeProps.getNodeName())
-                  && coreNodeProps.getState().equals(
+                  || !coreNodeProps.getState().equals(
                       ZkStateReader.ACTIVE)) continue;
               if (first) {
                 first = false;

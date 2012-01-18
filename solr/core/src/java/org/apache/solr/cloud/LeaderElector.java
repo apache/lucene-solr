@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.core.SolrCore;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -74,6 +75,7 @@ public  class LeaderElector {
    * If it is, set the leaderId on the leader zk node. If it is not, start
    * watching the candidate that is in line before this one - if it goes down, check
    * if this candidate is the leader again.
+   * @param leaderSeqPath 
    * 
    * @param seq
    * @param context 
@@ -82,7 +84,7 @@ public  class LeaderElector {
    * @throws IOException 
    * @throws UnsupportedEncodingException
    */
-  private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement) throws KeeperException,
+  private void checkIfIamLeader(final String leaderSeqPath, final int seq, final ElectionContext context, boolean replacement, final SolrCore core) throws KeeperException,
       InterruptedException, IOException {
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
@@ -91,7 +93,7 @@ public  class LeaderElector {
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
     if (seq <= intSeqs.get(0)) {
-      runIamLeaderProcess(context, replacement);
+      runIamLeaderProcess(leaderSeqPath, context, replacement, core);
     } else {
       // I am not the leader - watch the node below me
       int i = 1;
@@ -115,7 +117,7 @@ public  class LeaderElector {
               public void process(WatchedEvent event) {
                 // am I the next leader?
                 try {
-                  checkIfIamLeader(seq, context, true);
+                  checkIfIamLeader(leaderSeqPath, seq, context, true, core);
                 } catch (KeeperException e) {
                   log.warn("", e);
                   
@@ -132,17 +134,19 @@ public  class LeaderElector {
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
       } catch (KeeperException e) {
+        e.printStackTrace(System.out);
         // we couldn't set our watch - the node before us may already be down?
         // we need to check if we are the leader again
-        checkIfIamLeader(seq, context, true);
+        checkIfIamLeader(leaderSeqPath, seq, context, true, core);
       }
     }
   }
 
-  protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
-      InterruptedException {
+  // TODO: get this core param out of here
+  protected void runIamLeaderProcess(String leaderSeqPath, final ElectionContext context, boolean weAreReplacement, SolrCore core) throws KeeperException,
+      InterruptedException, IOException {
 
-    context.runLeaderProcess(weAreReplacement);
+    context.runLeaderProcess(leaderSeqPath, weAreReplacement, core);
   }
   
   /**
@@ -197,13 +201,14 @@ public  class LeaderElector {
    * watch the next lowest numbered node.
    * 
    * @param context
+   * @param SolrCore - optional - sometimes null
    * @return sequential node number
    * @throws KeeperException
    * @throws InterruptedException
    * @throws IOException 
    * @throws UnsupportedEncodingException
    */
-  public int joinElection(ElectionContext context) throws KeeperException, InterruptedException, IOException {
+  public int joinElection(ElectionContext context, SolrCore core) throws KeeperException, InterruptedException, IOException {
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
@@ -245,7 +250,7 @@ public  class LeaderElector {
       }
     }
     int seq = getSeq(leaderSeqPath);
-    checkIfIamLeader(seq, context, false);
+    checkIfIamLeader(leaderSeqPath, seq, context, false, core);
     
     return seq;
   }

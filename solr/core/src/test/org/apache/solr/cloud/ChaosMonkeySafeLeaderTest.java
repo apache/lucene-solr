@@ -48,13 +48,7 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
   public void setUp() throws Exception {
     super.setUp();
     // we expect this time of exception as shards go up and down...
-    ignoreException("shard update error ");
-    ignoreException("Connection refused");
-    ignoreException("interrupted waiting for shard update response");
-    ignoreException("org\\.mortbay\\.jetty\\.EofException");
-    ignoreException("java\\.lang\\.InterruptedException");
-    ignoreException("java\\.nio\\.channels\\.ClosedByInterruptException");
-    
+    ignoreException(".*");
     
     // sometimes we cannot get the same port
     ignoreException("java\\.net\\.BindException: Address already in use");
@@ -94,7 +88,7 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
       indexThread.start();
     }
     
-    chaosMonkey.startTheMonkey(false);
+    chaosMonkey.startTheMonkey(false, 500);
     
     Thread.sleep(atLeast(8000));
     
@@ -118,7 +112,7 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
     // wait until there are no recoveries...
     waitForThingsToLevelOut();
 
-    checkShardConsistency();
+    checkShardConsistency(true, true);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
   }

@@ -304,7 +304,9 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
     log.error( "error", ex );
   }
   
+  @Override
   public void shutdown() {
+    super.shutdown();
     scheduler.shutdown();
     try {
       if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
@@ -320,6 +322,7 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
   
   
   public void shutdownNow() {
+    super.shutdown();
     scheduler.shutdownNow(); // Cancel currently executing tasks
     try {
       if (!scheduler.awaitTermination(30, TimeUnit.SECONDS)) log

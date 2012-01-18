@@ -262,7 +262,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       //make sure leaders are in cloud state
       for (int i = 0; i < sliceCount; i++) {
-        assertNotNull(reader.getLeaderUrl("collection1", "shard" + (i + 1)));
+        assertNotNull(reader.getLeaderUrl("collection1", "shard" + (i + 1)), 15000);
       }
 
     } finally {
@@ -508,7 +508,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     LeaderElector overseerElector = new LeaderElector(zkClient);
     ElectionContext ec = new OverseerElectionContext(address.replaceAll("/", "_"), zkClient, reader);
     overseerElector.setup(ec);
-    overseerElector.joinElection(ec);
+    overseerElector.joinElection(ec, null);
     return zkClient;
   }
 }

@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
@@ -37,6 +39,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
+
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
@@ -53,14 +56,13 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   public void setUp() throws Exception {
     super.setUp();
     // TODO use @Noisy annotation as we expect lots of exceptions
-    
+    ignoreException(".*");
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
   @Override
   @After
   public void tearDown() throws Exception {
-    printLayout();
     super.tearDown();
     resetExceptionIgnores();
   }
@@ -96,11 +98,12 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     threads.add(ftIndexThread);
     ftIndexThread.start();
     
-    chaosMonkey.startTheMonkey(true);
-    
-    Thread.sleep(atLeast(20000));
-    
-    chaosMonkey.stopTheMonkey();
+    chaosMonkey.startTheMonkey(true, 1500);
+    try {
+      Thread.sleep(atLeast(12000));
+    } finally {
+      chaosMonkey.stopTheMonkey();
+    }
     
     for (StopableIndexingThread indexThread : threads) {
       indexThread.safeStop();
@@ -184,17 +187,26 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   }
 
   class FullThrottleStopableIndexingThread extends StopableIndexingThread {
+    MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
+    private HttpClient httpClient = new HttpClient(cm) ;
     private volatile boolean stop = false;
     int clientIndex = 0;
     private StreamingUpdateSolrServer suss;
     private List<SolrServer> clients;  
     
-    public FullThrottleStopableIndexingThread(List<SolrServer> clients, int startI, boolean doDeletes) throws MalformedURLException {
+    public FullThrottleStopableIndexingThread(List<SolrServer> clients,
+        int startI, boolean doDeletes) throws MalformedURLException {
       super(startI, doDeletes);
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
       this.clients = clients;
-      suss = new StreamingUpdateSolrServer(((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), 2, 2);
+      suss = new StreamingUpdateSolrServer(
+          ((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), httpClient, 8,
+          2) {
+        public void handleError(Throwable ex) {
+          log.warn("suss error", ex);
+        }
+      };
     }
     
     @Override
@@ -213,14 +225,16 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
             suss.deleteById(Integer.toString(delete));
           } catch (Exception e) {
             changeUrlOnError(e);
-            System.err.println("REQUEST FAILED:");
-            e.printStackTrace();
+            //System.err.println("REQUEST FAILED:");
+            //e.printStackTrace();
             fails.incrementAndGet();
           }
         }
         
         try {
           numAdds++;
+          if (numAdds > 4000)
+            continue;
           SolrInputDocument doc = getDoc(
               id,
               i,
@@ -233,8 +247,8 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
           suss.add(doc);
         } catch (Exception e) {
           changeUrlOnError(e);
-          System.err.println("REQUEST FAILED:");
-          e.printStackTrace();
+          //System.err.println("REQUEST FAILED:");
+          //e.printStackTrace();
           fails.incrementAndGet();
         }
         
@@ -255,7 +269,13 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
         }
         try {
           suss.shutdownNow();
-          suss = new StreamingUpdateSolrServer(((CommonsHttpSolrServer) clients.get(clientIndex)).getBaseURL(), 30, 3);
+          suss = new StreamingUpdateSolrServer(
+              ((CommonsHttpSolrServer) clients.get(clientIndex)).getBaseURL(),
+              httpClient, 30, 3) {
+            public void handleError(Throwable ex) {
+              log.warn("suss error", ex);
+            }
+          };
         } catch (MalformedURLException e1) {
           e1.printStackTrace();
         }
@@ -265,6 +285,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     public void safeStop() {
       stop = true;
       suss.shutdownNow();
+      cm.shutdown();
     }
 
     public int getFails() {

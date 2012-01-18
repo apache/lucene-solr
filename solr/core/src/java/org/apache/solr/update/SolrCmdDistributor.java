@@ -43,14 +43,18 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+
 
 
 
 public class SolrCmdDistributor {
   // TODO: shut this thing down
+  // TODO: this cannot be per instance...
   static ThreadPoolExecutor commExecutor = new ThreadPoolExecutor(0,
-      Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
-  
+      Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+      new DefaultSolrThreadFactory("cmdDistribExecutor"));
+
   static HttpClient client;
   
   static {
@@ -64,7 +68,7 @@ public class SolrCmdDistributor {
   Set<Future<Request>> pending;
   
   int maxBufferedAddsPerServer = 10;
-  int maxBufferedDeletesPerServer = 100;
+  int maxBufferedDeletesPerServer = 10;
 
   private Response response = new Response();
   
@@ -79,6 +83,10 @@ public class SolrCmdDistributor {
   class DeleteRequest {
     DeleteUpdateCommand cmd;
     ModifiableSolrParams params;
+  }
+  
+  public SolrCmdDistributor() {
+   
   }
   
   public void finish() {

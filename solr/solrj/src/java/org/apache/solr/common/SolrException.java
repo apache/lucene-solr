@@ -135,6 +135,16 @@ public class SolrException extends RuntimeException {
     if (msg!=null) log(log,msg,e);
     else log(log,e);
   }
+  
+  public static void log(Logger log, String msg) {
+    String stackTrace = msg;
+    String ignore = doIgnore(stackTrace);
+    if (ignore != null) {
+      log.info(ignore);
+      return;
+    }
+    log.error(stackTrace);
+  }
 
 
   // public String toString() { return toStr(this); }  // oops, inf loop
