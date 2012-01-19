@@ -773,7 +773,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int commitPercent = 5 + random.nextInt(20);
     final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random.nextInt(25);
-    final int deleteByQueryPercent = 0;  // real-time get isn't currently supported with delete-by-query
+    final int deleteByQueryPercent = 0;  // delete-by-query can't be reordered on replicas
     final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
     int nWriteThreads = 5 + random.nextInt(25);
 
@@ -1348,7 +1348,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int commitPercent = 5 + random.nextInt(20);
     final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random.nextInt(25);
-    final int deleteByQueryPercent = 0;  // real-time get isn't currently supported with delete-by-query
+    final int deleteByQueryPercent = 1+random.nextInt(5);
     final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
     int nWriteThreads = 5 + random.nextInt(25);
 
