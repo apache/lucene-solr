@@ -50,8 +50,6 @@ public abstract class ElectionContext {
   abstract void runLeaderProcess(String leaderSeqPath, boolean weAreReplacement) throws KeeperException, InterruptedException, IOException;
 }
 
-
-
 class ShardLeaderElectionContextBase extends ElectionContext {
   
   protected final SolrZkClient zkClient;
@@ -114,6 +112,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         try {
           // should I be leader?
           if (weAreReplacement && !shouldIBeLeader(leaderProps)) {
+            System.out.println("there is a better leader candidate it appears");
             rejoinLeaderElection(leaderSeqPath, core);
             return;
           }
@@ -159,10 +158,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     leaderElector.joinElection(this);
   }
   
-
-  
-
-  
   private boolean shouldIBeLeader(ZkNodeProps leaderProps) {
     CloudState cloudState = zkController.getZkStateReader().getCloudState();
     Map<String,Slice> slices = cloudState.getSlices(this.collection);
@@ -195,7 +190,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return !foundSomeoneElseActive;
   }
   
-
 }
 
 final class OverseerElectionContext extends ElectionContext {

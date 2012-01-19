@@ -283,7 +283,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         continue;
       }
       // TODO: we should force their state to recovering ??
-      
+      // TODO: could be sent in parallel
       // TODO: do retries??
       // TODO: what if its is already recovering? Right now recoveries queue up -
       // should they?

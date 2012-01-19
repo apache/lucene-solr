@@ -27,18 +27,24 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.PeerSync;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SyncStrategy {
+  protected final Logger log = LoggerFactory.getLogger(getClass());
+  
   public boolean sync(ZkController zkController, SolrCore core,
       ZkNodeProps leaderProps) {
     zkController.publish(core, ZkStateReader.SYNC);
@@ -168,7 +174,10 @@ public class SyncStrategy {
     
     List<String> syncWith = new ArrayList<String>();
     for (ZkCoreNodeProps node : nodes) {
-      syncWith.add(node.getCoreUrl());
+      // if we see a leader, must be stale state, and this is the guy that went down
+      if (!node.getNodeProps().keySet().contains(ZkStateReader.LEADER_PROP)) {
+        syncWith.add(node.getCoreUrl());
+      }
     }
     
  
@@ -194,18 +203,33 @@ public class SyncStrategy {
     for (ZkCoreNodeProps node : nodes) {
       try {
         // TODO: do we first everyone register as sync phase? get the overseer
-        // to
-        // do
-        // it?
+        // to do it?
+        // TODO: this should be done in parallel
         QueryRequest qr = new QueryRequest(params("qt", "/get", "getVersions",
-            Integer.toString(1000), "sync", StrUtils.join(
-                Collections.singletonList(zkLeader.getCoreUrl()), ',')));
-        CommonsHttpSolrServer server = null;
-        
-        server = new CommonsHttpSolrServer(node.getCoreUrl());
+            Integer.toString(1000), "sync", zkLeader.getCoreUrl(), "distrib", "false"));
+        CommonsHttpSolrServer server = new CommonsHttpSolrServer(node.getCoreUrl());
         
         NamedList rsp = server.request(qr);
         System.out.println("response about syncing to leader:" + rsp);
+        boolean success = (Boolean) rsp.get("sync");
+        System.out.println("success:" + success);
+        if (!success) {
+          System.out.println("try and ask " + node.getCoreUrl() + " to recover");
+          log.info("try and ask " + node.getCoreUrl() + " to recover");
+          try {
+            server = new CommonsHttpSolrServer(node.getBaseUrl());
+            server.setSoTimeout(5000);
+            server.setConnectionTimeout(5000);
+            
+            RequestRecovery recoverRequestCmd = new RequestRecovery();
+            recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
+            recoverRequestCmd.setCoreName(node.getCoreName());
+            
+            server.request(recoverRequestCmd);
+          } catch (Exception e) {
+            log.info("Could not tell a replica to recover", e);
+          }
+        }
       } catch (Exception e) {
         // nocommit
         e.printStackTrace();
