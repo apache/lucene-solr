@@ -143,7 +143,7 @@ abstract class FSTEnum<T> {
         // Arcs are fixed array -- use binary search to find
         // the target.
 
-        final FST<T>.BytesReader in = fst.getBytesReader(0);
+        final FST.BytesReader in = fst.getBytesReader(0);
         int low = arc.arcIdx;
         int high = arc.numArcs-1;
         int mid = 0;
@@ -281,7 +281,7 @@ abstract class FSTEnum<T> {
         // Arcs are fixed array -- use binary search to find
         // the target.
 
-        final FST<T>.BytesReader in = fst.getBytesReader(0);
+        final FST.BytesReader in = fst.getBytesReader(0);
         int low = arc.arcIdx;
         int high = arc.numArcs-1;
         int mid = 0;

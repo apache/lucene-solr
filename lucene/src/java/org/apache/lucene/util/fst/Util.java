@@ -86,6 +86,113 @@ public final class Util {
       return output;
     }
   }
+
+  // TODO: parameterize the FST type <T> and allow passing in a
+  // comparator; eg maybe your output is a PairOutput and
+  // one of the outputs in the pair is monotonic so you
+  // compare by that
+
+  /** Reverse lookup (lookup by output instead of by input),
+   *  in the special case when your FSTs outputs are
+   *  strictly ascending.  This locates the input/output
+   *  pair where the output is equal to the target, and will
+   *  return null if that output does not exist.
+   *
+   *  <p>NOTE: this only works with FST<Long>, only
+   *  works when the outputs are ascending in order with
+   *  the inputs and only works when you shared
+   *  the outputs (pass doShare=true to {@link
+   *  PositiveIntOutputs#getSingleton}).
+   *  For example, simple ordinals (0, 1,
+   *  2, ...), or file offets (when appending to a file)
+   *  fit this. */
+  public static IntsRef getByOutput(FST<Long> fst, long targetOutput) throws IOException {
+
+    final FST.BytesReader in = fst.getBytesReader(0);
+
+    // TODO: would be nice not to alloc this on every lookup
+    FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<Long>());
+    
+    FST.Arc<Long> scratchArc = new FST.Arc<Long>();
+
+    final IntsRef result = new IntsRef();
+
+    long output = arc.output;
+    int upto = 0;
+
+    //System.out.println("reverseLookup output=" + targetOutput);
+
+    while(true) {
+      if (arc.isFinal()) {
+        final long finalOutput = output + arc.nextFinalOutput;
+        //System.out.println("  isFinal finalOutput=" + finalOutput);
+        if (finalOutput == targetOutput) {
+          result.length = upto;
+          //System.out.println("    found!");
+          return result;
+        } else if (finalOutput > targetOutput) {
+          //System.out.println("    not found!");
+          return null;
+        }
+      }
+
+      if (fst.targetHasArcs(arc)) {
+        //System.out.println("  targetHasArcs");
+        if (result.ints.length == upto) {
+          result.grow(1+upto);
+        }
+        
+        fst.readFirstRealArc(arc.target, arc, in);
+
+        FST.Arc<Long> prevArc = null;
+
+        // TODO: we could do binary search here if node arcs
+        // are array'd:
+        while(true) {
+          //System.out.println("    cycle label=" + arc.label + " output=" + arc.output);
+
+          // This is the min output we'd hit if we follow
+          // this arc:
+          final long minArcOutput = output + arc.output;
+
+          if (minArcOutput == targetOutput) {
+            // Recurse on this arc:
+            //System.out.println("  match!  break");
+            output = minArcOutput;
+            result.ints[upto++] = arc.label;
+            break;
+          } else if (minArcOutput > targetOutput) {
+            if (prevArc == null) {
+              // Output doesn't exist
+              return null;
+            } else {
+              // Recurse on previous arc:
+              arc.copyFrom(prevArc);
+              result.ints[upto++] = arc.label;
+              output += arc.output;
+              //System.out.println("    recurse prev label=" + (char) arc.label + " output=" + output);
+              break;
+            }
+          } else if (arc.isLast()) {
+            // Recurse on this arc:
+            output = minArcOutput;
+            //System.out.println("    recurse last label=" + (char) arc.label + " output=" + output);
+            result.ints[upto++] = arc.label;
+            break;
+          } else {
+            // Read next arc in this node:
+            prevArc = scratchArc;
+            prevArc.copyFrom(arc);
+            //System.out.println("      after copy label=" + (char) prevArc.label + " vs " + (char) arc.label);
+            fst.readNextRealArc(arc, in);
+          }
+        }
+      } else {
+        //System.out.println("  no target arcs; not found!");
+        return null;
+      }
+    }    
+  }
   
   /**
    * Dumps an {@link FST} to a GraphViz's <code>dot</code> language description
@@ -352,6 +459,17 @@ public final class Util {
     scratch.grow(input.length);
     for(int i=0;i<input.length;i++) {
       scratch.ints[i] = input.bytes[i+input.offset] & 0xFF;
+    }
+    scratch.length = input.length;
+    return scratch;
+  }
+
+  /** Just converts IntsRef to BytesRef; you must ensure the
+   *  int values fit into a byte. */
+  public static BytesRef toBytesRef(IntsRef input, BytesRef scratch) {
+    scratch.grow(input.length);
+    for(int i=0;i<input.length;i++) {
+      scratch.bytes[i] = (byte) input.ints[i+input.offset];
     }
     scratch.length = input.length;
     return scratch;

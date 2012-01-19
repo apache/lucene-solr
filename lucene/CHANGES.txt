@@ -785,6 +785,10 @@ New Features
   (i.e. \* or "*")  Custom QueryParser subclasses overriding getRangeQuery()
   will be passed null for any open endpoint. (Ingo Renner, Adriano
   Crestani, yonik, Mike McCandless
+
+* LUCENE-3121: Add sugar reverse lookup (given an output, find the
+  input mapping to it) for FSTs that have strictly monotonic long
+  outputs (such as an ord).  (Mike McCandless)
   
 Bug fixes
 

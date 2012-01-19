@@ -161,7 +161,7 @@ public class TestFSTs extends LuceneTestCase {
         for(IntsRef term : terms2) {
           pairs.add(new FSTTester.InputOutput<Object>(term, NO_OUTPUT));
         }
-        FST<Object> fst = new FSTTester<Object>(random, dir, inputMode, pairs, outputs).doTest(0, 0, false);
+        FST<Object> fst = new FSTTester<Object>(random, dir, inputMode, pairs, outputs, false).doTest(0, 0, false);
         assertNotNull(fst);
         assertEquals(22, fst.getNodeCount());
         assertEquals(27, fst.getArcCount());
@@ -174,7 +174,7 @@ public class TestFSTs extends LuceneTestCase {
         for(int idx=0;idx<terms2.length;idx++) {
           pairs.add(new FSTTester.InputOutput<Long>(terms2[idx], outputs.get(idx)));
         }
-        final FST<Long> fst = new FSTTester<Long>(random, dir, inputMode, pairs, outputs).doTest(0, 0, false);
+        final FST<Long> fst = new FSTTester<Long>(random, dir, inputMode, pairs, outputs, true).doTest(0, 0, false);
         assertNotNull(fst);
         assertEquals(22, fst.getNodeCount());
         assertEquals(27, fst.getArcCount());
@@ -189,7 +189,7 @@ public class TestFSTs extends LuceneTestCase {
           final BytesRef output = random.nextInt(30) == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
           pairs.add(new FSTTester.InputOutput<BytesRef>(terms2[idx], output));
         }
-        final FST<BytesRef> fst = new FSTTester<BytesRef>(random, dir, inputMode, pairs, outputs).doTest(0, 0, false);
+        final FST<BytesRef> fst = new FSTTester<BytesRef>(random, dir, inputMode, pairs, outputs, false).doTest(0, 0, false);
         assertNotNull(fst);
         assertEquals(24, fst.getNodeCount());
         assertEquals(30, fst.getArcCount());
@@ -222,7 +222,7 @@ public class TestFSTs extends LuceneTestCase {
       for(IntsRef term : terms) {
         pairs.add(new FSTTester.InputOutput<Object>(term, NO_OUTPUT));
       }
-      new FSTTester<Object>(random, dir, inputMode, pairs, outputs).doTest();
+      new FSTTester<Object>(random, dir, inputMode, pairs, outputs, false).doTest();
     }
 
     // PositiveIntOutput (ord)
@@ -232,12 +232,13 @@ public class TestFSTs extends LuceneTestCase {
       for(int idx=0;idx<terms.length;idx++) {
         pairs.add(new FSTTester.InputOutput<Long>(terms[idx], outputs.get(idx)));
       }
-      new FSTTester<Long>(random, dir, inputMode, pairs, outputs).doTest();
+      new FSTTester<Long>(random, dir, inputMode, pairs, outputs, true).doTest();
     }
 
     // PositiveIntOutput (random monotonically increasing positive number)
     {
-      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(random.nextBoolean());
+      final boolean doShare = random.nextBoolean();
+      final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(doShare);
       final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
@@ -245,7 +246,7 @@ public class TestFSTs extends LuceneTestCase {
         lastOutput = value;
         pairs.add(new FSTTester.InputOutput<Long>(terms[idx], outputs.get(value)));
       }
-      new FSTTester<Long>(random, dir, inputMode, pairs, outputs).doTest();
+      new FSTTester<Long>(random, dir, inputMode, pairs, outputs, doShare).doTest();
     }
 
     // PositiveIntOutput (random positive number)
@@ -255,7 +256,7 @@ public class TestFSTs extends LuceneTestCase {
       for(int idx=0;idx<terms.length;idx++) {
         pairs.add(new FSTTester.InputOutput<Long>(terms[idx], outputs.get(random.nextLong()) & Long.MAX_VALUE));
       }
-      new FSTTester<Long>(random, dir, inputMode, pairs, outputs).doTest();
+      new FSTTester<Long>(random, dir, inputMode, pairs, outputs, false).doTest();
     }
 
     // Pair<ord, (random monotonically increasing positive number>
@@ -272,7 +273,7 @@ public class TestFSTs extends LuceneTestCase {
                                                                          outputs.get(o1.get(idx),
                                                                                      o2.get(value))));
       }
-      new FSTTester<PairOutputs.Pair<Long,Long>>(random, dir, inputMode, pairs, outputs).doTest();
+      new FSTTester<PairOutputs.Pair<Long,Long>>(random, dir, inputMode, pairs, outputs, false).doTest();
     }
 
     // Sequence-of-bytes
@@ -284,7 +285,7 @@ public class TestFSTs extends LuceneTestCase {
         final BytesRef output = random.nextInt(30) == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
         pairs.add(new FSTTester.InputOutput<BytesRef>(terms[idx], output));
       }
-      new FSTTester<BytesRef>(random, dir, inputMode, pairs, outputs).doTest();
+      new FSTTester<BytesRef>(random, dir, inputMode, pairs, outputs, false).doTest();
     }
 
     // Sequence-of-ints
@@ -300,7 +301,7 @@ public class TestFSTs extends LuceneTestCase {
         }
         pairs.add(new FSTTester.InputOutput<IntsRef>(terms[idx], output));
       }
-      new FSTTester<IntsRef>(random, dir, inputMode, pairs, outputs).doTest();
+      new FSTTester<IntsRef>(random, dir, inputMode, pairs, outputs, false).doTest();
     }
 
     // Up to two positive ints, shared, generally but not
@@ -330,7 +331,7 @@ public class TestFSTs extends LuceneTestCase {
         }
         pairs.add(new FSTTester.InputOutput<Object>(terms[idx], output));
       }
-      new FSTTester<Object>(random, dir, inputMode, pairs, outputs).doTest();
+      new FSTTester<Object>(random, dir, inputMode, pairs, outputs, false).doTest();
     }
   }
 
@@ -341,13 +342,15 @@ public class TestFSTs extends LuceneTestCase {
     final int inputMode;
     final Outputs<T> outputs;
     final Directory dir;
+    final boolean doReverseLookup;
 
-    public FSTTester(Random random, Directory dir, int inputMode, List<InputOutput<T>> pairs, Outputs<T> outputs) {
+    public FSTTester(Random random, Directory dir, int inputMode, List<InputOutput<T>> pairs, Outputs<T> outputs, boolean doReverseLookup) {
       this.random = random;
       this.dir = dir;
       this.inputMode = inputMode;
       this.pairs = pairs;
       this.outputs = outputs;
+      this.doReverseLookup = doReverseLookup;
     }
 
     private static class InputOutput<T> implements Comparable<InputOutput<T>> {
@@ -525,6 +528,26 @@ public class TestFSTs extends LuceneTestCase {
     // FST is complete
     private void verifyUnPruned(int inputMode, FST<T> fst) throws IOException {
 
+      final FST<Long> fstLong;
+      final Set<Long> validOutputs;
+      long minLong = Long.MAX_VALUE;
+      long maxLong = Long.MIN_VALUE;
+
+      if (doReverseLookup) {
+        @SuppressWarnings("unchecked") FST<Long> fstLong0 = (FST<Long>) fst;
+        fstLong = fstLong0;
+        validOutputs = new HashSet<Long>();
+        for(InputOutput<T> pair: pairs) {
+          Long output = (Long) pair.output;
+          maxLong = Math.max(maxLong, output);
+          minLong = Math.min(minLong, output);
+          validOutputs.add(output);
+        }
+      } else {
+        fstLong = null;
+        validOutputs = null;
+      }
+
       if (pairs.size() == 0) {
         assertNull(fst);
         return;
@@ -542,7 +565,7 @@ public class TestFSTs extends LuceneTestCase {
 
       assertNotNull(fst);
 
-      // visit valid paris in order -- make sure all words
+      // visit valid pairs in order -- make sure all words
       // are accepted, and FSTEnum's next() steps through
       // them correctly
       if (VERBOSE) {
@@ -556,7 +579,6 @@ public class TestFSTs extends LuceneTestCase {
             System.out.println("TEST: check term=" + inputToString(inputMode, term) + " output=" + fst.outputs.outputToString(pair.output));
           }
           Object output = run(fst, term, null);
-
           assertNotNull("term " + inputToString(inputMode, term) + " is not accepted", output);
           assertEquals(pair.output, output);
 
@@ -574,6 +596,20 @@ public class TestFSTs extends LuceneTestCase {
         termsMap.put(pair.input, pair.output);
       }
 
+      if (doReverseLookup && maxLong > minLong) {
+        // Do random lookups so we test null (output doesn't
+        // exist) case:
+        assertNull(Util.getByOutput(fstLong, minLong-7));
+        assertNull(Util.getByOutput(fstLong, maxLong+7));
+
+        final int num = atLeast(100);
+        for(int iter=0;iter<num;iter++) {
+          Long v = minLong + random.nextLong() % (maxLong - minLong);
+          IntsRef input = Util.getByOutput(fstLong, v);
+          assertTrue(validOutputs.contains(v) || input == null);
+        }
+      }
+
       // find random matching word and make sure it's valid
       if (VERBOSE) {
         System.out.println("TEST: verify random accepted terms");
@@ -584,6 +620,14 @@ public class TestFSTs extends LuceneTestCase {
         T output = randomAcceptedWord(fst, scratch);
         assertTrue("accepted word " + inputToString(inputMode, scratch) + " is not valid", termsMap.containsKey(scratch));
         assertEquals(termsMap.get(scratch), output);
+
+        if (doReverseLookup) {
+          //System.out.println("lookup output=" + output + " outs=" + fst.outputs);
+          IntsRef input = Util.getByOutput(fstLong, (Long) output);
+          assertNotNull(input);
+          //System.out.println("  got " + Util.toBytesRef(input, new BytesRef()).utf8ToString());
+          assertEquals(scratch, input);
+        }
       }
     
       // test IntsRefFSTEnum.seek:
@@ -887,7 +931,7 @@ public class TestFSTs extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: after prune");
         for(Map.Entry<IntsRef,CountMinOutput<T>> ent : prefixes.entrySet()) {
-          System.out.println("  " + inputToString(inputMode, ent.getKey()) + ": isLeaf=" + ent.getValue().isLeaf + " isFinal=" + ent.getValue().isFinal);
+          System.out.println("  " + inputToString(inputMode, ent.getKey(), false) + ": isLeaf=" + ent.getValue().isLeaf + " isFinal=" + ent.getValue().isFinal);
           if (ent.getValue().isFinal) {
             System.out.println("    finalOutput=" + outputs.outputToString(ent.getValue().finalOutput));
           }
@@ -951,7 +995,7 @@ public class TestFSTs extends LuceneTestCase {
     //testRandomWords(20, 100);
   }
 
-  private String inputModeToString(int mode) {
+  String inputModeToString(int mode) {
     if (mode == 0) {
       return "utf8";
     } else {
@@ -995,7 +1039,7 @@ public class TestFSTs extends LuceneTestCase {
     testRandomWords(_TestUtil.nextInt(random, 50000, 60000), 1);
   }
   
-  private static String inputToString(int inputMode, IntsRef term) {
+  static String inputToString(int inputMode, IntsRef term) {
     return inputToString(inputMode, term, true);
   }
 
@@ -1422,6 +1466,14 @@ public class TestFSTs extends LuceneTestCase {
     assertNotNull(seekResult);
     assertEquals(b, seekResult.input);
     assertEquals(42, (long) seekResult.output);
+
+    assertEquals(Util.toIntsRef(new BytesRef("c"), new IntsRef()),
+                 Util.getByOutput(fst, 13824324872317238L));
+    assertNull(Util.getByOutput(fst, 47));
+    assertEquals(Util.toIntsRef(new BytesRef("b"), new IntsRef()),
+                 Util.getByOutput(fst, 42));
+    assertEquals(Util.toIntsRef(new BytesRef("a"), new IntsRef()),
+                 Util.getByOutput(fst, 17));
   }
 
   public void testPrimaryKeys() throws Exception {
