@@ -369,10 +369,7 @@ Other Changes
 * SOLR-2588: Moved VelocityResponseWriter back to contrib module in order to 
   remove it as a mandatory core dependency.  (ehatcher)
   
-* SOLR-2718: Add ability to lazy load response writers, defined with startup="lazy".
-  (ehatcher)
-
-* SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering 
+* SOLR-2862: More explicit lexical resources location logged if Carrot2 clustering
   extension is used. Fixed solr. impl. of IResource and IResourceLookup. (Dawid Weiss)
 
 * SOLR-1123: Changed JSONResponseWriter to now use application/json as its Content-Type
@@ -497,6 +494,9 @@ Other Changes
 * Solr-3032: Deprecate logOnce from SolrException logOnce and all the supporting
   structure will disappear in 4.0. Errors should be caught and logged at the
   top-most level or logged and NOT propagated up the chain. (Erick Erickson)
+
+* SOLR-2718: Add ability to lazy load response writers, defined with startup="lazy".
+  (ehatcher)
 
 Build
 ----------------------
