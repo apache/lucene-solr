@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.io.Writer;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.XMLResponseWriter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -91,7 +93,15 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
         // System.out.println(out);
         assertTrue(out.contains("DUMMY"));
     }
-    
+
+    public void testLazy() {
+      QueryResponseWriter qrw = h.getCore().getQueryResponseWriter("useless");
+      assertTrue("Should be a lazy class", qrw instanceof SolrCore.LazyQueryResponseWriterWrapper);
+
+      qrw = h.getCore().getQueryResponseWriter("xml");
+      assertTrue("Should not be a lazy class", qrw instanceof XMLResponseWriter);
+
+    }
     
     ////////////////////////////////////////////////////////////////////////////
     /** An output writer that doesn't do anything useful. */
