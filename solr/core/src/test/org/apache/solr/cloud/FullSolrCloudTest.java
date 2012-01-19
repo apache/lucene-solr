@@ -926,6 +926,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
               query.set("distrib", false);
               long results = client.query(query).getResults().getNumFound();
               if (verbose) System.out.println(new ZkCoreNodeProps(props).getCoreUrl() + " : " + results);
+              if (verbose) System.out.println("shard:" + props.get(ZkStateReader.SHARD_ID_PROP));
               cnt += results;
               break;
             }
