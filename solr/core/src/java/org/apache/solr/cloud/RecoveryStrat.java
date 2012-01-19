@@ -228,8 +228,9 @@ public class RecoveryStrat extends Thread {
             break;
           }
           
-          zkController.publishAsDown(baseUrl, cloudDesc, coreZkNodeName,
-              core.getName());
+          // nocommit:
+//          zkController.publishAsDown(baseUrl, cloudDesc, coreZkNodeName,
+//              core.getName());
           
         } catch (Exception e) {
           SolrException.log(log, "", e);
