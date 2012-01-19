@@ -1055,6 +1055,50 @@ public class TestFSTs extends LuceneTestCase {
     }
   }
 
+  // NOTE: this test shows a case where our current builder
+  // fails to produce minimal FST:
+  /*
+  public void test3() throws Exception {
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+    IntsRef scratchIntsRef = new IntsRef();
+    builder.add(Util.toIntsRef(new BytesRef("aa$"), scratchIntsRef), outputs.get(0));
+    builder.add(Util.toIntsRef(new BytesRef("aab$"), scratchIntsRef), 1L);
+    builder.add(Util.toIntsRef(new BytesRef("bbb$"), scratchIntsRef), 2L);
+    final FST<Long> fst = builder.finish();
+    //System.out.println("NODES " + fst.getNodeCount() + " ARCS " + fst.getArcCount());
+    // NOTE: we produce 7 nodes today
+    assertEquals(6, fst.getNodeCount());
+    // NOTE: we produce 8 arcs today
+    assertEquals(7, fst.getNodeCount());
+    //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+    //Util.toDot(fst, w, false, false);
+    //w.close();
+  }
+  */
+
+  // NOTE: this test shows a case where our current builder
+  // fails to produce minimal FST:
+  /*
+  public void test4() throws Exception {
+    final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
+    Builder<BytesRef> builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, outputs);
+    IntsRef scratchIntsRef = new IntsRef();
+    builder.add(Util.toIntsRef(new BytesRef("aa$"), scratchIntsRef), outputs.getNoOutput());
+    builder.add(Util.toIntsRef(new BytesRef("aab$"), scratchIntsRef), new BytesRef("1"));
+    builder.add(Util.toIntsRef(new BytesRef("bbb$"), scratchIntsRef), new BytesRef("11"));
+    final FST<BytesRef> fst = builder.finish();
+    //System.out.println("NODES " + fst.getNodeCount() + " ARCS " + fst.getArcCount());
+    // NOTE: we produce 7 nodes today
+    assertEquals(6, fst.getNodeCount());
+    // NOTE: we produce 8 arcs today
+    assertEquals(7, fst.getNodeCount());
+    //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+    //Util.toDot(fst, w, false, false);
+    //w.close();
+  }
+  */
+
   // Build FST for all unique terms in the test line docs
   // file, up until a time limit
   public void testRealTerms() throws Exception {
