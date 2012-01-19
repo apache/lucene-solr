@@ -773,7 +773,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return out.toString();
   }
 
-    /** Creates a JSON add command from a SolrInputDocument list.  Doesn't currently handle boosts. */
+    /** Creates a JSON delete command from an id list */
   public static String jsonDelId(Object... ids) {
     CharArr out = new CharArr();
     try {
@@ -784,6 +784,27 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         else out.append(',');
         out.append("\"delete\":{\"id\":");
         out.append(JSONUtil.toJSON(id));
+        out.append('}');
+      }
+      out.append('}');
+    } catch (IOException e) {
+      // should never happen
+    }
+    return out.toString();
+  }
+
+
+  /** Creates a JSON deleteByQuery command */
+  public static String jsonDelQ(String... queries) {
+    CharArr out = new CharArr();
+    try {
+      out.append('{');
+      boolean first = true;
+      for (Object q : queries) {
+        if (first) first=false;
+        else out.append(',');
+        out.append("\"delete\":{\"query\":");
+        out.append(JSONUtil.toJSON(q));
         out.append('}');
       }
       out.append('}');
@@ -810,6 +831,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return (Long) lst.get(1);
   }
 
+  public static Long deleteByQueryAndGetVersion(String q, SolrParams params) throws Exception {
+    String response = updateJ(jsonDelQ(q), params);
+    Map rsp = (Map)ObjectBuilder.fromJSON(response);
+    List lst = (List)rsp.get("deleteByQuery");
+    if (lst == null || lst.size() == 0) return null;
+    return (Long) lst.get(1);
+  }
 
   /////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////// random document / index creation ///////////////////////

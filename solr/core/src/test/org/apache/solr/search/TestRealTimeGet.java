@@ -213,7 +213,10 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
         ,"=={'doc':null}"
     );
 
-
+    version = addAndGetVersion(sdoc("id","2"), null);
+    long version2 = deleteByQueryAndGetVersion("id:2", null);
+    assertTrue(Math.abs(version2) > version );
+    
   }
 
 
@@ -299,7 +302,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int commitPercent = 5 + random.nextInt(20);
     final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random.nextInt(25);
-    final int deleteByQueryPercent = 0;  // real-time get isn't currently supported with delete-by-query
+    final int deleteByQueryPercent = 1+random.nextInt(5);
     final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
     int nWriteThreads = 5 + random.nextInt(25);
 
@@ -533,7 +536,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int commitPercent = 5 + random.nextInt(20);
     final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random.nextInt(25);
-    final int deleteByQueryPercent = 0;  // real-time get isn't currently supported with delete-by-query
+    final int deleteByQueryPercent = 1 + random.nextInt(5);
     final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
     int nWriteThreads = 5 + random.nextInt(25);
 
@@ -635,7 +638,20 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                 verbose("deleting id", id, "val=",nextVal,"DONE");
               } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
+                verbose("deleteByQyery id",id,"val=",nextVal);
 
+                Long version = deleteByQueryAndGetVersion("id:"+Integer.toString(id), null);
+                assertTrue(version < 0);
+
+                // only update model if the version is newer
+                synchronized (model) {
+                  DocInfo currInfo = model.get(id);
+                  if (Math.abs(version) > Math.abs(currInfo.version)) {
+                    model.put(id, new DocInfo(version, -nextVal));
+                  }
+                }
+
+                verbose("deleteByQyery id", id, "val=",nextVal,"DONE");
               } else {
                 verbose("adding id", id, "val=", nextVal);
 

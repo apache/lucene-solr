@@ -81,6 +81,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   private NamedList addsResponse = null;
   private NamedList deleteResponse = null;
+  private NamedList deleteByQueryResponse = null;
   private CharsRef scratch;
   
   private final SchemaField idField;
@@ -642,6 +643,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
     }
+
+    if (returnVersions && rsp != null) {
+      if (deleteByQueryResponse == null) {
+        deleteByQueryResponse = new NamedList<String>();
+        rsp.add("deleteByQuery",deleteByQueryResponse);
+      }
+      deleteByQueryResponse.add(cmd.getQuery(), cmd.getVersion());
+    }
+
   }
 
   @Override
