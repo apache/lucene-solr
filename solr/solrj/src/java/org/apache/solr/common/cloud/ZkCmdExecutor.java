@@ -129,7 +129,7 @@ public class ZkCmdExecutor {
   protected void retryDelay(int attemptCount) {
     if (attemptCount > 0) {
       try {
-        Thread.sleep(attemptCount * retryDelay);
+        Thread.sleep(Math.min(10000, attemptCount * retryDelay));
       } catch (InterruptedException e) {
         LOG.debug("Failed to sleep: " + e, e);
       }
