@@ -164,7 +164,7 @@ public class CloudSolrServer extends SolrServer {
         ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
         String node = coreNodeProps.getNodeName();
         if (!liveNodes.contains(coreNodeProps.getNodeName())
-            && coreNodeProps.getState().equals(
+            || !coreNodeProps.getState().equals(
                 ZkStateReader.ACTIVE)) continue;
         if (nodes.put(node, nodeProps) == null) {
           String url = coreNodeProps.getCoreUrl();
