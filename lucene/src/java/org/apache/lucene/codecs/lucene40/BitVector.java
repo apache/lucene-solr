@@ -68,7 +68,7 @@ public final class BitVector implements Cloneable, MutableBits {
   }
   
   @Override
-  public Object clone() {
+  public BitVector clone() {
     byte[] copyBits = new byte[bits.length];
     System.arraycopy(bits, 0, copyBits, 0, bits.length);
     BitVector clone = new BitVector(copyBits, size);

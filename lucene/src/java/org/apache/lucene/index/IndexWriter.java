@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene40.BitVector;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -52,6 +51,7 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.MutableBits;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.TwoPhaseCommit;
 
@@ -416,7 +416,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // docs, and it's copy-on-write (cloned whenever we need
     // to change it but it's been shared to an external NRT
     // reader).
-    public BitVector liveDocs;
+    public MutableBits liveDocs;
 
     // How many further deletions we've done against
     // liveDocs vs when we loaded it or last wrote it:
@@ -486,7 +486,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (reader == null) {
         reader = new SegmentReader(info, config.getReaderTermsIndexDivisor(), context);
         if (liveDocs == null) {
-          liveDocs = (BitVector) reader.getLiveDocs();
+          // nocommit: nuke cast
+          liveDocs = (MutableBits) reader.getLiveDocs();
         }
         //System.out.println("ADD seg=" + rld.info + " isMerge=" + isMerge + " " + readerMap.size() + " in pool");
       }
@@ -513,7 +514,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         } else {
           mergeReader = new SegmentReader(info, -1, context);
           if (liveDocs == null) {
-            liveDocs = (BitVector) mergeReader.getLiveDocs();
+            liveDocs = (MutableBits) mergeReader.getLiveDocs();
           }
         }
       }
@@ -567,7 +568,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
-    public synchronized void initWritableLiveDocs() {
+    public synchronized void initWritableLiveDocs() throws IOException {
       assert Thread.holdsLock(IndexWriter.this);
       //System.out.println("initWritableLivedocs seg=" + info + " liveDocs=" + liveDocs + " shared=" + shared);
       if (shared) {
@@ -577,10 +578,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // change it:
         if (liveDocs == null) {
           //System.out.println("create BV seg=" + info);
-          liveDocs = new BitVector(info.docCount);
-          liveDocs.setAll();
+          liveDocs = info.getCodec().liveDocsFormat().newLiveDocs(info.docCount);
         } else {
-          liveDocs = (BitVector) liveDocs.clone();
+          liveDocs = liveDocs.clone();
         }
         shared = false;
       } else {
@@ -588,7 +588,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
-    public synchronized BitVector getReadOnlyLiveDocs() {
+    // nocommit: if this is read-only live docs, why doesn't it return Bits?!
+    public synchronized MutableBits getReadOnlyLiveDocs() {
       //System.out.println("getROLiveDocs seg=" + info);
       assert Thread.holdsLock(IndexWriter.this);
       shared = true;
@@ -618,7 +619,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         final String delFileName = info.getDelFileName();
         boolean success = false;
         try {
-          liveDocs.write(dir, delFileName, IOContext.DEFAULT);
+          info.getCodec().liveDocsFormat().writeLiveDocs(liveDocs, dir, info, IOContext.DEFAULT);
           success = true;
         } finally {
           if (!success) {
@@ -3035,8 +3036,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       SegmentInfo info = sourceSegments.get(i);
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
       final int docCount = info.docCount;
-      final BitVector prevLiveDocs = merge.readerLiveDocs.get(i);
-      final BitVector currentLiveDocs;
+      final MutableBits prevLiveDocs = merge.readerLiveDocs.get(i);
+      final MutableBits currentLiveDocs;
       ReadersAndLiveDocs rld = readerPool.get(info, false);
       // We enrolled in mergeInit:
       assert rld != null;
@@ -3576,7 +3577,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     merge.readers = new ArrayList<SegmentReader>();
-    merge.readerLiveDocs = new ArrayList<BitVector>();
+    merge.readerLiveDocs = new ArrayList<MutableBits>();
 
     // This is try/finally to make sure merger's readers are
     // closed:
@@ -3595,7 +3596,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         assert reader != null;
 
         // Carefully pull the most recent live docs:
-        final BitVector liveDocs;
+        final MutableBits liveDocs;
         synchronized(this) {
           // Must sync to ensure BufferedDeletesStream
           // cannot change liveDocs/pendingDeleteCount while

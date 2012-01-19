@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.codecs.lucene40.BitVector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.util.MutableBits;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.SetOnce;
 
@@ -74,7 +74,7 @@ public abstract class MergePolicy implements java.io.Closeable {
     int maxNumSegments = -1;        // used by IndexWriter
     public long estimatedMergeBytes;       // used by IndexWriter
     List<SegmentReader> readers;        // used by IndexWriter
-    List<BitVector> readerLiveDocs;   // used by IndexWriter
+    List<MutableBits> readerLiveDocs;   // used by IndexWriter
     public final List<SegmentInfo> segments;
     public final int totalDocCount;
     boolean aborted;
