@@ -274,7 +274,7 @@ public class FST<T> {
     getFirstArc(arc);
     final BytesReader in = getBytesReader(0);
     if (targetHasArcs(arc)) {
-      readFirstRealArc(arc.target, arc);
+      readFirstRealArc(arc.target, arc, in);
       while(true) {
         assert arc.label != END_LABEL;
         if (arc.label < cachedRootArcs.length) {
@@ -666,14 +666,12 @@ public class FST<T> {
       //System.out.println("    insert isFinal; nextArc=" + follow.target + " isLast=" + arc.isLast() + " output=" + outputs.outputToString(arc.output));
       return arc;
     } else {
-      return readFirstRealArc(follow.target, arc);
+      return readFirstRealArc(follow.target, arc, getBytesReader(0));
     }
   }
 
-  public Arc<T> readFirstRealArc(int address, Arc<T> arc) throws IOException {
-
-    final BytesReader in = getBytesReader(address);
-
+  public Arc<T> readFirstRealArc(int address, Arc<T> arc, final BytesReader in) throws IOException {
+    in.pos = address;
     arc.flags = in.readByte();
 
     if (arc.flag(BIT_ARCS_AS_FIXED_ARRAY)) {
@@ -715,7 +713,7 @@ public class FST<T> {
         // This arc went to virtual final node, ie has no outgoing arcs
         return null;
       }
-      return readFirstRealArc(arc.nextArc, arc);
+      return readFirstRealArc(arc.nextArc, arc, getBytesReader(0));
     } else {
       return readNextRealArc(arc, getBytesReader(0));
     }
@@ -989,14 +987,16 @@ public class FST<T> {
 
   public final BytesReader getBytesReader(int pos) {
     // TODO: maybe re-use via ThreadLocal?
-    return new BytesReader(pos);
+    return new BytesReader(bytes, pos);
   }
 
-  // Non-static: reads byte[] from FST
-  final class BytesReader extends DataInput {
+  /** Expert */
+  public final static class BytesReader extends DataInput {
+    final byte[] bytes;
     int pos;
 
-    public BytesReader(int pos) {
+    public BytesReader(byte[] bytes, int pos) {
+      this.bytes = bytes;
       this.pos = pos;
     }
 
