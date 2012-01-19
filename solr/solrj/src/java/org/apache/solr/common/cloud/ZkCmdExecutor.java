@@ -95,6 +95,9 @@ public class ZkCmdExecutor {
         if (exception == null) {
           exception = e;
         }
+        if (Thread.currentThread().isInterrupted()) {
+          throw new InterruptedException();
+        }
         retryDelay(i);
       }
     }
