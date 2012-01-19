@@ -633,7 +633,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
         }
         assert (info.docCount - liveDocs.count()) == info.getDelCount() + pendingDeleteCount:
-           "delete count mismatch during commit: seg=" + info + " info.delCount=" + info.getDelCount() + " vs BitVector=" + (info.docCount-liveDocs.count() + " pendingDelCount=" + pendingDeleteCount);
+           "delete count mismatch during commit: seg=" + info + " info.delCount=" + info.getDelCount() + " vs MutableBits=" + (info.docCount-liveDocs.count() + " pendingDelCount=" + pendingDeleteCount);
         info.setDelCount(info.getDelCount() + pendingDeleteCount);
         pendingDeleteCount = 0;
         return true;
@@ -2206,7 +2206,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   /**
    * Prepares the {@link SegmentInfo} for the new flushed segment and persists
-   * the deleted documents {@link BitVector}. Use
+   * the deleted documents {@link MutableBits}. Use
    * {@link #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes)} to
    * publish the returned {@link SegmentInfo} together with its segment private
    * delete packet.

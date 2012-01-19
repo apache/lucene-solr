@@ -147,7 +147,7 @@ class BufferedDeletesStream {
   };
   
   /** Resolves the buffered deleted Term/Query/docIDs, into
-   *  actual deleted docIDs in the liveDocs BitVector for
+   *  actual deleted docIDs in the liveDocs MutableBits for
    *  each SegmentReader. */
   public synchronized ApplyDeletesResult applyDeletes(IndexWriter.ReaderPool readerPool, List<SegmentInfo> infos) throws IOException {
     final long t0 = System.currentTimeMillis();
