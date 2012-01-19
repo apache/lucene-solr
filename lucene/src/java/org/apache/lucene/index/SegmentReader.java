@@ -135,7 +135,7 @@ public final class SegmentReader extends IndexReader {
 
       // Verify our docCount matches:
       assert numDocs == count :
-      "delete count mismatch: numDocs=" + numDocs + " vs BitVector=" + (si.docCount-count);
+      "delete count mismatch: numDocs=" + numDocs + " vs MutableBits=" + (si.docCount-count);
 
       assert isNRT || si.docCount - si.getDelCount() == count :
         "si.docCount=" + si.docCount + "si.getDelCount()=" + si.getDelCount() + " recomputedCount=" + count;
