@@ -79,7 +79,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       Deque<Long> versions = new ArrayDeque<Long>();
       versions.addFirst(addAndGetVersion(sdoc("id", "1"), null));
-      versions.addFirst( addAndGetVersion(sdoc("id", "11"), null));
+      versions.addFirst(addAndGetVersion(sdoc("id", "11"), null));
+      versions.addFirst(addAndGetVersion(sdoc("id", "12"), null));
+      versions.addFirst(deleteByQueryAndGetVersion("id:11", null));
+      versions.addFirst(addAndGetVersion(sdoc("id", "13"), null));
 
       assertJQ(req("q","*:*"),"/response/numFound==0");
 
@@ -106,7 +109,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // wait until recovery has finished
       assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
 
-      assertJQ(req("q","*:*") ,"/response/numFound==2");
+      assertJQ(req("q","*:*") ,"/response/numFound==3");
 
       // make sure we can still access versions after recovery
       assertJQ(req("qt","/get", "getVersions",""+versions.size()) ,"/versions==" + versions);
@@ -116,7 +119,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertU(delI("2"));
       assertU(adoc("id","4"));
 
-      assertJQ(req("q","*:*") ,"/response/numFound==2");
+      assertJQ(req("q","*:*") ,"/response/numFound==3");
 
       h.close();
       createCore();
@@ -125,7 +128,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       // wait until recovery has finished
       assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
-      assertJQ(req("q","*:*") ,"/response/numFound==4");
+      assertJQ(req("q","*:*") ,"/response/numFound==5");
       assertJQ(req("q","id:2") ,"/response/numFound==0");
 
       // no updates, so insure that recovery does not run
@@ -135,7 +138,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // Solr should kick this off now
       // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
-      assertJQ(req("q","*:*") ,"/response/numFound==4");
+      assertJQ(req("q","*:*") ,"/response/numFound==5");
       Thread.sleep(100);
       assertEquals(permits, logReplay.availablePermits()); // no updates, so insure that recovery didn't run
 
@@ -194,19 +197,21 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
 
       // simulate updates from a leader
-      updateJ(jsonAdd(sdoc("id","1", "_version_","101")), params(SEEN_LEADER,SEEN_LEADER_VAL));
-      updateJ(jsonAdd(sdoc("id","2", "_version_","102")), params(SEEN_LEADER,SEEN_LEADER_VAL));
-      updateJ(jsonAdd(sdoc("id","3", "_version_","103")), params(SEEN_LEADER,SEEN_LEADER_VAL));
-      deleteAndGetVersion("1", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-201"));
+      updateJ(jsonAdd(sdoc("id","1", "_version_","1010")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","11", "_version_","1015")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonDelQ("id:1 id:11 id:2 id:3"), params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-1017"));
+      updateJ(jsonAdd(sdoc("id","2", "_version_","1020")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","3", "_version_","1030")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      deleteAndGetVersion("1", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-2010"));
 
-      assertJQ(req("qt","/get", "getVersions","4")
-          ,"=={'versions':[-201,103,102,101]}"
+      assertJQ(req("qt","/get", "getVersions","6")
+          ,"=={'versions':[-2010,1030,1020,-1017,1015,1010]}"
       );
 
       assertU(commit());
 
-      assertJQ(req("qt","/get", "getVersions","4")
-          ,"=={'versions':[-201,103,102,101]}"
+      assertJQ(req("qt","/get", "getVersions","6")
+          ,"=={'versions':[-2010,1030,1020,-1017,1015,1010]}"
       );
 
       // updates should be buffered, so we should not see any results yet.
@@ -233,8 +238,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
 
-      assertJQ(req("qt","/get", "getVersions","4")
-          ,"=={'versions':[-201,103,102,101]}"
+      assertJQ(req("qt","/get", "getVersions","6")
+          ,"=={'versions':[-2010,1030,1020,-1017,1015,1010]}"
       );
 
 
@@ -247,24 +252,24 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
 
       Long ver = getVer(req("qt","/get", "id","3"));
-      assertEquals(103L, ver.longValue());
+      assertEquals(1030L, ver.longValue());
 
       // add a reordered doc that shouldn't overwrite one in the index
       updateJ(jsonAdd(sdoc("id","3", "_version_","3")), params(SEEN_LEADER,SEEN_LEADER_VAL));
 
       // reorder two buffered updates
-      updateJ(jsonAdd(sdoc("id","4", "_version_","104")), params(SEEN_LEADER,SEEN_LEADER_VAL));
-      deleteAndGetVersion("4", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-94"));   // this update should not take affect
-      updateJ(jsonAdd(sdoc("id","6", "_version_","106")), params(SEEN_LEADER,SEEN_LEADER_VAL));
-      updateJ(jsonAdd(sdoc("id","5", "_version_","105")), params(SEEN_LEADER,SEEN_LEADER_VAL));
-      updateJ(jsonAdd(sdoc("id","8", "_version_","108")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","4", "_version_","1040")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      deleteAndGetVersion("4", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-940"));   // this update should not take affect
+      updateJ(jsonAdd(sdoc("id","6", "_version_","1060")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","5", "_version_","1050")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","8", "_version_","1080")), params(SEEN_LEADER,SEEN_LEADER_VAL));
 
       // test that delete by query is at least buffered along with everything else so it will delete the
       // currently buffered id:8 (even if it doesn't currently support versioning)
-      updateJ("{\"delete\": { \"query\":\"id:2 OR id:8\" }}", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-300"));
+      updateJ("{\"delete\": { \"query\":\"id:2 OR id:8\" }}", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-3000"));
 
-      assertJQ(req("qt","/get", "getVersions","10")
-          ,"=={'versions':[-300,108,105,106,-94,104,3,-201,103,102]}"  // the "3" appears because versions aren't checked while buffering
+      assertJQ(req("qt","/get", "getVersions","13")
+          ,"=={'versions':[-3000,1080,1050,1060,-940,1040,3,-2010,1030,1020,-1017,1015,1010]}"  // the "3" appears because versions aren't checked while buffering
       );
 
       logReplay.drainPermits();
@@ -276,22 +281,22 @@ public class TestRecovery extends SolrTestCaseJ4 {
       logReplay.release(1);
 
       // now add another update
-      updateJ(jsonAdd(sdoc("id","7", "_version_","107")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","7", "_version_","1070")), params(SEEN_LEADER,SEEN_LEADER_VAL));
 
       // a reordered update that should be dropped
-      deleteAndGetVersion("5", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-95"));
+      deleteAndGetVersion("5", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-950"));
 
-      deleteAndGetVersion("6", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-206"));
+      deleteAndGetVersion("6", params(SEEN_LEADER,SEEN_LEADER_VAL, "_version_","-2060"));
 
       logReplay.release(1000);
       UpdateLog.RecoveryInfo recInfo = rinfoFuture.get();
 
       assertJQ(req("q", "*:*", "sort","id asc", "fl","id,_version_")
           , "/response/docs==["
-                           + "{'id':'3','_version_':103}"
-                           + ",{'id':'4','_version_':104}"
-                           + ",{'id':'5','_version_':105}"
-                           + ",{'id':'7','_version_':107}"
+                           + "{'id':'3','_version_':1030}"
+                           + ",{'id':'4','_version_':1040}"
+                           + ",{'id':'5','_version_':1050}"
+                           + ",{'id':'7','_version_':1070}"
                            +"]"
       );
 
