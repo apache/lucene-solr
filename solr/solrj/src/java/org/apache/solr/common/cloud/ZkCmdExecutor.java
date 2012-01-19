@@ -31,13 +31,11 @@ import org.apache.zookeeper.data.ACL;
 public class ZkCmdExecutor {
   private static final Logger LOG = Logger.getLogger(ZkCmdExecutor.class);
   
-  //protected final SolrZkClient zkClient;
   private long retryDelay = 1000L;
   private int retryCount = 15;
   private List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
   
   public ZkCmdExecutor() {
-    //this.zkClient = solrZkClient;
   }
   
   /**
