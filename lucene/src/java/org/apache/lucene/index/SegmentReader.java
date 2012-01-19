@@ -23,7 +23,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.codecs.lucene40.BitVector; // nocommit: move asserts/checks to codec
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
@@ -125,24 +124,21 @@ public final class SegmentReader extends IndexReader {
     return liveDocs;
   }
 
-  // nocommit
   private boolean checkLiveCounts(boolean isNRT) throws IOException {
-    BitVector liveDocs = (BitVector) this.liveDocs;
+    MutableBits liveDocs = (MutableBits) this.liveDocs;
     if (liveDocs != null) {
-      if (liveDocs.size() != si.docCount) {
-        throw new CorruptIndexException("document count mismatch: deleted docs count " + liveDocs.size() + " vs segment doc count " + si.docCount + " segment=" + si.name);
+      if (liveDocs.length() != si.docCount) {
+        throw new CorruptIndexException("document count mismatch: deleted docs count " + liveDocs.length() + " vs segment doc count " + si.docCount + " segment=" + si.name);
       }
 
-      final int recomputedCount = liveDocs.getRecomputedCount();
-      // Verify BitVector is self consistent:
-      assert liveDocs.count() == recomputedCount : "live count=" + liveDocs.count() + " vs recomputed count=" + recomputedCount;
+      final int count = liveDocs.count();
 
       // Verify our docCount matches:
-      assert numDocs == recomputedCount :
-      "delete count mismatch: numDocs=" + numDocs + " vs BitVector=" + (si.docCount-recomputedCount);
+      assert numDocs == count :
+      "delete count mismatch: numDocs=" + numDocs + " vs BitVector=" + (si.docCount-count);
 
-      assert isNRT || si.docCount - si.getDelCount() == recomputedCount :
-        "si.docCount=" + si.docCount + "si.getDelCount()=" + si.getDelCount() + " recomputedCount=" + recomputedCount;
+      assert isNRT || si.docCount - si.getDelCount() == count :
+        "si.docCount=" + si.docCount + "si.getDelCount()=" + si.getDelCount() + " recomputedCount=" + count;
     }
   
     return true;
