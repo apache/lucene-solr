@@ -27,8 +27,12 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 
 /**
+ * Lucene3x ReadOnly FieldInfosFromat implementation
+ * @deprecated (4.0) This is only used to read indexes created
+ * before 4.0.
  * @lucene.experimental
  */
+@Deprecated
 public class Lucene3xFieldInfosFormat extends FieldInfosFormat {
   private final FieldInfosReader reader = new Lucene3xFieldInfosReader();
   
@@ -39,7 +43,7 @@ public class Lucene3xFieldInfosFormat extends FieldInfosFormat {
 
   @Override
   public FieldInfosWriter getFieldInfosWriter() throws IOException {
-    throw new IllegalArgumentException("this codec can only be used for reading");
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override

@@ -30,9 +30,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
@@ -55,12 +53,8 @@ public class Lucene3xCodec extends Codec {
   
   private final FieldInfosFormat fieldInfosFormat = new Lucene3xFieldInfosFormat();
 
-  // TODO: this should really be a different impl
-  // also if we want preflex to *really* be read-only it should throw exception for the writer?
-  // this way IR.commit fails on delete/undelete/setNorm/etc ?
-  private final SegmentInfosFormat infosFormat = new Lucene40SegmentInfosFormat();
+  private final SegmentInfosFormat infosFormat = new Lucene3xSegmentInfosFormat();
   
-  // TODO: this should really be a different impl
   private final NormsFormat normsFormat = new Lucene3xNormsFormat();
   
   // 3.x doesn't support docvalues

@@ -1,5 +1,9 @@
 package org.apache.lucene.codecs.lucene3x;
 
+import org.apache.lucene.codecs.SegmentInfosFormat;
+import org.apache.lucene.codecs.SegmentInfosReader;
+import org.apache.lucene.codecs.SegmentInfosWriter;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,39 +21,23 @@ package org.apache.lucene.codecs.lucene3x;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Set;
-
-import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-
 /**
- * Lucene3x ReadOnly TermVectorsFormat implementation
+ * Lucene3x ReadOnly SegmentInfosFormat implementation
  * @deprecated (4.0) This is only used to read indexes created
  * before 4.0.
  * @lucene.experimental
  */
 @Deprecated
-public class Lucene3xTermVectorsFormat extends TermVectorsFormat {
-
+public class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
+  private final SegmentInfosReader reader = new Lucene3xSegmentInfosReader();
+  
   @Override
-  public TermVectorsReader vectorsReader(Directory directory,SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
-    return new Lucene3xTermVectorsReader(directory, segmentInfo, fieldInfos, context);
+  public SegmentInfosReader getSegmentInfosReader() {
+    return reader;
   }
 
   @Override
-  public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
+  public SegmentInfosWriter getSegmentInfosWriter() {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
-
-  @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xTermVectorsReader.files(dir, info, files);
-  }
-  
 }

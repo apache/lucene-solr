@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.preflexrw;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,6 +34,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   private final NormsFormat norms = new PreFlexRWNormsFormat();
   private final FieldInfosFormat fieldInfos = new PreFlexRWFieldInfosFormat();
   private final TermVectorsFormat termVectors = new PreFlexRWTermVectorsFormat();
+  private final SegmentInfosFormat segmentInfos = new PreFlexRWSegmentInfosFormat();
   
   @Override
   public PostingsFormat postingsFormat() {
@@ -49,6 +51,15 @@ public class PreFlexRWCodec extends Lucene3xCodec {
       return norms;
     } else {
       return super.normsFormat();
+    }
+  }
+
+  @Override
+  public SegmentInfosFormat segmentInfosFormat() {
+    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+      return segmentInfos ;
+    } else {
+      return super.segmentInfosFormat();
     }
   }
 

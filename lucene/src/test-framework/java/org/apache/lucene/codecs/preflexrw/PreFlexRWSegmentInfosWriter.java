@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.preflexrw;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,10 +32,10 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Default implementation of {@link SegmentInfosWriter}.
+ * PreFlex implementation of {@link SegmentInfosWriter}.
  * @lucene.experimental
  */
-public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
+public class PreFlexRWSegmentInfosWriter extends SegmentInfosWriter {
 
   @Override
   public IndexOutput writeInfos(Directory dir, String segmentFileName, String codecID, SegmentInfos infos, IOContext context)
@@ -43,12 +43,8 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
     IndexOutput out = createOutput(dir, segmentFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount())));
     boolean success = false;
     try {
-      /*
-       * TODO its not ideal that we write the format and the codecID inside the
-       * codec private classes but we read it in SegmentInfos.
-       */
-      out.writeInt(SegmentInfos.FORMAT_CURRENT); // write FORMAT
-      out.writeString(codecID); // write codecID
+      out.writeInt(SegmentInfos.FORMAT_3_1); // write FORMAT
+      // we don't write a codec - this is 3.x
       out.writeLong(infos.version);
       out.writeInt(infos.counter); // write counter
       out.writeInt(infos.size()); // write infos
@@ -73,12 +69,14 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
     output.writeString(si.name);
     output.writeInt(si.docCount);
     output.writeLong(si.getDelGen());
-    // we still need to write this in 4.0 since we can open a 3.x with shared docStores
+
     output.writeInt(si.getDocStoreOffset());
     if (si.getDocStoreOffset() != -1) {
       output.writeString(si.getDocStoreSegment());
       output.writeByte((byte) (si.getDocStoreIsCompoundFile() ? 1:0));
     }
+    // pre-4.0 indexes write a byte if there is a single norms file
+    output.writeByte((byte) 1);
 
     Map<Integer,Long> normGen = si.getNormGen();
     if (normGen == null) {
@@ -86,7 +84,6 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
     } else {
       output.writeInt(normGen.size());
       for (Entry<Integer,Long> entry : normGen.entrySet()) {
-        output.writeInt(entry.getKey());
         output.writeLong(entry.getValue());
       }
     }
@@ -94,7 +91,6 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
     output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
     output.writeInt(si.getDelCount());
     output.writeByte((byte) (si.getHasProxInternal()));
-    output.writeString(si.getCodec().getName());
     output.writeStringStringMap(si.getDiagnostics());
     output.writeByte((byte) (si.getHasVectorsInternal()));
   }

@@ -29,10 +29,12 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 
 /**
- * Read-Only Lucene 3.x Norms Format
- * 
+ * Lucene3x ReadOnly NormsFormat implementation
+ * @deprecated (4.0) This is only used to read indexes created
+ * before 4.0.
  * @lucene.experimental
  */
+@Deprecated
 public class Lucene3xNormsFormat extends NormsFormat {
 
 
@@ -49,7 +51,7 @@ public class Lucene3xNormsFormat extends NormsFormat {
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    throw new IllegalArgumentException("this codec can only be used for reading");
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override
