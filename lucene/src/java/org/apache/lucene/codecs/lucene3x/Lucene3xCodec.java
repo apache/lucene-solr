@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
@@ -30,6 +31,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
@@ -56,6 +58,9 @@ public class Lucene3xCodec extends Codec {
   private final SegmentInfosFormat infosFormat = new Lucene3xSegmentInfosFormat();
   
   private final NormsFormat normsFormat = new Lucene3xNormsFormat();
+  
+  // TODO: this should really be a different impl
+  private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
   
   // 3.x doesn't support docvalues
   private final DocValuesFormat docValuesFormat = new DocValuesFormat() {
@@ -106,5 +111,10 @@ public class Lucene3xCodec extends Codec {
   @Override
   public NormsFormat normsFormat() {
     return normsFormat;
+  }
+  
+  @Override
+  public LiveDocsFormat liveDocsFormat() {
+    return liveDocsFormat;
   }
 }

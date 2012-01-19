@@ -20,12 +20,14 @@ package org.apache.lucene.codecs.simpletext;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 
 /**
  * plain text index format.
@@ -43,6 +45,8 @@ public final class SimpleTextCodec extends Codec {
   private final DocValuesFormat docValues = new Lucene40DocValuesFormat();
   // TODO: need a plain-text impl (using the above)
   private final NormsFormat normsFormat = new SimpleTextNormsFormat();
+  // TODO: need a plain-text impl
+  private final LiveDocsFormat liveDocs = new Lucene40LiveDocsFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
@@ -81,5 +85,10 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public NormsFormat normsFormat() {
     return normsFormat;
+  }
+  
+  @Override
+  public LiveDocsFormat liveDocsFormat() {
+    return liveDocs;
   }
 }

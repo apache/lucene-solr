@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,6 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * <code>TestBitVector</code> tests the <code>BitVector</code>, obviously.

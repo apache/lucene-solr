@@ -23,9 +23,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.codecs.lucene40.BitVector;
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -36,7 +36,7 @@ public final class SegmentReader extends IndexReader {
   private final SegmentInfo si;
   private final ReaderContext readerContext = new AtomicReaderContext(this);
   
-  private final BitVector liveDocs;
+  private final Bits liveDocs;
 
   // Normally set to si.docCount - si.delDocCount, unless we
   // were created as an NRT reader from IW, in which case IW
@@ -56,7 +56,7 @@ public final class SegmentReader extends IndexReader {
     try {
       if (si.hasDeletions()) {
         // NOTE: the bitvector is stored using the regular directory, not cfs
-        liveDocs = new BitVector(directory(), si.getDelFileName(), new IOContext(IOContext.READ, true));
+        liveDocs = si.getCodec().liveDocsFormat().readLiveDocs(directory(), si, new IOContext(IOContext.READ, true));
       } else {
         assert si.getDelCount() == 0;
         liveDocs = null;
@@ -124,7 +124,9 @@ public final class SegmentReader extends IndexReader {
     return liveDocs;
   }
 
+  // nocommit
   private boolean checkLiveCounts(boolean isNRT) throws IOException {
+    BitVector liveDocs = (BitVector) this.liveDocs;
     if (liveDocs != null) {
       if (liveDocs.size() != si.docCount) {
         throw new CorruptIndexException("document count mismatch: deleted docs count " + liveDocs.size() + " vs segment doc count " + si.docCount + " segment=" + si.name);

@@ -18,9 +18,9 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene40.BitVector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.InfoStream;
 
 /**

@@ -75,6 +75,9 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   /** Encodes/decodes document normalization values */
   public abstract NormsFormat normsFormat();
   
+  /** Encodes/decodes live docs */
+  public abstract LiveDocsFormat liveDocsFormat();
+  
   /** looks up a codec by name */
   public static Codec forName(String name) {
     return loader.lookup(name);
