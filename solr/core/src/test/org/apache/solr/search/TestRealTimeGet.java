@@ -1024,7 +1024,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
         // query variables
     final int percentRealtimeQuery = 75;
-    final AtomicLong operations = new AtomicLong(1000);  // number of recovery loops to perform
+    final AtomicLong operations = new AtomicLong(atLeast(75));  // number of recovery loops to perform
     int nReadThreads = 2 + random.nextInt(10);  // fewer read threads to give writers more of a chance
 
     initModel(ndocs);
