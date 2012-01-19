@@ -132,6 +132,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     
     // TODO: move sync stuff to a better spot??
     if (weAreReplacement && core != null) { // TODO: core can be null in tests
+      zkController.publish(core, ZkStateReader.SYNC);
+      
       if (zkClient.exists(leaderPath, true)) {
         zkClient.delete(leaderPath, -1, true);
       }
@@ -289,9 +291,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             props.get(ZkStateReader.CORE_PROP));
     
     if (nodes == null) {
+      System.out.println("I have no replicas");
       // I have no replicas
       return;
     }
+    System.out.println("tell my replicas to sync");
     ZkCoreNodeProps zkLeader = new ZkCoreNodeProps(leaderProps);
     for (ZkCoreNodeProps node : nodes) {
       try {
@@ -307,6 +311,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         server = new CommonsHttpSolrServer(node.getCoreUrl());
         
         NamedList rsp = server.request(qr);
+        System.out.println("response about syncing to leader:" + rsp);
       } catch (Exception e) {
         // nocommit
         e.printStackTrace();

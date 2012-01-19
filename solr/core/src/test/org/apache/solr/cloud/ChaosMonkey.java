@@ -66,6 +66,7 @@ public class ChaosMonkey {
   private boolean aggressivelyKillLeaders;
   private Map<String,SolrServer> shardToLeaderClient;
   private Map<String,CloudJettyRunner> shardToLeaderJetty;
+  private long startTime;
   
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
@@ -241,8 +242,10 @@ public class ChaosMonkey {
   }
   
   public JettySolrRunner getRandomJetty(String slice, boolean aggressivelyKillLeaders) throws KeeperException, InterruptedException {
+    
     // get latest cloud state
     zkStateReader.updateCloudState(true);
+    
     Slice theShards = zkStateReader.getCloudState().getSlices(collection)
         .get(slice);
     int numRunning = 0;
@@ -284,10 +287,14 @@ public class ChaosMonkey {
       }
     }
     
+    System.out.println("num active:" + numActive + " for " + slice);
+    
     if (numActive < 2) {
       // we cannot kill anyone
       return null;
     }
+    
+    System.out.println("kill for shard:" + slice);
     
     int chance = random.nextInt(10);
     JettySolrRunner jetty;
@@ -333,7 +340,7 @@ public class ChaosMonkey {
   // active shard up for a slice or if there is one active and others recovering
   public void startTheMonkey(boolean killLeaders, final int roundPause) {
     this.aggressivelyKillLeaders = killLeaders;
-    
+    startTime = System.currentTimeMillis();
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
     
     stop = false;
@@ -407,7 +414,7 @@ public class ChaosMonkey {
           }
         }
         
-        System.out.println("I stopped " + stops + " and I started " + starts
+        System.out.println("I ran for " + (System.currentTimeMillis() - startTime)/1000.0f + "sec. I stopped " + stops + " and I started " + starts
             + ". I also expired " + expires.get() + " and caused " + connloss
             + " connection losses");
       }

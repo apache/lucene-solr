@@ -41,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -569,6 +570,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
                   ZkStateReader.NODE_NAME_PROP)));
           String state = shard.getValue().get(ZkStateReader.STATE_PROP);
           if ((state.equals(ZkStateReader.RECOVERING) || state
+              .equals(ZkStateReader.SYNC) || state
               .equals(ZkStateReader.DOWN))
               && cloudState.liveNodesContain(shard.getValue().get(
                   ZkStateReader.NODE_NAME_PROP))) {
@@ -922,7 +924,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             if (active) {
               SolrQuery query = new SolrQuery("*:*");
               query.set("distrib", false);
-              cnt += client.query(query).getResults().getNumFound();
+              long results = client.query(query).getResults().getNumFound();
+              if (verbose) System.out.println(new ZkCoreNodeProps(props).getCoreUrl() + " : " + results);
+              cnt += results;
               break;
             }
           } catch (SolrServerException e) {
@@ -1118,7 +1122,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       String url = "http://localhost:" + port + context + "/" + DEFAULT_COLLECTION;
       CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
       s.setConnectionTimeout(100); // 1/10th sec
-      s.setSoTimeout(15000);
+      s.setSoTimeout(30000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;

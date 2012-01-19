@@ -67,6 +67,7 @@ public class ZkStateReader {
   public static final String RECOVERY_FAILED = "recovery_failed";
   public static final String ACTIVE = "active";
   public static final String DOWN = "down";
+  public static final String SYNC = "sync";
   
   private volatile CloudState cloudState;
 
@@ -75,6 +76,7 @@ public class ZkStateReader {
   public static final String LEADER_ELECT_ZKNODE = "/leader_elect";
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
+
 
 
   

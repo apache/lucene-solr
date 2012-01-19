@@ -65,7 +65,7 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
   
   public ChaosMonkeySafeLeaderTest() {
     super();
-    shardCount = atLeast(6);
+    shardCount = atLeast(3);
     sliceCount = atLeast(2);
   }
   

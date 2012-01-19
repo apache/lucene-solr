@@ -100,7 +100,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     
     chaosMonkey.startTheMonkey(true, 1500);
     try {
-      Thread.sleep(atLeast(12000));
+      Thread.sleep(atLeast(6000));
     } finally {
       chaosMonkey.stopTheMonkey();
     }
@@ -122,8 +122,12 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     
     // try and wait for any replications and what not to finish...
     
+    Thread.sleep(2000);
+    
     // wait until there are no recoveries...
     waitForThingsToLevelOut();
+    
+    printLayout();
     
     // make sure we again have leaders for each shard
     for (int j = 1; j < sliceCount; j++) {
