@@ -110,6 +110,9 @@ Bug Fixes
 * SOLR-2542: Fixed DIH Context variables which were broken for all scopes other 
   then SCOPE_ENTITY (Linbin Chen & Frank Wesemann via hossman)
 
+* SOLR-3042: Fixed Maven Jetty plugin configuration. 
+  (David Smiley via Steve Rowe)
+
 * SOLR-2970: CSV ResponseWriter returns fields defined as stored=false in schema (janhoy)
 
 Other Changes
