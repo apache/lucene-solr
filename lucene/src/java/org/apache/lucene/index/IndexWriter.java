@@ -2267,7 +2267,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // shortly-to-be-opened SegmentReader and let it
           // carry the changes; there's no reason to use
           // filesystem as intermediary here.
-          flushedSegment.liveDocs.write(directory, delFileName, context);
+          
+          SegmentInfo info = flushedSegment.segmentInfo;
+          Codec codec = info.getCodec();
+          codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, context);
           success2 = true;
         } finally {
           if (!success2) {

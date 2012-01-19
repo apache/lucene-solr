@@ -25,7 +25,6 @@ import java.text.NumberFormat;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene40.BitVector;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
@@ -36,6 +35,7 @@ import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.MutableBits;
 
 public class DocumentsWriterPerThread {
 
@@ -114,10 +114,10 @@ public class DocumentsWriterPerThread {
   static class FlushedSegment {
     final SegmentInfo segmentInfo;
     final BufferedDeletes segmentDeletes;
-    final BitVector liveDocs;
+    final MutableBits liveDocs;
 
     private FlushedSegment(SegmentInfo segmentInfo,
-        BufferedDeletes segmentDeletes, BitVector liveDocs) {
+        BufferedDeletes segmentDeletes, MutableBits liveDocs) {
       this.segmentInfo = segmentInfo;
       this.segmentDeletes = segmentDeletes;
       this.liveDocs = liveDocs;
@@ -448,8 +448,7 @@ public class DocumentsWriterPerThread {
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
     if (pendingDeletes.docIDs.size() > 0) {
-      flushState.liveDocs = new BitVector(numDocsInRAM);
-      flushState.liveDocs.invertAll();
+      flushState.liveDocs = codec.liveDocsFormat().newLiveDocs(numDocsInRAM);
       for(int delDocID : pendingDeletes.docIDs) {
         flushState.liveDocs.clear(delDocID);
       }

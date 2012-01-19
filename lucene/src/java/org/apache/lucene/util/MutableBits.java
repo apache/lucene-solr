@@ -18,5 +18,7 @@ package org.apache.lucene.util;
  */
 
 public interface MutableBits extends Bits {
-  
+  public void clear(int bit);
+  // nocommit: remove this from this interface somehow? (used by DWPT infostream at least)
+  public int count();
 }

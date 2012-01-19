@@ -27,7 +27,6 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.codecs.lucene40.BitVector;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -461,9 +460,10 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           // Mark it deleted.  TODO: we could also skip
           // writing its postings; this would be
           // deterministic (just for this Term's docs).
+          
+          // nocommit: totally wrong to do this reach-around here, and this way
           if (state.liveDocs == null) {
-            state.liveDocs = new BitVector(state.numDocs);
-            state.liveDocs.invertAll();
+            state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.numDocs);
           }
           state.liveDocs.clear(docID);
         }
