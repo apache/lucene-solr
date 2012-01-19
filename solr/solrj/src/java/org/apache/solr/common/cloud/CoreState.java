@@ -36,12 +36,12 @@ public class CoreState implements JSONWriter.Writable {
     HashMap<String,String> props = new HashMap<String,String>();
     props.putAll(properties);
     props.put(ZkStateReader.COLLECTION_PROP, collectionName);
-    props.put(ZkStateReader.CORE_PROP, coreName);
+    props.put(ZkStateReader.CORE_NAME_PROP, coreName);
     this.properties = Collections.unmodifiableMap(props);
   }
 
   public String getCoreName() {
-    return properties.get(ZkStateReader.CORE_PROP);
+    return properties.get(ZkStateReader.CORE_NAME_PROP);
   }
   
   public String getCoreNodeName() {

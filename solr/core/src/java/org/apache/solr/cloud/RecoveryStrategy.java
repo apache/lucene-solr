@@ -41,16 +41,15 @@ import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RecoveryStrat extends Thread {
+public class RecoveryStrategy extends Thread {
   private static final int MAX_RETRIES = 100;
   private static final int START_TIMEOUT = 100;
   
   private static final String REPLICATION_HANDLER = "/replication";
 
-  private static Logger log = LoggerFactory.getLogger(RecoveryStrat.class);
+  private static Logger log = LoggerFactory.getLogger(RecoveryStrategy.class);
 
   private volatile boolean close = false;
-
 
   private ZkController zkController;
   private String baseUrl;
@@ -60,14 +59,7 @@ public class RecoveryStrat extends Thread {
   private int retries;
   private SolrCore core;
   
-  // for now, just for tests
-  public interface RecoveryListener {
-    public void startRecovery();
-    public void finishedReplication();
-    public void finishedRecovery();
-  }
-  
-  public RecoveryStrat(SolrCore core) {
+  public RecoveryStrategy(SolrCore core) {
     this.core = core;
     this.coreName = core.getName();
     setDaemon(true);

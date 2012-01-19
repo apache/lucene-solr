@@ -20,7 +20,7 @@ package org.apache.solr.update;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.solr.cloud.RecoveryStrat;
+import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 
@@ -35,7 +35,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
  
 
   private boolean recoveryRunning;
-  private RecoveryStrat recoveryStrat;
+  private RecoveryStrategy recoveryStrat;
   
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
     this.directoryFactory = directoryFactory;
@@ -109,7 +109,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         }
       }
       
-      recoveryStrat = new RecoveryStrat(core);
+      recoveryStrat = new RecoveryStrategy(core);
       recoveryStrat.start();
       recoveryRunning = true;
     }

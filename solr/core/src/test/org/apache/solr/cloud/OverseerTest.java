@@ -73,7 +73,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "3");
 
-      zkController = new ZkController(server.getZkAddress(), TIMEOUT, 10000,
+      zkController = new ZkController(null, server.getZkAddress(), TIMEOUT, 10000,
           "localhost", "8983", "solr", new CurrentCoreDescriptorProvider() {
 
             @Override
@@ -157,7 +157,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       for (int i = 0; i < nodeCount; i++) {
       
-      controllers[i] = new ZkController(server.getZkAddress(), TIMEOUT, 10000,
+      controllers[i] = new ZkController(null, server.getZkAddress(), TIMEOUT, 10000,
           "localhost", "898" + i, "solr", new CurrentCoreDescriptorProvider() {
 
             @Override
@@ -355,7 +355,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       HashMap<String, String> coreProps = new HashMap<String,String>();
       coreProps.put(ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr");
       coreProps.put(ZkStateReader.NODE_NAME_PROP, "node1");
-      coreProps.put(ZkStateReader.CORE_PROP, "core1");
+      coreProps.put(ZkStateReader.CORE_NAME_PROP, "core1");
       coreProps.put(ZkStateReader.ROLES_PROP, "");
       coreProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
       CoreState state = new CoreState("core1", "collection1", coreProps);
@@ -508,7 +508,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     LeaderElector overseerElector = new LeaderElector(zkClient);
     ElectionContext ec = new OverseerElectionContext(address.replaceAll("/", "_"), zkClient, reader);
     overseerElector.setup(ec);
-    overseerElector.joinElection(ec, null);
+    overseerElector.joinElection(ec);
     return zkClient;
   }
 }

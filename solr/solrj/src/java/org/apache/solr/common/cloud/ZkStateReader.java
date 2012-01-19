@@ -53,7 +53,7 @@ public class ZkStateReader {
   public static final String NODE_NAME_PROP = "node_name";
   public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
-  public static final String CORE_PROP = "core";
+  public static final String CORE_NAME_PROP = "core";
   public static final String COLLECTION_PROP = "collection";
   public static final String SHARD_ID_PROP = "shard_id";
   public static final String NUM_SHARDS_PROP = "numShards";

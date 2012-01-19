@@ -73,7 +73,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkClient.printLayoutToStdOut();
       }
       zkClient.close();
-      ZkController zkController = new ZkController(server.getZkAddress(), TIMEOUT, 10000,
+      ZkController zkController = new ZkController(null, server.getZkAddress(), TIMEOUT, 10000,
           "localhost", "8983", "solr", new CurrentCoreDescriptorProvider() {
             
             @Override
@@ -107,7 +107,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
-      zkController = new ZkController(server.getZkAddress(),
+      zkController = new ZkController(null, server.getZkAddress(),
           TIMEOUT, 10000, "localhost", "8983", "solr", new CurrentCoreDescriptorProvider() {
             
             @Override

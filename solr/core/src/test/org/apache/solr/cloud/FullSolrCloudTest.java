@@ -158,8 +158,8 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   public FullSolrCloudTest() {
     fixShardCount = true;
     
-    shardCount = atLeast(4);
-    sliceCount = atLeast(2);
+    shardCount = 4;
+    sliceCount = 2;
     // TODO: for now, turn off stress because it uses regular clients, and we 
     // need the cloud client because we kill servers
     stress = 0;
@@ -1084,7 +1084,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @Override
   @After
   public void tearDown() throws Exception {
-    if (VERBOSE) {
+    if (true) {
       super.printLayout();
     }
     ((CommonsHttpSolrServer) controlClient).shutdown();

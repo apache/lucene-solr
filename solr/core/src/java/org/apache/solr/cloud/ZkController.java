@@ -103,6 +103,9 @@ public final class ZkController {
   
   private boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 
+  // this can be null in which case recovery will be inactive
+  private CoreContainer cc;
+
   public static void main(String[] args) throws Exception {
     // start up a tmp zk server first
     String zkServerAddress = args[0];
@@ -130,7 +133,7 @@ public final class ZkController {
 
 
   /**
-   * @param coreContainer
+   * @param coreContainer if null, recovery will not be enabled
    * @param zkServerAddress
    * @param zkClientTimeout
    * @param zkClientConnectTimeout
@@ -142,10 +145,10 @@ public final class ZkController {
    * @throws TimeoutException
    * @throws IOException
    */
-  public ZkController(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
+  public ZkController(CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
- 
+    this.cc = cc;
     if (localHostContext.contains("/")) {
       throw new IllegalArgumentException("localHostContext ("
           + localHostContext + ") should not contain a /");
@@ -166,7 +169,7 @@ public final class ZkController {
               Overseer.createClientNodes(zkClient, getNodeName());
 
               ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
-              overseerElector.joinElection(context, null);
+              overseerElector.joinElection(context);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
               List<CoreDescriptor> descriptors = registerOnReconnect
@@ -327,7 +330,7 @@ public final class ZkController {
       overseerElector = new LeaderElector(zkClient);
       ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
       overseerElector.setup(context);
-      overseerElector.joinElection(context, null);
+      overseerElector.joinElection(context);
       zkStateReader.createClusterStateWatchersAndUpdate();
       
     } catch (IOException e) {
@@ -474,7 +477,7 @@ public final class ZkController {
 
     Map<String,String> props = new HashMap<String,String>();
     props.put(ZkStateReader.BASE_URL_PROP, baseUrl);
-    props.put(ZkStateReader.CORE_PROP, coreName);
+    props.put(ZkStateReader.CORE_NAME_PROP, coreName);
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
     props.put(ZkStateReader.STATE_PROP, ZkStateReader.DOWN);
@@ -501,19 +504,16 @@ public final class ZkController {
 
     // we only put a subset of props into the leader node
     ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        props.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_PROP,
-        props.get(ZkStateReader.CORE_PROP), ZkStateReader.NODE_NAME_PROP,
+        props.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_NAME_PROP,
+        props.get(ZkStateReader.CORE_NAME_PROP), ZkStateReader.NODE_NAME_PROP,
         props.get(ZkStateReader.NODE_NAME_PROP));
     
     SolrCore core = null;
-    
 
-    
-    CoreContainer cc = desc.getCoreContainer();
     if (cc != null) { // CoreContainer only null in tests
       try {
         core = cc.getCore(desc.getName());
-        joinElection(collection, shardZkNodeName, shardId, leaderProps, core);
+        joinElection(collection, shardZkNodeName, shardId, leaderProps);
         boolean success = checkRecovery(coreName, desc, recoverReloadedCores, baseUrl, cloudDesc,
             collection, shardZkNodeName, shardId, leaderProps, core, cc);
         if (success) {
@@ -525,7 +525,7 @@ public final class ZkController {
         }
       }
     } else {
-      joinElection(collection, shardZkNodeName, shardId, leaderProps, core);
+      joinElection(collection, shardZkNodeName, shardId, leaderProps);
       publishAsActive(baseUrl, cloudDesc, shardZkNodeName, coreName);
     }
     
@@ -537,13 +537,12 @@ public final class ZkController {
 
 
   private void joinElection(final String collection,
-      final String shardZkNodeName, String shardId, ZkNodeProps leaderProps,
-      SolrCore core) throws InterruptedException, KeeperException, IOException {
+      final String shardZkNodeName, String shardId, ZkNodeProps leaderProps) throws InterruptedException, KeeperException, IOException {
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
-        collection, shardZkNodeName, leaderProps, this);
+        collection, shardZkNodeName, leaderProps, this, cc);
     
     leaderElector.setup(context);
-    leaderElector.joinElection(context, core);
+    leaderElector.joinElection(context);
   }
 
 
@@ -612,7 +611,7 @@ public final class ZkController {
       final CloudDescriptor cloudDesc, String shardZkNodeName, String coreName) {
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.BASE_URL_PROP, shardUrl);
-    finalProps.put(ZkStateReader.CORE_PROP, coreName);
+    finalProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
     finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
@@ -623,7 +622,7 @@ public final class ZkController {
     CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
-    finalProps.put(ZkStateReader.CORE_PROP, core.getName());
+    finalProps.put(ZkStateReader.CORE_NAME_PROP, core.getName());
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     finalProps.put(ZkStateReader.STATE_PROP, state);
     finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
@@ -635,7 +634,7 @@ public final class ZkController {
       final CloudDescriptor cloudDesc, String shardZkNodeName, String coreName) {
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.BASE_URL_PROP, baseUrl);
-    finalProps.put(ZkStateReader.CORE_PROP, coreName);
+    finalProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.DOWN);
     finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());
@@ -646,7 +645,7 @@ public final class ZkController {
       final CloudDescriptor cloudDesc, String shardZkNodeName, String coreName) {
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.BASE_URL_PROP, baseUrl);
-    finalProps.put(ZkStateReader.CORE_PROP, coreName);
+    finalProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     finalProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERY_FAILED);
     finalProps.put(ZkStateReader.SHARD_ID_PROP, cloudDesc.getShardId());

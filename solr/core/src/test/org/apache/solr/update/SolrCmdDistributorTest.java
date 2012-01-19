@@ -88,7 +88,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
     ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
         ((CommonsHttpSolrServer) controlClient).getBaseURL(),
-        ZkStateReader.CORE_PROP, "");
+        ZkStateReader.CORE_NAME_PROP, "");
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
 
     // add one doc to controlClient
@@ -111,7 +111,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     CommonsHttpSolrServer client = (CommonsHttpSolrServer) clients.get(0);
     nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        client.getBaseURL(), ZkStateReader.CORE_PROP, "");
+        client.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     
     // add another 2 docs to control and 3 to client

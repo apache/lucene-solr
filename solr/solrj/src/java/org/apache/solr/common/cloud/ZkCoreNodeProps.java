@@ -26,7 +26,7 @@ public class ZkCoreNodeProps {
   
   // may return null
   public String getCoreUrl() {
-    return getCoreUrl(nodeProps.get(ZkStateReader.BASE_URL_PROP), nodeProps.get(ZkStateReader.CORE_PROP));
+    return getCoreUrl(nodeProps.get(ZkStateReader.BASE_URL_PROP), nodeProps.get(ZkStateReader.CORE_NAME_PROP));
   }
   
   public String getNodeName() {
@@ -42,7 +42,7 @@ public class ZkCoreNodeProps {
   }
   
   public String getCoreName() {
-    return nodeProps.get(ZkStateReader.CORE_PROP);
+    return nodeProps.get(ZkStateReader.CORE_NAME_PROP);
   }
   
   public static String getCoreUrl(String baseUrl, String coreName) {
