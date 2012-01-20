@@ -64,7 +64,7 @@ public class RecoveryStrategy extends Thread {
   public RecoveryStrategy(SolrCore core) {
     this.core = core;
     this.coreName = core.getName();
-    //setDaemon(true);
+    setDaemon(true);
     
     zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
     zkStateReader = zkController.getZkStateReader();
