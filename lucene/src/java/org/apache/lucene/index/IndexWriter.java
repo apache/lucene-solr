@@ -47,6 +47,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
@@ -588,7 +589,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     // nocommit: if this is read-only live docs, why doesn't it return Bits?!
-    public synchronized MutableBits getReadOnlyLiveDocs() {
+    public synchronized Bits getReadOnlyLiveDocs() {
       //System.out.println("getROLiveDocs seg=" + info);
       assert Thread.holdsLock(IndexWriter.this);
       shared = true;
@@ -2993,7 +2994,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  saves the resulting deletes file (incrementing the
    *  delete generation for merge.info).  If no deletes were
    *  flushed, no new deletes file is saved. */
-  synchronized private ReadersAndLiveDocs commitMergedDeletes(MergePolicy.OneMerge merge) throws IOException {
+  synchronized private ReadersAndLiveDocs commitMergedDeletes(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
 
     assert testPoint("startCommitMergeDeletes");
 
@@ -3015,8 +3016,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       SegmentInfo info = sourceSegments.get(i);
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
       final int docCount = info.docCount;
-      final MutableBits prevLiveDocs = merge.readerLiveDocs.get(i);
-      final MutableBits currentLiveDocs;
+      final Bits prevLiveDocs = merge.readerLiveDocs.get(i);
+      final Bits currentLiveDocs;
       ReadersAndLiveDocs rld = readerPool.get(info, false);
       // We enrolled in mergeInit:
       assert rld != null;
@@ -3035,7 +3036,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // newly flushed deletes but mapping them to the new
         // docIDs.
 
-        if (currentLiveDocs.count() < prevLiveDocs.count()) {
+        if (currentLiveDocs != prevLiveDocs) {
           // This means this segment received new deletes
           // since we started the merge, so we
           // must merge them:
@@ -3054,8 +3055,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         } else {
-          assert currentLiveDocs.count() == prevLiveDocs.count(): "currentLiveDocs.count()==" + currentLiveDocs.count() + " vs prevLiveDocs.count()=" + prevLiveDocs.count() + " info=" + info;
-          docUpto += currentLiveDocs.count();
+          final int readerDocCount;
+          if (i == sourceSegments.size()-1) {
+            readerDocCount = mergeState.mergedDocCount - mergeState.docBase[i];
+          } else {
+            readerDocCount = mergeState.docBase[i+1] - mergeState.docBase[i];
+          }
+          docUpto += readerDocCount;
         }
       } else if (currentLiveDocs != null) {
         // This segment had no deletes before but now it
@@ -3096,7 +3102,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return mergedDeletes;
   }
 
-  synchronized private boolean commitMerge(MergePolicy.OneMerge merge) throws IOException {
+  synchronized private boolean commitMerge(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
 
     assert testPoint("startCommitMerge");
 
@@ -3123,7 +3129,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return false;
     }
 
-    final ReadersAndLiveDocs mergedDeletes = commitMergedDeletes(merge);
+    final ReadersAndLiveDocs mergedDeletes = commitMergedDeletes(merge, mergeState);
 
     assert mergedDeletes == null || mergedDeletes.pendingDeleteCount != 0;
 
@@ -3556,13 +3562,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     merge.readers = new ArrayList<SegmentReader>();
-    merge.readerLiveDocs = new ArrayList<MutableBits>();
+    merge.readerLiveDocs = new ArrayList<Bits>();
 
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
     try {
-      int totDocCount = 0;
       int segUpto = 0;
       while(segUpto < sourceSegments.size()) {
 
@@ -3575,7 +3580,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         assert reader != null;
 
         // Carefully pull the most recent live docs:
-        final MutableBits liveDocs;
+        final Bits liveDocs;
         synchronized(this) {
           // Must sync to ensure BufferedDeletesStream
           // cannot change liveDocs/pendingDeleteCount while
@@ -3596,17 +3601,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         merge.readerLiveDocs.add(liveDocs);
         merge.readers.add(reader);
 
-        if (liveDocs == null || liveDocs.count() > 0) {
-          merger.add(reader, liveDocs);
-          totDocCount += liveDocs == null ? reader.maxDoc() : liveDocs.count();
-        } else {
-          //System.out.println("  skip seg: fully deleted");
-        }
+        merger.add(reader, liveDocs);
         segUpto++;
-      }
-
-      if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "merge: total " + totDocCount + " docs");
       }
 
       merge.checkAborted(directory);
@@ -3619,10 +3615,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       merge.info.setCodec(codec);
 
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "merge codec=" + codec);
+        infoStream.message("IW", "merge codec=" + codec + " docCount=" + mergedDocCount);
       }
-
-      assert mergedDocCount == totDocCount: "mergedDocCount=" + mergedDocCount + " vs " + totDocCount;
 
       // Very important to do this before opening the reader
       // because codec must know if prox was written for
@@ -3709,7 +3703,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Force READ context because we merge deletes onto
       // this reader:
-      if (!commitMerge(merge)) {
+      if (!commitMerge(merge, mergeState)) {
         // commitMerge will return false if this merge was aborted
         return 0;
       }
@@ -3767,7 +3761,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   /** @lucene.internal */
   public synchronized String segString(SegmentInfo info) throws IOException {
-    StringBuilder buffer = new StringBuilder();
     return info.toString(info.dir, numDeletedDocs(info) - info.getDelCount());
   }
 
