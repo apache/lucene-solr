@@ -495,9 +495,10 @@ public final class SegmentInfo implements Cloneable {
       }
     }
 
-    String delFileName = IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen);
-    if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
-      fileSet.add(delFileName);
+    // because deletions are stored outside CFS, we must check deletes here
+    // note: before the WTF logic was: delFileName != null && (hasDeletions() || fileExists(delFileName))... 
+    if (hasDeletions()) {
+      codec.liveDocsFormat().separateFiles(dir, this, fileSet);
     }
 
     // because separate norm files are unconditionally stored outside cfs,

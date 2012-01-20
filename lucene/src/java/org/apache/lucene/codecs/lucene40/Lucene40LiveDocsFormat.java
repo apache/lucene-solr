@@ -13,6 +13,9 @@ import org.apache.lucene.util.MutableBits;
 
 public class Lucene40LiveDocsFormat extends LiveDocsFormat {
 
+  /** Extension of deletes */
+  static final String DELETES_EXTENSION = "del";
+  
   @Override
   public MutableBits newLiveDocs(int size) throws IOException {
     BitVector bitVector = new BitVector(size);
@@ -22,14 +25,14 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
 
   @Override
   public Bits readLiveDocs(Directory dir, SegmentInfo info, IOContext context) throws IOException {
-    String filename = IndexFileNames.fileNameFromGeneration(info.name, IndexFileNames.DELETES_EXTENSION, info.getDelGen());
+    String filename = IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen());
     return new BitVector(dir, filename, context);
   }
 
   @Override
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException {
     // nocommit: this api is ugly...
-    String filename = IndexFileNames.fileNameFromGeneration(info.name, IndexFileNames.DELETES_EXTENSION, info.getDelGen());
+    String filename = IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen());
     
     // nocommit: is it somehow cleaner to still have IW do this try/finally/delete stuff and add abort() instead?
     boolean success = false;
@@ -49,9 +52,9 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     if (info.hasDeletions()) {
-      files.add(IndexFileNames.fileNameFromGeneration(info.name, IndexFileNames.DELETES_EXTENSION, info.getDelGen()));
+      files.add(IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen()));
     }
   }
 }

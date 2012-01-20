@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -4071,11 +4070,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     Collection<String> files = info.files();
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
     try {
+      assert assertNoSeparateFiles(files, directory, info);
       for (String file : files) {
-        assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
-                  : ".del file is not allowed in .cfs: " + file;
-        assert !isSeparateNormsFile(file) 
-                  : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
         directory.copy(cfsDir, file, file, context);
         checkAbort.work(directory.fileLength(file));
       }
@@ -4088,15 +4084,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   
   
   /**
-   * Returns true if the given filename ends with the separate norms file
-   * pattern: {@code SEPARATE_NORMS_EXTENSION + "[0-9]+"}.
-   * @deprecated only for asserting
+   * used only by assert: checks that filenames about to be put in cfs belong.
    */
-  @Deprecated
-  private static boolean isSeparateNormsFile(String filename) {
-    int idx = filename.lastIndexOf('.');
-    if (idx == -1) return false;
-    String ext = filename.substring(idx + 1);
-    return Pattern.matches("s[0-9]+", ext);
+  private static boolean assertNoSeparateFiles(Collection<String> files, 
+      Directory dir, SegmentInfo info) throws IOException {
+    // maybe this is overkill, but codec naming clashes would be bad.
+    Set<String> separateFiles = new HashSet<String>();
+    Codec codec = info.getCodec();
+    codec.normsFormat().separateFiles(dir, info, separateFiles);
+    codec.liveDocsFormat().separateFiles(dir, info, separateFiles);
+    
+    for (String file : files) {
+      assert !separateFiles.contains(file) : file + " should not go in CFS!";
+    }
+    return true;
   }
 }
