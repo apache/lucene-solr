@@ -197,8 +197,8 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
 
     assertNotNull("manCommit wasn't fast enough", manCommit);
     assertTrue("forced manCommit didn't happen when it should have: " + 
-        manCommit + " !< " + postAdd529, 
-        manCommit < postAdd529);
+        manCommit + " !<= " + postAdd529, 
+        manCommit <= postAdd529);
     
     Long hard529 = monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
     assertNotNull("hard529 wasn't fast enough", hard529);
