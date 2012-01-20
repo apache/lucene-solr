@@ -20,7 +20,6 @@ package org.apache.solr.common.cloud;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -29,8 +28,6 @@ import org.apache.zookeeper.data.ACL;
 
 
 public class ZkCmdExecutor {
-  private static final Logger LOG = Logger.getLogger(ZkCmdExecutor.class);
-  
   private long retryDelay = 1000L;
   private int retryCount = 15;
   private List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
@@ -38,40 +35,18 @@ public class ZkCmdExecutor {
   public ZkCmdExecutor() {
   }
   
-  /**
-   * return the acl its using
-   * 
-   * @return the acl.
-   */
   public List<ACL> getAcl() {
     return acl;
   }
   
-  /**
-   * set the acl
-   * 
-   * @param acl
-   *          the acl to set to
-   */
   public void setAcl(List<ACL> acl) {
     this.acl = acl;
   }
   
-  /**
-   * get the retry delay in milliseconds
-   * 
-   * @return the retry delay
-   */
   public long getRetryDelay() {
     return retryDelay;
   }
   
-  /**
-   * Sets the time waited between retry delays
-   * 
-   * @param retryDelay
-   *          the retry delay
-   */
   public void setRetryDelay(long retryDelay) {
     this.retryDelay = retryDelay;
   }
@@ -79,7 +54,7 @@ public class ZkCmdExecutor {
   /**
    * Perform the given operation, retrying if the connection fails
    * 
-   * @return object. it needs to be cast to the callee's expected return type.
+   * @return
    * @throws IOException 
    */
   @SuppressWarnings("unchecked")
@@ -94,6 +69,7 @@ public class ZkCmdExecutor {
           exception = e;
         }
         if (Thread.currentThread().isInterrupted()) {
+          Thread.currentThread().interrupt();
           throw new InterruptedException();
         }
         retryDelay(i);
@@ -125,14 +101,11 @@ public class ZkCmdExecutor {
    * 
    * @param attemptCount
    *          the number of the attempts performed so far
+   * @throws InterruptedException 
    */
-  protected void retryDelay(int attemptCount) {
+  protected void retryDelay(int attemptCount) throws InterruptedException {
     if (attemptCount > 0) {
-      try {
-        Thread.sleep(Math.max(10000, attemptCount * retryDelay));
-      } catch (InterruptedException e) {
-        LOG.debug("Failed to sleep: " + e, e);
-      }
+      Thread.sleep(Math.max(10000, attemptCount * retryDelay));
     }
   }
 
