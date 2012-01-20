@@ -65,8 +65,8 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
   
   public ChaosMonkeySafeLeaderTest() {
     super();
-    shardCount = atLeast(3);
-    sliceCount = atLeast(2);
+    sliceCount = 2;
+    shardCount = 12;
   }
   
   @Override
@@ -81,7 +81,7 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
     //del("*:*");
     
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
-    int threadCount = atLeast(2);
+    int threadCount = 2;
     for (int i = 0; i < threadCount; i++) {
       StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
       threads.add(indexThread);
@@ -109,7 +109,6 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
     
     // try and wait for any replications and what not to finish...
     
-    // wait until there are no recoveries...
     waitForThingsToLevelOut();
 
     checkShardConsistency(true, true);
@@ -122,7 +121,7 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
     int cnt = 0;
     boolean retry = false;
     do {
-      waitForRecoveriesToFinish(VERBOSE);
+      waitForRecoveriesToFinish(false);
       
       commit();
       
@@ -135,11 +134,14 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
       }
       
       if (failMessage != null) {
-        retry  = true;
+        retry = true;
+      } else {
+        retry = false;
       }
+      
       cnt++;
       if (cnt > 10) break;
-      Thread.sleep(4000);
+      Thread.sleep(2000);
     } while (retry);
   }
   

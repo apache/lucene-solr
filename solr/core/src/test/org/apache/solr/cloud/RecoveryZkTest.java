@@ -123,6 +123,7 @@ public class RecoveryZkTest extends FullSolrCloudTest {
   
   @Override
   public void tearDown() throws Exception {
+    printLayout();
     // make sure threads have been stopped...
     indexThread.safeStop();
     indexThread2.safeStop();

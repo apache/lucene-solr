@@ -92,9 +92,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
       for (int i = 0; i < numShards; i++) {
         CloudDescriptor collection1Desc = new CloudDescriptor();
         collection1Desc.setCollectionName("collection1");
-        CoreDescriptor desc1 = new CoreDescriptor(null, "core"
-            + (i + 1), "");
+        CoreDescriptor desc1 = new CoreDescriptor(null, "core" + (i + 1), "");
         desc1.setCloudDescriptor(collection1Desc);
+        zkController.publishAsDown(zkController.getBaseUrl(), desc1,
+            zkController.getNodeName() + "_" + "core" + (i + 1), "core"
+                + (i + 1));
         ids[i] = zkController.register("core" + (i + 1), desc1);
       }
       
@@ -192,7 +194,12 @@ public class OverseerTest extends SolrTestCaseJ4 {
             final CoreDescriptor desc = new CoreDescriptor(null, coreName, "");
             desc.setCloudDescriptor(collection1Desc);
             try {
-              ids[slot] = controllers[slot % nodeCount].register(coreName, desc);
+              controllers[slot % nodeCount].publishAsDown(controllers[slot
+                  % nodeCount].getBaseUrl(), desc, controllers[slot
+                  % nodeCount].getNodeName()
+                  + "_" + coreName, coreName);
+              ids[slot] = controllers[slot % nodeCount]
+                  .register(coreName, desc);
             } catch (Throwable e) {
               e.printStackTrace();
               fail("register threw exception:" + e.getClass());

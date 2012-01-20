@@ -292,7 +292,7 @@ public class ChaosMonkey {
       return null;
     }
     
-    System.out.println("num active:" + numActive + " for " + slice);
+    //System.out.println("num active:" + numActive + " for " + slice);
     
     int chance = random.nextInt(10);
     JettySolrRunner jetty;

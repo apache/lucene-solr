@@ -477,6 +477,12 @@ public class CoreContainer
       throw new RuntimeException( "Invalid core name: "+name );
     }
 
+    if (zkController != null) {
+      // before becoming available, make sure we are not live and active
+      // this also gets us our assigned shard id if it was not specified
+      zkController.publish(core, ZkStateReader.DOWN);
+    }
+    
     SolrCore old = null;
     synchronized (cores) {
       old = cores.put(name, core);

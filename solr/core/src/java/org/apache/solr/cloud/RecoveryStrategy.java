@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 public class RecoveryStrategy extends Thread {
   private static final int MAX_RETRIES = 100;
+  private static final int INTERRUPTED = 101;
   private static final int START_TIMEOUT = 100;
   
   private static final String REPLICATION_HANDLER = "/replication";
@@ -84,9 +86,9 @@ public class RecoveryStrategy extends Thread {
   
   private void recoveryFailed(final SolrCore core,
       final ZkController zkController, final String baseUrl,
-      final String shardZkNodeName, final CloudDescriptor cloudDesc) {
-    log.error("Recovery failed - I give up.");
-    zkController.publishAsRecoveryFailed(baseUrl, cloudDesc,
+      final String shardZkNodeName, final CoreDescriptor cd) {
+    SolrException.log(log, "Recovery failed - I give up.");
+    zkController.publishAsRecoveryFailed(baseUrl, cd,
         shardZkNodeName, core.getName());
     close = true;
   }
@@ -132,11 +134,11 @@ public class RecoveryStrategy extends Thread {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl + "replication");
       
-      if (close) retries = MAX_RETRIES; 
+      if (close) retries = INTERRUPTED; 
       boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making sure fore=true does not download files we already have
 
       if (!success) {
-        throw new RuntimeException("Replication for recovery failed.");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
       }
       
       // nocommit
@@ -157,7 +159,6 @@ public class RecoveryStrategy extends Thread {
   
   @Override
   public void run() {
-    
     boolean replayed = false;
     boolean succesfulRecovery = false;
     
@@ -183,23 +184,22 @@ public class RecoveryStrategy extends Thread {
         replayed = true;
         
         // if there are pending recovery requests, don't advert as active
-        
-        zkController.publishAsActive(baseUrl, cloudDesc, coreZkNodeName,
+        zkController.publishAsActive(baseUrl, core.getCoreDescriptor(), coreZkNodeName,
             coreName);
         
         succesfulRecovery = true;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         log.warn("Recovery was interrupted", e);
-        retries = MAX_RETRIES;
+        retries = INTERRUPTED;
       } catch (Throwable t) {
         SolrException.log(log, "Error while trying to recover", t);
       } finally {
         if (!replayed) {
           try {
             ulog.dropBufferedUpdates();
-          } catch (Exception e) {
-            log.error("", e);
+          } catch (Throwable t) {
+            SolrException.log(log, "", t);
           }
         }
         
@@ -214,9 +214,13 @@ public class RecoveryStrategy extends Thread {
           SolrException.log(log, "Recovery failed - trying again...");
           retries++;
           if (retries >= MAX_RETRIES) {
-            // TODO: for now, give up after 10 tries - should we do more?
-            recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
-                cloudDesc);
+            if (retries == INTERRUPTED) {
+
+            } else {
+              // TODO: for now, give up after 10 tries - should we do more?
+              recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+                  core.getCoreDescriptor());
+            }
             break;
           }
           
@@ -233,7 +237,7 @@ public class RecoveryStrategy extends Thread {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           log.warn("Recovery was interrupted", e);
-          retries = MAX_RETRIES;
+          retries = INTERRUPTED;
         }
       }
       

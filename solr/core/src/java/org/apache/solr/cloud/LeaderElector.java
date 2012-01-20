@@ -121,7 +121,6 @@ public  class LeaderElector {
                   checkIfIamLeader(leaderSeqPath, seq, context, true);
                 } catch (KeeperException e) {
                   log.warn("", e);
-                  
                 } catch (InterruptedException e) {
                   // Restore the interrupted status
                   Thread.currentThread().interrupt();
@@ -135,7 +134,6 @@ public  class LeaderElector {
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
       } catch (KeeperException e) {
-        e.printStackTrace(System.out);
         // we couldn't set our watch - the node before us may already be down?
         // we need to check if we are the leader again
         checkIfIamLeader(leaderSeqPath, seq, context, true);

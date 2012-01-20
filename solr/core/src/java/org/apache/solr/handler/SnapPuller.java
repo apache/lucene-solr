@@ -244,7 +244,7 @@ public class SnapPuller {
   @SuppressWarnings("unchecked")
   boolean successfulInstall = false;
 
-  boolean fetchLatestIndex(SolrCore core, boolean force) throws IOException {
+  boolean fetchLatestIndex(SolrCore core, boolean force) throws IOException, InterruptedException {
     successfulInstall = false;
     replicationStartTime = System.currentTimeMillis();
     try {
@@ -354,6 +354,8 @@ public class SnapPuller {
         return false;
       } catch (SolrException e) {
         throw e;
+      } catch (InterruptedException e) {
+        throw new InterruptedException("Index fetch interrupted");
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       } finally {

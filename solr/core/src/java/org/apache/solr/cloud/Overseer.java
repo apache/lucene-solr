@@ -355,13 +355,11 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
     newStates.putAll(state.getCollectionStates());
     
     if (!newStates.containsKey(collection)) {
-      log.info("New collection");
       newStates.put(collection, new LinkedHashMap<String,Slice>());
     }
     
     final Map<String, Slice> slices = newStates.get(collection);
     if (!slices.containsKey(slice.getName())) {
-      log.info("New slice");
       slices.put(slice.getName(), slice);
     } else {
       final Map<String,ZkNodeProps> shards = new LinkedHashMap<String,ZkNodeProps>();

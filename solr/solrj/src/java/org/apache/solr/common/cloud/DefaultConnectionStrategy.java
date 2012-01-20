@@ -20,6 +20,7 @@ package org.apache.solr.common.cloud;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.SolrZooKeeper;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
           .update(new SolrZooKeeper(serverAddress, zkClientTimeout, watcher));
       log.info("Reconnected to ZooKeeper");
     } catch (Exception e) {
-      log.error("", e);
+      SolrException.log(log, "Reconnect to ZooKeeper failed", e);
       log.info("Reconnect to ZooKeeper failed");
     }
     
