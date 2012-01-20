@@ -4082,9 +4082,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       Directory dir, SegmentInfo info) throws IOException {
     // maybe this is overkill, but codec naming clashes would be bad.
     Set<String> separateFiles = new HashSet<String>();
-    Codec codec = info.getCodec();
-    codec.normsFormat().separateFiles(dir, info, separateFiles);
-    codec.liveDocsFormat().separateFiles(dir, info, separateFiles);
+    info.getCodec().separateFiles(dir, info, separateFiles);
     
     for (String file : files) {
       assert !separateFiles.contains(file) : file + " should not go in CFS!";

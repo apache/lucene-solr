@@ -54,6 +54,11 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     normsFormat().files(dir, info, files);
   }
   
+  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    liveDocsFormat().separateFiles(dir, info, files);
+    normsFormat().separateFiles(dir, info, files);
+  }
+  
   /** Encodes/decodes postings */
   public abstract PostingsFormat postingsFormat();
   
