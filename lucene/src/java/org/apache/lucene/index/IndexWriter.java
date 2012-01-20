@@ -588,7 +588,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
-    // nocommit: if this is read-only live docs, why doesn't it return Bits?!
     public synchronized Bits getReadOnlyLiveDocs() {
       //System.out.println("getROLiveDocs seg=" + info);
       assert Thread.holdsLock(IndexWriter.this);
