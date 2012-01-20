@@ -326,16 +326,6 @@ public final class SegmentInfo implements Cloneable {
     return si;
   }
 
-  public String getDelFileName() {
-    if (delGen == NO) {
-      // In this case we know there is no deletion filename
-      // against this segment
-      return null;
-    } else {
-      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen);
-    }
-  }
-
   /**
    * @deprecated separate norms are not supported in >= 4.0
    */

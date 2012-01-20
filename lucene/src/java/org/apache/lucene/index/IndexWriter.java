@@ -616,7 +616,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // We can write directly to the actual name (vs to a
         // .tmp & renaming it) because the file is not live
         // until segments file is written:
-        final String delFileName = info.getDelFileName();
         boolean success = false;
         try {
           info.getCodec().liveDocsFormat().writeLiveDocs(liveDocs, dir, info, IOContext.DEFAULT);
@@ -624,12 +623,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         } finally {
           if (!success) {
             info.reset(sav);
-            try {
-              dir.deleteFile(delFileName);
-            } catch (Throwable t) {
-              // Suppress this so we keep throwing the
-              // original exception
-            }
           }
         }
         assert (info.docCount - liveDocs.count()) == info.getDelCount() + pendingDeleteCount:
@@ -2257,32 +2250,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         assert delCount > 0;
         newSegment.setDelCount(delCount);
         newSegment.advanceDelGen();
-        final String delFileName = newSegment.getDelFileName();
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "flush: write " + delCount + " deletes to " + delFileName);
+          infoStream.message("IW", "flush: write " + delCount + " deletes gen=" + flushedSegment.segmentInfo.getDelGen());
         }
-        boolean success2 = false;
-        try {
-          // TODO: in the NRT case it'd be better to hand
-          // this del vector over to the
-          // shortly-to-be-opened SegmentReader and let it
-          // carry the changes; there's no reason to use
-          // filesystem as intermediary here.
+
+        // TODO: in the NRT case it'd be better to hand
+        // this del vector over to the
+        // shortly-to-be-opened SegmentReader and let it
+        // carry the changes; there's no reason to use
+        // filesystem as intermediary here.
           
-          SegmentInfo info = flushedSegment.segmentInfo;
-          Codec codec = info.getCodec();
-          codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, context);
-          success2 = true;
-        } finally {
-          if (!success2) {
-            try {
-              directory.deleteFile(delFileName);
-            } catch (Throwable t) {
-              // suppress this so we keep throwing the
-              // original exception
-            }
-          }
-        }
+        SegmentInfo info = flushedSegment.segmentInfo;
+        Codec codec = info.getCodec();
+        codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, context);
       }
 
       success = true;
