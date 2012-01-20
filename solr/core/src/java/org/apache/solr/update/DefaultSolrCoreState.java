@@ -57,18 +57,23 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   }
 
   @Override
-  public synchronized void decref(IndexWriterCloser closer) throws IOException {
-    refCnt--;
-    if (refCnt == 0) {
-      if (closer != null) {
-        closer.closeWriter(indexWriter);
-      } else if (indexWriter != null) {
-        indexWriter.close();
+  public  void decref(IndexWriterCloser closer) throws IOException {
+    boolean cancelRecovery = false;
+    synchronized (this) {
+      refCnt--;
+      if (refCnt == 0) {
+        if (closer != null) {
+          closer.closeWriter(indexWriter);
+        } else if (indexWriter != null) {
+          indexWriter.close();
+        }
+        directoryFactory.close();
+        closed = true;
+        cancelRecovery = true;
       }
-      directoryFactory.close();
-      closed  = true;
-      cancelRecovery();
     }
+    // don't wait for this in the sync block
+    if (cancelRecovery) cancelRecovery();
   }
 
   @Override
@@ -122,11 +127,13 @@ public final class DefaultSolrCoreState extends SolrCoreState {
     synchronized (recoveryLock) {
       if (recoveryStrat != null) {
         recoveryStrat.close();
+        
         try {
           recoveryStrat.join();
         } catch (InterruptedException e) {
           
         }
+        
         recoveryRunning = false;
         recoveryLock.notifyAll();
       }
