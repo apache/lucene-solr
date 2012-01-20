@@ -175,13 +175,6 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     }
 
     @Override
-    public boolean getAndSet(int bit) {
-      boolean v = bits.get(bit);
-      bits.set(bit);
-      return v;
-    }
-
-    @Override
     public boolean getAndClear(int bit) {
       boolean v = bits.get(bit);
       bits.clear(bit);

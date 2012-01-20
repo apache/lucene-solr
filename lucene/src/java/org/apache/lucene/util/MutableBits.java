@@ -23,7 +23,6 @@ public interface MutableBits extends Bits,Cloneable {
   public int count();
   
   // nocommit: are these truly necessary?
-  public boolean getAndSet(int bit);
   public boolean getAndClear(int bit);
   public MutableBits clone();
 }
