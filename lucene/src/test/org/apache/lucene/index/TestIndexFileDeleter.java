@@ -87,17 +87,20 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     }
     */
 
+    // TODO: fix this test better
+    String ext = Codec.getDefault().getName().equals("SimpleText") ? ".liv" : ".del";
+    
     // Create a bogus separate del file for a
     // segment that already has a separate del file: 
-    copyFile(dir, "_0_1.del", "_0_2.del");
+    copyFile(dir, "_0_1" + ext, "_0_2" + ext);
 
     // Create a bogus separate del file for a
     // segment that does not yet have a separate del file:
-    copyFile(dir, "_0_1.del", "_1_1.del");
+    copyFile(dir, "_0_1" + ext, "_1_1" + ext);
 
     // Create a bogus separate del file for a
     // non-existent segment:
-    copyFile(dir, "_0_1.del", "_188_1.del");
+    copyFile(dir, "_0_1" + ext, "_188_1" + ext);
 
     // Create a bogus segment file:
     copyFile(dir, "_0.cfs", "_188.cfs");
