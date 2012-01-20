@@ -204,7 +204,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           server.setDefaultCollection(DEFAULT_COLLECTION);
           server.getLbServer().getHttpClient().getParams()
               .setConnectionManagerTimeout(5000);
-          server.getLbServer().getHttpClient().getParams().setSoTimeout(5000);
           cloudClient = server;
         } catch (MalformedURLException e) {
           throw new RuntimeException(e);
