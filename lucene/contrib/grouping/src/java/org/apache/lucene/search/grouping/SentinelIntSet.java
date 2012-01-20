@@ -1,4 +1,6 @@
-/**
+package org.apache.lucene.search.grouping;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,17 +17,24 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search.grouping;
-
 import java.util.Arrays;
 
-/** A native int set where one value is reserved to mean "EMPTY" */
-class SentinelIntSet {
+/**
+ * A native int set where one value is reserved to mean "EMPTY"
+ *
+ * @lucene.internal
+ */
+public class SentinelIntSet {
   public int[] keys;
   public int count;
   public final int emptyVal;
   public int rehashCount;   // the count at which a rehash should be done
 
+  /**
+   *
+   * @param size  The minimum number of elements this set should be able to hold without re-hashing (i.e. the slots are guaranteed not to change)
+   * @param emptyVal The integer value to use for EMPTY
+   */
   public SentinelIntSet(int size, int emptyVal) {
     this.emptyVal = emptyVal;
     int tsize = Math.max(org.apache.lucene.util.BitUtil.nextHighestPowerOfTwo(size), 1);
@@ -87,13 +96,13 @@ class SentinelIntSet {
   public int put(int key) {
     int s = find(key);
     if (s < 0) {
+      count++;
       if (count >= rehashCount) {
         rehash();
         s = getSlot(key);
       } else {
         s = -s-1;
       }
-      count++;
       keys[s] = key;
     }
     return s;
