@@ -156,7 +156,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     SolrZkClient.numCloses.getAndSet(0);
 
     
-    if (endNumOpens-numOpens != endNumCloses-numCloses) {
+    if (endNumOpens-zkClientNumOpens != endNumCloses-zkClientNumCloses) {
       String msg = "ERROR: SolrZkClient opens=" + (endNumOpens-zkClientNumOpens) + " closes=" + (endNumCloses-zkClientNumCloses);
       log.error(msg);
       testsFailed = true;
