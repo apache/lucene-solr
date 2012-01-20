@@ -825,6 +825,12 @@ Bug fixes
 * LUCENE-3605: don't sleep in a retry loop when trying to locate the
   segments_N file (Robert Muir, Mike McCandless)
 
+* LUCENE-3711: SentinelIntSet with a small initial size can go into
+  an infinite loop when expanded.  This can affect grouping using
+  TermAllGroupsCollector or TermAllGroupHeadsCollector if instantiated with a
+  non default small size. (Martijn van Groningen, yonik)
+
+
 Optimizations
 
 * LUCENE-3653: Improve concurrency in VirtualMethod and AttributeSource by

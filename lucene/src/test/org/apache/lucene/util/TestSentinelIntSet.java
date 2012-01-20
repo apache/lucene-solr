@@ -48,18 +48,6 @@ public class TestSentinelIntSet extends LuceneTestCase {
     assertEquals(24, set.rehashCount);
   }
   
-  @Test
-  public void testRehash() throws Exception {
-    SentinelIntSet set = new SentinelIntSet(3, -1);
-    set.put(1);
-    set.find(99);
-    set.put(2);
-    set.find(99);
-    set.put(3);
-    set.find(99);
-    set.put(4);
-    set.find(99);
-  }
 
   @Test
   public void testRandom() throws Exception {
