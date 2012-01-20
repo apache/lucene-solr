@@ -118,13 +118,13 @@ public  class LeaderElector {
                 // am I the next leader?
                 try {
                   checkIfIamLeader(leaderSeqPath, seq, context, true);
-                } catch (KeeperException e) {
-                  log.warn("", e);
                 } catch (InterruptedException e) {
                   // Restore the interrupted status
                   Thread.currentThread().interrupt();
                   log.warn("", e);
                 } catch (IOException e) {
+                  log.warn("", e);
+                } catch (Exception e) {
                   log.warn("", e);
                 }
               }
