@@ -20,23 +20,21 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.PeerSync;
 import org.slf4j.Logger;
@@ -101,7 +99,7 @@ public class SyncStrategy {
           for (ZkCoreNodeProps node : nodes) {
             try {
               syncToMe(zkController, collection, shardId, leaderProps,
-                  node.getNodeProps());
+                  node.getNodeProps(), nodes);
             } catch (Exception exception) {
               exception.printStackTrace();
               // nocommit
@@ -186,12 +184,8 @@ public class SyncStrategy {
   }
   
   private void syncToMe(ZkController zkController, String collection,
-      String shardId, ZkNodeProps leaderProps, ZkNodeProps props)
+      String shardId, ZkNodeProps leaderProps, ZkNodeProps props, List<ZkCoreNodeProps> nodes)
       throws MalformedURLException, SolrServerException, IOException {
-    List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
-        .getReplicaProps(collection, shardId,
-            props.get(ZkStateReader.NODE_NAME_PROP),
-            props.get(ZkStateReader.CORE_NAME_PROP));
     
     if (nodes == null) {
       System.out.println("I have no replicas");
@@ -210,7 +204,7 @@ public class SyncStrategy {
         CommonsHttpSolrServer server = new CommonsHttpSolrServer(node.getCoreUrl());
         
         NamedList rsp = server.request(qr);
-        System.out.println("response about syncing to leader:" + rsp);
+        System.out.println("response about syncing to leader:" + rsp + " node:" + node.getCoreUrl() + " me:" + zkController.getBaseUrl());
         boolean success = (Boolean) rsp.get("sync");
         System.out.println("success:" + success);
         if (!success) {

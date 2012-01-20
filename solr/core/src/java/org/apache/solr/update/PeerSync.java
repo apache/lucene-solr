@@ -17,14 +17,23 @@
 
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.net.ConnectException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.commons.httpclient.NoHttpResponseException;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -37,15 +46,8 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
 
 /** @lucene.experimental */
 public class PeerSync  {
@@ -163,8 +165,19 @@ public class PeerSync  {
 
   private boolean handleResponse(ShardResponse srsp) {
     if (srsp.getException() != null) {
+
+      // nocommit
+      if (srsp.getException() instanceof SolrServerException) {
+        Throwable solrException = ((SolrServerException) srsp.getException())
+            .getRootCause();
+        if (solrException instanceof ConnectException
+            || solrException instanceof NoHttpResponseException) {
+          return true;
+        }
+      }
       // TODO: at least log???
-      // srsp.getException().printStackTrace(System.out);
+      srsp.getException().printStackTrace(System.out);
+      
       return false;
     }
 

@@ -439,11 +439,11 @@ public class ZkStateReader {
     
     Map<String,ZkNodeProps> shardMap = replicas.getShards();
     List<ZkCoreNodeProps> nodes = new ArrayList<ZkCoreNodeProps>(shardMap.size());
-
+    String filterNodeName = thisNodeName + "_" + coreName;
     for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
       String coreNodeName = nodeProps.getNodeName() + "_" + coreName;
-      if (cloudState.liveNodesContain(thisNodeName) && !coreNodeName.equals(thisNodeName + "_" + coreName)) {
+      if (cloudState.liveNodesContain(nodeProps.getNodeName()) && !coreNodeName.equals(filterNodeName)) {
         if (stateFilter == null || stateFilter.equals(nodeProps.getState())) {
           nodes.add(nodeProps);
         }
