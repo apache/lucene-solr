@@ -68,13 +68,13 @@ public class NodeStateWatcher implements Watcher {
   public void process(WatchedEvent event) {
     try {
       processStateChange();
-    } catch (KeeperException e) {
-      log.warn("Error processing state change", e);
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
       return;
-    }
+    } catch (Exception e) {
+      log.warn("Error processing state change", e);
+    } 
   }
 
   private void processStateChange() throws KeeperException, InterruptedException {
