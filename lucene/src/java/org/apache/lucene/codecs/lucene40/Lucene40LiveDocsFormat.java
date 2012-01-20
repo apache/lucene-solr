@@ -9,6 +9,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
 public class Lucene40LiveDocsFormat extends LiveDocsFormat {
@@ -34,19 +35,14 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
     // nocommit: this api is ugly...
     String filename = IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen());
     
-    // nocommit: is it somehow cleaner to still have IW do this try/finally/delete stuff and add abort() instead?
+    // nocommit: test if we really need this
     boolean success = false;
     try {
       ((BitVector)bits).write(dir, filename, context);
       success = true;
     } finally {
       if (!success) {
-        try {
-          dir.deleteFile(filename);
-        } catch (Throwable t) {
-          // suppress this so we keep throwing the
-          // original exception
-        }
+        IOUtils.deleteFilesIgnoringExceptions(dir, filename);
       }
     }
   }
