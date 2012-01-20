@@ -32,12 +32,13 @@ import org.apache.lucene.util.BytesRef;
 public final class ByteSequenceOutputs extends Outputs<BytesRef> {
 
   private final static BytesRef NO_OUTPUT = new BytesRef();
+  private final static ByteSequenceOutputs singleton = new ByteSequenceOutputs();
 
   private ByteSequenceOutputs() {
   }
 
   public static ByteSequenceOutputs getSingleton() {
-    return new ByteSequenceOutputs();
+    return singleton;
   }
 
   @Override
