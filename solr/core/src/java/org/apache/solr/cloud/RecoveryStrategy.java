@@ -77,10 +77,6 @@ public class RecoveryStrategy extends Thread {
   public void close() {
     close = true;
     interrupt();
-    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-    if (ulog == null) return;
-    ulog.cancelApplyBufferedUpdates();
-    
   }
 
   
