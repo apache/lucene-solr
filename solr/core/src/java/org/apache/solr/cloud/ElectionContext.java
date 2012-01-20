@@ -3,6 +3,8 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -107,39 +109,44 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   void runLeaderProcess(String leaderSeqPath, boolean weAreReplacement)
       throws KeeperException, InterruptedException, IOException {
     if (cc != null) {
-      SolrCore core = cc.getCore(leaderProps.get(ZkStateReader.CORE_NAME_PROP));
-      if (core != null) {
-        try {
-          // should I be leader?
-          if (weAreReplacement && !shouldIBeLeader(leaderProps)) {
-            System.out.println("there is a better leader candidate it appears");
+      SolrCore core = null;
+      String coreName = leaderProps.get(ZkStateReader.CORE_NAME_PROP);
+      try {
+        core = cc.getCore(coreName);
+        if (core == null) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Core not found:" + coreName);
+        }
+        // should I be leader?
+        if (weAreReplacement && !shouldIBeLeader(leaderProps)) {
+          System.out.println("there is a better leader candidate it appears");
+          rejoinLeaderElection(leaderSeqPath, core);
+          return;
+        }
+        
+        if (weAreReplacement) {
+          if (zkClient.exists(leaderPath, true)) {
+            zkClient.delete(leaderPath, -1, true);
+          }
+          System.out.println("I may be the new Leader:" + leaderPath
+              + " - I need to try and sync");
+          boolean success = syncStrategy.sync(zkController, core, leaderProps);
+          if (!success) {
             rejoinLeaderElection(leaderSeqPath, core);
             return;
           }
-          
-          if (weAreReplacement) {
-            if (zkClient.exists(leaderPath, true)) {
-              zkClient.delete(leaderPath, -1, true);
-            }
-            System.out.println("I may be the new Leader:" + leaderPath
-                + " - I need to try and sync");
-            boolean success = syncStrategy
-                .sync(zkController, core, leaderProps);
-            if (!success) {
-              rejoinLeaderElection(leaderSeqPath, core);
-              return;
-            }
-          }
-          
-          // If I am going to be the leader I have to be active
-          if (core != null) {
-            core.getUpdateHandler().getSolrCoreState().cancelRecovery();
-            zkController.publish(core, ZkStateReader.ACTIVE);
-          }
-        } finally {
+        }
+        
+        // If I am going to be the leader I have to be active
+        
+        core.getUpdateHandler().getSolrCoreState().cancelRecovery();
+        zkController.publish(core, ZkStateReader.ACTIVE);
+        
+      } finally {
+        if (core != null) {
           core.close();
         }
       }
+      
     }
     
     super.runLeaderProcess(leaderSeqPath, weAreReplacement);

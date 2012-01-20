@@ -30,12 +30,10 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   private int refCnt = 1;
   private SolrIndexWriter indexWriter = null;
   private DirectoryFactory directoryFactory;
- 
-
- 
 
   private boolean recoveryRunning;
   private RecoveryStrategy recoveryStrat;
+  private boolean closed = false;
   
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
     this.directoryFactory = directoryFactory;
@@ -68,6 +66,8 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         indexWriter.close();
       }
       directoryFactory.close();
+      closed  = true;
+      cancelRecovery();
     }
   }
 
@@ -107,6 +107,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         } catch (InterruptedException e) {
 
         }
+        if (closed) return;
       }
       
       recoveryStrat = new RecoveryStrategy(core);

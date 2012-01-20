@@ -202,11 +202,10 @@ public final class ZkController {
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
-              log.error("", e);
               throw new ZooKeeperException(
                   SolrException.ErrorCode.SERVER_ERROR, "", e);
             } catch (Exception e) {
-              log.error("", e);
+              SolrException.log(log, "", e);
               throw new ZooKeeperException(
                   SolrException.ErrorCode.SERVER_ERROR, "", e);
             }

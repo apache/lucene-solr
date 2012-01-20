@@ -264,7 +264,7 @@ public class SnapPuller {
       try {
         searcherRefCounted = core.getNewestSearcher(false);
         if (searcherRefCounted == null) {
-          LOG.error("No open searcher found - fetch aborted");
+          SolrException.log(LOG, "No open searcher found - fetch aborted");
           return false;
         }
         commit = searcherRefCounted.get().getIndexReader().getIndexCommit();

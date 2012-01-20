@@ -127,6 +127,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      SolrIndexSearcher.numOpens.getAndSet(0);
      SolrIndexSearcher.numCloses.getAndSet(0);
 
+     // wait a bit in case any ending threads have anything to release
+     int retries = 0;
+     while (endNumOpens - numOpens != endNumCloses - numCloses) {
+       if (retries++ > 15) {
+         break;
+       }
+       try {
+         Thread.sleep(1000);
+       } catch (InterruptedException e) {}
+       endNumOpens = SolrIndexSearcher.numOpens.get();
+       endNumCloses = SolrIndexSearcher.numCloses.get();
+     }
      
      if (endNumOpens-numOpens != endNumCloses-numCloses) {
        String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);

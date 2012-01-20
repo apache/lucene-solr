@@ -164,16 +164,15 @@ public class ChaosMonkey {
   }
   
   public static void kill(JettySolrRunner jetty) throws Exception {
-
+    FilterHolder fh = jetty.getDispatchFilter();
+    SolrDispatchFilter sdf = null;
+    if (fh != null) {
+      sdf = (SolrDispatchFilter) fh.getFilter();
+    }
     jetty.stop();
     
-    
-    FilterHolder fh = jetty.getDispatchFilter();
-    if (fh != null) {
-      SolrDispatchFilter sdf = (SolrDispatchFilter) fh.getFilter();
-      if (sdf != null) {
-        sdf.destroy();
-      }
+    if (sdf != null) {
+      sdf.destroy();
     }
     
     if (!jetty.isStopped()) {

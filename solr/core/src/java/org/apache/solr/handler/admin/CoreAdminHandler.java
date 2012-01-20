@@ -594,14 +594,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
     if (cname == null) {
       cname = "";
     }
-    SolrCore core = coreContainer.getCore(cname);
+    SolrCore core = null;
     try {
+      core = coreContainer.getCore(cname);
       core.getUpdateHandler().getSolrCoreState().doRecovery(core);
     } finally {
       // no recoveryStrat close for now
-      core.close();
+      if (core != null) {
+        core.close();
+      }
     }
-    
   }
   
   protected void handlePrepRecoveryAction(SolrQueryRequest req,
@@ -616,11 +618,14 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String nodeName = params.get("nodeName");
     String coreNodeName = params.get("coreNodeName");
     
-    SolrCore core = coreContainer.getCore(cname);
-    if (core == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "core not found:" + cname);
-    }
+ 
+    SolrCore core =  null;
+
     try {
+      core = coreContainer.getCore(cname);
+      if (core == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "core not found:" + cname);
+      }
       String state;
       int retry = 0;
       while (true) {

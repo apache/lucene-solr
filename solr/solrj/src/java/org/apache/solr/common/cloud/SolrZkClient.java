@@ -645,7 +645,7 @@ public class SolrZkClient {
    */
   public void close() throws InterruptedException {
     if (isClosed) {
-      throw new AlreadyClosedException("");
+      throw new AlreadyClosedException("This client has already been closed");
     }
     isClosed = true;
     keeper.close();

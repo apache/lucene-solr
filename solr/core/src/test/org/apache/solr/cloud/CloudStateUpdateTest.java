@@ -23,11 +23,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreContainer.Initializer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;

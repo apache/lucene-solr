@@ -431,10 +431,14 @@ public class CoreContainer
     log.info("Shutting down CoreContainer instance="+System.identityHashCode(this));    
     synchronized(cores) {
       try {
-        for(SolrCore core : cores.values()) {
-          core.getUpdateHandler().getSolrCoreState().cancelRecovery();
-          if (!core.isClosed()) {
-            core.close();
+        for (SolrCore core : cores.values()) {
+          try {
+            if (!core.isClosed()) {
+              core.close();
+            }
+            core.getUpdateHandler().getSolrCoreState().cancelRecovery();
+          } catch (Exception e) {
+            SolrException.log(log, "Error shutting down core", e);
           }
         }
         cores.clear();

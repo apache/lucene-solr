@@ -102,7 +102,7 @@ public class JettySolrRunner {
         QueuedThreadPool threadPool = (QueuedThreadPool) connector
             .getThreadPool();
         if (threadPool != null) {
-          threadPool.setMaxStopTimeMs(0);
+          threadPool.setMaxStopTimeMs(100);
         }
       }
       server.setConnectors(new Connector[] {connector});
@@ -114,7 +114,7 @@ public class JettySolrRunner {
             QueuedThreadPool threadPool = (QueuedThreadPool) ((SocketConnector) connector)
                 .getThreadPool();
             if (threadPool != null) {
-              threadPool.setMaxStopTimeMs(0);
+              threadPool.setMaxStopTimeMs(100);
             }
           }
         }
