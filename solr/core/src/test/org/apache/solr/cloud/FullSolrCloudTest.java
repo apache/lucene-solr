@@ -281,17 +281,17 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     shardToJetty.clear();
     jettyToInfo.clear();
     
+    CloudState cloudState = zkStateReader.getCloudState();
+    Map<String,Slice> slices = cloudState.getSlices(DEFAULT_COLLECTION);
+    
+    if (slices == null) {
+      throw new RuntimeException("No slices found for collection "
+          + DEFAULT_COLLECTION + " in " + cloudState.getCollections());
+    }
+    
     for (SolrServer client : clients) {
-      // find info for this client in zk
-      
-      CloudState cloudState = zkStateReader.getCloudState();
-      Map<String,Slice> slices = cloudState.getSlices(DEFAULT_COLLECTION);
-      
-      if (slices == null) {
-        throw new RuntimeException("No slices found for collection "
-            + DEFAULT_COLLECTION + " in " + cloudState.getCollections());
-      }
-      
+      // find info for this client in zk 
+      nextClient:
       // we find ou state by simply matching ports...
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
@@ -316,21 +316,27 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             if (isLeader) {
               shardToLeaderClient.put(slice.getKey(), client);
             }
+            break nextClient;
           }
         }
       }
-      
     }
     
-    Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(
-        DEFAULT_COLLECTION);
-    
+    for (Map.Entry<String,Slice> slice : slices.entrySet()) {
+      // check that things look right
+      assertEquals(slice.getValue().getShards().size(), shardToClient.get(slice.getKey()).size());
+    }
+ 
     for (JettySolrRunner jetty : jettys) {
+      nextJetty:
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
           int port = jetty.getLocalPort();
-         
+          if (port == -1) {
+            fail("If we cannot get the port, we cannot map properly");
+          }
+          
           if (shard.getKey().contains(":" + port + "_")) {
             jettyToInfo.put(jetty, shard.getValue());
             List<CloudJettyRunner> list = shardToJetty.get(slice.getKey());
@@ -348,9 +354,15 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             if (isLeader) {
               shardToLeaderJetty.put(slice.getKey(), cjr);
             }
+            break nextJetty;
           }
         }
       }
+    }
+    
+    for (Map.Entry<String,Slice> slice : slices.entrySet()) {
+      // check that things look right
+      assertEquals(slice.getValue().getShards().size(), shardToJetty.get(slice.getKey()).size());
     }
   }
   
