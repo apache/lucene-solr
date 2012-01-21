@@ -106,6 +106,7 @@ public class RecoveryStrategy extends Thread {
     if (!leaderBaseUrl.equals(baseUrl)) {
       
       CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderBaseUrl);
+      server.setSoTimeout(15000);
       PrepRecovery prepCmd = new PrepRecovery();
       prepCmd.setCoreName(leaderCoreName);
       prepCmd.setNodeName(nodeName);
