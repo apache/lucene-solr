@@ -361,11 +361,15 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       }
     }
     
-    // # of jetties may not match replicas in shard here, because we don't map jetties that
-    // are not running - every shard should have at least one running jetty though
+    // # of jetties may not match replicas in shard here, because we don't map
+    // jetties that are not running - every shard should have at least one
+    // running jetty though
     for (Map.Entry<String,Slice> slice : slices.entrySet()) {
       // check that things look right
-      assertTrue(shardToJetty.get(slice.getKey()).size() > 0);
+      List<CloudJettyRunner> jetties = shardToJetty.get(slice.getKey());
+      assertNotNull("We found no jetties for shard: " + slice.getKey()
+          + " just:" + shardToJetty.keySet(), jetties);
+      assertTrue(jetties.size() > 0);
     }
   }
   
