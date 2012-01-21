@@ -149,15 +149,12 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
                 log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
                 return;
               }
-              log.error("", e);
+              SolrException.log(log, "", e);
               throw new ZooKeeperException(
                   SolrException.ErrorCode.SERVER_ERROR, "", e);
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
             }
           }
         }, true);
