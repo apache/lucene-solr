@@ -521,7 +521,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         if (writer != null) {
           writer.rollback();
         }
-        return; // don't close the ulog either
+
+        // we shouldn't close the transaction logs either, but leaving them open
+        // means we can't delete them on windows.
+        if (ulog != null) ulog.close();
+
+        return;
       }
 
       if (writer != null) {

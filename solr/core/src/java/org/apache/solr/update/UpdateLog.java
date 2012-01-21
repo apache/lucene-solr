@@ -577,14 +577,31 @@ public class UpdateLog implements PluginInfoInitialized {
 
   public void close() {
     synchronized (this) {
-      if (prevTlog != null) {
-        prevTlog.decref();
-      }
-      if (tlog != null) {
-        tlog.decref();
+      try {
+        recoveryExecutor.shutdownNow();
+      } catch (Exception e) {
+        SolrException.log(log, e);
       }
 
-      recoveryExecutor.shutdownNow();
+      // Don't delete the old tlogs, we want to be able to replay from them and retrieve old versions
+
+      if (prevTlog != null) {
+        prevTlog.deleteOnClose = false;
+        prevTlog.decref();
+        prevTlog.forceClose();
+      }
+      if (tlog != null) {
+        tlog.deleteOnClose = false;
+        tlog.decref();
+        tlog.forceClose();
+      }
+
+      for (TransactionLog log : logs) {
+        log.deleteOnClose = false;
+        log.decref();
+        log.forceClose();
+      }
+
     }
   }
 

@@ -485,13 +485,24 @@ public class TransactionLog {
         log.debug("Closing tlog" + this);
       }
 
-      fos.flush();
-      fos.close();
+      synchronized (this) {
+        fos.flush();
+        fos.close();
+      }
+
       if (deleteOnClose) {
         tlogFile.delete();
       }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+  
+  public void forceClose() {
+    if (refcount.get() > 0) {
+      log.error("Error: Forcing close of " + this);
+      refcount.set(0);
+      close();
     }
   }
 
