@@ -9,7 +9,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
 public class Lucene40LiveDocsFormat extends LiveDocsFormat {
@@ -34,17 +33,7 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException {
     // nocommit: this api is ugly...
     String filename = IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen());
-    
-    // nocommit: test if we really need this
-    boolean success = false;
-    try {
-      ((BitVector)bits).write(dir, filename, context);
-      success = true;
-    } finally {
-      if (!success) {
-        IOUtils.deleteFilesIgnoringExceptions(dir, filename);
-      }
-    }
+    ((BitVector)bits).write(dir, filename, context);
   }
 
   @Override

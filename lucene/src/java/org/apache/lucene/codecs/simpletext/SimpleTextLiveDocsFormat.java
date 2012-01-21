@@ -127,7 +127,6 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
         IOUtils.close(out);
       } else {
         IOUtils.closeWhileHandlingException(out);
-        IOUtils.deleteFilesIgnoringExceptions(dir, fileName);
       }
     }
   }
