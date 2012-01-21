@@ -291,8 +291,6 @@ public class ChaosMonkey {
       return null;
     }
     
-    //System.out.println("num active:" + numActive + " for " + slice);
-    
     int chance = random.nextInt(10);
     JettySolrRunner jetty;
     if (chance <= 5 && aggressivelyKillLeaders) {
@@ -317,7 +315,7 @@ public class ChaosMonkey {
         return null;
       } 
     }
- 
+    System.out.println("num active:" + numActive + " for " + slice + " sac:" + jetty.getLocalPort());
     return jetty;
   }
   
