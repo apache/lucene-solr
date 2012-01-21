@@ -790,6 +790,9 @@ New Features
   input mapping to it) for FSTs that have strictly monotonic long
   outputs (such as an ord).  (Mike McCandless)
   
+* LUCENE-3121: Add TypeTokenFilter that filters tokens based on
+  their TypeAttribute.  (Tommaso Teofili via Uwe Schindler)
+  
 Bug fixes
 
 * LUCENE-3595: Fixed FieldCacheRangeFilter and FieldCacheTermsFilter
