@@ -311,6 +311,24 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return ureq.process(server);
   }
 
+  protected UpdateResponse del(SolrServer server, SolrParams params, Object... ids) throws IOException, SolrServerException {
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setParams(new ModifiableSolrParams(params));
+    for (Object id: ids) {
+      ureq.deleteById(id.toString());
+    }
+    return ureq.process(server);
+  }
+
+  protected UpdateResponse delQ(SolrServer server, SolrParams params, String... queries) throws IOException, SolrServerException {
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setParams(new ModifiableSolrParams(params));
+    for (String q: queries) {
+      ureq.deleteByQuery(q);
+    }
+    return ureq.process(server);
+  }
+
   protected void index_specific(int serverNumber, Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     for (int i = 0; i < fields.length; i += 2) {

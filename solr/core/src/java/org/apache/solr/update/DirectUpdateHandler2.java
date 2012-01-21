@@ -32,6 +32,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -45,7 +46,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
+import org.apache.solr.search.function.ValueSourceRangeFilter;
 
 /**
  *  TODO: add soft commitWithin support
@@ -232,8 +237,27 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     try {
       Query q;
       try {
+        // TODO: move this higher in the stack?
         QParser parser = QParser.getParser(cmd.query, "lucene", cmd.req);
         q = parser.getQuery();
+        q = QueryUtils.makeQueryable(q);
+
+        // peer-sync can cause older deleteByQueries to be executed and could
+        // delete newer documents.  We prevent this by adding a clause restricting
+        // version.
+        if ((cmd.getFlags() & UpdateCommand.PEER_SYNC) != 0) {
+          BooleanQuery bq = new BooleanQuery();
+          bq.add(q, Occur.MUST);
+          SchemaField sf = core.getSchema().getField(VersionInfo.VERSION_FIELD);
+          ValueSource vs = sf.getType().getValueSource(sf, null);
+          ValueSourceRangeFilter filt = new ValueSourceRangeFilter(vs, null, Long.toString(cmd.version), true, true);
+          FunctionRangeQuery range = new FunctionRangeQuery(filt);
+          bq.add(range, Occur.MUST);
+          // q = bq;             // nocommit
+        }
+
+
+
       } catch (ParseException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }

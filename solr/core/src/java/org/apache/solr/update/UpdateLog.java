@@ -599,6 +599,7 @@ public class UpdateLog implements PluginInfoInitialized {
     Deque<TransactionLog> logList;    // newest first
     List<List<Update>> updateList;
     HashMap<Long, Update> updates;
+    List<Update> deleteByQueryList;
 
 
     public List<Long> getVersions(int n) {
@@ -621,9 +622,22 @@ public class UpdateLog implements PluginInfoInitialized {
       return update.log.lookup(update.pointer);
     }
 
+    /** Returns the list of deleteByQueries that happened after the given version */
+    public List<Object> getDeleteByQuery(long afterVersion) {
+      List<Object> result = new ArrayList<Object>(deleteByQueryList.size());
+      for (Update update : deleteByQueryList) {
+        if (Math.abs(update.version) > afterVersion) {
+          Object dbq = update.log.lookup(update.pointer);
+          result.add(dbq);
+        }
+      }
+      return result;
+    }
+
     private void update() {
       int numUpdates = 0;
       updateList = new ArrayList<List<Update>>(logList.size());
+      deleteByQueryList = new ArrayList<Update>();
       updates = new HashMap<Long,Update>(numRecordsToKeep);
 
       for (TransactionLog oldLog : logList) {
@@ -656,6 +670,11 @@ public class UpdateLog implements PluginInfoInitialized {
 
                   updatesForLog.add(update);
                   updates.put(version, update);
+                  
+                  if (oper == UpdateLog.DELETE_BY_QUERY) {
+                    deleteByQueryList.add(update);
+                  }
+                  
                   break;
 
                 case UpdateLog.COMMIT:

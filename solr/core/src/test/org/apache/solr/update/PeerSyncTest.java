@@ -122,7 +122,20 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, true, shardsArr[0]);
     client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
 
-    v+= toAdd;
+
+
+    // test delete and deleteByQuery
+    v=1000;
+    add(client0, seenLeader, sdoc("id","1000","_version_",++v));
+    add(client0, seenLeader, sdoc("id","1001","_version_",++v));
+    delQ(client0, params("leader","true","_version_",Long.toString(-++v)), "id:1001 OR id:1002");
+    add(client0, seenLeader, sdoc("id","1002","_version_",++v));
+    del(client0, params("leader","true","_version_",Long.toString(-++v)), "1000");
+
+    assertSync(client1, numVersions, true, shardsArr[0]);
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
+
+
   }
 
 

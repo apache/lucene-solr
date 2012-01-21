@@ -82,6 +82,26 @@ public class PeerSync  {
     }
   };
 
+  // comparator that sorts update records by absolute value of version, putting lowest first
+  private static Comparator<Object> updateRecordComparator = new Comparator<Object>() {
+    @Override
+    public int compare(Object o1, Object o2) {
+      if (!(o1 instanceof List)) return 1;
+      if (!(o2 instanceof List)) return -1;
+
+      List lst1 = (List)o1;
+      List lst2 = (List)o2;
+
+      long l1 = Math.abs((Long)lst1.get(1));
+      long l2 = Math.abs((Long)lst2.get(1));
+
+      if (l1 >l2) return 1;
+      if (l1 < l2) return -1;
+      return 0;
+    }
+  };
+
+
   private static class SyncShardRequest extends ShardRequest {
     List<Long> reportedVersions;
     List<Long> requestedUpdates;
@@ -273,7 +293,7 @@ public class PeerSync  {
     List<Object> updates = (List<Object>)srsp.getSolrResponse().getResponse().get("updates");
 
     SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
-    if (sreq.requestedUpdates.size() <  updates.size()) {
+    if (updates.size() < sreq.requestedUpdates.size()) {
       log.error("PeerSync: Requested " + sreq.requestedUpdates.size() + " updates from " + sreq.shards[0] + " but retrieved " + updates.size());
       return false;
     }
@@ -290,15 +310,15 @@ public class PeerSync  {
 
     UpdateRequestProcessor proc = magicFac.getInstance(req, rsp, runFac.getInstance(req, rsp, null));
 
+    Collections.sort(updates, updateRecordComparator);
+
     Object o = null;
     try {
-
       // Apply oldest updates first
-      for (int i=updates.size()-1; i>=0; i--) {
-        o = updates.get(i);
-
+      for (Object obj : updates) {
         // should currently be a List<Oper,Ver,Doc/Id>
-        List entry = (List)o;
+        o = obj;
+        List<Object> entry = (List<Object>)o;
 
         int oper = (Integer)entry.get(0);
         long version = (Long) entry.get(1);

@@ -330,25 +330,35 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
 
     List<Object> updates = new ArrayList<Object>(versions.size());
+
+    long minVersion = Long.MAX_VALUE;
     
     try {
-    for (String versionStr : versions) {
-      long version = Long.parseLong(versionStr);
-      try {
-        Object o = recentUpdates.lookup(version);
-        if (o == null) continue;
+      for (String versionStr : versions) {
+        long version = Long.parseLong(versionStr);
+        try {
+          Object o = recentUpdates.lookup(version);
+          if (o == null) continue;
 
-        // TODO: do any kind of validation here?
-        updates.add(o);
+          if (version > 0) {
+            minVersion = Math.min(minVersion, version);
+          }
+          
+          // TODO: do any kind of validation here?
+          updates.add(o);
 
-      } catch (SolrException e) {
-        log.warn("Exception reading log for updates", e);
-      } catch (ClassCastException e) {
-        log.warn("Exception reading log for updates", e);
+        } catch (SolrException e) {
+          log.warn("Exception reading log for updates", e);
+        } catch (ClassCastException e) {
+          log.warn("Exception reading log for updates", e);
+        }
       }
-    }
 
-    rb.rsp.add("updates", updates);
+      // Must return all delete-by-query commands that occur after the first add requested
+      // since they may apply.
+      updates.addAll( recentUpdates.getDeleteByQuery(minVersion));
+
+      rb.rsp.add("updates", updates);
 
     } finally {
       recentUpdates.close();  // cache this somehow?
