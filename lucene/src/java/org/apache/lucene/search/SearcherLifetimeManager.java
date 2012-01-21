@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.search.NRTManager;        // javadocs
+import org.apache.lucene.index.CompositeIndexReader;        // javadocs
 import org.apache.lucene.index.IndexReader;        // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.IOUtils;
@@ -109,7 +110,8 @@ public class SearcherLifetimeManager implements Closeable {
 
     public SearcherTracker(IndexSearcher searcher) {
       this.searcher = searcher;
-      version = searcher.getIndexReader().getVersion();
+      // nocommit: fix getVersion() usage for atomic readers
+      version = ((CompositeIndexReader) searcher.getIndexReader()).getVersion();
       searcher.getIndexReader().incRef();
       // Use nanoTime not currentTimeMillis since it [in
       // theory] reduces risk from clock shift
@@ -168,7 +170,8 @@ public class SearcherLifetimeManager implements Closeable {
     // TODO: we don't have to use IR.getVersion to track;
     // could be risky (if it's buggy); we could get better
     // bug isolation if we assign our own private ID:
-    final long version = searcher.getIndexReader().getVersion();
+    // nocommit: fix getVersion() usage for atomic readers
+    final long version = ((CompositeIndexReader) searcher.getIndexReader()).getVersion();
     SearcherTracker tracker = searchers.get(version);
     if (tracker == null) {
       //System.out.println("RECORD version=" + version + " ms=" + System.currentTimeMillis());

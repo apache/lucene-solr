@@ -23,6 +23,7 @@ import java.util.concurrent.Semaphore;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.CompositeIndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.NRTManager; // javadocs
 import org.apache.lucene.search.IndexSearcher; // javadocs
@@ -144,7 +145,10 @@ public final class SearcherManager implements Closeable {
         final IndexReader newReader;
         final IndexSearcher searcherToReopen = acquire();
         try {
-          newReader = IndexReader.openIfChanged(searcherToReopen.getIndexReader());
+          final IndexReader r = searcherToReopen.getIndexReader();
+          newReader = (r instanceof CompositeIndexReader) ?
+            IndexReader.openIfChanged((CompositeIndexReader) r) :
+            null;
         } finally {
           release(searcherToReopen);
         }
@@ -172,13 +176,16 @@ public final class SearcherManager implements Closeable {
   /**
    * Returns <code>true</code> if no changes have occured since this searcher
    * ie. reader was opened, otherwise <code>false</code>.
-   * @see IndexReader#isCurrent() 
+   * @see CompositeIndexReader#isCurrent() 
    */
   public boolean isSearcherCurrent() throws CorruptIndexException,
       IOException {
     final IndexSearcher searcher = acquire();
     try {
-      return searcher.getIndexReader().isCurrent();
+      final IndexReader r = searcher.getIndexReader();
+      return r instanceof CompositeIndexReader ?
+        ((CompositeIndexReader ) r).isCurrent() :
+        true;
     } finally {
       release(searcher);
     }

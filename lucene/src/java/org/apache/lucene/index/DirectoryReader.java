@@ -32,8 +32,9 @@ import org.apache.lucene.util.IOUtils;
 
 /** 
  * An IndexReader which reads indexes with multiple segments.
+ * To get an instance of this reader use {@link IndexReader.open(Directory)}.
  */
-final class DirectoryReader extends BaseMultiReader<SegmentReader> {
+public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
   protected final Directory directory;
   private final IndexWriter writer;
   private final SegmentInfos segmentInfos;
@@ -50,9 +51,9 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     this.applyAllDeletes = applyAllDeletes;
   }
 
-  static IndexReader open(final Directory directory, final IndexCommit commit,
+  static DirectoryReader open(final Directory directory, final IndexCommit commit,
                           final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
+    return (DirectoryReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         SegmentInfos sis = new SegmentInfos();
@@ -222,12 +223,12 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
   }
 
   @Override
-  protected final IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
+  protected final CompositeIndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
     return doOpenIfChanged(null);
   }
 
   @Override
-  protected final IndexReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
+  protected final CompositeIndexReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
     ensureOpen();
 
     // If we were obtained by writer.getReader(), re-ask the
@@ -240,7 +241,7 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
   }
 
   @Override
-  protected final IndexReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+  protected final CompositeIndexReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
     ensureOpen();
     if (writer == this.writer && applyAllDeletes == this.applyAllDeletes) {
       return doOpenFromWriter(null);
@@ -250,7 +251,7 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     }
   }
 
-  private final IndexReader doOpenFromWriter(IndexCommit commit) throws CorruptIndexException, IOException {
+  private final CompositeIndexReader doOpenFromWriter(IndexCommit commit) throws CorruptIndexException, IOException {
     if (commit != null) {
       throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
     }
@@ -259,7 +260,7 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
       return null;
     }
 
-    IndexReader reader = writer.getReader(applyAllDeletes);
+    CompositeIndexReader reader = writer.getReader(applyAllDeletes);
 
     // If in fact no changes took place, return null:
     if (reader.getVersion() == segmentInfos.getVersion()) {
@@ -270,7 +271,7 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     return reader;
   }
 
-  private synchronized IndexReader doOpenNoWriter(IndexCommit commit) throws CorruptIndexException, IOException {
+  private synchronized CompositeIndexReader doOpenNoWriter(IndexCommit commit) throws CorruptIndexException, IOException {
 
     if (commit == null) {
       if (isCurrent()) {
@@ -285,7 +286,7 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
       }
     }
 
-    return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
+    return (CompositeIndexReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         final SegmentInfos infos = new SegmentInfos();

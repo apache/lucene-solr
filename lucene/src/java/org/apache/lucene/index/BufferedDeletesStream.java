@@ -435,14 +435,14 @@ class BufferedDeletesStream {
   }
 
   // Delete by query
-  private static long applyQueryDeletes(Iterable<QueryAndLimit> queriesIter, IndexWriter.ReadersAndLiveDocs rld, SegmentReader reader) throws IOException {
+  private static long applyQueryDeletes(Iterable<QueryAndLimit> queriesIter, IndexWriter.ReadersAndLiveDocs rld, final SegmentReader reader) throws IOException {
     long delCount = 0;
-    final AtomicReaderContext readerContext = (AtomicReaderContext) reader.getTopReaderContext();
+    final AtomicReaderContext readerContext = reader.getTopReaderContext();
     boolean any = false;
     for (QueryAndLimit ent : queriesIter) {
       Query query = ent.query;
       int limit = ent.limit;
-      final DocIdSet docs = new QueryWrapperFilter(query).getDocIdSet(readerContext, readerContext.reader.getLiveDocs());
+      final DocIdSet docs = new QueryWrapperFilter(query).getDocIdSet(readerContext, reader.getLiveDocs());
       if (docs != null) {
         final DocIdSetIterator it = docs.iterator();
         if (it != null) {

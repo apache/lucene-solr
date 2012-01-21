@@ -39,7 +39,7 @@ import java.util.Comparator;
  * To reopen, you have to first reopen the underlying reader
  * and wrap it again with the custom filter.
  */
-public class FilterIndexReader extends IndexReader {
+public class FilterIndexReader extends AtomicIndexReader {
 
   /** Base class for filtering {@link Fields}
    *  implementations. */
@@ -279,14 +279,14 @@ public class FilterIndexReader extends IndexReader {
     }
   }
 
-  protected IndexReader in;
+  protected AtomicIndexReader in;
 
   /**
    * <p>Construct a FilterIndexReader based on the specified base reader.
    * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
    * @param in specified base reader.
    */
-  public FilterIndexReader(IndexReader in) {
+  public FilterIndexReader(AtomicIndexReader in) {
     super();
     this.in = in;
   }
@@ -355,35 +355,13 @@ public class FilterIndexReader extends IndexReader {
   protected void doClose() throws IOException {
     in.close();
   }
-
-  @Override
-  public long getVersion() {
-    ensureOpen();
-    return in.getVersion();
-  }
-
-  @Override
-  public boolean isCurrent() throws CorruptIndexException, IOException {
-    ensureOpen();
-    return in.isCurrent();
-  }
   
   @Override
-  public IndexReader[] getSequentialSubReaders() {
-    return in.getSequentialSubReaders();
-  }
-  
-  @Override
-  public ReaderContext getTopReaderContext() {
+  public AtomicReaderContext getTopReaderContext() {
     ensureOpen();
     return in.getTopReaderContext();
   }
 
-  @Override
-  public Map<String, String> getCommitUserData() { 
-    return in.getCommitUserData();
-  }
-  
   @Override
   public Fields fields() throws IOException {
     ensureOpen();
@@ -426,11 +404,6 @@ public class FilterIndexReader extends IndexReader {
   public DocValues normValues(String field) throws IOException {
     ensureOpen();
     return in.normValues(field);
-  }
-
-  @Override
-  public IndexCommit getIndexCommit() throws IOException {
-    return in.getIndexCommit();
   }
 
   @Override

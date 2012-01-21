@@ -31,10 +31,10 @@ import org.apache.lucene.util.Bits;
 /**
  * @lucene.experimental
  */
-public final class SegmentReader extends IndexReader {
+public final class SegmentReader extends AtomicIndexReader {
 
   private final SegmentInfo si;
-  private final ReaderContext readerContext = new AtomicReaderContext(this);
+  private final AtomicReaderContext readerContext = new AtomicReaderContext(this);
   
   private final BitVector liveDocs;
 
@@ -230,7 +230,7 @@ public final class SegmentReader extends IndexReader {
   }
   
   @Override
-  public ReaderContext getTopReaderContext() {
+  public AtomicReaderContext getTopReaderContext() {
     ensureOpen();
     return readerContext;
   }

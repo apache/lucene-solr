@@ -50,14 +50,20 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * yourself.</p>
  */
 
-public final class SlowMultiReaderWrapper extends FilterIndexReader {
+public final class SlowMultiReaderWrapper extends AtomicIndexReader {
 
-  private final ReaderContext readerContext;
+  private final CompositeIndexReader in;
+  private final AtomicReaderContext readerContext;
   private final Map<String, DocValues> normsCache = new HashMap<String, DocValues>();
+  private final Fields fields;
+  private final Bits liveDocs;
   
-  public SlowMultiReaderWrapper(IndexReader other) {
-    super(other);
-    readerContext = new AtomicReaderContext(this); // emulate atomic reader!
+  public SlowMultiReaderWrapper(CompositeIndexReader other) throws IOException {
+    super();
+    in = other;
+    readerContext = new AtomicReaderContext(this);
+    fields = MultiFields.getFields(in);
+    liveDocs = MultiFields.getLiveDocs(in);
   }
 
   @Override
@@ -68,7 +74,7 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   @Override
   public Fields fields() throws IOException {
     ensureOpen();
-    return MultiFields.getFields(in);
+    return fields;
   }
 
   @Override
@@ -87,25 +93,59 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
     }
     return values;
   }
+  
+  @Override
+  public Fields getTermVectors(int docID)
+          throws IOException {
+    ensureOpen();
+    return in.getTermVectors(docID);
+  }
+
+  @Override
+  public int numDocs() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return in.numDocs();
+  }
+
+  @Override
+  public int maxDoc() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return in.maxDoc();
+  }
+
+  @Override
+  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+    ensureOpen();
+    in.document(docID, visitor);
+  }
+
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
-    return MultiFields.getLiveDocs(in);
+    return liveDocs;
   }
   
   @Override
-  public IndexReader[] getSequentialSubReaders() {
-    return null;
-  }
-  
-  @Override
-  public ReaderContext getTopReaderContext() {
+  public AtomicReaderContext getTopReaderContext() {
     ensureOpen();
     return readerContext;
   }
 
   @Override
   public FieldInfos getFieldInfos() {
+    ensureOpen();
     return ReaderUtil.getMergedFieldInfos(in);
+  }
+  
+  @Override
+  public boolean hasDeletions() {
+    ensureOpen();
+    return liveDocs != null;
+  }
+
+  @Override
+  protected void doClose() throws IOException {
+    // TODO: as this is a wrapper, should we really close the delegate?
+    in.close();
   }
 }

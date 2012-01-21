@@ -263,7 +263,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // The PayloadProcessorProvider to use when segments are merged
   private PayloadProcessorProvider payloadProcessorProvider;
 
-  IndexReader getReader() throws IOException {
+  DirectoryReader getReader() throws IOException {
     return getReader(true);
   }
 
@@ -326,7 +326,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @throws IOException
    */
-  IndexReader getReader(boolean applyAllDeletes) throws IOException {
+  DirectoryReader getReader(boolean applyAllDeletes) throws IOException {
     ensureOpen();
 
     final long tStart = System.currentTimeMillis();
@@ -338,7 +338,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // obtained during this flush are pooled, the first time
     // this method is called:
     poolReaders = true;
-    final IndexReader r;
+    final DirectoryReader r;
     doBeforeFlush();
     boolean anySegmentFlushed = false;
     /*

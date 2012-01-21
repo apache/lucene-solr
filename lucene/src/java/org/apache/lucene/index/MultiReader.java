@@ -60,50 +60,9 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
   }
 
   @Override
-  protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-    ensureOpen();
-    
-    boolean changed = false;
-    IndexReader[] newSubReaders = new IndexReader[subReaders.length];
-    
-    boolean success = false;
-    try {
-      for (int i = 0; i < subReaders.length; i++) {
-        final IndexReader newSubReader = IndexReader.openIfChanged(subReaders[i]);
-        if (newSubReader != null) {
-          newSubReaders[i] = newSubReader;
-          changed = true;
-        } else {
-          newSubReaders[i] = subReaders[i];
-        }
-      }
-      success = true;
-    } finally {
-      if (!success && changed) {
-        for (int i = 0; i < newSubReaders.length; i++) {
-          if (newSubReaders[i] != subReaders[i]) {
-            try {
-              newSubReaders[i].close();
-            } catch (IOException ignore) {
-              // keep going - we want to clean up as much as possible
-            }
-          }
-        }
-      }
-    }
-
-    if (changed) {
-      boolean[] newDecrefOnClose = new boolean[subReaders.length];
-      for (int i = 0; i < subReaders.length; i++) {
-        if (newSubReaders[i] == subReaders[i]) {
-          newSubReaders[i].incRef();
-          newDecrefOnClose[i] = true;
-        }
-      }
-      return new MultiReader(newSubReaders, newDecrefOnClose);
-    } else {
-      return null;
-    }
+  protected synchronized CompositeIndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
+    // nocommit: remove this method
+    return null;
   }
 
   @Override
@@ -128,7 +87,8 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
   public boolean isCurrent() throws CorruptIndexException, IOException {
     ensureOpen();
     for (int i = 0; i < subReaders.length; i++) {
-      if (!subReaders[i].isCurrent()) {
+      final IndexReader r = subReaders[i];
+      if (r instanceof CompositeIndexReader && !((CompositeIndexReader) r).isCurrent()) {
         return false;
       }
     }

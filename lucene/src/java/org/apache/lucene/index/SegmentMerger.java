@@ -76,7 +76,7 @@ final class SegmentMerger {
     try {
       new ReaderUtil.Gather(reader) {
         @Override
-        protected void add(int base, IndexReader r) {
+        protected void add(int base, AtomicIndexReader r) {
           mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(r, r.getLiveDocs()));
         }
       }.run();
@@ -205,7 +205,7 @@ final class SegmentMerger {
     Map<FieldInfo,TypePromoter> normValuesTypes = new HashMap<FieldInfo,TypePromoter>();
 
     for (MergeState.IndexReaderAndLiveDocs readerAndLiveDocs : mergeState.readers) {
-      final IndexReader reader = readerAndLiveDocs.reader;
+      final AtomicIndexReader reader = readerAndLiveDocs.reader;
       FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fi : readerFieldInfos) {
         FieldInfo merged = mergeState.fieldInfos.add(fi);

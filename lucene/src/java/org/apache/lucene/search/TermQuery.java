@@ -23,7 +23,7 @@ import java.util.Set;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicIndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
@@ -117,7 +117,7 @@ public class TermQuery extends Query {
       return termsEnum;
     }
     
-    private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
+    private boolean termNotInReader(AtomicIndexReader reader, String field, BytesRef bytes) throws IOException {
       // only called from assert
       //System.out.println("TQ.termNotInReader reader=" + reader + " term=" + field + ":" + bytes.utf8ToString());
       return reader.docFreq(field, bytes) == 0;
