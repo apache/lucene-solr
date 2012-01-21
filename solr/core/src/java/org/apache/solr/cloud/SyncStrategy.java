@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -59,21 +60,19 @@ public class SyncStrategy {
     CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
     String collection = cloudDesc.getCollectionName();
     String shardId = cloudDesc.getShardId();
+
+    // first sync ourselves - we are the potential leader after all
     try {
-      // nocommit
-      
-      // first sync ourselves - we are the potential leader after all
-      try {
-        success = syncWithReplicas(zkController, core, leaderProps, collection, shardId);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      
+      success = syncWithReplicas(zkController, core, leaderProps, collection,
+          shardId);
+    } catch (Exception e) {
+      SolrException.log(log, "Sync Failed", e);
+    }
+    try {
       // if !success but no one else is in active mode,
       // we are the leader anyway
-      // nocommit: should we also be leader if there is only one other active?
-      // if we couldnt sync with it, it shouldnt be able to sync with us
-      
+      // TODO: should we also be leader if there is only one other active?
+      // if we couldn't sync with it, it shouldn't be able to sync with us
       if (!success
           && !areAnyOtherReplicasActive(zkController, leaderProps, collection,
               shardId)) {
@@ -91,18 +90,13 @@ public class SyncStrategy {
         syncToMe(zkController, collection, shardId, leaderProps);
         
       } else {
-        // nocommit: we cannot be the leader - go into recovery
-        // but what if no one can be the leader in a loop?
-        // perhaps we look down the list and if no one is active, we
-        // accept leader role anyhow
         
         // nocommit
         System.out.println("Sync failure");
       }
       
     } catch (Exception e) {
-      // nocommit
-      e.printStackTrace();
+      SolrException.log(log, "Sync Failed", e);
     }
     
     return success;
@@ -220,8 +214,7 @@ public class SyncStrategy {
           }
         }
       } catch (Exception e) {
-        // nocommit
-        e.printStackTrace();
+        SolrException.log(log, "Error syncing replica to leader", e);
       }
     }
   }

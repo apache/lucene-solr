@@ -130,7 +130,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
-      // nocommit
+ 
       //System.out.println("The latest index gen is:" + commitPoint.getGeneration() + " " + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
       if (commitPoint != null && replicationEnabled.get()) {
         //
@@ -339,7 +339,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     long version = Long.parseLong(v);
     IndexCommit commit = core.getDeletionPolicy().getCommitPoint(version);
-    //nocommit
+ 
     //System.out.println("ask for files for gen:" + commit.getGeneration() + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
     if (commit == null) {
       rsp.add("status", "invalid indexversion");

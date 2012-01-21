@@ -173,7 +173,7 @@ public class RecoveryStrategy extends Thread {
         
         ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        // nocommit
+        
         // System.out.println("recover " + shardZkNodeName + " against " +
         // leaderprops);
         replicate(zkController.getNodeName(), core, coreZkNodeName,
@@ -223,10 +223,6 @@ public class RecoveryStrategy extends Thread {
             break;
           }
           
-          // nocommit:
-//          zkController.publishAsDown(baseUrl, cloudDesc, coreZkNodeName,
-//              core.getName());
-          
         } catch (Exception e) {
           SolrException.log(log, "", e);
         }
@@ -253,7 +249,7 @@ public class RecoveryStrategy extends Thread {
       log.info("No replay needed");
     } else {
       // wait for replay
-      future.get(5, TimeUnit.MINUTES); // nocommit
+      future.get();
     }
     
     // nocommit

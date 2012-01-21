@@ -131,9 +131,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               + " - I need to try and sync");
           boolean success = syncStrategy.sync(zkController, core, leaderProps);
           if (!success) {
+            // TODO: what if no one can be the leader in a loop?
+            // perhaps we look down the list and if no one is active, we
+            // accept leader role anyhow
+            core.getUpdateHandler().getSolrCoreState().doRecovery(core);
+            
             rejoinLeaderElection(leaderSeqPath, core);
             return;
-          }
+          } 
         }
         
         // If I am going to be the leader I have to be active

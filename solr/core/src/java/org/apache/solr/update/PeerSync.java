@@ -54,7 +54,6 @@ public class PeerSync  {
   public static Logger log = LoggerFactory.getLogger(PeerSync.class);
   public boolean debug = log.isDebugEnabled();
 
-  private SolrCore core;
   private List<String> replicas;
   private int nUpdates;
 
@@ -91,7 +90,6 @@ public class PeerSync  {
 
 
   public PeerSync(SolrCore core, List<String> replicas, int nUpdates) {
-    this.core = core;
     this.replicas = replicas;
     this.nUpdates = nUpdates;
 
@@ -166,7 +164,9 @@ public class PeerSync  {
   private boolean handleResponse(ShardResponse srsp) {
     if (srsp.getException() != null) {
 
-      // nocommit
+      // TODO: look at this more thoroughly - we don't want
+      // to fail on connection exceptions, but it may make sense
+      // to determine this based on the number of fails
       if (srsp.getException() instanceof SolrServerException) {
         Throwable solrException = ((SolrServerException) srsp.getException())
             .getRootCause();
@@ -176,7 +176,7 @@ public class PeerSync  {
         }
       }
       // TODO: at least log???
-      srsp.getException().printStackTrace(System.out);
+      // srsp.getException().printStackTrace(System.out);
       
       return false;
     }
