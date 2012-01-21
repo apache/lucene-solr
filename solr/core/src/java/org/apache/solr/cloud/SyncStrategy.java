@@ -88,24 +88,8 @@ public class SyncStrategy {
         System.out.println("Sync success");
         // we are the leader - tell all of our replias to sync with us
         
-        // sync everyone else
-        // TODO: we should do this in parallel at least
-        List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
-            .getReplicaProps(collection, shardId,
-                leaderProps.get(ZkStateReader.NODE_NAME_PROP),
-                leaderProps.get(ZkStateReader.CORE_NAME_PROP),
-                ZkStateReader.ACTIVE);
-        if (nodes != null) {
-          for (ZkCoreNodeProps node : nodes) {
-            try {
-              syncToMe(zkController, collection, shardId, leaderProps,
-                  node.getNodeProps(), nodes);
-            } catch (Exception exception) {
-              exception.printStackTrace();
-              // nocommit
-            }
-          }
-        }
+        syncToMe(zkController, collection, shardId, leaderProps);
+        
       } else {
         // nocommit: we cannot be the leader - go into recovery
         // but what if no one can be the leader in a loop?
@@ -184,9 +168,16 @@ public class SyncStrategy {
   }
   
   private void syncToMe(ZkController zkController, String collection,
-      String shardId, ZkNodeProps leaderProps, ZkNodeProps props, List<ZkCoreNodeProps> nodes)
-      throws MalformedURLException, SolrServerException, IOException {
+      String shardId, ZkNodeProps leaderProps) throws MalformedURLException,
+      SolrServerException, IOException {
     
+    // sync everyone else
+    // TODO: we should do this in parallel at least
+    List<ZkCoreNodeProps> nodes = zkController
+        .getZkStateReader()
+        .getReplicaProps(collection, shardId,
+            leaderProps.get(ZkStateReader.NODE_NAME_PROP),
+            leaderProps.get(ZkStateReader.CORE_NAME_PROP), ZkStateReader.ACTIVE);
     if (nodes == null) {
       System.out.println("I have no replicas");
       // I have no replicas
@@ -200,15 +191,19 @@ public class SyncStrategy {
         // to do it?
         // TODO: this should be done in parallel
         QueryRequest qr = new QueryRequest(params("qt", "/get", "getVersions",
-            Integer.toString(1000), "sync", zkLeader.getCoreUrl(), "distrib", "false"));
-        CommonsHttpSolrServer server = new CommonsHttpSolrServer(node.getCoreUrl());
+            Integer.toString(1000), "sync", zkLeader.getCoreUrl(), "distrib",
+            "false"));
+        CommonsHttpSolrServer server = new CommonsHttpSolrServer(
+            node.getCoreUrl());
         
         NamedList rsp = server.request(qr);
-        System.out.println("response about syncing to leader:" + rsp + " node:" + node.getCoreUrl() + " me:" + zkController.getBaseUrl());
+        System.out.println("response about syncing to leader:" + rsp + " node:"
+            + node.getCoreUrl() + " me:" + zkController.getBaseUrl());
         boolean success = (Boolean) rsp.get("sync");
         System.out.println("success:" + success);
         if (!success) {
-          System.out.println("try and ask " + node.getCoreUrl() + " to recover");
+          System.out
+              .println("try and ask " + node.getCoreUrl() + " to recover");
           log.info("try and ask " + node.getCoreUrl() + " to recover");
           try {
             server = new CommonsHttpSolrServer(node.getBaseUrl());
