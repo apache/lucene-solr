@@ -315,7 +315,14 @@ public class ChaosMonkey {
         return null;
       } 
     }
+
+    if (jetty.getLocalPort() == -1) {
+      // we can't kill the dead
+      return null;
+    }
+    
     System.out.println("num active:" + numActive + " for " + slice + " sac:" + jetty.getLocalPort());
+    
     return jetty;
   }
   
