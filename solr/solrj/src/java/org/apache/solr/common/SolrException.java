@@ -74,7 +74,7 @@ public class SolrException extends RuntimeException {
   public void log(Logger log) { log(log,this); }
   public static void log(Logger log, Throwable e) {
     String stackTrace = toStr(e);
-    String ignore = doIgnore(stackTrace);
+    String ignore = doIgnore(e, stackTrace);
     if (ignore != null) {
       log.info(ignore);
       return;
@@ -85,7 +85,7 @@ public class SolrException extends RuntimeException {
 
   public static void log(Logger log, String msg, Throwable e) {
     String stackTrace = msg + ':' + toStr(e);
-    String ignore = doIgnore(stackTrace);
+    String ignore = doIgnore(e, stackTrace);
     if (ignore != null) {
       log.info(ignore);
       return;
@@ -95,7 +95,7 @@ public class SolrException extends RuntimeException {
   
   public static void log(Logger log, String msg) {
     String stackTrace = msg;
-    String ignore = doIgnore(stackTrace);
+    String ignore = doIgnore(null, stackTrace);
     if (ignore != null) {
       log.info(ignore);
       return;
@@ -129,8 +129,9 @@ public class SolrException extends RuntimeException {
   public static Set<String> ignorePatterns;
 
   /** Returns null if this exception does not match any ignore patterns, or a message string to use if it does. */
-  public static String doIgnore(String m) {
+  public static String doIgnore(Throwable t, String m) {
     if (ignorePatterns == null || m == null) return null;
+    if (t != null && t instanceof AssertionError) return null;
 
     for (String regex : ignorePatterns) {
       Pattern pattern = Pattern.compile(regex);
