@@ -313,6 +313,7 @@ public class PeerSync  {
     Collections.sort(updates, updateRecordComparator);
 
     Object o = null;
+    long lastVersion = 0;
     try {
       // Apply oldest updates first
       for (Object obj : updates) {
@@ -322,6 +323,8 @@ public class PeerSync  {
 
         int oper = (Integer)entry.get(0);
         long version = (Long) entry.get(1);
+        if (version == lastVersion && version != 0) continue;
+        lastVersion = version;
 
         switch (oper) {
           case UpdateLog.ADD:

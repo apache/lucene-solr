@@ -135,7 +135,26 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, true, shardsArr[0]);
     client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
 
+    // test that delete by query is returned even if not requested, and that it doesn't delete newer stuff than it should
+    v=2000;
+    SolrServer client = client0;
+    add(client, seenLeader, sdoc("id","2000","_version_",++v));
+    add(client, seenLeader, sdoc("id","2001","_version_",++v));
+    delQ(client, params("leader","true","_version_",Long.toString(-++v)), "id:2001 OR id:2002");
+    add(client, seenLeader, sdoc("id","2002","_version_",++v));
+    del(client, params("leader","true","_version_",Long.toString(-++v)), "2000");
 
+    v=2000;
+    client = client1;
+    add(client, seenLeader, sdoc("id","2000","_version_",++v));
+    ++v;  // pretend we missed the add of 2001.  peersync should retrieve it, but should also retrieve any deleteByQuery objects after it
+    // add(client, seenLeader, sdoc("id","2001","_version_",++v));
+    delQ(client, params("leader","true","_version_",Long.toString(-++v)), "id:2001 OR id:2002");
+    add(client, seenLeader, sdoc("id","2002","_version_",++v));
+    del(client, params("leader","true","_version_",Long.toString(-++v)), "2000");
+
+    // assertSync(client1, numVersions, true, shardsArr[0]);
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
   }
 
 
