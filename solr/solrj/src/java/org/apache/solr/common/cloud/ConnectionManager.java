@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.SolrZooKeeper;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -97,7 +98,7 @@ class ConnectionManager implements Watcher {
               }
             });
       } catch (Exception e) {
-        log.error("", e);
+        SolrException.log(log, "", e);
       }
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {

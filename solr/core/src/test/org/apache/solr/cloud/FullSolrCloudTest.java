@@ -137,6 +137,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    ignoreException(".*");
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
@@ -328,15 +329,15 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
  
     for (JettySolrRunner jetty : jettys) {
+      int port = jetty.getLocalPort();
+      if (port == -1) {
+        continue; // If we cannot get the port, this jetty is down
+      }
+      
       nextJetty:
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
-          int port = jetty.getLocalPort();
-          if (port == -1) {
-            fail("If we cannot get the port, we cannot map properly");
-          }
-          
           if (shard.getKey().contains(":" + port + "_")) {
             jettyToInfo.put(jetty, shard.getValue());
             List<CloudJettyRunner> list = shardToJetty.get(slice.getKey());
@@ -360,9 +361,11 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       }
     }
     
+    // # of jetties may not match replicas in shard here, because we don't map jetties that
+    // are not running - every shard should have at least one running jetty though
     for (Map.Entry<String,Slice> slice : slices.entrySet()) {
       // check that things look right
-      assertEquals(slice.getValue().getShards().size(), shardToJetty.get(slice.getKey()).size());
+      assertTrue(shardToJetty.get(slice.getKey()).size() > 0);
     }
   }
   
