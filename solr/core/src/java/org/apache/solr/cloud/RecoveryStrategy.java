@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.PrepRecovery;
@@ -37,8 +38,10 @@ import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
+import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,18 +141,18 @@ public class RecoveryStrategy extends Thread {
       }
       
       // nocommit
-//      try {
-//        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
-//        SolrIndexSearcher searcher = searchHolder.get();
-//        try {
-//          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replicated "
-//              + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " from " + leaderUrl + " gen:" + core.getDeletionPolicy().getLatestCommit().getGeneration() + " data:" + core.getDataDir());
-//        } finally {
-//          searchHolder.decref();
-//        }
-//      } catch (Exception e) {
-//        
-//      }
+      try {
+        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+        SolrIndexSearcher searcher = searchHolder.get();
+        try {
+          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replicated "
+              + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " from " + leaderUrl + " gen:" + core.getDeletionPolicy().getLatestCommit().getGeneration() + " data:" + core.getDataDir());
+        } finally {
+          searchHolder.decref();
+        }
+      } catch (Exception e) {
+        
+      }
     }
   }
   
@@ -254,18 +257,18 @@ public class RecoveryStrategy extends Thread {
     }
     
     // nocommit
-//    try {
-//      RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
-//      SolrIndexSearcher searcher = searchHolder.get();
-//      try {
-//        System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replayed "
-//            + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
-//      } finally {
-//        searchHolder.decref();
-//      }
-//    } catch (Exception e) {
-//      
-//    }
+    try {
+      RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+      SolrIndexSearcher searcher = searchHolder.get();
+      try {
+        System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " replayed "
+            + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+      } finally {
+        searchHolder.decref();
+      }
+    } catch (Exception e) {
+      
+    }
     
     return future;
   }

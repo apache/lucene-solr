@@ -195,7 +195,7 @@ public class SyncStrategy {
             "false"));
         CommonsHttpSolrServer server = new CommonsHttpSolrServer(
             node.getCoreUrl());
-        
+        System.out.println("ask " + node.getCoreUrl() + " to sync");
         NamedList rsp = server.request(qr);
         System.out.println("response about syncing to leader:" + rsp + " node:"
             + node.getCoreUrl() + " me:" + zkController.getBaseUrl());
