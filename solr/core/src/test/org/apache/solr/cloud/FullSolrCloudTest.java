@@ -98,7 +98,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   class CloudJettyRunner {
     JettySolrRunner jetty;
     String nodeName;
-    String shardName;
+    String coreNodeName;
   }
   
   static class CloudSolrServerClient {
@@ -343,10 +343,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
             CloudJettyRunner cjr = new CloudJettyRunner();
             cjr.jetty = jetty;
             cjr.nodeName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
-            cjr.shardName = shard.getKey();
+            cjr.coreNodeName = shard.getKey();
             list.add(cjr);
             if (isLeader) {
-              shardToLeaderJetty.put(shard.getKey(), cjr);
+              shardToLeaderJetty.put(slice.getKey(), cjr);
             }
           }
         }

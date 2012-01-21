@@ -254,9 +254,9 @@ public class ChaosMonkey {
     for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
       boolean running = true;
       
-      ZkNodeProps props = theShards.getShards().get(cloudJetty.shardName);
+      ZkNodeProps props = theShards.getShards().get(cloudJetty.coreNodeName);
       if (props == null) {
-        throw new RuntimeException("shard name " + cloudJetty.shardName + " not found in " + theShards.getShards().keySet());
+        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + theShards.getShards().keySet());
       }
       
       String state = props.get(ZkStateReader.STATE_PROP);
