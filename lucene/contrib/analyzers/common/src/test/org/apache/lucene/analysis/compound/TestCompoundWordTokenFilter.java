@@ -18,14 +18,20 @@ package org.apache.lucene.analysis.compound;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.MappingCharFilter;
+import org.apache.lucene.analysis.NormalizeCharMap;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Attribute;
@@ -291,6 +297,36 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
       return false;
       }
     }
+  }
+  
+  // SOLR-2891
+  // *CompoundWordTokenFilter blindly adds term length to offset, but this can take things out of bounds
+  // wrt original text if a previous filter increases the length of the word (in this case ü -> ue)
+  // so in this case we behave like WDF, and preserve any modified offsets
+  public void testInvalidOffsets() throws Exception {
+    final String[] dict = { "fall" };
+    final NormalizeCharMap normMap = new NormalizeCharMap();
+    normMap.add("ü", "ue");
+    
+    Analyzer analyzer = new ReusableAnalyzerBase() {
+
+      //@Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenFilter filter = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, tokenizer, dict);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+
+      //@Override
+      protected Reader initReader(Reader reader) {
+        return new MappingCharFilter(normMap, CharReader.get(reader));
+      }
+    };
+
+    assertAnalyzesTo(analyzer, "banküberfall", 
+        new String[] { "bankueberfall", "fall" },
+        new int[] { 0,  0 },
+        new int[] { 12, 12 });
   }
 
 }
