@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
@@ -225,6 +227,11 @@ public final class MultiFields extends Fields {
     return result;
   }
 
+  @Override
+  public int getUniqueFieldCount() {
+    return -1;
+  }
+
   public static long totalTermFreq(IndexReader r, String field, BytesRef text) throws IOException {
     final Terms terms = getTerms(r, field);
     if (terms != null) {
@@ -236,9 +243,26 @@ public final class MultiFields extends Fields {
     return 0;
   }
 
-  @Override
-  public int getUniqueFieldCount() {
-    return -1;
+  /** Call this to get the (merged) FieldInfos for a
+   *  composite reader */
+  public static FieldInfos getMergedFieldInfos(IndexReader reader) {
+    final List<AtomicIndexReader> subReaders = new ArrayList<AtomicIndexReader>();
+    ReaderUtil.gatherSubReaders(subReaders, reader);
+    final FieldInfos fieldInfos = new FieldInfos();
+    for(AtomicIndexReader subReader : subReaders) {
+      fieldInfos.add(subReader.getFieldInfos());
+    }
+    return fieldInfos;
+  }
+
+  public static Collection<String> getIndexedFields(IndexReader reader) {
+    final Collection<String> fields = new HashSet<String>();
+    for(FieldInfo fieldInfo : getMergedFieldInfos(reader)) {
+      if (fieldInfo.isIndexed) {
+        fields.add(fieldInfo.name);
+      }
+    }
+    return fields;
   }
 }
 

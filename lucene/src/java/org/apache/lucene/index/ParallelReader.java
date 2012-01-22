@@ -22,7 +22,6 @@ import java.util.*;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;
 
 
 /** An AtomicIndexReader which reads multiple, parallel indexes.  Each index added
@@ -123,7 +122,7 @@ public class ParallelReader extends AtomicIndexReader {
       throw new IllegalArgumentException
         ("All readers must have same numDocs: "+numDocs+"!="+reader.numDocs());
 
-    final FieldInfos readerFieldInfos = ReaderUtil.getMergedFieldInfos(reader);
+    final FieldInfos readerFieldInfos = MultiFields.getMergedFieldInfos(reader);
     for(FieldInfo fieldInfo : readerFieldInfos) {   // update fieldToReader map
       // NOTE: first reader having a given field "wins":
       if (fieldToReader.get(fieldInfo.name) == null) {

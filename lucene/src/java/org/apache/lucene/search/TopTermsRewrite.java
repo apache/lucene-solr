@@ -160,7 +160,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     
     for (final ScoreTerm st : scoreTerms) {
       final Term term = new Term(query.field, st.bytes);
-      //nocommit: reenable this: assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq() + " term=" + term;
+      assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq() + " term=" + term;
       addClause(q, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
     }
     return q;

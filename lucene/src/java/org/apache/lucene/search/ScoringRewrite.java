@@ -121,7 +121,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       for (int i = 0; i < size; i++) {
         final int pos = sort[i];
         final Term term = new Term(query.getField(), col.terms.get(pos, new BytesRef()));
-        // nocommit: reenable this: assert reader.docFreq(term) == termStates[pos].docFreq();
+        assert reader.docFreq(term) == termStates[pos].docFreq();
         addClause(result, term, termStates[pos].docFreq(), query.getBoost() * boost[pos], termStates[pos]);
       }
     }

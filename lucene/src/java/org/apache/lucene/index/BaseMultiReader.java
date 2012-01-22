@@ -87,6 +87,16 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeIndexRead
     return hasDeletions;
   }
 
+  @Override
+  public int docFreq(String field, BytesRef t) throws IOException {
+    ensureOpen();
+    int total = 0;          // sum freqs in segments
+    for (int i = 0; i < subReaders.length; i++) {
+      total += subReaders[i].docFreq(field, t);
+    }
+    return total;
+  }
+
   /** Helper method for subclasses to get the corresponding reader for a doc ID */
   protected final int readerIndex(int docID) {
     if (docID < 0 || docID >= maxDoc) {

@@ -653,7 +653,17 @@ public abstract class IndexReader implements Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
   
-  // nocommit: remove generics and add a typed (overloaded) getter method instead instance fields with "R reader"
+  public final int docFreq(Term term) throws IOException {
+    return docFreq(term.field(), term.bytes());
+  }
+
+  /** Returns the number of documents containing the term
+   * <code>t</code>.  This method returns 0 if the term or
+   * field does not exists.  This method does not take into
+   * account deleted documents that have not yet been merged
+   * away. */
+  public abstract int docFreq(String field, BytesRef term) throws IOException;
+
   /**
    * A struct like class that represents a hierarchical relationship between
    * {@link IndexReader} instances. 

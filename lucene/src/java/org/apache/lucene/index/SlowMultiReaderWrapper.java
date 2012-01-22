@@ -134,7 +134,7 @@ public final class SlowMultiReaderWrapper extends AtomicIndexReader {
   @Override
   public FieldInfos getFieldInfos() {
     ensureOpen();
-    return ReaderUtil.getMergedFieldInfos(in);
+    return MultiFields.getMergedFieldInfos(in);
   }
   
   @Override

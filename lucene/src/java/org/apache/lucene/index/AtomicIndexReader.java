@@ -98,15 +98,7 @@ public abstract class AtomicIndexReader extends IndexReader {
    * through them yourself. */
   public abstract Fields fields() throws IOException;
   
-  public final int docFreq(Term term) throws IOException {
-    return docFreq(term.field(), term.bytes());
-  }
-
-  /** Returns the number of documents containing the term
-   * <code>t</code>.  This method returns 0 if the term or
-   * field does not exists.  This method does not take into
-   * account deleted documents that have not yet been merged
-   * away. */
+  @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     final Fields fields = fields();
     if (fields == null) {
