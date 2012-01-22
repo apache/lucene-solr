@@ -45,7 +45,6 @@ public class TypeTokenFilterFactory extends BaseTokenFilterFactory implements Re
   @Override
   public void init(Map<String, String> args) {
     super.init(args);
-    assureMatchVersion();
   }
 
   @Override
