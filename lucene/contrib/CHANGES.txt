@@ -97,6 +97,11 @@ Bug Fixes
  * LUCENE-3697: SimpleBoundaryScanner does not work well when highlighting
    at the beginning of the text. (Shay Banon via Koji Sekiguchi)
 
+ * LUCENE-3703: Calling DirectoryTaxonomyReader.refresh() could mess up 
+   reference counting (e.g. if application called incRef/decRef). Also, 
+   getRefCount() no longer checks if the taxonomy reader is already closed.
+   (Doron Cohen, Shai Erera)
+ 
 Documentation
 
  * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly 
