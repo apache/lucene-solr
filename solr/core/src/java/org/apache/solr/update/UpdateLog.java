@@ -199,9 +199,7 @@ public class UpdateLog implements PluginInfoInitialized {
       break;
     }
 
-    // shouldn't need to incref... we are taking ownership, but becoming
-    // an additional user.
-    // oldLog.incref();
+    // don't incref... we are taking ownership from the caller.
     logs.addFirst(oldLog);
   }
 
@@ -523,9 +521,7 @@ public class UpdateLog implements PluginInfoInitialized {
     }
 
     try {
-      if (currLog != null) {
-        currLog.finish(syncLevel);
-      }
+      currLog.finish(syncLevel);
     } finally {
       currLog.decref();
     }

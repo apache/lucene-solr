@@ -289,10 +289,11 @@ public class RealTimeGetComponent extends SearchComponent
     if (ulog == null) return;
 
     UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
-    
-    rb.rsp.add("versions", recentUpdates.getVersions(nVersions));
-    
-    recentUpdates.close();  // cache this somehow?
+    try {
+      rb.rsp.add("versions", recentUpdates.getVersions(nVersions));
+    } finally {
+      recentUpdates.close();  // cache this somehow?
+    }
   }
 
   

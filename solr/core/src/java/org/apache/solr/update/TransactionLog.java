@@ -507,7 +507,7 @@ public class TransactionLog {
   }
 
   public String toString() {
-    return tlogFile.toString();
+    return "tlog{file=" + tlogFile.toString() + " refcount=" + refcount.get() + "}";
   }
 
   /** Returns a reader that can be used while a log is still in use.

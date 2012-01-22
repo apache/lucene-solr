@@ -138,7 +138,13 @@ public class PeerSync  {
     }
 
     recentUpdates = ulog.getRecentUpdates();
-    ourUpdates = recentUpdates.getVersions(nUpdates);
+    try {
+      ourUpdates = recentUpdates.getVersions(nUpdates);
+    } finally {
+      recentUpdates.close();
+    }
+    
+    
     Collections.sort(ourUpdates, absComparator);
 
     if (ourUpdates.size() > 0) {
