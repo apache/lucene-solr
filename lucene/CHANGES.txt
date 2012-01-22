@@ -792,6 +792,9 @@ New Features
   
 * LUCENE-3121: Add TypeTokenFilter that filters tokens based on
   their TypeAttribute.  (Tommaso Teofili via Uwe Schindler)
+
+* LUCENE-3690: Added HTMLStripCharFilter, a CharFilter that strips HTML
+  markup. (Steve Rowe)
   
 Bug fixes
 

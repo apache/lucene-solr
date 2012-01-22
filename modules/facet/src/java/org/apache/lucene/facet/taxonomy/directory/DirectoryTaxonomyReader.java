@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
@@ -100,6 +101,9 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
 
   private volatile boolean closed = false;
   
+  // set refCount to 1 at start
+  private final AtomicInteger refCount = new AtomicInteger(1);
+  
   /**
    * Open for reading a taxonomy stored in a given {@link Directory}.
    * @param directory
@@ -130,7 +134,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
    * @throws AlreadyClosedException if this IndexReader is closed
    */
   protected final void ensureOpen() throws AlreadyClosedException {
-    if (indexReader.getRefCount() <= 0) {
+    if (getRefCount() <= 0) {
       throw new AlreadyClosedException("this TaxonomyReader is closed");
     }
   }
@@ -415,8 +419,12 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
 
   public void close() throws IOException {
     if (!closed) {
-      decRef();
-      closed = true;
+      synchronized (this) {
+        if (!closed) {
+          decRef();
+          closed = true;
+        }
+      }
     }
   }
   
@@ -555,27 +563,31 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
   }
 
   /**
-   * Expert: decreases the refCount of this TaxonomyReader instance. 
-   * If the refCount drops to 0, then pending changes (if any) are 
-   * committed to the taxonomy index and this reader is closed. 
-   * @throws IOException 
+   * Expert: decreases the refCount of this TaxonomyReader instance. If the
+   * refCount drops to 0, then this reader is closed.
    */
   public void decRef() throws IOException {
     ensureOpen();
-    if (indexReader.getRefCount() == 1) {
-      // Do not decRef the indexReader - doClose does it by calling reader.close()
-      doClose();
-    } else {
-      indexReader.decRef();
+    final int rc = refCount.decrementAndGet();
+    if (rc == 0) {
+      boolean success = false;
+      try {
+        doClose();
+        success = true;
+      } finally {
+        if (!success) {
+          // Put reference back on failure
+          refCount.incrementAndGet();
+        }
+      }
+    } else if (rc < 0) {
+      throw new IllegalStateException("too many decRef calls: refCount is " + rc + " after decrement");
     }
   }
   
-  /**
-   * Expert: returns the current refCount for this taxonomy reader
-   */
+  /** Expert: returns the current refCount for this taxonomy reader */
   public int getRefCount() {
-    ensureOpen();
-    return this.indexReader.getRefCount();
+    return refCount.get();
   }
   
   /**
@@ -587,6 +599,6 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
    */
   public void incRef() {
     ensureOpen();
-    this.indexReader.incRef();
+    refCount.incrementAndGet();
   }
 }

@@ -249,7 +249,42 @@ public class _TestUtil {
     }
   }
   
-  // TODO: make this more evil
+  private static final String[] HTML_CHAR_ENTITIES = {
+      "AElig", "Aacute", "Acirc", "Agrave", "Alpha", "AMP", "Aring", "Atilde",
+      "Auml", "Beta", "COPY", "Ccedil", "Chi", "Dagger", "Delta", "ETH",
+      "Eacute", "Ecirc", "Egrave", "Epsilon", "Eta", "Euml", "Gamma", "GT",
+      "Iacute", "Icirc", "Igrave", "Iota", "Iuml", "Kappa", "Lambda", "LT",
+      "Mu", "Ntilde", "Nu", "OElig", "Oacute", "Ocirc", "Ograve", "Omega",
+      "Omicron", "Oslash", "Otilde", "Ouml", "Phi", "Pi", "Prime", "Psi",
+      "QUOT", "REG", "Rho", "Scaron", "Sigma", "THORN", "Tau", "Theta",
+      "Uacute", "Ucirc", "Ugrave", "Upsilon", "Uuml", "Xi", "Yacute", "Yuml",
+      "Zeta", "aacute", "acirc", "acute", "aelig", "agrave", "alefsym",
+      "alpha", "amp", "and", "ang", "apos", "aring", "asymp", "atilde",
+      "auml", "bdquo", "beta", "brvbar", "bull", "cap", "ccedil", "cedil",
+      "cent", "chi", "circ", "clubs", "cong", "copy", "crarr", "cup",
+      "curren", "dArr", "dagger", "darr", "deg", "delta", "diams", "divide",
+      "eacute", "ecirc", "egrave", "empty", "emsp", "ensp", "epsilon",
+      "equiv", "eta", "eth", "euml", "euro", "exist", "fnof", "forall",
+      "frac12", "frac14", "frac34", "frasl", "gamma", "ge", "gt", "hArr",
+      "harr", "hearts", "hellip", "iacute", "icirc", "iexcl", "igrave",
+      "image", "infin", "int", "iota", "iquest", "isin", "iuml", "kappa",
+      "lArr", "lambda", "lang", "laquo", "larr", "lceil", "ldquo", "le",
+      "lfloor", "lowast", "loz", "lrm", "lsaquo", "lsquo", "lt", "macr",
+      "mdash", "micro", "middot", "minus", "mu", "nabla", "nbsp", "ndash",
+      "ne", "ni", "not", "notin", "nsub", "ntilde", "nu", "oacute", "ocirc",
+      "oelig", "ograve", "oline", "omega", "omicron", "oplus", "or", "ordf",
+      "ordm", "oslash", "otilde", "otimes", "ouml", "para", "part", "permil",
+      "perp", "phi", "pi", "piv", "plusmn", "pound", "prime", "prod", "prop",
+      "psi", "quot", "rArr", "radic", "rang", "raquo", "rarr", "rceil",
+      "rdquo", "real", "reg", "rfloor", "rho", "rlm", "rsaquo", "rsquo",
+      "sbquo", "scaron", "sdot", "sect", "shy", "sigma", "sigmaf", "sim",
+      "spades", "sub", "sube", "sum", "sup", "sup1", "sup2", "sup3", "supe",
+      "szlig", "tau", "there4", "theta", "thetasym", "thinsp", "thorn",
+      "tilde", "times", "trade", "uArr", "uacute", "uarr", "ucirc", "ugrave",
+      "uml", "upsih", "upsilon", "uuml", "weierp", "xi", "yacute", "yen",
+      "yuml", "zeta", "zwj", "zwnj"
+  };
+  
   public static String randomHtmlishString(Random random, int numElements) {
     final int end = random.nextInt(numElements);
     if (end == 0) {
@@ -258,17 +293,80 @@ public class _TestUtil {
     }
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < end; i++) {
-      int val = random.nextInt(10);
+      int val = random.nextInt(25);
       switch(val) {
         case 0: sb.append("<p>"); break;
-        case 1: sb.append("</p>"); break;
-        case 2: sb.append("<!--"); break;
-        case 3: sb.append("-->"); break;
-        case 4: sb.append("&#"); break;
-        case 5: sb.append(";"); break;
-        case 6: sb.append((char)_TestUtil.nextInt(random, '0', '9')); break;
-        default:
-          sb.append((char)_TestUtil.nextInt(random, 'a', 'z'));
+        case 1: {
+          sb.append("<");
+          sb.append("    ".substring(nextInt(random, 0, 4)));
+          sb.append(randomSimpleString(random));
+          for (int j = 0 ; j < nextInt(random, 0, 10) ; ++j) {
+            sb.append(' ');
+            sb.append(randomSimpleString(random));
+            sb.append(" ".substring(nextInt(random, 0, 1)));
+            sb.append('=');
+            sb.append(" ".substring(nextInt(random, 0, 1)));
+            sb.append("\"".substring(nextInt(random, 0, 1)));
+            sb.append(randomSimpleString(random));
+            sb.append("\"".substring(nextInt(random, 0, 1)));
+          }
+          sb.append("    ".substring(nextInt(random, 0, 4)));
+          sb.append("/".substring(nextInt(random, 0, 1)));
+          sb.append(">".substring(nextInt(random, 0, 1)));
+          break;
+        }
+        case 2: {
+          sb.append("</");
+          sb.append("    ".substring(nextInt(random, 0, 4)));
+          sb.append(randomSimpleString(random));
+          sb.append("    ".substring(nextInt(random, 0, 4)));
+          sb.append(">".substring(nextInt(random, 0, 1)));
+          break;
+        }
+        case 3: sb.append(">"); break;
+        case 4: sb.append("</p>"); break;
+        case 5: sb.append("<!--"); break;
+        case 6: sb.append("<!--#"); break;
+        case 7: sb.append("<script><!-- f('"); break;
+        case 8: sb.append("</script>"); break;
+        case 9: sb.append("<?"); break;
+        case 10: sb.append("?>"); break;
+        case 11: sb.append("\""); break;
+        case 12: sb.append("\\\""); break;
+        case 13: sb.append("'"); break;
+        case 14: sb.append("\\'"); break;
+        case 15: sb.append("-->"); break;
+        case 16: {
+          sb.append("&");
+          switch(nextInt(random, 0, 2)) {
+            case 0: sb.append(randomSimpleString(random)); break;
+            case 1: sb.append(HTML_CHAR_ENTITIES[random.nextInt(HTML_CHAR_ENTITIES.length)]); break;
+          }
+          sb.append(";".substring(nextInt(random, 0, 1)));
+          break;
+        }
+        case 17: {
+          sb.append("&#");
+          if (0 == nextInt(random, 0, 1)) {
+            sb.append(nextInt(random, 0, Integer.MAX_VALUE - 1));
+            sb.append(";".substring(nextInt(random, 0, 1)));
+          }
+          break;
+        } 
+        case 18: {
+          sb.append("&#x");
+          if (0 == nextInt(random, 0, 1)) {
+            sb.append(Integer.toString(nextInt(random, 0, Integer.MAX_VALUE - 1), 16));
+            sb.append(";".substring(nextInt(random, 0, 1)));
+          }
+          break;
+        }
+          
+        case 19: sb.append(";"); break;
+        case 20: sb.append(nextInt(random, 0, Integer.MAX_VALUE - 1)); break;
+        case 21: sb.append("\n");
+        case 22: sb.append("          ".substring(nextInt(random, 0, 10)));
+        default: sb.append(randomSimpleString(random));
       }
     }
     return sb.toString();

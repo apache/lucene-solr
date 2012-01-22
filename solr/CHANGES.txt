@@ -401,6 +401,14 @@ Upgrading from Solr 3.5
 * As doGet() methods in SimplePostTool was changed to static, the client applications of this
   class need to be recompiled.
 
+* In Solr version 3.5 and earlier, HTMLStripCharFilter had known bugs in the
+  character offsets it provided, triggering e.g. exceptions in highlighting.
+  HTMLStripCharFilter has been re-implemented, addressing this and other
+  issues.  See the entry for LUCENE-3690 in the Bug Fixes section below for a
+  detailed list of changes.  For people who depend on the behavior of
+  HTMLStripCharFilter in Solr version 3.5 and earlier: the old implementation
+  (bugs and all) is preserved as LegacyHTMLStripCharFilter.
+
 New Features
 ----------------------
 * SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
@@ -482,6 +490,41 @@ Bug Fixes
   (David Smiley via Steve Rowe)
 
 * SOLR-2970: CSV ResponseWriter returns fields defined as stored=false in schema (janhoy)
+
+* LUCENE-3690, LUCENE-2208, SOLR-882, SOLR-42: Re-implemented
+  HTMLStripCharFilter as a JFlex-generated scanner.  See below for a list
+  of bug fixes and other changes.  To get the same behavior as
+  HTMLStripCharFilter in Solr version 3.5 and earlier (including the bugs),
+  use LegacyHTMLStripCharFilter, which is the previous implementation.
+
+  Behavior changes from the previous version:
+
+  - Known offset bugs are fixed.
+  - The "Mark invalid" exceptions reported in SOLR-1283 are no longer
+    triggered (the bug is still present in LegacyHTMLStripCharFilter).
+  - The character entity "&apos;" is now always properly decoded.
+  - More cases of <script> tags are now properly stripped.
+  - CDATA sections are now handled properly.
+  - Valid tag name characters now include the supplementary Unicode characters
+    from Unicode character classes [:ID_Start:] and [:ID_Continue:].
+  - Uppercase character entities "&QUOT;", "&COPY;", "&GT;", "&LT;", "&REG;",
+    and "&AMP;" are now recognized and handled as if they were in lowercase.
+  - Opening tags with unbalanced quotation marks are now properly stripped.
+  - Literal "<" and ">" characters in opening tags, regardless of whether they
+    appear inside quotation marks, now inhibit recognition (and stripping) of
+    the tags.  The only exception to this is for values of event-handler
+    attributes, e.g. "onClick", "onLoad", "onSelect".
+  - A newline '\n' is substituted instead of a space for stripped HTML markup.
+  - Nothing is substituted for opening and closing inline tags - they are
+    simply removed.  The list of inline tags is (case insensitively): <a>,
+    <abbr>, <acronym>, <b>, <basefont>, <bdo>, <big>, <cite>, <code>, <dfn>,
+    <em>, <font>, <i>, <img>, <input>, <kbd>, <label>, <q>, <s>, <samp>,
+    <select>, <small>, <span>, <strike>, <strong>, <sub>, <sup>, <textarea>,
+    <tt>, <u>, and <var>.
+  - HTMLStripCharFilterFactory now handles HTMLStripCharFilter's "escapedTags"
+    feature: opening and closing tags with the given names, including any
+    attributes and their values, are left intact in the output.
+  (Steve Rowe)
 
 Other Changes
 ----------------------

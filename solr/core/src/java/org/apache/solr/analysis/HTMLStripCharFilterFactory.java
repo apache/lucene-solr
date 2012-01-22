@@ -21,21 +21,50 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
 * Factory for {@link HTMLStripCharFilter}. 
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_html" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;charFilter class="solr.HTMLStripCharFilterFactory"/&gt;
+ *     &lt;charFilter class="solr.HTMLStripCharFilterFactory" escapedTags="a, title" /&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre
  *
  */
  public class HTMLStripCharFilterFactory extends BaseCharFilterFactory {
+  
+  Set<String> escapedTags = null;
+  Pattern TAG_NAME_PATTERN = Pattern.compile("[^\\s,]+");
 
   public HTMLStripCharFilter create(CharStream input) {
-    return new HTMLStripCharFilter(input);
+    HTMLStripCharFilter charFilter;
+    if (null == escapedTags) {
+      charFilter = new HTMLStripCharFilter(input);
+    } else {
+      charFilter = new HTMLStripCharFilter(input, escapedTags);
+    }
+    return charFilter;
   }
-
+  
+  @Override
+  public void init(Map<String,String> args) {
+    super.init(args);
+    String escapedTagsArg = args.get("escapedTags");
+    if (null != escapedTagsArg) {
+      Matcher matcher = TAG_NAME_PATTERN.matcher(escapedTagsArg);
+      while (matcher.find()) {
+        if (null == escapedTags) {
+          escapedTags = new HashSet<String>();
+        }
+        escapedTags.add(matcher.group(0));
+      }
+    }
+  }
 }
