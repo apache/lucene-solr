@@ -790,7 +790,7 @@ New Features
   input mapping to it) for FSTs that have strictly monotonic long
   outputs (such as an ord).  (Mike McCandless)
   
-* LUCENE-3121: Add TypeTokenFilter that filters tokens based on
+* LUCENE-3671: Add TypeTokenFilter that filters tokens based on
   their TypeAttribute.  (Tommaso Teofili via Uwe Schindler)
 
 * LUCENE-3690: Added HTMLStripCharFilter, a CharFilter that strips HTML

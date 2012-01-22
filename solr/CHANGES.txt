@@ -450,7 +450,7 @@ New Features
 * SOLR-1709: Distributed support for Date and Numeric Range Faceting
   (Peter Sturge, David Smiley, hossman, Simon Willnauer)
 
-* SOLR-3054, LUCENE-3121: Add TypeTokenFilterFactory that creates TypeTokenFilter
+* SOLR-3054, LUCENE-3671: Add TypeTokenFilterFactory that creates TypeTokenFilter
   that filters tokens based on their TypeAttribute.  (Tommaso Teofili via
   Uwe Schindler)
 
