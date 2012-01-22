@@ -30,6 +30,7 @@ import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   //
   // Consider CallerRuns policy and a lower max threads to throttle
   // requests at some point (or should we simply return failure?)
-   Executor commExecutor = new ThreadPoolExecutor(
+   ThreadPoolExecutor commExecutor = new ThreadPoolExecutor(
           0,
           Integer.MAX_VALUE,
           5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
@@ -125,7 +126,20 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
 
   @Override
   public void close() {
-    mgr.shutdown();
-    loadbalancer.shutdown();
+    try {
+      mgr.shutdown();
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
+    try {
+      loadbalancer.shutdown();
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
+    try {
+      commExecutor.shutdownNow();
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
   }
 }

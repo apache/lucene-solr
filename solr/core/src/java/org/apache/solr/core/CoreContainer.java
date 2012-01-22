@@ -449,6 +449,9 @@ public class CoreContainer
         if (zkServer != null) {
           zkServer.stop();
         }
+        if (shardHandlerFactory != null) {
+          shardHandlerFactory.close();
+        }
         isShutDown = true;
       }
     }
