@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache.ByteParser;
@@ -203,7 +203,7 @@ public abstract class FieldComparator<T> {
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       if (missingValue != null) {
-        docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader, field);
+        docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader(), field);
         // optimization to remove unneeded checks on the bit interface:
         if (docsWithField instanceof Bits.MatchAllBits) {
           docsWithField = null;
@@ -261,7 +261,7 @@ public abstract class FieldComparator<T> {
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getBytes(context.reader, field, parser, missingValue != null);
+      currentReaderValues = FieldCache.DEFAULT.getBytes(context.reader(), field, parser, missingValue != null);
       return super.setNextReader(context);
     }
     
@@ -338,7 +338,7 @@ public abstract class FieldComparator<T> {
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getDoubles(context.reader, field, parser, missingValue != null);
+      currentReaderValues = FieldCache.DEFAULT.getDoubles(context.reader(), field, parser, missingValue != null);
       return super.setNextReader(context);
     }
     
@@ -397,7 +397,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      final DocValues docValues = context.reader.docValues(field);
+      final DocValues docValues = context.reader().docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource(); 
       } else {
@@ -481,7 +481,7 @@ public abstract class FieldComparator<T> {
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getFloats(context.reader, field, parser, missingValue != null);
+      currentReaderValues = FieldCache.DEFAULT.getFloats(context.reader(), field, parser, missingValue != null);
       return super.setNextReader(context);
     }
     
@@ -543,7 +543,7 @@ public abstract class FieldComparator<T> {
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getShorts(context.reader, field, parser, missingValue != null);
+      currentReaderValues = FieldCache.DEFAULT.getShorts(context.reader(), field, parser, missingValue != null);
       return super.setNextReader(context);
     }
 
@@ -627,7 +627,7 @@ public abstract class FieldComparator<T> {
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getInts(context.reader, field, parser, missingValue != null);
+      currentReaderValues = FieldCache.DEFAULT.getInts(context.reader(), field, parser, missingValue != null);
       return super.setNextReader(context);
     }
     
@@ -690,7 +690,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      DocValues docValues = context.reader.docValues(field);
+      DocValues docValues = context.reader().docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource();
       } else {
@@ -775,7 +775,7 @@ public abstract class FieldComparator<T> {
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getLongs(context.reader, field, parser, missingValue != null);
+      currentReaderValues = FieldCache.DEFAULT.getLongs(context.reader(), field, parser, missingValue != null);
       return super.setNextReader(context);
     }
     
@@ -1288,7 +1288,7 @@ public abstract class FieldComparator<T> {
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       final int docBase = context.docBase;
-      termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, field);
+      termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
       final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
       FieldComparator perSegComp = null;
       if (docToOrd.hasArray()) {
@@ -1706,19 +1706,19 @@ public abstract class FieldComparator<T> {
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       final int docBase = context.docBase;
 
-      final DocValues dv = context.reader.docValues(field);
+      final DocValues dv = context.reader().docValues(field);
       if (dv == null) {
         // This may mean entire segment had no docs with
         // this DV field; use default field value (empty
         // byte[]) in this case:
-        termsIndex = DocValues.getDefaultSortedSource(DocValues.Type.BYTES_VAR_SORTED, context.reader.maxDoc());
+        termsIndex = DocValues.getDefaultSortedSource(DocValues.Type.BYTES_VAR_SORTED, context.reader().maxDoc());
       } else {
         termsIndex = dv.getSource().asSortedSource();
         if (termsIndex == null) {
           // This means segment has doc values, but they are
           // not able to provide a sorted source; consider
           // this a hard error:
-          throw new IllegalStateException("DocValues exist for field \"" + field + "\", but not as a sorted source: type=" + dv.getSource().type() + " reader=" + context.reader);
+          throw new IllegalStateException("DocValues exist for field \"" + field + "\", but not as a sorted source: type=" + dv.getSource().type() + " reader=" + context.reader());
         }
       }
 
@@ -1853,7 +1853,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      docTerms = FieldCache.DEFAULT.getTerms(context.reader, field);
+      docTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
       return this;
     }
     
@@ -1922,7 +1922,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      final DocValues dv = context.reader.docValues(field);
+      final DocValues dv = context.reader().docValues(field);
       if (dv != null) {
         docTerms = dv.getSource();
       } else {

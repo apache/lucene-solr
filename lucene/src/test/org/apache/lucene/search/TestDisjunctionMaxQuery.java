@@ -23,7 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.FieldInvertState;
@@ -178,7 +178,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     assertTrue(s.getTopReaderContext().isAtomic);
     final Weight dw = s.createNormalizedWeight(dq);
     AtomicReaderContext context = (AtomicReaderContext)s.getTopReaderContext();
-    final Scorer ds = dw.scorer(context, true, false, context.reader.getLiveDocs());
+    final Scorer ds = dw.scorer(context, true, false, context.reader().getLiveDocs());
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
       fail("firsttime skipTo found a match? ... "
@@ -194,7 +194,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     QueryUtils.check(random, dq, s);
     final Weight dw = s.createNormalizedWeight(dq);
     AtomicReaderContext context = (AtomicReaderContext)s.getTopReaderContext();
-    final Scorer ds = dw.scorer(context, true, false, context.reader.getLiveDocs());
+    final Scorer ds = dw.scorer(context, true, false, context.reader().getLiveDocs());
     assertTrue("firsttime skipTo found no match",
         ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("found wrong docid", "d4", r.document(ds.docID()).get("id"));

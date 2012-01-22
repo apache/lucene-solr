@@ -25,7 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -221,8 +221,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
       ReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext context : leaves) {
-        int maxDoc = context.reader.maxDoc();
-        DocsEnum docsEnum = _TestUtil.docs(random, context.reader, fieldName, bytes, null, null, true);
+        int maxDoc = context.reader().maxDoc();
+        DocsEnum docsEnum = _TestUtil.docs(random, context.reader(), fieldName, bytes, null, null, true);
         if (findNext(freqInDoc, context.docBase, context.docBase + maxDoc) == Integer.MAX_VALUE) {
           assertNull(docsEnum);
           continue;

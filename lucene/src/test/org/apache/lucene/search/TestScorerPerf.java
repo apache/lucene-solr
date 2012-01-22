@@ -8,7 +8,7 @@ import java.util.BitSet;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;

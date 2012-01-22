@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.apache.lucene.document.DocValuesField; // javadoc
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader; // javadoc
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.Terms; // javadoc
 import org.apache.lucene.search.BooleanQuery;

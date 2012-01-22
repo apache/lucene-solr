@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.SearcherManager; // javadocs
@@ -264,4 +265,54 @@ public abstract class CompositeIndexReader extends IndexReader {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
   
+  /**
+   * {@link ReaderContext} for {@link CompositeIndexReader} instance.
+   * @lucene.experimental
+   */
+  public static final class CompositeReaderContext extends ReaderContext {
+    private final ReaderContext[] children;
+    private final AtomicReaderContext[] leaves;
+    private final CompositeIndexReader reader;
+
+    /**
+     * Creates a {@link CompositeReaderContext} for intermediate readers that aren't
+     * not top-level readers in the current context
+     */
+    public CompositeReaderContext(CompositeReaderContext parent, CompositeIndexReader reader,
+        int ordInParent, int docbaseInParent, ReaderContext[] children) {
+      this(parent, reader, ordInParent, docbaseInParent, children, null);
+    }
+    
+    /**
+     * Creates a {@link CompositeReaderContext} for top-level readers with parent set to <code>null</code>
+     */
+    public CompositeReaderContext(CompositeIndexReader reader, ReaderContext[] children, AtomicReaderContext[] leaves) {
+      this(null, reader, 0, 0, children, leaves);
+    }
+    
+    private CompositeReaderContext(CompositeReaderContext parent, CompositeIndexReader reader,
+        int ordInParent, int docbaseInParent, ReaderContext[] children,
+        AtomicReaderContext[] leaves) {
+      super(parent, ordInParent, docbaseInParent);
+      this.children = children;
+      this.leaves = leaves;
+      this.reader = reader;
+    }
+
+    @Override
+    public AtomicReaderContext[] leaves() {
+      return leaves;
+    }
+    
+    
+    @Override
+    public ReaderContext[] children() {
+      return children;
+    }
+    
+    @Override
+    public CompositeIndexReader reader() {
+      return reader;
+    }
+  }
 }

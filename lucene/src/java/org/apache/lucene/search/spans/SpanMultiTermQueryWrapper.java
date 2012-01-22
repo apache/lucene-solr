@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;

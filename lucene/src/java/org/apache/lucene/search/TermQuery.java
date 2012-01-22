@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.AtomicIndexReader;
 import org.apache.lucene.index.Term;
@@ -108,11 +108,11 @@ public class TermQuery extends Query {
     TermsEnum getTermsEnum(AtomicReaderContext context) throws IOException {
       final TermState state = termStates.get(context.ord);
       if (state == null) { // term is not present in that reader
-        assert termNotInReader(context.reader, term.field(), term.bytes()) : "no termstate found but term exists in reader term=" + term;
+        assert termNotInReader(context.reader(), term.field(), term.bytes()) : "no termstate found but term exists in reader term=" + term;
         return null;
       }
       //System.out.println("LD=" + reader.getLiveDocs() + " set?=" + (reader.getLiveDocs() != null ? reader.getLiveDocs().get(0) : "null"));
-      final TermsEnum termsEnum = context.reader.terms(term.field()).iterator(null);
+      final TermsEnum termsEnum = context.reader().terms(term.field()).iterator(null);
       termsEnum.seekExact(term.bytes(), state);
       return termsEnum;
     }
@@ -125,7 +125,7 @@ public class TermQuery extends Query {
     
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader.getLiveDocs());
+      Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

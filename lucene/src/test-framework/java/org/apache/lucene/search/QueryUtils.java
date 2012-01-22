@@ -25,7 +25,7 @@ import junit.framework.Assert;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
@@ -254,7 +254,7 @@ public class QueryUtils {
               if (scorer == null) {
                 Weight w = s.createNormalizedWeight(q);
                 AtomicReaderContext context = readerContextArray[leafPtr];
-                scorer = w.scorer(context, true, false, context.reader.getLiveDocs());
+                scorer = w.scorer(context, true, false, context.reader().getLiveDocs());
               }
               
               int op = order[(opidx[0]++) % order.length];
@@ -307,8 +307,8 @@ public class QueryUtils {
               }
               leafPtr++;
             }
-            lastReader[0] = context.reader;
-            assert readerContextArray[leafPtr].reader == context.reader;
+            lastReader[0] = context.reader();
+            assert readerContextArray[leafPtr].reader == context.reader();
             this.scorer = null;
             lastDoc[0] = -1;
           }
@@ -392,9 +392,9 @@ public class QueryUtils {
           leafPtr++;
         }
 
-        lastReader[0] = context.reader;
+        lastReader[0] = context.reader();
         lastDoc[0] = -1;
-        liveDocs = context.reader.getLiveDocs();
+        liveDocs = context.reader().getLiveDocs();
       }
       @Override
       public boolean acceptsDocsOutOfOrder() {

@@ -23,7 +23,7 @@ import java.util.*;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.AtomicIndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -178,7 +178,7 @@ public class MultiPhraseQuery extends Query {
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
       assert !termArrays.isEmpty();
-      final AtomicIndexReader reader = context.reader;
+      final AtomicIndexReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
       
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
@@ -259,7 +259,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader.getLiveDocs());
+      Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

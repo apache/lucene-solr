@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -186,7 +186,7 @@ public class PayloadSpanUtil {
     }
     final AtomicReaderContext[] leaves = ReaderUtil.leaves(context);
     for (AtomicReaderContext atomicReaderContext : leaves) {
-      final Spans spans = query.getSpans(atomicReaderContext, atomicReaderContext.reader.getLiveDocs(), termContexts);
+      final Spans spans = query.getSpans(atomicReaderContext, atomicReaderContext.reader().getLiveDocs(), termContexts);
       while (spans.next() == true) {
         if (spans.isPayloadAvailable()) {
           Collection<byte[]> payload = spans.getPayload();

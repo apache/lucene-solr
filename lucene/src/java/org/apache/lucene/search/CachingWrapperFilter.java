@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AtomicIndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 
@@ -102,7 +102,7 @@ public class CachingWrapperFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-    final AtomicIndexReader reader = context.reader;
+    final AtomicIndexReader reader = context.reader();
 
     // Only cache if incoming acceptDocs is == live docs;
     // if Lucene passes in more interesting acceptDocs in

@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;

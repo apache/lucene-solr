@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.AtomicIndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -83,7 +83,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
    */
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-    final AtomicIndexReader reader = context.reader;
+    final AtomicIndexReader reader = context.reader();
     final Fields fields = reader.fields();
     if (fields == null) {
       // reader has no fields
@@ -100,7 +100,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
     assert termsEnum != null;
     if (termsEnum.next() != null) {
       // fill into a FixedBitSet
-      final FixedBitSet bitSet = new FixedBitSet(context.reader.maxDoc());
+      final FixedBitSet bitSet = new FixedBitSet(context.reader().maxDoc());
       DocsEnum docsEnum = null;
       do {
         // System.out.println("  iter termCount=" + termCount + " term=" +

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.index.CompositeIndexReader.CompositeReaderContext;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.SearcherManager; // javadocs
@@ -288,4 +289,46 @@ public abstract class AtomicIndexReader extends IndexReader {
    */
   public abstract Bits getLiveDocs();
   
+  /**
+   * {@link ReaderContext} for {@link AtomicIndexReader} instances
+   * @lucene.experimental
+   */
+  public static final class AtomicReaderContext extends ReaderContext {
+    /** The readers ord in the top-level's leaves array */
+    public final int ord;
+    /** The readers absolute doc base */
+    public final int docBase;
+    
+    private final AtomicIndexReader reader;
+
+    /**
+     * Creates a new {@link AtomicReaderContext} 
+     */    
+    public AtomicReaderContext(CompositeReaderContext parent, AtomicIndexReader reader,
+        int ord, int docBase, int leafOrd, int leafDocBase) {
+      super(parent, ord, docBase);
+      this.ord = leafOrd;
+      this.docBase = leafDocBase;
+      this.reader = reader;
+    }
+    
+    public AtomicReaderContext(AtomicIndexReader atomicReader) {
+      this(null, atomicReader, 0, 0, 0, 0);
+    }
+    
+    @Override
+    public AtomicReaderContext[] leaves() {
+      return null;
+    }
+    
+    @Override
+    public ReaderContext[] children() {
+      return null;
+    }
+    
+    @Override
+    public AtomicIndexReader reader() {
+      return reader;
+    }
+  }
 }

@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -138,8 +138,8 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public IndexSearcher(ReaderContext context, ExecutorService executor) {
-    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader;
-    reader = context.reader;
+    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
+    reader = context.reader();
     this.executor = executor;
     this.readerContext = context;
     leafContexts = ReaderUtil.leaves(context);
@@ -501,7 +501,7 @@ public class IndexSearcher {
     // always use single thread:
     for (int i = 0; i < leaves.length; i++) { // search each subreader
       collector.setNextReader(leaves[i]);
-      Scorer scorer = weight.scorer(leaves[i], !collector.acceptsDocsOutOfOrder(), true, leaves[i].reader.getLiveDocs());
+      Scorer scorer = weight.scorer(leaves[i], !collector.acceptsDocsOutOfOrder(), true, leaves[i].reader().getLiveDocs());
       if (scorer != null) {
         scorer.score(collector);
       }

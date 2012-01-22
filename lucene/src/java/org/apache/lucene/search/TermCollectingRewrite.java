@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -51,7 +51,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
     Comparator<BytesRef> lastTermComp = null;
     final AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
     for (AtomicReaderContext context : leaves) {
-      final Fields fields = context.reader.fields();
+      final Fields fields = context.reader().fields();
       if (fields == null) {
         // reader has no fields
         continue;
