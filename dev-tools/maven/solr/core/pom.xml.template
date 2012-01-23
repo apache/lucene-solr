@@ -203,6 +203,12 @@
         <directory>src/test-files</directory>
       </testResource>
       <testResource>
+        <directory>${project.build.testSourceDirectory}</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </testResource>
+      <testResource>
         <directory>../solrj/src/test-files</directory>
       </testResource>
     </testResources>
