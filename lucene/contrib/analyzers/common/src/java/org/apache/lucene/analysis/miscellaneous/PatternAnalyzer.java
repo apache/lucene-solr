@@ -26,13 +26,14 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -62,9 +63,8 @@ import org.apache.lucene.util.Version;
  *     pat.tokenStream("content", "James is running round in the woods"), 
  *     "English"));
  * </pre>
- *
  */
-public final class PatternAnalyzer extends Analyzer {
+public final class PatternAnalyzer extends ReusableAnalyzerBase {
   
   /** <code>"\\W+"</code>; Divides text at non-letters (NOT Character.isLetter(c)) */
   public static final Pattern NON_WORD_PATTERN = Pattern.compile("\\W+");
@@ -144,7 +144,7 @@ public final class PatternAnalyzer extends Analyzer {
   /**
    * Constructs a new instance with the given parameters.
    * 
-   * @param matchVersion If >= {@link Version#LUCENE_29}, StopFilter.enablePositionIncrement is set to true
+   * @param matchVersion currently does nothing
    * @param pattern
    *            a regular expression delimiting tokens
    * @param toLowerCase
@@ -181,35 +181,33 @@ public final class PatternAnalyzer extends Analyzer {
    * 
    * @param fieldName
    *            the name of the field to tokenize (currently ignored).
+   * @param reader
+   *            reader (e.g. charfilter) of the original text. can be null.
    * @param text
    *            the string to tokenize
    * @return a new token stream
    */
-  public TokenStream tokenStream(String fieldName, String text) {
+  public TokenStreamComponents createComponents(String fieldName, Reader reader, String text) {
     // Ideally the Analyzer superclass should have a method with the same signature, 
     // with a default impl that simply delegates to the StringReader flavour. 
     if (text == null) 
       throw new IllegalArgumentException("text must not be null");
     
-    TokenStream stream;
     if (pattern == NON_WORD_PATTERN) { // fast path
-      stream = new FastStringTokenizer(text, true, toLowerCase, stopWords);
+      return new TokenStreamComponents(new FastStringTokenizer(reader, text, true, toLowerCase, stopWords));
+    } else if (pattern == WHITESPACE_PATTERN) { // fast path
+      return new TokenStreamComponents(new FastStringTokenizer(reader, text, false, toLowerCase, stopWords));
     }
-    else if (pattern == WHITESPACE_PATTERN) { // fast path
-      stream = new FastStringTokenizer(text, false, toLowerCase, stopWords);
-    }
-    else {
-      stream = new PatternTokenizer(text, pattern, toLowerCase);
-      if (stopWords != null) stream = new StopFilter(matchVersion, stream, stopWords);
-    }
-    
-    return stream;
+
+    Tokenizer tokenizer = new PatternTokenizer(reader, text, pattern, toLowerCase);
+    TokenStream result = (stopWords != null) ? new StopFilter(matchVersion, tokenizer, stopWords) : tokenizer;
+    return new TokenStreamComponents(tokenizer, result);
   }
   
   /**
    * Creates a token stream that tokenizes all the text in the given Reader;
-   * This implementation forwards to <code>tokenStream(String, String)</code> and is
-   * less efficient than <code>tokenStream(String, String)</code>.
+   * This implementation forwards to <code>tokenStream(String, Reader, String)</code> and is
+   * less efficient than <code>tokenStream(String, Reader, String)</code>.
    * 
    * @param fieldName
    *            the name of the field to tokenize (currently ignored).
@@ -218,14 +216,10 @@ public final class PatternAnalyzer extends Analyzer {
    * @return a new token stream
    */
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    if (reader instanceof FastStringReader) { // fast path
-      return tokenStream(fieldName, ((FastStringReader)reader).getString());
-    }
-    
+  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
     try {
       String text = toString(reader);
-      return tokenStream(fieldName, text);
+      return createComponents(fieldName, reader, text);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -289,6 +283,10 @@ public final class PatternAnalyzer extends Analyzer {
    * @throws IOException if an I/O error occurs while reading the stream
    */
   private static String toString(Reader input) throws IOException {
+    if (input instanceof FastStringReader) { // fast path
+      return ((FastStringReader) input).getString();
+    }
+
     try {
       int len = 256;
       char[] buffer = new char[len];
@@ -323,9 +321,10 @@ public final class PatternAnalyzer extends Analyzer {
    * The work horse; performance isn't fantastic, but it's not nearly as bad
    * as one might think - kudos to the Sun regex developers.
    */
-  private static final class PatternTokenizer extends TokenStream {
-    
-    private final String str;
+  private static final class PatternTokenizer extends Tokenizer {
+
+    private final Pattern pattern;
+    private String str;
     private final boolean toLowerCase;
     private Matcher matcher;
     private int pos = 0;
@@ -333,7 +332,9 @@ public final class PatternAnalyzer extends Analyzer {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
-    public PatternTokenizer(String str, Pattern pattern, boolean toLowerCase) {
+    public PatternTokenizer(Reader input, String str, Pattern pattern, boolean toLowerCase) {
+      super(input);
+      this.pattern = pattern;
       this.str = str;
       this.matcher = pattern.matcher(str);
       this.toLowerCase = toLowerCase;
@@ -359,7 +360,7 @@ public final class PatternAnalyzer extends Analyzer {
           String text = str.substring(start, end);
           if (toLowerCase) text = text.toLowerCase(locale);
           termAtt.setEmpty().append(text);
-          offsetAtt.setOffset(start, end);
+          offsetAtt.setOffset(correctOffset(start), correctOffset(end));
           return true;
         }
         if (!isMatch) return false;
@@ -369,10 +370,23 @@ public final class PatternAnalyzer extends Analyzer {
     @Override
     public final void end() {
       // set final offset
-      final int finalOffset = str.length();
-    	this.offsetAtt.setOffset(finalOffset, finalOffset);
-    }    
-  } 
+      final int finalOffset = correctOffset(str.length());
+      this.offsetAtt.setOffset(finalOffset, finalOffset);
+    }
+
+    @Override
+    public void reset(Reader input) throws IOException {
+      super.reset(input);
+      this.str = PatternAnalyzer.toString(input);
+      this.matcher = pattern.matcher(this.str);
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.pos = 0;
+    }
+  }
   
   
   ///////////////////////////////////////////////////////////////////////////////
@@ -382,9 +396,9 @@ public final class PatternAnalyzer extends Analyzer {
    * Special-case class for best performance in common cases; this class is
    * otherwise unnecessary.
    */
-  private static final class FastStringTokenizer extends TokenStream {
+  private static final class FastStringTokenizer extends Tokenizer {
     
-    private final String str;
+    private String str;
     private int pos;
     private final boolean isLetter;
     private final boolean toLowerCase;
@@ -393,7 +407,8 @@ public final class PatternAnalyzer extends Analyzer {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
-    public FastStringTokenizer(String str, boolean isLetter, boolean toLowerCase, Set<?> stopWords) {
+    public FastStringTokenizer(Reader input, String str, boolean isLetter, boolean toLowerCase, Set<?> stopWords) {
+      super(input);
       this.str = str;
       this.isLetter = isLetter;
       this.toLowerCase = toLowerCase;
@@ -445,7 +460,7 @@ public final class PatternAnalyzer extends Analyzer {
         return false;
       }
       termAtt.setEmpty().append(text);
-      offsetAtt.setOffset(start, i);
+      offsetAtt.setOffset(correctOffset(start), correctOffset(i));
       return true;
     }
     
@@ -453,7 +468,7 @@ public final class PatternAnalyzer extends Analyzer {
     public final void end() {
       // set final offset
       final int finalOffset = str.length();
-      this.offsetAtt.setOffset(finalOffset, finalOffset);
+      this.offsetAtt.setOffset(correctOffset(finalOffset), correctOffset(finalOffset));
     }    
     
     private boolean isTokenChar(char c, boolean isLetter) {
@@ -463,7 +478,18 @@ public final class PatternAnalyzer extends Analyzer {
     private boolean isStopWord(String text) {
       return stopWords != null && stopWords.contains(text);
     }
-    
+
+    @Override
+    public void reset(Reader input) throws IOException {
+      super.reset(input);
+      this.str = PatternAnalyzer.toString(input);
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.pos = 0;
+    }
   }
 
   

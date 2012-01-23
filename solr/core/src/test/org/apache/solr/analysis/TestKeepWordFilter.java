@@ -17,17 +17,22 @@
 
 package org.apache.solr.analysis;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.lucene.analysis.Tokenizer;
 
 
 /**
@@ -91,5 +96,24 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     stream = new KeepWordFilter(false, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
     assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 1 });
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    final Set<String> words = new HashSet<String>();
+    words.add( "a" );
+    words.add( "b" );
+    
+    Analyzer a = new ReusableAnalyzerBase() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenStream stream = new KeepWordFilter(true, tokenizer, new CharArraySet(TEST_VERSION_CURRENT, words, true));
+        return new TokenStreamComponents(tokenizer, stream);
+      }
+    };
+    
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

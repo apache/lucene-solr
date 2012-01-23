@@ -17,12 +17,17 @@
 
 package org.apache.solr.analysis;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.KeywordTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 
@@ -209,5 +214,23 @@ public class TestCapitalizationFilter extends BaseTokenTestCase {
     Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("kitten"));
     TokenStream ts = factory.create(tokenizer);
     assertTokenStreamContents(ts, new String[] {"Kitten"});
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomString() throws Exception {
+    Analyzer a = new ReusableAnalyzerBase() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+        CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+        factory.init(args);
+        TokenStream filter = factory.create(tokenizer);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+    
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

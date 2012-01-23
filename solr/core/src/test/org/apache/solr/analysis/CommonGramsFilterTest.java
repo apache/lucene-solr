@@ -22,8 +22,10 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
@@ -305,5 +307,32 @@ public class CommonGramsFilterTest extends BaseTokenTestCase {
     CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "the_of" });
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new ReusableAnalyzerBase() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        CommonGramsFilter cgf = new CommonGramsFilter(t, commonWords);
+        return new TokenStreamComponents(t, cgf);
+      }
+    };
+    
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    
+    Analyzer b = new ReusableAnalyzerBase() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        CommonGramsFilter cgf = new CommonGramsFilter(t, commonWords);
+        return new TokenStreamComponents(t, new CommonGramsQueryFilter(cgf));
+      }
+    };
+    
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
   }
 }

@@ -18,10 +18,15 @@
 package org.apache.solr.analysis;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -30,6 +35,8 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.*;
 
 /**
  * @version $Id:$
@@ -114,5 +121,28 @@ public class TestTrimFilter extends BaseTokenTestCase {
         return true;
       }
     }
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new ReusableAnalyzerBase() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer, false));
+      } 
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    
+    Analyzer b = new ReusableAnalyzerBase() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer, true));
+      } 
+    };
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
   }
 }

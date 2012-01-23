@@ -19,11 +19,13 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -496,5 +498,29 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
         new int[] { 4, 11, 4 }, 
         new int[] { 10, 15, 15 },
         new int[] { 2, 1, 0 });
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    int numIterations = atLeast(5);
+    for (int i = 0; i < numIterations; i++) {
+      final int flags = random.nextInt(512);
+      final CharArraySet protectedWords;
+      if (random.nextBoolean()) {
+        protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("a", "b", "cd")), false);
+      } else {
+        protectedWords = null;
+      }
+      
+      Analyzer a = new ReusableAnalyzerBase() {
+        
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+          return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, protectedWords));
+        }
+      };
+      checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    }
   }
 }
