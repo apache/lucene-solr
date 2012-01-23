@@ -18,6 +18,7 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.FastInputStream;
@@ -589,7 +590,15 @@ public class TransactionLog {
 
   public class ReverseReader {
     ChannelFastInputStream fis;
-    private LogCodec codec = new LogCodec();
+    private LogCodec codec = new LogCodec() {
+      @Override
+      public SolrInputDocument readSolrInputDocument(FastInputStream dis) throws IOException {
+        // Given that the SolrInputDocument is last in an add record, it's OK to just skip
+        // reading it completely.
+        return null;
+      }
+    };
+
     int nextLength;  // length of the next record (the next one closer to the start of the log file)
     long prevPos;    // where we started reading from last time (so prevPos - nextLength == start of next record)
 
@@ -649,7 +658,7 @@ public class TransactionLog {
       // TODO: optionally skip document data
       Object o = codec.readVal(fis);
 
-      assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data
+      // assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data (and we currently skip reading SolrInputDocument
 
       return o;
     }
