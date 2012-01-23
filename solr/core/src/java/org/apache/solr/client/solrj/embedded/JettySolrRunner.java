@@ -53,7 +53,7 @@ public class JettySolrRunner {
 
   private boolean waitOnSolr = false;
 
-  private int lastPort;
+  private int lastPort = -1;
 
   private String shards;
 
@@ -139,7 +139,7 @@ public class JettySolrRunner {
       }
 
       public void lifeCycleStarted(LifeCycle arg0) {
-        lastPort = getLocalPort();
+        lastPort = getFirstConnectorPort();
         System.setProperty("hostPort", Integer.toString(lastPort));
         if (solrConfigFilename != null) System.setProperty("solrconfig",
             solrConfigFilename);
@@ -225,16 +225,28 @@ public class JettySolrRunner {
   }
 
   /**
-   * Returns the Local Port of the first Connector found for the jetty Server.
+   * Returns the Local Port of the jetty Server.
    * 
    * @exception RuntimeException if there is no Connector
    */
-  public int getLocalPort() {
+  private int getFirstConnectorPort() {
     Connector[] conns = server.getConnectors();
     if (0 == conns.length) {
       throw new RuntimeException("Jetty Server has no Connectors");
     }
     return conns[0].getLocalPort();
+  }
+  
+  /**
+   * Returns the Local Port of the jetty Server.
+   * 
+   * @exception RuntimeException if there is no Connector
+   */
+  public int getLocalPort() {
+    if (lastPort == -1) {
+      throw new IllegalStateException("You cannot get the port until this instance has started");
+    }
+    return lastPort;
   }
 
   // --------------------------------------------------------------
