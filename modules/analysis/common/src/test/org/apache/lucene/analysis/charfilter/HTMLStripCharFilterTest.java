@@ -503,7 +503,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
       @Override
       protected Reader initReader(Reader reader) {
-        return new HTMLStripCharFilter(CharReader.get(new BufferedReader(reader)));
+        return new HTMLStripCharFilter(CharReader.get(reader));
       }
     };
     
