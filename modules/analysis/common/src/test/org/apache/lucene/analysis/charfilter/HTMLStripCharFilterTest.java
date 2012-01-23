@@ -817,4 +817,47 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
         (CharReader.get(new StringReader(text.toString())));
     while (reader.read() != -1);
   }
+
+  public void testUTF16Surrogates() throws Exception {
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+
+      @Override
+      protected Reader initReader(Reader reader) {
+        return new HTMLStripCharFilter(CharReader.get(new BufferedReader(reader)));
+      }
+    };
+    // Paired surrogates
+    assertAnalyzesTo(analyzer, " one two &#xD86C;&#XdC01;three",
+        new String[] { "one", "two", "\uD86C\uDC01three" } );
+    assertAnalyzesTo(analyzer, " &#55404;&#XdC01;", new String[] { "\uD86C\uDC01" } );
+    assertAnalyzesTo(analyzer, " &#xD86C;&#56321;", new String[] { "\uD86C\uDC01" } );
+    assertAnalyzesTo(analyzer, " &#55404;&#56321;", new String[] { "\uD86C\uDC01" } );
+
+    // Improperly paired surrogates
+    assertAnalyzesTo(analyzer, " &#55404;&#57999;", new String[] { "\uFFFD\uE28F" } );
+    assertAnalyzesTo(analyzer, " &#xD86C;&#57999;", new String[] { "\uFFFD\uE28F" } );
+    assertAnalyzesTo(analyzer, " &#55002;&#XdC01;", new String[] { "\uD6DA\uFFFD" } );
+    assertAnalyzesTo(analyzer, " &#55002;&#56321;", new String[] { "\uD6DA\uFFFD" } );
+
+    // Unpaired high surrogates
+    assertAnalyzesTo(analyzer, " &#Xd921;", new String[] { "\uFFFD" } );
+    assertAnalyzesTo(analyzer, " &#Xd921", new String[] { "\uFFFD" } );
+    assertAnalyzesTo(analyzer, " &#Xd921<br>", new String[] { "&#Xd921" } );
+    assertAnalyzesTo(analyzer, " &#55528;", new String[] { "\uFFFD" } );
+    assertAnalyzesTo(analyzer, " &#55528", new String[] { "\uFFFD" } );
+    assertAnalyzesTo(analyzer, " &#55528<br>", new String[] { "&#55528" } );
+
+    // Unpaired low surrogates
+    assertAnalyzesTo(analyzer, " &#xdfdb;", new String[] { "\uFFFD" } );
+    assertAnalyzesTo(analyzer, " &#xdfdb", new String[] { "\uFFFD" } );
+    assertAnalyzesTo(analyzer, " &#xdfdb<br>", new String[] { "&#xdfdb" } );
+    assertAnalyzesTo(analyzer, " &#57209;", new String[] { "\uFFFD" } );
+    assertAnalyzesTo(analyzer, " &#57209", new String[] { "\uFFFD" } );
+    assertAnalyzesTo(analyzer, " &#57209<br>", new String[] { "&#57209" } );
+  }
 }
