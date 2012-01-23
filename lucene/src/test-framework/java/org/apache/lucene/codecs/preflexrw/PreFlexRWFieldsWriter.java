@@ -137,7 +137,7 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
         }
 
         if ((++df % termsOut.skipInterval) == 0) {
-          skipListWriter.setSkipData(lastDocID, storePayloads, lastPayloadLength);
+          skipListWriter.setSkipData(lastDocID, storePayloads, lastPayloadLength, false, 0);
           skipListWriter.bufferSkip(df);
         }
 

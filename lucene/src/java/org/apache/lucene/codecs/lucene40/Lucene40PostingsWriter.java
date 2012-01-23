@@ -73,12 +73,15 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
 
   IndexOptions indexOptions;
   boolean storePayloads;
+  boolean storeOffsets;
   // Starts a new term
   long freqStart;
   long proxStart;
   FieldInfo fieldInfo;
   int lastPayloadLength;
+  int lastOffsetLength;
   int lastPosition;
+  int lastOffset;
 
   // private String segment;
 
@@ -137,6 +140,8 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
       proxStart = proxOut.getFilePointer();
       // force first payload to write its length
       lastPayloadLength = -1;
+      // force first offset to write its length
+      lastOffsetLength = -1;
     }
     skipListWriter.resetSkip();
   }
@@ -155,10 +160,8 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     */
     this.fieldInfo = fieldInfo;
     indexOptions = fieldInfo.indexOptions;
-    if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-      throw new UnsupportedOperationException("this codec cannot index offsets");
-    }
-        
+    
+    storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;        
     storePayloads = fieldInfo.storePayloads;
     //System.out.println("  set init blockFreqStart=" + freqStart);
     //System.out.println("  set init blockProxStart=" + proxStart);
@@ -180,7 +183,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     }
 
     if ((++df % skipInterval) == 0) {
-      skipListWriter.setSkipData(lastDocID, storePayloads, lastPayloadLength);
+      skipListWriter.setSkipData(lastDocID, storePayloads, lastPayloadLength, storeOffsets, lastOffsetLength);
       skipListWriter.bufferSkip(df);
     }
 
@@ -197,22 +200,15 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     }
 
     lastPosition = 0;
+    lastOffset = 0;
   }
 
   /** Add a new position & payload */
   @Override
   public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
     //if (DEBUG) System.out.println("SPW:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
-    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS: "invalid indexOptions: " + indexOptions;
+    assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 : "invalid indexOptions: " + indexOptions;
     assert proxOut != null;
-
-    // TODO: when we add offsets... often
-    // endOffset-startOffset will be constant or near
-    // constant for all docs (eg if the term wasn't stemmed
-    // then this will usually be the utf16 length of the
-    // term); would be nice to write that length once up
-    // front and then not encode endOffset for each
-    // position..
 
     final int delta = position - lastPosition;
     
@@ -220,8 +216,10 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
 
     lastPosition = position;
 
+    int payloadLength = 0;
+
     if (storePayloads) {
-      final int payloadLength = payload == null ? 0 : payload.length;
+      payloadLength = payload == null ? 0 : payload.length;
 
       if (payloadLength != lastPayloadLength) {
         lastPayloadLength = payloadLength;
@@ -230,12 +228,27 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
       } else {
         proxOut.writeVInt(delta << 1);
       }
-
-      if (payloadLength > 0) {
-        proxOut.writeBytes(payload.bytes, payload.offset, payloadLength);
-      }
     } else {
       proxOut.writeVInt(delta);
+    }
+    
+    if (storeOffsets) {
+      // don't use startOffset - lastEndOffset, because this creates lots of negative vints for synonyms,
+      // and the numbers aren't that much smaller anyways.
+      int offsetDelta = startOffset - lastOffset;
+      int offsetLength = endOffset - startOffset;
+      if (offsetLength != lastOffsetLength) {
+        proxOut.writeVInt(offsetDelta << 1 | 1);
+        proxOut.writeVInt(offsetLength);
+      } else {
+        proxOut.writeVInt(offsetDelta << 1);
+      }
+      lastOffset = startOffset;
+      lastOffsetLength = offsetLength;
+    }
+    
+    if (payloadLength > 0) {
+      proxOut.writeBytes(payload.bytes, payload.offset, payloadLength);
     }
   }
 
@@ -304,7 +317,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
       assert firstTerm.skipOffset > 0;
       bytesWriter.writeVInt(firstTerm.skipOffset);
     }
-    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+    if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
       bytesWriter.writeVLong(firstTerm.proxStart);
     }
     long lastFreqStart = firstTerm.freqStart;
@@ -319,7 +332,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
         assert term.skipOffset > 0;
         bytesWriter.writeVInt(term.skipOffset);
       }
-      if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
         bytesWriter.writeVLong(term.proxStart - lastProxStart);
         lastProxStart = term.proxStart;
       }

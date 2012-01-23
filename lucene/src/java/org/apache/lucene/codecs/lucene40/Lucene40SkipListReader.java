@@ -30,13 +30,16 @@ import org.apache.lucene.store.IndexInput;
  */
 public class Lucene40SkipListReader extends MultiLevelSkipListReader {
   private boolean currentFieldStoresPayloads;
+  private boolean currentFieldStoresOffsets;
   private long freqPointer[];
   private long proxPointer[];
   private int payloadLength[];
+  private int offsetLength[];
   
   private long lastFreqPointer;
   private long lastProxPointer;
   private int lastPayloadLength;
+  private int lastOffsetLength;
                            
 
   public Lucene40SkipListReader(IndexInput skipStream, int maxSkipLevels, int skipInterval) {
@@ -44,17 +47,20 @@ public class Lucene40SkipListReader extends MultiLevelSkipListReader {
     freqPointer = new long[maxSkipLevels];
     proxPointer = new long[maxSkipLevels];
     payloadLength = new int[maxSkipLevels];
+    offsetLength = new int[maxSkipLevels];
   }
 
-  public void init(long skipPointer, long freqBasePointer, long proxBasePointer, int df, boolean storesPayloads) {
+  public void init(long skipPointer, long freqBasePointer, long proxBasePointer, int df, boolean storesPayloads, boolean storesOffsets) {
     super.init(skipPointer, df);
     this.currentFieldStoresPayloads = storesPayloads;
+    this.currentFieldStoresOffsets = storesOffsets;
     lastFreqPointer = freqBasePointer;
     lastProxPointer = proxBasePointer;
 
     Arrays.fill(freqPointer, freqBasePointer);
     Arrays.fill(proxPointer, proxBasePointer);
     Arrays.fill(payloadLength, 0);
+    Arrays.fill(offsetLength, 0);
   }
 
   /** Returns the freq pointer of the doc to which the last call of 
@@ -76,12 +82,20 @@ public class Lucene40SkipListReader extends MultiLevelSkipListReader {
     return lastPayloadLength;
   }
   
+  /** Returns the offset length (endOffset-startOffset) of the position stored just before 
+   * the doc to which the last call of {@link MultiLevelSkipListReader#skipTo(int)} 
+   * has skipped.  */
+  public int getOffsetLength() {
+    return lastOffsetLength;
+  }
+  
   @Override
   protected void seekChild(int level) throws IOException {
     super.seekChild(level);
     freqPointer[level] = lastFreqPointer;
     proxPointer[level] = lastProxPointer;
     payloadLength[level] = lastPayloadLength;
+    offsetLength[level] = lastOffsetLength;
   }
   
   @Override
@@ -90,6 +104,7 @@ public class Lucene40SkipListReader extends MultiLevelSkipListReader {
     lastFreqPointer = freqPointer[level];
     lastProxPointer = proxPointer[level];
     lastPayloadLength = payloadLength[level];
+    lastOffsetLength = offsetLength[level];
   }
 
 
@@ -110,6 +125,11 @@ public class Lucene40SkipListReader extends MultiLevelSkipListReader {
     } else {
       delta = skipStream.readVInt();
     }
+
+    if (currentFieldStoresOffsets) {
+      offsetLength[level] = skipStream.readVInt();
+    }
+
     freqPointer[level] += skipStream.readVInt();
     proxPointer[level] += skipStream.readVInt();
     
