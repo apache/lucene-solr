@@ -17,11 +17,14 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.List;
 import java.util.ArrayList;
@@ -1906,5 +1909,18 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
   void assertTermEquals(String expected, TokenStream stream, CharTermAttribute termAtt) throws Exception {
     assertTrue(stream.incrementToken());
     assertEquals(expected, termAtt.toString());
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new ASCIIFoldingFilter(tokenizer));
+      } 
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

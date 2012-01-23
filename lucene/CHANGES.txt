@@ -815,9 +815,10 @@ Bug fixes
   to clones/reopened readers.  (Uwe Schindler)
 
 * LUCENE-3642, SOLR-2891, LUCENE-3717: Fixed bugs in CharTokenizer, n-gram filters, 
-  compound token filters, thai word filter, icutokenizer, and smart chinese 
-  where they would create invalid offsets in some situations, leading to problems 
-  in highlighting.  (Max Beutel, Edwin Steiner via Robert Muir)
+  compound token filters, thai word filter, icutokenizer, pattern analyzer, 
+  wikipediatokenizer, and smart chinese where they would create invalid offsets in 
+  some situations, leading to problems in highlighting.  
+  (Max Beutel, Edwin Steiner via Robert Muir)
 
 * LUCENE-3639: TopDocs.merge was incorrectly setting TopDocs.maxScore to
   Float.MIN_VALUE when it should be Float.NaN, when there were 0

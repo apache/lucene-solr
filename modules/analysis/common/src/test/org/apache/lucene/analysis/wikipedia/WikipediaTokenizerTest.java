@@ -18,12 +18,15 @@
 
 package org.apache.lucene.analysis.wikipedia;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.io.IOException;
 import java.util.Set;
 import java.util.HashSet;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 
 import static org.apache.lucene.analysis.wikipedia.WikipediaTokenizer.*;
@@ -168,5 +171,18 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
     }
     assertFalse(tf.incrementToken());
     tf.close();
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new WikipediaTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      } 
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

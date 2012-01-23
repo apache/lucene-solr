@@ -16,11 +16,17 @@
  */
 package org.apache.lucene.analysis.phonetic;
 
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.util._TestUtil;
 
 public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
 
@@ -65,4 +71,28 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&", "HL" });
   }
 
+  public void testRandom() throws Exception {
+    final int codeLen = _TestUtil.nextInt(random, 1, 8);
+    Analyzer a = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new DoubleMetaphoneFilter(tokenizer, codeLen, false));
+      }
+      
+    };
+    checkRandomData(random, a, 1000 * RANDOM_MULTIPLIER);
+    
+    Analyzer b = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new DoubleMetaphoneFilter(tokenizer, codeLen, true));
+      }
+      
+    };
+    checkRandomData(random, b, 1000 * RANDOM_MULTIPLIER); 
+  }
 }

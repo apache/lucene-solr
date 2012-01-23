@@ -91,6 +91,14 @@ final int setText(StringBuilder buffer){
   return length;
 }
 
+final void reset() {
+  currentTokType = 0;
+  numBalanced = 0;
+  positionInc = 1;
+  numLinkToks = 0;
+  numWikiTokensSeen = 0;
+}
+
 
 %}
 

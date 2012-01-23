@@ -298,4 +298,28 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new int[] { 10, 15, 15 },
         new int[] { 2, 1, 0 });
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    int numIterations = atLeast(5);
+    for (int i = 0; i < numIterations; i++) {
+      final int flags = random.nextInt(512);
+      final CharArraySet protectedWords;
+      if (random.nextBoolean()) {
+        protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("a", "b", "cd")), false);
+      } else {
+        protectedWords = null;
+      }
+      
+      Analyzer a = new Analyzer() {
+        
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+          return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, protectedWords));
+        }
+      };
+      checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    }
+  }
 }

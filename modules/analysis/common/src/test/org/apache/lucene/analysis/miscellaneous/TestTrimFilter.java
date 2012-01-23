@@ -18,11 +18,15 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Collection;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 
 /**
@@ -102,5 +106,28 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
         return true;
       }
     }
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer, false));
+      } 
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    
+    Analyzer b = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer, true));
+      } 
+    };
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
   }
 }

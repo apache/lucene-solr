@@ -530,6 +530,10 @@ Bug Fixes
     attributes and their values, are left intact in the output.
   (Steve Rowe)
 
+* LUCENE-3717: Fixed offset bugs in TrimFilter, WordDelimiterFilter, and
+  HyphenatedWordsFilter where they would create invalid offsets in
+  some situations, leading to problems in highlighting.  (Robert Muir)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
