@@ -436,9 +436,8 @@ public class CoreContainer
             if (!core.isClosed()) {
               core.close();
             }
-            core.getUpdateHandler().getSolrCoreState().cancelRecovery();
-          } catch (Exception e) {
-            SolrException.log(log, "Error shutting down core", e);
+          } catch (Throwable t) {
+            SolrException.log(log, "Error shutting down core", t);
           }
         }
         cores.clear();
