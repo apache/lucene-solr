@@ -872,7 +872,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         create = false;
       } else {
         // CREATE_OR_APPEND - create only if an index does not exist
-        create = !IndexReader.indexExists(directory);
+        create = !DirectoryReader.indexExists(directory);
       }
 
       // If index is too old, reading the segments will throw

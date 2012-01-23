@@ -250,7 +250,6 @@ public final class SegmentReader extends AtomicIndexReader {
   }
 
   /** Returns the directory this index resides in. */
-  @Override
   public Directory directory() {
     // Don't ensureOpen here -- in certain cases, when a
     // cloned/reopened reader needs to commit, it may call
@@ -271,7 +270,6 @@ public final class SegmentReader extends AtomicIndexReader {
     return this;
   }
   
-  @Override
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }

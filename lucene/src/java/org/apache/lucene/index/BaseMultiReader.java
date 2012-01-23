@@ -53,9 +53,6 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeIndexRead
   }
 
   @Override
-  protected abstract CompositeIndexReader doOpenIfChanged() throws CorruptIndexException, IOException;
-
-  @Override
   public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
     final int i = readerIndex(docID);        // find segment num

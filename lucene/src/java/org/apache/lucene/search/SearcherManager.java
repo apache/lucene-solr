@@ -23,7 +23,7 @@ import java.util.concurrent.Semaphore;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.CompositeIndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.NRTManager; // javadocs
 import org.apache.lucene.search.IndexSearcher; // javadocs
@@ -94,7 +94,7 @@ public final class SearcherManager implements Closeable {
       searcherFactory = new SearcherFactory();
     }
     this.searcherFactory = searcherFactory;
-    currentSearcher = searcherFactory.newSearcher(IndexReader.open(writer, applyAllDeletes));
+    currentSearcher = searcherFactory.newSearcher(DirectoryReader.open(writer, applyAllDeletes));
   }
 
   /**
@@ -111,7 +111,7 @@ public final class SearcherManager implements Closeable {
       searcherFactory = new SearcherFactory();
     }
     this.searcherFactory = searcherFactory;
-    currentSearcher = searcherFactory.newSearcher(IndexReader.open(dir));
+    currentSearcher = searcherFactory.newSearcher(DirectoryReader.open(dir));
   }
 
   /**
@@ -146,8 +146,8 @@ public final class SearcherManager implements Closeable {
         final IndexSearcher searcherToReopen = acquire();
         try {
           final IndexReader r = searcherToReopen.getIndexReader();
-          newReader = (r instanceof CompositeIndexReader) ?
-            IndexReader.openIfChanged((CompositeIndexReader) r) :
+          newReader = (r instanceof DirectoryReader) ?
+            DirectoryReader.openIfChanged((DirectoryReader) r) :
             null;
         } finally {
           release(searcherToReopen);
@@ -176,15 +176,15 @@ public final class SearcherManager implements Closeable {
   /**
    * Returns <code>true</code> if no changes have occured since this searcher
    * ie. reader was opened, otherwise <code>false</code>.
-   * @see CompositeIndexReader#isCurrent() 
+   * @see DirectoryReader#isCurrent() 
    */
   public boolean isSearcherCurrent() throws CorruptIndexException,
       IOException {
     final IndexSearcher searcher = acquire();
     try {
       final IndexReader r = searcher.getIndexReader();
-      return r instanceof CompositeIndexReader ?
-        ((CompositeIndexReader ) r).isCurrent() :
+      return r instanceof DirectoryReader ?
+        ((DirectoryReader ) r).isCurrent() :
         true;
     } finally {
       release(searcher);

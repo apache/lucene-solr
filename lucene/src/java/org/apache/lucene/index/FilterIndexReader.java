@@ -292,12 +292,6 @@ public class FilterIndexReader extends AtomicIndexReader {
   }
 
   @Override
-  public Directory directory() {
-    ensureOpen();
-    return in.directory();
-  }
-  
-  @Override
   public Bits getLiveDocs() {
     ensureOpen();
     return in.getLiveDocs();
@@ -405,9 +399,4 @@ public class FilterIndexReader extends AtomicIndexReader {
     ensureOpen();
     return in.normValues(field);
   }
-
-  @Override
-  public int getTermInfosIndexDivisor() {
-    return in.getTermInfosIndexDivisor();
-  }  
 }

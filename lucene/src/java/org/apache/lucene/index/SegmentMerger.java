@@ -329,7 +329,9 @@ final class SegmentMerger {
       }
 
       if (mergeState.payloadProcessorProvider != null) {
-        mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(reader.reader.directory());
+        // nocommit: this was original, is the change correct:
+        // mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(reader.reader.directory());
+        mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(directory);
       }
     }
 

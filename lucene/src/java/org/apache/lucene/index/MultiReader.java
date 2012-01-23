@@ -60,12 +60,6 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
   }
 
   @Override
-  protected synchronized CompositeIndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-    // nocommit: remove this method
-    return null;
-  }
-
-  @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
     for (int i = 0; i < subReaders.length; i++) {
@@ -81,27 +75,5 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
     }
     // throw the first exception
     if (ioe != null) throw ioe;
-  }
-  
-  @Override
-  public boolean isCurrent() throws CorruptIndexException, IOException {
-    ensureOpen();
-    for (int i = 0; i < subReaders.length; i++) {
-      final IndexReader r = subReaders[i];
-      if (r instanceof CompositeIndexReader && !((CompositeIndexReader) r).isCurrent()) {
-        return false;
-      }
-    }
-    
-    // all subreaders are up to date
-    return true;
-  }
-  
-  /** Not implemented.
-   * @throws UnsupportedOperationException
-   */
-  @Override
-  public long getVersion() {
-    throw new UnsupportedOperationException("MultiReader does not support this method.");
   }
 }
