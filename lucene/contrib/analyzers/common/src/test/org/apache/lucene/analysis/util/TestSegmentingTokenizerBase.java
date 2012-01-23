@@ -161,7 +161,7 @@ public class TestSegmentingTokenizerBase extends BaseTokenStreamTestCase {
         hasSentence = false;
         clearAttributes();
         termAtt.copyBuffer(buffer, sentenceStart, sentenceEnd-sentenceStart);
-        offsetAtt.setOffset(offset+sentenceStart, offset+sentenceEnd);
+        offsetAtt.setOffset(correctOffset(offset+sentenceStart), correctOffset(offset+sentenceEnd));
         return true;
       } else {
         return false;
@@ -216,7 +216,7 @@ public class TestSegmentingTokenizerBase extends BaseTokenStreamTestCase {
       
       clearAttributes();
       termAtt.copyBuffer(buffer, wordStart, wordEnd-wordStart);
-      offsetAtt.setOffset(offset+wordStart, offset+wordEnd);
+      offsetAtt.setOffset(correctOffset(offset+wordStart), correctOffset(offset+wordEnd));
       posIncAtt.setPositionIncrement(posIncAtt.getPositionIncrement() + posBoost);
       posBoost = 0;
       return true;
