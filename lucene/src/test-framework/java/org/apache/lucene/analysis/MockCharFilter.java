@@ -1,0 +1,100 @@
+package org.apache.lucene.analysis;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.IOException;
+import java.io.Reader;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+// the purpose of this charfilter is to send offsets out of bounds
+// if the analyzer doesn't use correctOffset or does incorrect offset math.
+class MockCharFilter extends CharStream {
+  final Reader in;
+  final int remainder;
+  
+  // for testing only
+  public MockCharFilter(Reader in, int remainder) {
+    this.in = in;
+    this.remainder = remainder;
+    assert remainder >= 0 && remainder < 10 : "invalid parameter";
+  }
+
+  @Override
+  public void close() throws IOException {
+    in.close();
+  }
+  
+  int currentOffset = -1;
+  int delta = 0;
+  int bufferedCh = -1;
+  
+  @Override
+  public int read() throws IOException {
+    // we have a buffered character, add an offset correction and return it
+    if (bufferedCh >= 0) {
+      int ch = bufferedCh;
+      bufferedCh = -1;
+      currentOffset++;
+      
+      addOffCorrectMap(currentOffset+delta, delta-1);
+      delta--;
+      return ch;
+    }
+    
+    // otherwise actually read one    
+    int ch = in.read();
+    if (ch < 0)
+      return ch;
+    
+    currentOffset++;
+    if ((ch % 10) != remainder || Character.isHighSurrogate((char)ch) || Character.isLowSurrogate((char)ch)) {
+      return ch;
+    }
+    
+    // we will double this character, so buffer it.
+    bufferedCh = ch;
+    return ch;
+  }
+
+  @Override
+  public int read(char[] cbuf, int off, int len) throws IOException {
+    int numRead = 0;
+    for (int i = off; i < off + len; i++) {
+      int c = read();
+      if (c == -1) break;
+      cbuf[i] = (char) c;
+      numRead++;
+    }
+    return numRead == 0 ? -1 : numRead;
+  }
+
+  @Override
+  public int correctOffset(int currentOff) {
+    SortedMap<Integer,Integer> subMap = corrections.subMap(0, currentOff+1);
+    int ret = subMap.isEmpty() ? currentOff : currentOff + subMap.get(subMap.lastKey());
+    assert ret >= 0 : "currentOff=" + currentOff + ",diff=" + (ret-currentOff);
+    return ret;
+  }
+  
+  protected void addOffCorrectMap(int off, int cumulativeDiff) {
+    corrections.put(off, cumulativeDiff);
+  }
+  
+  TreeMap<Integer,Integer> corrections = new TreeMap<Integer,Integer>();
+}

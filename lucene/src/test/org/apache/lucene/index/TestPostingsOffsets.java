@@ -22,29 +22,46 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Assume;
+import org.apache.lucene.util._TestUtil;
 
 public class TestPostingsOffsets extends LuceneTestCase {
+  IndexWriterConfig iwc;
+  
+  public void setUp() throws Exception {
+    super.setUp();
+    // Currently only SimpleText and Lucene40 can index offsets into postings:
+    assumeTrue("codec does not support offsets", Codec.getDefault().getName().equals("SimpleText") || Codec.getDefault().getName().equals("Lucene40"));
+    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    
+    if (Codec.getDefault().getName().equals("Lucene40")) {
+      // pulsing etc are not implemented
+      iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
+    }
+  }
 
   public void testBasic() throws Exception {
-
-    // Currently only SimpleText can index offsets into postings:
-    Assume.assumeTrue(Codec.getDefault().getName().equals("SimpleText"));
-
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    
+    RandomIndexWriter w = new RandomIndexWriter(random, dir, iwc);
     Document doc = new Document();
 
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
@@ -94,16 +111,117 @@ public class TestPostingsOffsets extends LuceneTestCase {
     r.close();
     dir.close();
   }
+  
+  public void testSkipping() throws Exception {
+    doTestNumbers(false);
+  }
+  
+  public void testPayloads() throws Exception {
+    doTestNumbers(true);
+  }
+  
+  public void doTestNumbers(boolean withPayloads) throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = withPayloads ? new MockPayloadAnalyzer() : new MockAnalyzer(random);
+    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    if (Codec.getDefault().getName().equals("Lucene40")) {
+      // pulsing etc are not implemented
+      iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
+    }
+    iwc.setMergePolicy(newLogMergePolicy()); // will rely on docids a bit for skipping
+    RandomIndexWriter w = new RandomIndexWriter(random, dir, iwc);
+    
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    if (random.nextBoolean()) {
+      ft.setStoreTermVectors(true);
+      ft.setStoreTermVectorOffsets(random.nextBoolean());
+      ft.setStoreTermVectorPositions(random.nextBoolean());
+    }
+    
+    int numDocs = atLeast(500);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      doc.add(new Field("numbers", English.intToEnglish(i), ft));
+      doc.add(new Field("oddeven", (i % 2) == 0 ? "even" : "odd", ft));
+      doc.add(new StringField("id", "" + i));
+      w.addDocument(doc);
+    }
+    
+    IndexReader reader = w.getReader();
+    w.close();
+    
+    String terms[] = { "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "hundred" };
+    
+    for (String term : terms) {
+      DocsAndPositionsEnum dp = MultiFields.getTermPositionsEnum(reader, null, "numbers", new BytesRef(term), true);
+      int doc;
+      while((doc = dp.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+        String storedNumbers = reader.document(doc).get("numbers");
+        int freq = dp.freq();
+        for (int i = 0; i < freq; i++) {
+          dp.nextPosition();
+          int start = dp.startOffset();
+          assert start >= 0;
+          int end = dp.endOffset();
+          assert end >= 0 && end >= start;
+          // check that the offsets correspond to the term in the src text
+          assertTrue(storedNumbers.substring(start, end).equals(term));
+          if (withPayloads) {
+            // check that we have a payload and it starts with "pos"
+            assertTrue(dp.hasPayload());
+            BytesRef payload = dp.getPayload();
+            assertTrue(payload.utf8ToString().startsWith("pos:"));
+          } // note: withPayloads=false doesnt necessarily mean we dont have them from MockAnalyzer!
+        }
+      }
+    }
+    
+    // check we can skip correctly
+    int numSkippingTests = atLeast(50);
+    
+    for (int j = 0; j < numSkippingTests; j++) {
+      int num = _TestUtil.nextInt(random, 100, Math.min(numDocs-1, 999));
+      DocsAndPositionsEnum dp = MultiFields.getTermPositionsEnum(reader, null, "numbers", new BytesRef("hundred"), true);
+      int doc = dp.advance(num);
+      assertEquals(num, doc);
+      int freq = dp.freq();
+      for (int i = 0; i < freq; i++) {
+        String storedNumbers = reader.document(doc).get("numbers");
+        dp.nextPosition();
+        int start = dp.startOffset();
+        assert start >= 0;
+        int end = dp.endOffset();
+        assert end >= 0 && end >= start;
+        // check that the offsets correspond to the term in the src text
+        assertTrue(storedNumbers.substring(start, end).equals("hundred"));
+        if (withPayloads) {
+          // check that we have a payload and it starts with "pos"
+          assertTrue(dp.hasPayload());
+          BytesRef payload = dp.getPayload();
+          assertTrue(payload.utf8ToString().startsWith("pos:"));
+        } // note: withPayloads=false doesnt necessarily mean we dont have them from MockAnalyzer!
+      }
+    }
+    
+    // check that other fields (without offsets) work correctly
+    
+    for (int i = 0; i < numDocs; i++) {
+      DocsEnum dp = MultiFields.getTermDocsEnum(reader, null, "id", new BytesRef("" + i), false);
+      assertEquals(i, dp.nextDoc());
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
+    }
+    
+    reader.close();
+    dir.close();
+  }
 
   public void testRandom() throws Exception {
-    // Currently only SimpleText can index offsets into postings:
-    Assume.assumeTrue(Codec.getDefault().getName().equals("SimpleText"));
-
     // token -> docID -> tokens
     final Map<String,Map<Integer,List<Token>>> actualTokens = new HashMap<String,Map<Integer,List<Token>>>();
 
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    RandomIndexWriter w = new RandomIndexWriter(random, dir, iwc);
 
     final int numDocs = atLeast(20);
     //final int numDocs = atLeast(5);

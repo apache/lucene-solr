@@ -40,7 +40,9 @@ public class Lucene40SkipListWriter extends MultiLevelSkipListWriter {
 
   private int curDoc;
   private boolean curStorePayloads;
+  private boolean curStoreOffsets;
   private int curPayloadLength;
+  private int curOffsetLength;
   private long curFreqPointer;
   private long curProxPointer;
 
@@ -58,10 +60,12 @@ public class Lucene40SkipListWriter extends MultiLevelSkipListWriter {
   /**
    * Sets the values for the current skip data. 
    */
-  public void setSkipData(int doc, boolean storePayloads, int payloadLength) {
+  public void setSkipData(int doc, boolean storePayloads, int payloadLength, boolean storeOffsets, int offsetLength) {
     this.curDoc = doc;
     this.curStorePayloads = storePayloads;
     this.curPayloadLength = payloadLength;
+    this.curStoreOffsets = storeOffsets;
+    this.curOffsetLength = offsetLength;
     this.curFreqPointer = freqOutput.getFilePointer();
     if (proxOutput != null)
       this.curProxPointer = proxOutput.getFilePointer();
@@ -116,6 +120,12 @@ public class Lucene40SkipListWriter extends MultiLevelSkipListWriter {
       // current field does not store payloads
       skipBuffer.writeVInt(curDoc - lastSkipDoc[level]);
     }
+
+    // TODO: not sure it really helps to shove this somewhere else if its the same as the last skip
+    if (curStoreOffsets) {
+      skipBuffer.writeVInt(curOffsetLength);
+    }
+
     skipBuffer.writeVInt((int) (curFreqPointer - lastSkipFreqPointer[level]));
     skipBuffer.writeVInt((int) (curProxPointer - lastSkipProxPointer[level]));
 

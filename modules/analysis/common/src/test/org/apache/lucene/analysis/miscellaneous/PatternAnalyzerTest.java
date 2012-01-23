@@ -22,6 +22,7 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopAnalyzer;
@@ -131,5 +132,11 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
     // analysis of a String, uses PatternAnalyzer.tokenStream(String, String)
     TokenStream ts2 = analyzer.tokenStream("dummy", new StringReader(document));
     assertTokenStreamContents(ts2, expected);
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new PatternAnalyzer(TEST_VERSION_CURRENT, Pattern.compile(","), true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

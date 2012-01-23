@@ -197,7 +197,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       // undefined
     }
 
-    if (fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+    if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
       if (isFirstTerm) {
         termState.proxOffset = termState.bytesReader.readVLong();
       } else {
@@ -245,23 +245,23 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
                                                DocsAndPositionsEnum reuse, boolean needsOffsets)
     throws IOException {
 
-    if (needsOffsets) {
-      // TODO: once we index offsets into postings fix this!
-      return null;
+    boolean hasOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    if (needsOffsets && !hasOffsets) {
+      return null; // not available
     }
 
     // TODO: refactor
-    if (fieldInfo.storePayloads) {
-      SegmentDocsAndPositionsAndPayloadsEnum docsEnum;
-      if (reuse == null || !(reuse instanceof SegmentDocsAndPositionsAndPayloadsEnum)) {
-        docsEnum = new SegmentDocsAndPositionsAndPayloadsEnum(freqIn, proxIn);
+    if (fieldInfo.storePayloads || hasOffsets) {
+      SegmentFullPositionsEnum docsEnum;
+      if (reuse == null || !(reuse instanceof SegmentFullPositionsEnum)) {
+        docsEnum = new SegmentFullPositionsEnum(freqIn, proxIn);
       } else {
-        docsEnum = (SegmentDocsAndPositionsAndPayloadsEnum) reuse;
+        docsEnum = (SegmentFullPositionsEnum) reuse;
         if (docsEnum.startFreqIn != freqIn) {
           // If you are using ParellelReader, and pass in a
           // reused DocsEnum, it could have come from another
           // reader also using standard codec
-          docsEnum = new SegmentDocsAndPositionsAndPayloadsEnum(freqIn, proxIn);
+          docsEnum = new SegmentFullPositionsEnum(freqIn, proxIn);
         }
       }
       return docsEnum.reset(fieldInfo, (StandardTermState) termState, liveDocs);
@@ -295,6 +295,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     
     protected boolean indexOmitsTF;                               // does current field omit term freq?
     protected boolean storePayloads;                        // does current field store payloads?
+    protected boolean storeOffsets;                         // does current field store offsets?
 
     protected int limit;                                    // number of docs in this posting
     protected int ord;                                      // how many docs we've read
@@ -324,6 +325,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     DocsEnum reset(FieldInfo fieldInfo, StandardTermState termState) throws IOException {
       indexOmitsTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
       storePayloads = fieldInfo.storePayloads;
+      storeOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       freqOffset = termState.freqOffset;
       skipOffset = termState.skipOffset;
 
@@ -471,7 +473,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
           skipper.init(freqOffset + skipOffset,
                        freqOffset, 0,
-                       limit, storePayloads);
+                       limit, storePayloads, storeOffsets);
 
           skipped = true;
         }
@@ -665,7 +667,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   
   // TODO specialize DocsAndPosEnum too
   
-  // Decodes docs & positions. payloads are not present.
+  // Decodes docs & positions. payloads nor offsets are present.
   private final class SegmentDocsAndPositionsEnum extends DocsAndPositionsEnum {
     final IndexInput startFreqIn;
     private final IndexInput freqIn;
@@ -792,7 +794,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
           skipper.init(freqOffset+skipOffset,
                        freqOffset, proxOffset,
-                       limit, false);
+                       limit, false, false);
 
           skipped = true;
         }
@@ -868,8 +870,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
   }
   
-  // Decodes docs & positions & payloads
-  private class SegmentDocsAndPositionsAndPayloadsEnum extends DocsAndPositionsEnum {
+  // Decodes docs & positions & (payloads and/or offsets)
+  private class SegmentFullPositionsEnum extends DocsAndPositionsEnum {
     final IndexInput startFreqIn;
     private final IndexInput freqIn;
     private final IndexInput proxIn;
@@ -895,16 +897,24 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     Lucene40SkipListReader skipper;
     private BytesRef payload;
     private long lazyProxPointer;
+    
+    boolean storePayloads;
+    boolean storeOffsets;
+    
+    int offsetLength;
+    int startOffset;
 
-    public SegmentDocsAndPositionsAndPayloadsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
+    public SegmentFullPositionsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
       startFreqIn = freqIn;
       this.freqIn = (IndexInput) freqIn.clone();
       this.proxIn = (IndexInput) proxIn.clone();
     }
 
-    public SegmentDocsAndPositionsAndPayloadsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
-      assert fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-      assert fieldInfo.storePayloads;
+    public SegmentFullPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
+      storeOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      storePayloads = fieldInfo.storePayloads;
+      assert fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      assert storePayloads || storeOffsets;
       if (payload == null) {
         payload = new BytesRef();
         payload.bytes = new byte[1];
@@ -923,6 +933,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       doc = -1;
       accum = 0;
       position = 0;
+      startOffset = 0;
 
       skipped = false;
       posPendingCount = 0;
@@ -963,6 +974,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       }
 
       position = 0;
+      startOffset = 0;
 
       //System.out.println("StandardR.D&PE nextDoc seg=" + segment + " return doc=" + doc);
       return (doc = accum);
@@ -1001,7 +1013,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
           //System.out.println("  init skipper freqOffset=" + freqOffset + " skipOffset=" + skipOffset + " vs len=" + freqIn.length());
           skipper.init(freqOffset+skipOffset,
                        freqOffset, proxOffset,
-                       limit, true);
+                       limit, storePayloads, storeOffsets);
 
           skipped = true;
         }
@@ -1016,8 +1028,10 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
           lazyProxPointer = skipper.getProxPointer();
           posPendingCount = 0;
           position = 0;
+          startOffset = 0;
           payloadPending = false;
           payloadLength = skipper.getPayloadLength();
+          offsetLength = skipper.getOffsetLength();
         }
       }
         
@@ -1038,27 +1052,38 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       }
       
       if (payloadPending && payloadLength > 0) {
-        // payload of last position as never retrieved -- skip it
+        // payload of last position was never retrieved -- skip it
         proxIn.seek(proxIn.getFilePointer() + payloadLength);
         payloadPending = false;
       }
 
       // scan over any docs that were iterated without their positions
       while(posPendingCount > freq) {
-
         final int code = proxIn.readVInt();
 
-        if ((code & 1) != 0) {
-          // new payload length
-          payloadLength = proxIn.readVInt();
-          assert payloadLength >= 0;
+        if (storePayloads) {
+          if ((code & 1) != 0) {
+            // new payload length
+            payloadLength = proxIn.readVInt();
+            assert payloadLength >= 0;
+          }
+          assert payloadLength != -1;
         }
         
-        assert payloadLength != -1;
-        proxIn.seek(proxIn.getFilePointer() + payloadLength);
+        if (storeOffsets) {
+          if ((proxIn.readVInt() & 1) != 0) {
+            // new offset length
+            offsetLength = proxIn.readVInt();
+          }
+        }
+        
+        if (storePayloads) {
+          proxIn.seek(proxIn.getFilePointer() + payloadLength);
+        }
 
         posPendingCount--;
         position = 0;
+        startOffset = 0;
         payloadPending = false;
         //System.out.println("StandardR.D&PE skipPos");
       }
@@ -1069,16 +1094,28 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
         proxIn.seek(proxIn.getFilePointer()+payloadLength);
       }
 
-      final int code = proxIn.readVInt();
-      if ((code & 1) != 0) {
-        // new payload length
-        payloadLength = proxIn.readVInt();
-        assert payloadLength >= 0;
-      }
-      assert payloadLength != -1;
+      int code = proxIn.readVInt();
+      if (storePayloads) {
+        if ((code & 1) != 0) {
+          // new payload length
+          payloadLength = proxIn.readVInt();
+          assert payloadLength >= 0;
+        }
+        assert payloadLength != -1;
           
-      payloadPending = true;
-      position += code >>> 1;
+        payloadPending = true;
+        code >>>= 1;
+      }
+      position += code;
+      
+      if (storeOffsets) {
+        int offsetCode = proxIn.readVInt();
+        if ((offsetCode & 1) != 0) {
+          // new offset length
+          offsetLength = proxIn.readVInt();
+        }
+        startOffset += offsetCode >>> 1;
+      }
 
       posPendingCount--;
 
@@ -1090,32 +1127,36 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
     @Override
     public int startOffset() throws IOException {
-      return -1;
+      return storeOffsets ? startOffset : -1;
     }
 
     @Override
     public int endOffset() throws IOException {
-      return -1;
+      return storeOffsets ? startOffset + offsetLength : -1;
     }
 
     /** Returns the payload at this position, or null if no
      *  payload was indexed. */
     @Override
     public BytesRef getPayload() throws IOException {
-      assert lazyProxPointer == -1;
-      assert posPendingCount < freq;
-      if (!payloadPending) {
-        throw new IOException("Either no payload exists at this term position or an attempt was made to load it more than once.");
-      }
-      if (payloadLength > payload.bytes.length) {
-        payload.grow(payloadLength);
-      }
+      if (storePayloads) {
+        assert lazyProxPointer == -1;
+        assert posPendingCount < freq;
+        if (!payloadPending) {
+          throw new IOException("Either no payload exists at this term position or an attempt was made to load it more than once.");
+        }
+        if (payloadLength > payload.bytes.length) {
+          payload.grow(payloadLength);
+        }
 
-      proxIn.readBytes(payload.bytes, 0, payloadLength);
-      payload.length = payloadLength;
-      payloadPending = false;
+        proxIn.readBytes(payload.bytes, 0, payloadLength);
+        payload.length = payloadLength;
+        payloadPending = false;
 
-      return payload;
+        return payload;
+      } else {
+        throw new IOException("No payloads exist for this field!");
+      }
     }
 
     @Override

@@ -68,6 +68,7 @@ public final class ThaiWordFilter extends TokenFilter {
   private CharTermAttribute clonedTermAtt = null;
   private OffsetAttribute clonedOffsetAtt = null;
   private boolean hasMoreTokensInClone = false;
+  private boolean hasIllegalOffsets = false; // only if the length changed before this filter
 
   /** Creates a new ThaiWordFilter with the specified match version. */
   public ThaiWordFilter(Version matchVersion, TokenStream input) {
@@ -86,7 +87,11 @@ public final class ThaiWordFilter extends TokenFilter {
       if (end != BreakIterator.DONE) {
         clonedToken.copyTo(this);
         termAtt.copyBuffer(clonedTermAtt.buffer(), start, end - start);
-        offsetAtt.setOffset(clonedOffsetAtt.startOffset() + start, clonedOffsetAtt.startOffset() + end);
+        if (hasIllegalOffsets) {
+          offsetAtt.setOffset(clonedOffsetAtt.startOffset(), clonedOffsetAtt.endOffset());
+        } else {
+          offsetAtt.setOffset(clonedOffsetAtt.startOffset() + start, clonedOffsetAtt.startOffset() + end);
+        }
         if (handlePosIncr) posAtt.setPositionIncrement(1);
         return true;
       }
@@ -102,6 +107,10 @@ public final class ThaiWordFilter extends TokenFilter {
     }
     
     hasMoreTokensInClone = true;
+    
+    // if length by start + end offsets doesn't match the term text then assume
+    // this is a synonym and don't adjust the offsets.
+    hasIllegalOffsets = offsetAtt.endOffset() - offsetAtt.startOffset() != termAtt.length();
 
     // we lazy init the cloned token, as in ctor not all attributes may be added
     if (clonedToken == null) {
@@ -118,7 +127,11 @@ public final class ThaiWordFilter extends TokenFilter {
     int end = breaker.next();
     if (end != BreakIterator.DONE) {
       termAtt.setLength(end);
-      offsetAtt.setOffset(clonedOffsetAtt.startOffset(), clonedOffsetAtt.startOffset() + end);
+      if (hasIllegalOffsets) {
+        offsetAtt.setOffset(clonedOffsetAtt.startOffset(), clonedOffsetAtt.endOffset());
+      } else {
+        offsetAtt.setOffset(clonedOffsetAtt.startOffset(), clonedOffsetAtt.startOffset() + end);
+      }
       // position increment keeps as it is for first token
       return true;
     }

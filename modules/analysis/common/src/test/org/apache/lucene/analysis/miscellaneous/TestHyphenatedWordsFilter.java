@@ -17,11 +17,14 @@
 
 package org.apache.lucene.analysis.miscellaneous;
 
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * HyphenatedWordsFilter test
@@ -46,5 +49,29 @@ public class TestHyphenatedWordsFilter extends BaseTokenStreamTestCase {
 	    ts = new HyphenatedWordsFilter(ts);
 	    assertTokenStreamContents(ts, 
 	        new String[] { "ecological", "develop", "comprehensive-hands-on", "and", "ecology-" });
-	  }
+	}
+	
+	public void testOffsets() throws Exception {
+	  String input = "abc- def geh 1234- 5678-";
+    TokenStream ts = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+    ts = new HyphenatedWordsFilter(ts);
+    assertTokenStreamContents(ts, 
+        new String[] { "abcdef", "geh", "12345678-" },
+        new int[] { 0, 9, 13 },
+        new int[] { 8, 12, 24 });
+	}
+	
+  /** blast some random strings through the analyzer */
+  public void testRandomString() throws Exception {
+    Analyzer a = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new HyphenatedWordsFilter(tokenizer));
+      }
+    };
+    
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+  }
 }

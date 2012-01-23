@@ -405,10 +405,20 @@ public final class WordDelimiterFilter extends TokenFilter {
     clearAttributes();
     termAttribute.copyBuffer(savedBuffer, iterator.current, iterator.end - iterator.current);
 
-    int startOffSet = (isSingleWord || !hasIllegalOffsets) ? savedStartOffset + iterator.current : savedStartOffset;
-    int endOffSet = (hasIllegalOffsets) ? savedEndOffset : savedStartOffset + iterator.end;
-
-    offsetAttribute.setOffset(startOffSet, endOffSet);
+    int startOffset = savedStartOffset + iterator.current;
+    int endOffset = savedStartOffset + iterator.end;
+    
+    if (hasIllegalOffsets) {
+      // historically this filter did this regardless for 'isSingleWord', 
+      // but we must do a sanity check:
+      if (isSingleWord && startOffset <= savedEndOffset) {
+        offsetAttribute.setOffset(startOffset, savedEndOffset);
+      } else {
+        offsetAttribute.setOffset(savedStartOffset, savedEndOffset);
+      }
+    } else {
+      offsetAttribute.setOffset(startOffset, endOffset);
+    }
     posIncAttribute.setPositionIncrement(position(false));
     typeAttribute.setType(savedType);
   }

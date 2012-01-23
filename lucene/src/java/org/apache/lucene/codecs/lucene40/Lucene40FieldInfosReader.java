@@ -85,11 +85,11 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         // LUCENE-3027: past indices were able to write
         // storePayloads=true when omitTFAP is also true,
         // which is invalid.  We correct that, here:
-        if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+        if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           storePayloads = false;
         }
         hasVectors |= storeTermVector;
-        hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+        hasProx |= isIndexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
         hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
         // DV Types are packed in one byte
         byte val = input.readByte();

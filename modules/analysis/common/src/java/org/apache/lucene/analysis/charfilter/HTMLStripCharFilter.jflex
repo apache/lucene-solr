@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.util.OpenStringBuilder;
 /**
  * A CharFilter that wraps another Reader and attempts to strip out HTML constructs.
  */
+@SuppressWarnings("fallthrough")
 %%
 
 %unicode 6.0
@@ -151,6 +152,7 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
   private static final char BR_END_TAG_REPLACEMENT = '\n';
   private static final char SCRIPT_REPLACEMENT = '\n';
   private static final char STYLE_REPLACEMENT = '\n';
+  private static final char REPLACEMENT_CHARACTER = '\uFFFD';
 
   private CharArraySet escapedTags = null;
   private int inputStart;
@@ -350,6 +352,137 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     yybegin(CHARACTER_REFERENCE_TAIL);
   }
   "#" { inputSegment.append('#'); yybegin(NUMERIC_CHARACTER); }
+
+//                                             1   1       11              11
+// 0  1   2   3       45              678  9   0   1       23              45
+  "#" [xX][dD][89aAbB][0-9a-fA-F]{2} ";&#" [xX][dD][c-fC-F][0-9a-fA-F]{2} ";" {
+    // Handle paired UTF-16 surrogates.
+    outputSegment = entitySegment;
+    outputSegment.clear();
+    String surrogatePair = yytext();
+    char highSurrogate = '\u0000';
+    try {
+      highSurrogate = (char)Integer.parseInt(surrogatePair.substring(2, 6), 16);
+    } catch(Exception e) { // should never happen
+      assert false: "Exception parsing high surrogate '"
+                  + surrogatePair.substring(2, 6) + "'";
+    }
+    try {
+      outputSegment.unsafeWrite
+          ((char)Integer.parseInt(surrogatePair.substring(10, 14), 16));
+    } catch(Exception e) { // should never happen
+      assert false: "Exception parsing low surrogate '"
+                  + surrogatePair.substring(10, 14) + "'";
+    }
+    cumulativeDiff += inputSegment.length() + yylength() - 2;
+    addOffCorrectMap(outputCharCount + 2, cumulativeDiff);
+    inputSegment.clear();
+    yybegin(YYINITIAL);
+    return highSurrogate;
+  }
+
+//                          1   1       11              11
+// 01  2    345    678  9   0   1       23              45
+  "#5" [56] \d{3} ";&#" [xX][dD][c-fC-F][0-9a-fA-F]{2} ";" {
+    // Handle paired UTF-16 surrogates.
+    String surrogatePair = yytext();
+    char highSurrogate = '\u0000';
+    try { // High surrogates are in decimal range [55296, 56319]
+      highSurrogate = (char)Integer.parseInt(surrogatePair.substring(1, 6));
+    } catch(Exception e) { // should never happen
+      assert false: "Exception parsing high surrogate '"
+                  + surrogatePair.substring(1, 6) + "'";
+    }
+    if (Character.isHighSurrogate(highSurrogate)) {
+      outputSegment = entitySegment;
+      outputSegment.clear();
+      try {
+        outputSegment.unsafeWrite
+            ((char)Integer.parseInt(surrogatePair.substring(10, 14), 16));
+      } catch(Exception e) { // should never happen
+        assert false: "Exception parsing low surrogate '"
+                    + surrogatePair.substring(10, 14) + "'";
+      }
+      cumulativeDiff += inputSegment.length() + yylength() - 2;
+      addOffCorrectMap(outputCharCount + 2, cumulativeDiff);
+      inputSegment.clear();
+      yybegin(YYINITIAL);
+      return highSurrogate;
+    }
+    yypushback(surrogatePair.length() - 1); // Consume only '#'
+    inputSegment.append('#');
+    yybegin(NUMERIC_CHARACTER);
+  }
+
+//                                          1    111     11
+// 0  1   2   3       45              6789  0    123     45
+  "#" [xX][dD][89aAbB][0-9a-fA-F]{2} ";&#5" [67] \d{3}  ";" {
+    // Handle paired UTF-16 surrogates.
+    String surrogatePair = yytext();
+    char highSurrogate = '\u0000';
+    char lowSurrogate = '\u0000';
+    try {
+      highSurrogate = (char)Integer.parseInt(surrogatePair.substring(2, 6), 16);
+    } catch(Exception e) { // should never happen
+      assert false: "Exception parsing high surrogate '"
+                  + surrogatePair.substring(2, 6) + "'";
+    }
+    try { // Low surrogates are in decimal range [56320, 57343]
+      lowSurrogate = (char)Integer.parseInt(surrogatePair.substring(9, 14));
+    } catch(Exception e) { // should never happen
+      assert false: "Exception parsing low surrogate '"
+                  + surrogatePair.substring(9, 14) + "'";
+    }
+    if (Character.isLowSurrogate(lowSurrogate)) {
+      outputSegment = entitySegment;
+      outputSegment.clear();
+      outputSegment.unsafeWrite(lowSurrogate);
+      cumulativeDiff += inputSegment.length() + yylength() - 2;
+      addOffCorrectMap(outputCharCount + 2, cumulativeDiff);
+      inputSegment.clear();
+      yybegin(YYINITIAL);
+      return highSurrogate;
+    }
+    yypushback(surrogatePair.length() - 1); // Consume only '#'
+    inputSegment.append('#');
+    yybegin(NUMERIC_CHARACTER);
+  }
+
+//                       1    111     11
+// 01  2    345    6789  0    123     45
+  "#5" [56] \d{3} ";&#5" [67] \d{3}  ";" {
+    // Handle paired UTF-16 surrogates.
+    String surrogatePair = yytext();
+    char highSurrogate = '\u0000';
+    try { // High surrogates are in decimal range [55296, 56319]
+      highSurrogate = (char)Integer.parseInt(surrogatePair.substring(1, 6));
+    } catch(Exception e) { // should never happen
+      assert false: "Exception parsing high surrogate '"
+                  + surrogatePair.substring(1, 6) + "'";
+    }
+    if (Character.isHighSurrogate(highSurrogate)) {
+      char lowSurrogate = '\u0000';
+      try { // Low surrogates are in decimal range [56320, 57343]
+        lowSurrogate = (char)Integer.parseInt(surrogatePair.substring(9, 14));
+      } catch(Exception e) { // should never happen
+        assert false: "Exception parsing low surrogate '"
+                    + surrogatePair.substring(9, 14) + "'";
+      }
+      if (Character.isLowSurrogate(lowSurrogate)) {
+        outputSegment = entitySegment;
+        outputSegment.clear();
+        outputSegment.unsafeWrite(lowSurrogate);
+        cumulativeDiff += inputSegment.length() + yylength() - 2;
+        addOffCorrectMap(outputCharCount + 2, cumulativeDiff);
+        inputSegment.clear();
+        yybegin(YYINITIAL);
+        return highSurrogate;
+      }
+    }
+    yypushback(surrogatePair.length() - 1); // Consume only '#'
+    inputSegment.append('#');
+    yybegin(NUMERIC_CHARACTER);
+  }
 }
 
 <NUMERIC_CHARACTER> {
@@ -359,25 +492,27 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     if (matchLength <= 6) { // 10FFFF: max 6 hex chars
       String hexCharRef
           = new String(zzBuffer, zzStartRead + 1, matchLength - 1);
+      int codePoint = 0;
       try {
-        int codePoint = Integer.parseInt(hexCharRef, 16);
-        if (codePoint <= 0x10FFFF) {
-          outputSegment = entitySegment;
-          outputSegment.clear();
+        codePoint = Integer.parseInt(hexCharRef, 16);
+      } catch(Exception e) {
+        assert false: "Exception parsing hex code point '" + hexCharRef + "'";
+      }
+      if (codePoint <= 0x10FFFF) {
+        outputSegment = entitySegment;
+        outputSegment.clear();
+        if (codePoint >= Character.MIN_SURROGATE
+            && codePoint <= Character.MAX_SURROGATE) {
+          outputSegment.unsafeWrite(REPLACEMENT_CHARACTER);
+        } else {
           outputSegment.setLength
               (Character.toChars(codePoint, outputSegment.getArray(), 0));
-          yybegin(CHARACTER_REFERENCE_TAIL);
-        } else {
-          outputSegment = inputSegment;
-          yybegin(YYINITIAL);
-          return outputSegment.nextChar();
         }
-      } catch(NumberFormatException e) {
-        assert false: "NumberFormatException parsing hex code point '"
-                      + hexCharRef + "'";
-      } catch(IllegalArgumentException e) {
-        assert false: "IllegalArgumentException getting chars "
-                      + "for hex code point '" + hexCharRef + "'";
+        yybegin(CHARACTER_REFERENCE_TAIL);
+      } else {
+        outputSegment = inputSegment;
+        yybegin(YYINITIAL);
+        return outputSegment.nextChar();
       }
     } else {
       outputSegment = inputSegment;
@@ -390,25 +525,27 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     inputSegment.write(zzBuffer, zzStartRead, matchLength);
     if (matchLength <= 7) { // 0x10FFFF = 1114111: max 7 decimal chars
       String decimalCharRef = yytext();
+      int codePoint = 0;
       try {
-        int codePoint = Integer.parseInt(decimalCharRef);
-        if (codePoint <= 0x10FFFF) {
-          outputSegment = entitySegment;
-          outputSegment.clear();
+        codePoint = Integer.parseInt(decimalCharRef);
+      } catch(Exception e) {
+        assert false: "Exception parsing code point '" + decimalCharRef + "'";
+      }
+      if (codePoint <= 0x10FFFF) {
+        outputSegment = entitySegment;
+        outputSegment.clear();
+        if (codePoint >= Character.MIN_SURROGATE
+            && codePoint <= Character.MAX_SURROGATE) {
+          outputSegment.unsafeWrite(REPLACEMENT_CHARACTER);
+        } else {
           outputSegment.setLength
               (Character.toChars(codePoint, outputSegment.getArray(), 0));
-          yybegin(CHARACTER_REFERENCE_TAIL);
-        } else {
-          outputSegment = inputSegment;
-          yybegin(YYINITIAL);
-          return outputSegment.nextChar();
         }
-      } catch(NumberFormatException e) {
-        assert false: "NumberFormatException parsing code point '"
-                      + decimalCharRef + "'";
-      } catch(IllegalArgumentException e) {
-        assert false: "IllegalArgumentException getting chars for code point '"
-                      + decimalCharRef + "'";
+        yybegin(CHARACTER_REFERENCE_TAIL);
+      } else {
+        outputSegment = inputSegment;
+        yybegin(YYINITIAL);
+        return outputSegment.nextChar();
       }
     } else {
       outputSegment = inputSegment;

@@ -58,7 +58,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
       output.writeVInt(FORMAT_CURRENT);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
-        assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
+        assert fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.storePayloads;
         byte bits = 0x0;
         if (fi.isIndexed) bits |= IS_INDEXED;
         if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
