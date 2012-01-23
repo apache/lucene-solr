@@ -513,6 +513,11 @@ Bug Fixes
     from Unicode character classes [:ID_Start:] and [:ID_Continue:].
   - Uppercase character entities "&QUOT;", "&COPY;", "&GT;", "&LT;", "&REG;",
     and "&AMP;" are now recognized and handled as if they were in lowercase.
+  - The REPLACEMENT CHARACTER U+FFFD is now used to replace numeric character 
+    entities for unpaired UTF-16 low and high surrogates (in the range
+    [U+D800-U+DFFF]).
+  - Properly paired numeric character entities for UTF-16 surrogates are now
+    converted to the corresponding code units.
   - Opening tags with unbalanced quotation marks are now properly stripped.
   - Literal "<" and ">" characters in opening tags, regardless of whether they
     appear inside quotation marks, now inhibit recognition (and stripping) of
