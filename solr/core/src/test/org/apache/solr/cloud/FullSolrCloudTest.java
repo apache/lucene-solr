@@ -367,7 +367,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     for (Map.Entry<String,Slice> slice : slices.entrySet()) {
       // check that things look right
       List<CloudJettyRunner> jetties = shardToJetty.get(slice.getKey());
-      assertNotNull("We found no jetties for shard: " + slice.getKey()
+      assertNotNull("Test setup problem: We found no jetties for shard: " + slice.getKey()
           + " just:" + shardToJetty.keySet(), jetties);
       assertTrue(jetties.size() > 0);
     }
