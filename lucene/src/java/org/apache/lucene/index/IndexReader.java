@@ -921,13 +921,7 @@ public abstract class IndexReader implements Closeable {
    *  If this method returns an empty array, that means this
    *  reader is a null reader (for example a MultiReader
    *  that has no sub readers).
-   *  <p>
-   *  NOTE: You should not try using sub-readers returned by
-   *  this method to make any changes (deleteDocument,
-   *  etc.). While this might succeed for one composite reader
-   *  (like MultiReader), it will most likely lead to index
-   *  corruption for other readers (like DirectoryReader obtained
-   *  through {@link #open}. Use the parent reader directly. */
+   */
   public IndexReader[] getSequentialSubReaders() {
     ensureOpen();
     return null;

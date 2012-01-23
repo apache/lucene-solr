@@ -57,7 +57,7 @@ public class Lucene3xPostingsFormat extends PostingsFormat {
   
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    throw new IllegalArgumentException("this codec can only be used for reading");
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override

@@ -154,13 +154,22 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
 
     /** Construct the compound token based on a slice of the current {@link CompoundWordTokenFilterBase#termAtt}. */
     public CompoundToken(int offset, int length) {
-      final int newStart = CompoundWordTokenFilterBase.this.offsetAtt.startOffset() + offset;
       this.txt = CompoundWordTokenFilterBase.this.termAtt.subSequence(offset, offset + length);
-      // TODO: This ignores the original endOffset, if a CharFilter/Tokenizer/Filter removed
-      // chars from the term, offsets may not match correctly (other filters producing tokens
-      // may also have this problem):
-      this.startOffset = newStart;
-      this.endOffset = newStart + length;
+      
+      // offsets of the original word
+      int startOff = CompoundWordTokenFilterBase.this.offsetAtt.startOffset();
+      int endOff = CompoundWordTokenFilterBase.this.offsetAtt.endOffset();
+      
+      if (endOff - startOff != CompoundWordTokenFilterBase.this.termAtt.length()) {
+        // if length by start + end offsets doesn't match the term text then assume
+        // this is a synonym and don't adjust the offsets.
+        this.startOffset = startOff;
+        this.endOffset = endOff;
+      } else {
+        final int newStart = startOff + offset;
+        this.startOffset = newStart;
+        this.endOffset = newStart + length;
+      }
     }
 
   }  

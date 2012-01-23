@@ -43,6 +43,10 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
     IndexOutput out = createOutput(dir, segmentFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount())));
     boolean success = false;
     try {
+      /*
+       * TODO its not ideal that we write the format and the codecID inside the
+       * codec private classes but we read it in SegmentInfos.
+       */
       out.writeInt(SegmentInfos.FORMAT_CURRENT); // write FORMAT
       out.writeString(codecID); // write codecID
       out.writeLong(infos.version);
@@ -69,7 +73,7 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
     output.writeString(si.name);
     output.writeInt(si.docCount);
     output.writeLong(si.getDelGen());
-
+    // we still need to write this in 4.0 since we can open a 3.x with shared docStores
     output.writeInt(si.getDocStoreOffset());
     if (si.getDocStoreOffset() != -1) {
       output.writeString(si.getDocStoreSegment());

@@ -135,4 +135,9 @@ public final class PositiveIntOutputs extends Outputs<Long> {
   public String outputToString(Long output) {
     return output.toString();
   }
+
+  @Override
+  public String toString() {
+    return "PositiveIntOutputs(doShare=" + doShare + ")";
+  }
 }

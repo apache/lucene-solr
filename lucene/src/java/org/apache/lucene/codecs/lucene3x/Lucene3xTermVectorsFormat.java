@@ -28,6 +28,13 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
+/**
+ * Lucene3x ReadOnly TermVectorsFormat implementation
+ * @deprecated (4.0) This is only used to read indexes created
+ * before 4.0.
+ * @lucene.experimental
+ */
+@Deprecated
 public class Lucene3xTermVectorsFormat extends TermVectorsFormat {
 
   @Override
@@ -37,8 +44,7 @@ public class Lucene3xTermVectorsFormat extends TermVectorsFormat {
 
   @Override
   public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
-    // TODO all these IAEs in preflex should be UOEs?
-    throw new IllegalArgumentException("this codec can only be used for reading");
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override

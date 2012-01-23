@@ -33,9 +33,7 @@ import org.apache.lucene.util.FixedBitSet;
 
 public abstract class PostingsConsumer {
 
-  /** Adds a new doc in this term.  If this field omits term
-   *  freqs & positions then termDocFreq should be ignored,
-   *  and, finishDoc will not be called. */
+  /** Adds a new doc in this term. */
   public abstract void startDoc(int docID, int termDocFreq) throws IOException;
 
   public static class PostingsMergeState {
@@ -52,8 +50,7 @@ public abstract class PostingsConsumer {
   public abstract void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException;
 
   /** Called when we are done adding positions & payloads
-   *  for each doc.  Not called  when the field omits term
-   *  freq and positions. */
+   *  for each doc. */
   public abstract void finishDoc() throws IOException;
 
   /** Default merge impl: append documents, mapping around

@@ -96,13 +96,13 @@ public class SentinelIntSet {
   public int put(int key) {
     int s = find(key);
     if (s < 0) {
+      count++;
       if (count >= rehashCount) {
         rehash();
         s = getSlot(key);
       } else {
         s = -s-1;
       }
-      count++;
       keys[s] = key;
     }
     return s;

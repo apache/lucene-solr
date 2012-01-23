@@ -117,5 +117,10 @@ public class TestChineseTokenizer extends BaseTokenStreamTestCase
       assertAnalyzesTo(justFilter, "This is a Test. b c d", 
           new String[] { "This", "Test." });
     }
+    
+    /** blast some random strings through the analyzer */
+    public void testRandomStrings() throws Exception {
+      checkRandomData(random, new ChineseAnalyzer(), 10000*RANDOM_MULTIPLIER);
+    }
 
 }

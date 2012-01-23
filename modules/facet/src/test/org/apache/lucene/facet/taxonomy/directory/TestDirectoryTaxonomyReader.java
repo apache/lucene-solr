@@ -11,6 +11,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -178,4 +179,28 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     }
   }
   
+  @Test
+  public void testRefreshAndRefCount() throws Exception {
+    Directory dir = new RAMDirectory(); // no need for random directories here
+
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
+    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.commit();
+
+    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
+    assertEquals("wrong refCount", 1, taxoReader.getRefCount());
+
+    taxoReader.incRef();
+    assertEquals("wrong refCount", 2, taxoReader.getRefCount());
+
+    taxoWriter.addCategory(new CategoryPath("a", "b"));
+    taxoWriter.commit();
+    taxoReader.refresh();
+    assertEquals("wrong refCount", 2, taxoReader.getRefCount());
+
+    taxoWriter.close();
+    taxoReader.close();
+    dir.close();
+  }
+
 }

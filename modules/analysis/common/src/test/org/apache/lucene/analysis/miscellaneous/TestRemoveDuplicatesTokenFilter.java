@@ -17,13 +17,21 @@
 
 package org.apache.lucene.analysis.miscellaneous;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.synonym.SynonymFilter;
+import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util._TestUtil;
 
+import java.io.Reader;
 import java.util.Iterator;
 import java.util.Arrays;
 
@@ -116,6 +124,45 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
              
   }
   
+  // some helper methods for the below test with synonyms
+  private String randomNonEmptyString() {
+    while(true) {
+      final String s = _TestUtil.randomUnicodeString(random).trim();
+      if (s.length() != 0 && s.indexOf('\u0000') == -1) {
+        return s;
+      }
+    }
+  }
   
+  private void add(SynonymMap.Builder b, String input, String output, boolean keepOrig) {
+    b.add(new CharsRef(input.replaceAll(" +", "\u0000")),
+          new CharsRef(output.replaceAll(" +", "\u0000")),
+          keepOrig);
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    final int numIters = atLeast(10);
+    for (int i = 0; i < numIters; i++) {
+      SynonymMap.Builder b = new SynonymMap.Builder(random.nextBoolean());
+      final int numEntries = atLeast(10);
+      for (int j = 0; j < numEntries; j++) {
+        add(b, randomNonEmptyString(), randomNonEmptyString(), random.nextBoolean());
+      }
+      final SynonymMap map = b.build();
+      final boolean ignoreCase = random.nextBoolean();
+      
+      final Analyzer analyzer = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+          TokenStream stream = new SynonymFilter(tokenizer, map, ignoreCase);
+          return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(stream));
+        }
+      };
+
+      checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
+    }
+  }
 
 }

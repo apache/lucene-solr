@@ -517,9 +517,8 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
               }
             }
           }
-
-          postingsConsumer.finishDoc();
         }
+        postingsConsumer.finishDoc();
       }
       termsConsumer.finishTerm(text, new TermStats(numDocs, totTF));
       sumTotalTermFreq += totTF;

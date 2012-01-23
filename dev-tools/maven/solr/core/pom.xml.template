@@ -37,6 +37,15 @@
   </properties>
   <dependencies>
     <dependency>
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
+      <!-- This dependency cannot be put into solr-parent, because local        -->
+      <!-- dependencies are always ordered before inherited dependencies.       -->
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>solr-solrj</artifactId>
       <version>${project.version}</version>
@@ -192,6 +201,12 @@
     <testResources>
       <testResource>
         <directory>src/test-files</directory>
+      </testResource>
+      <testResource>
+        <directory>${project.build.testSourceDirectory}</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
       </testResource>
       <testResource>
         <directory>../solrj/src/test-files</directory>
