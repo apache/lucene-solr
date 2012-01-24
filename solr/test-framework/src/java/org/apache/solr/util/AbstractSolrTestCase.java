@@ -316,6 +316,20 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
     Doc d = doc(fieldsAndValues);
     return add(d);
   }
+  
+  /**
+   * Generates a simple &lt;add&gt;&lt;doc&gt;... XML String with the
+   * commitWithin attribute.
+   *
+   * @param commitWithin the value of the commitWithin attribute 
+   * @param fieldsAndValues 0th and Even numbered args are fields names odds are field values.
+   * @see #add
+   * @see #doc
+   */
+  public String adoc(int commitWithin, String... fieldsAndValues) {
+    Doc d = doc(fieldsAndValues);
+    return add(d, "commitWithin", String.valueOf(commitWithin));
+  }
 
   /**
    * Generates a simple &lt;add&gt;&lt;doc&gt;... XML String with no options
@@ -366,16 +380,17 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
    *
    * @see TestHarness#deleteById
    */
-  public String delI(String id) {
-    return h.deleteById(id);
+  public String delI(String id, String... args) {
+    return h.deleteById(id, args);
   }
+  
   /**
    * Generates a &lt;delete&gt;... XML string for an query
    *
    * @see TestHarness#deleteByQuery
    */
-  public String delQ(String q) {
-    return h.deleteByQuery(q);
+  public String delQ(String q, String... args) {
+    return h.deleteByQuery(q, args);
   }
   
   /**

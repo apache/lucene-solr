@@ -91,6 +91,14 @@ final class CommitTracker implements Runnable {
   public void scheduleCommitWithin(long commitMaxTime) {
     _scheduleCommitWithin(commitMaxTime);
   }
+  
+  private void _scheduleCommitWithinIfNeeded(long commitWithin) {
+    long ctime = (commitWithin > 0) ? commitWithin : timeUpperBound;
+
+    if (ctime > 0) {
+      _scheduleCommitWithin(ctime);
+    }
+  }
 
   private void _scheduleCommitWithin(long commitMaxTime) {
     if (commitMaxTime <= 0) return;
@@ -139,11 +147,14 @@ final class CommitTracker implements Runnable {
     }
     
     // maxTime-triggered autoCommit
-    long ctime = (commitWithin > 0) ? commitWithin : timeUpperBound;
-
-    if (ctime > 0) {
-      _scheduleCommitWithin(ctime);
-    }
+    _scheduleCommitWithinIfNeeded(commitWithin);
+  }
+  
+  /** 
+   * Indicate that documents have been deleted
+   */
+  public void deletedDocument( int commitWithin ) {
+    _scheduleCommitWithinIfNeeded(commitWithin);
   }
   
   /** Inform tracker that a commit has occurred */

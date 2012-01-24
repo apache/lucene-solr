@@ -198,28 +198,43 @@ class XMLLoader extends ContentStreamLoader {
           } // end rollback
           else if (XmlUpdateRequestHandler.DELETE.equals(currTag)) {
             XmlUpdateRequestHandler.log.trace("parsing delete");
-            processDelete(processor, parser);
+            processDelete(req, processor, parser);
           } // end delete
           break;
       }
     }
   }
 
+  /*
+   * Signature for backward compat
+   */
+  void processDelete(UpdateRequestProcessor processor, XMLStreamReader parser) throws XMLStreamException, IOException {
+    processDelete(null, processor, parser);
+  }
+
   /**
    * @since solr 1.3
    */
-  void processDelete(UpdateRequestProcessor processor, XMLStreamReader parser) throws XMLStreamException, IOException {
+  void processDelete(SolrQueryRequest req, UpdateRequestProcessor processor, XMLStreamReader parser) throws XMLStreamException, IOException {
     // Parse the command
     DeleteUpdateCommand deleteCmd = new DeleteUpdateCommand();
     deleteCmd.fromPending = true;
     deleteCmd.fromCommitted = true;
+
+    // Need to instansiate a SolrParams, even if req is null, for backward compat with legacyUpdate
+    SolrParams params = (req != null) ? req.getParams() : new ModifiableSolrParams();
+
+    // First look for commitWithin parameter on the request, will be overwritten for individual <delete>'s
+    deleteCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       String attrName = parser.getAttributeLocalName(i);
       String attrVal = parser.getAttributeValue(i);
-      if ("fromPending".equals(attrName)) {
+      if (XmlUpdateRequestHandler.FROM_PENDING.equals(attrName)) {
         deleteCmd.fromPending = StrUtils.parseBoolean(attrVal);
-      } else if ("fromCommitted".equals(attrName)) {
+      } else if (XmlUpdateRequestHandler.FROM_COMMITTED.equals(attrName)) {
         deleteCmd.fromCommitted = StrUtils.parseBoolean(attrVal);
+      } else if (XmlUpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
+        deleteCmd.commitWithin = Integer.parseInt(attrVal);
       } else {
         XmlUpdateRequestHandler.log.warn("unexpected attribute delete/@" + attrName);
       }

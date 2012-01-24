@@ -284,6 +284,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     iwCommit.lock();
     try {
       openWriter();
+      commitTracker.deletedDocument( cmd.commitWithin );
       writer.deleteDocuments(idTerm.createTerm(idFieldType.toInternal(cmd.id)));
     } finally {
       iwCommit.unlock();
@@ -318,6 +319,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
      iwCommit.lock();
      try {
+       commitTracker.deletedDocument(cmd.commitWithin);
        if (delAll) {
          deleteAll();
        } else {

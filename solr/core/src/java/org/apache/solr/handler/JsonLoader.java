@@ -156,7 +156,8 @@ class JsonLoader extends ContentStreamLoader {
 
     DeleteUpdateCommand cmd = new DeleteUpdateCommand();
     cmd.fromCommitted = cmd.fromPending = true;
-
+    cmd.commitWithin = commitWithin;
+    
     while( true ) {
       int ev = parser.nextEvent();
       if( ev == JSONParser.STRING ) {
@@ -168,7 +169,9 @@ class JsonLoader extends ContentStreamLoader {
           else if( "query".equals(key) ) {
             cmd.query = parser.getString();
           }
-          else {
+          else if( "commitWithin".equals(key) ) { 
+            cmd.commitWithin = Integer.parseInt(parser.getString());
+          } else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
           }
         }

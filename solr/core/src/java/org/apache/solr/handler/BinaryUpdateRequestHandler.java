@@ -34,7 +34,6 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 
 /**
  * Update handler which uses the JavaBin format
@@ -104,11 +103,8 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
         log.error("Exception while processing update request", e);
         break;
       }
-      if (update.getDeleteById() != null) {
-        delete(update.getDeleteById(), processor, true);
-      }
-      if (update.getDeleteQuery() != null) {
-        delete(update.getDeleteQuery(), processor, false);
+      if (update.getDeleteById() != null || update.getDeleteQuery() != null) {
+        delete(update, processor);
       }
     }
   }
@@ -117,37 +113,37 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
     AddUpdateCommand addCmd = new AddUpdateCommand();
     boolean overwrite = true;  // the default
 
-    Boolean overwritePending = null;
-    Boolean overwriteCommitted = null;
-
-
     overwrite = params.getBool(UpdateParams.OVERWRITE, overwrite);
     addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     // check if these flags are set
-    if (overwritePending != null && overwriteCommitted != null) {
-      if (overwritePending != overwriteCommitted) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "can't have different values for 'overwritePending' and 'overwriteCommitted'");
-      }
-      overwrite = overwritePending;
-    }
     addCmd.overwriteCommitted = overwrite;
     addCmd.overwritePending = overwrite;
     addCmd.allowDups = !overwrite;
     return addCmd;
   }
 
-  private void delete(List<String> l, UpdateRequestProcessor processor, boolean isId) throws IOException {
-    for (String s : l) {
-      DeleteUpdateCommand delcmd = new DeleteUpdateCommand();
-      if (isId) {
+  private void delete(UpdateRequest update, UpdateRequestProcessor processor) throws IOException {
+    SolrParams params = update.getParams();
+    DeleteUpdateCommand delcmd = new DeleteUpdateCommand();
+    delcmd.fromCommitted = true;
+    delcmd.fromPending = true;
+    if(params != null) {
+      delcmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+    }
+    
+    if(update.getDeleteById() != null) {
+      for (String s : update.getDeleteById()) {
         delcmd.id = s;
-      } else {
-        delcmd.query = s;
+        processor.processDelete(delcmd);
       }
-      delcmd.fromCommitted = true;
-      delcmd.fromPending = true;
-      processor.processDelete(delcmd);
+      delcmd.id = null;
+    }
+    
+    if(update.getDeleteQuery() != null) {
+      for (String s : update.getDeleteQuery()) {
+        delcmd.query = s;
+        processor.processDelete(delcmd);
+      }
     }
   }
 

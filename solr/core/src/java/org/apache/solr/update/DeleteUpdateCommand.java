@@ -24,6 +24,7 @@ public class DeleteUpdateCommand extends UpdateCommand {
   public String query; // query string for delete-by-query
   public boolean fromPending;
   public boolean fromCommitted;
+  public int commitWithin = -1;
 
   public DeleteUpdateCommand() {
     super("delete");
@@ -37,6 +38,7 @@ public class DeleteUpdateCommand extends UpdateCommand {
     else sb.append("query=`").append(query).append('`');
     sb.append(",fromPending=").append(fromPending);
     sb.append(",fromCommitted=").append(fromCommitted);
+    sb.append(",commitWithin=").append(commitWithin);
     return sb.toString();
   }
 }

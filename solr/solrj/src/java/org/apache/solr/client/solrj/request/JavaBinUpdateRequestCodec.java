@@ -148,6 +148,15 @@ public class JavaBinUpdateRequestCodec {
       }
     };
     codec.unmarshal(is);
+    
+    // NOTE: if the update request contains only delete commands the params
+    // must be loaded now
+    if(updateRequest.getParams()==null) {
+      NamedList params = (NamedList) namedList[0].get("params");
+      if(params!=null) {
+        updateRequest.setParams(new ModifiableSolrParams(SolrParams.toSolrParams(params)));
+      }
+    }
     delById = (List<String>) namedList[0].get("delById");
     delByQ = (List<String>) namedList[0].get("delByQ");
     doclist = (List<List<NamedList>>) namedList[0].get("docs");

@@ -16,13 +16,20 @@
  */
 package org.apache.solr.handler;
 
+import org.apache.commons.lang.ObjectUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.AbstractSolrTestCase;
+
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
@@ -109,5 +116,76 @@ public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase
     assertEquals(true, add.allowDups);
     req.close();
   }
+  
+  @Test
+  public void testReadDelete() throws Exception {
+	    String xml =
+	      "<update>" +
+	      " <delete>" +
+	      "   <query>id:150</query>" +
+	      "   <id>150</id>" +
+	      "   <id>200</id>" +
+	      "   <query>id:200</query>" +
+	      " </delete>" +
+	      " <delete commitWithin=\"500\">" +
+	      "   <query>id:150</query>" +
+	      " </delete>" +
+	      " <delete fromPending=\"false\">" +
+	      "   <id>150</id>" +
+	      " </delete>" +
+	      " <delete fromCommitted=\"false\">" +
+	      "   <id>150</id>" +
+	      " </delete>" +
+	      "</update>";
+	    
+	    MockUpdateRequestProcessor p = new MockUpdateRequestProcessor(null);
+	    p.expectDelete(null, "id:150", true, true, -1);
+	    p.expectDelete("150", null, true, true, -1);
+	    p.expectDelete("200", null, true, true, -1);
+	    p.expectDelete(null, "id:200", true, true, -1);
+	    p.expectDelete(null, "id:150", true, true, 500);
+	    p.expectDelete("150", null, false, true, -1);
+	    p.expectDelete("150", null, true, false, -1);
+
+	    XMLLoader loader = new XMLLoader(p, inputFactory);
+	    loader.load(req(), new SolrQueryResponse(), new ContentStreamBase.StringStream(xml));
+	    
+	    p.assertNoCommandsPending();
+	  }
+	  
+	  private class MockUpdateRequestProcessor extends UpdateRequestProcessor {
+	    
+	    private Queue<DeleteUpdateCommand> deleteCommands = new LinkedList<DeleteUpdateCommand>();
+	    
+	    public MockUpdateRequestProcessor(UpdateRequestProcessor next) {
+	      super(next);
+	    }
+	    
+	    public void expectDelete(String id, String query, boolean fromPending, boolean fromCommitted, int commitWithin) {
+	      DeleteUpdateCommand cmd = new DeleteUpdateCommand();
+	      cmd.id = id;
+	      cmd.query = query;
+	      cmd.fromCommitted = fromCommitted;
+	      cmd.fromPending = fromPending;
+	      cmd.commitWithin = commitWithin;
+	      deleteCommands.add(cmd);
+	    }
+	    
+	    public void assertNoCommandsPending() {
+	      assertTrue(deleteCommands.isEmpty());
+	    }
+	    
+	    @Override
+	    public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+	      DeleteUpdateCommand expected = deleteCommands.poll();
+	      assertNotNull("Unexpected delete command: [" + cmd + "]", expected);
+	      assertTrue("Expected [" + expected + "] but found [" + cmd + "]",
+	          ObjectUtils.equals(expected.id, cmd.id) &&
+	          ObjectUtils.equals(expected.query, cmd.query) &&
+	          expected.fromPending==cmd.fromPending &&
+	          expected.fromCommitted==cmd.fromCommitted &&
+	          expected.commitWithin==cmd.commitWithin);
+	    }
+	  }
 
 }
