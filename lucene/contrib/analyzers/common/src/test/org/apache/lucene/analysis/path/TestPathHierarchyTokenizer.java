@@ -17,12 +17,16 @@ package org.apache.lucene.analysis.path;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.MappingCharFilter;
 import org.apache.lucene.analysis.NormalizeCharMap;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.Tokenizer;
 
 public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
 
@@ -192,5 +196,17 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new int[]{2},
         new int[]{1},
         path.length());
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new PathHierarchyTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }    
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

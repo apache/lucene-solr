@@ -18,15 +18,20 @@
 package org.apache.solr.analysis;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * 
@@ -188,5 +193,22 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   
   private Pattern pattern( String p ){
     return Pattern.compile( p );
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+
+      @Override
+      protected Reader initReader(Reader reader) {
+        return new PatternReplaceCharFilter(Pattern.compile("a"), "b", CharReader.get(reader));
+      }
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

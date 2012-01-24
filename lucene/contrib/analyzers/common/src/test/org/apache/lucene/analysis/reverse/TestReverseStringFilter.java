@@ -17,11 +17,16 @@
 
 package org.apache.lucene.analysis.reverse;
 
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.Version;
 
 public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testFilter() throws Exception {
@@ -92,5 +97,17 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
     buffer = "abc瀛愯𩬅def".toCharArray();
     ReverseStringFilter.reverse(TEST_VERSION_CURRENT, buffer, 3, 7);
     assertEquals("abcfed𩬅愯瀛", new String(buffer));
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new ReverseStringFilter(TEST_VERSION_CURRENT, tokenizer));
+      }
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }
