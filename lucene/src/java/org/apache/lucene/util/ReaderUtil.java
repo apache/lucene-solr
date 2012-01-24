@@ -94,43 +94,6 @@ public final class ReaderUtil {
   }
 
   /**
-   * Returns sub IndexReader that contains the given document id.
-   *    
-   * @param doc id of document
-   * @param reader parent reader
-   * @return sub reader of parent which contains the specified doc id
-   */
-  public static IndexReader subReader(int doc, IndexReader reader) {
-    List<IndexReader> subReadersList = new ArrayList<IndexReader>();
-    ReaderUtil.gatherSubReaders(subReadersList, reader);
-    IndexReader[] subReaders = subReadersList
-        .toArray(new IndexReader[subReadersList.size()]);
-    int[] docStarts = new int[subReaders.length];
-    int maxDoc = 0;
-    for (int i = 0; i < subReaders.length; i++) {
-      docStarts[i] = maxDoc;
-      maxDoc += subReaders[i].maxDoc();
-    }
-    return subReaders[ReaderUtil.subIndex(doc, docStarts)];
-  }
-  
-  /**
-   * Returns sub-reader subIndex from reader.
-   * 
-   * @param reader parent reader
-   * @param subIndex index of desired sub reader
-   * @return the subreader at subIndex
-   */
-  public static IndexReader subReader(IndexReader reader, int subIndex) {
-    List<IndexReader> subReadersList = new ArrayList<IndexReader>();
-    ReaderUtil.gatherSubReaders(subReadersList, reader);
-    IndexReader[] subReaders = subReadersList
-        .toArray(new IndexReader[subReadersList.size()]);
-    return subReaders[subIndex];
-  }
-
-
-  /**
    * Returns index of the searcher/reader for document <code>n</code> in the
    * array used to construct this searcher/reader.
    */
