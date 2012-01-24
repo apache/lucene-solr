@@ -104,11 +104,8 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
         log.error("Exception while processing update request", e);
         break;
       }
-      if (update.getDeleteById() != null) {
-        delete(req, update.getDeleteById(), processor, true);
-      }
-      if (update.getDeleteQuery() != null) {
-        delete(req, update.getDeleteQuery(), processor, false);
+      if (update.getDeleteById() != null || update.getDeleteQuery() != null) {
+        delete(req, update, processor);
       }
     }
   }
@@ -121,18 +118,28 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
     return addCmd;
   }
 
-  private void delete(SolrQueryRequest req, List<String> l, UpdateRequestProcessor processor, boolean isId) throws IOException {
-    for (String s : l) {
-      DeleteUpdateCommand delcmd = new DeleteUpdateCommand(req);
-      if (isId) {
+  private void delete(SolrQueryRequest req, UpdateRequest update, UpdateRequestProcessor processor) throws IOException {
+    SolrParams params = update.getParams();
+    DeleteUpdateCommand delcmd = new DeleteUpdateCommand(req);
+    if(params != null) {
+      delcmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+    }
+    
+    if(update.getDeleteById() != null) {
+      for (String s : update.getDeleteById()) {
         delcmd.id = s;
-      } else {
-        delcmd.query = s;
+        processor.processDelete(delcmd);
       }
-      processor.processDelete(delcmd);
+      delcmd.id = null;
+    }
+    
+    if(update.getDeleteQuery() != null) {
+      for (String s : update.getDeleteQuery()) {
+        delcmd.query = s;
+        processor.processDelete(delcmd);
+      }
     }
   }
-
   @Override
   public String getDescription() {
     return "Add/Update multiple documents with javabin format";

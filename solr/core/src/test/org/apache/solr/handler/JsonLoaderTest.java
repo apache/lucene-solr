@@ -68,7 +68,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "'optimize': { 'waitSearcher':false },\n" +
       "\n" +
       "'delete': { 'id':'ID' },\n" +
+      "'delete': { 'id':'ID', 'commitWithin':'500' },\n" +
       "'delete': { 'query':'QUERY' },\n" +
+      "'delete': { 'query':'QUERY', 'commitWithin':'500' },\n" +
       "'rollback': {}\n" +
       "\n" +
       "}\n" +
@@ -113,14 +115,26 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     
 
     // DELETE COMMANDS
-    assertEquals( 2, p.deleteCommands.size() );
+    assertEquals( 4, p.deleteCommands.size() );
     DeleteUpdateCommand delete = p.deleteCommands.get( 0 );
     assertEquals( delete.id, "ID" );
     assertEquals( delete.query, null );
+    assertEquals( delete.commitWithin, -1);
     
     delete = p.deleteCommands.get( 1 );
+    assertEquals( delete.id, "ID" );
+    assertEquals( delete.query, null );
+    assertEquals( delete.commitWithin, 500);
+    
+    delete = p.deleteCommands.get( 2 );
     assertEquals( delete.id, null );
     assertEquals( delete.query, "QUERY" );
+    assertEquals( delete.commitWithin, -1);
+    
+    delete = p.deleteCommands.get( 3 );
+    assertEquals( delete.id, null );
+    assertEquals( delete.query, "QUERY" );
+    assertEquals( delete.commitWithin, 500);
 
     // ROLLBACK COMMANDS
     assertEquals( 1, p.rollbackCommands.size() );

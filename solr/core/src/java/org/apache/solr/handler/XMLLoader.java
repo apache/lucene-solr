@@ -181,6 +181,10 @@ class XMLLoader extends ContentStreamLoader {
     // Parse the command
     DeleteUpdateCommand deleteCmd = new DeleteUpdateCommand(req);
 
+    // First look for commitWithin parameter on the request, will be overwritten for individual <delete>'s
+    SolrParams params = req.getParams();
+    deleteCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       String attrName = parser.getAttributeLocalName(i);
       String attrVal = parser.getAttributeValue(i);
@@ -188,6 +192,8 @@ class XMLLoader extends ContentStreamLoader {
         // deprecated
       } else if ("fromCommitted".equals(attrName)) {
         // deprecated
+      } else if (XmlUpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
+        deleteCmd.commitWithin = Integer.parseInt(attrVal);
       } else {
         XmlUpdateRequestHandler.log.warn("unexpected attribute delete/@" + attrName);
       }

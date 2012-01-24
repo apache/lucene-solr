@@ -203,6 +203,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     Term deleteTerm = new Term(idField.getName(), cmd.getIndexedId());
 
     // SolrCore.verbose("deleteDocuments",deleteTerm,writer);
+    commitTracker.deletedDocument( cmd.commitWithin );
     writer.deleteDocuments(deleteTerm);
     // SolrCore.verbose("deleteDocuments",deleteTerm,"DONE");
 
@@ -234,6 +235,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       
       boolean delAll = MatchAllDocsQuery.class == q.getClass();
       
+      commitTracker.deletedDocument(cmd.commitWithin);
+
       if (delAll) {
         deleteAll();
       } else {

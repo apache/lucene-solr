@@ -47,7 +47,6 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
   // NOTE: This constant is for use with the <add> XML tag, not the HTTP param with same name
   public static final String COMMIT_WITHIN = "commitWithin";
 
-
   XMLInputFactory inputFactory;
 
 

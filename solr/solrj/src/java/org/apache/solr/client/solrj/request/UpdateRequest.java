@@ -228,7 +228,11 @@ public class UpdateRequest extends AbstractUpdateRequest {
     boolean deleteI = deleteById != null && deleteById.size() > 0;
     boolean deleteQ = deleteQuery != null && deleteQuery.size() > 0;
     if( deleteI || deleteQ ) {
-      writer.append( "<delete>" );
+      if(commitWithin>0) {
+        writer.append( "<delete commitWithin=\"" + commitWithin + "\">" );
+      } else {
+        writer.append( "<delete>" );
+      }
       if( deleteI ) {
         for( String id : deleteById ) {
           writer.append( "<id>" );

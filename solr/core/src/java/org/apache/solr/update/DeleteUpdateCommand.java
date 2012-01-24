@@ -18,7 +18,6 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -30,6 +29,7 @@ public class DeleteUpdateCommand extends UpdateCommand {
   public String id;    // external (printable) id, for delete-by-id
   public String query; // query string for delete-by-query
   private BytesRef indexedId;
+  public int commitWithin = -1;
 
 
   public DeleteUpdateCommand(SolrQueryRequest req) {
@@ -62,6 +62,7 @@ public class DeleteUpdateCommand extends UpdateCommand {
     sb.append(':');
     if (id!=null) sb.append("id=").append(id);
     else sb.append("query=`").append(query).append('`');
+    sb.append(",commitWithin=").append(commitWithin);
     return sb.toString();
   }
 }

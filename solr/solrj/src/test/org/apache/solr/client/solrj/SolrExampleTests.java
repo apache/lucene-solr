@@ -343,7 +343,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
    * query the example
    */
  @Test
- public void testCommitWithin() throws Exception
+ public void testCommitWithinOnAdd() throws Exception
   {    
     // make sure it is empty...
     SolrServer server = getSolrServer();
@@ -388,7 +388,6 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     
     Assert.assertEquals( 1, rsp.getResults().getNumFound() );
     
-
     // Now test the new convenience parameter on the add() for commitWithin
     SolrInputDocument doc4 = new SolrInputDocument();
     doc4.addField( "id", "id4", 1.0f );
@@ -416,7 +415,52 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     }
     
     Assert.assertEquals( 1, rsp.getResults().getNumFound() );
+  }
+ 
+ @Test
+ public void testCommitWithinOnDelete() throws Exception
+  {    
+    // make sure it is empty...
+    SolrServer server = getSolrServer();
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    QueryResponse rsp = server.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 0, rsp.getResults().getNumFound() );
 
+    // Now add one document...
+    SolrInputDocument doc3 = new SolrInputDocument();
+    doc3.addField( "id", "id3", 1.0f );
+    doc3.addField( "name", "doc3", 1.0f );
+    doc3.addField( "price", 10 );
+    server.add(doc3);
+    server.commit();
+
+    // now check that it comes out...
+    rsp = server.query( new SolrQuery( "id:id3") );    
+    Assert.assertEquals( 1, rsp.getResults().getNumFound() );
+    
+    // now test commitWithin on a delete
+    UpdateRequest up = new UpdateRequest();
+    up.setCommitWithin(1000);
+    up.deleteById("id3");
+    up.process( server );
+    
+    // the document should still be there
+    rsp = server.query( new SolrQuery( "id:id3") );
+    Assert.assertEquals( 1, rsp.getResults().getNumFound() );
+    
+    // check if the doc has been deleted every 250 ms for 30 seconds
+    long timeout = System.currentTimeMillis() + 30000;
+    do {
+      Thread.sleep( 250 ); // wait 250 ms
+      
+      rsp = server.query( new SolrQuery( "id:id3") );
+      if(rsp.getResults().getNumFound()==0) {
+        return;
+      }
+    } while(System.currentTimeMillis()<timeout);
+    
+    Assert.fail("commitWithin failed to commit");
   }
 
 
