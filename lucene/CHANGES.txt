@@ -742,6 +742,9 @@ Changes in backwards compatibility policy
   behavior.  Added seekExact() to FSTEnum, and added FST.save/read 
   from a File. (Mike McCandless, Dawid Weiss, Robert Muir)
   
+* LUCENE-3712: Removed unused and untested ReaderUtil#subReader methods.
+  (Uwe Schindler)
+  
 Security fixes
 
 * LUCENE-3588: Try harder to prevent SIGSEGV on cloned MMapIndexInputs:
