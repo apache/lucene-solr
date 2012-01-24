@@ -29,11 +29,26 @@ import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
 
 /**
- * A CharFilter that wraps another Reader and attempts to strip out HTML constructs.
- * 
- * @version $Id$
+ * <p>
+ * This class is <b>NOT</b> recommended for new users and should be
+ * considered <b>UNSUPPORTED</b>.
+ * </p>
+ * <p>
+ * In Solr version 3.5 and earlier, <tt>HTMLStripCharFilter(Factory)</tt>
+ * had known bugs in the offsets it provided, triggering e.g. exceptions in
+ * highlighting.
+ * </p>
+ * <p>
+ * This class is provided as possible alternative for people who depend on
+ * the "broken" behavior of <tt>HTMLStripCharFilter</tt> in Solr version 3.5
+ * and earlier, and/or who don't like the changes introduced by the Solr 3.6+
+ * version of <tt>HTMLStripCharFilterFactory</tt>.  (See the 3.6.0 release
+ * section of solr/CHANGES.txt for a list of differences in behavior.)
+ * </p>
+ * @deprecated use {@link org.apache.lucene.analysis.charfilter.HTMLStripCharFilter}
  */
-public class HTMLStripCharFilter extends BaseCharFilter {
+@Deprecated
+public class LegacyHTMLStripCharFilter extends BaseCharFilter {
   private int readAheadLimit = DEFAULT_READ_AHEAD;
   private int safeReadAheadLimit = readAheadLimit - 3;
   private int numWhitespace = 0;
@@ -55,22 +70,22 @@ public class HTMLStripCharFilter extends BaseCharFilter {
 
 
   public static void main(String[] args) throws IOException {
-    Reader in = new HTMLStripCharFilter(
+    Reader in = new LegacyHTMLStripCharFilter(
             CharReader.get(new InputStreamReader(System.in)));
     int ch;
     while ( (ch=in.read()) != -1 ) System.out.print((char)ch);
   }
 
-  public HTMLStripCharFilter(CharStream source) {
+  public LegacyHTMLStripCharFilter(CharStream source) {
     super(source.markSupported() ? source : CharReader.get(new BufferedReader(source)));
   }
 
-  public HTMLStripCharFilter(CharStream source, Set<String> escapedTags){
+  public LegacyHTMLStripCharFilter(CharStream source, Set<String> escapedTags){
     this(source);
     this.escapedTags = escapedTags;
   }
 
-  public HTMLStripCharFilter(CharStream source, Set<String> escapedTags, int readAheadLimit){
+  public LegacyHTMLStripCharFilter(CharStream source, Set<String> escapedTags, int readAheadLimit){
     this(source);
     this.escapedTags = escapedTags;
     this.readAheadLimit = readAheadLimit;

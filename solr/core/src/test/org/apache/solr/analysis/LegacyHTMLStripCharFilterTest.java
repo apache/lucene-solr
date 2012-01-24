@@ -33,11 +33,12 @@ import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util._TestUtil;
 import org.junit.Ignore;
 
 import org.apache.solr.SolrTestCaseJ4;
 
-public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
+public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   //this is some text  here is a  link  and another  link . This is an entity: & plus a <.  Here is an &
   //
@@ -48,7 +49,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = " this is some text  here is a  link  and " +
             "another  link . " +
             "This is an entity: & plus a <.  Here is an &.  ";
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new StringReader(html)));
+    LegacyHTMLStripCharFilter reader = new LegacyHTMLStripCharFilter(CharReader.get(new StringReader(html)));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     char [] goldArray = gold.toCharArray();
@@ -66,7 +67,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
 
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new FileReader(SolrTestCaseJ4.getFile("htmlStripReaderTest.html"))));
+    LegacyHTMLStripCharFilter reader = new LegacyHTMLStripCharFilter(CharReader.get(new FileReader(SolrTestCaseJ4.getFile("htmlStripReaderTest.html"))));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){
@@ -86,7 +87,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "\u0393";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
+    Reader reader = new LegacyHTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -103,7 +104,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "  <foo> \u00DCbermensch = \u0393 bar \u0393";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
+    Reader reader = new LegacyHTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -120,7 +121,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String gold = "  <junk/>   ! @ and ’";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
+    Reader reader = new LegacyHTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -136,7 +137,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     String test = "aaa bbb <reserved ccc=\"ddddd\"> eeee </reserved> ffff <reserved ggg=\"hhhh\"/> <other/>";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
+    Reader reader = new LegacyHTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -153,7 +154,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testMalformedHTML() throws Exception {
     String test = "a <a hr<ef=aa<a>> </close</a>";
     String gold = "a <a hr<ef=aa > </close ";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
+    Reader reader = new LegacyHTMLStripCharFilter(CharReader.get(new StringReader(test)));
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -166,27 +167,27 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testBufferOverflow() throws Exception {
-    StringBuilder testBuilder = new StringBuilder(HTMLStripCharFilter.DEFAULT_READ_AHEAD + 50);
+    StringBuilder testBuilder = new StringBuilder(LegacyHTMLStripCharFilter.DEFAULT_READ_AHEAD + 50);
     testBuilder.append("ah<?> ??????");
-    appendChars(testBuilder, HTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
+    appendChars(testBuilder, LegacyHTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
     processBuffer(testBuilder.toString(), "Failed on pseudo proc. instr.");//processing instructions
 
     testBuilder.setLength(0);
     testBuilder.append("<!--");//comments
-    appendChars(testBuilder, 3*HTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);//comments have two lookaheads
+    appendChars(testBuilder, 3*LegacyHTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);//comments have two lookaheads
 
     testBuilder.append("-->foo");
     processBuffer(testBuilder.toString(), "Failed w/ comment");
 
     testBuilder.setLength(0);
     testBuilder.append("<?");
-    appendChars(testBuilder, HTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
+    appendChars(testBuilder, LegacyHTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
     testBuilder.append("?>");
     processBuffer(testBuilder.toString(), "Failed with proc. instr.");
     
     testBuilder.setLength(0);
     testBuilder.append("<b ");
-    appendChars(testBuilder, HTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
+    appendChars(testBuilder, LegacyHTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
     testBuilder.append("/>");
     processBuffer(testBuilder.toString(), "Failed on tag");
 
@@ -195,14 +196,14 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   private void appendChars(StringBuilder testBuilder, int numChars) {
     int i1 = numChars / 2;
     for (int i = 0; i < i1; i++){
-      testBuilder.append('a').append(' ');//tack on enough to go beyond the mark readahead limit, since <?> makes HTMLStripCharFilter think it is a processing instruction
+      testBuilder.append('a').append(' ');//tack on enough to go beyond the mark readahead limit, since <?> makes LegacyHTMLStripCharFilter think it is a processing instruction
     }
   }  
 
 
   private void processBuffer(String test, String assertMsg) throws IOException {
     // System.out.println("-------------------processBuffer----------");
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
+    Reader reader = new LegacyHTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -219,7 +220,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
     String test = "<!--- three dashes, still a valid comment ---> ";
     String gold = "  ";
-    Reader reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
+    Reader reader = new LegacyHTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -234,7 +235,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
 
   public void doTestOffsets(String in) throws Exception {
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(in))));
+    LegacyHTMLStripCharFilter reader = new LegacyHTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(in))));
     int ch = 0;
     int off = 0;     // offset in the reader
     int strOff = -1; // offset in the original string
@@ -271,11 +272,54 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
       @Override
       protected Reader initReader(Reader reader) {
-        return new HTMLStripCharFilter(CharReader.get(new BufferedReader(reader)));
+        return new LegacyHTMLStripCharFilter(CharReader.get(new BufferedReader(reader)));
       }
     };
     
     int numRounds = RANDOM_MULTIPLIER * 10000;
     checkRandomData(random, analyzer, numRounds);
+  }
+
+  public void testRandomBrokenHTML() throws Exception {
+    int maxNumElements = 10000;
+    String text = _TestUtil.randomHtmlishString(random, maxNumElements);
+    Reader reader
+        = new LegacyHTMLStripCharFilter(CharReader.get(new StringReader(text)));
+    while (reader.read() != -1);
+  }
+
+  public void testRandomText() throws Exception {
+    StringBuilder text = new StringBuilder();
+    int minNumWords = 10;
+    int maxNumWords = 10000;
+    int minWordLength = 3;
+    int maxWordLength = 20;
+    int numWords = _TestUtil.nextInt(random, minNumWords, maxNumWords);
+    switch (_TestUtil.nextInt(random, 0, 4)) {
+      case 0: {
+        for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
+          text.append(_TestUtil.randomUnicodeString(random, maxWordLength));
+          text.append(' ');
+        }
+        break;
+      }
+      case 1: {
+        for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
+          text.append(_TestUtil.randomRealisticUnicodeString
+              (random, minWordLength, maxWordLength));
+          text.append(' ');
+        }
+        break;
+      }
+      default: { // ASCII 50% of the time
+        for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
+          text.append(_TestUtil.randomSimpleString(random));
+          text.append(' ');
+        }
+      }
+    }
+    Reader reader = new LegacyHTMLStripCharFilter
+        (CharReader.get(new StringReader(text.toString())));
+    while (reader.read() != -1);
   }
 }

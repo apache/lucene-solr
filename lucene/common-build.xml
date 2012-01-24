@@ -184,7 +184,9 @@
   -->
   <property name="svnversion.exe" value="svnversion" />
   <property name="svn.exe" value="svn" />
-  
+
+  <property name="python.exe" value="python" />
+
   <property name="gpg.exe" value="gpg" />
   <property name="gpg.key" value="CODE SIGNING KEY" />
 

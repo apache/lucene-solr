@@ -31,7 +31,30 @@
 
   <target name="compile-core" depends="jflex-notice, common.compile-core"/>
 
-  <target name="jflex" depends="jflex-check,clean-jflex,jflex-wiki-tokenizer"/>
+  <target name="jflex" depends="jflex-check,clean-jflex,jflex-wiki-tokenizer,jflex-HTMLStripCharFilter"/>
+
+  <target name="jflex-HTMLStripCharFilter"
+          depends="init,jflex-check,generate-jflex-html-char-entities"
+          if="jflex.present">
+    <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
+      <classpath refid="jflex.classpath"/>
+    </taskdef>
+    <jflex file="src/java/org/apache/lucene/analysis/charfilter/HTMLStripCharFilter.jflex"
+           outdir="src/java/org/apache/lucene/analysis/charfilter"
+           nobak="on"/>
+    <!-- Remove the inappropriate JFlex-generated constructors -->
+    <replaceregexp file="src/java/org/apache/lucene/analysis/charfilter/HTMLStripCharFilter.java"
+                   match="/\*\*\s*\*\s*Creates a new scanner.*this\(new java\.io\.InputStreamReader\(in\)\);\s*\}"
+                   replace="" flags="sg"/>
+  </target>
+
+  <target name="generate-jflex-html-char-entities">
+    <exec dir="src/java/org/apache/lucene/analysis/charfilter"
+          output="src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex"
+          executable="${python.exe}" failonerror="true" logerror="true">
+      <arg value="htmlentity.py"/>
+    </exec>
+  </target>
 
   <target name="jflex-wiki-tokenizer" depends="init,jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
