@@ -74,7 +74,8 @@ public final class EdgeNGramTokenizer extends Tokenizer {
   private int gramSize;
   private Side side;
   private boolean started = false;
-  private int inLen;
+  private int inLen; // length of the input AFTER trim()
+  private int charsRead; // length of the input
   private String inStr;
 
 
@@ -183,7 +184,11 @@ public final class EdgeNGramTokenizer extends Tokenizer {
     if (!started) {
       started = true;
       char[] chars = new char[1024];
-      int charsRead = input.read(chars);
+      charsRead = input.read(chars);
+      if (charsRead < 0) {
+        charsRead = inLen = 0;
+        return false;
+      }
       inStr = new String(chars, 0, charsRead).trim();  // remove any leading or trailing spaces
       inLen = inStr.length();
       gramSize = minGram;
@@ -211,7 +216,7 @@ public final class EdgeNGramTokenizer extends Tokenizer {
   @Override
   public final void end() {
     // set final offset
-    final int finalOffset = inLen;
+    final int finalOffset = correctOffset(charsRead);
     this.offsetAtt.setOffset(finalOffset, finalOffset);
   }    
 
@@ -225,5 +230,6 @@ public final class EdgeNGramTokenizer extends Tokenizer {
   public void reset() throws IOException {
     super.reset();
     started = false;
+    charsRead = 0;
   }
 }

@@ -129,4 +129,27 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
         new int[]    {    0,     0,      0,       0,        0,         0,          0,           0,            0,             0,              0 },
         new int[]    {   11,    11,     11,      11,       11,        11,         11,          11,           11,            11,             11 });
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, 
+            new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.FRONT, 2, 15));
+      }    
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    
+    Analyzer b = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, 
+            new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.BACK, 2, 15));
+      }    
+    };
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
+  }
 }
