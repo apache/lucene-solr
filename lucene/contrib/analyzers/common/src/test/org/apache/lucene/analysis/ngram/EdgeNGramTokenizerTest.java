@@ -18,9 +18,13 @@ package org.apache.lucene.analysis.ngram;
  */
 
 
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * Tests {@link EdgeNGramTokenizer} for correctness.
@@ -94,5 +98,26 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
     assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3}, 5 /* abcde */);
     tokenizer.reset(new StringReader("abcde"));
     assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3}, 5 /* abcde */);
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new EdgeNGramTokenizer(reader, EdgeNGramTokenizer.Side.FRONT, 2, 15);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }    
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    
+    Analyzer b = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new EdgeNGramTokenizer(reader, EdgeNGramTokenizer.Side.BACK, 2, 15);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }    
+    };
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
   }
 }

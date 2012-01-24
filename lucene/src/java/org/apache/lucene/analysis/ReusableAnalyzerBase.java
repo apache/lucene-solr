@@ -44,12 +44,12 @@ public abstract class ReusableAnalyzerBase extends Analyzer {
    * @param fieldName
    *          the name of the fields content passed to the
    *          {@link TokenStreamComponents} sink as a reader
-   * @param aReader
+   * @param reader
    *          the reader passed to the {@link Tokenizer} constructor
    * @return the {@link TokenStreamComponents} for this analyzer.
    */
   protected abstract TokenStreamComponents createComponents(String fieldName,
-      Reader aReader);
+      Reader reader);
 
   /**
    * This method uses {@link #createComponents(String, Reader)} to obtain an
