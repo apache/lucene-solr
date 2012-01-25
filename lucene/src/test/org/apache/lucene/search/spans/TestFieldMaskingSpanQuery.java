@@ -31,6 +31,7 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
@@ -240,6 +241,8 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   }
   
   public void testSimple2() throws Exception {
+    assumeTrue("Broken scoring: LUCENE-3723", 
+        searcher.getSimilarityProvider().get("id") instanceof TFIDFSimilarity);
     SpanQuery q1 = new SpanTermQuery(new Term("gender", "female"));
     SpanQuery q2 = new SpanTermQuery(new Term("last", "smith"));
     SpanQuery q = new SpanNearQuery(new SpanQuery[]
@@ -310,6 +313,8 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   }
   
   public void testSpans2() throws Exception {
+    assumeTrue("Broken scoring: LUCENE-3723", 
+        searcher.getSimilarityProvider().get("id") instanceof TFIDFSimilarity);
     SpanQuery qA1 = new SpanTermQuery(new Term("gender", "female"));
     SpanQuery qA2 = new SpanTermQuery(new Term("first",  "james"));
     SpanQuery qA  = new SpanOrQuery(qA1, new FieldMaskingSpanQuery(qA2, "gender"));
