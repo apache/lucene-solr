@@ -96,7 +96,7 @@
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-stemming-1.5.2.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-collections-3.1.jar"/>
-	<classpathentry kind="lib" path="modules/benchmark/lib/commons-compress-1.3.jar"/>
+	<classpathentry kind="lib" path="modules/benchmark/lib/commons-compress-1.2.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-digester-1.7.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
@@ -136,7 +136,7 @@
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/bcmail-jdk15-1.45.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/bcprov-jdk15-1.45.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/boilerpipe-1.1.0.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/commons-compress-1.2.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/commons-compress-1.3.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/dom4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/fontbox-1.6.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/jempbox-1.6.0.jar"/>
