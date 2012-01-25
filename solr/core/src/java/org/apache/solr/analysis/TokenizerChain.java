@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.*;
 
+import java.io.IOException;
 import java.io.Reader;
 
 /**
@@ -48,6 +49,21 @@ public final class TokenizerChain extends SolrAnalyzer {
   public TokenizerFactory getTokenizerFactory() { return tokenizer; }
   public TokenFilterFactory[] getTokenFilterFactories() { return filters; }
 
+  class SolrTokenStreamComponents extends TokenStreamComponents {
+    public SolrTokenStreamComponents(final Tokenizer source, final TokenStream result) {
+      super(source, result);
+    }
+
+    @Override
+    protected void reset(Reader reader) throws IOException {
+      // the tokenizers are currently reset by the indexing process, so only
+      // the tokenizer needs to be reset.
+      Reader r = initReader(reader);
+      super.reset(r);
+    }
+  }
+  
+  
   @Override
   public Reader initReader(Reader reader) {
     if (charFilters != null && charFilters.length > 0) {
@@ -62,12 +78,12 @@ public final class TokenizerChain extends SolrAnalyzer {
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName, Reader aReader) {
-    Tokenizer tk = tokenizer.create(aReader);
+    Tokenizer tk = tokenizer.create( initReader(aReader) );
     TokenStream ts = tk;
     for (TokenFilterFactory filter : filters) {
       ts = filter.create(ts);
     }
-    return new TokenStreamComponents(tk, ts);
+    return new SolrTokenStreamComponents(tk, ts);
   }
 
   @Override
