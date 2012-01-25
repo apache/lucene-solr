@@ -118,7 +118,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
         // should I be leader?
         if (weAreReplacement && !shouldIBeLeader(leaderProps)) {
-          System.out.println("there is a better leader candidate it appears");
+          // System.out.println("there is a better leader candidate it appears");
           rejoinLeaderElection(leaderSeqPath, core);
           return;
         }
