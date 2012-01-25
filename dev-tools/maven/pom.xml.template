@@ -45,7 +45,7 @@
     <jetty.version>6.1.26</jetty.version>
     <patched.jetty.version>6.1.26-patched-JETTY-1340</patched.jetty.version>
     <slf4j.version>1.6.1</slf4j.version>
-    <tika.version>0.10</tika.version>
+    <tika.version>1.0</tika.version>
   </properties>
   <issueManagement>
     <system>JIRA</system>

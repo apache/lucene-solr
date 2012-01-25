@@ -24,7 +24,7 @@ $Id$
 ==================  4.0.0-dev ==================
 Versions of Major Components
 ---------------------
-Apache Tika 0.10
+Apache Tika 1.0
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -555,6 +555,8 @@ Other Changes
 
 * SOLR-2718: Add ability to lazy load response writers, defined with startup="lazy".
   (ehatcher)
+
+* SOLR-2901: Upgrade Solr to Tika 1.0 (janhoy)
 
 Build
 ----------------------
