@@ -18,14 +18,17 @@
 package org.apache.lucene.analysis.pattern;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * Tests {@link PatternReplaceCharFilter}
@@ -171,5 +174,22 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
   
   private Pattern pattern( String p ){
     return Pattern.compile( p );
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+
+      @Override
+      protected Reader initReader(Reader reader) {
+        return new PatternReplaceCharFilter(Pattern.compile("a"), "b", CharReader.get(reader));
+      }
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

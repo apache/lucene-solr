@@ -38,8 +38,11 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DocumentBuilder;
+import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.transform.Transformer;
 import java.io.IOException;
@@ -47,14 +50,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * TODO!
- * 
- *
- * @since solr 1.3
- */
+
 public class RealTimeGetComponent extends SearchComponent
 {
+  public static Logger log = LoggerFactory.getLogger(UpdateLog.class);
   public static final String COMPONENT_NAME = "get";
 
   @Override
@@ -73,6 +72,18 @@ public class RealTimeGetComponent extends SearchComponent
     SolrParams params = req.getParams();
 
     if (!params.getBool(COMPONENT_NAME, true)) {
+      return;
+    }
+
+    String val = params.get("getVersions");
+    if (val != null) {
+      processGetVersions(rb);
+      return;
+    }
+
+    val = params.get("getUpdates");
+    if (val != null) {
+      processGetUpdates(rb);
       return;
     }
 
@@ -142,7 +153,7 @@ public class RealTimeGetComponent extends SearchComponent
 
        // didn't find it in the update log, so it should be in the newest searcher opened
        if (searcher == null) {
-         searcherHolder =  req.getCore().getNewestSearcher(false);
+         searcherHolder = req.getCore().getRealtimeSearcher();
          searcher = searcherHolder.get();
        }
 
@@ -247,4 +258,112 @@ public class RealTimeGetComponent extends SearchComponent
   public URL[] getDocs() {
     return null;
   }
+
+
+
+  ///////////////////////////////////////////////////////////////////////////////////
+  // Returns last versions added to index
+  ///////////////////////////////////////////////////////////////////////////////////
+
+
+  public void processGetVersions(ResponseBuilder rb) throws IOException
+  {
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
+    SolrParams params = req.getParams();
+
+    if (!params.getBool(COMPONENT_NAME, true)) {
+      return;
+    }
+
+    int nVersions = params.getInt("getVersions", -1);
+    if (nVersions == -1) return;
+
+    String sync = params.get("sync");
+    if (sync != null) {
+      processSync(rb, nVersions, sync);
+      return;
+    }
+
+    UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
+    if (ulog == null) return;
+
+    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
+    try {
+      rb.rsp.add("versions", recentUpdates.getVersions(nVersions));
+    } finally {
+      recentUpdates.close();  // cache this somehow?
+    }
+  }
+
+  
+  public void processSync(ResponseBuilder rb, int nVersions, String sync) {
+    List<String> replicas = StrUtils.splitSmart(sync, ",", true);
+    
+    
+    PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions);
+    boolean success = peerSync.sync();
+    
+    // TODO: more complex response?
+    rb.rsp.add("sync", success);
+  }
+  
+
+  public void processGetUpdates(ResponseBuilder rb) throws IOException
+  {
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
+    SolrParams params = req.getParams();
+
+    if (!params.getBool(COMPONENT_NAME, true)) {
+      return;
+    }
+
+    String versionsStr = params.get("getUpdates");
+    if (versionsStr == null) return;
+
+    UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
+    if (ulog == null) return;
+
+    List<String> versions = StrUtils.splitSmart(versionsStr, ",", true);
+
+    // TODO: get this from cache instead of rebuilding?
+    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
+
+    List<Object> updates = new ArrayList<Object>(versions.size());
+
+    long minVersion = Long.MAX_VALUE;
+    
+    try {
+      for (String versionStr : versions) {
+        long version = Long.parseLong(versionStr);
+        try {
+          Object o = recentUpdates.lookup(version);
+          if (o == null) continue;
+
+          if (version > 0) {
+            minVersion = Math.min(minVersion, version);
+          }
+          
+          // TODO: do any kind of validation here?
+          updates.add(o);
+
+        } catch (SolrException e) {
+          log.warn("Exception reading log for updates", e);
+        } catch (ClassCastException e) {
+          log.warn("Exception reading log for updates", e);
+        }
+      }
+
+      // Must return all delete-by-query commands that occur after the first add requested
+      // since they may apply.
+      updates.addAll( recentUpdates.getDeleteByQuery(minVersion));
+
+      rb.rsp.add("updates", updates);
+
+    } finally {
+      recentUpdates.close();  // cache this somehow?
+    }
+  }
+
 }

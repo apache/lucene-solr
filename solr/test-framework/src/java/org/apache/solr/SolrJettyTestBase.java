@@ -44,12 +44,11 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     ignoreException("maxWarmingSearchers");
 
     // this sets the property for jetty starting SolrDispatchFilter
-    System.setProperty( "solr.solr.home", solrHome);
     System.setProperty( "solr.data.dir", dataDir.getCanonicalPath() );
 
     context = context==null ? "/solr" : context;
     SolrJettyTestBase.context = context;
-    jetty = new JettySolrRunner( context, 0, configFile );
+    jetty = new JettySolrRunner(solrHome, context, 0, configFile, null);
 
     jetty.start();
     port = jetty.getLocalPort();

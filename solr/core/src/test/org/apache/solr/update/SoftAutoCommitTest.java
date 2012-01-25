@@ -96,8 +96,8 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     assertNotNull("soft529 wasn't fast enough", soft529);
     monitor.assertSaneOffers();
 
-    // check for the searcher, should have happend right after soft commit
-    Long searcher529 = monitor.searcher.poll(softCommitWaitMillis, MILLISECONDS);
+    // check for the searcher, should have happened right after soft commit
+    Long searcher529 = monitor.searcher.poll(softCommitWaitMillis * 3, MILLISECONDS);
     assertNotNull("searcher529 wasn't fast enough", searcher529);
     monitor.assertSaneOffers();
 
@@ -118,7 +118,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
 
     // however slow the machine was to do the soft commit compared to expected,
     // assume newSearcher had some magnitude of that much overhead as well 
-    long slowTestFudge = Math.max(100, 6 * (soft529 - add529 - softCommitWaitMillis));
+    long slowTestFudge = Math.max(200, 12 * (soft529 - add529 - softCommitWaitMillis));
     assertTrue("searcher529 wasn't soon enough after soft529: " +
                searcher529 + " !< " + soft529 + " + " + slowTestFudge + " (fudge)",
                searcher529 < soft529 + slowTestFudge );
@@ -191,16 +191,16 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     long postAdd529 = System.currentTimeMillis();
 
     // wait for first hard/soft commit
-    Long soft529 = monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
+    Long soft529 = monitor.soft.poll(softCommitWaitMillis * 3, MILLISECONDS);
     assertNotNull("soft529 wasn't fast enough", soft529);
     Long manCommit = monitor.hard.poll(0, MILLISECONDS);
 
     assertNotNull("manCommit wasn't fast enough", manCommit);
     assertTrue("forced manCommit didn't happen when it should have: " + 
-        manCommit + " !< " + postAdd529, 
-        manCommit < postAdd529);
+        manCommit + " !<= " + postAdd529, 
+        manCommit <= postAdd529);
     
-    Long hard529 = monitor.hard.poll(hardCommitWaitMillis, MILLISECONDS);
+    Long hard529 = monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
     assertNotNull("hard529 wasn't fast enough", hard529);
 
     monitor.assertSaneOffers();

@@ -120,7 +120,7 @@ public final class ReaderUtil {
 
     protected abstract void add(int base, AtomicIndexReader r) throws IOException;
   }
-
+  
   public static ReaderContext buildReaderContext(IndexReader reader) {
     return new ReaderContextBuilder(reader).build();
   }

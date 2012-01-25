@@ -21,13 +21,7 @@ import java.io.IOException;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.update.DocumentBuilder;
-import org.apache.solr.update.MergeIndexesCommand;
-import org.apache.solr.update.RollbackUpdateCommand;
-import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.*;
 
 
 /**
@@ -49,6 +43,8 @@ class RunUpdateProcessor extends UpdateRequestProcessor
   private final SolrQueryRequest req;
   private final UpdateHandler updateHandler;
 
+  private boolean changesSinceCommit = false;
+
   public RunUpdateProcessor(SolrQueryRequest req, UpdateRequestProcessor next) {
     super( next );
     this.req = req;
@@ -59,17 +55,19 @@ class RunUpdateProcessor extends UpdateRequestProcessor
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     updateHandler.addDoc(cmd);
     super.processAdd(cmd);
+    changesSinceCommit = true;
   }
 
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    if( cmd.id != null ) {
+    if( cmd.isDeleteById()) {
       updateHandler.delete(cmd);
     }
     else {
       updateHandler.deleteByQuery(cmd);
     }
     super.processDelete(cmd);
+    changesSinceCommit = true;
   }
 
   @Override
@@ -83,6 +81,7 @@ class RunUpdateProcessor extends UpdateRequestProcessor
   {
     updateHandler.commit(cmd);
     super.processCommit(cmd);
+    changesSinceCommit = false;
   }
 
   /**
@@ -93,6 +92,16 @@ class RunUpdateProcessor extends UpdateRequestProcessor
   {
     updateHandler.rollback(cmd);
     super.processRollback(cmd);
+    changesSinceCommit = false;
+  }
+
+
+  @Override
+  public void finish() throws IOException {
+    if (changesSinceCommit && updateHandler.getUpdateLog() != null) {
+      updateHandler.getUpdateLog().finish(null);
+    }
+    super.finish();
   }
 }
 

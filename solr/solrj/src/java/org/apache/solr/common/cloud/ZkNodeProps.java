@@ -17,43 +17,77 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-public class ZkNodeProps extends HashMap<String,String> {
+import org.apache.noggit.JSONWriter;
 
-  private static final long serialVersionUID = 1L;
+// Immutable
+public class ZkNodeProps implements JSONWriter.Writable {
 
-  public void load(byte[] bytes) throws IOException {
-    String stringRep = new String(bytes, "UTF-8");
-    String[] lines = stringRep.split("\n");
-    for (String line : lines) {
-      int sepIndex = line.indexOf('=');
-      String key = line.substring(0, sepIndex);
-      String value = line.substring(sepIndex + 1, line.length());
-      put(key, value);
+  private final Map<String,String> propMap;
+
+  public ZkNodeProps(Map<String,String> propMap) {
+    this.propMap = new HashMap<String,String>();
+    this.propMap.putAll(propMap);
+  }
+  
+  public ZkNodeProps(ZkNodeProps zkNodeProps) {
+    this.propMap = new HashMap<String,String>();
+    this.propMap.putAll(zkNodeProps.propMap);
+  }
+  
+  public ZkNodeProps() {
+    propMap = new HashMap<String,String>();
+  }
+  
+  public ZkNodeProps(String... keyVals) {
+    if (keyVals.length % 2 != 0) {
+      throw new IllegalArgumentException("arguments should be key,value");
+    }
+    propMap = new HashMap<String,String>();
+    for (int i = 0; i < keyVals.length; i+=2) {
+      propMap.put(keyVals[i], keyVals[i+1]);
     }
   }
+  
+  public Set<String> keySet() {
+    return Collections.unmodifiableSet(propMap.keySet());
+  }
 
-  public byte[] store() throws IOException {
-    StringBuilder sb = new StringBuilder();
-    Set<Entry<String,String>> entries = entrySet();
-    for(Entry<String,String> entry : entries) {
-      sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
-    }
-    return sb.toString().getBytes("UTF-8");
+  public Map<String,String> getProperties() {
+    return Collections.unmodifiableMap(propMap);
+  }
+
+  public static ZkNodeProps load(byte[] bytes) {
+    Map<String, String> props = (Map<String, String>) ZkStateReader.fromJSON(bytes);
+    return new ZkNodeProps(props);
+  }
+
+  @Override
+  public void write(JSONWriter jsonWriter) {
+    jsonWriter.write(propMap);
+  }
+  
+  public String get(String key) {
+    return propMap.get(key);
   }
   
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    Set<Entry<String,String>> entries = entrySet();
+    Set<Entry<String,String>> entries = propMap.entrySet();
     for(Entry<String,String> entry : entries) {
       sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
     }
     return sb.toString();
+  }
+  
+  public boolean containsKey(String key) {
+    return propMap.containsKey(key);
   }
 
 }

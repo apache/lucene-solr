@@ -18,17 +18,22 @@
 package org.apache.lucene.analysis.pattern;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
+import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class TestPatternTokenizer extends BaseTokenStreamTestCase 
@@ -116,5 +121,36 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
 
     in.close();
     return out.toString();
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = null;
+        try {
+          tokenizer = new PatternTokenizer(reader, Pattern.compile("a"), -1);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }    
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    
+    Analyzer b = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = null;
+        try {
+          tokenizer = new PatternTokenizer(reader, Pattern.compile("a"), 0);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }    
+    };
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
   }
 }

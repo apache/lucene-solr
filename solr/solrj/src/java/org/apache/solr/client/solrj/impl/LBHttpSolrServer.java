@@ -28,6 +28,8 @@ import org.apache.solr.common.SolrException;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -249,16 +251,26 @@ public class LBHttpSolrServer extends SolrServer {
         rsp.rsp = server.request(req.getRequest());
         return rsp; // SUCCESS
       } catch (SolrException e) {
-        // Server is alive but the request was malformed or invalid
-        throw e;
+        // we retry on 404 or 403 or 503 - you can see this on solr shutdown
+        if (e.code() == 404 || e.code() == 403 || e.code() == 503 || e.code() == 500) {
+          ex = addZombie(server, e);
+        } else {
+          // Server is alive but the request was likely malformed or invalid
+          throw e;
+        }
+       
+       // TODO: consider using below above - currently does cause a problem with distrib updates:
+       // seems to match up against a failed forward to leader exception as well...
+       //     || e.getMessage().contains("java.net.SocketException")
+       //     || e.getMessage().contains("java.net.ConnectException")
+      } catch (SocketException e) {
+        ex = addZombie(server, e);
+      } catch (SocketTimeoutException e) {
+        ex = addZombie(server, e);
       } catch (SolrServerException e) {
-        if (e.getRootCause() instanceof IOException) {
-          ex = e;
-          wrapper = new ServerWrapper(server);
-          wrapper.lastUsed = System.currentTimeMillis();
-          wrapper.standard = false;
-          zombieServers.put(wrapper.getKey(), wrapper);
-          startAliveCheckExecutor();
+        Throwable rootCause = e.getRootCause();
+        if (rootCause instanceof IOException) {
+          ex = addZombie(server, e);
         } else {
           throw e;
         }
@@ -274,11 +286,23 @@ public class LBHttpSolrServer extends SolrServer {
         zombieServers.remove(wrapper.getKey());
         return rsp; // SUCCESS
       } catch (SolrException e) {
-        // Server is alive but the request was malformed or invalid
-        zombieServers.remove(wrapper.getKey());
-        throw e;
+        // we retry on 404 or 403 or 503 - you can see this on solr shutdown
+        if (e.code() == 404 || e.code() == 403 || e.code() == 503 || e.code() == 500) {
+          ex = e;
+          // already a zombie, no need to re-add
+        } else {
+          // Server is alive but the request was malformed or invalid
+          zombieServers.remove(wrapper.getKey());
+          throw e;
+        }
+
+      } catch (SocketException e) {
+        ex = e;
+      } catch (SocketTimeoutException e) {
+        ex = e;
       } catch (SolrServerException e) {
-        if (e.getRootCause() instanceof IOException) {
+        Throwable rootCause = e.getRootCause();
+        if (rootCause instanceof IOException) {
           ex = e;
           // already a zombie, no need to re-add
         } else {
@@ -293,9 +317,22 @@ public class LBHttpSolrServer extends SolrServer {
     if (ex == null) {
       throw new SolrServerException("No live SolrServers available to handle this request");
     } else {
-      throw new SolrServerException("No live SolrServers available to handle this request", ex);
+      throw new SolrServerException("No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
     }
 
+  }
+
+  private Exception addZombie(CommonsHttpSolrServer server,
+      Exception e) {
+
+    ServerWrapper wrapper;
+
+    wrapper = new ServerWrapper(server);
+    wrapper.lastUsed = System.currentTimeMillis();
+    wrapper.standard = false;
+    zombieServers.put(wrapper.getKey(), wrapper);
+    startAliveCheckExecutor();
+    return e;
   }  
 
 
@@ -362,6 +399,12 @@ public class LBHttpSolrServer extends SolrServer {
    */
   public void setSoTimeout(int timeout) {
     httpClient.getParams().setSoTimeout(timeout);
+  }
+  
+  public void shutdown() {
+    if (aliveCheckExecutor != null) {
+      aliveCheckExecutor.shutdownNow();
+    }
   }
 
   /**

@@ -173,9 +173,8 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
   }
 
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
-    System.setProperty("solr.solr.home", instance.getHomeDir());
     System.setProperty("solr.data.dir", instance.getDataDir());
-    JettySolrRunner jetty = new JettySolrRunner("/solr", 0);
+    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0);
     jetty.start();
     return jetty;
   }

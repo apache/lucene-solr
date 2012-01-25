@@ -20,7 +20,7 @@ to your Solr Home lib directory.  See http://wiki.apache.org/solr/ExtractingRequ
 Tika Dependency
 ---------------
 
-Current Version: Tika 0.10 (released 2011-09-30)
+Current Version: Tika 1.0 (released 2011-11-07)
 
 $Id$
 
@@ -33,6 +33,8 @@ $Id$
 * SOLR-2346: Add a chance to set content encoding explicitly via content type of stream.
   This is convenient when Tika's auto detector cannot detect encoding, especially
   the text file is too short to detect encoding. (koji)
+
+* SOLR-2901: Upgrade Solr to Tika 1.0 (janhoy)
 
 ================== Release 3.5.0 ==================
 

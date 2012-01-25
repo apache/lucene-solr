@@ -70,8 +70,9 @@ import org.apache.lucene.util.ToStringUtils;
  * and 'jones' in position 1). </p>
  * 
  * <p>Note: as {@link #getField()} returns the masked field, scoring will be 
- * done using the norms of the field name supplied. This may lead to unexpected
- * scoring behaviour.</p>
+ * done using the Similarity and collection statistics of the field name supplied,
+ * but with the term statistics of the real field. This may lead to exceptions,
+ * poor performance, and unexpected scoring behaviour.</p>
  */
 public class FieldMaskingSpanQuery extends SpanQuery {
   private SpanQuery maskedQuery;

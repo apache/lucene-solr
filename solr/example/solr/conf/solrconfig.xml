@@ -344,11 +344,9 @@
     <!-- Enables a transaction log, currently used for real-time get.
          "dir" - the target directory for transaction logs, defaults to the
             solr data directory.  --> 
-    <!--
-    <updateLog class="solr.FSUpdateLog">
+    <updateLog>
       <str name="dir">${solr.data.dir:}</str>
     </updateLog>
-    -->
    
 
   </updateHandler>
@@ -1072,6 +1070,13 @@
        </lst>
      </requestHandler>
     -->
+    
+    <!-- Solr Replication for SolrCloud Recovery
+    
+         This is the config need for SolrCloud's recovery replication.
+    -->
+	<requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
+
 
   <!-- Search Components
 

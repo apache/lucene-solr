@@ -23,6 +23,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.RTimer;
+import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -133,11 +134,19 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       log.info("Adding  debug component:" + dbgCmp);
     }
     if(shfInfo ==null) {
-      Map m = new HashMap();
-      m.put("class",HttpShardHandlerFactory.class.getName());
-      shfInfo = new PluginInfo("shardHandlerFactory", m,null,Collections.<PluginInfo>emptyList());
+      shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+    } else {
+      shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
     }
-    shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
+    core.addCloseHook(new CloseHook() {
+      @Override
+      public void preClose(SolrCore core) {
+        shardHandlerFactory.close();
+      }
+      @Override
+      public void postClose(SolrCore core) {
+      }
+    });
   }
 
   public List<SearchComponent> getComponents() {
@@ -247,7 +256,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
               params.remove(ShardParams.SHARDS);      // not a top-level request
-              params.remove("distrib");               // not a top-level request
+              params.set("distrib", "false");               // not a top-level request
               params.remove("indent");
               params.remove(CommonParams.HEADER_ECHO_PARAMS);
               params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request

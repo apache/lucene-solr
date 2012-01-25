@@ -35,7 +35,8 @@ public final class NGramTokenizer extends Tokenizer {
   private int minGram, maxGram;
   private int gramSize;
   private int pos = 0;
-  private int inLen;
+  private int inLen; // length of the input AFTER trim()
+  private int charsRead; // length of the input
   private String inStr;
   private boolean started = false;
   
@@ -104,7 +105,11 @@ public final class NGramTokenizer extends Tokenizer {
       started = true;
       gramSize = minGram;
       char[] chars = new char[1024];
-      input.read(chars);
+      charsRead = input.read(chars);
+      if (charsRead < 0) {
+        charsRead = inLen = 0;
+        return false;
+      }
       inStr = new String(chars).trim();  // remove any trailing empty strings 
       inLen = inStr.length();
     }
@@ -128,7 +133,7 @@ public final class NGramTokenizer extends Tokenizer {
   @Override
   public final void end() {
     // set final offset
-    final int finalOffset = inLen;
+    final int finalOffset = correctOffset(charsRead);
     this.offsetAtt.setOffset(finalOffset, finalOffset);
   }    
   
@@ -143,5 +148,6 @@ public final class NGramTokenizer extends Tokenizer {
     super.reset();
     started = false;
     pos = 0;
+    charsRead = 0;
   }
 }

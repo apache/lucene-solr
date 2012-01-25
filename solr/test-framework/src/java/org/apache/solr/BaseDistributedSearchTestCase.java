@@ -36,11 +36,14 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -69,6 +72,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected JettySolrRunner controlJetty;
   protected List<SolrServer> clients = new ArrayList<SolrServer>();
   protected List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
+  
   protected String context = "/solr";
   protected String shards;
   protected String[] shardsArr;
@@ -159,7 +163,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    System.setProperty("solr.solr.home", getSolrHome());
     testDir = new File(TEMP_DIR,
             getClass().getName() + "-" + System.currentTimeMillis());
     testDir.mkdirs();
@@ -175,14 +178,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void createServers(int numShards) throws Exception {
-    controlJetty = createJetty(testDir, testDir + "/control/data");
+    controlJetty = createJetty(testDir, testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
+
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
     shardsArr = new String[numShards];
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, testDir + "/shard" + i + "/data");
+      JettySolrRunner j = createJetty(testDir,
+          testDir + "/shard" + i + "/data", null, getSolrConfigFile(),
+          getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
       String shardStr = "localhost:" + j.getLocalPort() + context;
@@ -223,27 +229,28 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void destroyServers() throws Exception {
     controlJetty.stop();
+    ((CommonsHttpSolrServer) controlClient).shutdown();
     for (JettySolrRunner jetty : jettys) jetty.stop();
+    for (SolrServer client : clients) ((CommonsHttpSolrServer) client).shutdown();
     clients.clear();
     jettys.clear();
   }
   
   public JettySolrRunner createJetty(File baseDir, String dataDir) throws Exception {
-    return createJetty(baseDir, dataDir, null, null);
+    return createJetty(baseDir, dataDir, null, null, null);
   }
 
   public JettySolrRunner createJetty(File baseDir, String dataDir, String shardId) throws Exception {
-    return createJetty(baseDir, dataDir, shardId, null);
+    return createJetty(baseDir, dataDir, shardId, null, null);
   }
   
-  public JettySolrRunner createJetty(File baseDir, String dataDir, String shardList, String solrConfigOverride) throws Exception {
-    System.setProperty("solr.data.dir", dataDir);
-    JettySolrRunner jetty = new JettySolrRunner("/solr", 0, solrConfigOverride);
-    if(shardList != null) {
-      System.setProperty("shard", shardList);
-    }
+  public JettySolrRunner createJetty(File baseDir, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
+
+    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), "/solr", 0, solrConfigOverride, schemaOverride);
+    jetty.setShards(shardList);
+    jetty.setDataDir(dataDir);
     jetty.start();
-    System.clearProperty("shard");
+
     return jetty;
   }
   
@@ -272,8 +279,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);
     addFields(doc, "rnd_b", true);
-    addFields(doc, getRandFields(getFieldNames(), getRandValues()));
+    addRandFields(doc);
     indexDoc(doc);
+  }
+  
+  protected SolrInputDocument addRandFields(SolrInputDocument sdoc) {
+    addFields(sdoc, getRandFields(getFieldNames(), getRandValues()));
+    return sdoc;
   }
 
   protected void index(Object... fields) throws Exception {
@@ -288,6 +300,33 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % clients.size();
     SolrServer client = clients.get(which);
     client.add(doc);
+  }
+  
+  protected UpdateResponse add(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setParams(new ModifiableSolrParams(params));
+    for (SolrInputDocument sdoc : sdocs) {
+      ureq.add(sdoc);
+    }
+    return ureq.process(server);
+  }
+
+  protected UpdateResponse del(SolrServer server, SolrParams params, Object... ids) throws IOException, SolrServerException {
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setParams(new ModifiableSolrParams(params));
+    for (Object id: ids) {
+      ureq.deleteById(id.toString());
+    }
+    return ureq.process(server);
+  }
+
+  protected UpdateResponse delQ(SolrServer server, SolrParams params, String... queries) throws IOException, SolrServerException {
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setParams(new ModifiableSolrParams(params));
+    for (String q: queries) {
+      ureq.deleteByQuery(q);
+    }
+    return ureq.process(server);
   }
 
   protected void index_specific(int serverNumber, Object... fields) throws Exception {
@@ -310,7 +349,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void commit() throws Exception {
     controlClient.commit();
-    for (SolrServer client : clients) client.commit();
+    for (SolrServer client : clients) {
+      client.commit();
+    }
   }
 
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
@@ -322,14 +363,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void query(Object... q) throws Exception {
+    
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
     for (int i = 0; i < q.length; i += 2) {
       params.add(q[i].toString(), q[i + 1].toString());
     }
-
+    // TODO: look into why passing true causes fails
+    params.set("distrib", "false");
     final QueryResponse controlRsp = controlClient.query(params);
 
+    params.remove("distrib");
     setDistributedParams(params);
 
     QueryResponse rsp = queryServer(params);
@@ -365,6 +409,20 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       }
     }
   }
+  
+  public QueryResponse queryAndCompare(SolrParams params, SolrServer... servers) throws SolrServerException {
+    QueryResponse first = null;
+    for (SolrServer server : servers) {
+      QueryResponse rsp = server.query(new ModifiableSolrParams(params));
+      if (first == null) {
+        first = rsp;
+      } else {
+        compareResponses(first, rsp);
+      }
+    }
+
+    return first;
+  }
 
   public static boolean eq(String a, String b) {
     return a == b || (a != null && a.equals(b));
@@ -377,6 +435,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   public static String compare(NamedList a, NamedList b, int flags, Map<String, Integer> handle) {
+//    System.out.println("resp a:" + a);
+//    System.out.println("resp b:" + b);
     boolean ordered = (flags & UNORDERED) == 0;
 
     int posa = 0, posb = 0;
@@ -578,9 +638,19 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void compareResponses(QueryResponse a, QueryResponse b) {
     String cmp;
+    if (System.getProperty("remove.version.field") != null) {
+      // we don't care if one has a version and the other doesnt -
+      // control vs distrib
+      for (SolrDocument doc : a.getResults()) {
+        doc.removeFields("_version_");
+      }
+      for (SolrDocument doc : b.getResults()) {
+        doc.removeFields("_version_");
+      }
+    }
     cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
-      log.info("Mismatched responses:\n" + a + "\n" + b);
+      log.error("Mismatched responses:\n" + a + "\n" + b);
       TestCase.fail(cmp);
     }
   }

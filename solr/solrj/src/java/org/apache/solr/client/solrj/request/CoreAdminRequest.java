@@ -89,6 +89,74 @@ public class CoreAdminRequest extends SolrRequest
       return params;
     }
   }
+  
+  public static class PrepRecovery extends CoreAdminRequest {
+    protected String nodeName;
+    protected String coreNodeName;
+
+    public PrepRecovery() {
+      action = CoreAdminAction.PREPRECOVERY;
+    }
+    
+    public void setNodeName(String nodeName) {
+      this.nodeName = nodeName;
+    }
+    
+    public String getNodeName() {
+      return nodeName;
+    }
+    
+    public String getCoreNodeName() {
+      return coreNodeName;
+    }
+    
+    public void setCoreNodeName(String coreNodeName) {
+      this.coreNodeName = coreNodeName;
+    }
+    
+    @Override
+    public SolrParams getParams() {
+      if( action == null ) {
+        throw new RuntimeException( "no action specified!" );
+      }
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set( CoreAdminParams.ACTION, action.toString() );
+ 
+      params.set( CoreAdminParams.CORE, core );
+      
+      if (nodeName != null) {
+        params.set( "nodeName", nodeName);
+      }
+      
+      if (coreNodeName != null) {
+        params.set( "coreNodeName", coreNodeName);
+      }
+
+      return params;
+    }
+
+  }
+  
+  public static class RequestRecovery extends CoreAdminRequest {
+
+    public RequestRecovery() {
+      action = CoreAdminAction.REQUESTRECOVERY;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      if( action == null ) {
+        throw new RuntimeException( "no action specified!" );
+      }
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set( CoreAdminParams.ACTION, action.toString() );
+ 
+      params.set( CoreAdminParams.CORE, core );
+
+      return params;
+    }
+  }
+  
     //a persist core request
   public static class Persist extends CoreAdminRequest {
     protected String fileName = null;

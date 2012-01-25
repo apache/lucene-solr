@@ -23,10 +23,11 @@ import java.io.*;
  *  Internal Solr use only, subject to change.
  */
 public class FastInputStream extends InputStream implements DataInput {
-  private final InputStream in;
-  private final byte[] buf;
-  private int pos;
-  private int end;
+  protected final InputStream in;
+  protected final byte[] buf;
+  protected int pos;
+  protected int end;
+  protected long readFromStream; // number of bytes read from the underlying inputstream
 
   public FastInputStream(InputStream in) {
   // use default BUFSIZE of BufferedOutputStream so if we wrap that
@@ -55,10 +56,21 @@ public class FastInputStream extends InputStream implements DataInput {
     return buf[pos++] & 0xff;     
   }
 
+  public int peek() throws IOException {
+    if (pos >= end) {
+      refill();
+      if (pos >= end) return -1;
+    }
+    return buf[pos] & 0xff;
+  }
+
+
   public int readUnsignedByte() throws IOException {
     if (pos >= end) {
       refill();
-      if (pos >= end) throw new EOFException();
+      if (pos >= end) {
+        throw new EOFException();
+      }
     }
     return buf[pos++] & 0xff;
   }
@@ -67,9 +79,14 @@ public class FastInputStream extends InputStream implements DataInput {
     return in.read(target, offset, len);
   }
 
+  public long position() {
+    return readFromStream - (end - pos);
+  }
+
   public void refill() throws IOException {
     // this will set end to -1 at EOF
     end = readWrappedStream(buf, 0, buf.length);
+    if (end > 0) readFromStream += end;
     pos = 0;
   }
 
@@ -80,11 +97,12 @@ public class FastInputStream extends InputStream implements DataInput {
 
   @Override
   public int read(byte b[], int off, int len) throws IOException {
-    int r=0;  // number of bytes read
+    int r=0;  // number of bytes we have read
+
     // first read from our buffer;
     if (end-pos > 0) {
       r = Math.min(end-pos, len);
-      System.arraycopy(buf, pos, b, off, r);      
+      System.arraycopy(buf, pos, b, off, r);
       pos += r;
     }
 
@@ -93,14 +111,19 @@ public class FastInputStream extends InputStream implements DataInput {
     // amount left to read is >= buffer size
     if (len-r >= buf.length) {
       int ret = readWrappedStream(b, off+r, len-r);
-      if (ret==-1) return r==0 ? -1 : r;
-      r += ret;
-      return r;
+      if (ret >= 0) {
+        readFromStream += ret;
+        r += ret;
+        return r;
+      } else {
+        // negative return code
+        return r > 0 ? r : -1;
+      }
     }
 
     refill();
 
-    // first read from our buffer;
+    // read rest from our buffer
     if (end-pos > 0) {
       int toRead = Math.min(end-pos, len-r);
       System.arraycopy(buf, pos, b, off+r, toRead);
@@ -108,7 +131,7 @@ public class FastInputStream extends InputStream implements DataInput {
       r += toRead;
       return r;
     }
-    
+
     return r > 0 ? r : -1;
   }
 

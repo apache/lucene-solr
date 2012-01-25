@@ -45,7 +45,7 @@
     <jetty.version>6.1.26</jetty.version>
     <patched.jetty.version>6.1.26-patched-JETTY-1340</patched.jetty.version>
     <slf4j.version>1.6.1</slf4j.version>
-    <tika.version>0.10</tika.version>
+    <tika.version>1.0</tika.version>
   </properties>
   <issueManagement>
     <system>JIRA</system>
@@ -283,7 +283,7 @@
       <dependency>
         <groupId>org.apache.zookeeper</groupId>
         <artifactId>zookeeper</artifactId>
-        <version>3.3.3</version>
+        <version>3.3.4</version>
       </dependency>
       <dependency>
         <groupId>org.carrot2</groupId>
@@ -670,7 +670,7 @@
                   <artifactId>solr-noggit</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/lib/apache-solr-noggit-r1209632.jar</file>
+                  <file>solr/lib/apache-solr-noggit-r1211150.jar</file>
                 </configuration>  
               </execution>
               <execution>

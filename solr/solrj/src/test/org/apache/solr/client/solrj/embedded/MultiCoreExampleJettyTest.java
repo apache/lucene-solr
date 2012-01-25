@@ -53,7 +53,7 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     System.clearProperty("solr.directoryFactory");
     super.setUp();
 
-    jetty = new JettySolrRunner( context, 0 );
+    jetty = new JettySolrRunner(getSolrHome(), context, 0 );
     jetty.start(false);
     port = jetty.getLocalPort();
 

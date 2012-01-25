@@ -28,16 +28,23 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.KeeperException;
 
 public class CloudSolrServer extends SolrServer {
@@ -48,12 +55,14 @@ public class CloudSolrServer extends SolrServer {
   private String defaultCollection;
   private LBHttpSolrServer lbServer;
   Random rand = new Random();
-
+  private MultiThreadedHttpConnectionManager connManager;
   /**
    * @param zkHost The address of the zookeeper quorum containing the cloud state
    */
   public CloudSolrServer(String zkHost) throws MalformedURLException {
-      this(zkHost, new LBHttpSolrServer());
+      connManager = new MultiThreadedHttpConnectionManager();
+      this.zkHost = zkHost;
+      this.lbServer = new LBHttpSolrServer(new HttpClient(connManager));
   }
 
   /**
@@ -88,42 +97,58 @@ public class CloudSolrServer extends SolrServer {
    * @throws InterruptedException
    */
   public void connect() {
-    if (zkStateReader != null) return;
-    synchronized(this) {
-      if (zkStateReader != null) return;
-      try {
-        ZkStateReader zk = new ZkStateReader(zkHost, zkConnectTimeout, zkClientTimeout);
-        zk.makeCollectionsNodeWatches();
-        zk.makeShardZkNodeWatches(false);
-        zk.updateCloudState(true);
-        zkStateReader = zk;
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-      } catch (KeeperException e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-
-      } catch (IOException e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-
-      } catch (TimeoutException e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    if (zkStateReader == null) {
+      synchronized (this) {
+        if (zkStateReader == null) {
+          try {
+            ZkStateReader zk = new ZkStateReader(zkHost, zkConnectTimeout,
+                zkClientTimeout);
+            zk.createClusterStateWatchersAndUpdate();
+            zkStateReader = zk;
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          } catch (KeeperException e) {
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          } catch (IOException e) {
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          } catch (TimeoutException e) {
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          }
+        }
       }
     }
   }
-
 
   @Override
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException {
     connect();
 
+    // TODO: if you can hash here, you could favor the shard leader
+    
     CloudState cloudState = zkStateReader.getCloudState();
 
-    String collection = request.getParams().get("collection", defaultCollection);
+    SolrParams reqParams = request.getParams();
+    if (reqParams == null) {
+      reqParams = new ModifiableSolrParams();
+    }
+    String collection = reqParams.get("collection", defaultCollection);
+    
+    // Extract each comma separated collection name and store in a List.
+    List<String> collectionList = StrUtils.splitSmart(collection, ",", true);
+    
+    // Retrieve slices from the cloud state and, for each collection specified,
+    // add it to the Map of slices.
+    Map<String,Slice> slices = new HashMap<String,Slice>();
+    for (int i = 0; i < collectionList.size(); i++) {
+      String coll= collectionList.get(i);
+      ClientUtils.appendMap(coll, slices, cloudState.getSlices(coll));
+    }
 
-    // TODO: allow multiple collections to be specified via comma separated list
-
-    Map<String,Slice> slices = cloudState.getSlices(collection);
     Set<String> liveNodes = cloudState.getLiveNodes();
 
     // IDEA: have versions on various things... like a global cloudState version
@@ -136,18 +161,21 @@ public class CloudSolrServer extends SolrServer {
     List<String> urlList = new ArrayList<String>();
     for (Slice slice : slices.values()) {
       for (ZkNodeProps nodeProps : slice.getShards().values()) {
-        String node = nodeProps.get(ZkStateReader.NODE_NAME);
-        if (!liveNodes.contains(node)) continue;
+        ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
+        String node = coreNodeProps.getNodeName();
+        if (!liveNodes.contains(coreNodeProps.getNodeName())
+            || !coreNodeProps.getState().equals(
+                ZkStateReader.ACTIVE)) continue;
         if (nodes.put(node, nodeProps) == null) {
-          String url = nodeProps.get(ZkStateReader.URL_PROP);
+          String url = coreNodeProps.getCoreUrl();
           urlList.add(url);
         }
       }
     }
 
     Collections.shuffle(urlList, rand);
-    // System.out.println("########################## MAKING REQUEST TO " + urlList);
-    // TODO: set distrib=true if we detected more than one shard?
+    //System.out.println("########################## MAKING REQUEST TO " + urlList);
+ 
     LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, urlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);
     return rsp.getResponse();
@@ -161,5 +189,12 @@ public class CloudSolrServer extends SolrServer {
         zkStateReader = null;
       }
     }
+    if (connManager != null) {
+      connManager.shutdown();
+    }
+  }
+
+  public LBHttpSolrServer getLbServer() {
+    return lbServer;
   }
 }

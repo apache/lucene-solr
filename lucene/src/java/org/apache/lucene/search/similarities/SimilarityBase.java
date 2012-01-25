@@ -87,6 +87,8 @@ public abstract class SimilarityBase extends Similarity {
   /** Fills all member fields defined in {@code BasicStats} in {@code stats}. 
    *  Subclasses can override this method to fill additional stats. */
   protected void fillBasicStats(BasicStats stats, CollectionStatistics collectionStats, TermStatistics termStats) {
+    // #positions(field) must be >= #positions(term)
+    assert collectionStats.sumTotalTermFreq() == -1 || collectionStats.sumTotalTermFreq() >= termStats.totalTermFreq();
     int numberOfDocuments = collectionStats.maxDoc();
     
     int docFreq = termStats.docFreq();

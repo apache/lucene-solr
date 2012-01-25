@@ -108,7 +108,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final Collection<String> fieldNames;
   private Collection<String> storedHighlightFieldNames;
   private DirectoryFactory directoryFactory;
-  
+
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
     // we don't need to reserve the directory because we get it from the factory
     this(core, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, config.lockType)), true, enableCache, false, directoryFactory);
@@ -133,6 +133,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (dir instanceof FSDirectory) {
       FSDirectory fsDirectory = (FSDirectory) dir;
       indexDir = fsDirectory.getDirectory().getAbsolutePath();
+    } else {
+      log.warn("WARNING: Directory impl does not support setting indexDir: " + dir.getClass().getName());
     }
 
     this.closeReader = closeReader;
@@ -567,6 +569,37 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
+  }
+
+  /** lookup the docid by the unique key field, and return the id *within* the leaf reader in the low 32 bits, and the index of the leaf reader in the high 32 bits.
+   * -1 is returned if not found.
+   * @lucene.internal
+   */
+  public long lookupId(BytesRef idBytes) throws IOException {
+    String field = schema.getUniqueKeyField().getName();
+    final AtomicReaderContext[] leaves = leafContexts;
+
+
+    for (int i=0; i<leaves.length; i++) {
+      final AtomicReaderContext leaf = leaves[i];
+      final IndexReader reader = leaf.reader;
+
+      final Fields fields = reader.fields();
+      if (fields == null) continue;
+
+      final Bits liveDocs = reader.getLiveDocs();
+      
+      final DocsEnum docs = reader.termDocsEnum(liveDocs, field, idBytes, false);
+
+      if (docs == null) continue;
+      int id = docs.nextDoc();
+      if (id == DocIdSetIterator.NO_MORE_DOCS) continue;
+      assert docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
+
+      return (((long)i) << 32) | id;
+    }
+
+    return -1;
   }
 
 

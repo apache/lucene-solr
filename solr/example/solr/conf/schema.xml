@@ -532,6 +532,9 @@
 
    <field name="payloads" type="payloads" indexed="true" stored="true"/>
 
+
+   <field name="_version_" type="long" indexed="true" stored="true"/>
+
    <!-- Uncommenting the following will create a "timestamp" field using
         a default value of "NOW" to indicate when each document was indexed.
      -->

@@ -32,6 +32,10 @@ public class CollectionStatistics {
   private final long sumDocFreq;
   
   public CollectionStatistics(String field, int maxDoc, int docCount, long sumTotalTermFreq, long sumDocFreq) {
+    assert maxDoc >= 0;
+    assert docCount >= -1 && docCount <= maxDoc; // #docs with field must be <= #docs
+    assert sumDocFreq >= -1;
+    assert sumTotalTermFreq == -1 || sumTotalTermFreq >= sumDocFreq; // #positions must be >= #postings
     this.field = field;
     this.maxDoc = maxDoc;
     this.docCount = docCount;

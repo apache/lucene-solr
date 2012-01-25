@@ -521,7 +521,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
           return doc = docs[i];
         }
       }
-      return refill();
+      return doc = refill();
     }
 
     @Override
@@ -604,7 +604,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
           return doc = docs[i];
         }
       }
-      return refill();
+      return doc = refill();
     }
     
     @Override

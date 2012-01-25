@@ -548,8 +548,9 @@ class SimpleTextFieldsReader extends FieldsProducer {
           UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length, scratchUTF16);
           int docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           visitedDocs.set(docID);
-        } else if (StringHelper.startsWith(scratch, POS)) {
-          totalTermFreq++;
+        } else if (StringHelper.startsWith(scratch, FREQ)) {
+          UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+FREQ.length, scratch.length-FREQ.length, scratchUTF16);
+          totalTermFreq += ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
         } else if (StringHelper.startsWith(scratch, TERM)) {
           if (lastDocsStart != -1) {
             b.add(Util.toIntsRef(lastTerm, scratchIntsRef), new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,

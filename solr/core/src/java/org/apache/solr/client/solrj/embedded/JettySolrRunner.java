@@ -34,6 +34,7 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.HashSessionIdManager;
 import org.mortbay.log.Logger;
+import org.mortbay.thread.QueuedThreadPool;
 
 /**
  * Run solr using jetty
@@ -48,30 +49,76 @@ public class JettySolrRunner {
   String context;
 
   private String solrConfigFilename;
+  private String schemaFilename;
 
   private boolean waitOnSolr = false;
 
-  public JettySolrRunner(String context, int port) {
-    this.init(context, port);
+  private int lastPort = -1;
+
+  private String shards;
+
+  private String dataDir;
+  
+  private volatile boolean startedBefore = false;
+
+  private String solrHome;
+
+  private boolean stopAtShutdown;
+
+  public JettySolrRunner(String solrHome, String context, int port) {
+    this.init(solrHome, context, port, true);
   }
 
-  public JettySolrRunner(String context, int port, String solrConfigFilename) {
-    this.init(context, port);
+  public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename, String schemaFileName) {
+    this.init(solrHome, context, port, true);
     this.solrConfigFilename = solrConfigFilename;
+    this.schemaFilename = schemaFileName;
+  }
+  
+  public JettySolrRunner(String solrHome, String context, int port,
+      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown) {
+    this.init(solrHome, context, port, stopAtShutdown);
+    this.solrConfigFilename = solrConfigFilename;
+    this.schemaFilename = schemaFileName;
   }
 
-  private void init(String context, int port) {
+  private void init(String solrHome, String context, int port, boolean stopAtShutdown) {
     this.context = context;
     server = new Server(port);
-    server.setStopAtShutdown(true);
+    this.solrHome = solrHome;
+    this.stopAtShutdown = stopAtShutdown;
+    server.setStopAtShutdown(stopAtShutdown);
+    if (!stopAtShutdown) {
+      server.setGracefulShutdown(0);
+    }
+    System.setProperty("solr.solr.home", solrHome);
     if (System.getProperty("jetty.testMode") != null) {
       // SelectChannelConnector connector = new SelectChannelConnector();
       // Normal SocketConnector is what solr's example server uses by default
       SocketConnector connector = new SocketConnector();
       connector.setPort(port);
       connector.setReuseAddress(true);
-      server.setConnectors(new Connector[] { connector });
+      if (!stopAtShutdown) {
+        QueuedThreadPool threadPool = (QueuedThreadPool) connector
+            .getThreadPool();
+        if (threadPool != null) {
+          threadPool.setMaxStopTimeMs(100);
+        }
+      }
+      server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new HashSessionIdManager(new Random()));
+    } else {
+      if (!stopAtShutdown) {
+        for (Connector connector : server.getConnectors()) {
+          if (connector instanceof SocketConnector) {
+            QueuedThreadPool threadPool = (QueuedThreadPool) ((SocketConnector) connector)
+                .getThreadPool();
+            if (threadPool != null) {
+              threadPool.setMaxStopTimeMs(100);
+            }
+          }
+        }
+      }
     }
 
     // Initialize the servlets
@@ -92,13 +139,20 @@ public class JettySolrRunner {
       }
 
       public void lifeCycleStarted(LifeCycle arg0) {
-        System.setProperty("hostPort", Integer.toString(getLocalPort()));
-        if (solrConfigFilename != null)
-          System.setProperty("solrconfig", solrConfigFilename);
+        lastPort = getFirstConnectorPort();
+        System.setProperty("hostPort", Integer.toString(lastPort));
+        if (solrConfigFilename != null) System.setProperty("solrconfig",
+            solrConfigFilename);
+        if (schemaFilename != null) System.setProperty("schema", 
+            schemaFilename);
+//        SolrDispatchFilter filter = new SolrDispatchFilter();
+//        FilterHolder fh = new FilterHolder(filter);
         dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*",
             Handler.REQUEST);
-        if (solrConfigFilename != null)
-          System.clearProperty("solrconfig");
+        if (solrConfigFilename != null) System.clearProperty("solrconfig");
+        if (schemaFilename != null) System.clearProperty("schema");
+        System.clearProperty("solr.solr.home");
+        
       }
 
       public void lifeCycleFailure(LifeCycle arg0, Throwable arg1) {
@@ -111,6 +165,18 @@ public class JettySolrRunner {
 
   }
 
+  public FilterHolder getDispatchFilter() {
+    return dispatchFilter;
+  }
+
+  public boolean isRunning() {
+    return server.isRunning();
+  }
+  
+  public boolean isStopped() {
+    return server.isStopped();
+  }
+
   // ------------------------------------------------------------------------------------------------
   // ------------------------------------------------------------------------------------------------
 
@@ -119,6 +185,21 @@ public class JettySolrRunner {
   }
 
   public void start(boolean waitForSolr) throws Exception {
+    // if started before, make a new server
+    if (startedBefore) {
+      waitOnSolr = false;
+      init(solrHome, context, lastPort, stopAtShutdown);
+    } else {
+      startedBefore = true;
+    }
+    
+    if( dataDir != null) {
+      System.setProperty("solr.data.dir", dataDir);
+    }
+    if(shards != null) {
+      System.setProperty("shard", shards);
+    }
+    
     if (!server.isRunning()) {
       server.start();
     }
@@ -131,26 +212,41 @@ public class JettySolrRunner {
         }
       }
     }
+    
+    System.clearProperty("shard");
+    System.clearProperty("solr.data.dir");
   }
 
   public void stop() throws Exception {
-    if (server.isRunning()) {
+    if (!server.isStopped() && !server.isStopping()) {
       server.stop();
-      server.join();
     }
+    server.join();
   }
 
   /**
-   * Returns the Local Port of the first Connector found for the jetty Server.
+   * Returns the Local Port of the jetty Server.
    * 
    * @exception RuntimeException if there is no Connector
    */
-  public int getLocalPort() {
+  private int getFirstConnectorPort() {
     Connector[] conns = server.getConnectors();
     if (0 == conns.length) {
       throw new RuntimeException("Jetty Server has no Connectors");
     }
     return conns[0].getLocalPort();
+  }
+  
+  /**
+   * Returns the Local Port of the jetty Server.
+   * 
+   * @exception RuntimeException if there is no Connector
+   */
+  public int getLocalPort() {
+    if (lastPort == -1) {
+      throw new IllegalStateException("You cannot get the port until this instance has started");
+    }
+    return lastPort;
   }
 
   // --------------------------------------------------------------
@@ -172,11 +268,19 @@ public class JettySolrRunner {
    */
   public static void main(String[] args) {
     try {
-      JettySolrRunner jetty = new JettySolrRunner("/solr", 8983);
+      JettySolrRunner jetty = new JettySolrRunner(".", "/solr", 8983);
       jetty.start();
     } catch (Exception ex) {
       ex.printStackTrace();
     }
+  }
+
+  public void setShards(String shardList) {
+     this.shards = shardList;
+  }
+
+  public void setDataDir(String dataDir) {
+    this.dataDir = dataDir;
   }
 }
 

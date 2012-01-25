@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 public final class PositionFilter extends TokenFilter {
 
   /** Position increment to assign to all but the first token - default = 0 */
-  private int positionIncrement = 0;
+  private final int positionIncrement;
   
   /** The first token must have non-zero positionIncrement **/
   private boolean firstTokenPositioned = false;
@@ -44,7 +44,7 @@ public final class PositionFilter extends TokenFilter {
    * @param input the input stream
    */
   public PositionFilter(final TokenStream input) {
-    super(input);
+    this(input, 0);
   }
 
   /**
@@ -56,7 +56,7 @@ public final class PositionFilter extends TokenFilter {
    *  token from the input stream
    */
   public PositionFilter(final TokenStream input, final int positionIncrement) {
-    this(input);
+    super(input);
     this.positionIncrement = positionIncrement;
   }
 

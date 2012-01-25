@@ -31,18 +31,22 @@ import java.util.List;
 
 import javax.management.JMException;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.zookeeper.jmx.ManagedUtil;
 import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ServerConfig;
+import org.apache.zookeeper.server.SessionTracker.Session;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
-import org.apache.zookeeper.server.SessionTracker.Session;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZkTestServer {
+  public static final int TICK_TIME = 3000;
 
+  private static Logger log = LoggerFactory.getLogger(ZkTestServer.class);
+  
   protected final ZKServerMain zkServer = new ZKServerMain();
 
   private String zkDir;
@@ -50,6 +54,8 @@ public class ZkTestServer {
   private int clientPort;
 
   private Thread zooThread;
+  
+  private int theTickTime = TICK_TIME;
 
   class ZKServerMain {
 
@@ -76,7 +82,6 @@ public class ZkTestServer {
 
     /**
      * Run from a ServerConfig.
-     * 
      * @param config ServerConfig to use.
      * @throws IOException
      */
@@ -125,7 +130,12 @@ public class ZkTestServer {
       if (cnxnFactory == null) {
         throw new IllegalStateException("A port has not yet been selected");
       }
-      int port = cnxnFactory.getLocalPort();
+      int port;
+      try {
+        port = cnxnFactory.getLocalPort();
+      } catch (NullPointerException e) {
+        throw new IllegalStateException("A port has not yet been selected");
+      }
       if (port == 0) {
         throw new IllegalStateException("A port has not yet been selected");
       }
@@ -163,10 +173,15 @@ public class ZkTestServer {
       @Override
       public int getTimeout() {
         return 4000;
+      }
+      @Override
+      public boolean isClosing() {
+        return false;
       }});
   }
 
   public void run() throws InterruptedException {
+    log.info("STARTING ZK TEST SERVER");
     // we don't call super.setUp
     zooThread = new Thread() {
       
@@ -178,7 +193,7 @@ public class ZkTestServer {
             setClientPort(ZkTestServer.this.clientPort);
             this.dataDir = zkDir;
             this.dataLogDir = zkDir;
-            this.tickTime = 1500;
+            this.tickTime = theTickTime;
           }
           
           public void setClientPort(int clientPort) {
@@ -220,7 +235,7 @@ public class ZkTestServer {
       } catch(IllegalStateException e) {
         
       }
-      if (cnt == 40) {
+      if (cnt == 100) {
         throw new RuntimeException("Could not get the port for ZooKeeper server");
       }
       cnt++;
@@ -229,13 +244,8 @@ public class ZkTestServer {
 
   @SuppressWarnings("deprecation")
   public void shutdown() throws IOException {
-    SolrTestCaseJ4.ignoreException("java.nio.channels.ClosedChannelException");
     // TODO: this can log an exception while trying to unregister a JMX MBean
-    try {
-      zkServer.shutdown();
-    } finally {
-      SolrTestCaseJ4.resetExceptionIgnores();
-    }
+    zkServer.shutdown();
   }
  
   
@@ -323,5 +333,13 @@ public class ZkTestServer {
       alist.add(new HostPort(host, port));
     }
     return alist;
+  }
+
+  public int getTheTickTime() {
+    return theTickTime;
+  }
+
+  public void setTheTickTime(int theTickTime) {
+    this.theTickTime = theTickTime;
   }
 }

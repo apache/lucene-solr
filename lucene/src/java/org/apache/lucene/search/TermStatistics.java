@@ -29,6 +29,8 @@ public class TermStatistics {
   private final long totalTermFreq;
   
   public TermStatistics(BytesRef term, int docFreq, long totalTermFreq) {
+    assert docFreq >= 0;
+    assert totalTermFreq == -1 || totalTermFreq >= docFreq; // #positions must be >= #postings
     this.term = term;
     this.docFreq = docFreq;
     this.totalTermFreq = totalTermFreq;
