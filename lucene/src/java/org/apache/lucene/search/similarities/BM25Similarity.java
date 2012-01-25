@@ -154,7 +154,6 @@ public class BM25Similarity extends Similarity {
 
   @Override
   public final Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
-    assert collectionStats.sumTotalTermFreq() >= -1;
     Explanation idf = termStats.length == 1 ? idfExplain(collectionStats, termStats[0]) : idfExplain(collectionStats, termStats);
 
     float avgdl = avgFieldLength(collectionStats);
