@@ -283,7 +283,8 @@ public abstract class LuceneTestCase extends Assert {
     int randomVal = random.nextInt(10);
     
     if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2)) { // preflex-only setup
-      codec = new PreFlexRWCodec();
+      codec = Codec.forName("Lucene3x");
+      assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
     } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9)) {
       codec = new SimpleTextCodec();

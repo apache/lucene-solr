@@ -16,6 +16,13 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import java.net.MalformedURLException;
+import java.util.Random;
+import java.util.concurrent.Executor;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
@@ -23,16 +30,11 @@ import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.MalformedURLException;
-import java.util.Random;
-import java.util.concurrent.Executor;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements PluginInfoInitialized{
@@ -44,12 +46,13 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   //
   // Consider CallerRuns policy and a lower max threads to throttle
   // requests at some point (or should we simply return failure?)
-   Executor commExecutor = new ThreadPoolExecutor(
+   ThreadPoolExecutor commExecutor = new ThreadPoolExecutor(
           0,
           Integer.MAX_VALUE,
           5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
-          new SynchronousQueue<Runnable>()  // directly hand off tasks
-  );
+          new SynchronousQueue<Runnable>(),  // directly hand off tasks
+          new DefaultSolrThreadFactory("httpShardExecutor")
+   );
 
 
   HttpClient client;
@@ -58,6 +61,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   int soTimeout = 0; //current default values
   int connectionTimeout = 0; //current default values
   public  String scheme = "http://"; //current default values
+
+  private MultiThreadedHttpConnectionManager mgr;
  // socket timeout measured in ms, closes a socket if read
   // takes longer than x ms to complete. throws
   // java.net.SocketTimeoutException: Read timed out exception
@@ -97,7 +102,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
           log.info("Setting shard-connection-timeout to: " + connectionTimeout);
         }
     }
-    MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
+    mgr = new MultiThreadedHttpConnectionManager();
     mgr.getParams().setDefaultMaxConnectionsPerHost(20);
     mgr.getParams().setMaxTotalConnections(10000);
     mgr.getParams().setConnectionTimeout(connectionTimeout);
@@ -117,5 +122,24 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
     }
 
+  }
+
+  @Override
+  public void close() {
+    try {
+      mgr.shutdown();
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
+    try {
+      loadbalancer.shutdown();
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
+    try {
+      commExecutor.shutdownNow();
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
   }
 }

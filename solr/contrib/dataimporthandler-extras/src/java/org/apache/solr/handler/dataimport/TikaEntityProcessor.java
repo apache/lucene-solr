@@ -118,9 +118,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
     }
     Parser tikaParser = null;
     if(parser.equals(AUTO_PARSER)){
-      AutoDetectParser parser = new AutoDetectParser();
-      parser.setConfig(tikaConfig);
-      tikaParser = parser;
+      tikaParser = new AutoDetectParser(tikaConfig);
     } else {
       tikaParser = (Parser) context.getSolrCore().getResourceLoader().newInstance(parser);
     }

@@ -206,7 +206,7 @@ public class SegmentTermDocs {
         skipListReader = new Lucene40SkipListReader((IndexInput) freqStream.clone(), maxSkipLevels, skipInterval); // lazily clone
 
       if (!haveSkipped) {                          // lazily initialize skip stream
-        skipListReader.init(skipPointer, freqBasePointer, proxBasePointer, df, currentFieldStoresPayloads);
+        skipListReader.init(skipPointer, freqBasePointer, proxBasePointer, df, currentFieldStoresPayloads, false);
         haveSkipped = true;
       }
 

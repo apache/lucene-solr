@@ -18,12 +18,14 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -116,5 +118,19 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
     assertCapitalizesTo(new MockTokenizer(new StringReader(input), MockTokenizer.KEYWORD, false),
         new String[] { expected }, onlyFirstWord, keep, forceFirstLetter, okPrefix,
         minWordLength, maxWordCount, maxTokenLength);    
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomString() throws Exception {
+    Analyzer a = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new CapitalizationFilter(tokenizer));
+      }
+    };
+    
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

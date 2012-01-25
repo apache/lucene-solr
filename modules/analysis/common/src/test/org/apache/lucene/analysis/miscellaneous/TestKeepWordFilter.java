@@ -17,13 +17,16 @@
 
 package org.apache.lucene.analysis.miscellaneous;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 /** Test {@link KeepWordFilter} */
@@ -56,5 +59,24 @@ public class TestKeepWordFilter extends BaseTokenStreamTestCase {
     stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     stream = new KeepWordFilter(false, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
     assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 1 });
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    final Set<String> words = new HashSet<String>();
+    words.add( "a" );
+    words.add( "b" );
+    
+    Analyzer a = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenStream stream = new KeepWordFilter(true, tokenizer, new CharArraySet(TEST_VERSION_CURRENT, words, true));
+        return new TokenStreamComponents(tokenizer, stream);
+      }
+    };
+    
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

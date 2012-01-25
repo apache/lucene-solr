@@ -62,10 +62,10 @@ public class SolrDispatchFilter implements Filter
 {
   final Logger log = LoggerFactory.getLogger(SolrDispatchFilter.class);
 
-  protected CoreContainer cores;
+  protected volatile CoreContainer cores;
+
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
-  protected String solrConfigFilename = null;
   protected final Map<SolrConfig, SolrRequestParsers> parsers = new WeakHashMap<SolrConfig, SolrRequestParsers>();
   protected final SolrRequestParsers adminRequestParser;
   
@@ -100,6 +100,10 @@ public class SolrDispatchFilter implements Filter
 
     log.info("SolrDispatchFilter.init() done");
   }
+  
+  public CoreContainer getCores() {
+    return cores;
+  }
 
   /** Method to override to change how CoreContainer initialization is performed. */
   protected CoreContainer.Initializer createInitializer() {
@@ -118,7 +122,13 @@ public class SolrDispatchFilter implements Filter
       ((HttpServletResponse)response).sendError( 500, abortErrorMessage );
       return;
     }
-
+    
+    if (this.cores == null) {
+      ((HttpServletResponse)response).sendError( 403, "Server is shutting down" );
+      return;
+    }
+    CoreContainer cores = this.cores;
+    
     if( request instanceof HttpServletRequest) {
       HttpServletRequest req = (HttpServletRequest)request;
       HttpServletResponse resp = (HttpServletResponse)response;

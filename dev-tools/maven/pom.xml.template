@@ -45,7 +45,7 @@
     <jetty.version>6.1.26</jetty.version>
     <patched.jetty.version>6.1.26-patched-JETTY-1340</patched.jetty.version>
     <slf4j.version>1.6.1</slf4j.version>
-    <tika.version>0.10</tika.version>
+    <tika.version>1.0</tika.version>
   </properties>
   <issueManagement>
     <system>JIRA</system>
@@ -283,7 +283,7 @@
       <dependency>
         <groupId>org.apache.zookeeper</groupId>
         <artifactId>zookeeper</artifactId>
-        <version>3.3.3</version>
+        <version>3.3.4</version>
       </dependency>
       <dependency>
         <groupId>org.carrot2</groupId>
@@ -362,6 +362,19 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+  <dependencies>
+    <dependency> 
+      <!-- Maven 2.2.X has a bug that omits as duplicate all JUnit         -->
+      <!-- dependencies from the classpath when compiling solr-clustering, -->
+      <!-- causing test compilation to fail.  Maven 3.0.4 test compilation -->
+      <!-- succeeds with the exact same dependencies, so apparently the    -->
+      <!-- bug has been fixed.  This dependency can be removed when the    -->
+      <!-- minimum Maven version is upgraded to 3.0.4+.                    -->
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
   <build>
     <directory>lucene/build/lucene-parent</directory>
     <pluginManagement>
@@ -384,6 +397,11 @@
             <source>${java.compat.version}</source>
             <target>${java.compat.version}</target>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.4</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -652,7 +670,7 @@
                   <artifactId>solr-noggit</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/lib/apache-solr-noggit-r1209632.jar</file>
+                  <file>solr/lib/apache-solr-noggit-r1211150.jar</file>
                 </configuration>  
               </execution>
               <execution>

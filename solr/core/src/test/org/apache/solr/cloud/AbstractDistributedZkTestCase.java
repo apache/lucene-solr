@@ -23,6 +23,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.SolrConfig;
+import org.junit.AfterClass;
 import org.junit.Before;
 
 public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearchTestCase {
@@ -34,7 +35,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
   public void setUp() throws Exception {
     super.setUp();
     log.info("####SETUP_START " + getName());
-    
+    createTempDir();
     ignoreException("java.nio.channels.ClosedChannelException");
     
     String zkDir = testDir.getAbsolutePath() + File.separator
@@ -80,13 +81,19 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     System.clearProperty("collection");
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
-    super.tearDown();
     resetExceptionIgnores();
+    super.tearDown();
   }
   
   protected void printLayout() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();
     zkClient.close();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
 }

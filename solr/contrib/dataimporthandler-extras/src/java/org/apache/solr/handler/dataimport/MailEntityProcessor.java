@@ -18,8 +18,8 @@ package org.apache.solr.handler.dataimport;
 
 import com.sun.mail.imap.IMAPMessage;
 
-import org.apache.tika.config.TikaConfig;
-import org.apache.tika.utils.ParseUtils;
+import org.apache.tika.Tika;
+import org.apache.tika.metadata.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +95,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
               getStringFromContext("processAttachment",null) == null ? "processAttachement":"processAttachment"
             , true);
 
+    tika = new Tika();
+    
     logConfig();
   }
 
@@ -166,7 +168,10 @@ public class MailEntityProcessor extends EntityProcessorBase {
       if (!processAttachment || (disp != null && disp.equalsIgnoreCase(Part.ATTACHMENT)))        return;
       InputStream is = part.getInputStream();
       String fileName = part.getFileName();
-      String content = ParseUtils.getStringContent(is, TikaConfig.getDefaultConfig(), ctype.getBaseType().toLowerCase(Locale.ENGLISH));
+      Metadata md = new Metadata();
+      md.set(Metadata.CONTENT_TYPE, ctype.getBaseType().toLowerCase(Locale.ENGLISH));
+      md.set(Metadata.RESOURCE_NAME_KEY, fileName);
+      String content = tika.parseToString(is, md);
       if (disp != null && disp.equalsIgnoreCase(Part.ATTACHMENT)) {
         if (row.get(ATTACHMENT) == null)
           row.put(ATTACHMENT, new ArrayList<String>());
@@ -529,6 +534,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
 
   private boolean processAttachment = true;
 
+  private Tika tika;
+  
   // holds the current state
   private Store mailbox;
   private boolean connected = false;

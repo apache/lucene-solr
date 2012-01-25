@@ -216,6 +216,12 @@ public class TestHarness {
       SolrCore core = new SolrCore(coreName, dataDirectory, solrConfig, indexSchema, dcore);
       container.register(coreName, core, false);
 
+      // TODO: we should be exercising the *same* core container initialization code, not equivalent code!
+      if (container.getZkController() == null && core.getUpdateHandler().getUpdateLog() != null) {
+        // always kick off recovery if we are in standalone mode.
+        core.getUpdateHandler().getUpdateLog().recoverFromLog();
+      }
+      
       return container;
     }
   }
@@ -453,32 +459,46 @@ public class TestHarness {
   /**
    * Generates a delete by query xml string
    * @param q Query that has not already been xml escaped
+   * @param args The attributes of the delete tag
    */
-  public static String deleteByQuery(String q) {
-    return delete("query", q);
+  public static String deleteByQuery(String q, String... args) {
+    try {
+      StringWriter r = new StringWriter();
+      XML.writeXML(r, "query", q);
+      return delete(r.getBuffer().toString(), args);
+    } catch(IOException e) {
+      throw new RuntimeException
+        ("this should never happen with a StringWriter", e);
+    }
   }
+  
   /**
    * Generates a delete by id xml string
    * @param id ID that has not already been xml escaped
+   * @param args The attributes of the delete tag
    */
-  public static String deleteById(String id) {
-    return delete("id", id);
+  public static String deleteById(String id, String... args) {
+    try {
+      StringWriter r = new StringWriter();
+      XML.writeXML(r, "id", id);
+      return delete(r.getBuffer().toString(), args);
+    } catch(IOException e) {
+      throw new RuntimeException
+        ("this should never happen with a StringWriter", e);
+    }
   }
         
   /**
    * Generates a delete xml string
    * @param val text that has not already been xml escaped
+   * @param args 0 and Even numbered args are params, Odd numbered args are XML escaped values.
    */
-  private static String delete(String deltype, String val) {
+  private static String delete(String val, String... args) {
     try {
       StringWriter r = new StringWriter();
-            
-      r.write("<delete>");
-      XML.writeXML(r, deltype, val);
-      r.write("</delete>");
-            
+      XML.writeUnescapedXML(r, "delete", val, (Object[])args);
       return r.getBuffer().toString();
-    } catch (IOException e) {
+    } catch(IOException e) {
       throw new RuntimeException
         ("this should never happen with a StringWriter", e);
     }

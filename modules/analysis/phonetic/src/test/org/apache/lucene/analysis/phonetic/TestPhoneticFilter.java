@@ -17,6 +17,8 @@
 
 package org.apache.lucene.analysis.phonetic;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.commons.codec.Encoder;
@@ -25,7 +27,9 @@ import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.codec.language.Metaphone;
 import org.apache.commons.codec.language.RefinedSoundex;
 import org.apache.commons.codec.language.Soundex;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
@@ -69,5 +73,34 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
         new StringReader(input));
     PhoneticFilter filter = new PhoneticFilter(tokenizer, encoder, inject);
     assertTokenStreamContents(filter, expected);
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws IOException {
+    Encoder encoders[] = new Encoder[] {
+      new Metaphone(), new DoubleMetaphone(), new Soundex(), new RefinedSoundex(), new Caverphone()
+    };
+    
+    for (final Encoder e : encoders) {
+      Analyzer a = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+          return new TokenStreamComponents(tokenizer, new PhoneticFilter(tokenizer, e, false));
+        }   
+      };
+      
+      checkRandomData(random, a, 1000*RANDOM_MULTIPLIER);
+      
+      Analyzer b = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+          return new TokenStreamComponents(tokenizer, new PhoneticFilter(tokenizer, e, false));
+        }   
+      };
+      
+      checkRandomData(random, b, 1000*RANDOM_MULTIPLIER);
+    }
   }
 }

@@ -310,7 +310,7 @@
 
       Stat stat = new Stat();
       try {
-        byte[] data = zkClient.getData(path, null, stat);
+        byte[] data = zkClient.getData(path, null, stat, true);
 
         if (stat.getEphemeralOwner() != 0)
           out.print("ephemeral ");
@@ -362,7 +362,7 @@
 
       List<String> children = null;
       try {
-        children = zkClient.getChildren(path, null);
+        children = zkClient.getChildren(path, null, true);
       } catch (KeeperException e) {
         exception(e);
         return;
@@ -389,7 +389,7 @@
       try {
 
         Stat stat = new Stat();
-        byte[] data = zkClient.getData(path, null, stat);
+        byte[] data = zkClient.getData(path, null, stat, true);
 
         out.print("<h2>");
         xmlescape(path);

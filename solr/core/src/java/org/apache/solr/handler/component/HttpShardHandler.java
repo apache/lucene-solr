@@ -22,11 +22,13 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -234,7 +236,8 @@ public class HttpShardHandler extends ShardHandler {
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
 
-    rb.isDistrib = params.getBool("distrib",false);
+    rb.isDistrib = params.getBool("distrib", req.getCore().getCoreDescriptor()
+        .getCoreContainer().isZooKeeperAware());
     String shards = params.get(ShardParams.SHARDS);
 
     // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
@@ -272,11 +275,36 @@ public class HttpShardHandler extends ShardHandler {
 
         cloudState =  zkController.getCloudState();
 
-        // TODO: check "collection" for which collection(s) to search.. but for now, just default
-        // to the collection for this core.
-        // This can be more efficient... we only record the name, even though we have the
-        // shard info we need in the next step of mapping slice->shards
-        slices = cloudState.getSlices(cloudDescriptor.getCollectionName());
+        // This can be more efficient... we only record the name, even though we
+        // have the shard info we need in the next step of mapping slice->shards
+        
+        // Stores the comma-separated list of specified collections.
+        // Eg: "collection1,collection2,collection3"
+        String collections = params.get("collection");
+        if (collections != null) {
+          // If there were one or more collections specified in the query, split
+          // each parameter and store as a seperate member of a List.
+          List<String> collectionList = StrUtils.splitSmart(collections, ",",
+              true);
+          
+          // First create an empty HashMap to add the slice info to.
+          slices = new HashMap<String,Slice>();
+          
+          // In turn, retrieve the slices that cover each collection from the
+          // cloud state and add them to the Map 'slices'.
+          for (int i = 0; i < collectionList.size(); i++) {
+            String collection = collectionList.get(i);
+            ClientUtils.appendMap(collection, slices, cloudState.getSlices(collection));
+          }
+        } else {
+          // If no collections were specified, default to the collection for
+          // this core.
+          slices = cloudState.getSlices(cloudDescriptor.getCollectionName());
+        }
+        
+        // Store the logical slices in the ResponseBuilder and create a new
+        // String array to hold the physical shards (which will be mapped
+        // later).
         rb.slices = slices.keySet().toArray(new String[slices.size()]);
         rb.shards = new String[rb.slices.length];
 
@@ -317,14 +345,16 @@ public class HttpShardHandler extends ShardHandler {
             StringBuilder sliceShardsStr = new StringBuilder();
             boolean first = true;
             for (ZkNodeProps nodeProps : sliceShards.values()) {
-              if (!liveNodes.contains(nodeProps.get(ZkStateReader.NODE_NAME)))
-                continue;
+              ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
+              if (!liveNodes.contains(coreNodeProps.getNodeName())
+                  || !coreNodeProps.getState().equals(
+                      ZkStateReader.ACTIVE)) continue;
               if (first) {
                 first = false;
               } else {
                 sliceShardsStr.append('|');
               }
-              String url = nodeProps.get("url");
+              String url = coreNodeProps.getCoreUrl();
               if (url.startsWith("http://"))
                 url = url.substring(7);
               sliceShardsStr.append(url);

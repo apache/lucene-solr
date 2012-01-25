@@ -26,11 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -41,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  */
-final class RequestHandlers {
+public final class RequestHandlers {
   public static Logger log = LoggerFactory.getLogger(RequestHandlers.class);
 
   public static final String DEFAULT_HANDLER_NAME="standard";
@@ -208,7 +205,7 @@ final class RequestHandlers {
    * 
    * @since solr 1.2
    */
-  private static final class LazyRequestHandlerWrapper implements SolrRequestHandler, SolrInfoMBean
+  public static final class LazyRequestHandlerWrapper implements SolrRequestHandler, SolrInfoMBean
   {
     private final SolrCore core;
     private String _className;

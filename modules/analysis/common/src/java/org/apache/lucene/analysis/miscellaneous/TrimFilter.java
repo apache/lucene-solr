@@ -68,7 +68,7 @@ public final class TrimFilter extends TokenFilter {
       } else {
         termAtt.setEmpty();
       }
-      if (updateOffsets) {
+      if (updateOffsets && len == offsetAtt.endOffset() - offsetAtt.startOffset()) {
         int newStart = offsetAtt.startOffset()+start;
         int newEnd = offsetAtt.endOffset() - (start<end ? endOff:0);
         offsetAtt.setOffset(newStart, newEnd);

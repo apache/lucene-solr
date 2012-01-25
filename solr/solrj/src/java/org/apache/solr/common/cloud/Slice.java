@@ -17,12 +17,14 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.noggit.JSONWriter;
+
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
-
 // immutable
-public class Slice {
+public class Slice implements JSONWriter.Writable {
   private final Map<String,ZkNodeProps> shards;
   private final String name;
 
@@ -34,8 +36,27 @@ public class Slice {
   public Map<String,ZkNodeProps> getShards() {
     return Collections.unmodifiableMap(shards);
   }
+
+  public Map<String,ZkNodeProps> getShardsCopy() {
+    Map<String,ZkNodeProps> shards = new HashMap<String,ZkNodeProps>();
+    for (Map.Entry<String,ZkNodeProps> entry : this.shards.entrySet()) {
+      ZkNodeProps zkProps = new ZkNodeProps(entry.getValue());
+      shards.put(entry.getKey(), zkProps);
+    }
+    return shards;
+  }
   
   public String getName() {
     return name;
+  }
+
+  @Override
+  public String toString() {
+    return "Slice [shards=" + shards + ", name=" + name + "]";
+  }
+
+  @Override
+  public void write(JSONWriter jsonWriter) {
+    jsonWriter.write(shards);
   }
 }

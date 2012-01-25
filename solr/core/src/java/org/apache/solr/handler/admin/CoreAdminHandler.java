@@ -17,38 +17,55 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.*;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.NumberUtils;
-import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.update.MergeIndexesCommand;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.MergeIndexesCommand;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.util.NumberUtils;
+import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -161,6 +178,21 @@ public class CoreAdminHandler extends RequestHandlerBase {
           break;
         }
 
+        case PREPRECOVERY: {
+          this.handlePrepRecoveryAction(req, rsp);
+          break;
+        }
+        
+        case REQUESTRECOVERY: {
+          this.handleRequestRecoveryAction(req, rsp);
+          break;
+        }
+        
+        case DISTRIBURL: {
+          this.handleDistribUrlAction(req, rsp);
+          break;
+        }
+        
         default: {
           doPersist = this.handleCustomAction(req, rsp);
           break;
@@ -554,6 +586,142 @@ public class CoreAdminHandler extends RequestHandlerBase {
     return doPersist;
 
   }
+  
+  protected void handleRequestRecoveryAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws IOException {
+    final SolrParams params = req.getParams();
+    
+    String cname = params.get(CoreAdminParams.CORE);
+    if (cname == null) {
+      cname = "";
+    }
+    SolrCore core = null;
+    try {
+      core = coreContainer.getCore(cname);
+      core.getUpdateHandler().getSolrCoreState().doRecovery(core);
+    } finally {
+      // no recoveryStrat close for now
+      if (core != null) {
+        core.close();
+      }
+    }
+  }
+  
+  protected void handlePrepRecoveryAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws IOException, InterruptedException {
+    final SolrParams params = req.getParams();
+    
+    String cname = params.get(CoreAdminParams.CORE);
+    if (cname == null) {
+      cname = "";
+    }
+    
+    String nodeName = params.get("nodeName");
+    String coreNodeName = params.get("coreNodeName");
+    
+ 
+    SolrCore core =  null;
+
+    try {
+      core = coreContainer.getCore(cname);
+      if (core == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "core not found:" + cname);
+      }
+      String state;
+      int retry = 0;
+      while (true) {
+        // wait until we are sure the recovering node is ready
+        // to accept updates
+        CloudDescriptor cloudDescriptor = core.getCoreDescriptor()
+            .getCloudDescriptor();
+        CloudState cloudState = coreContainer
+            .getZkController()
+            .getCloudState();
+        ZkNodeProps nodeProps = 
+            cloudState.getSlice(cloudDescriptor.getCollectionName(),
+                cloudDescriptor.getShardId()).getShards().get(coreNodeName);
+        state = nodeProps.get(ZkStateReader.STATE_PROP);
+        boolean live = cloudState.liveNodesContain(nodeName);
+        if (nodeProps != null && state.equals(ZkStateReader.RECOVERING)
+            && live) {
+          break;
+        }
+        
+        if (retry++ == 30) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "I was asked to prep for recovery for " + nodeName
+                  + " but she is not live or not in a recovery state - state: " + state + " live:" + live);
+        }
+        
+        Thread.sleep(1000);
+      }
+      
+      // small safety net for any updates that started with state that
+      // kept it from sending the update to be buffered -
+      // pause for a while to let any outstanding updates finish
+      
+      Thread.sleep(4000);
+      
+      UpdateRequestProcessorChain processorChain = core
+          .getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
+      
+      ModifiableSolrParams reqParams = new ModifiableSolrParams(req.getParams());
+      reqParams.set(DistributedUpdateProcessor.COMMIT_END_POINT, "true");
+      
+      SolrQueryRequest sqr = new LocalSolrQueryRequest(core, reqParams);
+      UpdateRequestProcessor processor = processorChain.createProcessor(sqr,
+          new SolrQueryResponse());
+      CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
+      
+      processor.processCommit(cuc);
+      processor.finish();
+      
+      // solrcloud_debug
+//      try {
+//        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+//        SolrIndexSearcher searcher = searchHolder.get();
+//        try {
+//          System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " to replicate "
+//              + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " gen:" + core.getDeletionPolicy().getLatestCommit().getGeneration()  + " data:" + core.getDataDir());
+//        } finally {
+//          searchHolder.decref();
+//        }
+//      } catch (Exception e) {
+//        
+//      }
+      
+    } finally {
+      if (core != null) {
+        core.close();
+      }
+    }
+  }
+  
+  protected void handleDistribUrlAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws IOException, InterruptedException, SolrServerException {
+    // TODO: finish this and tests
+    SolrParams params = req.getParams();
+    
+    SolrParams required = params.required();
+    String path = required.get("path");
+    String shard = params.get("shard");
+    String collection = required.get("collection");
+    
+    SolrCore core = req.getCore();
+    ZkController zkController = core.getCoreDescriptor().getCoreContainer()
+        .getZkController();
+    if (shard != null) {
+      List<ZkCoreNodeProps> replicas = zkController.getZkStateReader().getReplicaProps(
+          collection, shard, zkController.getNodeName(), core.getName());
+      
+      for (ZkCoreNodeProps node : replicas) {
+        CommonsHttpSolrServer server = new CommonsHttpSolrServer(node.getCoreUrl() + path);
+        QueryRequest qr = new QueryRequest();
+        server.request(qr);
+      }
+
+    }
+  }
 
   protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<Object>();
@@ -594,6 +762,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
     return path;
   }
 
+  public static ModifiableSolrParams params(String... params) {
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    for (int i=0; i<params.length; i+=2) {
+      msp.add(params[i], params[i+1]);
+    }
+    return msp;
+  }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 

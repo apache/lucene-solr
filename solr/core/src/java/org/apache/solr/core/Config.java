@@ -242,7 +242,10 @@ public class Config {
 
   public String get(String path, String def) {
     String val = getVal(path, false);
-    return val!=null ? val : def;
+    if (val == null || val.length() == 0) {
+      return def;
+    }
+    return val;
   }
 
   public int getInt(String path) {

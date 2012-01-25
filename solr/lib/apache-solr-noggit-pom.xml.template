@@ -31,6 +31,6 @@
   <artifactId>solr-noggit</artifactId>
   <name>Solr Specific Noggit</name>
   <version>@version@</version>
-  <description>Solr Specific Noggit r1209632</description>
+  <description>Solr Specific Noggit r1211150</description>
   <packaging>jar</packaging>
 </project>

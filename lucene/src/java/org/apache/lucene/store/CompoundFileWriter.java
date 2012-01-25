@@ -255,10 +255,8 @@ final class CompoundFileWriter implements Closeable{
       assert !seenIDs.contains(id): "file=\"" + name + "\" maps to id=\"" + id + "\", which was already written";
       seenIDs.add(id);
       final DirectCFSIndexOutput out;
-      if (outputTaken.compareAndSet(false, true)) {
+      if ((outputLocked = outputTaken.compareAndSet(false, true))) {
         out = new DirectCFSIndexOutput(getOutput(), entry, false);
-        outputLocked = true;
-        success = true;
       } else {
         entry.dir = this.directory;
         if (directory.fileExists(name)) {

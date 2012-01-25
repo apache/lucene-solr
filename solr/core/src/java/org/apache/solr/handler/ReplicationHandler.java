@@ -43,6 +43,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -81,6 +82,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {
+  
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationHandler.class.getName());
   SolrCore core;
 
@@ -128,6 +130,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
+ 
+      //System.out.println("The latest index gen is:" + commitPoint.getGeneration() + " " + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
       if (commitPoint != null && replicationEnabled.get()) {
         //
         // There is a race condition here.  The commit point may be changed / deleted by the time
@@ -162,7 +166,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       new Thread() {
         @Override
         public void run() {
-          doFetch(paramsCopy);
+          doFetch(paramsCopy, false);
         }
       }.start();
       rsp.add(STATUS, OK_STATUS);
@@ -270,10 +274,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile SnapPuller tempSnapPuller;
 
-  void doFetch(SolrParams solrParams) {
+  public boolean doFetch(SolrParams solrParams, boolean force) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
     if (!snapPullLock.tryLock())
-      return;
+      return false;
     try {
       tempSnapPuller = snapPuller;
       if (masterUrl != null) {
@@ -281,13 +285,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         nl.remove(SnapPuller.POLL_INTERVAL);
         tempSnapPuller = new SnapPuller(nl, this, core);
       }
-      tempSnapPuller.fetchLatestIndex(core);
+      return tempSnapPuller.fetchLatestIndex(core, force);
     } catch (Exception e) {
-      LOG.error("SnapPull failed ", e);
+      SolrException.log(LOG, "SnapPull failed ", e);
     } finally {
       tempSnapPuller = snapPuller;
       snapPullLock.unlock();
     }
+    return false;
   }
 
   boolean isReplicating() {
@@ -334,6 +339,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     long version = Long.parseLong(v);
     IndexCommit commit = core.getDeletionPolicy().getCommitPoint(version);
+ 
+    //System.out.println("ask for files for gen:" + commit.getGeneration() + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
     if (commit == null) {
       rsp.add("status", "invalid indexversion");
       return;
@@ -757,12 +764,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
 
-  void refreshCommitpoint() {
-    IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
-    if(replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
-      indexCommitPoint = commitPoint;
-    }
-  }
+//  void refreshCommitpoint() {
+//    IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
+//    if(replicateOnCommit || (replicateOnOptimize && commitPoint.getSegmentCount() == 1)) {
+//      indexCommitPoint = commitPoint;
+//    }
+//  }
 
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
@@ -777,6 +784,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     NamedList master = (NamedList) initArgs.get("master");
     boolean enableMaster = isEnabled( master );
+    
+    if (!enableSlave && !enableMaster) {
+      enableMaster = true;
+      master = new NamedList<Object>();
+    }
+    
     if (enableMaster) {
       includeConfFiles = (String) master.get(CONF_FILES);
       if (includeConfFiles != null && includeConfFiles.trim().length() > 0) {
@@ -796,6 +809,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       replicateOnCommit = replicateAfter.contains("commit");
       replicateOnOptimize = !replicateOnCommit && replicateAfter.contains("optimize");
 
+      if (!replicateOnCommit && ! replicateOnOptimize) {
+        replicateOnCommit = true;
+      }
+      
       // if we only want to replicate on optimize, we need the deletion policy to
       // save the last optimized commit point.
       if (replicateOnOptimize) {

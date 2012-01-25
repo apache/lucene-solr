@@ -18,12 +18,15 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
-import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
@@ -56,6 +59,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     
+    System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("hostPort", "0000");
     
@@ -69,21 +73,23 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   static void buildZooKeeper(String zkHost, String zkAddress, String config,
       String schema) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath("/solr");
+    zkClient.makePath("/solr", false, true);
     zkClient.close();
 
     zkClient = new SolrZkClient(zkAddress, AbstractZkTestCase.TIMEOUT);
 
-    ZkNodeProps props = new ZkNodeProps();
+    Map<String,String> props = new HashMap<String,String>();
     props.put("configName", "conf1");
-    zkClient.makePath("/collections/collection1", props.store(), CreateMode.PERSISTENT);
-    zkClient.makePath("/collections/collection1/shards", CreateMode.PERSISTENT);
-
-    zkClient.makePath("/collections/control_collection", props.store(), CreateMode.PERSISTENT);
-    zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT);
+    final ZkNodeProps zkProps = new ZkNodeProps(props);
+    
+    zkClient.makePath("/collections/collection1", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, true);
+    zkClient.makePath("/collections/collection1/shards", CreateMode.PERSISTENT, true);
+    zkClient.makePath("/collections/control_collection", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, true);
+    zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT, true);
 
     putConfig(zkClient, config);
     putConfig(zkClient, schema);
+    putConfig(zkClient, "solrconfig.xml");
     putConfig(zkClient, "stopwords.txt");
     putConfig(zkClient, "protwords.txt");
     putConfig(zkClient, "mapping-ISOLatin1Accent.txt");
@@ -93,10 +99,10 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.close();
   }
 
-  private static void putConfig(SolrZkClient zkConnection, String name)
+  private static void putConfig(SolrZkClient zkClient, final String name)
       throws Exception {
-    zkConnection.setData("/configs/conf1/" + name, getFile("solr"
-        + File.separator + "conf" + File.separator + name));
+    zkClient.makePath("/configs/conf1/" + name, getFile("solr"
+        + File.separator + "conf" + File.separator + name), false, false);  
   }
 
   @Override
@@ -109,11 +115,15 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   }
   
   @AfterClass
-  public static void azt_afterClass() throws IOException {
-    zkServer.shutdown();
+  public static void azt_afterClass() throws Exception {
     System.clearProperty("zkHost");
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
+    System.clearProperty("solrcloud.skip.autorecovery");
+    zkServer.shutdown();
+
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
 
   protected void printLayout(String zkHost) throws Exception {
@@ -122,24 +132,24 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.close();
   }
 
-  static void makeSolrZkNode(String zkHost) throws Exception {
+  public static void makeSolrZkNode(String zkHost) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, TIMEOUT);
-    zkClient.makePath("/solr");
+    zkClient.makePath("/solr", false, true);
     zkClient.close();
   }
   
-  static void tryCleanSolrZkNode(String zkHost) throws Exception {
+  public static void tryCleanSolrZkNode(String zkHost) throws Exception {
     tryCleanPath(zkHost, "/solr");
   }
   
   static void tryCleanPath(String zkHost, String path) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, TIMEOUT);
-    if (zkClient.exists(path)) {
-      List<String> children = zkClient.getChildren(path, null);
+    if (zkClient.exists(path, true)) {
+      List<String> children = zkClient.getChildren(path, null, true);
       for (String string : children) {
         tryCleanPath(zkHost, path+"/"+string);
       }
-      zkClient.delete(path, -1);
+      zkClient.delete(path, -1, true);
     }
     zkClient.close();
   }

@@ -268,8 +268,19 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
             assert subStats != null;
           }
         
-          docFreq += subStats.docFreq();
-          totalTermFreq += subStats.totalTermFreq();
+          int nodeDocFreq = subStats.docFreq();
+          if (docFreq >= 0 && nodeDocFreq >= 0) {
+            docFreq += nodeDocFreq;
+          } else {
+            docFreq = -1;
+          }
+          
+          long nodeTotalTermFreq = subStats.totalTermFreq();
+          if (totalTermFreq >= 0 && nodeTotalTermFreq >= 0) {
+            totalTermFreq += nodeTotalTermFreq;
+          } else {
+            totalTermFreq = -1;
+          }
         }
 
         return new TermStatistics(term.bytes(), docFreq, totalTermFreq);
@@ -299,9 +310,29 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           // Collection stats are pre-shared on reopen, so,
           // we better not have a cache miss:
           assert nodeStats != null: "myNodeID=" + myNodeID + " nodeID=" + nodeID + " version=" + nodeVersions[nodeID] + " field=" + field;
-          docCount += nodeStats.docCount();
-          sumTotalTermFreq += nodeStats.sumTotalTermFreq();
-          sumDocFreq += nodeStats.sumDocFreq();
+          
+          int nodeDocCount = nodeStats.docCount();
+          if (docCount >= 0 && nodeDocCount >= 0) {
+            docCount += nodeDocCount;
+          } else {
+            docCount = -1;
+          }
+          
+          long nodeSumTotalTermFreq = nodeStats.sumTotalTermFreq();
+          if (sumTotalTermFreq >= 0 && nodeSumTotalTermFreq >= 0) {
+            sumTotalTermFreq += nodeSumTotalTermFreq;
+          } else {
+            sumTotalTermFreq = -1;
+          }
+          
+          long nodeSumDocFreq = nodeStats.sumDocFreq();
+          if (sumDocFreq >= 0 && nodeSumDocFreq >= 0) {
+            sumDocFreq += nodeSumDocFreq;
+          } else {
+            sumDocFreq = -1;
+          }
+          
+          assert nodeStats.maxDoc() >= 0;
           maxDoc += nodeStats.maxDoc();
         }
 

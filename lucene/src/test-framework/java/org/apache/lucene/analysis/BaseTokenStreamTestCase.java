@@ -17,6 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -289,8 +290,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       }
     }
   };
-
+  
   public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength) throws IOException {
+    checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean());
+  }
+
+  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter) throws IOException {
     for (int i = 0; i < iterations; i++) {
       String text;
       switch(_TestUtil.nextInt(random, 0, 4)) {
@@ -311,7 +316,9 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         System.out.println("NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
       }
 
-      TokenStream ts = a.tokenStream("dummy", new StringReader(text));
+      int remainder = random.nextInt(10);
+      Reader reader = new StringReader(text);
+      TokenStream ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
       assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
       CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
       OffsetAttribute offsetAtt = ts.hasAttribute(OffsetAttribute.class) ? ts.getAttribute(OffsetAttribute.class) : null;
@@ -339,30 +346,38 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("NOTE: BaseTokenStreamTestCase: re-run analysis");
         }
+        reader = new StringReader(text);
+        ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
         if (typeAtt != null && posIncAtt != null && offsetAtt != null) {
           // offset + pos + type
-          assertAnalyzesToReuse(a, text, 
+          assertTokenStreamContents(ts, 
             tokens.toArray(new String[tokens.size()]),
             toIntArray(startOffsets),
             toIntArray(endOffsets),
             types.toArray(new String[types.size()]),
-            toIntArray(positions));
+            toIntArray(positions),
+            text.length());
         } else if (posIncAtt != null && offsetAtt != null) {
           // offset + pos
-          assertAnalyzesToReuse(a, text, 
+          assertTokenStreamContents(ts, 
               tokens.toArray(new String[tokens.size()]),
               toIntArray(startOffsets),
               toIntArray(endOffsets),
-              toIntArray(positions));
+              null,
+              toIntArray(positions),
+              text.length());
         } else if (offsetAtt != null) {
           // offset
-          assertAnalyzesToReuse(a, text, 
+          assertTokenStreamContents(ts, 
               tokens.toArray(new String[tokens.size()]),
               toIntArray(startOffsets),
-              toIntArray(endOffsets));
+              toIntArray(endOffsets),
+              null,
+              null,
+              text.length());
         } else {
           // terms only
-          assertAnalyzesToReuse(a, text, 
+          assertTokenStreamContents(ts, 
               tokens.toArray(new String[tokens.size()]));
         }
       }

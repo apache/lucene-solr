@@ -18,27 +18,30 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
-
 
 public class ZkNodePropsTest extends SolrTestCaseJ4 {
   @Test
   public void testBasic() throws IOException {
-
-    ZkNodeProps props = new ZkNodeProps();
+    
+    Map<String,String> props = new HashMap<String,String>();
     props.put("prop1", "value1");
     props.put("prop2", "value2");
     props.put("prop3", "value3");
     props.put("prop4", "value4");
     props.put("prop5", "value5");
     props.put("prop6", "value6");
-    byte[] bytes = props.store();
     
-    ZkNodeProps props2 = new ZkNodeProps();
-    props2.load(bytes);
+    ZkNodeProps zkProps = new ZkNodeProps(props);
+    byte[] bytes = ZkStateReader.toJSON(zkProps);
+    
+    ZkNodeProps props2 = ZkNodeProps.load(bytes);
     assertEquals("value1", props2.get("prop1"));
     assertEquals("value2", props2.get("prop2"));
     assertEquals("value3", props2.get("prop3"));

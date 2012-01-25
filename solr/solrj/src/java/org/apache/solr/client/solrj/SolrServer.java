@@ -226,7 +226,22 @@ public abstract class SolrServer implements Serializable
    * @throws IOException
    */
   public UpdateResponse deleteById(String id) throws SolrServerException, IOException {
-    return new UpdateRequest().deleteById( id ).process( this );
+    return deleteById(id, -1);
+  }
+
+  /**
+   * Deletes a single document by unique ID, specifying max time before commit
+   * @param id  the ID of the document to delete
+   * @param commitWithinMs  max time (in ms) before a commit will happen 
+   * @throws SolrServerException
+   * @throws IOException
+   * @since 3.6
+   */
+  public UpdateResponse deleteById(String id, int commitWithinMs) throws SolrServerException, IOException {
+    UpdateRequest req = new UpdateRequest();
+    req.deleteById(id);
+    req.setCommitWithin(commitWithinMs);
+    return req.process(this);
   }
 
   /**
@@ -236,7 +251,22 @@ public abstract class SolrServer implements Serializable
    * @throws IOException
    */
   public UpdateResponse deleteById(List<String> ids) throws SolrServerException, IOException {
-    return new UpdateRequest().deleteById( ids ).process( this );
+    return deleteById(ids, -1);
+  }
+
+  /**
+   * Deletes a list of documents by unique ID, specifying max time before commit
+   * @param ids  the list of document IDs to delete 
+   * @param commitWithinMs  max time (in ms) before a commit will happen 
+   * @throws SolrServerException
+   * @throws IOException
+   * @since 3.6
+   */
+  public UpdateResponse deleteById(List<String> ids, int commitWithinMs) throws SolrServerException, IOException {
+    UpdateRequest req = new UpdateRequest();
+    req.deleteById(ids);
+    req.setCommitWithin(commitWithinMs);
+    return req.process(this);
   }
 
   /**
@@ -246,7 +276,22 @@ public abstract class SolrServer implements Serializable
    * @throws IOException
    */
   public UpdateResponse deleteByQuery(String query) throws SolrServerException, IOException {
-    return new UpdateRequest().deleteByQuery( query ).process( this );
+    return deleteByQuery(query, -1);
+  }
+
+  /**
+   * Deletes documents from the index based on a query, specifying max time before commit
+   * @param query  the query expressing what documents to delete
+   * @param commitWithinMs  max time (in ms) before a commit will happen 
+   * @throws SolrServerException
+   * @throws IOException
+   * @since 3.6
+   */
+  public UpdateResponse deleteByQuery(String query, int commitWithinMs) throws SolrServerException, IOException {
+    UpdateRequest req = new UpdateRequest();
+    req.deleteByQuery(query);
+    req.setCommitWithin(commitWithinMs);
+    return req.process(this);
   }
 
   /**

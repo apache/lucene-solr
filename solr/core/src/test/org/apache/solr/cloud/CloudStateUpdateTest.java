@@ -18,7 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
-import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,34 +31,19 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreContainer.Initializer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * TODO: look at hostPort used below
- */
 public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
 
   private static final boolean VERBOSE = false;
-
-  private static final String URL1 = "http://localhost:3133/solr/core0";
-  private static final String URL3 = "http://localhost:3133/solr/core1";
-  private static final String URL2 = "http://localhost:3123/solr/core1";
-  private static final String URL4 = "http://localhost:3123/solr/core4";
-  private static final String SHARD4 = "localhost:3123_solr_core4";
-  private static final String SHARD3 = "localhost:3123_solr_core3";
-  private static final String SHARD2 = "localhost:3123_solr_core2";
-  private static final String SHARD1 = "localhost:3123_solr_core1";
-  
-  private static final int TIMEOUT = 10000;
 
   protected ZkTestServer zkServer;
 
@@ -82,6 +67,14 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solrcloud.skip.autorecovery", "true");
+  }
+  
+  @AfterClass
+  public static void afterClass() throws InterruptedException {
+    System.clearProperty("solrcloud.skip.autorecovery");
+    // wait just a bit for any zk client threads to outlast timeout
+    Thread.sleep(2000);
   }
 
   @Override
@@ -115,6 +108,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     
+    System.setProperty("solr.solr.home", TEST_HOME());
     System.setProperty("hostPort", "1661");
     CoreContainer.Initializer init1 = new CoreContainer.Initializer();
     System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir1.getAbsolutePath());
@@ -133,87 +127,30 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir3.getAbsolutePath());
     container3 = init3.initialize();
     System.clearProperty("hostPort");
+    System.clearProperty("solr.solr.home");
     
     log.info("####SETUP_END " + getName());
     
   }
+
   
   @Test
-  public void testIncrementalUpdate() throws Exception {
-    System.setProperty("CLOUD_UPDATE_DELAY", "1");
-    String zkDir = dataDir.getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
-    ZkTestServer server = null;
-    SolrZkClient zkClient = null;
-    ZkController zkController = null;
-    
-    server = new ZkTestServer(zkDir);
-    server.run();
-    try {
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-      
-      zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
-      String shardsPath1 = "/collections/collection1/shards/shardid1";
-      String shardsPath2 = "/collections/collection1/shards/shardid2";
-      zkClient.makePath(shardsPath1);
-      zkClient.makePath(shardsPath2);
-      
-      addShardToZk(zkClient, shardsPath1, SHARD1, URL1);
-      addShardToZk(zkClient, shardsPath1, SHARD2, URL2);
-      addShardToZk(zkClient, shardsPath2, SHARD3, URL3);
-      
-      removeShardFromZk(server.getZkAddress(), zkClient, shardsPath1);
-      
-      zkController = new ZkController(server.getZkAddress(), TIMEOUT, 1000,
-          "localhost", "8983", "solr");
-      
-      zkController.getZkStateReader().updateCloudState(true);
-      CloudState cloudInfo = zkController.getCloudState();
-      Map<String,Slice> slices = cloudInfo.getSlices("collection1");
-      assertFalse(slices.containsKey("shardid1"));
-      
-      zkClient.makePath(shardsPath1);
-      addShardToZk(zkClient, shardsPath1, SHARD1, URL1);
-      
-      zkController.getZkStateReader().updateCloudState(true);
-      cloudInfo = zkController.getCloudState();
-      slices = cloudInfo.getSlices("collection1");
-      assertTrue(slices.containsKey("shardid1"));
-      
-      updateUrl(zkClient, shardsPath1, SHARD1, "fake");
-      
-      addShardToZk(zkClient, shardsPath2, SHARD4, URL4);
-      
-      zkController.getZkStateReader().updateCloudState(true);
-      cloudInfo = zkController.getCloudState();
-      String url = cloudInfo.getSlices("collection1").get("shardid1").getShards().get(SHARD1).get("url");
-      
-      // because of incremental update, we don't expect to find the new 'fake'
-      // url - instead we should still
-      // be using the original url - the correct way to update this would be to
-      // remove the whole node and readd it
-      assertEquals(URL1, url);
-      
-    } finally {
-      server.shutdown();
-      zkClient.close();
-      zkController.close();
-    }
-  }
-
-  @Test
   public void testCoreRegistration() throws Exception {
-    System.setProperty("CLOUD_UPDATE_DELAY", "1");
+    System.setProperty("solrcloud.update.delay", "1");
     
-    ZkNodeProps props2 = new ZkNodeProps();
+   
+    Map<String,String> props2 = new HashMap<String,String>();
     props2.put("configName", "conf1");
+    ZkNodeProps zkProps2 = new ZkNodeProps(props2);
     
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath("/collections/testcore", props2.store(), CreateMode.PERSISTENT);
-    zkClient.makePath("/collections/testcore/shards", CreateMode.PERSISTENT);
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
+        AbstractZkTestCase.TIMEOUT);
+    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore",
+        ZkStateReader.toJSON(zkProps2), CreateMode.PERSISTENT, true);
+    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore/shards",
+        CreateMode.PERSISTENT, true);
     zkClient.close();
-    
+
     CoreDescriptor dcore = new CoreDescriptor(container1, "testcore",
         "testcore");
     
@@ -235,17 +172,18 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
       cloudState2 = zkController2.getCloudState();
       slices = cloudState2.getSlices("testcore");
       
-      if (slices != null && slices.containsKey(host + ":1661_solr_testcore")) {
+      if (slices != null && slices.containsKey("shard1")
+          && slices.get("shard1").getShards().size() > 0) {
         break;
       }
       Thread.sleep(500);
     }
 
     assertNotNull(slices);
-    assertTrue(slices.containsKey(host + ":1661_solr_testcore"));
+    assertTrue(slices.containsKey("shard1"));
 
-    Slice slice = slices.get(host + ":1661_solr_testcore");
-    assertEquals(host + ":1661_solr_testcore", slice.getName());
+    Slice slice = slices.get("shard1");
+    assertEquals("shard1", slice.getName());
 
     Map<String,ZkNodeProps> shards = slice.getShards();
 
@@ -255,9 +193,9 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
 
     assertNotNull(zkProps);
 
-    assertEquals(host + ":1661_solr", zkProps.get("node_name"));
+    assertEquals(host + ":1661_solr", zkProps.get(ZkStateReader.NODE_NAME_PROP));
 
-    assertEquals("http://" + host + ":1661/solr/testcore", zkProps.get("url"));
+    assertEquals("http://" + host + ":1661/solr", zkProps.get(ZkStateReader.BASE_URL_PROP));
 
     Set<String> liveNodes = cloudState2.getLiveNodes();
     assertNotNull(liveNodes);
@@ -305,44 +243,15 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     }
     container1.shutdown();
     container2.shutdown();
-    container3.shutdown();
+    if (!container3.isShutDown()) {
+      container3.shutdown();
+    }
     zkServer.shutdown();
     super.tearDown();
     System.clearProperty("zkClientTimeout");
     System.clearProperty("zkHost");
     System.clearProperty("hostPort");
-    System.clearProperty("CLOUD_UPDATE_DELAY");
-  }
-
-  private void addShardToZk(SolrZkClient zkClient, String shardsPath,
-      String zkNodeName, String url) throws IOException,
-      KeeperException, InterruptedException {
-
-    ZkNodeProps props = new ZkNodeProps();
-    props.put(ZkStateReader.URL_PROP, url);
-    props.put(ZkStateReader.NODE_NAME, zkNodeName);
-    byte[] bytes = props.store();
-
-    zkClient
-        .create(shardsPath + "/" + zkNodeName, bytes, CreateMode.PERSISTENT);
-  }
-  
-  private void updateUrl(SolrZkClient zkClient, String shardsPath,
-      String zkNodeName, String url) throws IOException,
-      KeeperException, InterruptedException {
-
-    ZkNodeProps props = new ZkNodeProps();
-    props.put(ZkStateReader.URL_PROP, url);
-    props.put(ZkStateReader.NODE_NAME, zkNodeName);
-    byte[] bytes = props.store();
-
-    zkClient
-        .setData(shardsPath + "/" + zkNodeName, bytes);
-  }
-  
-  private void removeShardFromZk(String zkHost, SolrZkClient zkClient, String shardsPath) throws Exception {
-
-    AbstractZkTestCase.tryCleanPath(zkHost, shardsPath);
+    System.clearProperty("solrcloud.update.delay");
   }
   
   private void printLayout(String zkHost) throws Exception {

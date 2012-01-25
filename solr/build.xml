@@ -482,7 +482,7 @@
           <packageset dir="contrib/langid/src/java"/>
           <packageset dir="contrib/uima/src/java"/>
           <group title="Core" packages="org.apache.*" />
-          <group title="SolrJ" packages="org.apache.solr.common.*,org.apache.solr.client.solrj*" />
+          <group title="SolrJ" packages="org.apache.solr.common.*,org.apache.solr.client.solrj.*,org.apache.zookeeper.*" />
           <group title="contrib: Clustering" packages="org.apache.solr.handler.clustering*" />
           <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
           <group title="contrib: Solr Cell" packages="org.apache.solr.handler.extraction*" />

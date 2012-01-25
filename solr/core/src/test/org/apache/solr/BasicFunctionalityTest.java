@@ -121,7 +121,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // test merge factor picked up
     SolrCore core = h.getCore();
 
-    IndexWriter writer = ((DirectUpdateHandler2)core.getUpdateHandler()).getIndexWriterProvider().getIndexWriter(core);
+    IndexWriter writer = ((DirectUpdateHandler2)core.getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
     assertEquals("Mergefactor was not picked up", ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
 
     lrf.args.put(CommonParams.VERSION,"2.2");
@@ -220,6 +220,19 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ(req("id:[100 TO 110]")
             ,"//*[@numFound='0']"
             );
+  }
+
+  @Test
+  public void testHTMLStrip() {
+    assertU(add(doc("id","200", "HTMLwhitetok","&#65;&#66;&#67;")));
+    assertU(add(doc("id","201", "HTMLwhitetok","&#65;B&#67;")));      // do it again to make sure reuse is working
+    assertU(commit());
+    assertQ(req("q","HTMLwhitetok:A&#66;C")
+        ,"//*[@numFound='2']"
+    );
+    assertQ(req("q","HTMLwhitetok:&#65;BC")
+        ,"//*[@numFound='2']"
+    );
   }
 
 

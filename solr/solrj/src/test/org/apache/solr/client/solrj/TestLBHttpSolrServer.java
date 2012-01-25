@@ -276,8 +276,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     }
 
     public void startJetty() throws Exception {
-      jetty = new JettySolrRunner("/solr", port);
-      System.setProperty("solr.solr.home", getHomeDir());
+      jetty = new JettySolrRunner(getHomeDir(), "/solr", port, "bad_solrconfig.xml", null);
       System.setProperty("solr.data.dir", getDataDir());
       jetty.start();
       int newPort = jetty.getLocalPort();

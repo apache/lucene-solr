@@ -49,11 +49,12 @@ public abstract class SolrCoreState {
   
   /**
    * Decrement the number of references to this state. When then number of
-   * references hits 0, the state will close.
+   * references hits 0, the state will close.  If an optional closer is
+   * passed, that will be used to close the writer.
    * 
    * @throws IOException
    */
-  public abstract void decref() throws IOException;
+  public abstract void decref(IndexWriterCloser closer) throws IOException;
   
   /**
    * Increment the number of references to this state.
@@ -73,5 +74,14 @@ public abstract class SolrCoreState {
    * @return the {@link DirectoryFactory} that should be used.
    */
   public abstract DirectoryFactory getDirectoryFactory();
+
+
+  public interface IndexWriterCloser {
+    public void closeWriter(IndexWriter writer) throws IOException;
+  }
+
+  public abstract void doRecovery(SolrCore core);
   
+  public abstract void cancelRecovery();
+
 }

@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.common.SolrException;
+import org.apache.zookeeper.SolrZooKeeper;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
@@ -36,7 +38,7 @@ class ConnectionManager implements Watcher {
   private KeeperState state;
   private boolean connected;
 
-  private ZkClientConnectionStrategy connectionStrategy;
+  private final ZkClientConnectionStrategy connectionStrategy;
 
   private String zkServerAddress;
 
@@ -73,30 +75,33 @@ class ConnectionManager implements Watcher {
       connected = true;
       clientConnected.countDown();
     } else if (state == KeeperState.Expired) {
-      
       connected = false;
-      log.info("Attempting to reconnect to ZooKeeper...");
+      log.info("Attempting to reconnect to recover relationship with ZooKeeper...");
 
       try {
-        connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this, new ZkClientConnectionStrategy.ZkUpdate() {
-          @Override
-          public void update(SolrZooKeeper keeper) throws InterruptedException, TimeoutException, IOException {
-           waitForConnected(SolrZkClient.DEFAULT_CLIENT_CONNECT_TIMEOUT);
-           client.updateKeeper(keeper);
-           if(onReconnect != null) {
-             onReconnect.command();
-           }
-           ConnectionManager.this.connected = true;
-          }
-        });
+        connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this,
+            new ZkClientConnectionStrategy.ZkUpdate() {
+              @Override
+              public void update(SolrZooKeeper keeper)
+                  throws InterruptedException, TimeoutException, IOException {
+                synchronized (connectionStrategy) {
+                  waitForConnected(SolrZkClient.DEFAULT_CLIENT_CONNECT_TIMEOUT);
+                  client.updateKeeper(keeper);
+                  if (onReconnect != null) {
+                    onReconnect.command();
+                  }
+                  synchronized (ConnectionManager.this) {
+                    ConnectionManager.this.connected = true;
+                  }
+                }
+                
+              }
+            });
       } catch (Exception e) {
-        log.error("", e);
+        SolrException.log(log, "", e);
       }
-
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
-      // ZooKeeper client will recover when it can
-      // TODO: this needs to be investigated more
       connected = false;
     } else {
       connected = false;

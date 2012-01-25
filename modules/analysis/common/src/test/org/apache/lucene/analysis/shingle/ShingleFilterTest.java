@@ -18,9 +18,12 @@ package org.apache.lucene.analysis.shingle;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -1128,5 +1131,17 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     token.copyBuffer(term.toCharArray(), 0, term.length());
     token.setPositionIncrement(positionIncrement);
     return token;
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
+      }
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

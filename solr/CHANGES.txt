@@ -24,11 +24,11 @@ $Id$
 ==================  4.0.0-dev ==================
 Versions of Major Components
 ---------------------
-Apache Tika 0.10
+Apache Tika 1.0
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
-Apache ZooKeeper 3.3.3
+Apache ZooKeeper 3.3.4
 
 
 Upgrading from Solr 3.6-dev
@@ -401,6 +401,14 @@ Upgrading from Solr 3.5
 * As doGet() methods in SimplePostTool was changed to static, the client applications of this
   class need to be recompiled.
 
+* In Solr version 3.5 and earlier, HTMLStripCharFilter had known bugs in the
+  character offsets it provided, triggering e.g. exceptions in highlighting.
+  HTMLStripCharFilter has been re-implemented, addressing this and other
+  issues.  See the entry for LUCENE-3690 in the Bug Fixes section below for a
+  detailed list of changes.  For people who depend on the behavior of
+  HTMLStripCharFilter in Solr version 3.5 and earlier: the old implementation
+  (bugs and all) is preserved as LegacyHTMLStripCharFilter.
+
 New Features
 ----------------------
 * SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
@@ -441,6 +449,10 @@ New Features
   
 * SOLR-1709: Distributed support for Date and Numeric Range Faceting
   (Peter Sturge, David Smiley, hossman, Simon Willnauer)
+
+* SOLR-3054, LUCENE-3671: Add TypeTokenFilterFactory that creates TypeTokenFilter
+  that filters tokens based on their TypeAttribute.  (Tommaso Teofili via
+  Uwe Schindler)
 
 Optimizations
 ----------------------
@@ -483,6 +495,52 @@ Bug Fixes
 
 * SOLR-2970: CSV ResponseWriter returns fields defined as stored=false in schema (janhoy)
 
+* LUCENE-3690, LUCENE-2208, SOLR-882, SOLR-42: Re-implemented
+  HTMLStripCharFilter as a JFlex-generated scanner.  See below for a list
+  of bug fixes and other changes.  To get the same behavior as
+  HTMLStripCharFilter in Solr version 3.5 and earlier (including the bugs),
+  use LegacyHTMLStripCharFilter, which is the previous implementation.
+
+  Behavior changes from the previous version:
+
+  - Known offset bugs are fixed.
+  - The "Mark invalid" exceptions reported in SOLR-1283 are no longer
+    triggered (the bug is still present in LegacyHTMLStripCharFilter).
+  - The character entity "&apos;" is now always properly decoded.
+  - More cases of <script> tags are now properly stripped.
+  - CDATA sections are now handled properly.
+  - Valid tag name characters now include the supplementary Unicode characters
+    from Unicode character classes [:ID_Start:] and [:ID_Continue:].
+  - Uppercase character entities "&QUOT;", "&COPY;", "&GT;", "&LT;", "&REG;",
+    and "&AMP;" are now recognized and handled as if they were in lowercase.
+  - The REPLACEMENT CHARACTER U+FFFD is now used to replace numeric character 
+    entities for unpaired UTF-16 low and high surrogates (in the range
+    [U+D800-U+DFFF]).
+  - Properly paired numeric character entities for UTF-16 surrogates are now
+    converted to the corresponding code units.
+  - Opening tags with unbalanced quotation marks are now properly stripped.
+  - Literal "<" and ">" characters in opening tags, regardless of whether they
+    appear inside quotation marks, now inhibit recognition (and stripping) of
+    the tags.  The only exception to this is for values of event-handler
+    attributes, e.g. "onClick", "onLoad", "onSelect".
+  - A newline '\n' is substituted instead of a space for stripped HTML markup.
+  - Nothing is substituted for opening and closing inline tags - they are
+    simply removed.  The list of inline tags is (case insensitively): <a>,
+    <abbr>, <acronym>, <b>, <basefont>, <bdo>, <big>, <cite>, <code>, <dfn>,
+    <em>, <font>, <i>, <img>, <input>, <kbd>, <label>, <q>, <s>, <samp>,
+    <select>, <small>, <span>, <strike>, <strong>, <sub>, <sup>, <textarea>,
+    <tt>, <u>, and <var>.
+  - HTMLStripCharFilterFactory now handles HTMLStripCharFilter's "escapedTags"
+    feature: opening and closing tags with the given names, including any
+    attributes and their values, are left intact in the output.
+  (Steve Rowe)
+
+* LUCENE-3717: Fixed offset bugs in TrimFilter, WordDelimiterFilter, and
+  HyphenatedWordsFilter where they would create invalid offsets in
+  some situations, leading to problems in highlighting.  (Robert Muir)
+
+* SOLR-2280: commitWithin ignored for a delete query (Juan Grande via janhoy)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
@@ -497,6 +555,8 @@ Other Changes
 
 * SOLR-2718: Add ability to lazy load response writers, defined with startup="lazy".
   (ehatcher)
+
+* SOLR-2901: Upgrade Solr to Tika 1.0 (janhoy)
 
 Build
 ----------------------

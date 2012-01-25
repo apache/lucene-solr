@@ -306,4 +306,31 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "the_of" });
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, t, commonWords);
+        return new TokenStreamComponents(t, cgf);
+      }
+    };
+    
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    
+    Analyzer b = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, t, commonWords);
+        return new TokenStreamComponents(t, new CommonGramsQueryFilter(cgf));
+      }
+    };
+    
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
+  }
 }

@@ -559,6 +559,8 @@
    <field name="nopositionstext" type="nopositions" indexed="true" stored="true"/>
 
    <field name="tlong" type="tlong" indexed="true" stored="true" />
+   
+   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

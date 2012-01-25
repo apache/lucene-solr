@@ -81,7 +81,7 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     try {
       log.info("Deleting document: " + id);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand(req);
-      delCmd.id = id.toString();
+      delCmd.setId(id.toString());
       processor.processDelete(delCmd);
     } catch (IOException e) {
       log.error("Exception while deleteing: " + id, e);

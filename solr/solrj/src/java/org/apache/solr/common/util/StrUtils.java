@@ -144,10 +144,11 @@ public class StrUtils {
   }
 
   /** Creates a backslash escaped string, joining all the items. */
-  public static String join(List<String> items, char separator) {
+  public static String join(List<?> items, char separator) {
     StringBuilder sb = new StringBuilder(items.size() << 3);
     boolean first=true;
-    for (String item : items) {
+    for (Object o : items) {
+      String item = o.toString();
       if (first) {
         first = false;
       } else {

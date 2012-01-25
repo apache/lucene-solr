@@ -17,10 +17,13 @@
 
 package org.apache.lucene.analysis.pattern;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.regex.Pattern;
 
@@ -76,6 +79,29 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
                     "$1\\$", true);
     assertTokenStreamContents(ts,
         new String[] { "aa$fooaa$fooa$foo$", "a$", "caaaaaaaaa$" });
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenStream filter = new PatternReplaceFilter(tokenizer, Pattern.compile("a"), "b", false);
+        return new TokenStreamComponents(tokenizer, filter);
+      }    
+    };
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    
+    Analyzer b = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenStream filter = new PatternReplaceFilter(tokenizer, Pattern.compile("a"), "b", true);
+        return new TokenStreamComponents(tokenizer, filter);
+      }    
+    };
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
   }
 
 }

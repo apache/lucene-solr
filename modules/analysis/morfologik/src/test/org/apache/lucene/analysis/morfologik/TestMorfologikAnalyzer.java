@@ -102,4 +102,9 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     assertPOSToken(ts, "list",  "subst:sg:loc.voc:m3");
     assertPOSToken(ts, "lista", "subst:sg:dat.loc:f");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandom() throws Exception {
+    checkRandomData(random, getTestAnalyzer(), 10000 * RANDOM_MULTIPLIER); 
+  }
 }

@@ -326,8 +326,8 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     NamedList indexPart = textType.get("index");
     assertNotNull("expecting an index token analysis for field type 'charfilthtmlmap'", indexPart);
     
-    assertEquals("  whátëvêr  ", indexPart.get("org.apache.lucene.analysis.charfilter.HTMLStripCharFilter"));
-    assertEquals("  whatever  ", indexPart.get("org.apache.lucene.analysis.charfilter.MappingCharFilter"));
+    assertEquals("\n\nwhátëvêr\n\n", indexPart.get("org.apache.lucene.analysis.charfilter.HTMLStripCharFilter"));
+    assertEquals("\n\nwhatever\n\n", indexPart.get("org.apache.lucene.analysis.charfilter.MappingCharFilter"));
 
     List<NamedList> tokenList = (List<NamedList>)indexPart.get(MockTokenizer.class.getName());
     assertNotNull("Expecting MockTokenizer analysis breakdown", tokenList);

@@ -100,7 +100,7 @@
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-digester-1.7.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
-	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1209632.jar"/>
+	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1211150.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-csv-1.0-SNAPSHOT-r966014.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-httpclient-3.1.jar"/>
@@ -115,7 +115,7 @@
 	<classpathentry kind="lib" path="solr/lib/slf4j-api-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
-	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.3.jar"/>
+	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.4.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jetty-6.1.26-patched-JETTY-1340.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jetty-util-6.1.26-patched-JETTY-1340.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/servlet-api-2.5-20081211.jar"/>
@@ -136,7 +136,7 @@
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/bcmail-jdk15-1.45.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/bcprov-jdk15-1.45.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/boilerpipe-1.1.0.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/commons-compress-1.2.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/commons-compress-1.3.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/dom4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/fontbox-1.6.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/jempbox-1.6.0.jar"/>
@@ -149,8 +149,8 @@
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-scratchpad-3.8-beta4.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/rome-0.9.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tagsoup-1.2.1.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-core-0.10.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-parsers-0.10.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-core-1.0.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-parsers-1.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/xmlbeans-2.3.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/langid/lib/langdetect-r111.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/langid/lib/jsonic-1.2.0.jar"/>

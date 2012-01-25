@@ -32,12 +32,13 @@ import org.apache.lucene.util.IntsRef;
 public final class IntSequenceOutputs extends Outputs<IntsRef> {
 
   private final static IntsRef NO_OUTPUT = new IntsRef();
+  private final static IntSequenceOutputs singleton = new IntSequenceOutputs();
 
   private IntSequenceOutputs() {
   }
 
   public static IntSequenceOutputs getSingleton() {
-    return new IntSequenceOutputs();
+    return singleton;
   }
 
   @Override

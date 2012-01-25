@@ -19,7 +19,9 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+
+  <dataDir>${solr.data.dir:}</dataDir>
+
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   </requestHandler>
 
@@ -29,8 +31,14 @@
     </lst>
   </requestHandler>
 
+  <requestHandler name="/update"    class="solr.XmlUpdateRequestHandler">
+  </requestHandler>
+
+  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
+  </requestHandler>
+
   <updateHandler class="solr.DirectUpdateHandler2">
-    <updateLog class="solr.FSUpdateLog">
+    <updateLog>
       <!-- <str name="dir">/tmp/solr/</str> -->
     </updateLog>
   </updateHandler>

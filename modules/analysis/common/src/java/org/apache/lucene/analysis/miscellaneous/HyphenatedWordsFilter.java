@@ -60,6 +60,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
   private final StringBuilder hyphenated = new StringBuilder();
   private State savedState;
   private boolean exhausted = false;
+  private int lastEndOffset = 0;
 
   /**
    * Creates a new HyphenatedWordsFilter
@@ -78,6 +79,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
     while (!exhausted && input.incrementToken()) {
       char[] term = termAttribute.buffer();
       int termLength = termAttribute.length();
+      lastEndOffset = offsetAttribute.endOffset();
       
       if (termLength > 0 && term[termLength - 1] == '-') {
         // a hyphenated word
@@ -119,6 +121,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
     hyphenated.setLength(0);
     savedState = null;
     exhausted = false;
+    lastEndOffset = 0;
   }
 
   // ================================================= Helper Methods ================================================
@@ -127,8 +130,6 @@ public final class HyphenatedWordsFilter extends TokenFilter {
    * Writes the joined unhyphenated term
    */
   private void unhyphenate() {
-    int endOffset = offsetAttribute.endOffset();
-    
     restoreState(savedState);
     savedState = null;
     
@@ -140,7 +141,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
     
     hyphenated.getChars(0, length, term, 0);
     termAttribute.setLength(length);
-    offsetAttribute.setOffset(offsetAttribute.startOffset(), endOffset);
+    offsetAttribute.setOffset(offsetAttribute.startOffset(), lastEndOffset);
     hyphenated.setLength(0);
   }
 }

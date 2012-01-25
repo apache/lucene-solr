@@ -45,13 +45,20 @@ public class AddUpdateCommand extends UpdateCommand {
    public int commitWithin = -1;
    
    public AddUpdateCommand(SolrQueryRequest req) {
-     super("add", req);
+     super(req);
    }
+
+  @Override
+  public String name() {
+    return "add";
+  }
 
    /** Reset state to reuse this object with a different document in the same request */
    public void clear() {
      solrDoc = null;
      indexedId = null;
+     updateTerm = null;
+     version = 0;
    }
 
    public SolrInputDocument getSolrInputDocument() {
@@ -91,6 +98,10 @@ public class AddUpdateCommand extends UpdateCommand {
      return indexedId;
    }
 
+   public void setIndexedId(BytesRef indexedId) {
+     this.indexedId = indexedId;
+   }
+
    public String getPrintableId() {
      IndexSchema schema = req.getSchema();
      SchemaField sf = schema.getUniqueKeyField();
@@ -105,10 +116,11 @@ public class AddUpdateCommand extends UpdateCommand {
 
    @Override
   public String toString() {
-     StringBuilder sb = new StringBuilder(commandName);
-     sb.append(':');
-     if (indexedId !=null) sb.append("id=").append(indexedId);
+     StringBuilder sb = new StringBuilder(super.toString());
+     if (indexedId != null) sb.append(",id=").append(indexedId);
      if (!overwrite) sb.append(",overwrite=").append(overwrite);
+     if (commitWithin != -1) sb.append(",commitWithin=").append(commitWithin);
+     sb.append('}');
      return sb.toString();
    }
  }

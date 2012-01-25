@@ -258,5 +258,85 @@ public class AutoCommitTest extends AbstractSolrTestCase {
 
     assertQ("now it should", req("id:500") ,"//result[@numFound=1]" );
   }
+  
+  public void testCommitWithin() throws Exception {
+    SolrCore core = h.getCore();
+    NewSearcherListener trigger = new NewSearcherListener();    
+    core.registerNewSearcherListener(trigger);
+    DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
+    CommitTracker tracker = updater.commitTracker;
+    tracker.setTimeUpperBound(0);
+    tracker.setDocsUpperBound(-1);
+    
+    XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
+    handler.init( null );
+    
+    MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
+    
+    // Add a single document with commitWithin == 1 second
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
+    req.setContentStreams( toContentStreams(
+      adoc(1000, "id", "529", "field_t", "what's inside?", "subject", "info"), null ) );
+    trigger.reset();
+    handler.handleRequest( req, rsp );
+
+    // Check it isn't in the index
+    assertQ("shouldn't find any", req("id:529") ,"//result[@numFound=0]" );
+    
+    // Wait longer than the commitWithin time
+    assertTrue("commitWithin failed to commit", trigger.waitForNewSearcher(30000));
+
+    // Add one document without commitWithin
+    req.setContentStreams( toContentStreams(
+        adoc("id", "530", "field_t", "what's inside?", "subject", "info"), null ) );
+      trigger.reset();
+      handler.handleRequest( req, rsp );
+      
+    // Check it isn't in the index
+    assertQ("shouldn't find any", req("id:530") ,"//result[@numFound=0]" );
+    
+    // Delete one document with commitWithin
+    req.setContentStreams( toContentStreams(
+      delI("529", "commitWithin", "1000"), null ) );
+    trigger.reset();
+    handler.handleRequest( req, rsp );
+      
+    // Now make sure we can find it
+    assertQ("should find one", req("id:529") ,"//result[@numFound=1]" );
+    
+    // Wait for the commit to happen
+    assertTrue("commitWithin failed to commit", trigger.waitForNewSearcher(30000));
+    
+    // Now we shouldn't find it
+    assertQ("should find none", req("id:529") ,"//result[@numFound=0]" );
+    // ... but we should find the new one
+    assertQ("should find one", req("id:530") ,"//result[@numFound=1]" );
+    
+    trigger.reset();
+    
+    // now make the call 10 times really fast and make sure it 
+    // only commits once
+    req.setContentStreams( toContentStreams(
+        adoc(1000, "id", "500" ), null ) );
+    for( int i=0;i<10; i++ ) {
+      handler.handleRequest( req, rsp );
+    }
+    assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
+    
+    // the same for the delete
+    req.setContentStreams( toContentStreams(
+        delI("530", "commitWithin", "1000"), null ) );
+    for( int i=0;i<10; i++ ) {
+      handler.handleRequest( req, rsp );
+    }
+    assertQ("should be there", req("id:530") ,"//result[@numFound=1]" );
+    
+    assertTrue("commitWithin failed to commit", trigger.waitForNewSearcher(30000));
+    assertQ("should be there", req("id:500") ,"//result[@numFound=1]" );
+    assertQ("should not be there", req("id:530") ,"//result[@numFound=0]" );
+    
+    assertEquals(3, tracker.getCommitCount());
+  }
 
 }

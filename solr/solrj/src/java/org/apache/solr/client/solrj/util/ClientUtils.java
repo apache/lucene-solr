@@ -27,7 +27,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
+import java.util.Map.Entry;
 import java.nio.ByteBuffer;
 
 import org.apache.commons.httpclient.util.DateParseException;
@@ -35,6 +38,7 @@ import org.apache.commons.httpclient.util.DateParseException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.*;
 
@@ -228,5 +232,12 @@ public class ClientUtils
     }
     catch (IOException e) {throw new RuntimeException(e);}  // can't happen
     return sb.toString();
+  }
+  
+  public static void appendMap(String collection, Map<String,Slice> map1, Map<String,Slice> map2) {
+    Set<Entry<String,Slice>> entrySet = map2.entrySet();
+    for (Entry<String,Slice> entry : entrySet) {
+      map1.put(collection + "_" + entry.getKey(), entry.getValue());
+    }
   }
 }
