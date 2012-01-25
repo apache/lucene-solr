@@ -39,6 +39,7 @@ import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.DefaultParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.XHTMLContentHandler;
@@ -156,7 +157,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     if (streamType != null) {
       //Cache?  Parsers are lightweight to construct and thread-safe, so I'm told
       MediaType mt = MediaType.parse(streamType.trim().toLowerCase());
-      parser = config.getParser(mt);
+      parser = new DefaultParser(config.getMediaTypeRegistry()).getParsers().get(mt);
     } else {
       parser = autoDetectParser;
     }
@@ -172,6 +173,10 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       String resourceName = req.getParams().get(ExtractingParams.RESOURCE_NAME, null);
       if (resourceName != null) {
         metadata.add(Metadata.RESOURCE_NAME_KEY, resourceName);
+      }
+      // Provide stream's content type as hint for auto detection
+      if(stream.getContentType() != null) {
+        metadata.add(Metadata.CONTENT_TYPE, stream.getContentType());
       }
 
       SolrContentHandler handler = factory.createSolrContentHandler(metadata, params, schema);

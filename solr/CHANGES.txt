@@ -189,6 +189,8 @@ Other Changes
 * SOLR-2718: Add ability to lazy load response writers, defined with startup="lazy".
   (ehatcher)
 
+* SOLR-2901: Upgrade Solr to Tika 1.0 (janhoy)
+
 Build
 ----------------------
 * SOLR-2487: Add build target to package war without slf4j jars (janhoy)

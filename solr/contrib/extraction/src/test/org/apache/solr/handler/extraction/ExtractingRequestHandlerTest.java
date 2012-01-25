@@ -18,7 +18,6 @@ package org.apache.solr.handler.extraction;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
@@ -419,7 +418,33 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("*:*"), "//result[@numFound=1]");
   }
+  
+  @Test
+  public void testWrongStreamType() throws Exception {
+    ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
+    assertTrue("handler is null and it shouldn't be", handler != null);
 
+    try{
+      // Load plain text specifying another mime type, should fail
+      loadLocal("extraction/version_control.txt", 
+              "literal.id", "one",
+              ExtractingParams.STREAM_TYPE, "application/pdf"
+      );
+      fail("SolrException is expected because wrong parser specified for the file type");
+    }
+    catch(Exception expected){}
+
+    try{
+      // Load plain text specifying non existing mimetype, should fail
+      loadLocal("extraction/version_control.txt", 
+              "literal.id", "one",
+              ExtractingParams.STREAM_TYPE, "foo/bar"
+      );
+      fail("SolrException is expected because nonexsisting parser specified");
+    }
+    catch(Exception expected){}
+  }
+  
   SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
     try {
