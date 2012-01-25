@@ -216,6 +216,12 @@ public class TestHarness {
       SolrCore core = new SolrCore(coreName, dataDirectory, solrConfig, indexSchema, dcore);
       container.register(coreName, core, false);
 
+      // TODO: we should be exercising the *same* core container initialization code, not equivalent code!
+      if (container.getZkController() == null && core.getUpdateHandler().getUpdateLog() != null) {
+        // always kick off recovery if we are in standalone mode.
+        core.getUpdateHandler().getUpdateLog().recoverFromLog();
+      }
+      
       return container;
     }
   }

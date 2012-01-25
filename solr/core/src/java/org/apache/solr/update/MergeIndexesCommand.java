@@ -31,20 +31,25 @@ public class MergeIndexesCommand extends UpdateCommand {
   public IndexReader[] readers;
 
   public MergeIndexesCommand(IndexReader[] readers, SolrQueryRequest req) {
-    super("mergeIndexes", req);
+    super(req);
     this.readers = readers;
   }
 
   @Override
+  public String name() {
+    return "mergeIndexes";
+  }
+
+  @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder(commandName);
-    sb.append(':');
+    StringBuilder sb = new StringBuilder(super.toString());
     if (readers != null && readers.length > 0) {
       sb.append(readers[0].directory());
       for (int i = 1; i < readers.length; i++) {
         sb.append(",").append(readers[i].directory());
       }
     }
+    sb.append('}');
     return sb.toString();
   }
 }

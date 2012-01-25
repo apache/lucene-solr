@@ -28,7 +28,7 @@ Apache Tika 1.0
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
-Apache ZooKeeper 3.3.3
+Apache ZooKeeper 3.3.4
 
 
 Upgrading from Solr 3.6-dev

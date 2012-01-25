@@ -17,15 +17,24 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.BeforeClass;
 
 /**
  *
@@ -51,16 +60,10 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   String missingField="ignore_exception__missing_but_valid_field_t";
   String invalidField="ignore_exception__invalid_field_not_in_schema";
   
+  private Map<String,List<SolrServer>> otherCollectionClients = new HashMap<String,List<SolrServer>>();
+  
   public BasicDistributedZkTest() {
     fixShardCount = true;
-    
-    System.setProperty("CLOUD_UPDATE_DELAY", "0");
-  }
-
-  
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    System.setProperty("solr.solr.home", SolrTestCaseJ4.TEST_HOME());
   }
   
   @Override
@@ -68,7 +71,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
     if (r.nextBoolean()) {
       // don't set shards, let that be figured out from the cloud state
-      params.set("distrib", "true");
     } else {
       // use shard ids rather than physical locations
       StringBuilder sb = new StringBuilder();
@@ -78,7 +80,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
         sb.append("shard" + (i + 3));
       }
       params.set("shards", sb.toString());
-      params.set("distrib", "true");
     }
   }
   
@@ -240,10 +241,103 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
-
+    
+    testMultipleCollections();
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
+    }
+  }
+
+  private void testMultipleCollections() throws MalformedURLException,
+      SolrServerException, IOException, Exception {
+    // create another 2 collections and search across them
+    createNewCollection("collection2");
+    indexDoc("collection2", getDoc(id, "10000000")); 
+    indexDoc("collection2", getDoc(id, "10000001")); 
+    indexDoc("collection2", getDoc(id, "10000003")); 
+    
+    createNewCollection("collection3");
+    indexDoc("collection3", getDoc(id, "20000000"));
+    indexDoc("collection3", getDoc(id, "20000001")); 
+    
+    otherCollectionClients.get("collection2").get(0).commit();
+    otherCollectionClients.get("collection3").get(0).commit();
+    
+    long collection1Docs = solrj.query(new SolrQuery("*:*")).getResults()
+        .getNumFound();
+    long collection2Docs = otherCollectionClients.get("collection2").get(0)
+        .query(new SolrQuery("*:*")).getResults().getNumFound();
+    long collection3Docs = otherCollectionClients.get("collection3").get(0)
+        .query(new SolrQuery("*:*")).getResults().getNumFound();
+    
+    SolrQuery query = new SolrQuery("*:*");
+    query.set("collection", "collection2,collection3");
+    long found = clients.get(0).query(query).getResults().getNumFound();
+    assertEquals(collection2Docs + collection3Docs, found);
+    
+    query = new SolrQuery("*:*");
+    query.set("collection", "collection1,collection2,collection3");
+    found = clients.get(0).query(query).getResults().getNumFound();
+    assertEquals(collection1Docs + collection2Docs + collection3Docs, found);
+    
+    // try to search multiple with cloud client
+    found = solrj.query(query).getResults().getNumFound();
+    assertEquals(collection1Docs + collection2Docs + collection3Docs, found);
+    
+    query.set("collection", "collection2,collection3");
+    found = solrj.query(query).getResults().getNumFound();
+    assertEquals(collection2Docs + collection3Docs, found);
+    
+    query.set("collection", "collection3");
+    found = solrj.query(query).getResults().getNumFound();
+    assertEquals(collection3Docs, found);
+    
+    query.remove("collection");
+    found = solrj.query(query).getResults().getNumFound();
+    assertEquals(collection1Docs, found);
+  }
+  
+  protected SolrInputDocument getDoc(Object... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    addFields(doc, fields);
+    return doc;
+  }
+  
+  protected void indexDoc(String collection, SolrInputDocument doc) throws IOException, SolrServerException {
+    List<SolrServer> clients = otherCollectionClients.get(collection);
+    int which = (doc.getField(id).toString().hashCode() & 0x7fffffff) % clients.size();
+    SolrServer client = clients.get(which);
+    client.add(doc);
+  }
+
+  private void createNewCollection(String collection)
+      throws MalformedURLException, SolrServerException, IOException {
+    List<SolrServer> collectionClients = new ArrayList<SolrServer>();
+    otherCollectionClients.put(collection, collectionClients);
+    for (SolrServer client : clients) {
+      CommonsHttpSolrServer server = new CommonsHttpSolrServer(
+          ((CommonsHttpSolrServer) client).getBaseURL());
+      Create createCmd = new Create();
+      createCmd.setCoreName(collection);
+      createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator + collection);
+      server.request(createCmd);
+      collectionClients.add(createNewSolrServer(collection,
+          ((CommonsHttpSolrServer) client).getBaseURL()));
+    }
+  }
+  
+  protected SolrServer createNewSolrServer(String collection, String baseUrl) {
+    try {
+      // setup the server...
+      CommonsHttpSolrServer s = new CommonsHttpSolrServer(baseUrl + "/" + collection);
+      s.setConnectionTimeout(100); // 1/10th sec
+      s.setDefaultMaxConnectionsPerHost(100);
+      s.setMaxTotalConnections(100);
+      return s;
+    }
+    catch (Exception ex) {
+      throw new RuntimeException(ex);
     }
   }
 
@@ -278,7 +372,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    System.clearProperty("CLOUD_UPDATE_DELAY");
+    if (solrj != null) {
+      solrj.close();
+    }
     System.clearProperty("zkHost");
   }
 }

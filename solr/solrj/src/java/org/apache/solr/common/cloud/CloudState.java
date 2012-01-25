@@ -17,149 +17,222 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.noggit.JSONWriter;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.HashPartitioner.Range;
 import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-// immutable
-public class CloudState {
-  protected static Logger log = LoggerFactory.getLogger(CloudState.class);
+public class CloudState implements JSONWriter.Writable {
+	private final Map<String, Map<String,Slice>> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
+	private final Set<String> liveNodes;
   
-  private final Map<String,Map<String,Slice>> collectionStates;
-  private final Set<String> liveNodes;
+  private final HashPartitioner hp = new HashPartitioner();
   
-  public CloudState(Set<String> liveNodes, Map<String,Map<String,Slice>> collectionStates) {
-    this.liveNodes = liveNodes;
-    this.collectionStates = collectionStates;
-  }
-  
-  public Map<String,Slice> getSlices(String collection) {
-    Map<String,Slice> collectionState = collectionStates.get(collection);
-    if(collectionState == null) {
-      return null;
-    }
-    return Collections.unmodifiableMap(collectionState);
-  }
-  
-  public Set<String> getCollections() {
-    return Collections.unmodifiableSet(collectionStates.keySet());
-  }
-  
-  public Map<String,Map<String,Slice>> getCollectionStates() {
-    return Collections.unmodifiableMap(collectionStates);
-  }
-  
-  public Set<String> getLiveNodes() {
-    return Collections.unmodifiableSet(liveNodes);
-  }
-  
-  public boolean liveNodesContain(String name) {
-    return liveNodes.contains(name);
-  }
-  
-  public static CloudState buildCloudState(SolrZkClient zkClient, CloudState oldCloudState, boolean onlyLiveNodes) throws KeeperException, InterruptedException, IOException {
-    Map<String,Map<String,Slice>> collectionStates;
-    if (!onlyLiveNodes) {
-      List<String> collections = zkClient.getChildren(
-          ZkStateReader.COLLECTIONS_ZKNODE, null);
+  private final Map<String,RangeInfo> rangeInfos = new HashMap<String,RangeInfo>();
+  public Map<String,Map<String,ZkNodeProps>> leaders = new HashMap<String,Map<String,ZkNodeProps>>();
 
-      collectionStates = new HashMap<String,Map<String,Slice>>();
-      for (String collection : collections) {
-        String shardIdPaths = ZkStateReader.COLLECTIONS_ZKNODE + "/"
-            + collection + ZkStateReader.SHARDS_ZKNODE;
-        List<String> shardIdNames;
-        try {
-          shardIdNames = zkClient.getChildren(shardIdPaths, null);
-        } catch (KeeperException.NoNodeException e) {
-          // node is not valid currently
-          continue;
-        }
-        Map<String,Slice> slices = new HashMap<String,Slice>();
-        for (String shardIdZkPath : shardIdNames) {
-          Slice oldSlice = null;
-          if (oldCloudState.getCollectionStates().containsKey(collection)
-              && oldCloudState.getCollectionStates().get(collection)
-                  .containsKey(shardIdZkPath)) {
-            oldSlice = oldCloudState.getCollectionStates().get(collection)
-                .get(shardIdZkPath);
-          }
-          
-          Map<String,ZkNodeProps> shardsMap = readShards(zkClient, shardIdPaths
-              + "/" + shardIdZkPath, oldSlice);
-          Slice slice = new Slice(shardIdZkPath, shardsMap);
-          slices.put(shardIdZkPath, slice);
-        }
-        collectionStates.put(collection, slices);
-      }
-    } else {
-      collectionStates = oldCloudState.getCollectionStates();
-    }
-    
-    CloudState cloudInfo = new CloudState(getLiveNodes(zkClient), collectionStates);
-    
-    return cloudInfo;
-  }
-  
-  /**
-   * @param zkClient
-   * @param shardsZkPath
-   * @return
-   * @throws KeeperException
-   * @throws InterruptedException
-   * @throws IOException
-   */
-  private static Map<String,ZkNodeProps> readShards(SolrZkClient zkClient, String shardsZkPath, Slice oldSlice)
-      throws KeeperException, InterruptedException, IOException {
 
-    Map<String,ZkNodeProps> shardNameToProps = new HashMap<String,ZkNodeProps>();
+	public CloudState() {
+		this.liveNodes = new HashSet<String>();
+		this.collectionStates = new HashMap<String,Map<String,Slice>>(0);
+		addRangeInfos(collectionStates.keySet());
+		getShardLeaders();
+	}
 
-    if (zkClient.exists(shardsZkPath, null) == null) {
-      throw new IllegalStateException("Cannot find zk shards node that should exist:"
-          + shardsZkPath);
-    }
+	public CloudState(Set<String> liveNodes,
+			Map<String, Map<String,Slice>> collectionStates) {
+		this.liveNodes = new HashSet<String>(liveNodes.size());
+		this.liveNodes.addAll(liveNodes);
+		this.collectionStates = new HashMap<String, Map<String,Slice>>(collectionStates.size());
+		this.collectionStates.putAll(collectionStates);
+		addRangeInfos(collectionStates.keySet());
+		getShardLeaders();
+	}
 
-    List<String> shardZkPaths = zkClient.getChildren(shardsZkPath, null);
-    
-    for (String shardPath : shardZkPaths) {
-      ZkNodeProps props;
-      if (oldSlice != null && oldSlice.getShards().containsKey(shardPath)) {
-        props = oldSlice.getShards().get(shardPath);
-      } else {
-        byte[] data = zkClient.getData(shardsZkPath + "/" + shardPath, null,
-            null);
+	private void getShardLeaders() {
+    Set<Entry<String,Map<String,Slice>>> collections = collectionStates.entrySet();
+    for (Entry<String,Map<String,Slice>> collection : collections) {
+      Map<String,Slice> state = collection.getValue();
+      Set<Entry<String,Slice>> slices = state.entrySet();
+      for (Entry<String,Slice> sliceEntry : slices) {
+        Slice slice = sliceEntry.getValue();
+        Map<String,ZkNodeProps> shards = slice.getShards();
+        Set<Entry<String,ZkNodeProps>> shardsEntries = shards.entrySet();
+        for (Entry<String,ZkNodeProps> shardEntry : shardsEntries) {
+          ZkNodeProps props = shardEntry.getValue();
+          if (props.containsKey(ZkStateReader.LEADER_PROP)) {
+            Map<String,ZkNodeProps> leadersForCollection = leaders.get(collection.getKey());
+            if (leadersForCollection == null) {
+              leadersForCollection = new HashMap<String,ZkNodeProps>();
         
-        props = new ZkNodeProps();
-        props.load(data);
+              leaders.put(collection.getKey(), leadersForCollection);
+            }
+            leadersForCollection.put(sliceEntry.getKey(), props);
+          }
+        }
       }
-      
-      shardNameToProps.put(shardPath, props);
     }
-
-    return Collections.unmodifiableMap(shardNameToProps);
   }
-  
-  private static Set<String> getLiveNodes(SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    List<String> liveNodes = zkClient.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null);
-    Set<String> liveNodesSet = new HashSet<String>(liveNodes.size());
-    liveNodesSet.addAll(liveNodes);
+	
+	public ZkNodeProps getLeader(String collection, String shard) {
+	  Map<String,ZkNodeProps> collectionLeaders = leaders.get(collection);
+	  if (collectionLeaders == null) return null;
+	  return collectionLeaders.get(shard);
+	}
 
-    return liveNodesSet;
+  private void addRangeInfos(Set<String> collections) {
+    for (String collection : collections) {
+      addRangeInfo(collection);
+    }
   }
-  
+
+  public Slice getSlice(String collection, String slice) {
+		if (collectionStates.containsKey(collection)
+				&& collectionStates.get(collection).containsKey(slice))
+			return collectionStates.get(collection).get(slice);
+		return null;
+	}
+
+	public Map<String, Slice> getSlices(String collection) {
+		if(!collectionStates.containsKey(collection))
+			return null;
+		return Collections.unmodifiableMap(collectionStates.get(collection));
+	}
+
+	public Set<String> getCollections() {
+		return Collections.unmodifiableSet(collectionStates.keySet());
+	}
+
+	public Map<String, Map<String, Slice>> getCollectionStates() {
+		return Collections.unmodifiableMap(collectionStates);
+	}
+
+	public Set<String> getLiveNodes() {
+		return Collections.unmodifiableSet(liveNodes);
+	}
+
+	public String getShardId(String coreNodeName) {
+	  for (Entry<String, Map<String, Slice>> states: collectionStates.entrySet()){
+	    for(Entry<String, Slice> slices: states.getValue().entrySet()) {
+	      for(Entry<String, ZkNodeProps> shards: slices.getValue().getShards().entrySet()){
+	        if(coreNodeName.equals(shards.getKey())) {
+	          return slices.getKey();
+	        }
+	      }
+	    }
+	  }
+	  return null;
+	}
+
+	public boolean liveNodesContain(String name) {
+		return liveNodes.contains(name);
+	}
+	
+	public RangeInfo getRanges(String collection) {
+    // TODO: store this in zk
+    RangeInfo rangeInfo = rangeInfos.get(collection);
+
+	  return rangeInfo;
+	}
+
+  private RangeInfo addRangeInfo(String collection) {
+    List<Range> ranges;
+    RangeInfo rangeInfo;
+    rangeInfo = new RangeInfo();
+
+    Map<String,Slice> slices = getSlices(collection);
+    
+    if (slices == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find collection "
+          + collection + " in " + this);
+    }
+    
+    Set<String> shards = slices.keySet();
+    ArrayList<String> shardList = new ArrayList<String>(shards.size());
+    shardList.addAll(shards);
+    Collections.sort(shardList);
+    
+    ranges = hp.partitionRange(shards.size());
+    
+    rangeInfo.ranges = ranges;
+    rangeInfo.shardList = shardList;
+    rangeInfos.put(collection, rangeInfo);
+    return rangeInfo;
+  }
+	
+  public String getShard(int hash, String collection) {
+    RangeInfo rangInfo = getRanges(collection);
+    
+    int cnt = 0;
+    for (Range range : rangInfo.ranges) {
+      if (hash < range.max) {
+        return rangInfo.shardList.get(cnt);
+      }
+      cnt++;
+    }
+    
+    throw new IllegalStateException("The HashPartitioner failed");
+  }
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("live nodes:" + liveNodes);
+		sb.append(" collections:" + collectionStates);
+		return sb.toString();
+	}
+
+	public static CloudState load(SolrZkClient zkClient, Set<String> liveNodes) throws KeeperException, InterruptedException {
+    byte[] state = zkClient.getData(ZkStateReader.CLUSTER_STATE,
+        null, null, true);
+    return load(state, liveNodes);
+	}
+	
+	public static CloudState load(byte[] bytes, Set<String> liveNodes) throws KeeperException, InterruptedException {
+    if (bytes == null || bytes.length == 0) {
+      return new CloudState(liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
+    }
+    
+    LinkedHashMap<String, Object> stateMap = (LinkedHashMap<String, Object>) ZkStateReader.fromJSON(bytes);
+    HashMap<String,Map<String, Slice>> state = new HashMap<String,Map<String,Slice>>();
+
+    for(String collectionName: stateMap.keySet()){
+      Map<String, Object> collection = (Map<String, Object>)stateMap.get(collectionName);
+      Map<String, Slice> slices = new LinkedHashMap<String,Slice>();
+      for(String sliceName: collection.keySet()) {
+        Map<String, Map<String, String>> sliceMap = (Map<String, Map<String, String>>)collection.get(sliceName);
+        Map<String, ZkNodeProps> shards = new LinkedHashMap<String,ZkNodeProps>();
+        for(String shardName: sliceMap.keySet()) {
+          shards.put(shardName, new ZkNodeProps(sliceMap.get(shardName)));
+        }
+        Slice slice = new Slice(sliceName, shards);
+        slices.put(sliceName, slice);
+      }
+      state.put(collectionName, slices);
+    }
+    return new CloudState(liveNodes, state);
+	}
+
   @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("live nodes:" + liveNodes);
-    sb.append(" collections:" + collectionStates);
-    return sb.toString();
+  public void write(JSONWriter jsonWriter) {
+    jsonWriter.write(collectionStates);
   }
+  
+  class RangeInfo {
+    private List<Range> ranges;
+    private ArrayList<String> shardList;
+  }
+
 
 }

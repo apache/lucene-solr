@@ -163,10 +163,10 @@ class JsonLoader extends ContentStreamLoader {
         String key = parser.getString();
         if( parser.wasKey() ) {
           if( "id".equals( key ) ) {
-            cmd.id = parser.getString();
+            cmd.setId(parser.getString());
           }
           else if( "query".equals(key) ) {
-            cmd.query = parser.getString();
+            cmd.setQuery(parser.getString());
           }
           else if( "commitWithin".equals(key) ) { 
             cmd.commitWithin = Integer.parseInt(parser.getString());
@@ -181,7 +181,7 @@ class JsonLoader extends ContentStreamLoader {
         }
       }
       else if( ev == JSONParser.OBJECT_END ) {
-        if( cmd.id == null && cmd.query == null ) {
+        if( cmd.getId() == null && cmd.getQuery() == null ) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing id or query for delete ["+parser.getPosition()+"]" );
         }
         return cmd;

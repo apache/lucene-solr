@@ -74,7 +74,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     String file = collectionZkPath + "/" + resource;
     try {
       if (zkController.pathExists(file)) {
-        byte[] bytes = zkController.getZkClient().getData(collectionZkPath + "/" + resource, null, null);
+        byte[] bytes = zkController.getZkClient().getData(collectionZkPath + "/" + resource, null, null, true);
         return new ByteArrayInputStream(bytes);
       }
     } catch (Exception e) {
@@ -105,7 +105,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   public String[] listConfigDir() {
     List<String> list;
     try {
-      list = zkController.getZkClient().getChildren(collectionZkPath, null);
+      list = zkController.getZkClient().getChildren(collectionZkPath, null, true);
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
@@ -118,6 +118,10 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
           "", e);
     }
     return list.toArray(new String[0]);
+  }
+
+  public String getCollectionZkPath() {
+    return collectionZkPath;
   }
   
 }

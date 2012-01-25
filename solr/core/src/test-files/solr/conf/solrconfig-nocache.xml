@@ -30,8 +30,11 @@
         solr.RAMDirectoryFactory is memory based and not persistent. -->
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
+  <dataDir>${solr.data.dir:}</dataDir>
+
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>
+  
   <requestHandler name="standard" class="solr.StandardRequestHandler"/>
 
   <requestDispatcher handleSelect="true" >

@@ -211,14 +211,24 @@ class XMLLoader extends ContentStreamLoader {
                     "unexpected XML tag /delete/" + mode);
           }
           text.setLength(0);
+          
+          if ("id".equals(mode)) {
+            for (int i = 0; i < parser.getAttributeCount(); i++) {
+              String attrName = parser.getAttributeLocalName(i);
+              String attrVal = parser.getAttributeValue(i);
+              if (XmlUpdateRequestHandler.VERSION.equals(attrName)) {
+                deleteCmd.setVersion(Long.parseLong(attrVal));
+              }
+            }
+          }
           break;
 
         case XMLStreamConstants.END_ELEMENT:
           String currTag = parser.getLocalName();
           if ("id".equals(currTag)) {
-            deleteCmd.id = text.toString();
+            deleteCmd.setId(text.toString());         
           } else if ("query".equals(currTag)) {
-            deleteCmd.query = text.toString();
+            deleteCmd.setQuery(text.toString());
           } else if ("delete".equals(currTag)) {
             return;
           } else {

@@ -100,7 +100,7 @@
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-digester-1.7.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
-	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1209632.jar"/>
+	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1211150.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-csv-1.0-SNAPSHOT-r966014.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-httpclient-3.1.jar"/>
@@ -115,7 +115,7 @@
 	<classpathentry kind="lib" path="solr/lib/slf4j-api-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
-	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.3.jar"/>
+	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.4.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jetty-6.1.26-patched-JETTY-1340.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jetty-util-6.1.26-patched-JETTY-1340.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/servlet-api-2.5-20081211.jar"/>

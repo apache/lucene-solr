@@ -88,12 +88,11 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   private void initLog() {
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
     if (ulogPluginInfo != null && ulogPluginInfo.isEnabled()) {
-      ulog = core.createInitInstance(ulogPluginInfo, UpdateLog.class, "update log", "solr.NullUpdateLog");
-    } else {
-      ulog = new NullUpdateLog();
-      ulog.init(null);
+      ulog = new UpdateLog();
+      ulog.init(ulogPluginInfo);
+      // ulog = core.createInitInstance(ulogPluginInfo, UpdateLog.class, "update log", "solr.NullUpdateLog");
+      ulog.init(this, core);
     }
-    ulog.init(this, core);
   }
 
 
@@ -123,16 +122,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     parseEventListeners();
     initLog();
   }
-  
-  /**
-   * Allows the UpdateHandler to create the SolrIndexSearcher after it
-   * has issued a 'softCommit'. 
-   * 
-   * @param previousSearcher
-   * @throws IOException
-   */
-  public abstract SolrIndexSearcher reopenSearcher(SolrIndexSearcher previousSearcher) throws IOException;
-  
+
   /**
    * Called when the Writer should be opened again - eg when replication replaces
    * all of the index files.
@@ -141,7 +131,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
    */
   public abstract void newIndexWriter() throws IOException;
 
-  public abstract SolrCoreState getIndexWriterProvider();
+  public abstract SolrCoreState getSolrCoreState();
 
   public abstract int addDoc(AddUpdateCommand cmd) throws IOException;
   public abstract void delete(DeleteUpdateCommand cmd) throws IOException;

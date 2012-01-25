@@ -67,12 +67,11 @@ public class TestBinaryField extends LuceneTestCase {
     out = new FileOutputStream(f);
     IOUtils.copy(loader.openResource(fname), out);
     out.close();
-    System.setProperty("solr.solr.home", homeDir.getAbsolutePath());
     System.setProperty("solr.data.dir", dataDir.getAbsolutePath());
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
-    jetty = new JettySolrRunner(context, 0);
+    jetty = new JettySolrRunner(homeDir.getAbsolutePath(), context, 0);
     jetty.start();
     port = jetty.getLocalPort();
 

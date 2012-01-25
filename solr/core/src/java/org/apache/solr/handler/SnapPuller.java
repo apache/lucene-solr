@@ -33,6 +33,7 @@ import static org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,7 +159,7 @@ public class SnapPuller {
         }
         try {
           executorStartTime = System.currentTimeMillis();
-          replicationHandler.doFetch(null);
+          replicationHandler.doFetch(null, false);
         } catch (Exception e) {
           LOG.error("Exception in fetching index", e);
         }
@@ -243,7 +244,8 @@ public class SnapPuller {
   @SuppressWarnings("unchecked")
   boolean successfulInstall = false;
 
-  boolean fetchLatestIndex(SolrCore core) throws IOException {
+  boolean fetchLatestIndex(SolrCore core, boolean force) throws IOException, InterruptedException {
+    successfulInstall = false;
     replicationStartTime = System.currentTimeMillis();
     try {
       //get the current 'replicateable' index version in the master
@@ -256,23 +258,41 @@ public class SnapPuller {
       }
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
-      if (latestVersion == 0L) {
-        //there is nothing to be replicated
-        return false;
-      }
+
       IndexCommit commit;
       RefCounted<SolrIndexSearcher> searcherRefCounted = null;
       try {
         searcherRefCounted = core.getNewestSearcher(false);
+        if (searcherRefCounted == null) {
+          SolrException.log(LOG, "No open searcher found - fetch aborted");
+          return false;
+        }
         commit = searcherRefCounted.get().getIndexReader().getIndexCommit();
       } finally {
         if (searcherRefCounted != null)
           searcherRefCounted.decref();
       }
+      
+      if (latestVersion == 0L) {
+        if (force && commit.getVersion() != 0) {
+          // since we won't get the files for an empty index,
+          // we just clear ours and commit
+          core.getUpdateHandler().getSolrCoreState().getIndexWriter(core).deleteAll();
+          SolrQueryRequest req = new LocalSolrQueryRequest(core,
+              new ModifiableSolrParams());
+          core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+        }
+        
+        //there is nothing to be replicated
+        successfulInstall = true;
+        return true;
+      }
+      
       if (commit.getVersion() == latestVersion && commit.getGeneration() == latestGeneration) {
-        //master and slave are alsready in sync just return
+        //master and slave are already in sync just return
         LOG.info("Slave in sync with master.");
-        return false;
+        successfulInstall = true;
+        return true;
       }
       LOG.info("Master's version: " + latestVersion + ", generation: " + latestGeneration);
       LOG.info("Slave's version: " + commit.getVersion() + ", generation: " + commit.getGeneration());
@@ -289,7 +309,7 @@ public class SnapPuller {
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generateion of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index direcory to be created and all the files need to be copied
-      boolean isFullCopyNeeded = commit.getGeneration() >= latestGeneration;
+      boolean isFullCopyNeeded = commit.getVersion() >= latestVersion || force;
       File tmpIndexDir = createTempindexDir(core);
       if (isIndexStale())
         isFullCopyNeeded = true;
@@ -331,15 +351,17 @@ public class SnapPuller {
         return successfulInstall;
       } catch (ReplicationHandlerException e) {
         LOG.error("User aborted Replication");
+        return false;
       } catch (SolrException e) {
         throw e;
+      } catch (InterruptedException e) {
+        throw new InterruptedException("Index fetch interrupted");
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       } finally {
         if (deleteTmpIdxDir) delTree(tmpIndexDir);
         else delTree(indexDir);
       }
-      return successfulInstall;
     } finally {
       if (!successfulInstall) {
         logReplicationTimeAndConfFiles(null, successfulInstall);
@@ -476,9 +498,9 @@ public class SnapPuller {
       
       // reboot the writer on the new index and get a new searcher
       solrCore.getUpdateHandler().newIndexWriter();
-      solrCore.getSearcher(true, false, null);
-      
-      replicationHandler.refreshCommitpoint();
+      // update our commit point to the right dir
+      solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+
     } finally {
       req.close();
     }

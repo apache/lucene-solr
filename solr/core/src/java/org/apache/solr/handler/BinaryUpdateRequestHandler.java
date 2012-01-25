@@ -140,6 +140,7 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
       }
     }
   }
+
   @Override
   public String getDescription() {
     return "Add/Update multiple documents with javabin format";

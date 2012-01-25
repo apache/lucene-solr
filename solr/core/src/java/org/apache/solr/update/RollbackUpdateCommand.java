@@ -26,7 +26,16 @@ import org.apache.solr.request.SolrQueryRequest;
 public class RollbackUpdateCommand extends UpdateCommand {
 
   public RollbackUpdateCommand(SolrQueryRequest req) {
-    super("rollback", req);
+    super(req);
   }
 
+  @Override
+  public String name() {
+    return "rollback";
+  }
+
+  @Override
+  public String toString() {
+    return super.toString() + '}';
+  }
 }

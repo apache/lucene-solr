@@ -20,8 +20,14 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -31,13 +37,10 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -299,5 +302,34 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
   public void handleError( Throwable ex )
   {
     log.error( "error", ex );
+  }
+  
+  @Override
+  public void shutdown() {
+    super.shutdown();
+    scheduler.shutdown();
+    try {
+      if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+        scheduler.shutdownNow();
+        if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) log
+            .error("ExecutorService did not terminate");
+      }
+    } catch (InterruptedException ie) {
+      scheduler.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
+  }
+  
+  
+  public void shutdownNow() {
+    super.shutdown();
+    scheduler.shutdownNow(); // Cancel currently executing tasks
+    try {
+      if (!scheduler.awaitTermination(30, TimeUnit.SECONDS)) log
+          .error("ExecutorService did not terminate");
+    } catch (InterruptedException ie) {
+      scheduler.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 }

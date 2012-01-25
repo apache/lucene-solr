@@ -37,16 +37,21 @@ public class CommitUpdateCommand extends UpdateCommand {
   public int maxOptimizeSegments = 1;
 
   public CommitUpdateCommand(SolrQueryRequest req, boolean optimize) {
-    super("commit", req);
+    super(req);
     this.optimize=optimize;
   }
+
+  @Override
+  public String name() {
+    return "commit";
+  }
+
   @Override
   public String toString() {
-    return prepareCommit ? "prepareCommit" :
-        ("commit(optimize="+optimize
+    return super.toString() + ",optimize="+optimize
             +",waitSearcher="+waitSearcher
             +",expungeDeletes="+expungeDeletes
             +",softCommit="+softCommit
-            +')');
+            +'}';
   }
 }
