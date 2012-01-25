@@ -37,8 +37,10 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class LeaderElectionTest extends SolrTestCaseJ4 {
   
   static final int TIMEOUT = 30000;
