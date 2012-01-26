@@ -155,7 +155,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
         if(!leader.equals(currentLeader)) {
           break;
         }
-        Thread.sleep(100);
+        Thread.sleep(500);
       }
       
       leader = getLeader();
@@ -231,7 +231,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       } catch (KeeperException e) {
         // ignore
       }
-      Thread.sleep(200);
+      Thread.sleep(500);
     }
     return leader;
   }
