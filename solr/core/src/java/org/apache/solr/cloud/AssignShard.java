@@ -36,7 +36,7 @@ public class AssignShard {
    * 
    * @param collection
    * @param state
-   * @return
+   * @return the assigned shard id
    */
   public static String assignShard(String collection, CloudState state) {
 
