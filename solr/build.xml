@@ -184,9 +184,12 @@
     <delete dir="package" />
     <delete dir="example/solr/lib" />
     <delete includeemptydirs="true">
-      <fileset dir="example" includes="**/data/**/*" excludes="**/.gitignore" />
-      <fileset dir="example/webapps" includes="**/*" excludes="**/.gitignore" />
-      <fileset dir="example/work" includes="**/*" excludes="**/.gitignore" />
+      <fileset dir="example">
+        <include name="example/**/data/**/*" />
+        <include name="example/webapps/**/*" />
+        <include name="example/work/**/*" />
+        <exclude name="**/.gitignore" />
+      </fileset>
     </delete>
     <echo message="TODO: fix tests to not write files to 'core/src/test-files/solr/data'!" />
     <delete dir="core/src/test-files/solr/data" />
