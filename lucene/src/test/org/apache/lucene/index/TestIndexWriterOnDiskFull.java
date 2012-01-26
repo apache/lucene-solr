@@ -59,7 +59,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         }
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
         dir.setMaxSizeInBytes(diskFree);
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
         if (ms instanceof ConcurrentMergeScheduler) {
           // This test intentionally produces exceptions
@@ -167,7 +167,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     long inputDiskUsage = 0;
     for(int i=0;i<NUM_DIR;i++) {
       dirs[i] = newDirectory();
-      IndexWriter writer  = new IndexWriter(dirs[i], newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+      IndexWriter writer = new IndexWriter(dirs[i], newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       for(int j=0;j<25;j++) {
         addDocWithIndex(writer, 25*i+j);
       }
@@ -181,7 +181,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     // Now, build a starting index that has START_COUNT docs.  We
     // will then try to addIndexes into a copy of this:
     MockDirectoryWrapper startDir = newDirectory();
-    IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for(int j=0;j<START_COUNT;j++) {
       addDocWithIndex(writer, j);
     }
@@ -216,7 +216,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     for(int i=0;i<files.length;i++) {
       startDiskUsage += startDir.fileLength(files[i]);
     }
-    
+
     for(int iter=0;iter<3;iter++) {
       
       if (VERBOSE)
@@ -246,7 +246,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         
         // Make a new dir that will enforce disk usage:
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir, newIOContext(random)));
-        writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
         IOException err = null;
 
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
@@ -300,7 +300,13 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           try {
             
             if (0 == method) {
+              if (VERBOSE) {
+                System.out.println("TEST: now addIndexes count=" + dirs.length);
+              }
               writer.addIndexes(dirs);
+              if (VERBOSE) {
+                System.out.println("TEST: now forceMerge");
+              }
               writer.forceMerge(1);
             } else if (1 == method) {
               IndexReader readers[] = new IndexReader[dirs.length];
@@ -512,7 +518,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   // OK:
   public void testImmediateDiskFull() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
     dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
     final Document doc = new Document();
