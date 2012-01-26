@@ -1232,7 +1232,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           + DEFAULT_COLLECTION;
       CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
       s.setConnectionTimeout(100); // 1/10th sec
-      s.setSoTimeout(30000);
+      s.setSoTimeout(45000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
