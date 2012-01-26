@@ -68,6 +68,8 @@ import java.util.Comparator;
  *
  * The RAM consumption of this class can be high!
  *
+ * <p>NOTE: the provided reader must be an atomic reader
+ *
  * @lucene.experimental
  */
 
@@ -200,11 +202,15 @@ public class DocTermOrds {
     }
     if (indexedTermsArray == null) {
       //System.out.println("GET normal enum");
-      final Terms terms = MultiFields.getTerms(reader, field);
-      if (terms != null) {
-        return terms.iterator(null);
-      } else {
+      final Fields fields = reader.fields();
+      if (fields == null) {
         return null;
+      }
+      final Terms terms = fields.terms(field);
+      if (terms == null) {
+        return null;
+      } else {
+        return terms.iterator(null);
       }
     } else {
       //System.out.println("GET wrapped enum ordBase=" + ordBase);
@@ -230,7 +236,12 @@ public class DocTermOrds {
     final int[] lastTerm = new int[maxDoc];    // last term we saw for this document
     final byte[][] bytes = new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
 
-    final Terms terms = MultiFields.getTerms(reader, field);
+    final Fields fields = reader.fields();
+    if (fields == null) {
+      // No terms
+      return;
+    }
+    final Terms terms = fields.terms(field);
     if (terms == null) {
       // No terms
       return;
@@ -251,7 +262,7 @@ public class DocTermOrds {
 
     boolean testedOrd = false;
 
-    final Bits liveDocs = MultiFields.getLiveDocs(reader);
+    final Bits liveDocs = reader.getLiveDocs();
 
     // we need a minimum of 9 bytes, but round up to 12 since the space would
     // be wasted with most allocators anyway.
@@ -641,7 +652,7 @@ public class DocTermOrds {
     public OrdWrappedTermsEnum(IndexReader reader) throws IOException {
       this.reader = reader;
       assert indexedTermsArray != null;
-      termsEnum = MultiFields.getTerms(reader, field).iterator(null);
+      termsEnum = reader.fields().terms(field).iterator(null);
     }
 
     @Override

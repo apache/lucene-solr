@@ -66,7 +66,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final DocTermOrds dto = new DocTermOrds(r, "field");
+    final DocTermOrds dto = new DocTermOrds(new SlowMultiReaderWrapper(r), "field");
 
     TermOrdsIterator iter = dto.lookup(0, null);
     final int[] buffer = new int[5];

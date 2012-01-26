@@ -21,6 +21,7 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -80,7 +81,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
     assertEquals(size, uif.getNumTerms());
 
-    TermsEnum te = uif.getOrdTermsEnum(req.getSearcher().getIndexReader());
+    TermsEnum te = uif.getOrdTermsEnum(new SlowMultiReaderWrapper(req.getSearcher().getIndexReader()));
     assertEquals(size == 0, te == null);
 
     Random r = new Random(size);
