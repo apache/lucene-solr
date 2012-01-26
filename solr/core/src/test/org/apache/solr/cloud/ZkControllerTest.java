@@ -102,6 +102,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
     ZkTestServer server = new ZkTestServer(zkDir);
     ZkController zkController = null;
+    boolean testFinished = false;
     try {
       server.run();
 
@@ -127,8 +128,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       if (DEBUG) {
         zkController.printLayoutToStdOut();
       }
-
+      testFinished = true;
     } finally {
+      if (testFinished) {
+        zkController.getZkClient().printLayoutToStdOut();
+      }
+      
       if (zkController != null) {
         zkController.close();
       }
