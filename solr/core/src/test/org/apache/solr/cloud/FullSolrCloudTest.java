@@ -51,6 +51,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * 
@@ -58,6 +59,7 @@ import org.junit.BeforeClass;
  * what we test now - the default update chain
  * 
  */
+@Ignore
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   private static final String SHARD2 = "shard2";
