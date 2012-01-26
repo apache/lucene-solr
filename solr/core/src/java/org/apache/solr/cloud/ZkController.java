@@ -130,16 +130,15 @@ public final class ZkController {
     zkServer.stop();
   }
 
-
   /**
-   * @param coreContainer if null, recovery will not be enabled
+   * @param cc if null, recovery will not be enabled
    * @param zkServerAddress
    * @param zkClientTimeout
    * @param zkClientConnectTimeout
    * @param localHost
    * @param locaHostPort
    * @param localHostContext
-   * @param numShards 
+   * @param registerOnReconnect
    * @throws InterruptedException
    * @throws TimeoutException
    * @throws IOException
@@ -437,13 +436,14 @@ public final class ZkController {
   }
 
 
+
   /**
    * Register shard with ZooKeeper.
    * 
    * @param coreName
-   * @param cloudDesc
-   * @return
-   * @throws Exception 
+   * @param desc
+   * @return the shardId for the SolrCore
+   * @throws Exception
    */
   public String register(String coreName, final CoreDescriptor desc) throws Exception {  
     return register(coreName, desc, false);
@@ -456,7 +456,7 @@ public final class ZkController {
    * @param coreName
    * @param desc
    * @param recoverReloadedCores
-   * @return
+   * @return the shardId for the SolrCore
    * @throws Exception
    */
   public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores) throws Exception {  

@@ -35,11 +35,8 @@ public class AssignShard {
    * Assign a new unique id up to slices count - then add replicas evenly.
    * 
    * @param collection
-   * 
-   * @param slices
+   * @param state
    * @return
-   * @throws InterruptedException
-   * @throws KeeperException
    */
   public static String assignShard(String collection, CloudState state) {
 

@@ -199,7 +199,6 @@ public  class LeaderElector {
    * watch the next lowest numbered node.
    * 
    * @param context
-   * @param SolrCore - optional - sometimes null
    * @return sequential node number
    * @throws KeeperException
    * @throws InterruptedException
@@ -256,8 +255,7 @@ public  class LeaderElector {
   /**
    * Set up any ZooKeeper nodes needed for leader election.
    * 
-   * @param shardId
-   * @param collection
+   * @param context
    * @throws InterruptedException
    * @throws KeeperException
    */
