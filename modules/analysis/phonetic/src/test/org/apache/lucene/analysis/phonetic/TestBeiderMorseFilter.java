@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.junit.Ignore;
 
 /** Tests {@link BeiderMorseFilter} */
 public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
@@ -86,6 +87,7 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
         new int[] { 1 });
   }
   
+  @Ignore("broken: causes OOM on some strings (https://issues.apache.org/jira/browse/CODEC-132)")
   public void testRandom() throws Exception {
     checkRandomData(random, analyzer, 1000 * RANDOM_MULTIPLIER); 
   }
