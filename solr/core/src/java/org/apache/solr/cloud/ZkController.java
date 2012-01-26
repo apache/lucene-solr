@@ -534,7 +534,7 @@ public final class ZkController {
         
         boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
             collection, coreZkNodeName, shardId, leaderProps, core, cc);
-        if (didRecovery) {
+        if (!didRecovery) {
           publishAsActive(baseUrl, desc, coreZkNodeName, coreName);
         }
       } finally {
@@ -563,6 +563,24 @@ public final class ZkController {
   }
 
 
+  /**
+   * @param coreName
+   * @param desc
+   * @param recoverReloadedCores
+   * @param isLeader
+   * @param cloudDesc
+   * @param collection
+   * @param shardZkNodeName
+   * @param shardId
+   * @param leaderProps
+   * @param core
+   * @param cc
+   * @return whether or not a recovery was started
+   * @throws InterruptedException
+   * @throws KeeperException
+   * @throws IOException
+   * @throws ExecutionException
+   */
   private boolean checkRecovery(String coreName, final CoreDescriptor desc,
       boolean recoverReloadedCores, final boolean isLeader,
       final CloudDescriptor cloudDesc, final String collection,
