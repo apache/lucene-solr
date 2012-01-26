@@ -22,7 +22,5 @@ public interface MutableBits extends Bits,Cloneable {
   // nocommit: remove this from this interface somehow? (used by DWPT infostream at least)
   public int count();
   
-  // nocommit: are these truly necessary?
-  public boolean getAndClear(int bit);
   public MutableBits clone();
 }

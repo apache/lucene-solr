@@ -174,13 +174,6 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     }
 
     @Override
-    public boolean getAndClear(int bit) {
-      boolean v = bits.get(bit);
-      bits.clear(bit);
-      return v;
-    }
-
-    @Override
     public SimpleTextBits clone() {
       BitSet clonedBits = (BitSet) bits.clone();
       return new SimpleTextBits(clonedBits, size);

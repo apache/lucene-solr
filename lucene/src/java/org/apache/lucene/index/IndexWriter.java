@@ -527,8 +527,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     public synchronized boolean delete(int docID) {
       assert liveDocs != null;
       assert docID >= 0 && docID < liveDocs.length();
-      final boolean didDelete = liveDocs.getAndClear(docID);
+      final boolean didDelete = liveDocs.get(docID);
       if (didDelete) {
+        liveDocs.clear(docID);
         pendingDeleteCount++;
         //System.out.println("  new del seg=" + info + " docID=" + docID + " pendingDelCount=" + pendingDeleteCount + " totDelCount=" + (info.docCount-liveDocs.count()));
       }
