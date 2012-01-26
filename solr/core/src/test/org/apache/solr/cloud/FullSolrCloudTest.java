@@ -467,70 +467,80 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
    */
   @Override
   public void doTest() throws Exception {
-    handle.clear();
-    handle.put("QTime", SKIPVAL);
-    handle.put("timestamp", SKIPVAL);
-    
-    indexr(id, 1, i1, 100, tlong, 100, t1, "now is the time for all good men",
-        "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
-    
-    // make sure we are in a steady state...
-    waitForRecoveriesToFinish(false);
-    
-    commit();
-    
-    assertDocCounts(false);
-    
-    indexAbunchOfDocs();
-    
-    commit();
-    
-    assertDocCounts(VERBOSE);
-    checkQueries();
-    
-    assertDocCounts(VERBOSE);
-    
-    query("q", "*:*", "sort", "n_tl1 desc");
-    
-    brindDownShardIndexSomeDocsAndRecover();
-    
-    query("q", "*:*", "sort", "n_tl1 desc");
-    
-    // test adding another replica to a shard - it should do a
-    // recovery/replication to pick up the index from the leader
-    addNewReplica();
-    
-    long docId = testUpdateAndDelete();
-    
-    // index a bad doc...
+    boolean testFinished = false;
     try {
-      indexr(t1, "a doc with no id");
-      fail("this should fail");
-    } catch (SolrException e) {
-      // expected
+      handle.clear();
+      handle.put("QTime", SKIPVAL);
+      handle.put("timestamp", SKIPVAL);
+      
+      indexr(id, 1, i1, 100, tlong, 100, t1,
+          "now is the time for all good men", "foo_f", 1.414f, "foo_b", "true",
+          "foo_d", 1.414d);
+      
+      // make sure we are in a steady state...
+      waitForRecoveriesToFinish(false);
+      
+      commit();
+      
+      assertDocCounts(false);
+      
+      indexAbunchOfDocs();
+      
+      commit();
+      
+      assertDocCounts(VERBOSE);
+      checkQueries();
+      
+      assertDocCounts(VERBOSE);
+      
+      query("q", "*:*", "sort", "n_tl1 desc");
+      
+      brindDownShardIndexSomeDocsAndRecover();
+      
+      query("q", "*:*", "sort", "n_tl1 desc");
+      
+      // test adding another replica to a shard - it should do a
+      // recovery/replication to pick up the index from the leader
+      addNewReplica();
+      
+      long docId = testUpdateAndDelete();
+      
+      // index a bad doc...
+      try {
+        indexr(t1, "a doc with no id");
+        fail("this should fail");
+      } catch (SolrException e) {
+        // expected
+      }
+      
+      // TODO: bring this to it's own method?
+      // try indexing to a leader that has no replicas up
+      ZkNodeProps leaderProps = zkStateReader.getLeaderProps(
+          DEFAULT_COLLECTION, SHARD2);
+      
+      String nodeName = leaderProps.get(ZkStateReader.NODE_NAME_PROP);
+      chaosMonkey.stopShardExcept(SHARD2, nodeName);
+      
+      SolrServer client = getClient(nodeName);
+      
+      index_specific(client, "id", docId + 1, t1, "what happens here?");
+      
+      // expire a session...
+      CloudJettyRunner cloudJetty = shardToJetty.get("shard1").get(0);
+      chaosMonkey.expireSession(cloudJetty.jetty);
+      
+      indexr("id", docId + 1, t1, "slip this doc in");
+      
+      waitForRecoveriesToFinish(false);
+      
+      checkShardConsistency("shard1");
+      
+      testFinished = true;
+    } finally {
+      if (!testFinished) {
+        printLayout();
+      }
     }
-    
-    // TODO: bring this to it's own method?
-    // try indexing to a leader that has no replicas up
-    ZkNodeProps leaderProps = zkStateReader.getLeaderProps(DEFAULT_COLLECTION,
-        SHARD2);
-    
-    String nodeName = leaderProps.get(ZkStateReader.NODE_NAME_PROP);
-    chaosMonkey.stopShardExcept(SHARD2, nodeName);
-    
-    SolrServer client = getClient(nodeName);
-    
-    index_specific(client, "id", docId + 1, t1, "what happens here?");
-    
-    // expire a session...
-    CloudJettyRunner cloudJetty = shardToJetty.get("shard1").get(0);
-    chaosMonkey.expireSession(cloudJetty.jetty);
-    
-    indexr("id", docId + 1, t1, "slip this doc in");
-    
-    waitForRecoveriesToFinish(false);
-    
-    checkShardConsistency("shard1");
     
   }
   
