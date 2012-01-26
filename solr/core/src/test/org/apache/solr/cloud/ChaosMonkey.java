@@ -242,17 +242,19 @@ public class ChaosMonkey {
   
   public JettySolrRunner getRandomJetty(String slice, boolean aggressivelyKillLeaders) throws KeeperException, InterruptedException {
     
-    // get latest cloud state
-    zkStateReader.updateCloudState(true);
-    
-    Slice theShards = zkStateReader.getCloudState().getSlices(collection)
-        .get(slice);
+
     int numRunning = 0;
     int numRecovering = 0;
     int numActive = 0;
     
     for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
       boolean running = true;
+      
+      // get latest cloud state
+      zkStateReader.updateCloudState(true);
+      
+      Slice theShards = zkStateReader.getCloudState().getSlices(collection)
+          .get(slice);
       
       ZkNodeProps props = theShards.getShards().get(cloudJetty.coreNodeName);
       if (props == null) {
