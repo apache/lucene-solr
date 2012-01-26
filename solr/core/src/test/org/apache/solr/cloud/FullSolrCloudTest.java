@@ -278,6 +278,11 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         }
         Thread.sleep(500);
       }
+
+      // also make sure we have a leader for each shard
+      for (int i = 1; i <= sliceCount; i++) {
+        zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + i, 10000);
+      }
     }
 
     updateMappingsFromZk(this.jettys, this.clients);
