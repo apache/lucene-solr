@@ -48,6 +48,7 @@ import java.util.concurrent.*;
 public class UpdateLog implements PluginInfoInitialized {
   public static Logger log = LoggerFactory.getLogger(UpdateLog.class);
   public boolean debug = log.isDebugEnabled();
+  public boolean trace = log.isTraceEnabled();
 
 
   public enum SyncLevel { NONE, FLUSH, FSYNC }
@@ -141,6 +142,9 @@ public class UpdateLog implements PluginInfoInitialized {
     this.uhandler = uhandler;
 
     if (dataDir.equals(lastDataDir)) {
+      if (debug) {
+        log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id, " this is a reopen... nothing else to do.");
+      }
       // on a normal reopen, we currently shouldn't have to do anything
       return;
     }
@@ -150,6 +154,10 @@ public class UpdateLog implements PluginInfoInitialized {
     tlogFiles = getLogList(tlogDir);
     id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
+    if (debug) {
+      log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", existing tlogs=" + Arrays.asList(tlogFiles) + ", next id=" + id);
+    }
+    
     TransactionLog oldLog = null;
     for (String oldLogName : tlogFiles) {
       File f = new File(tlogDir, oldLogName);
@@ -247,8 +255,8 @@ public class UpdateLog implements PluginInfoInitialized {
         map.put(cmd.getIndexedId(), ptr);
       }
 
-      if (debug) {
-        log.debug("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      if (trace) {
+        log.trace("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
       }
     }
   }
@@ -274,8 +282,8 @@ public class UpdateLog implements PluginInfoInitialized {
         oldDeletes.put(br, ptr);
       }
 
-      if (debug) {
-        log.debug("TLOG: added delete for id " + cmd.id + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      if (trace) {
+        log.trace("TLOG: added delete for id " + cmd.id + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
       }
     }
   }
@@ -312,8 +320,8 @@ public class UpdateLog implements PluginInfoInitialized {
 
       LogPtr ptr = new LogPtr(pos, cmd.getVersion());
 
-      if (debug) {
-        log.debug("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
+      if (trace) {
+        log.trace("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
       }
     }
   }
@@ -385,6 +393,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   public void preSoftCommit(CommitUpdateCommand cmd) {
     debug = log.isDebugEnabled(); // refresh our view of debugging occasionally
+    trace = log.isTraceEnabled();
 
     synchronized (this) {
 
