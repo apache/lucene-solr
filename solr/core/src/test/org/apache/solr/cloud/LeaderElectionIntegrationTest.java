@@ -150,7 +150,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       //printLayout(zkServer.getZkAddress());
       
       // poll until leader change is visible
-      for (int j = 0; j < 30; j++) {
+      for (int j = 0; j < 60; j++) {
         String currentLeader = getLeader();
         if(!leader.equals(currentLeader)) {
           break;
