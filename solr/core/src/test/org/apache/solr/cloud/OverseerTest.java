@@ -232,7 +232,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
 
       // make sure all cores have been returned a id
-      for (int i = 0; i < 150; i++) {
+      for (int i = 0; i < 90; i++) {
         int assignedCount = 0;
         for (int j = 0; j < coreCount; j++) {
           if (ids[j] != null) {
@@ -242,7 +242,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         if (coreCount == assignedCount) {
           break;
         }
-        Thread.sleep(200);
+        Thread.sleep(500);
       }
       
       final HashMap<String, AtomicInteger> counters = new HashMap<String,AtomicInteger>();
