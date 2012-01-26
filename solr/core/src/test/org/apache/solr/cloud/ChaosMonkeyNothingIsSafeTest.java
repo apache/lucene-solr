@@ -77,78 +77,88 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   
   @Override
   public void doTest() throws Exception {
-    
-    handle.clear();
-    handle.put("QTime", SKIPVAL);
-    handle.put("timestamp", SKIPVAL);
-    
-    // we cannot do delete by query
-    // as it's not supported for recovery
-    //del("*:*");
-    
-    List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
-    int threadCount = 1;
-    int i = 0;
-    for (i = 0; i < threadCount; i++) {
-      StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
-      threads.add(indexThread);
-      indexThread.start();
-    }
-    
-    FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
-        clients, i * 50000, true);
-    threads.add(ftIndexThread);
-    ftIndexThread.start();
-    
-    chaosMonkey.startTheMonkey(true, 1500);
+    boolean testsSuccesful = false;
     try {
-      Thread.sleep(atLeast(6000));
+      handle.clear();
+      handle.put("QTime", SKIPVAL);
+      handle.put("timestamp", SKIPVAL);
+      
+      // we cannot do delete by query
+      // as it's not supported for recovery
+      // del("*:*");
+      
+      List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
+      int threadCount = 1;
+      int i = 0;
+      for (i = 0; i < threadCount; i++) {
+        StopableIndexingThread indexThread = new StopableIndexingThread(
+            i * 50000, true);
+        threads.add(indexThread);
+        indexThread.start();
+      }
+      
+      FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
+          clients, i * 50000, true);
+      threads.add(ftIndexThread);
+      ftIndexThread.start();
+      
+      chaosMonkey.startTheMonkey(true, 1500);
+      try {
+        Thread.sleep(atLeast(6000));
+      } finally {
+        chaosMonkey.stopTheMonkey();
+      }
+      
+      for (StopableIndexingThread indexThread : threads) {
+        indexThread.safeStop();
+      }
+      
+      // wait for stop...
+      for (StopableIndexingThread indexThread : threads) {
+        indexThread.join();
+      }
+      
+      // fails will happen...
+      // for (StopableIndexingThread indexThread : threads) {
+      // assertEquals(0, indexThread.getFails());
+      // }
+      
+      // try and wait for any replications and what not to finish...
+      
+      Thread.sleep(2000);
+      
+      // wait until there are no recoveries...
+      waitForThingsToLevelOut();
+      
+      // make sure we again have leaders for each shard
+      for (int j = 1; j < sliceCount; j++) {
+        zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
+      }
+      
+      commit();
+      
+      // TODO: assert we didnt kill everyone
+      
+      zkStateReader.updateCloudState(true);
+      assertTrue(zkStateReader.getCloudState().getLiveNodes().size() > 0);
+      
+      checkShardConsistency(false, true);
+      
+      // ensure we have added more than 0 docs
+      long cloudClientDocs = cloudClient.query(new SolrQuery("*:*"))
+          .getResults().getNumFound();
+      
+      assertTrue(cloudClientDocs > 0);
+      
+      if (VERBOSE) System.out.println("control docs:"
+          + controlClient.query(new SolrQuery("*:*")).getResults()
+              .getNumFound() + "\n\n");
+      testsSuccesful = true;
     } finally {
-      chaosMonkey.stopTheMonkey();
+      if (!testsSuccesful) {
+        printLayout();
+      }
     }
-    
-    for (StopableIndexingThread indexThread : threads) {
-      indexThread.safeStop();
-    }
-    
-    // wait for stop...
-    for (StopableIndexingThread indexThread : threads) {
-      indexThread.join();
-    }
-    
-    
-    // fails will happen...
-//    for (StopableIndexingThread indexThread : threads) {
-//      assertEquals(0, indexThread.getFails());
-//    }
-    
-    // try and wait for any replications and what not to finish...
-    
-    Thread.sleep(2000);
-    
-    // wait until there are no recoveries...
-    waitForThingsToLevelOut();
-    
-    // make sure we again have leaders for each shard
-    for (int j = 1; j < sliceCount; j++) {
-      zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
-    }
-
-    commit();
-    
-    // TODO: assert we didnt kill everyone
-    
-    zkStateReader.updateCloudState(true);
-    assertTrue(zkStateReader.getCloudState().getLiveNodes().size() > 0);
-    
-    checkShardConsistency(false, false);
-    
-    // ensure we have added more than 0 docs
-    long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
-
-    assertTrue(cloudClientDocs > 0);
-    
-    if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
   }
 
   private void waitForThingsToLevelOut() throws KeeperException,
