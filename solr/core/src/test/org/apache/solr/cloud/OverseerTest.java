@@ -146,7 +146,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient = null;
     ZkStateReader reader = null;
     final ZkController[] controllers = new ZkController[nodeCount];
-
+    final ExecutorService[] nodeExecutors = new ExecutorService[nodeCount];
     try {
       server.run();
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
@@ -174,7 +174,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
           .getAbsolutePath());
 
       
-      final ExecutorService[] nodeExecutors = new ExecutorService[nodeCount];
       for (int i = 0; i < nodeCount; i++) {
         nodeExecutors[i] = Executors.newFixedThreadPool(1);
       }
@@ -289,6 +288,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
           controllers[i].close();
         }
       server.shutdown();
+      for (int i = 0; i < nodeCount; i++) {
+        nodeExecutors[i].shutdownNow();
+      }
     }
     
     System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
