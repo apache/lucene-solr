@@ -113,7 +113,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     numOpens = SolrIndexSearcher.numOpens.getAndSet(0);
     numCloses = SolrIndexSearcher.numCloses.getAndSet(0);
     if (numOpens != 0 || numCloses != 0) {
-      log.error("startTrackingSearchers: numOpens="+numOpens+"numCloses="+numCloses);
+      // NOTE: some other tests don't use this base class and hence won't reset the counts.
+      log.warn("startTrackingSearchers: numOpens="+numOpens+" numCloses="+numCloses);
+      try {
+        throw new RuntimeException();
+      } catch (Exception e) {
+        log.error("",e);
+      }
       numOpens = numCloses = 0;
     }
   }
