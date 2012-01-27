@@ -76,7 +76,7 @@ public class ByteUtils {
 
   /** Writes UTF8 into the byte array, starting at offset.  The caller should ensure that
    * there is enough space for the worst-case scenario.
-   * @returns the number of bytes written
+   * @return the number of bytes written
    */
   public static int UTF16toUTF8(CharSequence s, int offset, int len, byte[] result, int resultOffset) {
     final int end = offset + len;
