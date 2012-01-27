@@ -1053,14 +1053,13 @@ public final class SolrCore implements SolrInfoMBean {
 
     openSearcherLock.lock();
     try {
-      String newIndexDir = null;
+      String newIndexDir = getNewIndexDir();
       File indexDirFile = null;
       File newIndexDirFile = null;
 
       // if it's not a normal near-realtime update, check that paths haven't changed.
       if (!nrt) {
         indexDirFile = new File(getIndexDir()).getCanonicalFile();
-        newIndexDir = getNewIndexDir();
         newIndexDirFile = new File(newIndexDir).getCanonicalFile();
       }
 
