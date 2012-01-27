@@ -465,7 +465,10 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           if (state.liveDocs == null) {
             state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.numDocs);
           }
-          state.liveDocs.clear(docID);
+          if (state.liveDocs.get(docID)) {
+            state.delCountOnFlush++;
+            state.liveDocs.clear(docID);
+          }
         }
 
         totTF += termDocFreq;

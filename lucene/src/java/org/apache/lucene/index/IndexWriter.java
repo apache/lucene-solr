@@ -2246,7 +2246,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // Must write deleted docs after the CFS so we don't
       // slurp the del file into CFS:
       if (flushedSegment.liveDocs != null) {
-        final int delCount = flushedSegment.segmentInfo.docCount - flushedSegment.liveDocs.count();
+        final int delCount = flushedSegment.delCount;
         assert delCount > 0;
         newSegment.setDelCount(delCount);
         newSegment.advanceDelGen();

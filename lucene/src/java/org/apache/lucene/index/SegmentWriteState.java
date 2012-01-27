@@ -32,6 +32,7 @@ public class SegmentWriteState {
   public final String segmentName;
   public final FieldInfos fieldInfos;
   public final int numDocs;
+  public int delCountOnFlush;
 
   // Deletes to apply while we are flushing the segment.  A
   // Term is enrolled in here if it was deleted at one
@@ -83,5 +84,6 @@ public class SegmentWriteState {
     codec = state.codec;
     this.segmentSuffix = segmentSuffix;
     segDeletes = state.segDeletes;
+    delCountOnFlush = state.delCountOnFlush;
   }
 }

@@ -115,12 +115,14 @@ public class DocumentsWriterPerThread {
     final SegmentInfo segmentInfo;
     final BufferedDeletes segmentDeletes;
     final MutableBits liveDocs;
+    final int delCount;
 
     private FlushedSegment(SegmentInfo segmentInfo,
-        BufferedDeletes segmentDeletes, MutableBits liveDocs) {
+                           BufferedDeletes segmentDeletes, MutableBits liveDocs, int delCount) {
       this.segmentInfo = segmentInfo;
       this.segmentDeletes = segmentDeletes;
       this.liveDocs = liveDocs;
+      this.delCount = delCount;
     }
   }
 
@@ -452,6 +454,7 @@ public class DocumentsWriterPerThread {
       for(int delDocID : pendingDeletes.docIDs) {
         flushState.liveDocs.clear(delDocID);
       }
+      flushState.delCountOnFlush = pendingDeletes.docIDs.size();
       pendingDeletes.bytesUsed.addAndGet(-pendingDeletes.docIDs.size() * BufferedDeletes.BYTES_PER_DEL_DOCID);
       pendingDeletes.docIDs.clear();
     }
@@ -503,7 +506,7 @@ public class DocumentsWriterPerThread {
       doAfterFlush();
       success = true;
 
-      return new FlushedSegment(newSegment, segmentDeletes, flushState.liveDocs);
+      return new FlushedSegment(newSegment, segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
     } finally {
       if (!success) {
         if (segment != null) {
