@@ -433,9 +433,7 @@ public class CoreContainer
       try {
         for (SolrCore core : cores.values()) {
           try {
-            if (!core.isClosed()) {
-              core.close();
-            }
+             core.close();
           } catch (Throwable t) {
             SolrException.log(log, "Error shutting down core", t);
           }
