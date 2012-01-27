@@ -3171,7 +3171,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         readerPool.drop(merge.info);
       }
     }
-    
+
+    // Must close before checkpoint, otherwise IFD won't be
+    // able to delete the held-open files from the merge
+    // readers:
+    closeMergeReaders(merge, false);
+
     // Must note the change to segmentInfos so any commits
     // in-flight don't lose it:
     checkpoint();
@@ -3179,8 +3184,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "after commit: " + segString());
     }
-
-    closeMergeReaders(merge, false);
 
     if (merge.maxNumSegments != -1 && !dropSegment) {
       // cascade the forceMerge:

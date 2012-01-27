@@ -288,7 +288,7 @@ public class SnapPuller {
         return true;
       }
       
-      if (commit.getVersion() == latestVersion && commit.getGeneration() == latestGeneration) {
+      if (!force && commit.getVersion() == latestVersion && commit.getGeneration() == latestGeneration) {
         //master and slave are already in sync just return
         LOG.info("Slave in sync with master.");
         successfulInstall = true;

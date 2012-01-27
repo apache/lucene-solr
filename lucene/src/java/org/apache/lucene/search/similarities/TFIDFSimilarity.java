@@ -333,13 +333,13 @@ import org.apache.lucene.util.SmallFloat;
  *      <i>idf(t)</i> appears for <i>t</i> in both the query and the document,
  *      hence it is squared in the equation.
  *      The default computation for <i>idf(t)</i> in
- *      {@link org.apache.lucene.search.similarities.DefaultSimilarity#idf(int, int) DefaultSimilarity} is:
+ *      {@link org.apache.lucene.search.similarities.DefaultSimilarity#idf(long, long) DefaultSimilarity} is:
  *
  *      <br>&nbsp;<br>
  *      <table cellpadding="2" cellspacing="2" border="0" align="center">
  *        <tr>
  *          <td valign="middle" align="right">
- *            {@link org.apache.lucene.search.similarities.DefaultSimilarity#idf(int, int) idf(t)}&nbsp; = &nbsp;
+ *            {@link org.apache.lucene.search.similarities.DefaultSimilarity#idf(long, long) idf(t)}&nbsp; = &nbsp;
  *          </td>
  *          <td valign="middle" align="center">
  *            1 + log <big>(</big>
@@ -526,7 +526,7 @@ import org.apache.lucene.util.SmallFloat;
 public abstract class TFIDFSimilarity extends Similarity {
   
   /** Computes a score factor based on a term or phrase's frequency in a
-   * document.  This value is multiplied by the {@link #idf(int, int)}
+   * document.  This value is multiplied by the {@link #idf(long, long)}
    * factor for each term in the query and these products are then summed to
    * form the initial score for a document.
    *
@@ -545,7 +545,7 @@ public abstract class TFIDFSimilarity extends Similarity {
   }
 
   /** Computes a score factor based on a term or phrase's frequency in a
-   * document.  This value is multiplied by the {@link #idf(int, int)}
+   * document.  This value is multiplied by the {@link #idf(long, long)}
    * factor for each term in the query and these products are then summed to
    * form the initial score for a document.
    *
@@ -583,8 +583,8 @@ public abstract class TFIDFSimilarity extends Similarity {
    * @throws IOException
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
-    final int df = termStats.docFreq();
-    final int max = collectionStats.maxDoc();
+    final long df = termStats.docFreq();
+    final long max = collectionStats.maxDoc();
     final float idf = idf(df, max);
     return new Explanation(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
   }
@@ -604,12 +604,12 @@ public abstract class TFIDFSimilarity extends Similarity {
    * @throws IOException
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-    final int max = collectionStats.maxDoc();
+    final long max = collectionStats.maxDoc();
     float idf = 0.0f;
     final Explanation exp = new Explanation();
     exp.setDescription("idf(), sum of:");
     for (final TermStatistics stat : termStats ) {
-      final int df = stat.docFreq();
+      final long df = stat.docFreq();
       final float termIdf = idf(df, max);
       exp.addDetail(new Explanation(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
       idf += termIdf;
@@ -631,7 +631,7 @@ public abstract class TFIDFSimilarity extends Similarity {
    * @param numDocs the total number of documents in the collection
    * @return a score factor based on the term's document frequency
    */
-  public abstract float idf(int docFreq, int numDocs);
+  public abstract float idf(long docFreq, long numDocs);
 
   /** Cache of decoded bytes. */
   private static final float[] NORM_TABLE = new float[256];

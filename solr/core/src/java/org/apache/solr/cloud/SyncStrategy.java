@@ -46,7 +46,8 @@ public class SyncStrategy {
   
   public boolean sync(ZkController zkController, SolrCore core,
       ZkNodeProps leaderProps) {
-    zkController.publish(core, ZkStateReader.SYNC);
+    // TODO: look at our state usage of sync
+    // zkController.publish(core, ZkStateReader.SYNC);
     
     // solrcloud_debug
     // System.out.println("SYNC UP");

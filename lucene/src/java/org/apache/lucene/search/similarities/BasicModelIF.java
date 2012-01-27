@@ -26,7 +26,7 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 public class BasicModelIF extends BasicModel {
   @Override
   public final float score(BasicStats stats, float tfn) {
-    int N = stats.getNumberOfDocuments();
+    long N = stats.getNumberOfDocuments();
     long F = stats.getTotalTermFreq();
     return tfn * (float)(log2(1 + (N + 1) / (F + 0.5)));
   }

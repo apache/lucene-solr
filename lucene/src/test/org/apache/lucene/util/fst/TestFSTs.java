@@ -1890,4 +1890,32 @@ public class TestFSTs extends LuceneTestCase {
     assertFalse(arc.isFinal());
     assertEquals(42, arc.output.longValue());
   }
+
+  public void testLargeOutputsOnArrayArcs() throws Exception {
+    final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
+    final Builder<BytesRef> builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    final byte[] bytes = new byte[300];
+    final IntsRef input = new IntsRef();
+    input.grow(1);
+    input.length = 1;
+    final BytesRef output = new BytesRef(bytes);
+    for(int arc=0;arc<6;arc++) {
+      input.ints[0] = arc;
+      output.bytes[0] = (byte) arc;
+      builder.add(input, BytesRef.deepCopyOf(output));
+    }
+
+    final FST<BytesRef> fst = builder.finish();
+    for(int arc=0;arc<6;arc++) {
+      input.ints[0] = arc;
+      final BytesRef result = Util.get(fst, input);
+      assertNotNull(result);
+      assertEquals(300, result.length);
+      assertEquals(result.bytes[result.offset], arc);
+      for(int byteIDX=1;byteIDX<result.length;byteIDX++) {
+        assertEquals(0, result.bytes[result.offset+byteIDX]);
+      }
+    }
+  }
 }

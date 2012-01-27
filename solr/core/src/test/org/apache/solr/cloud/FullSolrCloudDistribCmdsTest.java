@@ -40,6 +40,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Super basic testing, no shard restarting or anything.

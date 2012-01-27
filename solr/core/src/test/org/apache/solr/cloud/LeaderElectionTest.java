@@ -32,7 +32,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.junit.AfterClass;
@@ -154,7 +153,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   
   private String getLeaderUrl(final String collection, final String slice)
       throws KeeperException, InterruptedException {
-    int iterCount = 30;
+    int iterCount = 60;
     while (iterCount-- > 0)
       try {
         byte[] data = zkClient.getData(
@@ -164,7 +163,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             ZkNodeProps.load(data));
         return leaderProps.getCoreUrl();
       } catch (NoNodeException e) {
-        Thread.sleep(100);
+        Thread.sleep(500);
       }
     throw new RuntimeException("Could not get leader props");
   }

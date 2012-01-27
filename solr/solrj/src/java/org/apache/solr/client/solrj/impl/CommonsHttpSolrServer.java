@@ -475,10 +475,10 @@ public class CommonsHttpSolrServer extends SolrServer
       return processor.processResponse(respBody, charset);
     }
     catch (HttpException e) {
-      throw new SolrServerException( e );
+      throw new SolrServerException(getBaseURL(), e);
     }
     catch (IOException e) {
-      throw new SolrServerException( e );
+      throw new SolrServerException(getBaseURL(), e);
     }
     finally {
       method.releaseConnection();

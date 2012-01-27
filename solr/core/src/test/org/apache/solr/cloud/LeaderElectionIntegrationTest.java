@@ -34,7 +34,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreContainer.Initializer;
-import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -150,12 +149,12 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       //printLayout(zkServer.getZkAddress());
       
       // poll until leader change is visible
-      for (int j = 0; j < 30; j++) {
+      for (int j = 0; j < 90; j++) {
         String currentLeader = getLeader();
         if(!leader.equals(currentLeader)) {
           break;
         }
-        Thread.sleep(100);
+        Thread.sleep(500);
       }
       
       leader = getLeader();
@@ -216,23 +215,12 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     //Thread.sleep(100000);
   }
   
-  private String getLeader() throws InterruptedException {
-    String leader = null;
-    int tries = 30;
-    while (tries-- > 0) {
-      ZkNodeProps props;
-      try {
-        reader.updateCloudState(true);
-        props = reader.getLeaderProps("collection1", "shard1", 500);
-        leader = props.get(ZkStateReader.NODE_NAME_PROP);
-        if (leader != null) {
-          break;
-        }
-      } catch (KeeperException e) {
-        // ignore
-      }
-      Thread.sleep(200);
-    }
+  private String getLeader() throws InterruptedException, KeeperException {
+    
+    reader.updateCloudState(true);
+    ZkNodeProps props = reader.getLeaderProps("collection1", "shard1", 15000);
+    String leader = props.get(ZkStateReader.NODE_NAME_PROP);
+    
     return leader;
   }
   

@@ -89,9 +89,9 @@ public abstract class SimilarityBase extends Similarity {
   protected void fillBasicStats(BasicStats stats, CollectionStatistics collectionStats, TermStatistics termStats) {
     // #positions(field) must be >= #positions(term)
     assert collectionStats.sumTotalTermFreq() == -1 || collectionStats.sumTotalTermFreq() >= termStats.totalTermFreq();
-    int numberOfDocuments = collectionStats.maxDoc();
+    long numberOfDocuments = collectionStats.maxDoc();
     
-    int docFreq = termStats.docFreq();
+    long docFreq = termStats.docFreq();
     long totalTermFreq = termStats.totalTermFreq();
 
     // codec does not supply totalTermFreq: substitute docFreq

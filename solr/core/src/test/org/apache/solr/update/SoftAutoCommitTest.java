@@ -191,7 +191,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     long postAdd529 = System.currentTimeMillis();
 
     // wait for first hard/soft commit
-    Long soft529 = monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
+    Long soft529 = monitor.soft.poll(softCommitWaitMillis * 3, MILLISECONDS);
     assertNotNull("soft529 wasn't fast enough", soft529);
     Long manCommit = monitor.hard.poll(0, MILLISECONDS);
 

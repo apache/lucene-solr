@@ -55,6 +55,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TransactionLog {
   public static Logger log = LoggerFactory.getLogger(TransactionLog.class);
+  final boolean debug = log.isDebugEnabled();
+  final boolean trace = log.isTraceEnabled();
 
   public final static String END_MESSAGE="SOLR_TLOG_END";
 
@@ -71,7 +73,6 @@ public class TransactionLog {
   AtomicInteger refcount = new AtomicInteger(1);
   Map<String,Integer> globalStringMap = new HashMap<String, Integer>();
   List<String> globalStringList = new ArrayList<String>();
-  final boolean debug = log.isDebugEnabled();
 
   long snapshot_size;
   int snapshot_numRecords;
@@ -156,6 +157,9 @@ public class TransactionLog {
           addGlobalStrings(globalStrings);
         }
       } else {
+        if (start > 0) {
+          log.error("New transaction log already exists:" + tlogFile + " size=" + raf.length());
+        }
         assert start==0;
         if (start > 0) {
           raf.setLength(0);
@@ -543,8 +547,8 @@ public class TransactionLog {
 
 
       synchronized (TransactionLog.this) {
-        if (debug) {
-          log.debug("Reading log record.  pos="+pos+" currentSize="+fos.size());
+        if (trace) {
+          log.trace("Reading log record.  pos="+pos+" currentSize="+fos.size());
         }
 
         if (pos >= fos.size()) {
