@@ -25,13 +25,13 @@ import org.apache.lucene.index.Terms;
  */
 public class BasicStats extends Similarity.Stats {
   /** The number of documents. */
-  protected int numberOfDocuments;
+  protected long numberOfDocuments;
   /** The total number of tokens in the field. */
   protected long numberOfFieldTokens;
   /** The average field length. */
   protected float avgFieldLength;
   /** The document frequency. */
-  protected int docFreq;
+  protected long docFreq;
   /** The total number of occurrences of this term across all documents. */
   protected long totalTermFreq;
   
@@ -55,12 +55,12 @@ public class BasicStats extends Similarity.Stats {
   // ------------------------- Getter/setter methods -------------------------
   
   /** Returns the number of documents. */
-  public int getNumberOfDocuments() {
+  public long getNumberOfDocuments() {
     return numberOfDocuments;
   }
   
   /** Sets the number of documents. */
-  public void setNumberOfDocuments(int numberOfDocuments) {
+  public void setNumberOfDocuments(long numberOfDocuments) {
     this.numberOfDocuments = numberOfDocuments;
   }
   
@@ -91,12 +91,12 @@ public class BasicStats extends Similarity.Stats {
   }
   
   /** Returns the document frequency. */
-  public int getDocFreq() {
+  public long getDocFreq() {
     return docFreq;
   }
   
   /** Sets the document frequency. */
-  public void setDocFreq(int docFreq) {
+  public void setDocFreq(long docFreq) {
     this.docFreq = docFreq;
   }
   

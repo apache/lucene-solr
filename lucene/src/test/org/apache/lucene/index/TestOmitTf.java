@@ -47,7 +47,7 @@ public class TestOmitTf extends LuceneTestCase {
         @Override public void computeNorm(FieldInvertState state, Norm norm) { norm.setByte(encodeNormValue(state.getBoost())); }
         @Override public float tf(float freq) { return freq; }
         @Override public float sloppyFreq(int distance) { return 2.0f; }
-        @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
+        @Override public float idf(long docFreq, long numDocs) { return 1.0f; }
         @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
           return new Explanation(1.0f, "Inexplicable");
         }
