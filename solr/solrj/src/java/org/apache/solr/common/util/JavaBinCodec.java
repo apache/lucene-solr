@@ -463,44 +463,10 @@ public class JavaBinCodec {
     int end = s.length();
     int maxSize = end * 4;
     if (bytes == null || bytes.length < maxSize) bytes = new byte[maxSize];
-    int upto = 0;
-    for(int i=0;i<end;i++) {
-      final int code = (int) s.charAt(i);
+    int sz = ByteUtils.UTF16toUTF8(s, 0, end, bytes, 0);
 
-      if (code < 0x80)
-        bytes[upto++] = (byte) code;
-      else if (code < 0x800) {
-        bytes[upto++] = (byte) (0xC0 | (code >> 6));
-        bytes[upto++] = (byte)(0x80 | (code & 0x3F));
-      } else if (code < 0xD800 || code > 0xDFFF) {
-        bytes[upto++] = (byte)(0xE0 | (code >> 12));
-        bytes[upto++] = (byte)(0x80 | ((code >> 6) & 0x3F));
-        bytes[upto++] = (byte)(0x80 | (code & 0x3F));
-      } else {
-        // surrogate pair
-        // confirm valid high surrogate
-        if (code < 0xDC00 && (i < end-1)) {
-          int utf32 = (int) s.charAt(i+1);
-          // confirm valid low surrogate and write pair
-          if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) { 
-            utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
-            i++;
-            bytes[upto++] = (byte)(0xF0 | (utf32 >> 18));
-            bytes[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F));
-            bytes[upto++] = (byte)(0x80 | ((utf32 >> 6) & 0x3F));
-            bytes[upto++] = (byte)(0x80 | (utf32 & 0x3F));
-            continue;
-          }
-        }
-        // replace unpaired surrogate or out-of-order low surrogate
-        // with substitution character
-        bytes[upto++] = (byte) 0xEF;
-        bytes[upto++] = (byte) 0xBF;
-        bytes[upto++] = (byte) 0xBD;
-      }
-    }
-    writeTag(STR, upto);
-    daos.write(bytes, 0, upto);
+    writeTag(STR, sz);
+    daos.write(bytes, 0, sz);
   }
 
   byte[] bytes;
@@ -600,15 +566,32 @@ public class JavaBinCodec {
     } else if (val instanceof String) {
       writeStr((String) val);
       return true;
-    } else if (val instanceof Integer) {
-      writeInt(((Integer) val).intValue());
-      return true;
-    } else if (val instanceof Long) {
-      writeLong(((Long) val).longValue());
-      return true;
-    } else if (val instanceof Float) {
-      writeFloat(((Float) val).floatValue());
-      return true;
+    } else if (val instanceof Number) {
+
+      if (val instanceof Integer) {
+        writeInt(((Integer) val).intValue());
+        return true;
+      } else if (val instanceof Long) {
+        writeLong(((Long) val).longValue());
+        return true;
+      } else if (val instanceof Float) {
+        writeFloat(((Float) val).floatValue());
+        return true;
+      } else if (val instanceof Double) {
+        daos.writeByte(DOUBLE);
+        daos.writeDouble(((Double) val).doubleValue());
+        return true;
+      } else if (val instanceof Byte) {
+        daos.writeByte(BYTE);
+        daos.writeByte(((Byte) val).intValue());
+        return true;
+      } else if (val instanceof Short) {
+        daos.writeByte(SHORT);
+        daos.writeShort(((Short) val).intValue());
+        return true;
+      }
+      return false;
+
     } else if (val instanceof Date) {
       daos.writeByte(DATE);
       daos.writeLong(((Date) val).getTime());
@@ -616,18 +599,6 @@ public class JavaBinCodec {
     } else if (val instanceof Boolean) {
       if ((Boolean) val) daos.writeByte(BOOL_TRUE);
       else daos.writeByte(BOOL_FALSE);
-      return true;
-    } else if (val instanceof Double) {
-      daos.writeByte(DOUBLE);
-      daos.writeDouble(((Double) val).doubleValue());
-      return true;
-    } else if (val instanceof Byte) {
-      daos.writeByte(BYTE);
-      daos.writeByte(((Byte) val).intValue());
-      return true;
-    } else if (val instanceof Short) {
-      daos.writeByte(SHORT);
-      daos.writeShort(((Short) val).intValue());
       return true;
     } else if (val instanceof byte[]) {
       writeByteArray((byte[]) val, 0, ((byte[]) val).length);
