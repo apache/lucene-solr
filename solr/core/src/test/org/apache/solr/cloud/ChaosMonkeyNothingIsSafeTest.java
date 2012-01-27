@@ -168,7 +168,11 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
     do {
       waitForRecoveriesToFinish(VERBOSE);
       
-      commit();
+      try {
+        commit();
+      } catch (Exception e) {
+        // we don't care if this commit fails on some nodes
+      }
       
       updateMappingsFromZk(jettys, clients);
       
