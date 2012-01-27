@@ -34,7 +34,6 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.zookeeper.CreateMode;
@@ -644,9 +643,6 @@ public class SolrZkClient {
    * @throws InterruptedException
    */
   public void close() throws InterruptedException {
-    if (isClosed) {
-      throw new AlreadyClosedException("This client has already been closed");
-    }
     isClosed = true;
     keeper.close();
     numCloses.incrementAndGet();
