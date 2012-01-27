@@ -110,8 +110,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   static long numOpens;
   static long numCloses;
   public static void startTrackingSearchers() {
-    numOpens = SolrIndexSearcher.numOpens.get();
-    numCloses = SolrIndexSearcher.numCloses.get();
+    numOpens = SolrIndexSearcher.numOpens.getAndSet(0);
+    numCloses = SolrIndexSearcher.numCloses.getAndSet(0);
+    if (numOpens != 0 || numCloses != 0) {
+      log.error("startTrackingSearchers: numOpens="+numOpens+"numCloses="+numCloses);
+      numOpens = numCloses = 0;
+    }
   }
   static long zkClientNumOpens;
   static long zkClientNumCloses;
