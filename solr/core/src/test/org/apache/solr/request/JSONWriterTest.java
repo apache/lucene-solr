@@ -41,7 +41,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   }    
   
   @Test
-  public void testNaNInf() throws IOException {
+  public void testTypes() throws IOException {
     SolrQueryRequest req = req("dummy");
     SolrQueryResponse rsp = new SolrQueryResponse();
     QueryResponseWriter w = new PythonResponseWriter();
@@ -77,8 +77,12 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     nl.add(null, 42);
     rsp.add("nl", nl);
 
+    rsp.add("byte", Byte.valueOf((byte)-3));
+    rsp.add("short", Short.valueOf((short)-4));
+    rsp.add("bytes", "abc".getBytes("UTF-8"));
+
     w.write(buf, req, rsp);
-    assertEquals("{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]]}", buf.toString());
+    assertEquals("{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]],\"byte\":-3,\"short\":-4,\"bytes\":\"YWJj\"}", buf.toString());
     req.close();
   }
   
