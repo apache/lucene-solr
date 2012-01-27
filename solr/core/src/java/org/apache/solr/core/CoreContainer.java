@@ -489,6 +489,9 @@ public class CoreContainer
     
     SolrCore old = null;
     synchronized (cores) {
+      if (isShutDown) {
+        throw new IllegalStateException("This CoreContainer has been shutdown");
+      }
       old = cores.put(name, core);
       /*
       * set both the name of the descriptor and the name of the
