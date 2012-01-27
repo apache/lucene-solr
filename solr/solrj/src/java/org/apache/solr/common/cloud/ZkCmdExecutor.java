@@ -54,7 +54,6 @@ public class ZkCmdExecutor {
   /**
    * Perform the given operation, retrying if the connection fails
    * 
-   * @return
    * @throws IOException 
    */
   @SuppressWarnings("unchecked")
