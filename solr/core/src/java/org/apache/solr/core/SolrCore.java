@@ -732,8 +732,17 @@ public final class SolrCore implements SolrInfoMBean {
       if (!searcherExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
         log.error("Timeout waiting for searchExecutor to terminate");
       }
+    } catch (InterruptedException e) {
+      searcherExecutor.shutdownNow();
+      try {
+        if (!searcherExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+          log.error("Timeout waiting for searchExecutor to terminate");
+        }
+      } catch (InterruptedException e2) {
+        SolrException.log(log, e2);
+      }
     } catch (Exception e) {
-      SolrException.log(log,e);
+      SolrException.log(log, e);
     }
     try {
       // Since we waited for the searcherExecutor to shut down,
@@ -744,7 +753,7 @@ public final class SolrCore implements SolrInfoMBean {
       // then the searchExecutor will throw an exception when getSearcher()
       // tries to use it, and the exception handling code should close it.
       closeSearcher();
-    } catch (Exception e) {
+    } catch (Throwable e) {
       SolrException.log(log,e);
     }
 
