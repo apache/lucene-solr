@@ -417,7 +417,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // docs, and it's copy-on-write (cloned whenever we need
     // to change it but it's been shared to an external NRT
     // reader).
-    public MutableBits liveDocs;
+    public Bits liveDocs;
 
     // How many further deletions we've done against
     // liveDocs vs when we loaded it or last wrote it:
@@ -494,8 +494,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (reader == null) {
         reader = new SegmentReader(info, config.getReaderTermsIndexDivisor(), context);
         if (liveDocs == null) {
-          // nocommit: still don't like this cast, gotta be a cleaner way.
-          liveDocs = (MutableBits) reader.getLiveDocs();
+          liveDocs = reader.getLiveDocs();
         }
         //System.out.println("ADD seg=" + rld.info + " isMerge=" + isMerge + " " + readerMap.size() + " in pool");
       }
@@ -522,7 +521,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         } else {
           mergeReader = new SegmentReader(info, -1, context);
           if (liveDocs == null) {
-            liveDocs = (MutableBits) mergeReader.getLiveDocs();
+            liveDocs = mergeReader.getLiveDocs();
           }
         }
       }
@@ -538,7 +537,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       assert !shared;
       final boolean didDelete = liveDocs.get(docID);
       if (didDelete) {
-        liveDocs.clear(docID);
+       ((MutableBits) liveDocs).clear(docID);
         pendingDeleteCount++;
         //System.out.println("  new del seg=" + info + " docID=" + docID + " pendingDelCount=" + pendingDeleteCount + " totDelCount=" + (info.docCount-liveDocs.count()));
       }
@@ -627,7 +626,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // until segments file is written:
         boolean success = false;
         try {
-          info.getCodec().liveDocsFormat().writeLiveDocs(liveDocs, dir, info, IOContext.DEFAULT);
+          info.getCodec().liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, dir, info, IOContext.DEFAULT);
           success = true;
         } finally {
           if (!success) {

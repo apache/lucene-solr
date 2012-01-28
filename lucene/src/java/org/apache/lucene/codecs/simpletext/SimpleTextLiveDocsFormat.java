@@ -53,13 +53,13 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   
   @Override
   public MutableBits newLiveDocs(int size) throws IOException {
-    return new SimpleTextBits(size);
+    return new SimpleTextMutableBits(size);
   }
 
   @Override
   public MutableBits newLiveDocs(Bits existing) throws IOException {
     final SimpleTextBits bits = (SimpleTextBits) existing;
-    return bits.clone();
+    return new SimpleTextMutableBits((BitSet)bits.bits.clone(), bits.size);
   }
 
   @Override
@@ -144,15 +144,10 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     }
   }
   
-  static class SimpleTextBits implements MutableBits {
+  // read-only
+  static class SimpleTextBits implements Bits {
     final BitSet bits;
     final int size;
-    
-    SimpleTextBits(int size) {
-      this.size = size;
-      bits = new BitSet(size);
-      bits.set(0, size);
-    }
     
     SimpleTextBits(BitSet bits, int size) {
       this.bits = bits;
@@ -168,16 +163,23 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     public int length() {
       return size;
     }
+  }
+  
+  // read-write
+  static class SimpleTextMutableBits extends SimpleTextBits implements MutableBits {
 
+    SimpleTextMutableBits(int size) {
+      this(new BitSet(size), size);
+      bits.set(0, size);
+    }
+    
+    SimpleTextMutableBits(BitSet bits, int size) {
+      super(bits, size);
+    }
+    
     @Override
     public void clear(int bit) {
       bits.clear(bit);
-    }
-
-    @Override
-    public SimpleTextBits clone() {
-      BitSet clonedBits = (BitSet) bits.clone();
-      return new SimpleTextBits(clonedBits, size);
     }
   }
 }
