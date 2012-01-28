@@ -104,11 +104,12 @@ final class SegmentMerger {
     // IndexWriter.close(false) takes to actually stop the
     // threads.
     
-    setDocMaps();
+    mergeState.mergedDocCount = setDocMaps();
 
     mergeFieldInfos();
     setMatchingSegmentReaders();
-    mergeState.mergedDocCount = mergeFields();
+    int numMerged = mergeFields();
+    assert numMerged == mergeState.mergedDocCount;
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, segment, mergeState.fieldInfos, mergeState.mergedDocCount, termIndexInterval, codec, null, context);
     mergeTerms(segmentWriteState);
@@ -119,7 +120,7 @@ final class SegmentMerger {
     }
 
     if (mergeState.fieldInfos.hasVectors()) {
-      int numMerged = mergeVectors();
+      numMerged = mergeVectors();
       assert numMerged == mergeState.mergedDocCount;
     }
 
@@ -291,7 +292,7 @@ final class SegmentMerger {
   }
 
   // NOTE: removes any "all deleted" readers from mergeState.readers
-  private void setDocMaps() throws IOException {
+  private int setDocMaps() throws IOException {
     final int numReaders = mergeState.readers.size();
 
     // Remap docIDs
@@ -308,8 +309,6 @@ final class SegmentMerger {
 
       final MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(i);
 
-      // nocommit -- assert that final doc count ==
-      // mergedDocCount from stored fields and term vectors
       mergeState.docBase[i] = docBase;
       final int maxDoc = reader.reader.maxDoc();
       final int docCount;
@@ -359,6 +358,8 @@ final class SegmentMerger {
       mergeState.docMaps = shrink(mergeState.docMaps, numReadersLeft);
       mergeState.docBase = shrink(mergeState.docBase, numReadersLeft);
     }
+    
+    return docBase;
   }
 
   private final void mergeTerms(SegmentWriteState segmentWriteState) throws CorruptIndexException, IOException {
