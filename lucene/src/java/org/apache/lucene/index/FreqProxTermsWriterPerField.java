@@ -461,7 +461,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           // writing its postings; this would be
           // deterministic (just for this Term's docs).
           
-          // nocommit: totally wrong to do this reach-around here, and this way
+          // TODO: can we do this reach-around in a cleaner way????
           if (state.liveDocs == null) {
             state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.numDocs);
           }
