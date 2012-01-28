@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
@@ -41,10 +42,11 @@ public class MergeState {
   }
 
   public FieldInfos fieldInfos;
-  public List<IndexReaderAndLiveDocs> readers;    // Readers & liveDocs being merged
-  public int[][] docMaps;                         // Maps docIDs around deletions
-  public int[] docBase;                           // New docID base per reader
-  public int mergedDocCount;                      // Total # merged docs
+  public List<IndexReaderAndLiveDocs> readers;        // Readers & liveDocs being merged
+  public int[][] docMaps;                             // Maps docIDs around deletions
+  public int[] docBase;                               // New docID base per reader
+  public Map<SegmentInfo,Integer> segmentDocCounts;   // Non-deleted docCount per reader
+  public int mergedDocCount;                          // Total # merged docs
   public CheckAbort checkAbort;
   public InfoStream infoStream;
 

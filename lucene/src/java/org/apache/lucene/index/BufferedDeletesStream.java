@@ -206,7 +206,7 @@ class BufferedDeletesStream {
 
         delIDX--;
       } else if (packet != null && segGen == packet.delGen()) {
-        assert packet.isSegmentPrivate : "Packet and Segments deletegen can only match on a segment private del packet";
+        assert packet.isSegmentPrivate : "Packet and Segments deletegen can only match on a segment private del packet gen=" + segGen;
         //System.out.println("  eq");
 
         // Lock order: IW -> BD -> RP

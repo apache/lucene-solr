@@ -3036,10 +3036,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // newly flushed deletes but mapping them to the new
         // docIDs.
 
+        // Since we copy-on-write, if any new deletes were
+        // applied after merging has started, we can just
+        // check if the before/after liveDocs have changed.
+        // If so, we must carefully merge the liveDocs one
+        // doc at a time:
         if (currentLiveDocs != prevLiveDocs) {
+
           // This means this segment received new deletes
           // since we started the merge, so we
           // must merge them:
+          final int startDocUpto = docUpto;
           for(int j=0;j<docCount;j++) {
             if (!prevLiveDocs.get(j)) {
               assert !currentLiveDocs.get(j);
@@ -3055,13 +3062,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         } else {
-          final int readerDocCount;
-          if (i == sourceSegments.size()-1) {
-            readerDocCount = mergeState.mergedDocCount - mergeState.docBase[i];
-          } else {
-            readerDocCount = mergeState.docBase[i+1] - mergeState.docBase[i];
-          }
-          docUpto += readerDocCount;
+          assert mergeState.readers != null;
+          assert mergeState.segmentDocCounts != null;
+          docUpto += mergeState.segmentDocCounts.get(info);
         }
       } else if (currentLiveDocs != null) {
         // This segment had no deletes before but now it
@@ -3600,10 +3603,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         }
-
         merge.readerLiveDocs.add(liveDocs);
         merge.readers.add(reader);
-
         merger.add(reader, liveDocs);
         segUpto++;
       }
