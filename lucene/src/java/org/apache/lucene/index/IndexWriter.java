@@ -447,6 +447,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return rc > myRefCounts;
     }
 
+    // Call only from assert!
+    public synchronized boolean verifyDocCounts() {
+      int count;
+      if (liveDocs != null) {
+        count = 0;
+        for(int docID=0;docID<info.docCount;docID++) {
+          if (liveDocs.get(docID)) {
+            count++;
+          }
+        }
+      } else {
+        count = info.docCount;
+      }
+
+      assert info.docCount - info.getDelCount() - pendingDeleteCount == count: "info.docCount=" + info.docCount + " info.getDelCount()=" + info.getDelCount() + " pendingDeleteCount=" + pendingDeleteCount + " count=" + count;;
+      return true;
+    }
+
     // Returns true if any reader remains
     public synchronized boolean removeReader(SegmentReader sr, boolean drop) throws IOException {
       if (sr == reader) {
@@ -517,6 +535,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     public synchronized boolean delete(int docID) {
       assert liveDocs != null;
       assert docID >= 0 && docID < liveDocs.length();
+      assert !shared;
       final boolean didDelete = liveDocs.get(docID);
       if (didDelete) {
         liveDocs.clear(docID);
@@ -2981,7 +3000,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  saves the resulting deletes file (incrementing the
    *  delete generation for merge.info).  If no deletes were
    *  flushed, no new deletes file is saved. */
-  synchronized private ReadersAndLiveDocs commitMergedDeletes(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
+  synchronized private ReadersAndLiveDocs commitMergedDeletes(MergePolicy.OneMerge merge) throws IOException {
 
     assert testPoint("startCommitMergeDeletes");
 
@@ -3048,7 +3067,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         } else {
-          docUpto += mergeState.segmentDocCounts.get(info);
+          docUpto += info.docCount - info.getDelCount() - rld.pendingDeleteCount;
         }
       } else if (currentLiveDocs != null) {
         // This segment had no deletes before but now it
@@ -3089,7 +3108,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return mergedDeletes;
   }
 
-  synchronized private boolean commitMerge(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
+  synchronized private boolean commitMerge(MergePolicy.OneMerge merge) throws IOException {
 
     assert testPoint("startCommitMerge");
 
@@ -3116,7 +3135,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return false;
     }
 
-    final ReadersAndLiveDocs mergedDeletes = commitMergedDeletes(merge, mergeState);
+    final ReadersAndLiveDocs mergedDeletes = commitMergedDeletes(merge);
 
     assert mergedDeletes == null || mergedDeletes.pendingDeleteCount != 0;
 
@@ -3577,6 +3596,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // we pull a copy:
           liveDocs = rld.getReadOnlyLiveDocs();
 
+          assert rld.verifyDocCounts();
+
           if (infoStream.isEnabled("IW")) {
             if (rld.pendingDeleteCount != 0) {
               infoStream.message("IW", "seg=" + info + " delCount=" + info.getDelCount() + " pendingDelCount=" + rld.pendingDeleteCount);
@@ -3589,7 +3610,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
         merge.readerLiveDocs.add(liveDocs);
         merge.readers.add(reader);
-        merger.add(reader, liveDocs);
+        final int delCount = rld.pendingDeleteCount + info.getDelCount();
+        assert delCount <= info.docCount;
+        if (delCount < info.docCount) {
+          merger.add(reader, liveDocs);
+        }
         segUpto++;
       }
 
@@ -3691,7 +3716,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Force READ context because we merge deletes onto
       // this reader:
-      if (!commitMerge(merge, mergeState)) {
+      if (!commitMerge(merge)) {
         // commitMerge will return false if this merge was aborted
         return 0;
       }

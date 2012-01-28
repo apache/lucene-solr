@@ -279,18 +279,6 @@ final class SegmentMerger {
     }
   }
 
-  private int[] shrink(int[] in, int size) {
-    final int[] newArray = new int[size];
-    System.arraycopy(in, 0, newArray, 0, size);
-    return newArray;
-  }
-
-  private int[][] shrink(int[][] in, int size) {
-    final int[][] newArray = new int[size][];
-    System.arraycopy(in, 0, newArray, 0, size);
-    return newArray;
-  }
-
   // NOTE: removes any "all deleted" readers from mergeState.readers
   private int setDocMaps() throws IOException {
     final int numReaders = mergeState.readers.size();
@@ -298,7 +286,6 @@ final class SegmentMerger {
     // Remap docIDs
     mergeState.docMaps = new int[numReaders][];
     mergeState.docBase = new int[numReaders];
-    mergeState.segmentDocCounts = new HashMap<SegmentInfo,Integer>();
     mergeState.dirPayloadProcessor = new PayloadProcessorProvider.DirPayloadProcessor[numReaders];
     mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[numReaders];
 
@@ -332,16 +319,6 @@ final class SegmentMerger {
         docMap = null;
       }
 
-      if (reader.reader instanceof SegmentReader) {
-        mergeState.segmentDocCounts.put(((SegmentReader) reader.reader).getSegmentInfo(), docCount);
-      }
-
-      if (docCount == 0) {
-        // Skip this reader (all docs are deleted):
-        mergeState.readers.remove(i);
-        continue;
-      }
-
       mergeState.docMaps[i] = docMap;
       docBase += docCount;
 
@@ -352,13 +329,6 @@ final class SegmentMerger {
       i++;
     }
 
-    final int numReadersLeft = mergeState.readers.size();
-
-    if (numReadersLeft < mergeState.docMaps.length) {
-      mergeState.docMaps = shrink(mergeState.docMaps, numReadersLeft);
-      mergeState.docBase = shrink(mergeState.docBase, numReadersLeft);
-    }
-    
     return docBase;
   }
 
