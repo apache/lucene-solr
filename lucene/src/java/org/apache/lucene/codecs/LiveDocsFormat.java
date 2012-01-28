@@ -28,6 +28,7 @@ import org.apache.lucene.util.MutableBits;
 
 public abstract class LiveDocsFormat {
   public abstract MutableBits newLiveDocs(int size) throws IOException;
+  public abstract MutableBits newLiveDocs(Bits existing) throws IOException;
   public abstract Bits readLiveDocs(Directory dir, SegmentInfo info, IOContext context) throws IOException;
   public abstract void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException;
   public abstract void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException;

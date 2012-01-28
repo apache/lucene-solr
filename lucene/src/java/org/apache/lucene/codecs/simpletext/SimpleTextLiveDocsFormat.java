@@ -57,6 +57,12 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
+  public MutableBits newLiveDocs(Bits existing) throws IOException {
+    final SimpleTextBits bits = (SimpleTextBits) existing;
+    return bits.clone();
+  }
+
+  @Override
   public Bits readLiveDocs(Directory dir, SegmentInfo info, IOContext context) throws IOException {
     assert info.hasDeletions();
     BytesRef scratch = new BytesRef();

@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -475,7 +476,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (reader == null) {
         reader = new SegmentReader(info, config.getReaderTermsIndexDivisor(), context);
         if (liveDocs == null) {
-          // nocommit: nuke cast
           liveDocs = (MutableBits) reader.getLiveDocs();
         }
         //System.out.println("ADD seg=" + rld.info + " isMerge=" + isMerge + " " + readerMap.size() + " in pool");
@@ -565,11 +565,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // SegmentReader sharing the current liveDocs
         // instance; must now make a private clone so we can
         // change it:
+        LiveDocsFormat liveDocsFormat = info.getCodec().liveDocsFormat();
         if (liveDocs == null) {
           //System.out.println("create BV seg=" + info);
-          liveDocs = info.getCodec().liveDocsFormat().newLiveDocs(info.docCount);
+          liveDocs = liveDocsFormat.newLiveDocs(info.docCount);
         } else {
-          liveDocs = liveDocs.clone();
+          liveDocs = liveDocsFormat.newLiveDocs(liveDocs);
         }
         shared = false;
       } else {

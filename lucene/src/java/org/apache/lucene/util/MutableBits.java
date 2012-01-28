@@ -17,7 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-public interface MutableBits extends Bits, Cloneable {
+public interface MutableBits extends Bits {
   public void clear(int bit);
-  public MutableBits clone();
 }
