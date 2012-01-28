@@ -23,8 +23,10 @@ import java.util.*;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -130,20 +132,29 @@ public abstract class TextResponseWriter {
       else {
         writeStr(name, f.stringValue(), true);
       }
-    } else if (val instanceof Integer) {
-      writeInt(name, val.toString());
+    } else if (val instanceof Number) {
+      if (val instanceof Integer) {
+        writeInt(name, val.toString());
+      } else if (val instanceof Long) {
+        writeLong(name, val.toString());
+      } else if (val instanceof Float) {
+        // we pass the float instead of using toString() because
+        // it may need special formatting. same for double.
+        writeFloat(name, ((Float)val).floatValue());
+      } else if (val instanceof Double) {
+        writeDouble(name, ((Double)val).doubleValue());        
+      } else if (val instanceof Short) {
+        writeInt(name, val.toString());
+      } else if (val instanceof Byte) {
+        writeInt(name, val.toString());
+      } else {
+        // default... for debugging only
+        writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
+      }
     } else if (val instanceof Boolean) {
       writeBool(name, val.toString());
-    } else if (val instanceof Long) {
-      writeLong(name, val.toString());
     } else if (val instanceof Date) {
       writeDate(name,(Date)val);
-    } else if (val instanceof Float) {
-      // we pass the float instead of using toString() because
-      // it may need special formatting. same for double.
-      writeFloat(name, ((Float)val).floatValue());
-    } else if (val instanceof Double) {
-      writeDouble(name, ((Double)val).doubleValue());
     } else if (val instanceof Document) {
       SolrDocument doc = toSolrDocument( (Document)val );
       DocTransformer transformer = returnFields.getTransformer();
@@ -181,6 +192,12 @@ public abstract class TextResponseWriter {
       writeArray(name,(Object[])val);
     } else if (val instanceof Iterator) {
       writeArray(name,(Iterator)val);
+    } else if (val instanceof byte[]) {
+      byte[] arr = (byte[])val;
+      writeByteArr(name, arr, 0, arr.length);
+    } else if (val instanceof BytesRef) {
+      BytesRef arr = (BytesRef)val;
+      writeByteArr(name, arr.bytes, arr.offset, arr.length);
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
@@ -334,4 +351,7 @@ public abstract class TextResponseWriter {
   /** if this form of the method is called, val is the Solr ISO8601 based date format */
   public abstract void writeDate(String name, String val) throws IOException;
 
+  public void writeByteArr(String name, byte[] buf, int offset, int len) throws IOException {
+    writeStr(name, Base64.byteArrayToBase64(buf, offset, len), false);
+  }
 }

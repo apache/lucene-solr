@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexOutput;
@@ -63,6 +64,9 @@ public class PreFlexRWSegmentInfosWriter extends SegmentInfosWriter {
   
   /** Save a single segment's info. */
   private void writeInfo(IndexOutput output, SegmentInfo si) throws IOException {
+    // we are about to write this SI in 3.x format, dropping all codec information, etc.
+    // so it had better be a 3.x segment or you will get very confusing errors later.
+    assert si.getCodec() instanceof Lucene3xCodec : "broken test, trying to mix preflex with other codecs";
     assert si.getDelCount() <= si.docCount: "delCount=" + si.getDelCount() + " docCount=" + si.docCount + " segment=" + si.name;
     // Write the Lucene version that created this segment, since 3.1
     output.writeString(si.getVersion());

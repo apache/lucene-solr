@@ -115,11 +115,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (numOpens != 0 || numCloses != 0) {
       // NOTE: some other tests don't use this base class and hence won't reset the counts.
       log.warn("startTrackingSearchers: numOpens="+numOpens+" numCloses="+numCloses);
-      try {
-        throw new RuntimeException();
-      } catch (Exception e) {
-        log.error("",e);
-      }
       numOpens = numCloses = 0;
     }
   }
@@ -137,7 +132,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      // wait a bit in case any ending threads have anything to release
      int retries = 0;
      while (endNumOpens - numOpens != endNumCloses - numCloses) {
-       if (retries++ > 30) {
+       if (retries++ > 60) {
          break;
        }
        try {

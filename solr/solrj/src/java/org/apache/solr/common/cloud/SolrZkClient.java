@@ -118,7 +118,6 @@ public class SolrZkClient {
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect, int clientConnectTimeout) throws InterruptedException,
       TimeoutException, IOException {
-    numOpens.incrementAndGet();
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
         + zkServerAddress, this, zkServerAddress, zkClientTimeout, strat, onReconnect);
     strat.connect(zkServerAddress, zkClientTimeout, connManager,
@@ -141,6 +140,7 @@ public class SolrZkClient {
           }
         });
     connManager.waitForConnected(clientConnectTimeout);
+    numOpens.incrementAndGet();
   }
 
   /**

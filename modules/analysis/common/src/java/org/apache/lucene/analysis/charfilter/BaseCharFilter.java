@@ -95,9 +95,9 @@ public abstract class BaseCharFilter extends CharFilter {
       diffs = ArrayUtil.grow(diffs);
     }
     
-    assert (size == 0 || off >= offsets[size])
+    assert (size == 0 || off >= offsets[size - 1])
         : "Offset #" + size + "(" + off + ") is less than the last recorded offset "
-          + offsets[size] + "\n" + Arrays.toString(offsets) + "\n" + Arrays.toString(diffs);
+          + offsets[size - 1] + "\n" + Arrays.toString(offsets) + "\n" + Arrays.toString(diffs);
     
     if (size == 0 || off != offsets[size - 1]) {
       offsets[size] = off;
