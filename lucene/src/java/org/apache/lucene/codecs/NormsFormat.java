@@ -30,8 +30,6 @@ import org.apache.lucene.store.Directory;
  */
 public abstract class NormsFormat {
   public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
-  @Deprecated
-  public abstract PerDocProducer docsProducer(SegmentReadState state, Directory separateNormsDir) throws IOException;
   public abstract PerDocProducer docsProducer(SegmentReadState state) throws IOException;
   public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
   
@@ -41,4 +39,13 @@ public abstract class NormsFormat {
    */
   @Deprecated
   public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {};
+  
+  /**
+   * Note: this should not be overridden!
+   * @deprecated
+   */
+  @Deprecated
+  public PerDocProducer docsProducer(SegmentReadState state, Directory separateNormsDir) throws IOException {
+    return docsProducer(state);
+  }
 }

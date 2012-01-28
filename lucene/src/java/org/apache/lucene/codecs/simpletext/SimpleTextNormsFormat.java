@@ -51,12 +51,5 @@ public class SimpleTextNormsFormat extends NormsFormat {
       throws IOException {
     SimpleTextNormsConsumer.files(dir, info, files);
 
-  }
-
-  @Override
-  public PerDocProducer docsProducer(SegmentReadState state,
-      Directory separateNormsDir) throws IOException {
-    return docsProducer(state);
-  }
-   
+  }   
 }
