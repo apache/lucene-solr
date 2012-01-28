@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.NamedSPILoader;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -43,7 +44,11 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     return name;
   }
   
+  /** Populates <code>files</code> with all filenames needed for 
+   * the <code>info</code> segment.
+   */
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    assert (dir instanceof CompoundFileDirectory) == false;
     postingsFormat().files(dir, info, "", files);
     storedFieldsFormat().files(dir, info, files);
     termVectorsFormat().files(dir, info, files);
@@ -54,6 +59,9 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     normsFormat().files(dir, info, files);
   }
   
+  /** Populates <code>files</code> with any filenames that are
+   * stored outside of CFS for the <code>info</code> segment.
+   */
   public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     liveDocsFormat().separateFiles(dir, info, files);
     normsFormat().separateFiles(dir, info, files);
