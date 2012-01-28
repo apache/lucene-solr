@@ -17,10 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-public interface MutableBits extends Bits,Cloneable {
+public interface MutableBits extends Bits, Cloneable {
   public void clear(int bit);
-  // nocommit: remove this from this interface somehow? (used by DWPT infostream at least)
-  public int count();
-  
   public MutableBits clone();
 }

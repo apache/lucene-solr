@@ -169,11 +169,6 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     }
 
     @Override
-    public int count() {
-      return bits.cardinality();
-    }
-
-    @Override
     public SimpleTextBits clone() {
       BitSet clonedBits = (BitSet) bits.clone();
       return new SimpleTextBits(clonedBits, size);

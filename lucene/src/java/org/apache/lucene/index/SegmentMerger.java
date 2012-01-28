@@ -308,6 +308,8 @@ final class SegmentMerger {
 
       final MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(i);
 
+      // nocommit -- assert that final doc count ==
+      // mergedDocCount from stored fields and term vectors
       mergeState.docBase[i] = docBase;
       final int maxDoc = reader.reader.maxDoc();
       final int docCount;

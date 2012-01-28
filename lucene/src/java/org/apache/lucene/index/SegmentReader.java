@@ -62,7 +62,6 @@ public final class SegmentReader extends IndexReader {
         liveDocs = null;
       }
       numDocs = si.docCount - si.getDelCount();
-      assert checkLiveCounts(false);
       success = true;
     } finally {
       // With lock-less commits, it's entirely possible (and
@@ -94,7 +93,6 @@ public final class SegmentReader extends IndexReader {
     // ... but load our own deleted docs:
     liveDocs = si.getCodec().liveDocsFormat().readLiveDocs(si.dir, si, context);
     numDocs = si.docCount - si.getDelCount();
-    assert checkLiveCounts(false);
 
     // We share core w/ parent:
     parent.core.incRef();
@@ -114,34 +112,12 @@ public final class SegmentReader extends IndexReader {
     this.liveDocs = liveDocs;
 
     this.numDocs = numDocs;
-
-    assert checkLiveCounts(true);
   }
 
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
     return liveDocs;
-  }
-
-  private boolean checkLiveCounts(boolean isNRT) throws IOException {
-    MutableBits liveDocs = (MutableBits) this.liveDocs;
-    if (liveDocs != null) {
-      if (liveDocs.length() != si.docCount) {
-        throw new CorruptIndexException("document count mismatch: deleted docs count " + liveDocs.length() + " vs segment doc count " + si.docCount + " segment=" + si.name);
-      }
-
-      final int count = liveDocs.count();
-
-      // Verify our docCount matches:
-      assert numDocs == count :
-      "delete count mismatch: numDocs=" + numDocs + " vs MutableBits=" + (si.docCount-count);
-
-      assert isNRT || si.docCount - si.getDelCount() == count :
-        "si.docCount=" + si.docCount + "si.getDelCount()=" + si.getDelCount() + " recomputedCount=" + count;
-    }
-  
-    return true;
   }
 
   @Override

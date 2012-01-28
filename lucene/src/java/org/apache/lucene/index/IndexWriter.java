@@ -468,17 +468,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return reader != null || mergeReader != null;
     }
 
-    // Called only from assert
-    private boolean countsMatch() {
-      if (liveDocs == null) {
-        assert pendingDeleteCount == 0;
-      } else {
-        assert liveDocs.count() == info.docCount - info.getDelCount() - pendingDeleteCount :
-        "liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.docCount + " info.delCount=" + info.getDelCount() + " pendingDelCount=" + pendingDeleteCount;
-      }
-      return true;
-    }
-
     // Get reader for searching/deleting
     public synchronized SegmentReader getReader(IOContext context) throws IOException {
       //System.out.println("  livedocs=" + rld.liveDocs);
@@ -559,7 +548,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         getReader(context).decRef();
         assert reader != null;
       }
-      assert countsMatch();
       shared = true;
       if (liveDocs != null) {
         return new SegmentReader(reader, liveDocs, info.docCount - info.getDelCount() - pendingDeleteCount);
@@ -593,7 +581,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       //System.out.println("getROLiveDocs seg=" + info);
       assert Thread.holdsLock(IndexWriter.this);
       shared = true;
-      assert countsMatch();
       //if (liveDocs != null) {
       //System.out.println("  liveCount=" + liveDocs.count());
       //}
@@ -612,6 +599,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // Save in case we need to rollback on failure:
         final SegmentInfo sav = (SegmentInfo) info.clone();
         info.advanceDelGen();
+        info.setDelCount(info.getDelCount() + pendingDeleteCount);
 
         // We can write directly to the actual name (vs to a
         // .tmp & renaming it) because the file is not live
@@ -625,9 +613,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             info.reset(sav);
           }
         }
-        assert (info.docCount - liveDocs.count()) == info.getDelCount() + pendingDeleteCount:
-           "delete count mismatch during commit: seg=" + info + " info.delCount=" + info.getDelCount() + " vs MutableBits=" + (info.docCount-liveDocs.count() + " pendingDelCount=" + pendingDeleteCount);
-        info.setDelCount(info.getDelCount() + pendingDeleteCount);
         pendingDeleteCount = 0;
         return true;
       } else {
@@ -3046,7 +3031,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // This means this segment received new deletes
           // since we started the merge, so we
           // must merge them:
-          final int startDocUpto = docUpto;
           for(int j=0;j<docCount;j++) {
             if (!prevLiveDocs.get(j)) {
               assert !currentLiveDocs.get(j);
@@ -3062,8 +3046,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         } else {
-          assert mergeState.readers != null;
-          assert mergeState.segmentDocCounts != null;
           docUpto += mergeState.segmentDocCounts.get(info);
         }
       } else if (currentLiveDocs != null) {

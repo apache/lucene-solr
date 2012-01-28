@@ -26,14 +26,20 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   @Override
   public Bits readLiveDocs(Directory dir, SegmentInfo info, IOContext context) throws IOException {
     String filename = IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen());
-    return new BitVector(dir, filename, context);
+    final BitVector liveDocs = new BitVector(dir, filename, context);
+    assert liveDocs.count() == info.docCount - info.getDelCount();
+    assert liveDocs.length() == info.docCount;
+    return liveDocs;
   }
 
   @Override
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException {
     // nocommit: this api is ugly...
     String filename = IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen());
-    ((BitVector)bits).write(dir, filename, context);
+    final BitVector liveDocs = (BitVector) bits;
+    assert liveDocs.count() == info.docCount - info.getDelCount();
+    assert liveDocs.length() == info.docCount;
+    liveDocs.write(dir, filename, context);
   }
 
   @Override
