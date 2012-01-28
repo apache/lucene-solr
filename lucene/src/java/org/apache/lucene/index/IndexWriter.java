@@ -551,7 +551,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
       shared = true;
       if (liveDocs != null) {
-        return new SegmentReader(reader, liveDocs, info.docCount - info.getDelCount() - pendingDeleteCount);
+        return new SegmentReader(reader.getSegmentInfo(), reader.core, liveDocs, info.docCount - info.getDelCount() - pendingDeleteCount);
       } else {
         reader.incRef();
         return reader;

@@ -42,7 +42,7 @@ public final class SegmentReader extends IndexReader {
   // tells us the docCount:
   private final int numDocs;
 
-  private final SegmentCoreReaders core;
+  final SegmentCoreReaders core;
 
   /**
    * @throws CorruptIndexException if the index is corrupt
@@ -74,38 +74,21 @@ public final class SegmentReader extends IndexReader {
     }
   }
 
-  // TODO: really these next 2 ctors could take
-  // SegmentCoreReaders... that's all we do w/ the parent
-  // SR:
-
   // Create new SegmentReader sharing core from a previous
   // SegmentReader and loading new live docs from a new
   // deletes file.  Used by openIfChanged.
-  SegmentReader(SegmentInfo si, SegmentReader parent, IOContext context) throws IOException {
-    assert si.dir == parent.getSegmentInfo().dir;
-    this.si = si;
-
-    // It's no longer possible to unDeleteAll, so, we can
-    // only be created if we have deletions:
-    assert si.hasDeletions();
-
-    // ... but load our own deleted docs:
-    liveDocs = si.getCodec().liveDocsFormat().readLiveDocs(si.dir, si, context);
-    numDocs = si.docCount - si.getDelCount();
-
-    // We share core w/ parent:
-    parent.core.incRef();
-    core = parent.core;
+  SegmentReader(SegmentInfo si, SegmentCoreReaders core, IOContext context) throws IOException {
+    this(si, core, si.getCodec().liveDocsFormat().readLiveDocs(si.dir, si, context), si.docCount - si.getDelCount());
   }
 
   // Create new SegmentReader sharing core from a previous
   // SegmentReader and using the provided in-memory
   // liveDocs.  Used by IndexWriter to provide a new NRT
   // reader:
-  SegmentReader(SegmentReader parent, Bits liveDocs, int numDocs) throws IOException {
-    this.si = parent.si;
-    parent.core.incRef();
-    this.core = parent.core;
+  SegmentReader(SegmentInfo si, SegmentCoreReaders core, Bits liveDocs, int numDocs) throws IOException {
+    this.si = si;
+    this.core = core;
+    core.incRef();
 
     assert liveDocs != null;
     this.liveDocs = liveDocs;

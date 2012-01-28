@@ -166,7 +166,9 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
           } else {
             readerShared[i] = false;
             // Steal the ref returned by SegmentReader ctor:
-            newReaders[i] = new SegmentReader(infos.info(i), newReaders[i], IOContext.READ);
+            assert infos.info(i).dir == newReaders[i].getSegmentInfo().dir;
+            assert infos.info(i).hasDeletions();
+            newReaders[i] = new SegmentReader(infos.info(i), newReaders[i].core, IOContext.READ);
           }
         }
         success = true;
