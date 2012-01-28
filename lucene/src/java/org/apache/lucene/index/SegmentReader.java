@@ -26,7 +26,6 @@ import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.MutableBits;
 
 /**
  * @lucene.experimental
@@ -103,7 +102,7 @@ public final class SegmentReader extends IndexReader {
   // SegmentReader and using the provided in-memory
   // liveDocs.  Used by IndexWriter to provide a new NRT
   // reader:
-  SegmentReader(SegmentReader parent, MutableBits liveDocs, int numDocs) throws IOException {
+  SegmentReader(SegmentReader parent, Bits liveDocs, int numDocs) throws IOException {
     this.si = parent.si;
     parent.core.incRef();
     this.core = parent.core;

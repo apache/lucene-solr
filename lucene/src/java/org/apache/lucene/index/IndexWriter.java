@@ -476,6 +476,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (reader == null) {
         reader = new SegmentReader(info, config.getReaderTermsIndexDivisor(), context);
         if (liveDocs == null) {
+          // nocommit: still don't like this cast, gotta be a cleaner way.
           liveDocs = (MutableBits) reader.getLiveDocs();
         }
         //System.out.println("ADD seg=" + rld.info + " isMerge=" + isMerge + " " + readerMap.size() + " in pool");
