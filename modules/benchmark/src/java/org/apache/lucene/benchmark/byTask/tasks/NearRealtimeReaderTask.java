@@ -18,6 +18,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.ArrayUtil;
@@ -59,7 +60,7 @@ public class NearRealtimeReaderTask extends PerfTask {
     }
     
     long t = System.currentTimeMillis();
-    IndexReader r = IndexReader.open(w, true);
+    DirectoryReader r = IndexReader.open(w, true);
     runData.setIndexReader(r);
     // Transfer our reference to runData
     r.decRef();
@@ -77,7 +78,7 @@ public class NearRealtimeReaderTask extends PerfTask {
       }
 
       t = System.currentTimeMillis();
-      final IndexReader newReader = IndexReader.openIfChanged(r);
+      final DirectoryReader newReader = DirectoryReader.openIfChanged(r);
       if (newReader != null) {
         final int delay = (int) (System.currentTimeMillis()-t);
         if (reopenTimes.length == reopenCount) {

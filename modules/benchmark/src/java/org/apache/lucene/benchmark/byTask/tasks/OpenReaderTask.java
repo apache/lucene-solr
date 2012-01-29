@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
@@ -42,7 +43,7 @@ public class OpenReaderTask extends PerfTask {
   @Override
   public int doLogic() throws IOException {
     Directory dir = getRunData().getDirectory();
-    IndexReader r = null;
+    DirectoryReader r = null;
     if (commitUserData != null) {
       r = IndexReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData)); 
     } else {
@@ -71,7 +72,7 @@ public class OpenReaderTask extends PerfTask {
   }
 
   public static IndexCommit findIndexCommit(Directory dir, String userData) throws IOException {
-    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
     for (final IndexCommit ic : commits) {
       Map<String,String> map = ic.getUserData();
       String ud = null;

@@ -37,6 +37,7 @@ import org.apache.lucene.benchmark.byTask.utils.FileUtils;
 import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -90,7 +91,7 @@ public class PerfRunData implements Closeable {
   private HashMap<Class<? extends ReadTask>,QueryMaker> readTaskQueryMaker;
   private Class<? extends QueryMaker> qmkrClass;
 
-  private IndexReader indexReader;
+  private DirectoryReader indexReader;
   private IndexSearcher indexSearcher;
   private IndexWriter indexWriter;
   private Config config;
@@ -288,7 +289,7 @@ public class PerfRunData implements Closeable {
    * reference.  You must call IndexReader.decRef() when
    * you're done.
    */
-  public synchronized IndexReader getIndexReader() {
+  public synchronized DirectoryReader getIndexReader() {
     if (indexReader != null) {
       indexReader.incRef();
     }
@@ -314,7 +315,7 @@ public class PerfRunData implements Closeable {
    * the reader will remain open). 
    * @param indexReader The indexReader to set.
    */
-  public synchronized void setIndexReader(IndexReader indexReader) throws IOException {
+  public synchronized void setIndexReader(DirectoryReader indexReader) throws IOException {
     if (indexReader == this.indexReader) {
       return;
     }
