@@ -34,12 +34,14 @@ import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.MutableBits;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Supports the Lucene 3.x index format (readonly)
@@ -129,5 +131,17 @@ public class Lucene3xCodec extends Codec {
   @Override
   public LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
+  }
+  
+  // overrides the default implementation in codec.java to handle CFS without CFE, and shared docstores
+  @Override
+  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    // TODO: shared doc stores
+    if (info.getUseCompoundFile()) {
+      files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+      // NOTE: we don't add the CFE extension: because 3.x format doesn't use it.
+    } else {
+      super.files(dir, info, files);
+    }
   }
 }

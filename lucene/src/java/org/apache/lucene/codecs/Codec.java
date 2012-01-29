@@ -23,8 +23,6 @@ import java.util.Set;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.NamedSPILoader;
-import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -52,11 +50,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     if (info.getUseCompoundFile()) {
       files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-      // nocommit: get this out of here: 3.x codec should override this
-      String version = info.getVersion();
-      if (version != null && StringHelper.getVersionComparator().compare("4.0", version) <= 0) {
-        files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-      }
+      files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
     } else {
       postingsFormat().files(dir, info, "", files);
       storedFieldsFormat().files(dir, info, files);

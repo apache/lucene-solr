@@ -17,6 +17,9 @@ package org.apache.lucene.codecs.preflexrw;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Set;
+
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
@@ -27,7 +30,11 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Writes 3.x-like indexes (not perfect emulation yet) for testing only!
@@ -104,6 +111,22 @@ public class PreFlexRWCodec extends Lucene3xCodec {
       return storedFields;
     } else {
       return super.storedFieldsFormat();
+    }
+  }
+
+  @Override
+  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    if (info.getUseCompoundFile() && LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+      // because we don't fully emulate 3.x codec, PreFlexRW actually writes 4.x format CFS files.
+      // so we must check segment version here to see if its a "real" 3.x segment or a "fake"
+      // one that we wrote with a 4.x-format CFS+CFE
+      files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+      String version = info.getVersion();
+      if (version != null && StringHelper.getVersionComparator().compare("4.0", version) <= 0) {
+        files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+      }
+    } else {
+      super.files(dir, info, files);
     }
   }
 }
