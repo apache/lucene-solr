@@ -41,7 +41,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestFieldCache extends LuceneTestCase {
-  private static IndexReader reader;
+  private static AtomicIndexReader reader;
   private static int NUM_DOCS;
   private static int NUM_ORDS;
   private static String[] unicodeStrings;
@@ -293,11 +293,12 @@ public class TestFieldCache extends LuceneTestCase {
   public void testEmptyIndex() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(500));
-    IndexReader r = IndexReader.open(writer, true);
+    writer.close();
+    IndexReader r = DirectoryReader.open(dir);
     AtomicIndexReader reader = SlowCompositeReaderWrapper.wrap(r);
     FieldCache.DEFAULT.getTerms(reader, "foobar");
     FieldCache.DEFAULT.getTermsIndex(reader, "foobar");
-    writer.close();
+    FieldCache.DEFAULT.purge(reader);
     r.close();
     dir.close();
   }
