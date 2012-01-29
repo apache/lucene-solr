@@ -34,6 +34,7 @@ import org.apache.lucene.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -93,8 +94,8 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     
     populate(directory, config);
 
-    IndexReader r0 = IndexReader.open(directory);
-    SegmentReader r = (SegmentReader) r0.getSequentialSubReaders()[0];
+    DirectoryReader r0 = IndexReader.open(directory);
+    SegmentReader r = LuceneTestCase.getOnlySegmentReader(r0);
     String segment = r.getSegmentName();
     r.close();
 

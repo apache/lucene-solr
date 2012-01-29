@@ -93,7 +93,6 @@ public class TestExternalCodecs extends LuceneTestCase {
     w.deleteDocuments(new Term("id", "77"));
 
     IndexReader r = IndexReader.open(w, true);
-    IndexReader[] subs = r.getSequentialSubReaders();
     
     assertEquals(NUM_DOCS-1, r.numDocs());
     IndexSearcher s = newSearcher(r);
