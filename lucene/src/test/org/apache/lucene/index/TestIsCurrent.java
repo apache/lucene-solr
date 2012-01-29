@@ -63,7 +63,7 @@ public class TestIsCurrent extends LuceneTestCase {
   public void testDeleteByTermIsCurrent() throws IOException {
 
     // get reader
-    IndexReader reader = writer.getReader();
+    DirectoryReader reader = writer.getReader();
 
     // assert index has a document and reader is up2date 
     assertEquals("One document should be in the index", 1, writer.numDocs());
@@ -90,7 +90,7 @@ public class TestIsCurrent extends LuceneTestCase {
   public void testDeleteAllIsCurrent() throws IOException {
 
     // get reader
-    IndexReader reader = writer.getReader();
+    DirectoryReader reader = writer.getReader();
 
     // assert index has a document and reader is up2date 
     assertEquals("One document should be in the index", 1, writer.numDocs());
