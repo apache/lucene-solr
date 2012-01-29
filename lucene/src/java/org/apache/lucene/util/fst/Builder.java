@@ -78,7 +78,8 @@ public class Builder<T> {
 
   /**
    * Instantiates an FST/FSA builder without any pruning. A shortcut
-   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean, boolean, int, Outputs, FreezeTail)} with
+   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean,
+   * boolean, int, Outputs, FreezeTail, boolean)} with
    * pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
@@ -122,9 +123,10 @@ public class Builder<T> {
    *    FSA, use {@link NoOutputs#getSingleton()} and {@link NoOutputs#getNoOutput()} as the
    *    singleton output object.
    *
-   * @param willPackFST Pass true if you will rewrite (compact) the FST before saving.  This
-   *    causes the FST to create additional data structures intenrally to facilitate rewriting, but
-   *    it means the resulting FST cannot be saved: it must first be rewritten using {@link FST#FST(FST,int[])}}
+   * @param willPackFST Pass true if you will pack the FST before saving.  This
+   *    causes the FST to create additional data structures internally to facilitate packing, but
+   *    it means the resulting FST cannot be saved: it must
+   *    first be packed using {@link FST#pack(int, int)}}.
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
