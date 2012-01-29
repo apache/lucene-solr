@@ -377,7 +377,6 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private void close() throws Exception {
-    final Directory d = ((SegmentReader) r.getSequentialSubReaders()[0]).directory();
     r.close();
     d.close();
   }
