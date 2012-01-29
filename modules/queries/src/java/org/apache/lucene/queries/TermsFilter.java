@@ -18,7 +18,7 @@ package org.apache.lucene.queries;
  */
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
@@ -55,7 +55,7 @@ public class TermsFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-    IndexReader reader = context.reader;
+    AtomicIndexReader reader = context.reader();
     FixedBitSet result = new FixedBitSet(reader.maxDoc());
     Fields fields = reader.fields();
 

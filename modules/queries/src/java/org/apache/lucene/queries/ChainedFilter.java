@@ -17,8 +17,8 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -129,7 +129,7 @@ public class ChainedFilter extends Filter {
 
   private OpenBitSetDISI initialResult(AtomicReaderContext context, int logic, int[] index)
       throws IOException {
-    IndexReader reader = context.reader;
+    AtomicIndexReader reader = context.reader();
     OpenBitSetDISI result;
     /**
      * First AND operation takes place against a completely false

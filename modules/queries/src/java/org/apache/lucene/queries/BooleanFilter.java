@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.DocIdSet;
@@ -52,7 +52,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     FixedBitSet res = null;
-    final IndexReader reader = context.reader;
+    final AtomicIndexReader reader = context.reader();
     
     boolean hasShouldClauses = false;
     for (final FilterClause fc : clauses) {
