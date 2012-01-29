@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
@@ -114,7 +115,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   private static void assertDocIdSetCacheable(IndexReader reader, Filter filter, boolean shouldCacheable) throws IOException {
-    assertTrue(reader.getTopReaderContext().isAtomic);
+    assertTrue(reader.getTopReaderContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     final CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
     final DocIdSet originalSet = filter.getDocIdSet(context, context.reader().getLiveDocs());
@@ -171,7 +172,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // flipping a coin) may give us a newly opened reader,
     // but we use .reopen on this reader below and expect to
     // (must) get an NRT reader:
-    IndexReader reader = IndexReader.open(writer.w, true);
+    DirectoryReader reader = IndexReader.open(writer.w, true);
     // same reason we don't wrap?
     IndexSearcher searcher = newSearcher(reader, false);
 
@@ -298,9 +299,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     dir.close();
   }
 
-  private static IndexReader refreshReader(IndexReader reader) throws IOException {
-    IndexReader oldReader = reader;
-    reader = IndexReader.openIfChanged(reader);
+  private static DirectoryReader refreshReader(DirectoryReader reader) throws IOException {
+    DirectoryReader oldReader = reader;
+    reader = DirectoryReader.openIfChanged(reader);
     if (reader != null) {
       oldReader.close();
       return reader;

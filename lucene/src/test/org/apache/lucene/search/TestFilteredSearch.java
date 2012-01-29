@@ -101,7 +101,6 @@ public class TestFilteredSearch extends LuceneTestCase {
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
       assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
-      assert context.isAtomic;
       final FixedBitSet set = new FixedBitSet(context.reader().maxDoc());
       int docBase = context.docBase;
       final int limit = docBase+context.reader().maxDoc();

@@ -76,7 +76,7 @@ public class TestTermScorer extends LuceneTestCase {
     TermQuery termQuery = new TermQuery(allTerm);
     
     Weight weight = indexSearcher.createNormalizedWeight(termQuery);
-    assertTrue(indexSearcher.getTopReaderContext().isAtomic);
+    assertTrue(indexSearcher.getTopReaderContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext)indexSearcher.getTopReaderContext();
     Scorer ts = weight.scorer(context, true, true, context.reader().getLiveDocs());
     // we have 2 documents with the term all in them, one document for all the
@@ -138,7 +138,7 @@ public class TestTermScorer extends LuceneTestCase {
     TermQuery termQuery = new TermQuery(allTerm);
     
     Weight weight = indexSearcher.createNormalizedWeight(termQuery);
-    assertTrue(indexSearcher.getTopReaderContext().isAtomic);
+    assertTrue(indexSearcher.getTopReaderContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext) indexSearcher.getTopReaderContext();
     Scorer ts = weight.scorer(context, true, true, context.reader().getLiveDocs());
     assertTrue("next did not return a doc",
@@ -157,7 +157,7 @@ public class TestTermScorer extends LuceneTestCase {
     TermQuery termQuery = new TermQuery(allTerm);
     
     Weight weight = indexSearcher.createNormalizedWeight(termQuery);
-    assertTrue(indexSearcher.getTopReaderContext().isAtomic);
+    assertTrue(indexSearcher.getTopReaderContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext) indexSearcher.getTopReaderContext();
     Scorer ts = weight.scorer(context, true, true, context.reader().getLiveDocs());
     assertTrue("Didn't skip", ts.advance(3) != DocIdSetIterator.NO_MORE_DOCS);

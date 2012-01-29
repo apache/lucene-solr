@@ -175,7 +175,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     dq.add(tq("dek", "DOES_NOT_EXIST"));
     
     QueryUtils.check(random, dq, s);
-    assertTrue(s.getTopReaderContext().isAtomic);
+    assertTrue(s.getTopReaderContext() instanceof AtomicReaderContext);
     final Weight dw = s.createNormalizedWeight(dq);
     AtomicReaderContext context = (AtomicReaderContext)s.getTopReaderContext();
     final Scorer ds = dw.scorer(context, true, false, context.reader().getLiveDocs());
@@ -190,7 +190,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     final DisjunctionMaxQuery dq = new DisjunctionMaxQuery(0.0f);
     dq.add(tq("dek", "albino"));
     dq.add(tq("dek", "DOES_NOT_EXIST"));
-    assertTrue(s.getTopReaderContext().isAtomic);
+    assertTrue(s.getTopReaderContext() instanceof AtomicReaderContext);
     QueryUtils.check(random, dq, s);
     final Weight dw = s.createNormalizedWeight(dq);
     AtomicReaderContext context = (AtomicReaderContext)s.getTopReaderContext();

@@ -62,7 +62,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
     }
     AtomicReaderContext[] leaves = ReaderUtil.leaves(topLevelReaderContext);
     if(leaves.length == 1) {
-      return query.getSpans(leaves[0], leaves[0].reader.getLiveDocs(), termContexts);
+      return query.getSpans(leaves[0], leaves[0].reader().getLiveDocs(), termContexts);
     }
     return new MultiSpansWrapper(leaves, query, termContexts);
   }
@@ -73,14 +73,14 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
       return false;
     }
     if (current == null) {
-      current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader.getLiveDocs(), termContexts);
+      current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader().getLiveDocs(), termContexts);
     }
     while(true) {
       if (current.next()) {
         return true;
       }
       if (++leafOrd < leaves.length) {
-        current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader.getLiveDocs(), termContexts);
+        current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader().getLiveDocs(), termContexts);
       } else {
         current = null;
         break;
@@ -98,17 +98,17 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
     int subIndex = ReaderUtil.subIndex(target, leaves);
     assert subIndex >= leafOrd;
     if (subIndex != leafOrd) {
-      current = query.getSpans(leaves[subIndex], leaves[subIndex].reader.getLiveDocs(), termContexts);
+      current = query.getSpans(leaves[subIndex], leaves[subIndex].reader().getLiveDocs(), termContexts);
       leafOrd = subIndex;
     } else if (current == null) {
-      current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader.getLiveDocs(), termContexts);
+      current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader().getLiveDocs(), termContexts);
     }
     while (true) {
       if (current.skipTo(target - leaves[leafOrd].docBase)) {
         return true;
       }
       if (++leafOrd < leaves.length) {
-        current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader.getLiveDocs(), termContexts);
+        current = query.getSpans(leaves[leafOrd], leaves[leafOrd].reader().getLiveDocs(), termContexts);
       } else {
           current = null;
           break;
