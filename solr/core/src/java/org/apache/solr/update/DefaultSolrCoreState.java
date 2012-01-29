@@ -21,11 +21,15 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.cloud.RecoveryStrategy;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class DefaultSolrCoreState extends SolrCoreState {
- 
+  public static Logger log = LoggerFactory.getLogger(DefaultSolrCoreState.class);
+  
   private final Object recoveryLock = new Object();
   private int refCnt = 1;
   private SolrIndexWriter indexWriter = null;
@@ -62,10 +66,14 @@ public final class DefaultSolrCoreState extends SolrCoreState {
     synchronized (this) {
       refCnt--;
       if (refCnt == 0) {
-        if (closer != null) {
-          closer.closeWriter(indexWriter);
-        } else if (indexWriter != null) {
-          indexWriter.close();
+        try {
+          if (closer != null) {
+            closer.closeWriter(indexWriter);
+          } else if (indexWriter != null) {
+            indexWriter.close();
+          }
+        } catch (Throwable t) {
+          SolrException.log(log, t);
         }
         directoryFactory.close();
         closed = true;
