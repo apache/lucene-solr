@@ -50,7 +50,7 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * yourself.</p>
  */
 
-public final class SlowMultiReaderWrapper extends AtomicIndexReader {
+public final class SlowCompositeReaderWrapper extends AtomicIndexReader {
 
   private final CompositeIndexReader in;
   private final Map<String, DocValues> normsCache = new HashMap<String, DocValues>();
@@ -63,14 +63,14 @@ public final class SlowMultiReaderWrapper extends AtomicIndexReader {
    */
   public static AtomicIndexReader wrap(IndexReader reader) throws IOException {
     if (reader instanceof CompositeIndexReader) {
-      return new SlowMultiReaderWrapper((CompositeIndexReader) reader);
+      return new SlowCompositeReaderWrapper((CompositeIndexReader) reader);
     } else {
       assert reader instanceof AtomicIndexReader;
       return (AtomicIndexReader) reader;
     }
   }
   
-  public SlowMultiReaderWrapper(CompositeIndexReader reader) throws IOException {
+  public SlowCompositeReaderWrapper(CompositeIndexReader reader) throws IOException {
     super();
     in = reader;
     fields = MultiFields.getFields(in);
@@ -79,7 +79,7 @@ public final class SlowMultiReaderWrapper extends AtomicIndexReader {
 
   @Override
   public String toString() {
-    return "SlowMultiReaderWrapper(" + in + ")";
+    return "SlowCompositeReaderWrapper(" + in + ")";
   }
 
   @Override
