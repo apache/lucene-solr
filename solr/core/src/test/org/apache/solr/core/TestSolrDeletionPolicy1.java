@@ -92,10 +92,10 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     addDocs();
     Map<Long, IndexCommit> commits = delPolicy.getCommits();
     IndexCommit latest = delPolicy.getLatestCommit();
-    for (Long version : commits.keySet()) {
-      if (commits.get(version) == latest)
+    for (Long gen : commits.keySet()) {
+      if (commits.get(gen) == latest)
         continue;
-      assertEquals(1, commits.get(version).getSegmentCount());
+      assertEquals(1, commits.get(gen).getSegmentCount());
     }
   }
 
@@ -126,7 +126,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     );
 
     commits = delPolicy.getCommits();
-    assertTrue(!commits.containsKey(ic.getVersion()));
+    assertTrue(!commits.containsKey(ic.getGeneration()));
   }
 
 }

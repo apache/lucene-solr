@@ -94,16 +94,15 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * Whenever you add a new format, make it 1 smaller (negative version logic)! */
   public static final int FORMAT_SEGMENTS_GEN_CURRENT = -2;
     
-  public int counter = 0;    // used to name new segments
+  public int counter;    // used to name new segments
   
   /**
-   * counts how often the index has been changed by adding or deleting docs.
-   * starting with the current time in milliseconds forces to create unique version numbers.
+   * counts how often the index has been changed
    */
-  public long version = System.currentTimeMillis();
+  public long version;
   
-  private long generation = 0;     // generation of the "segments_N" for the next commit
-  private long lastGeneration = 0; // generation of the "segments_N" file we last successfully read
+  private long generation;     // generation of the "segments_N" for the next commit
+  private long lastGeneration; // generation of the "segments_N" file we last successfully read
                                    // or wrote; this is normally the same as generation except if
                                    // there was an IOException that had interrupted a commit
 

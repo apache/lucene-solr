@@ -151,7 +151,8 @@ abstract class FSTEnum<T> {
         boolean found = false;
         while (low <= high) {
           mid = (low + high) >>> 1;
-          in.pos = arc.posArcsStart - arc.bytesPerArc*mid - 1;
+          in.pos = arc.posArcsStart;
+          in.skip(arc.bytesPerArc*mid+1);
           final int midLabel = fst.readLabel(in);
           final int cmp = midLabel - targetLabel;
           //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);
@@ -275,7 +276,7 @@ abstract class FSTEnum<T> {
 
     // Now scan forward, matching the new suffix of the target
     while(true) {
-      //System.out.println("  cycle upto=" + upto + " arc.label=" + arc.label + " (" + (char) arc.label + ") targetLabel=" + targetLabel + " isLast?=" + arc.isLast());
+      //System.out.println("  cycle upto=" + upto + " arc.label=" + arc.label + " (" + (char) arc.label + ") targetLabel=" + targetLabel + " isLast?=" + arc.isLast() + " bba=" + arc.bytesPerArc);
 
       if (arc.bytesPerArc != 0 && arc.label != FST.END_LABEL) {
         // Arcs are fixed array -- use binary search to find
@@ -289,15 +290,16 @@ abstract class FSTEnum<T> {
         boolean found = false;
         while (low <= high) {
           mid = (low + high) >>> 1;
-          in.pos = arc.posArcsStart - arc.bytesPerArc*mid - 1;
+          in.pos = arc.posArcsStart;
+          in.skip(arc.bytesPerArc*mid+1);
           final int midLabel = fst.readLabel(in);
           final int cmp = midLabel - targetLabel;
           //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);
-          if (cmp < 0)
+          if (cmp < 0) {
             low = mid + 1;
-          else if (cmp > 0)
+          } else if (cmp > 0) {
             high = mid - 1;
-          else {
+          } else {
             found = true;
             break;
           }
@@ -430,9 +432,11 @@ abstract class FSTEnum<T> {
     FST.Arc<T> arc = getArc(upto-1);
     int targetLabel = getTargetLabel();
 
+    final FST.BytesReader fstReader = fst.getBytesReader(0);
+
     while(true) {
       //System.out.println("  cycle target=" + (targetLabel == -1 ? "-1" : (char) targetLabel));
-      final FST.Arc<T> nextArc = fst.findTargetArc(targetLabel, arc, getArc(upto));
+      final FST.Arc<T> nextArc = fst.findTargetArc(targetLabel, arc, getArc(upto), fstReader);
       if (nextArc == null) {
         // short circuit
         //upto--;

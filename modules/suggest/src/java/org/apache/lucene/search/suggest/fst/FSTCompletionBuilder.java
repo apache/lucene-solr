@@ -234,7 +234,7 @@ public class FSTCompletionBuilder {
     final Object empty = outputs.getNoOutput();
     final Builder<Object> builder = new Builder<Object>(
         FST.INPUT_TYPE.BYTE1, 0, 0, true, true, 
-        shareMaxTailLength, outputs, null);
+        shareMaxTailLength, outputs, null, false);
     
     BytesRef scratch = new BytesRef();
     final IntsRef scratchIntsRef = new IntsRef();

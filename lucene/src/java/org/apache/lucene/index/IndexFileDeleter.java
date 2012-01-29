@@ -655,7 +655,6 @@ final class IndexFileDeleter {
     boolean deleted;
     Directory directory;
     Collection<CommitPoint> commitsToDelete;
-    long version;
     long generation;
     final Map<String,String> userData;
     private final int segmentCount;
@@ -665,7 +664,6 @@ final class IndexFileDeleter {
       this.commitsToDelete = commitsToDelete;
       userData = segmentInfos.getUserData();
       segmentsFileName = segmentInfos.getCurrentSegmentFileName();
-      version = segmentInfos.getVersion();
       generation = segmentInfos.getGeneration();
       files = Collections.unmodifiableCollection(segmentInfos.files(directory, true));
       segmentCount = segmentInfos.size();
@@ -694,11 +692,6 @@ final class IndexFileDeleter {
     @Override
     public Directory getDirectory() {
       return directory;
-    }
-
-    @Override
-    public long getVersion() {
-      return version;
     }
 
     @Override

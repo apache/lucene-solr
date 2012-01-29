@@ -47,16 +47,17 @@ public final class TokenInfoFST {
     FST.Arc<Long> firstArc = new FST.Arc<Long>();
     fst.getFirstArc(firstArc);
     FST.Arc<Long> arc = new FST.Arc<Long>();
+    final FST.BytesReader fstReader = fst.getBytesReader(0);
     // TODO: jump to 3040, readNextRealArc to ceiling? (just be careful we don't add bugs)
     for (int i = 0; i < rootCache.length; i++) {
-      if (fst.findTargetArc(0x3040 + i, firstArc, arc) != null) {
+      if (fst.findTargetArc(0x3040 + i, firstArc, arc, fstReader) != null) {
         rootCache[i] = new FST.Arc<Long>().copyFrom(arc);
       }
     }
     return rootCache;
   }
   
-  public FST.Arc<Long> findTargetArc(int ch, FST.Arc<Long> follow, FST.Arc<Long> arc, boolean useCache) throws IOException {
+  public FST.Arc<Long> findTargetArc(int ch, FST.Arc<Long> follow, FST.Arc<Long> arc, boolean useCache, FST.BytesReader fstReader) throws IOException {
     if (useCache && ch >= 0x3040 && ch <= cacheCeiling) {
       assert ch != FST.END_LABEL;
       final Arc<Long> result = rootCache[ch - 0x3040];
@@ -67,12 +68,16 @@ public final class TokenInfoFST {
         return arc;
       }
     } else {
-      return fst.findTargetArc(ch, follow, arc);
+      return fst.findTargetArc(ch, follow, arc, fstReader);
     }
   }
   
   public Arc<Long> getFirstArc(FST.Arc<Long> arc) {
     return fst.getFirstArc(arc);
+  }
+
+  public FST.BytesReader getBytesReader(int pos) {
+    return fst.getBytesReader(pos);
   }
   
   /** @lucene.internal for testing only */

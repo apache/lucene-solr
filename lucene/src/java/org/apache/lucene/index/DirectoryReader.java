@@ -494,7 +494,15 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     return DirectoryReader.open(directory, writer, infos, subReaders, termInfosIndexDivisor);
   }
 
-  /** Version number when this IndexReader was opened. */
+  /**
+   * Version number when this IndexReader was opened. Not
+   * implemented in the IndexReader base class.
+   *
+   * <p>This method
+   * returns the version recorded in the commit that the
+   * reader opened.  This version is advanced every time
+   * a change is made with {@link IndexWriter}.</p>
+   */
   public long getVersion() {
     ensureOpen();
     return segmentInfos.getVersion();
@@ -608,22 +616,6 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
   }  
   
   /**
-   * Returns the time the index in the named directory was last modified. 
-   * Do not use this to check whether the reader is still up-to-date, use
-   * {@link #isCurrent()} instead. 
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static long lastModified(final Directory directory) throws CorruptIndexException, IOException {
-    return ((Long) new SegmentInfos.FindSegmentsFile(directory) {
-      @Override
-      public Object doBody(String segmentFileName) throws IOException {
-        return Long.valueOf(directory.fileModified(segmentFileName));
-      }
-    }.run()).longValue();
-  }
-  
-  /**
    * Reads version number from segments files. The version number is
    * initialized with a timestamp and then increased by one for each change of
    * the index.
@@ -675,7 +667,6 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     Collection<String> files;
     Directory dir;
     long generation;
-    long version;
     final Map<String,String> userData;
     private final int segmentCount;
 
@@ -684,7 +675,6 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
       this.dir = dir;
       userData = infos.getUserData();
       files = Collections.unmodifiableCollection(infos.files(dir, true));
-      version = infos.getVersion();
       generation = infos.getGeneration();
       segmentCount = infos.size();
     }
@@ -712,11 +702,6 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     @Override
     public Directory getDirectory() {
       return dir;
-    }
-
-    @Override
-    public long getVersion() {
-      return version;
     }
 
     @Override

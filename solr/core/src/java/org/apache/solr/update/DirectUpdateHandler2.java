@@ -22,6 +22,8 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
@@ -387,7 +389,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
 
         // SolrCore.verbose("writer.commit() start writer=",writer);
-        writer.commit();
+        final Map<String,String> commitData = new HashMap<String,String>();
+        commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
+        writer.commit(commitData);
         // SolrCore.verbose("writer.commit() end");
         numDocsPending.set(0);
         callPostCommitCallbacks();

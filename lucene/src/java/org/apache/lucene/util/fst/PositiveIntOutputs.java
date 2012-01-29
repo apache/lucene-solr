@@ -25,10 +25,7 @@ import org.apache.lucene.store.DataOutput;
 /**
  * Output is a long, for each input term.  NOTE: the
  * resulting FST is not guaranteed to be minimal!  See
- * {@link Builder}.  You must use {@link #get} to obtain the
- * output for a given long value -- do not use autoboxing
- * nor create your own Long instance (the value 0
- * must map to the {@link #getNoOutput} singleton).
+ * {@link Builder}.
  *
  * @lucene.experimental
  */
@@ -48,14 +45,6 @@ public final class PositiveIntOutputs extends Outputs<Long> {
 
   public static PositiveIntOutputs getSingleton(boolean doShare) {
     return doShare ? singletonShare : singletonNoShare;
-  }
-
-  public Long get(long v) {
-    if (v == 0) {
-      return NO_OUTPUT;
-    } else {
-      return Long.valueOf(v);
-    }
   }
 
   @Override

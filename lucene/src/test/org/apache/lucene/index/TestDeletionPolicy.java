@@ -18,10 +18,12 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.Collection;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -32,7 +34,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -47,20 +48,12 @@ public class TestDeletionPolicy extends LuceneTestCase {
     final IndexCommit firstCommit =  commits.get(0);
     long last = SegmentInfos.generationFromSegmentsFileName(firstCommit.getSegmentsFileName());
     assertEquals(last, firstCommit.getGeneration());
-    long lastVersion = firstCommit.getVersion();
-    long lastTimestamp = firstCommit.getTimestamp();
     for(int i=1;i<commits.size();i++) {
       final IndexCommit commit =  commits.get(i);
       long now = SegmentInfos.generationFromSegmentsFileName(commit.getSegmentsFileName());
-      long nowVersion = commit.getVersion();
-      long nowTimestamp = commit.getTimestamp();
       assertTrue("SegmentInfos commits are out-of-order", now > last);
-      assertTrue("SegmentInfos versions are out-of-order", nowVersion > lastVersion);
-      assertTrue("SegmentInfos timestamps are out-of-order: now=" + nowTimestamp + " vs last=" + lastTimestamp, nowTimestamp >= lastTimestamp);
       assertEquals(now, commit.getGeneration());
       last = now;
-      lastVersion = nowVersion;
-      lastTimestamp = nowTimestamp;
     }
   }
 
@@ -158,6 +151,10 @@ public class TestDeletionPolicy extends LuceneTestCase {
     }
   }
 
+  static long getCommitTime(IndexCommit commit) throws IOException {
+    return Long.parseLong(commit.getUserData().get("commitTime"));
+  }
+
   /*
    * Delete a commit only when it has been obsoleted by N
    * seconds.
@@ -184,10 +181,10 @@ public class TestDeletionPolicy extends LuceneTestCase {
       IndexCommit lastCommit = commits.get(commits.size()-1);
 
       // Any commit older than expireTime should be deleted:
-      double expireTime = dir.fileModified(lastCommit.getSegmentsFileName())/1000.0 - expirationTimeSeconds;
+      double expireTime = getCommitTime(lastCommit)/1000.0 - expirationTimeSeconds;
 
       for (final IndexCommit commit : commits) {
-        double modTime = dir.fileModified(commit.getSegmentsFileName())/1000.0;
+        double modTime = getCommitTime(commit)/1000.0;
         if (commit != lastCommit && modTime < expireTime) {
           commit.delete();
           numDelete += 1;
@@ -213,6 +210,9 @@ public class TestDeletionPolicy extends LuceneTestCase {
       ((LogMergePolicy) mp).setUseCompoundFile(true);
     }
     IndexWriter writer = new IndexWriter(dir, conf);
+    Map<String,String> commitData = new HashMap<String,String>();
+    commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
+    writer.commit(commitData);
     writer.close();
 
     final int ITER = 9;
@@ -233,6 +233,9 @@ public class TestDeletionPolicy extends LuceneTestCase {
       for(int j=0;j<17;j++) {
         addDoc(writer);
       }
+      commitData = new HashMap<String,String>();
+      commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
+      writer.commit(commitData);
       writer.close();
 
       if (i < ITER-1) {
@@ -269,7 +272,9 @@ public class TestDeletionPolicy extends LuceneTestCase {
         // if we are on a filesystem that seems to have only
         // 1 second resolution, allow +1 second in commit
         // age tolerance:
-        long modTime = dir.fileModified(fileName);
+        SegmentInfos sis = new SegmentInfos();
+        sis.read(dir, fileName);
+        long modTime = Long.parseLong(sis.getUserData().get("commitTime"));
         oneSecondResolution &= (modTime % 1000) == 0;
         final long leeway = (long) ((SECONDS + (oneSecondResolution ? 1.0:0.0))*1000);
 

@@ -126,11 +126,6 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     }
 
     @Override
-    public long getVersion() {
-      return cp.getVersion();
-    }
-
-    @Override
     public boolean isDeleted() {
       return cp.isDeleted();
     }

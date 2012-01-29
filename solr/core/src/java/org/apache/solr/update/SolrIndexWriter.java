@@ -50,6 +50,11 @@ public class SolrIndexWriter extends IndexWriter {
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
 
+
+  /** Stored into each Lucene commit to record the
+   *  System.currentTimeMillis() when commit was called. */
+  public static final String COMMIT_TIME_MSEC_KEY = "commitTimeMSec";
+
   String name;
   private DirectoryFactory directoryFactory;
 
