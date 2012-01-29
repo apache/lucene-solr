@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.AtomicIndexReader;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -41,7 +42,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -749,10 +750,9 @@ public class MemoryIndex {
    * Search support for Lucene framework integration; implements all methods
    * required by the Lucene IndexReader contracts.
    */
-  private final class MemoryIndexReader extends IndexReader {
+  private final class MemoryIndexReader extends AtomicIndexReader {
     
     private IndexSearcher searcher; // needed to find searcher.getSimilarity() 
-    private final ReaderContext readerInfos = new AtomicReaderContext(this);
     
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -783,11 +783,6 @@ public class MemoryIndex {
       if (info != null) freq = info.getPositions(term) != null ? 1 : 0;
       if (DEBUG) System.err.println("MemoryIndexReader.docFreq: " + field + ":" + term + ", freq:" + freq);
       return freq;
-    }
-    
-    @Override
-    public ReaderContext getTopReaderContext() {
-      return readerInfos;
     }
 
     private class MemoryFields extends Fields {
