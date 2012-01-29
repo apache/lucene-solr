@@ -806,6 +806,9 @@ New Features
 
 * LUCENE-3690: Added HTMLStripCharFilter, a CharFilter that strips HTML
   markup. (Steve Rowe)
+
+* LUCENE-3725: Added optional packing to FST building; this uses extra
+  RAM during building but results in a smaller FST.  (Mike McCandless)
   
 Bug fixes
 

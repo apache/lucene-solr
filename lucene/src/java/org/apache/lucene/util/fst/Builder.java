@@ -17,15 +17,15 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
-
 import java.io.IOException;
 
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
+
 /**
- * Builds a compact FST (maps an IntsRef term to an arbitrary
+ * Builds a minimal FST (maps an IntsRef term to an arbitrary
  * output) from pre-sorted terms with outputs (the FST
  * becomes an FSA if you use NoOutputs).  The FST is written
  * on-the-fly into a compact serialized format byte array, which can
@@ -34,12 +34,6 @@ import java.io.IOException;
  *
  * <p>NOTE: The algorithm is described at
  * http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.24.3698</p>
- *
- * If your outputs are ByteSequenceOutput then the final FST
- * will be minimal, but if you use PositiveIntOutput then
- * it's only "near minimal".  For example, aa/0, aab/1, bbb/2
- * will produce 6 states when a 5 state fst is also
- * possible.
  *
  * The parameterized type T is the output type.  See the
  * subclasses of {@link Outputs}.
@@ -52,7 +46,7 @@ public class Builder<T> {
   private final FST<T> fst;
   private final T NO_OUTPUT;
 
-  // private static final boolean DEBUG = false;
+  // private static final boolean DEBUG = true;
 
   // simplistic pruning: we prune node (and all following
   // nodes) if less than this number of terms go through it:
@@ -88,7 +82,7 @@ public class Builder<T> {
    * pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
-    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, null);
+    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, false);
   }
 
   /**
@@ -127,16 +121,20 @@ public class Builder<T> {
    * @param outputs The output type for each input sequence. Applies only if building an FST. For
    *    FSA, use {@link NoOutputs#getSingleton()} and {@link NoOutputs#getNoOutput()} as the
    *    singleton output object.
+   *
+   * @param willPackFST Pass true if you will rewrite (compact) the FST before saving.  This
+   *    causes the FST to create additional data structures intenrally to facilitate rewriting, but
+   *    it means the resulting FST cannot be saved: it must first be rewritten using {@link FST#FST(FST,int[])}}
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 FreezeTail<T> freezeTail) {
+                 FreezeTail<T> freezeTail, boolean willPackFST) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
     this.freezeTail = freezeTail;
     this.doShareNonSingletonNodes = doShareNonSingletonNodes;
     this.shareMaxTailLength = shareMaxTailLength;
-    fst = new FST<T>(inputType, outputs);
+    fst = new FST<T>(inputType, outputs, willPackFST);
     if (doShareSuffix) {
       dedupHash = new NodeHash<T>(fst);
     } else {
@@ -170,23 +168,23 @@ public class Builder<T> {
     fst.setAllowArrayArcs(b);
   }
 
-  private CompiledNode compileNode(UnCompiledNode<T> n, int tailLength) throws IOException {
-    final int address;
-    if (dedupHash != null && (doShareNonSingletonNodes || n.numArcs <= 1) && tailLength <= shareMaxTailLength) {
-      if (n.numArcs == 0) {
-        address = fst.addNode(n);
+  private CompiledNode compileNode(UnCompiledNode<T> nodeIn, int tailLength) throws IOException {
+    final int node;
+    if (dedupHash != null && (doShareNonSingletonNodes || nodeIn.numArcs <= 1) && tailLength <= shareMaxTailLength) {
+      if (nodeIn.numArcs == 0) {
+        node = fst.addNode(nodeIn);
       } else {
-        address = dedupHash.add(n);
+        node = dedupHash.add(nodeIn);
       }
     } else {
-      address = fst.addNode(n);
+      node = fst.addNode(nodeIn);
     }
-    assert address != -2;
+    assert node != -2;
 
-    n.clear();
+    nodeIn.clear();
 
     final CompiledNode fn = new CompiledNode();
-    fn.address = address;
+    fn.node = node;
     return fn;
   }
 
@@ -319,6 +317,11 @@ public class Builder<T> {
     }
     */
 
+    // De-dup NO_OUTPUT since it must be a singleton:
+    if (output.equals(NO_OUTPUT)) {
+      output = NO_OUTPUT;
+    }
+
     assert lastInput.length == 0 || input.compareTo(lastInput) >= 0: "inputs are added out of order lastInput=" + lastInput + " vs input=" + input;
     assert validOutput(output);
 
@@ -443,7 +446,7 @@ public class Builder<T> {
       }
     }
     //if (DEBUG) System.out.println("  builder.finish root.isFinal=" + root.isFinal + " root.output=" + root.output);
-    fst.finish(compileNode(root, lastInput.length).address);
+    fst.finish(compileNode(root, lastInput.length).node);
 
     return fst;
   }
@@ -480,7 +483,7 @@ public class Builder<T> {
   }
 
   static final class CompiledNode implements Node {
-    int address;
+    int node;
     public boolean isCompiled() {
       return true;
     }
@@ -560,7 +563,7 @@ public class Builder<T> {
       final Arc<T> arc = arcs[numArcs-1];
       assert arc.label == labelToMatch: "arc.label=" + arc.label + " vs " + labelToMatch;
       arc.target = target;
-      //assert target.address != -2;
+      //assert target.node != -2;
       arc.nextFinalOutput = nextFinalOutput;
       arc.isFinal = isFinal;
     }

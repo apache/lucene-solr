@@ -26,6 +26,10 @@ import org.apache.lucene.store.DataOutput;
  * Represents the outputs for an FST, providing the basic
  * algebra needed for the FST.
  *
+ * <p>Note that any operation that returns NO_OUTPUT must
+ * return the same singleton object from {@link
+ * #getNoOutput}.</p>
+ *
  * @lucene.experimental
  */
 
@@ -55,6 +59,8 @@ public abstract class Outputs<T> {
   public abstract T getNoOutput();
 
   public abstract String outputToString(T output);
+
+  // TODO: maybe make valid(T output) public...?  for asserts
 
   public T merge(T first, T second) {
     throw new UnsupportedOperationException();

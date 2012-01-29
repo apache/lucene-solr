@@ -229,7 +229,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       ////System.out.println("VGW: field=" + fieldInfo.name);
 
       // Always put empty string in
-      fstBuilder.add(new IntsRef(), fstOutputs.get(termsFilePointer));
+      fstBuilder.add(new IntsRef(), termsFilePointer);
       startTermsFilePointer = termsFilePointer;
     }
 
@@ -260,7 +260,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       final int lengthSave = text.length;
       text.length = indexedTermPrefixLength(lastTerm, text);
       try {
-        fstBuilder.add(Util.toIntsRef(text, scratchIntsRef), fstOutputs.get(termsFilePointer));
+        fstBuilder.add(Util.toIntsRef(text, scratchIntsRef), termsFilePointer);
       } finally {
         text.length = lengthSave;
       }

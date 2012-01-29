@@ -95,7 +95,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   }
 
   public boolean get(int index) {
-    assert index >= 0 && index < numBits;
+    assert index >= 0 && index < numBits: "index=" + index;
     int i = index >> 6;               // div 64
     // signed shift will keep a negative index and force an
     // array-index-out-of-bounds-exception, removing the need for an explicit check.

@@ -37,23 +37,21 @@ public final class Util {
     // TODO: would be nice not to alloc this on every lookup
     final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
 
+    final FST.BytesReader fstReader = fst.getBytesReader(0);
+
     // Accumulate output as we go
-    final T NO_OUTPUT = fst.outputs.getNoOutput();
-    T output = NO_OUTPUT;
+    T output = fst.outputs.getNoOutput();
     for(int i=0;i<input.length;i++) {
-      if (fst.findTargetArc(input.ints[input.offset + i], arc, arc) == null) {
+      if (fst.findTargetArc(input.ints[input.offset + i], arc, arc, fstReader) == null) {
         return null;
-      } else if (arc.output != NO_OUTPUT) {
-        output = fst.outputs.add(output, arc.output);
       }
+      output = fst.outputs.add(output, arc.output);
     }
 
-    if (fst.findTargetArc(FST.END_LABEL, arc, arc) == null) {
-      return null;
-    } else if (arc.output != NO_OUTPUT) {
-      return fst.outputs.add(output, arc.output);
+    if (arc.isFinal()) {
+      return fst.outputs.add(output, arc.nextFinalOutput);
     } else {
-      return output;
+      return null;
     }
   }
 
@@ -64,26 +62,24 @@ public final class Util {
   public static<T> T get(FST<T> fst, BytesRef input) throws IOException {
     assert fst.inputType == FST.INPUT_TYPE.BYTE1;
 
+    final FST.BytesReader fstReader = fst.getBytesReader(0);
+
     // TODO: would be nice not to alloc this on every lookup
     final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
 
     // Accumulate output as we go
-    final T NO_OUTPUT = fst.outputs.getNoOutput();
-    T output = NO_OUTPUT;
+    T output = fst.outputs.getNoOutput();
     for(int i=0;i<input.length;i++) {
-      if (fst.findTargetArc(input.bytes[i+input.offset] & 0xFF, arc, arc) == null) {
+      if (fst.findTargetArc(input.bytes[i+input.offset] & 0xFF, arc, arc, fstReader) == null) {
         return null;
-      } else if (arc.output != NO_OUTPUT) {
-        output = fst.outputs.add(output, arc.output);
       }
+      output = fst.outputs.add(output, arc.output);
     }
 
-    if (fst.findTargetArc(FST.END_LABEL, arc, arc) == null) {
-      return null;
-    } else if (arc.output != NO_OUTPUT) {
-      return fst.outputs.add(output, arc.output);
+    if (arc.isFinal()) {
+      return fst.outputs.add(output, arc.nextFinalOutput);
     } else {
-      return output;
+      return null;
     }
   }
 
@@ -142,7 +138,7 @@ public final class Util {
           result.grow(1+upto);
         }
         
-        fst.readFirstRealArc(arc.target, arc, in);
+        fst.readFirstRealTargetArc(arc.target, arc, in);
 
         FST.Arc<Long> prevArc = null;
 
@@ -238,6 +234,7 @@ public final class Util {
     // A queue of transitions to consider when processing the next level.
     final List<FST.Arc<T>> nextLevelQueue = new ArrayList<FST.Arc<T>>();
     nextLevelQueue.add(startArc);
+    //System.out.println("toDot: startArc: " + startArc);
     
     // A list of states on the same level (for ranking).
     final List<Integer> sameLevelStates = new ArrayList<Integer>();
@@ -289,8 +286,11 @@ public final class Util {
 
     int level = 0;
 
+    final FST.BytesReader r = fst.getBytesReader(0);
+
     while (!nextLevelQueue.isEmpty()) {
       // we could double buffer here, but it doesn't matter probably.
+      //System.out.println("next level=" + level);
       thisLevelQueue.addAll(nextLevelQueue);
       nextLevelQueue.clear();
 
@@ -298,19 +298,19 @@ public final class Util {
       out.write("\n  // Transitions and states at level: " + level + "\n");
       while (!thisLevelQueue.isEmpty()) {
         final FST.Arc<T> arc = thisLevelQueue.remove(thisLevelQueue.size() - 1);
+        //System.out.println("  pop: " + arc);
         if (fst.targetHasArcs(arc)) {
-          // scan all arcs
+          // scan all target arcs
+          //System.out.println("  readFirstTarget...");
           final int node = arc.target;
-          fst.readFirstTargetArc(arc, arc);
 
-          if (arc.label == FST.END_LABEL) {
-            // Skip it -- prior recursion took this into account already
-            assert !arc.isLast();
-            fst.readNextArc(arc);
-          }
+          fst.readFirstRealTargetArc(arc.target, arc, r);
+
+          //System.out.println("    firstTarget: " + arc);
 
           while (true) {
 
+            //System.out.println("  cycle arc=" + arc);
             // Emit the unseen state and add it to the queue for the next level.
             if (arc.target >= 0 && !seen.get(arc.target)) {
 
@@ -329,7 +329,7 @@ public final class Util {
               if (fst.isExpandedTarget(arc)) {
                 stateColor = expandedNodeColor;
               } else {
-               stateColor = null;
+                stateColor = null;
               }
 
               final String finalOutput;
@@ -339,7 +339,9 @@ public final class Util {
                 finalOutput = "";
               }
 
-              emitDotState(out, Integer.toString(arc.target), arc.isFinal() ? finalStateShape : stateShape, stateColor, finalOutput);
+              emitDotState(out, Integer.toString(arc.target), stateShape, stateColor, finalOutput);
+              // To see the node address, use this instead:
+              //emitDotState(out, Integer.toString(arc.target), stateShape, stateColor, String.valueOf(arc.target));
               seen.set(arc.target);
               nextLevelQueue.add(new FST.Arc<T>().copyFrom(arc));
               sameLevelStates.add(arc.target);
@@ -362,14 +364,22 @@ public final class Util {
               outs = outs + "/[" + fst.outputs.outputToString(arc.nextFinalOutput) + "]";
             }
 
+            final String arcColor;
+            if (arc.flag(FST.BIT_TARGET_NEXT)) {
+              arcColor = "red";
+            } else {
+              arcColor = "black";
+            }
+
             assert arc.label != FST.END_LABEL;
-            out.write("  " + node + " -> " + arc.target + " [label=\"" + printableLabel(arc.label) + outs + "\"]\n");
+            out.write("  " + node + " -> " + arc.target + " [label=\"" + printableLabel(arc.label) + outs + "\"" + (arc.isFinal() ? " style=\"bold\"" : "" ) + " color=\"" + arcColor + "\"]\n");
                    
             // Break the loop if we're on the last arc of this state.
             if (arc.isLast()) {
+              //System.out.println("    break");
               break;
             }
-            fst.readNextArc(arc);
+            fst.readNextRealArc(arc, r);
           }
         }
       }
