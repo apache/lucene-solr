@@ -22,7 +22,7 @@ import java.io.IOException;
 /** An IndexReader which reads multiple indexes, appending
  *  their content. */
 public class MultiReader extends BaseMultiReader<IndexReader> {
-  private final boolean[] decrefOnClose; // remember which subreaders to decRef on close
+  private final boolean closeSubReaders;
   
  /**
   * <p>Construct a MultiReader aggregating the named set of (sub)readers.
@@ -41,22 +41,12 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     super(subReaders.clone());
-    decrefOnClose = new boolean[subReaders.length];
-    for (int i = 0; i < subReaders.length; i++) {
-      if (!closeSubReaders) {
+    this.closeSubReaders = closeSubReaders;
+    if (!closeSubReaders) {
+      for (int i = 0; i < subReaders.length; i++) {
         subReaders[i].incRef();
-        decrefOnClose[i] = true;
-      } else {
-        decrefOnClose[i] = false;
       }
     }
-  }
-  
-  // used only by openIfChaged
-  private MultiReader(IndexReader[] subReaders, boolean[] decrefOnClose)
-                      throws IOException {
-    super(subReaders);
-    this.decrefOnClose = decrefOnClose;
   }
 
   @Override
@@ -64,10 +54,10 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
     IOException ioe = null;
     for (int i = 0; i < subReaders.length; i++) {
       try {
-        if (decrefOnClose[i]) {
-          subReaders[i].decRef();
-        } else {
+        if (closeSubReaders) {
           subReaders[i].close();
+        } else {
+          subReaders[i].decRef();
         }
       } catch (IOException e) {
         if (ioe == null) ioe = e;
