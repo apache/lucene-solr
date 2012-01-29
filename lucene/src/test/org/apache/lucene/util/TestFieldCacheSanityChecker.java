@@ -36,6 +36,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
   protected AtomicIndexReader readerA;
   protected AtomicIndexReader readerB;
   protected AtomicIndexReader readerX;
+  protected AtomicIndexReader readerAclone;
   protected Directory dirA, dirB;
   private static final int NUM_DOCS = 1000;
 
@@ -70,6 +71,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     }
     wA.close();
     wB.close();
+    DirectoryReader rA = DirectoryReader.open(dirA);
+    readerA = SlowCompositeReaderWrapper.wrap(rA);
+    readerAclone = SlowCompositeReaderWrapper.wrap(rA);
     readerA = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dirA));
     readerB = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dirB));
     readerX = SlowCompositeReaderWrapper.wrap(new MultiReader(readerA, readerB));
@@ -78,6 +82,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     readerA.close();
+    readerAclone.close();
     readerB.close();
     readerX.close();
     dirA.close();
@@ -91,6 +96,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
     cache.getDoubles(readerA, "theDouble", false);
     cache.getDoubles(readerA, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
+    cache.getDoubles(readerAclone, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
     cache.getDoubles(readerB, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
 
     cache.getInts(readerX, "theInt", false);

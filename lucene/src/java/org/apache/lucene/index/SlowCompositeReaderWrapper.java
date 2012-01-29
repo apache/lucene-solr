@@ -149,6 +149,16 @@ public final class SlowCompositeReaderWrapper extends AtomicIndexReader {
   }
 
   @Override
+  public Object getCoreCacheKey() {
+    return in.getCoreCacheKey();
+  }
+
+  @Override
+  public Object getCombinedCoreAndDeletesKey() {
+    return in.getCombinedCoreAndDeletesKey();
+  }
+
+  @Override
   protected void doClose() throws IOException {
     // nocommit: as this is a wrapper, should we really close the delegate?
     in.close();
