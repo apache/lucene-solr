@@ -321,8 +321,6 @@ public class SolrCmdDistributor {
   
           CommonsHttpSolrServer server = new CommonsHttpSolrServer(fullUrl,
               client);
-          server.setConnectionTimeout(30000);
-          server.setSoTimeout(30000);
           
           clonedRequest.ursp = server.request(clonedRequest.ureq);
           
