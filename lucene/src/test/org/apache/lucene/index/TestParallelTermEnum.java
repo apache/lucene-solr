@@ -28,8 +28,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestParallelTermEnum extends LuceneTestCase {
-    private DirectoryReader ir1;
-    private DirectoryReader ir2;
+    private AtomicIndexReader ir1;
+    private AtomicIndexReader ir2;
     private Directory rd1;
     private Directory rd2;
     
@@ -58,8 +58,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
         iw2.close();
 
-        this.ir1 = IndexReader.open(rd1);
-        this.ir2 = IndexReader.open(rd2);
+        this.ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1));
+        this.ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd2));
     }
 
     @Override
@@ -73,8 +73,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
     public void test1() throws IOException {
         ParallelReader pr = new ParallelReader();
-        pr.add(new SlowCompositeReaderWrapper(ir1));
-        pr.add(new SlowCompositeReaderWrapper(ir2));
+        pr.add(ir1);
+        pr.add(ir2);
 
         Bits liveDocs = pr.getLiveDocs();
 
