@@ -20,32 +20,22 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.MutableBits;
 
-/**
- * format for normalization factors
- */
-public abstract class NormsFormat {
-  public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
-  public abstract PerDocProducer docsProducer(SegmentReadState state) throws IOException;
-  public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
-  
-  /** 
-   * Note: this should not be overridden! 
-   * @deprecated 
-   */
-  @Deprecated
-  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {};
-  
-  /**
-   * Note: this should not be overridden!
-   * @deprecated
-   */
-  @Deprecated
-  public PerDocProducer docsProducer(SegmentReadState state, Directory separateNormsDir) throws IOException {
-    return docsProducer(state);
-  }
+/** Format for live/deleted documents
+ * @lucene.experimental */
+public abstract class LiveDocsFormat {
+  /** creates a new mutablebits, with all bits set, for the specified size */
+  public abstract MutableBits newLiveDocs(int size) throws IOException;
+  /** creates a new mutablebits of the same bits set and size of existing */
+  public abstract MutableBits newLiveDocs(Bits existing) throws IOException;
+  /** reads bits from a file */
+  public abstract Bits readLiveDocs(Directory dir, SegmentInfo info, IOContext context) throws IOException;
+  /** writes bits to a file */
+  public abstract void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException;
+  public abstract void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
 }

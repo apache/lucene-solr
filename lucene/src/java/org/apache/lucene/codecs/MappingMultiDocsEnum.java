@@ -78,6 +78,7 @@ public final class MappingMultiDocsEnum extends DocsEnum {
           current = subs[upto].docsEnum;
           currentBase = mergeState.docBase[reader];
           currentMap = mergeState.docMaps[reader];
+          assert currentMap == null || currentMap.length == subs[upto].slice.length: "readerIndex=" + reader + " subs.len=" + subs.length + " len1=" + currentMap.length + " vs " + subs[upto].slice.length;
         }
       }
 

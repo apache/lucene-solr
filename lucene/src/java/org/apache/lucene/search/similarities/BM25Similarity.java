@@ -58,7 +58,7 @@ public class BM25Similarity extends Similarity {
   }
   
   /** Implemented as <code>log(1 + (numDocs - docFreq + 0.5)/(docFreq + 0.5))</code>. */
-  protected float idf(int docFreq, int numDocs) {
+  protected float idf(long docFreq, long numDocs) {
     return (float) Math.log(1 + (numDocs - docFreq + 0.5D)/(docFreq + 0.5D));
   }
   
@@ -131,19 +131,19 @@ public class BM25Similarity extends Similarity {
   }
 
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
-    final int df = termStats.docFreq();
-    final int max = collectionStats.maxDoc();
+    final long df = termStats.docFreq();
+    final long max = collectionStats.maxDoc();
     final float idf = idf(df, max);
     return new Explanation(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
   }
 
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-    final int max = collectionStats.maxDoc();
+    final long max = collectionStats.maxDoc();
     float idf = 0.0f;
     final Explanation exp = new Explanation();
     exp.setDescription("idf(), sum of:");
     for (final TermStatistics stat : termStats ) {
-      final int df = stat.docFreq();
+      final long df = stat.docFreq();
       final float termIdf = idf(df, max);
       exp.addDetail(new Explanation(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
       idf += termIdf;

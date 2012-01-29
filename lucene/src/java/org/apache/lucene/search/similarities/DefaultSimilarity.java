@@ -62,7 +62,7 @@ public class DefaultSimilarity extends TFIDFSimilarity {
 
   /** Implemented as <code>log(numDocs/(docFreq+1)) + 1</code>. */
   @Override
-  public float idf(int docFreq, int numDocs) {
+  public float idf(long docFreq, long numDocs) {
     return (float)(Math.log(numDocs/(double)(docFreq+1)) + 1.0);
   }
     

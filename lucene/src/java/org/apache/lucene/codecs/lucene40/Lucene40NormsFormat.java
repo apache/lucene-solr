@@ -55,13 +55,6 @@ public class Lucene40NormsFormat extends NormsFormat {
     Lucene40NormsDocValuesConsumer.files(dir, info, files);
 
   }
-
-  @Override
-  public PerDocProducer docsProducer(SegmentReadState state,
-      Directory separateNormsDir) throws IOException {
-    return docsProducer(state);
-  }
-  
  
   public static class Lucene40NormsDocValuesProducer extends Lucene40DocValuesProducer {
 

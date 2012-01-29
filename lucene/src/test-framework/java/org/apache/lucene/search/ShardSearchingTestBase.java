@@ -253,7 +253,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
         assert term != null;
-        int docFreq = 0;
+        long docFreq = 0;
         long totalTermFreq = 0;
         for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
 
@@ -268,7 +268,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
             assert subStats != null;
           }
         
-          int nodeDocFreq = subStats.docFreq();
+          long nodeDocFreq = subStats.docFreq();
           if (docFreq >= 0 && nodeDocFreq >= 0) {
             docFreq += nodeDocFreq;
           } else {
@@ -291,10 +291,10 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         // TODO: we could compute this on init and cache,
         // since we are re-inited whenever any nodes have a
         // new reader
-        int docCount = 0;
+        long docCount = 0;
         long sumTotalTermFreq = 0;
         long sumDocFreq = 0;
-        int maxDoc = 0;
+        long maxDoc = 0;
 
         for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
           final FieldAndShardVersion key = new FieldAndShardVersion(nodeID, nodeVersions[nodeID], field);
@@ -311,7 +311,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           // we better not have a cache miss:
           assert nodeStats != null: "myNodeID=" + myNodeID + " nodeID=" + nodeID + " version=" + nodeVersions[nodeID] + " field=" + field;
           
-          int nodeDocCount = nodeStats.docCount();
+          long nodeDocCount = nodeStats.docCount();
           if (docCount >= 0 && nodeDocCount >= 0) {
             docCount += nodeDocCount;
           } else {

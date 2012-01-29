@@ -433,9 +433,9 @@ public class CoreContainer
       try {
         for (SolrCore core : cores.values()) {
           try {
-            if (!core.isClosed()) {
-              core.close();
-            }
+             core.close();
+             // make sure we wait for any recoveries to stop
+             core.getUpdateHandler().getSolrCoreState().cancelRecovery();
           } catch (Throwable t) {
             SolrException.log(log, "Error shutting down core", t);
           }
@@ -491,6 +491,9 @@ public class CoreContainer
     
     SolrCore old = null;
     synchronized (cores) {
+      if (isShutDown) {
+        throw new IllegalStateException("This CoreContainer has been shutdown");
+      }
       old = cores.put(name, core);
       /*
       * set both the name of the descriptor and the name of the

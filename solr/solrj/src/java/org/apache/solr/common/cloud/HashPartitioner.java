@@ -40,7 +40,7 @@ public class HashPartitioner {
    * works up to 65537 before requested num of ranges is one short
    * 
    * @param partitions
-   * @return
+   * @return Range for each partition
    */
   public List<Range> partitionRange(int partitions) {
     // some hokey code to partition the int space

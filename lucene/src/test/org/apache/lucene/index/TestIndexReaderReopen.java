@@ -42,7 +42,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;

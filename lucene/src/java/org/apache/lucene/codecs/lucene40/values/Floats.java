@@ -109,7 +109,7 @@ public class Floats {
         throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc, context, type);
       arrayTemplate = DocValuesArray.TEMPLATES.get(type);
-      assert size == 4 || size == 8;
+      assert size == 4 || size == 8: "wrong size=" + size + " type=" + type + " id=" + id;
     }
     
     @Override

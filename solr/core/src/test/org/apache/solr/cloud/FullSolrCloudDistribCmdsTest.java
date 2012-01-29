@@ -45,7 +45,6 @@ import org.junit.Ignore;
 /**
  * Super basic testing, no shard restarting or anything.
  */
-@Ignore
 public class FullSolrCloudDistribCmdsTest extends FullSolrCloudTest {
   
   

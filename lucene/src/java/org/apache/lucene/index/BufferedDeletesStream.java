@@ -147,7 +147,7 @@ class BufferedDeletesStream {
   };
   
   /** Resolves the buffered deleted Term/Query/docIDs, into
-   *  actual deleted docIDs in the liveDocs BitVector for
+   *  actual deleted docIDs in the liveDocs MutableBits for
    *  each SegmentReader. */
   public synchronized ApplyDeletesResult applyDeletes(IndexWriter.ReaderPool readerPool, List<SegmentInfo> infos) throws IOException {
     final long t0 = System.currentTimeMillis();
@@ -206,7 +206,7 @@ class BufferedDeletesStream {
 
         delIDX--;
       } else if (packet != null && segGen == packet.delGen()) {
-        assert packet.isSegmentPrivate : "Packet and Segments deletegen can only match on a segment private del packet";
+        assert packet.isSegmentPrivate : "Packet and Segments deletegen can only match on a segment private del packet gen=" + segGen;
         //System.out.println("  eq");
 
         // Lock order: IW -> BD -> RP

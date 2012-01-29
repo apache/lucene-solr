@@ -20,8 +20,8 @@ package org.apache.lucene.index;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.MutableBits;
 
 /**
  * @lucene.experimental
@@ -32,6 +32,7 @@ public class SegmentWriteState {
   public final String segmentName;
   public final FieldInfos fieldInfos;
   public final int numDocs;
+  public int delCountOnFlush;
 
   // Deletes to apply while we are flushing the segment.  A
   // Term is enrolled in here if it was deleted at one
@@ -41,7 +42,7 @@ public class SegmentWriteState {
   public final BufferedDeletes segDeletes;
 
   // Lazily created:
-  public BitVector liveDocs;
+  public MutableBits liveDocs;
 
   public final Codec codec;
   public final String segmentSuffix;
@@ -83,5 +84,6 @@ public class SegmentWriteState {
     codec = state.codec;
     this.segmentSuffix = segmentSuffix;
     segDeletes = state.segDeletes;
+    delCountOnFlush = state.delCountOnFlush;
   }
 }

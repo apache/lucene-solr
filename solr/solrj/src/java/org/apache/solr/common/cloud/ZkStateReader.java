@@ -31,15 +31,14 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.UnicodeUtil;
+
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONParser;
 import org.apache.noggit.JSONWriter;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.ByteUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -90,17 +89,18 @@ public class ZkStateReader {
   }
 
   public static byte[] toUTF8(CharArr out) {
-    BytesRef br = new BytesRef(out);
-    return Arrays.copyOf(br.bytes, br.length);
+    byte[] arr = new byte[out.size() << 2]; // is 4x the real worst-case upper-bound?
+    int nBytes = ByteUtils.UTF16toUTF8(out, 0, out.size(), arr, 0);
+    return Arrays.copyOf(arr, nBytes);
   }
 
   public static Object fromJSON(byte[] utf8) {
     // convert directly from bytes to chars
     // and parse directly from that instead of going through
     // intermediate strings or readers
-    CharsRef chars = new CharsRef();
-    UnicodeUtil.UTF8toUTF16(utf8, 0, utf8.length, chars);   // TODO: this method currently oversizes the array
-    JSONParser parser = new JSONParser(chars.chars, chars.offset, chars.length);
+    CharArr chars = new CharArr();
+    ByteUtils.UTF8toUTF16(utf8, 0, utf8.length, chars);
+    JSONParser parser = new JSONParser(chars.getArray(), chars.getStart(), chars.length());
     try {
       return ObjectBuilder.getVal(parser);
     } catch (IOException e) {

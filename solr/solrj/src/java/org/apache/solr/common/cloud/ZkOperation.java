@@ -22,8 +22,7 @@ import java.io.IOException;
 import org.apache.zookeeper.KeeperException;
 
 /**
- * A callback object which can be used for implementing retry-able operations in the 
- * {@link org.apache.solr.common.cloud.ZkCmdExecutor.lock.ProtocolSupport} class
+ * A callback object which can be used for implementing retry-able operations.
  *
  */
 public abstract class ZkOperation {

@@ -130,16 +130,15 @@ public final class ZkController {
     zkServer.stop();
   }
 
-
   /**
-   * @param coreContainer if null, recovery will not be enabled
+   * @param cc if null, recovery will not be enabled
    * @param zkServerAddress
    * @param zkClientTimeout
    * @param zkClientConnectTimeout
    * @param localHost
    * @param locaHostPort
    * @param localHostContext
-   * @param numShards 
+   * @param registerOnReconnect
    * @throws InterruptedException
    * @throws TimeoutException
    * @throws IOException
@@ -437,13 +436,14 @@ public final class ZkController {
   }
 
 
+
   /**
    * Register shard with ZooKeeper.
    * 
    * @param coreName
-   * @param cloudDesc
-   * @return
-   * @throws Exception 
+   * @param desc
+   * @return the shardId for the SolrCore
+   * @throws Exception
    */
   public String register(String coreName, final CoreDescriptor desc) throws Exception {  
     return register(coreName, desc, false);
@@ -456,7 +456,7 @@ public final class ZkController {
    * @param coreName
    * @param desc
    * @param recoverReloadedCores
-   * @return
+   * @return the shardId for the SolrCore
    * @throws Exception
    */
   public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores) throws Exception {  
@@ -508,9 +508,33 @@ public final class ZkController {
       try {
         core = cc.getCore(desc.getName());
 
-        boolean startRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
+        if (isLeader) {
+          // recover from local transaction log and wait for it to complete before
+          // going active
+          // TODO: should this be moved to another thread? To recoveryStrat?
+          // TODO: should this actually be done earlier, before (or as part of)
+          // leader election perhaps?
+          // TODO: ensure that a replica that is trying to recover waits until I'm
+          // active (or don't make me the
+          // leader until my local replay is done. But this replay is only needed
+          // on the leader - replicas
+          // will do recovery anyway
+          
+          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+          if (!core.isReloaded() && ulog != null) {
+            Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
+                .getUpdateLog().recoverFromLog();
+            if (recoveryFuture != null) {
+              recoveryFuture.get(); // NOTE: this could potentially block for
+                                    // minutes or more!
+              // TODO: public as recovering in the mean time?
+            }
+          }
+        }
+        
+        boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
             collection, coreZkNodeName, shardId, leaderProps, core, cc);
-        if (!startRecovery) {
+        if (!didRecovery) {
           publishAsActive(baseUrl, desc, coreZkNodeName, coreName);
         }
       } finally {
@@ -539,6 +563,24 @@ public final class ZkController {
   }
 
 
+  /**
+   * @param coreName
+   * @param desc
+   * @param recoverReloadedCores
+   * @param isLeader
+   * @param cloudDesc
+   * @param collection
+   * @param shardZkNodeName
+   * @param shardId
+   * @param leaderProps
+   * @param core
+   * @param cc
+   * @return whether or not a recovery was started
+   * @throws InterruptedException
+   * @throws KeeperException
+   * @throws IOException
+   * @throws ExecutionException
+   */
   private boolean checkRecovery(String coreName, final CoreDescriptor desc,
       boolean recoverReloadedCores, final boolean isLeader,
       final CloudDescriptor cloudDesc, final String collection,
@@ -546,46 +588,18 @@ public final class ZkController {
       SolrCore core, CoreContainer cc) throws InterruptedException,
       KeeperException, IOException, ExecutionException {
 
-    
     boolean doRecovery = true;
-
-
-    if (isLeader) {
-      doRecovery = false;
-      
-      // recover from local transaction log and wait for it to complete before
-      // going active
-      // TODO: should this be moved to another thread? To recoveryStrat?
-      // TODO: should this actually be done earlier, before (or as part of)
-      // leader election perhaps?
-      // TODO: ensure that a replica that is trying to recover waits until I'm
-      // active (or don't make me the
-      // leader until my local replay is done. But this replay is only needed
-      // on the leader - replicas
-      // will do recovery anyway
-      
-      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-      if (!core.isReloaded() && ulog != null) {
-        Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
-            .getUpdateLog().recoverFromLog();
-        if (recoveryFuture != null) {
-          recoveryFuture.get(); // NOTE: this could potentially block for
-                                // minutes or more!
-          // TODO: public as recovering in the mean time?
-        }
-      }
-      return false;
-    } else {
+    if (!isLeader) {
       
       if (core.isReloaded() && !recoverReloadedCores) {
         doRecovery = false;
       }
-    }
-    
-    if (doRecovery && !SKIP_AUTO_RECOVERY) {
-      log.info("Core needs to recover:" + core.getName());
-      core.getUpdateHandler().getSolrCoreState().doRecovery(core);
-      return true;
+      
+      if (doRecovery && !SKIP_AUTO_RECOVERY) {
+        log.info("Core needs to recover:" + core.getName());
+        core.getUpdateHandler().getSolrCoreState().doRecovery(core);
+        return true;
+      }
     }
     
     return false;

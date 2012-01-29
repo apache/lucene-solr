@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.codecs.lucene40;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.MutableBits;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like
  *  java.util.BitSet, but also includes the following:
@@ -37,7 +39,9 @@ import org.apache.lucene.store.IndexOutput;
  *
  *  @lucene.internal
  */
-public final class BitVector implements Cloneable, Bits {
+// pkg-private: if this thing is generally useful then it can go back in .util,
+// but the serialization must be here underneath the codec.
+final class BitVector implements Cloneable, MutableBits {
 
   private byte[] bits;
   private int size;
@@ -66,7 +70,7 @@ public final class BitVector implements Cloneable, Bits {
   }
   
   @Override
-  public Object clone() {
+  public BitVector clone() {
     byte[] copyBits = new byte[bits.length];
     System.arraycopy(bits, 0, copyBits, 0, bits.length);
     BitVector clone = new BitVector(copyBits, size);

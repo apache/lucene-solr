@@ -147,19 +147,19 @@ public class DocTermOrds {
   }
 
   /** Inverts all terms */
-  public DocTermOrds(IndexReader reader, String field) throws IOException {
+  public DocTermOrds(AtomicIndexReader reader, String field) throws IOException {
     this(reader, field, null, Integer.MAX_VALUE);
   }
 
   /** Inverts only terms starting w/ prefix */
-  public DocTermOrds(IndexReader reader, String field, BytesRef termPrefix) throws IOException {
+  public DocTermOrds(AtomicIndexReader reader, String field, BytesRef termPrefix) throws IOException {
     this(reader, field, termPrefix, Integer.MAX_VALUE);
   }
 
   /** Inverts only terms starting w/ prefix, and only terms
    *  whose docFreq (not taking deletions into account) is
    *  <=  maxTermDocFreq */
-  public DocTermOrds(IndexReader reader, String field, BytesRef termPrefix, int maxTermDocFreq) throws IOException {
+  public DocTermOrds(AtomicIndexReader reader, String field, BytesRef termPrefix, int maxTermDocFreq) throws IOException {
     this(reader, field, termPrefix, maxTermDocFreq, DEFAULT_INDEX_INTERVAL_BITS);
     uninvert(reader, termPrefix);
   }
@@ -168,7 +168,7 @@ public class DocTermOrds {
    *  whose docFreq (not taking deletions into account) is
    *  <=  maxTermDocFreq, with a custom indexing interval
    *  (default is every 128nd term). */
-  public DocTermOrds(IndexReader reader, String field, BytesRef termPrefix, int maxTermDocFreq, int indexIntervalBits) throws IOException {
+  public DocTermOrds(AtomicIndexReader reader, String field, BytesRef termPrefix, int maxTermDocFreq, int indexIntervalBits) throws IOException {
     this(field, maxTermDocFreq, indexIntervalBits);
     uninvert(reader, termPrefix);
   }
@@ -194,17 +194,21 @@ public class DocTermOrds {
    *
    *  <p><b>NOTE</b>: you must pass the same reader that was
    *  used when creating this class */
-  public TermsEnum getOrdTermsEnum(IndexReader reader) throws IOException {
+  public TermsEnum getOrdTermsEnum(AtomicIndexReader reader) throws IOException {
     if (termInstances == 0) {
       return null;
     }
     if (indexedTermsArray == null) {
       //System.out.println("GET normal enum");
-      final Terms terms = MultiFields.getTerms(reader, field);
-      if (terms != null) {
-        return terms.iterator(null);
-      } else {
+      final Fields fields = reader.fields();
+      if (fields == null) {
         return null;
+      }
+      final Terms terms = fields.terms(field);
+      if (terms == null) {
+        return null;
+      } else {
+        return terms.iterator(null);
       }
     } else {
       //System.out.println("GET wrapped enum ordBase=" + ordBase);
@@ -220,7 +224,7 @@ public class DocTermOrds {
   }
 
   // Call this only once (if you subclass!)
-  protected void uninvert(final IndexReader reader, final BytesRef termPrefix) throws IOException {
+  protected void uninvert(final AtomicIndexReader reader, final BytesRef termPrefix) throws IOException {
     //System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);
     final long startTime = System.currentTimeMillis();
     prefix = termPrefix == null ? null : BytesRef.deepCopyOf(termPrefix);
@@ -230,7 +234,12 @@ public class DocTermOrds {
     final int[] lastTerm = new int[maxDoc];    // last term we saw for this document
     final byte[][] bytes = new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
 
-    final Terms terms = MultiFields.getTerms(reader, field);
+    final Fields fields = reader.fields();
+    if (fields == null) {
+      // No terms
+      return;
+    }
+    final Terms terms = fields.terms(field);
     if (terms == null) {
       // No terms
       return;
@@ -251,7 +260,7 @@ public class DocTermOrds {
 
     boolean testedOrd = false;
 
-    final Bits liveDocs = MultiFields.getLiveDocs(reader);
+    final Bits liveDocs = reader.getLiveDocs();
 
     // we need a minimum of 9 bytes, but round up to 12 since the space would
     // be wasted with most allocators anyway.
@@ -633,15 +642,15 @@ public class DocTermOrds {
    * ord; in this case we "wrap" our own terms index
    * around it. */
   private final class OrdWrappedTermsEnum extends TermsEnum {
-    private final IndexReader reader;
+    private final AtomicIndexReader reader;
     private final TermsEnum termsEnum;
     private BytesRef term;
     private long ord = -indexInterval-1;          // force "real" seek
     
-    public OrdWrappedTermsEnum(IndexReader reader) throws IOException {
+    public OrdWrappedTermsEnum(AtomicIndexReader reader) throws IOException {
       this.reader = reader;
       assert indexedTermsArray != null;
-      termsEnum = MultiFields.getTerms(reader, field).iterator(null);
+      termsEnum = reader.fields().terms(field).iterator(null);
     }
 
     @Override

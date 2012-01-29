@@ -393,6 +393,10 @@ API Changes
   (Mike McCandless, Uwe Schindler, Robert Muir, Chris Male, Yonik Seeley,
   Jason Rutherglen, Paul Elschot)
 
+* LUCENE-3722: Similarity methods and collection/term statistics now take
+  long instead of int (to enable distributed scoring of > 2B docs).
+  (Yonik Seeley, Andrzej Bialecki, Robert Muir)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions

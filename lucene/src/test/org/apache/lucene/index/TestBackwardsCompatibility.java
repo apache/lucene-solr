@@ -497,17 +497,25 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       writer.deleteDocuments(searchTerm);
       writer.close();
 
-      // Now verify file names:
+      // Now verify file names... TODO: fix this test better, we could populate from 
+      // separateFiles() or something.
       String[] expected = new String[] {"_0.cfs", "_0.cfe",
                                "_0_1.del",
                                "segments_2",
                                "segments.gen"};
+      
+      String[] expectedSimpleText = new String[] {"_0.cfs", "_0.cfe",
+          "_0_1.liv",
+          "segments_2",
+          "segments.gen"};
 
       String[] actual = dir.listAll();
       Arrays.sort(expected);
+      Arrays.sort(expectedSimpleText);
       Arrays.sort(actual);
-      if (!Arrays.equals(expected, actual)) {
-        fail("incorrect filenames in index: expected:\n    " + asString(expected) + "\n  actual:\n    " + asString(actual));
+      if (!Arrays.equals(expected, actual) && !Arrays.equals(expectedSimpleText, actual)) {
+        fail("incorrect filenames in index: expected:\n    " + asString(expected) 
+            + "\n or " + asString(expectedSimpleText) + "\n actual:\n    " + asString(actual));
       }
       dir.close();
     } finally {

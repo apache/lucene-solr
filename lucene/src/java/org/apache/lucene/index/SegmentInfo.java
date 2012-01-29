@@ -326,16 +326,6 @@ public final class SegmentInfo implements Cloneable {
     return si;
   }
 
-  public String getDelFileName() {
-    if (delGen == NO) {
-      // In this case we know there is no deletion filename
-      // against this segment
-      return null;
-    } else {
-      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen);
-    }
-  }
-
   /**
    * @deprecated separate norms are not supported in >= 4.0
    */
@@ -494,6 +484,9 @@ public final class SegmentInfo implements Cloneable {
     } else {
       codec.files(dir, this, fileSet);
     }
+    
+    // regardless of compound file setting: these files are always in the directory
+    codec.separateFiles(dir, this, fileSet);
 
     if (docStoreOffset != -1) {
       // We are sharing doc stores (stored fields, term
@@ -503,18 +496,6 @@ public final class SegmentInfo implements Cloneable {
       if (docStoreIsCompoundFile) {
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
       }
-    }
-
-    String delFileName = IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen);
-    if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
-      fileSet.add(delFileName);
-    }
-
-    // because separate norm files are unconditionally stored outside cfs,
-    // we must explicitly ask for their filenames if we might have separate norms:
-    // remove this when 3.x indexes are no longer supported
-    if (normGen != null) {
-      codec.normsFormat().separateFiles(dir, this, fileSet);
     }
 
     files = new ArrayList<String>(fileSet);
