@@ -66,9 +66,9 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   /** Populates <code>files</code> with any filenames that are
    * stored outside of CFS for the <code>info</code> segment.
    */
+  // TODO: can we somehow totally remove this?
   public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     liveDocsFormat().separateFiles(dir, info, files);
-    normsFormat().separateFiles(dir, info, files);
   }
   
   /** Encodes/decodes postings */

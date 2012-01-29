@@ -24,7 +24,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -41,7 +40,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.MutableBits;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Supports the Lucene 3.x index format (readonly)
@@ -67,7 +65,7 @@ public class Lucene3xCodec extends Codec {
 
   private final SegmentInfosFormat infosFormat = new Lucene3xSegmentInfosFormat();
   
-  private final NormsFormat normsFormat = new Lucene3xNormsFormat();
+  private final Lucene3xNormsFormat normsFormat = new Lucene3xNormsFormat();
   
   // TODO: this should really be a different impl
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat() {
@@ -124,7 +122,7 @@ public class Lucene3xCodec extends Codec {
   }
 
   @Override
-  public NormsFormat normsFormat() {
+  public Lucene3xNormsFormat normsFormat() {
     return normsFormat;
   }
   
@@ -144,4 +142,12 @@ public class Lucene3xCodec extends Codec {
       super.files(dir, info, files);
     }
   }
+
+  // override the default implementation in codec.java to handle separate norms files
+  @Override
+  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+    super.separateFiles(dir, info, files);
+    normsFormat().separateFiles(dir, info, files);
+  }
+  
 }

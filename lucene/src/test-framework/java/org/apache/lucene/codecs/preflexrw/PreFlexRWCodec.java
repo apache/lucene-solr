@@ -22,12 +22,12 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
+import org.apache.lucene.codecs.lucene3x.Lucene3xNormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.index.IndexFileNames;
@@ -42,7 +42,7 @@ import org.apache.lucene.util.StringHelper;
  */
 public class PreFlexRWCodec extends Lucene3xCodec {
   private final PostingsFormat postings = new PreFlexRWPostingsFormat();
-  private final NormsFormat norms = new PreFlexRWNormsFormat();
+  private final Lucene3xNormsFormat norms = new PreFlexRWNormsFormat();
   private final FieldInfosFormat fieldInfos = new PreFlexRWFieldInfosFormat();
   private final TermVectorsFormat termVectors = new PreFlexRWTermVectorsFormat();
   private final SegmentInfosFormat segmentInfos = new PreFlexRWSegmentInfosFormat();
@@ -61,7 +61,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   }
 
   @Override
-  public NormsFormat normsFormat() {
+  public Lucene3xNormsFormat normsFormat() {
     if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
       return norms;
     } else {

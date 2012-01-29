@@ -43,7 +43,6 @@ public class Lucene3xNormsFormat extends NormsFormat {
     Lucene3xNormsProducer.files(dir, info, files);
   }
 
-  @Override
   public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
     Lucene3xNormsProducer.separateFiles(dir, info, files);
   }
