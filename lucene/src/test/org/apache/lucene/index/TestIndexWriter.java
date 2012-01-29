@@ -775,8 +775,8 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("", "a b c", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);  
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
-    IndexReader subreader = getOnlySegmentReader(reader);
+    DirectoryReader reader = IndexReader.open(dir);
+    AtomicIndexReader subreader = getOnlySegmentReader(reader);
     TermsEnum te = subreader.fields().terms("").iterator(null);
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
@@ -796,8 +796,8 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("", "c", StringField.TYPE_UNSTORED));
     writer.addDocument(doc);  
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
-    IndexReader subreader = getOnlySegmentReader(reader);
+    DirectoryReader reader = IndexReader.open(dir);
+    AtomicIndexReader subreader = getOnlySegmentReader(reader);
     TermsEnum te = subreader.fields().terms("").iterator(null);
     assertEquals(new BytesRef(""), te.next());
     assertEquals(new BytesRef("a"), te.next());
@@ -1301,7 +1301,7 @@ public class TestIndexWriter extends LuceneTestCase {
     d.add(f);
     w.addDocument(d);
 
-    IndexReader r = w.getReader().getSequentialSubReaders()[0];
+    AtomicIndexReader r = getOnlySegmentReader(w.getReader());
     TermsEnum t = r.fields().terms("field").iterator(null);
     int count = 0;
     while(t.next() != null) {
@@ -1331,7 +1331,7 @@ public class TestIndexWriter extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newField("field", "go", TextField.TYPE_UNSTORED));
       w.addDocument(doc);
-      IndexReader r;
+      DirectoryReader r;
       if (iter == 0) {
         // use NRT
         r = w.getReader();
@@ -1348,7 +1348,7 @@ public class TestIndexWriter extends LuceneTestCase {
       if (iter == 1) {
         w.commit();
       }
-      IndexReader r2 = IndexReader.openIfChanged(r);
+      IndexReader r2 = DirectoryReader.openIfChanged(r);
       assertNotNull(r2);
       assertTrue(r != r2);
       files = Arrays.asList(dir.listAll());
@@ -1543,7 +1543,7 @@ public class TestIndexWriter extends LuceneTestCase {
     _TestUtil.checkIndex(dir);
 
     assertNoUnreferencedFiles(dir, "no tv files");
-    IndexReader r0 = IndexReader.open(dir);
+    DirectoryReader r0 = IndexReader.open(dir);
     for (IndexReader r : r0.getSequentialSubReaders()) {
       SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
       assertFalse(s.getHasVectors());
@@ -1727,7 +1727,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newField("id", "0", StringField.TYPE_STORED));
     w.addDocument(doc);
-    IndexReader r = w.getReader();
+    DirectoryReader r = w.getReader();
     long version = r.getVersion();
     r.close();
 
