@@ -477,16 +477,6 @@ public final class SegmentInfo implements Cloneable {
     // regardless of compound file setting: these files are always in the directory
     codec.separateFiles(dir, this, fileSet);
 
-    if (docStoreOffset != -1) {
-      // We are sharing doc stores (stored fields, term
-      // vectors) with other segments
-      assert docStoreSegment != null;
-      // TODO: push this out into preflex fieldsFormat?
-      if (docStoreIsCompoundFile) {
-        fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
-      }
-    }
-
     files = new ArrayList<String>(fileSet);
 
     return files;
