@@ -184,7 +184,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void test() throws IOException {
     //Check to see the files were created properly in setup
-    IndexReader reader = IndexReader.open(dir);
+    DirectoryReader reader = IndexReader.open(dir);
     for (IndexReader r : reader.getSequentialSubReaders()) {
       SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
       assertTrue(s.getHasVectors());
