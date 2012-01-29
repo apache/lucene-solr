@@ -57,9 +57,6 @@ public final class IndexFileNames {
   /** Extension of compound file for doc store files*/
   public static final String COMPOUND_FILE_STORE_EXTENSION = "cfx";
 
-  /** Extension of deletes */
-  public static final String DELETES_EXTENSION = "del";
-
   /**
    * This array contains all filename extensions used by
    * Lucene's index files, with one exception, namely the
@@ -70,7 +67,6 @@ public final class IndexFileNames {
   public static final String INDEX_EXTENSIONS[] = new String[] {
     COMPOUND_FILE_EXTENSION,
     COMPOUND_FILE_ENTRIES_EXTENSION,
-    DELETES_EXTENSION,
     GEN_EXTENSION,
     COMPOUND_FILE_STORE_EXTENSION,
   };

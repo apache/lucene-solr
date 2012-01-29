@@ -30,12 +30,12 @@ import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.MutableBits;
 
 public class DocumentsWriterPerThread {
 
@@ -114,13 +114,15 @@ public class DocumentsWriterPerThread {
   static class FlushedSegment {
     final SegmentInfo segmentInfo;
     final BufferedDeletes segmentDeletes;
-    final BitVector liveDocs;
+    final MutableBits liveDocs;
+    final int delCount;
 
     private FlushedSegment(SegmentInfo segmentInfo,
-        BufferedDeletes segmentDeletes, BitVector liveDocs) {
+                           BufferedDeletes segmentDeletes, MutableBits liveDocs, int delCount) {
       this.segmentInfo = segmentInfo;
       this.segmentDeletes = segmentDeletes;
       this.liveDocs = liveDocs;
+      this.delCount = delCount;
     }
   }
 
@@ -448,11 +450,11 @@ public class DocumentsWriterPerThread {
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
     if (pendingDeletes.docIDs.size() > 0) {
-      flushState.liveDocs = new BitVector(numDocsInRAM);
-      flushState.liveDocs.invertAll();
+      flushState.liveDocs = codec.liveDocsFormat().newLiveDocs(numDocsInRAM);
       for(int delDocID : pendingDeletes.docIDs) {
         flushState.liveDocs.clear(delDocID);
       }
+      flushState.delCountOnFlush = pendingDeletes.docIDs.size();
       pendingDeletes.bytesUsed.addAndGet(-pendingDeletes.docIDs.size() * BufferedDeletes.BYTES_PER_DEL_DOCID);
       pendingDeletes.docIDs.clear();
     }
@@ -475,7 +477,7 @@ public class DocumentsWriterPerThread {
       pendingDeletes.terms.clear();
       final SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.codec, fieldInfos.asReadOnly());
       if (infoStream.isEnabled("DWPT")) {
-        infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.liveDocs.count())) + " deleted docs");
+        infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.delCountOnFlush)) + " deleted docs");
         infoStream.message("DWPT", "new segment has " + (newSegment.getHasVectors() ? "vectors" : "no vectors"));
         infoStream.message("DWPT", "flushedFiles=" + newSegment.files());
         infoStream.message("DWPT", "flushed codec=" + newSegment.getCodec());
@@ -504,7 +506,7 @@ public class DocumentsWriterPerThread {
       doAfterFlush();
       success = true;
 
-      return new FlushedSegment(newSegment, segmentDeletes, flushState.liveDocs);
+      return new FlushedSegment(newSegment, segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
     } finally {
       if (!success) {
         if (segment != null) {

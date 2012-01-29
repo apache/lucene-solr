@@ -25,7 +25,6 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -36,14 +35,14 @@ public final class SegmentReader extends IndexReader {
   private final SegmentInfo si;
   private final ReaderContext readerContext = new AtomicReaderContext(this);
   
-  private final BitVector liveDocs;
+  private final Bits liveDocs;
 
   // Normally set to si.docCount - si.delDocCount, unless we
   // were created as an NRT reader from IW, in which case IW
   // tells us the docCount:
   private final int numDocs;
 
-  private final SegmentCoreReaders core;
+  final SegmentCoreReaders core;
 
   /**
    * @throws CorruptIndexException if the index is corrupt
@@ -56,13 +55,12 @@ public final class SegmentReader extends IndexReader {
     try {
       if (si.hasDeletions()) {
         // NOTE: the bitvector is stored using the regular directory, not cfs
-        liveDocs = new BitVector(directory(), si.getDelFileName(), new IOContext(IOContext.READ, true));
+        liveDocs = si.getCodec().liveDocsFormat().readLiveDocs(directory(), si, new IOContext(IOContext.READ, true));
       } else {
         assert si.getDelCount() == 0;
         liveDocs = null;
       }
       numDocs = si.docCount - si.getDelCount();
-      assert checkLiveCounts(false);
       success = true;
     } finally {
       // With lock-less commits, it's entirely possible (and
@@ -76,73 +74,32 @@ public final class SegmentReader extends IndexReader {
     }
   }
 
-  // TODO: really these next 2 ctors could take
-  // SegmentCoreReaders... that's all we do w/ the parent
-  // SR:
-
   // Create new SegmentReader sharing core from a previous
   // SegmentReader and loading new live docs from a new
   // deletes file.  Used by openIfChanged.
-  SegmentReader(SegmentInfo si, SegmentReader parent, IOContext context) throws IOException {
-    assert si.dir == parent.getSegmentInfo().dir;
-    this.si = si;
-
-    // It's no longer possible to unDeleteAll, so, we can
-    // only be created if we have deletions:
-    assert si.hasDeletions();
-
-    // ... but load our own deleted docs:
-    liveDocs = new BitVector(si.dir, si.getDelFileName(), context);
-    numDocs = si.docCount - si.getDelCount();
-    assert checkLiveCounts(false);
-
-    // We share core w/ parent:
-    parent.core.incRef();
-    core = parent.core;
+  SegmentReader(SegmentInfo si, SegmentCoreReaders core, IOContext context) throws IOException {
+    this(si, core, si.getCodec().liveDocsFormat().readLiveDocs(si.dir, si, context), si.docCount - si.getDelCount());
   }
 
   // Create new SegmentReader sharing core from a previous
   // SegmentReader and using the provided in-memory
   // liveDocs.  Used by IndexWriter to provide a new NRT
   // reader:
-  SegmentReader(SegmentReader parent, BitVector liveDocs, int numDocs) throws IOException {
-    this.si = parent.si;
-    parent.core.incRef();
-    this.core = parent.core;
+  SegmentReader(SegmentInfo si, SegmentCoreReaders core, Bits liveDocs, int numDocs) throws IOException {
+    this.si = si;
+    this.core = core;
+    core.incRef();
 
     assert liveDocs != null;
     this.liveDocs = liveDocs;
 
     this.numDocs = numDocs;
-
-    assert checkLiveCounts(true);
   }
 
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
     return liveDocs;
-  }
-
-  private boolean checkLiveCounts(boolean isNRT) throws IOException {
-    if (liveDocs != null) {
-      if (liveDocs.size() != si.docCount) {
-        throw new CorruptIndexException("document count mismatch: deleted docs count " + liveDocs.size() + " vs segment doc count " + si.docCount + " segment=" + si.name);
-      }
-
-      final int recomputedCount = liveDocs.getRecomputedCount();
-      // Verify BitVector is self consistent:
-      assert liveDocs.count() == recomputedCount : "live count=" + liveDocs.count() + " vs recomputed count=" + recomputedCount;
-
-      // Verify our docCount matches:
-      assert numDocs == recomputedCount :
-      "delete count mismatch: numDocs=" + numDocs + " vs BitVector=" + (si.docCount-recomputedCount);
-
-      assert isNRT || si.docCount - si.getDelCount() == recomputedCount :
-        "si.docCount=" + si.docCount + "si.getDelCount()=" + si.getDelCount() + " recomputedCount=" + recomputedCount;
-    }
-  
-    return true;
   }
 
   @Override

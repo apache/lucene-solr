@@ -18,11 +18,15 @@ package org.apache.lucene.codecs.preflexrw;
  */
 
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfosFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
+import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -35,6 +39,10 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   private final FieldInfosFormat fieldInfos = new PreFlexRWFieldInfosFormat();
   private final TermVectorsFormat termVectors = new PreFlexRWTermVectorsFormat();
   private final SegmentInfosFormat segmentInfos = new PreFlexRWSegmentInfosFormat();
+  // TODO: this should really be a different impl
+  private final LiveDocsFormat liveDocs = new Lucene40LiveDocsFormat();
+  // TODO: this should really be a different impl
+  private final StoredFieldsFormat storedFields = new Lucene40StoredFieldsFormat();
   
   @Override
   public PostingsFormat postingsFormat() {
@@ -78,6 +86,24 @@ public class PreFlexRWCodec extends Lucene3xCodec {
       return termVectors;
     } else {
       return super.termVectorsFormat();
+    }
+  }
+
+  @Override
+  public LiveDocsFormat liveDocsFormat() {
+    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+      return liveDocs;
+    } else {
+      return super.liveDocsFormat();
+    }
+  }
+
+  @Override
+  public StoredFieldsFormat storedFieldsFormat() {
+    if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
+      return storedFields;
+    } else {
+      return super.storedFieldsFormat();
     }
   }
 }

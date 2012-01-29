@@ -104,16 +104,12 @@ final class SegmentMerger {
     // IndexWriter.close(false) takes to actually stop the
     // threads.
     
-    final int numReaders = mergeState.readers.size();
-    // Remap docIDs
-    mergeState.docMaps = new int[numReaders][];
-    mergeState.docBase = new int[numReaders];
-    mergeState.dirPayloadProcessor = new PayloadProcessorProvider.DirPayloadProcessor[numReaders];
-    mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[numReaders];
+    mergeState.mergedDocCount = setDocMaps();
 
     mergeFieldInfos();
     setMatchingSegmentReaders();
-    mergeState.mergedDocCount = mergeFields();
+    int numMerged = mergeFields();
+    assert numMerged == mergeState.mergedDocCount;
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, segment, mergeState.fieldInfos, mergeState.mergedDocCount, termIndexInterval, codec, null, context);
     mergeTerms(segmentWriteState);
@@ -124,7 +120,7 @@ final class SegmentMerger {
     }
 
     if (mergeState.fieldInfos.hasVectors()) {
-      int numMerged = mergeVectors();
+      numMerged = mergeVectors();
       assert numMerged == mergeState.mergedDocCount;
     }
 
@@ -283,37 +279,31 @@ final class SegmentMerger {
     }
   }
 
-  private final void mergeTerms(SegmentWriteState segmentWriteState) throws CorruptIndexException, IOException {
-    int docBase = 0;
-    
-    final List<Fields> fields = new ArrayList<Fields>();
-    final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
-
-    for(MergeState.IndexReaderAndLiveDocs r : mergeState.readers) {
-      final Fields f = r.reader.fields();
-      final int maxDoc = r.reader.maxDoc();
-      if (f != null) {
-        slices.add(new ReaderUtil.Slice(docBase, maxDoc, fields.size()));
-        fields.add(f);
-      }
-      docBase += maxDoc;
-    }
-
+  // NOTE: removes any "all deleted" readers from mergeState.readers
+  private int setDocMaps() throws IOException {
     final int numReaders = mergeState.readers.size();
 
-    docBase = 0;
+    // Remap docIDs
+    mergeState.docMaps = new int[numReaders][];
+    mergeState.docBase = new int[numReaders];
+    mergeState.dirPayloadProcessor = new PayloadProcessorProvider.DirPayloadProcessor[numReaders];
+    mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[numReaders];
 
-    for(int i=0;i<numReaders;i++) {
+    int docBase = 0;
+
+    int i = 0;
+    while(i < mergeState.readers.size()) {
 
       final MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(i);
 
       mergeState.docBase[i] = docBase;
       final int maxDoc = reader.reader.maxDoc();
-      if (reader.liveDocs != null) {
+      final int docCount;
+      final Bits liveDocs = reader.liveDocs;
+      final int[] docMap;
+      if (liveDocs != null) {
         int delCount = 0;
-        final Bits liveDocs = reader.liveDocs;
-        assert liveDocs != null;
-        final int[] docMap = mergeState.docMaps[i] = new int[maxDoc];
+        docMap = new int[maxDoc];
         int newDocID = 0;
         for(int j=0;j<maxDoc;j++) {
           if (!liveDocs.get(j)) {
@@ -323,14 +313,41 @@ final class SegmentMerger {
             docMap[j] = newDocID++;
           }
         }
-        docBase += maxDoc - delCount;
+        docCount = maxDoc - delCount;
       } else {
-        docBase += maxDoc;
+        docCount = maxDoc;
+        docMap = null;
       }
+
+      mergeState.docMaps[i] = docMap;
+      docBase += docCount;
 
       if (mergeState.payloadProcessorProvider != null) {
         mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(reader.reader.directory());
       }
+
+      i++;
+    }
+
+    return docBase;
+  }
+
+  private final void mergeTerms(SegmentWriteState segmentWriteState) throws CorruptIndexException, IOException {
+    
+    final List<Fields> fields = new ArrayList<Fields>();
+    final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
+
+    int docBase = 0;
+
+    for(int readerIndex=0;readerIndex<mergeState.readers.size();readerIndex++) {
+      final MergeState.IndexReaderAndLiveDocs r = mergeState.readers.get(readerIndex);
+      final Fields f = r.reader.fields();
+      final int maxDoc = r.reader.maxDoc();
+      if (f != null) {
+        slices.add(new ReaderUtil.Slice(docBase, maxDoc, readerIndex));
+        fields.add(f);
+      }
+      docBase += maxDoc;
     }
 
     final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState);

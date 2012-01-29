@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfosFormat;
@@ -35,6 +36,7 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
@@ -1155,6 +1157,11 @@ public class TestAddIndexes extends LuceneTestCase {
     @Override
     public NormsFormat normsFormat() {
       return new Lucene40NormsFormat();
+    }
+    
+    @Override
+    public LiveDocsFormat liveDocsFormat() {
+      return new Lucene40LiveDocsFormat();
     }
   }
   

@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -48,10 +48,11 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.MutableBits;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.TwoPhaseCommit;
 
@@ -416,7 +417,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // docs, and it's copy-on-write (cloned whenever we need
     // to change it but it's been shared to an external NRT
     // reader).
-    public BitVector liveDocs;
+    public Bits liveDocs;
 
     // How many further deletions we've done against
     // liveDocs vs when we loaded it or last wrote it:
@@ -446,6 +447,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return rc > myRefCounts;
     }
 
+    // Call only from assert!
+    public synchronized boolean verifyDocCounts() {
+      int count;
+      if (liveDocs != null) {
+        count = 0;
+        for(int docID=0;docID<info.docCount;docID++) {
+          if (liveDocs.get(docID)) {
+            count++;
+          }
+        }
+      } else {
+        count = info.docCount;
+      }
+
+      assert info.docCount - info.getDelCount() - pendingDeleteCount == count: "info.docCount=" + info.docCount + " info.getDelCount()=" + info.getDelCount() + " pendingDeleteCount=" + pendingDeleteCount + " count=" + count;;
+      return true;
+    }
+
     // Returns true if any reader remains
     public synchronized boolean removeReader(SegmentReader sr, boolean drop) throws IOException {
       if (sr == reader) {
@@ -468,17 +487,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return reader != null || mergeReader != null;
     }
 
-    // Called only from assert
-    private boolean countsMatch() {
-      if (liveDocs == null) {
-        assert pendingDeleteCount == 0;
-      } else {
-        assert liveDocs.count() == info.docCount - info.getDelCount() - pendingDeleteCount :
-        "liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.docCount + " info.delCount=" + info.getDelCount() + " pendingDelCount=" + pendingDeleteCount;
-      }
-      return true;
-    }
-
     // Get reader for searching/deleting
     public synchronized SegmentReader getReader(IOContext context) throws IOException {
       //System.out.println("  livedocs=" + rld.liveDocs);
@@ -486,7 +494,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (reader == null) {
         reader = new SegmentReader(info, config.getReaderTermsIndexDivisor(), context);
         if (liveDocs == null) {
-          liveDocs = (BitVector) reader.getLiveDocs();
+          liveDocs = reader.getLiveDocs();
         }
         //System.out.println("ADD seg=" + rld.info + " isMerge=" + isMerge + " " + readerMap.size() + " in pool");
       }
@@ -513,7 +521,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         } else {
           mergeReader = new SegmentReader(info, -1, context);
           if (liveDocs == null) {
-            liveDocs = (BitVector) mergeReader.getLiveDocs();
+            liveDocs = mergeReader.getLiveDocs();
           }
         }
       }
@@ -526,8 +534,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     public synchronized boolean delete(int docID) {
       assert liveDocs != null;
       assert docID >= 0 && docID < liveDocs.length();
-      final boolean didDelete = liveDocs.getAndClear(docID);
+      assert !shared;
+      final boolean didDelete = liveDocs.get(docID);
       if (didDelete) {
+       ((MutableBits) liveDocs).clear(docID);
         pendingDeleteCount++;
         //System.out.println("  new del seg=" + info + " docID=" + docID + " pendingDelCount=" + pendingDeleteCount + " totDelCount=" + (info.docCount-liveDocs.count()));
       }
@@ -557,17 +567,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         getReader(context).decRef();
         assert reader != null;
       }
-      assert countsMatch();
       shared = true;
       if (liveDocs != null) {
-        return new SegmentReader(reader, liveDocs, info.docCount - info.getDelCount() - pendingDeleteCount);
+        return new SegmentReader(reader.getSegmentInfo(), reader.core, liveDocs, info.docCount - info.getDelCount() - pendingDeleteCount);
       } else {
         reader.incRef();
         return reader;
       }
     }
 
-    public synchronized void initWritableLiveDocs() {
+    public synchronized void initWritableLiveDocs() throws IOException {
       assert Thread.holdsLock(IndexWriter.this);
       //System.out.println("initWritableLivedocs seg=" + info + " liveDocs=" + liveDocs + " shared=" + shared);
       if (shared) {
@@ -575,12 +584,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // SegmentReader sharing the current liveDocs
         // instance; must now make a private clone so we can
         // change it:
+        LiveDocsFormat liveDocsFormat = info.getCodec().liveDocsFormat();
         if (liveDocs == null) {
           //System.out.println("create BV seg=" + info);
-          liveDocs = new BitVector(info.docCount);
-          liveDocs.setAll();
+          liveDocs = liveDocsFormat.newLiveDocs(info.docCount);
         } else {
-          liveDocs = (BitVector) liveDocs.clone();
+          liveDocs = liveDocsFormat.newLiveDocs(liveDocs);
         }
         shared = false;
       } else {
@@ -588,11 +597,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
-    public synchronized BitVector getReadOnlyLiveDocs() {
+    public synchronized Bits getReadOnlyLiveDocs() {
       //System.out.println("getROLiveDocs seg=" + info);
       assert Thread.holdsLock(IndexWriter.this);
       shared = true;
-      assert countsMatch();
       //if (liveDocs != null) {
       //System.out.println("  liveCount=" + liveDocs.count());
       //}
@@ -611,29 +619,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // Save in case we need to rollback on failure:
         final SegmentInfo sav = (SegmentInfo) info.clone();
         info.advanceDelGen();
+        info.setDelCount(info.getDelCount() + pendingDeleteCount);
 
         // We can write directly to the actual name (vs to a
         // .tmp & renaming it) because the file is not live
         // until segments file is written:
-        final String delFileName = info.getDelFileName();
         boolean success = false;
         try {
-          liveDocs.write(dir, delFileName, IOContext.DEFAULT);
+          info.getCodec().liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, dir, info, IOContext.DEFAULT);
           success = true;
         } finally {
           if (!success) {
             info.reset(sav);
-            try {
-              dir.deleteFile(delFileName);
-            } catch (Throwable t) {
-              // Suppress this so we keep throwing the
-              // original exception
-            }
           }
         }
-        assert (info.docCount - liveDocs.count()) == info.getDelCount() + pendingDeleteCount:
-           "delete count mismatch during commit: seg=" + info + " info.delCount=" + info.getDelCount() + " vs BitVector=" + (info.docCount-liveDocs.count() + " pendingDelCount=" + pendingDeleteCount);
-        info.setDelCount(info.getDelCount() + pendingDeleteCount);
         pendingDeleteCount = 0;
         return true;
       } else {
@@ -2205,7 +2204,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   /**
    * Prepares the {@link SegmentInfo} for the new flushed segment and persists
-   * the deleted documents {@link BitVector}. Use
+   * the deleted documents {@link MutableBits}. Use
    * {@link #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes)} to
    * publish the returned {@link SegmentInfo} together with its segment private
    * delete packet.
@@ -2252,33 +2251,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // Must write deleted docs after the CFS so we don't
       // slurp the del file into CFS:
       if (flushedSegment.liveDocs != null) {
-        final int delCount = flushedSegment.segmentInfo.docCount - flushedSegment.liveDocs.count();
+        final int delCount = flushedSegment.delCount;
         assert delCount > 0;
         newSegment.setDelCount(delCount);
         newSegment.advanceDelGen();
-        final String delFileName = newSegment.getDelFileName();
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "flush: write " + delCount + " deletes to " + delFileName);
+          infoStream.message("IW", "flush: write " + delCount + " deletes gen=" + flushedSegment.segmentInfo.getDelGen());
         }
-        boolean success2 = false;
-        try {
-          // TODO: in the NRT case it'd be better to hand
-          // this del vector over to the
-          // shortly-to-be-opened SegmentReader and let it
-          // carry the changes; there's no reason to use
-          // filesystem as intermediary here.
-          flushedSegment.liveDocs.write(directory, delFileName, context);
-          success2 = true;
-        } finally {
-          if (!success2) {
-            try {
-              directory.deleteFile(delFileName);
-            } catch (Throwable t) {
-              // suppress this so we keep throwing the
-              // original exception
-            }
-          }
-        }
+
+        // TODO: in the NRT case it'd be better to hand
+        // this del vector over to the
+        // shortly-to-be-opened SegmentReader and let it
+        // carry the changes; there's no reason to use
+        // filesystem as intermediary here.
+          
+        SegmentInfo info = flushedSegment.segmentInfo;
+        Codec codec = info.getCodec();
+        codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, context);
       }
 
       success = true;
@@ -3032,8 +3021,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       SegmentInfo info = sourceSegments.get(i);
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
       final int docCount = info.docCount;
-      final BitVector prevLiveDocs = merge.readerLiveDocs.get(i);
-      final BitVector currentLiveDocs;
+      final Bits prevLiveDocs = merge.readerLiveDocs.get(i);
+      final Bits currentLiveDocs;
       ReadersAndLiveDocs rld = readerPool.get(info, false);
       // We enrolled in mergeInit:
       assert rld != null;
@@ -3052,7 +3041,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // newly flushed deletes but mapping them to the new
         // docIDs.
 
-        if (currentLiveDocs.count() < prevLiveDocs.count()) {
+        // Since we copy-on-write, if any new deletes were
+        // applied after merging has started, we can just
+        // check if the before/after liveDocs have changed.
+        // If so, we must carefully merge the liveDocs one
+        // doc at a time:
+        if (currentLiveDocs != prevLiveDocs) {
+
           // This means this segment received new deletes
           // since we started the merge, so we
           // must merge them:
@@ -3071,8 +3066,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         } else {
-          assert currentLiveDocs.count() == prevLiveDocs.count(): "currentLiveDocs.count()==" + currentLiveDocs.count() + " vs prevLiveDocs.count()=" + prevLiveDocs.count() + " info=" + info;
-          docUpto += currentLiveDocs.count();
+          docUpto += info.docCount - info.getDelCount() - rld.pendingDeleteCount;
         }
       } else if (currentLiveDocs != null) {
         // This segment had no deletes before but now it
@@ -3576,13 +3570,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     merge.readers = new ArrayList<SegmentReader>();
-    merge.readerLiveDocs = new ArrayList<BitVector>();
+    merge.readerLiveDocs = new ArrayList<Bits>();
 
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
     try {
-      int totDocCount = 0;
       int segUpto = 0;
       while(segUpto < sourceSegments.size()) {
 
@@ -3595,12 +3588,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         assert reader != null;
 
         // Carefully pull the most recent live docs:
-        final BitVector liveDocs;
+        final Bits liveDocs;
         synchronized(this) {
           // Must sync to ensure BufferedDeletesStream
           // cannot change liveDocs/pendingDeleteCount while
           // we pull a copy:
           liveDocs = rld.getReadOnlyLiveDocs();
+
+          assert rld.verifyDocCounts();
 
           if (infoStream.isEnabled("IW")) {
             if (rld.pendingDeleteCount != 0) {
@@ -3612,21 +3607,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         }
-
         merge.readerLiveDocs.add(liveDocs);
         merge.readers.add(reader);
-
-        if (liveDocs == null || liveDocs.count() > 0) {
+        final int delCount = rld.pendingDeleteCount + info.getDelCount();
+        assert delCount <= info.docCount;
+        if (delCount < info.docCount) {
           merger.add(reader, liveDocs);
-          totDocCount += liveDocs == null ? reader.maxDoc() : liveDocs.count();
-        } else {
-          //System.out.println("  skip seg: fully deleted");
         }
         segUpto++;
-      }
-
-      if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "merge: total " + totDocCount + " docs");
       }
 
       merge.checkAborted(directory);
@@ -3639,10 +3627,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       merge.info.setCodec(codec);
 
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "merge codec=" + codec);
+        infoStream.message("IW", "merge codec=" + codec + " docCount=" + mergedDocCount);
       }
-
-      assert mergedDocCount == totDocCount: "mergedDocCount=" + mergedDocCount + " vs " + totDocCount;
 
       // Very important to do this before opening the reader
       // because codec must know if prox was written for
@@ -4089,11 +4075,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     Collection<String> files = info.files();
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
     try {
+      assert assertNoSeparateFiles(files, directory, info);
       for (String file : files) {
-        assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
-                  : ".del file is not allowed in .cfs: " + file;
-        assert !isSeparateNormsFile(file) 
-                  : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
         directory.copy(cfsDir, file, file, context);
         checkAbort.work(directory.fileLength(file));
       }
@@ -4106,15 +4089,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   
   
   /**
-   * Returns true if the given filename ends with the separate norms file
-   * pattern: {@code SEPARATE_NORMS_EXTENSION + "[0-9]+"}.
-   * @deprecated only for asserting
+   * used only by assert: checks that filenames about to be put in cfs belong.
    */
-  @Deprecated
-  private static boolean isSeparateNormsFile(String filename) {
-    int idx = filename.lastIndexOf('.');
-    if (idx == -1) return false;
-    String ext = filename.substring(idx + 1);
-    return Pattern.matches("s[0-9]+", ext);
+  private static boolean assertNoSeparateFiles(Collection<String> files, 
+      Directory dir, SegmentInfo info) throws IOException {
+    // maybe this is overkill, but codec naming clashes would be bad.
+    Set<String> separateFiles = new HashSet<String>();
+    info.getCodec().separateFiles(dir, info, separateFiles);
+    
+    for (String file : files) {
+      assert !separateFiles.contains(file) : file + " should not go in CFS!";
+    }
+    return true;
   }
 }

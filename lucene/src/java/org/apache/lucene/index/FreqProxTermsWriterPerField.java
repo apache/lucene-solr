@@ -28,7 +28,6 @@ import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -461,11 +460,15 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           // Mark it deleted.  TODO: we could also skip
           // writing its postings; this would be
           // deterministic (just for this Term's docs).
+          
+          // TODO: can we do this reach-around in a cleaner way????
           if (state.liveDocs == null) {
-            state.liveDocs = new BitVector(state.numDocs);
-            state.liveDocs.invertAll();
+            state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.numDocs);
           }
-          state.liveDocs.clear(docID);
+          if (state.liveDocs.get(docID)) {
+            state.delCountOnFlush++;
+            state.liveDocs.clear(docID);
+          }
         }
 
         totTF += termDocFreq;

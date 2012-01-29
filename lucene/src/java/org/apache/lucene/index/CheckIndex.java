@@ -174,8 +174,8 @@ public class CheckIndex {
       /** True if this segment has pending deletions. */
       public boolean hasDeletions;
 
-      /** Name of the current deletions file name. */
-      public String deletionsFileName;
+      /** Current deletions generation. */
+      public long deletionsGen;
     
       /** Number of deleted documents. */
       public int numDeleted;
@@ -526,15 +526,14 @@ public class CheckIndex {
           segInfoStat.docStoreCompoundFile = info.getDocStoreIsCompoundFile();
         }
 
-        final String delFileName = info.getDelFileName();
-        if (delFileName == null){
+        if (info.hasDeletions()) {
           msg("    no deletions");
           segInfoStat.hasDeletions = false;
         }
         else{
-          msg("    has deletions [delFileName=" + delFileName + "]");
+          msg("    has deletions [delGen=" + info.getDelGen() + "]");
           segInfoStat.hasDeletions = true;
-          segInfoStat.deletionsFileName = delFileName;
+          segInfoStat.deletionsGen = info.getDelGen();
         }
         if (infoStream != null)
           infoStream.print("    test: open reader.........");

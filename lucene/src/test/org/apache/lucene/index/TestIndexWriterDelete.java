@@ -961,7 +961,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       w.updateDocument(delTerm, doc);
       // Eventually segment 0 should get a del docs:
-      if (dir.fileExists("_0_1.del")) {
+      // TODO: fix this test
+      if (dir.fileExists("_0_1.del") || dir.fileExists("_0_1.liv") ) {
         if (VERBOSE) {
           System.out.println("TEST: deletes created @ count=" + count);
         }
@@ -1006,7 +1007,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       w.updateDocument(delTerm, doc);
       // Eventually segment 0 should get a del docs:
-      if (dir.fileExists("_0_1.del")) {
+      // TODO: fix this test
+      if (dir.fileExists("_0_1.del") || dir.fileExists("_0_1.liv")) {
         break;
       }
       count++;
@@ -1052,7 +1054,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       doc.add(newField("body", sb.toString(), TextField.TYPE_UNSTORED));
       w.updateDocument(new Term("id", ""+id), doc);
       docsInSegment.incrementAndGet();
-      if (dir.fileExists("_0_1.del")) {
+      // TODO: fix this test
+      if (dir.fileExists("_0_1.del") || dir.fileExists("_0_1.liv")) {
         if (VERBOSE) {
           System.out.println("TEST: deletes created @ id=" + id);
         }
