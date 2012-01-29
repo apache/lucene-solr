@@ -33,7 +33,6 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Information about a segment such as it's name, directory, and files related
@@ -473,17 +472,7 @@ public final class SegmentInfo implements Cloneable {
     }
     final Set<String> fileSet = new HashSet<String>();
 
-    boolean useCompoundFile = getUseCompoundFile();
-
-    if (useCompoundFile) {
-      fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-      if (version != null && StringHelper.getVersionComparator().compare("4.0", version) <= 0) {
-        fileSet.add(IndexFileNames.segmentFileName(name, "",
-            IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-      }
-    } else {
-      codec.files(dir, this, fileSet);
-    }
+    codec.files(dir, this, fileSet);
     
     // regardless of compound file setting: these files are always in the directory
     codec.separateFiles(dir, this, fileSet);

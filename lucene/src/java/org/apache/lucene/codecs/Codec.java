@@ -20,8 +20,10 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.NamedSPILoader;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 
@@ -48,15 +50,23 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
    * the <code>info</code> segment.
    */
   public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    assert (dir instanceof CompoundFileDirectory) == false;
-    postingsFormat().files(dir, info, "", files);
-    storedFieldsFormat().files(dir, info, files);
-    termVectorsFormat().files(dir, info, files);
-    fieldInfosFormat().files(dir, info, files);
-    // TODO: segmentInfosFormat should be allowed to declare additional files
-    // if it wants, in addition to segments_N
-    docValuesFormat().files(dir, info, files);
-    normsFormat().files(dir, info, files);
+    if (info.getUseCompoundFile()) {
+      files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+      // nocommit: get this out of here: 3.x codec should override this
+      String version = info.getVersion();
+      if (version != null && StringHelper.getVersionComparator().compare("4.0", version) <= 0) {
+        files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+      }
+    } else {
+      postingsFormat().files(dir, info, "", files);
+      storedFieldsFormat().files(dir, info, files);
+      termVectorsFormat().files(dir, info, files);
+      fieldInfosFormat().files(dir, info, files);
+      // TODO: segmentInfosFormat should be allowed to declare additional files
+      // if it wants, in addition to segments_N
+      docValuesFormat().files(dir, info, files);
+      normsFormat().files(dir, info, files);
+    }
   }
   
   /** Populates <code>files</code> with any filenames that are
