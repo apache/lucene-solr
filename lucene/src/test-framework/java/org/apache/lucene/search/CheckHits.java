@@ -116,7 +116,8 @@ public class CheckHits {
       Assert.assertEquals("Wrap Reader " + i + ": " +
                           query.toString(defaultFieldName),
                           correct, actual);
-      FieldCache.DEFAULT.purge(s.getIndexReader()); // our wrapping can create insanity otherwise
+      // nocommit: I removed that as we can never get insanity by composite readers anymore... Is this ok?
+      //FieldCache.DEFAULT.purge(s.getIndexReader()); // our wrapping can create insanity otherwise
     }
   }
 

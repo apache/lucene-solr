@@ -33,7 +33,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.LuceneTestCase;
@@ -559,7 +559,7 @@ public class MockDirectoryWrapper extends Directory {
     }
     open = false;
     if (checkIndexOnClose) {
-      if (IndexReader.indexExists(this)) {
+      if (DirectoryReader.indexExists(this)) {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now crash");
         }
@@ -582,11 +582,11 @@ public class MockDirectoryWrapper extends Directory {
             assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles);
           }
 
-          IndexReader ir1 = IndexReader.open(this);
+          DirectoryReader ir1 = DirectoryReader.open(this);
           int numDocs1 = ir1.numDocs();
           ir1.close();
           new IndexWriter(this, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).close();
-          IndexReader ir2 = IndexReader.open(this);
+          DirectoryReader ir2 = DirectoryReader.open(this);
           int numDocs2 = ir2.numDocs();
           ir2.close();
           assert numDocs1 == numDocs2 : "numDocs changed after opening/closing IW: before=" + numDocs1 + " after=" + numDocs2;

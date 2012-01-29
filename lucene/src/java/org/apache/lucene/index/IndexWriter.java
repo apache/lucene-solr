@@ -3954,7 +3954,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * <p><b>NOTE</b>: warm is called before any deletes have
    * been carried over to the merged segment. */
   public static abstract class IndexReaderWarmer {
-    public abstract void warm(IndexReader reader) throws IOException;
+    public abstract void warm(AtomicIndexReader reader) throws IOException;
   }
 
   private void handleOOM(OutOfMemoryError oom, String location) {

@@ -189,14 +189,11 @@ public abstract class LuceneTestCase extends Assert {
    * Some tests expect the directory to contain a single segment, and want to do tests on that segment's reader.
    * This is an utility method to help them.
    */
-  public static SegmentReader getOnlySegmentReader(IndexReader reader) {
-    if (reader instanceof SegmentReader)
-      return (SegmentReader) reader;
-
+  public static SegmentReader getOnlySegmentReader(DirectoryReader reader) {
     IndexReader[] subReaders = reader.getSequentialSubReaders();
     if (subReaders.length != 1)
       throw new IllegalArgumentException(reader + " has " + subReaders.length + " segments instead of exactly one");
-
+    assertTrue(subReaders[0] instanceof SegmentReader);
     return (SegmentReader) subReaders[0];
   }
 
@@ -1239,7 +1236,7 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
     if (usually()) {
       if (maybeWrap && rarely()) {
-        r = new SlowMultiReaderWrapper(r);
+        r = SlowCompositeReaderWrapper.wrap(r);
       }
       IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getTopReaderContext());
       ret.setSimilarityProvider(similarityProvider);
