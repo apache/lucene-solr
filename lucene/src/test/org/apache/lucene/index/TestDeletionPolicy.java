@@ -346,7 +346,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       assertEquals(1 + (needsMerging ? 1:0), policy.numOnCommit);
 
       // Test listCommits
-      Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+      Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
       // 2 from closing writer
       assertEquals(1 + (needsMerging ? 1:0), commits.size());
 
@@ -410,7 +410,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     }
     writer.close();
 
-    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
     assertEquals(5, commits.size());
     IndexCommit lastCommit = null;
     for (final IndexCommit commit : commits) {
@@ -426,7 +426,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
 
-    assertEquals(6, IndexReader.listCommits(dir).size());
+    assertEquals(6, DirectoryReader.listCommits(dir).size());
 
     // Now open writer on the commit just before merge:
     writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -449,7 +449,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.close();
 
     // Now 8 because we made another commit
-    assertEquals(7, IndexReader.listCommits(dir).size());
+    assertEquals(7, DirectoryReader.listCommits(dir).size());
     
     r = IndexReader.open(dir);
     // Not fully merged because we rolled it back, and now only

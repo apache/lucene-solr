@@ -1407,7 +1407,7 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("c", "val", customType));
     writer.addDocument(doc);
     writer.commit();
-    assertEquals(1, IndexReader.listCommits(dir).size());
+    assertEquals(1, DirectoryReader.listCommits(dir).size());
 
     // Keep that commit
     sdp.snapshot("id");
@@ -1417,12 +1417,12 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("c", "val", customType));
     writer.addDocument(doc);
     writer.commit();
-    assertEquals(2, IndexReader.listCommits(dir).size());
+    assertEquals(2, DirectoryReader.listCommits(dir).size());
 
     // Should delete the unreferenced commit
     sdp.release("id");
     writer.deleteUnusedFiles();
-    assertEquals(1, IndexReader.listCommits(dir).size());
+    assertEquals(1, DirectoryReader.listCommits(dir).size());
 
     writer.close();
     dir.close();
