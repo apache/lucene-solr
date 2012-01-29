@@ -149,7 +149,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       w.addDocument(doc);
     }
     
-    final IndexReader r = w.getReader();
+    final DirectoryReader r = w.getReader();
     w.close();
 
     if (VERBOSE) {
@@ -160,7 +160,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: sub=" + subR);
       }
-      verify(subR, idToOrds, termsArray, null);
+      verify((AtomicIndexReader) subR, idToOrds, termsArray, null);
     }
 
     // Also test top-level reader: its enum does not support
@@ -168,9 +168,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: top reader");
     }
-    verify(SlowCompositeReaderWrapper.wrap(r), idToOrds, termsArray, null);
+    AtomicIndexReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    verify(slowR, idToOrds, termsArray, null);
 
-    FieldCache.DEFAULT.purge(r);
+    FieldCache.DEFAULT.purge(slowR);
 
     r.close();
     dir.close();
@@ -245,13 +246,14 @@ public class TestDocTermOrds extends LuceneTestCase {
       w.addDocument(doc);
     }
     
-    final IndexReader r = w.getReader();
+    final DirectoryReader r = w.getReader();
     w.close();
 
     if (VERBOSE) {
       System.out.println("TEST: reader=" + r);
     }
     
+    AtomicIndexReader slowR = SlowCompositeReaderWrapper.wrap(r);
     for(String prefix : prefixesArray) {
 
       final BytesRef prefixRef = prefix == null ? null : new BytesRef(prefix);
@@ -277,7 +279,7 @@ public class TestDocTermOrds extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("\nTEST: sub=" + subR);
         }
-        verify(subR, idToOrdsPrefix, termsArray, prefixRef);
+        verify((AtomicIndexReader) subR, idToOrdsPrefix, termsArray, prefixRef);
       }
 
       // Also test top-level reader: its enum does not support
@@ -285,16 +287,16 @@ public class TestDocTermOrds extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: top reader");
       }
-      verify(SlowCompositeReaderWrapper.wrap(r), idToOrdsPrefix, termsArray, prefixRef);
+      verify(slowR, idToOrdsPrefix, termsArray, prefixRef);
     }
 
-    FieldCache.DEFAULT.purge(r);
+    FieldCache.DEFAULT.purge(slowR);
 
     r.close();
     dir.close();
   }
 
-  private void verify(IndexReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
+  private void verify(AtomicIndexReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
 
     final DocTermOrds dto = new DocTermOrds(r,
                                             "field",

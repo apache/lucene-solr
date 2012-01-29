@@ -74,7 +74,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     }
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       IndexCommit lastCommit =  commits.get(commits.size()-1);
-      IndexReader r = IndexReader.open(dir);
+      DirectoryReader r = DirectoryReader.open(dir);
       assertEquals("lastCommit.segmentCount()=" + lastCommit.getSegmentCount() + " vs IndexReader.segmentCount=" + r.getSequentialSubReaders().length, r.getSequentialSubReaders().length, lastCommit.getSegmentCount());
       r.close();
       verifyCommitOrder(commits);
@@ -320,7 +320,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       final boolean needsMerging;
       {
-        IndexReader r = IndexReader.open(dir);
+        DirectoryReader r = DirectoryReader.open(dir);
         needsMerging = r.getSequentialSubReaders().length != 1;
         r.close();
       }
@@ -436,7 +436,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     // Should undo our rollback:
     writer.rollback();
 
-    IndexReader r = IndexReader.open(dir);
+    DirectoryReader r = DirectoryReader.open(dir);
     // Still merged, still 11 docs
     assertEquals(1, r.getSequentialSubReaders().length);
     assertEquals(11, r.numDocs());
@@ -451,7 +451,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     // Now 8 because we made another commit
     assertEquals(7, DirectoryReader.listCommits(dir).size());
     
-    r = IndexReader.open(dir);
+    r = DirectoryReader.open(dir);
     // Not fully merged because we rolled it back, and now only
     // 10 docs
     assertTrue(r.getSequentialSubReaders().length > 1);

@@ -64,7 +64,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     SegmentInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = new SegmentReader(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
@@ -125,7 +125,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
                                                                           "repeated", new BytesRef("repeated"), false);
@@ -197,7 +197,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"), false);
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
@@ -241,7 +241,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
     DocsAndPositionsEnum termPositions = reader.termPositionsEnum(reader.getLiveDocs(), "preanalyzed", new BytesRef("term1"), false);
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
