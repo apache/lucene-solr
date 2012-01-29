@@ -43,7 +43,9 @@ import org.apache.lucene.util.StringHelper;
 /**
  * Reads Lucene 3.x norms format and exposes it via DocValues API
  * @lucene.experimental
+ * @deprecated
  */
+@Deprecated
 class Lucene3xNormsProducer extends PerDocProducer {
   
   /** norms header placeholder */
@@ -52,9 +54,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
   /** Extension of norms file */
   static final String NORMS_EXTENSION = "nrm";
   
-  /** Extension of separate norms file
-   * @deprecated */
-  @Deprecated
+  /** Extension of separate norms file */
   static final String SEPARATE_NORMS_EXTENSION = "s";
   
   final Map<String,NormsDocValues> norms = new HashMap<String,NormsDocValues>();
@@ -203,8 +203,6 @@ class Lucene3xNormsProducer extends PerDocProducer {
     }
   }
   
-  /** @deprecated */
-  @Deprecated
   static void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
     Map<Integer,Long> normGen = info.getNormGen();
     if (normGen != null) {

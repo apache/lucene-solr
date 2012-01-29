@@ -45,6 +45,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
+/** @deprecated */
+@Deprecated
 public class Lucene3xTermVectorsReader extends TermVectorsReader {
 
   // NOTE: if you make a new format, it must be larger than

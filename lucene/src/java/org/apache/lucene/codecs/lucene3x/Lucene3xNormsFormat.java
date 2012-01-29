@@ -26,7 +26,6 @@ import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.Directory;
 
 /**
  * Lucene3x ReadOnly NormsFormat implementation

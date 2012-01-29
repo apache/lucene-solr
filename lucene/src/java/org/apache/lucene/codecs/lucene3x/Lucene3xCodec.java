@@ -43,7 +43,9 @@ import org.apache.lucene.util.MutableBits;
 
 /**
  * Supports the Lucene 3.x index format (readonly)
+ * @deprecated
  */
+@Deprecated
 public class Lucene3xCodec extends Codec {
   public Lucene3xCodec() {
     super("Lucene3x");

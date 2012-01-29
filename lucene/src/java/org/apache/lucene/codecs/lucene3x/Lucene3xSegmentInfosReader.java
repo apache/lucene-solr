@@ -37,7 +37,9 @@ import org.apache.lucene.store.IOContext;
 /**
  * Lucene 3x implementation of {@link SegmentInfosReader}.
  * @lucene.experimental
+ * @deprecated
  */
+@Deprecated
 public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
   @Override
