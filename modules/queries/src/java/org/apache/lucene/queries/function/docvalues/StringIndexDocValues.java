@@ -22,7 +22,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;

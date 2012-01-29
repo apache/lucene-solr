@@ -23,10 +23,10 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.CompositeIndexReader;
-import org.apache.lucene.index.CompositeIndexReader.CompositeReaderContext;
-import org.apache.lucene.index.AtomicIndexReader;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.CompositeReader.CompositeReaderContext;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 
@@ -68,11 +68,11 @@ public final class ReaderUtil {
    * @param reader
    */
 
-  public static void gatherSubReaders(final List<AtomicIndexReader> allSubReaders, IndexReader reader) {
+  public static void gatherSubReaders(final List<AtomicReader> allSubReaders, IndexReader reader) {
     try {
       new Gather(reader) {
         @Override
-        protected void add(int base, AtomicIndexReader r) {
+        protected void add(int base, AtomicReader r) {
           allSubReaders.add(r);
         }
       }.run();
@@ -103,13 +103,13 @@ public final class ReaderUtil {
     }
 
     private int run(int base, IndexReader reader) throws IOException {
-      if (reader instanceof AtomicIndexReader) {
+      if (reader instanceof AtomicReader) {
         // atomic reader
-        add(base, (AtomicIndexReader) reader);
+        add(base, (AtomicReader) reader);
         base += reader.maxDoc();
       } else {
-        assert reader instanceof CompositeIndexReader : "must be a composite reader";
-        IndexReader[] subReaders = ((CompositeIndexReader) reader).getSequentialSubReaders();
+        assert reader instanceof CompositeReader : "must be a composite reader";
+        IndexReader[] subReaders = ((CompositeReader) reader).getSequentialSubReaders();
         for (int i = 0; i < subReaders.length; i++) {
           base = run(base, subReaders[i]);
         }
@@ -118,7 +118,7 @@ public final class ReaderUtil {
       return base;
     }
 
-    protected abstract void add(int base, AtomicIndexReader r) throws IOException;
+    protected abstract void add(int base, AtomicReader r) throws IOException;
   }
   
   public static ReaderContext buildReaderContext(IndexReader reader) {
@@ -140,13 +140,13 @@ public final class ReaderUtil {
     }
     
     private ReaderContext build(CompositeReaderContext parent, IndexReader reader, int ord, int docBase) {
-      if (reader instanceof AtomicIndexReader) {
-        AtomicReaderContext atomic = new AtomicReaderContext(parent, (AtomicIndexReader) reader, ord, docBase, leafOrd, leafDocBase);
+      if (reader instanceof AtomicReader) {
+        AtomicReaderContext atomic = new AtomicReaderContext(parent, (AtomicReader) reader, ord, docBase, leafOrd, leafDocBase);
         leaves[leafOrd++] = atomic;
         leafDocBase += reader.maxDoc();
         return atomic;
       } else {
-        CompositeIndexReader cr = (CompositeIndexReader) reader;
+        CompositeReader cr = (CompositeReader) reader;
         IndexReader[] sequentialSubReaders = cr.getSequentialSubReaders();
         ReaderContext[] children = new ReaderContext[sequentialSubReaders.length];
         final CompositeReaderContext newParent;
@@ -170,7 +170,7 @@ public final class ReaderUtil {
       try {
         new Gather(reader) {
           @Override
-          protected void add(int base, AtomicIndexReader r) {
+          protected void add(int base, AtomicReader r) {
             numLeaves[0]++;
           }
         }.run();

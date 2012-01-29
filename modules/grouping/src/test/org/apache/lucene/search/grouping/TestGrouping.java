@@ -19,9 +19,9 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.AtomicIndexReader;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
-import org.apache.lucene.index.CompositeIndexReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
+import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -626,7 +626,7 @@ public class TestGrouping extends LuceneTestCase {
     public final int[] docStarts;
 
     public ShardState(IndexSearcher s) {
-      List<AtomicIndexReader> subReaders = new ArrayList<AtomicIndexReader>();
+      List<AtomicReader> subReaders = new ArrayList<AtomicReader>();
       ReaderUtil.gatherSubReaders(subReaders, s.getIndexReader());
       subSearchers = new ShardSearcher[subReaders.size()];
       final IndexReader.ReaderContext ctx = s.getTopReaderContext();
@@ -634,7 +634,7 @@ public class TestGrouping extends LuceneTestCase {
         assert subSearchers.length == 1;
         subSearchers[0] = new ShardSearcher((AtomicReaderContext) ctx, ctx);
       } else {
-        final CompositeIndexReader.CompositeReaderContext compCTX = (CompositeIndexReader.CompositeReaderContext) ctx;
+        final CompositeReader.CompositeReaderContext compCTX = (CompositeReader.CompositeReaderContext) ctx;
         for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) {
           subSearchers[searcherIDX] = new ShardSearcher(compCTX.leaves()[searcherIDX], compCTX);
         }

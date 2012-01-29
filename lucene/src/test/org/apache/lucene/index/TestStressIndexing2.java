@@ -283,7 +283,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     IndexReader[] subs = r.getSequentialSubReaders();
     for(IndexReader sub : subs) {
       // TODO: improve this
-      Bits liveDocs = ((AtomicIndexReader)sub).getLiveDocs();
+      Bits liveDocs = ((AtomicReader)sub).getLiveDocs();
       System.out.println("  " + ((SegmentReader) sub).getSegmentInfo());
       for(int docID=0;docID<sub.maxDoc();docID++) {
         Document doc = sub.document(docID);

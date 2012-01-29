@@ -687,7 +687,7 @@ public class TestIndexReader extends LuceneTestCase {
 
     // Open reader1
     DirectoryReader r = DirectoryReader.open(dir);
-    AtomicIndexReader r1 = getOnlySegmentReader(r);
+    AtomicReader r1 = getOnlySegmentReader(r);
     final int[] ints = FieldCache.DEFAULT.getInts(r1, "number", false);
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
@@ -700,7 +700,7 @@ public class TestIndexReader extends LuceneTestCase {
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
     r.close();
-    AtomicIndexReader sub0 = (AtomicIndexReader) r2.getSequentialSubReaders()[0];
+    AtomicReader sub0 = (AtomicReader) r2.getSequentialSubReaders()[0];
     final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
     r2.close();
     assertTrue(ints == ints2);
@@ -721,7 +721,7 @@ public class TestIndexReader extends LuceneTestCase {
     writer.commit();
 
     DirectoryReader r = DirectoryReader.open(dir);
-    AtomicIndexReader r1 = getOnlySegmentReader(r);
+    AtomicReader r1 = getOnlySegmentReader(r);
     assertEquals(36, r1.getUniqueTermCount());
     writer.addDocument(doc);
     writer.commit();
@@ -731,7 +731,7 @@ public class TestIndexReader extends LuceneTestCase {
 
     IndexReader[] subs = r2.getSequentialSubReaders();
     for(int i=0;i<subs.length;i++) {
-      assertEquals(36, ((AtomicIndexReader) subs[i]).getUniqueTermCount());
+      assertEquals(36, ((AtomicReader) subs[i]).getUniqueTermCount());
     }
     r2.close();
     writer.close();

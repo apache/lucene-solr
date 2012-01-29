@@ -17,10 +17,10 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.AtomicIndexReader;
-import org.apache.lucene.index.CompositeIndexReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -69,9 +69,9 @@ public class OrdFieldSource extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
     final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
-    final AtomicIndexReader r = topReader instanceof CompositeIndexReader 
-        ? new SlowCompositeReaderWrapper((CompositeIndexReader)topReader) 
-        : (AtomicIndexReader) topReader;
+    final AtomicReader r = topReader instanceof CompositeReader 
+        ? new SlowCompositeReaderWrapper((CompositeReader)topReader) 
+        : (AtomicReader) topReader;
     final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(r, field);
     return new IntDocValues(this) {
       protected String toTerm(String readableValue) {

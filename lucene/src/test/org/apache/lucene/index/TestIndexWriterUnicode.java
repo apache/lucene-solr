@@ -320,7 +320,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     // Test each sub-segment
     new ReaderUtil.Gather(r) {
       @Override
-      protected void add(int base, AtomicIndexReader r) throws IOException {
+      protected void add(int base, AtomicReader r) throws IOException {
         checkTermsOrder(r, allTerms, false);
       }
     }.run();

@@ -540,13 +540,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   static void assertReaderClosed(IndexReader reader, boolean checkSubReaders, boolean checkNormsClosed) {
     assertEquals(0, reader.getRefCount());
     
-    if (checkNormsClosed && reader instanceof AtomicIndexReader) {
+    if (checkNormsClosed && reader instanceof AtomicReader) {
       // TODO: should we really assert something here? we check for open files and this is obselete...
       // assertTrue(((SegmentReader) reader).normsClosed());
     }
     
-    if (checkSubReaders && reader instanceof CompositeIndexReader) {
-      IndexReader[] subReaders = ((CompositeIndexReader) reader).getSequentialSubReaders();
+    if (checkSubReaders && reader instanceof CompositeReader) {
+      IndexReader[] subReaders = ((CompositeReader) reader).getSequentialSubReaders();
       for (int i = 0; i < subReaders.length; i++) {
         assertReaderClosed(subReaders[i], checkSubReaders, checkNormsClosed);
       }

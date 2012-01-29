@@ -160,7 +160,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: sub=" + subR);
       }
-      verify((AtomicIndexReader) subR, idToOrds, termsArray, null);
+      verify((AtomicReader) subR, idToOrds, termsArray, null);
     }
 
     // Also test top-level reader: its enum does not support
@@ -168,7 +168,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: top reader");
     }
-    AtomicIndexReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    AtomicReader slowR = SlowCompositeReaderWrapper.wrap(r);
     verify(slowR, idToOrds, termsArray, null);
 
     FieldCache.DEFAULT.purge(slowR);
@@ -253,7 +253,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       System.out.println("TEST: reader=" + r);
     }
     
-    AtomicIndexReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    AtomicReader slowR = SlowCompositeReaderWrapper.wrap(r);
     for(String prefix : prefixesArray) {
 
       final BytesRef prefixRef = prefix == null ? null : new BytesRef(prefix);
@@ -279,7 +279,7 @@ public class TestDocTermOrds extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("\nTEST: sub=" + subR);
         }
-        verify((AtomicIndexReader) subR, idToOrdsPrefix, termsArray, prefixRef);
+        verify((AtomicReader) subR, idToOrdsPrefix, termsArray, prefixRef);
       }
 
       // Also test top-level reader: its enum does not support
@@ -296,7 +296,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     dir.close();
   }
 
-  private void verify(AtomicIndexReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
+  private void verify(AtomicReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
 
     final DocTermOrds dto = new DocTermOrds(r,
                                             "field",

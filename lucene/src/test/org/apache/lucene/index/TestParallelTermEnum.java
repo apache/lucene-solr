@@ -28,8 +28,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestParallelTermEnum extends LuceneTestCase {
-    private AtomicIndexReader ir1;
-    private AtomicIndexReader ir2;
+    private AtomicReader ir1;
+    private AtomicReader ir2;
     private Directory rd1;
     private Directory rd2;
     

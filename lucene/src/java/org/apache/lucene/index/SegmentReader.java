@@ -30,7 +30,7 @@ import org.apache.lucene.util.Bits;
 /**
  * @lucene.experimental
  */
-public final class SegmentReader extends AtomicIndexReader {
+public final class SegmentReader extends AtomicReader {
 
   private final SegmentInfo si;
   private final Bits liveDocs;

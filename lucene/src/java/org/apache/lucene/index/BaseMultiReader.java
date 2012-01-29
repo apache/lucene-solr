@@ -23,7 +23,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 
-abstract class BaseMultiReader<R extends IndexReader> extends CompositeIndexReader {
+abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
   protected final R[] subReaders;
   protected final int[] starts;       // 1st docno for each segment
   private final int maxDoc;

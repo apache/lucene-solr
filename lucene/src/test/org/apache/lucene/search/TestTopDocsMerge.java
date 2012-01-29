@@ -25,8 +25,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicIndexReader;
-import org.apache.lucene.index.CompositeIndexReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -38,11 +38,11 @@ import org.apache.lucene.util._TestUtil;
 public class TestTopDocsMerge extends LuceneTestCase {
 
   private static class ShardSearcher extends IndexSearcher {
-    private final AtomicIndexReader.AtomicReaderContext[] ctx;
+    private final AtomicReader.AtomicReaderContext[] ctx;
 
-    public ShardSearcher(AtomicIndexReader.AtomicReaderContext ctx, CompositeIndexReader.CompositeReaderContext parent) {
+    public ShardSearcher(AtomicReader.AtomicReaderContext ctx, CompositeReader.CompositeReaderContext parent) {
       super(parent);
-      this.ctx = new AtomicIndexReader.AtomicReaderContext[] {ctx};
+      this.ctx = new AtomicReader.AtomicReaderContext[] {ctx};
     }
 
     public void search(Weight weight, Collector collector) throws IOException {
@@ -123,13 +123,13 @@ public class TestTopDocsMerge extends LuceneTestCase {
     final ShardSearcher[] subSearchers;
     final int[] docStarts;
     
-    if (ctx instanceof AtomicIndexReader.AtomicReaderContext) {
+    if (ctx instanceof AtomicReader.AtomicReaderContext) {
       subSearchers = new ShardSearcher[1];
       docStarts = new int[1];
-      subSearchers[0] = new ShardSearcher((AtomicIndexReader.AtomicReaderContext) ctx, null);
+      subSearchers[0] = new ShardSearcher((AtomicReader.AtomicReaderContext) ctx, null);
       docStarts[0] = 0;
     } else {
-      final CompositeIndexReader.CompositeReaderContext compCTX = (CompositeIndexReader.CompositeReaderContext) ctx;
+      final CompositeReader.CompositeReaderContext compCTX = (CompositeReader.CompositeReaderContext) ctx;
       subSearchers = new ShardSearcher[compCTX.leaves().length];
       docStarts = new int[compCTX.leaves().length];
       int docBase = 0;

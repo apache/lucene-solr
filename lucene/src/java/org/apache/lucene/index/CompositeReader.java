@@ -17,24 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;         // for javadocs
-import org.apache.lucene.util.SetOnce;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -68,11 +54,11 @@ import org.apache.lucene.util.SetOnce;
  <code>IndexReader</code> instance; use your own
  (non-Lucene) objects instead.
 */
-public abstract class CompositeIndexReader extends IndexReader {
+public abstract class CompositeReader extends IndexReader {
 
   private CompositeReaderContext readerContext = null; // lazy init
 
-  protected CompositeIndexReader() { 
+  protected CompositeReader() { 
     super();
   }
   
@@ -113,19 +99,19 @@ public abstract class CompositeIndexReader extends IndexReader {
   public abstract IndexReader[] getSequentialSubReaders();
   
   /**
-   * {@link ReaderContext} for {@link CompositeIndexReader} instance.
+   * {@link ReaderContext} for {@link CompositeReader} instance.
    * @lucene.experimental
    */
   public static final class CompositeReaderContext extends ReaderContext {
     private final ReaderContext[] children;
     private final AtomicReaderContext[] leaves;
-    private final CompositeIndexReader reader;
+    private final CompositeReader reader;
 
     /**
      * Creates a {@link CompositeReaderContext} for intermediate readers that aren't
      * not top-level readers in the current context
      */
-    public CompositeReaderContext(CompositeReaderContext parent, CompositeIndexReader reader,
+    public CompositeReaderContext(CompositeReaderContext parent, CompositeReader reader,
         int ordInParent, int docbaseInParent, ReaderContext[] children) {
       this(parent, reader, ordInParent, docbaseInParent, children, null);
     }
@@ -133,11 +119,11 @@ public abstract class CompositeIndexReader extends IndexReader {
     /**
      * Creates a {@link CompositeReaderContext} for top-level readers with parent set to <code>null</code>
      */
-    public CompositeReaderContext(CompositeIndexReader reader, ReaderContext[] children, AtomicReaderContext[] leaves) {
+    public CompositeReaderContext(CompositeReader reader, ReaderContext[] children, AtomicReaderContext[] leaves) {
       this(null, reader, 0, 0, children, leaves);
     }
     
-    private CompositeReaderContext(CompositeReaderContext parent, CompositeIndexReader reader,
+    private CompositeReaderContext(CompositeReaderContext parent, CompositeReader reader,
         int ordInParent, int docbaseInParent, ReaderContext[] children,
         AtomicReaderContext[] leaves) {
       super(parent, ordInParent, docbaseInParent);
@@ -158,7 +144,7 @@ public abstract class CompositeIndexReader extends IndexReader {
     }
     
     @Override
-    public CompositeIndexReader reader() {
+    public CompositeReader reader() {
       return reader;
     }
   }

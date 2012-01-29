@@ -20,7 +20,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter;
@@ -33,10 +33,10 @@ import java.io.IOException;
 
 public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
-  protected AtomicIndexReader readerA;
-  protected AtomicIndexReader readerB;
-  protected AtomicIndexReader readerX;
-  protected AtomicIndexReader readerAclone;
+  protected AtomicReader readerA;
+  protected AtomicReader readerB;
+  protected AtomicReader readerX;
+  protected AtomicReader readerAclone;
   protected Directory dirA, dirB;
   private static final int NUM_DOCS = 1000;
 

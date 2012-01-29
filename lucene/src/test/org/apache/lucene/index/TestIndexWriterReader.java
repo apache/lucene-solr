@@ -602,7 +602,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   private static class MyWarmer extends IndexWriter.IndexReaderWarmer {
     int warmCount;
     @Override
-    public void warm(AtomicIndexReader reader) throws IOException {
+    public void warm(AtomicReader reader) throws IOException {
       warmCount++;
     }
   }
@@ -946,7 +946,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
             setReaderPooling(true).
             setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
               @Override
-              public void warm(AtomicIndexReader r) throws IOException {
+              public void warm(AtomicReader r) throws IOException {
                 IndexSearcher s = newSearcher(r);
                 TopDocs hits = s.search(new TermQuery(new Term("foo", "bar")), 10);
                 assertEquals(20, hits.totalHits);

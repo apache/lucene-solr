@@ -22,7 +22,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -53,7 +53,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     DirectoryReader open = DirectoryReader.open(dir);
     new ReaderUtil.Gather(open) {
       @Override
-      protected void add(int base, AtomicIndexReader r) throws IOException {
+      protected void add(int base, AtomicReader r) throws IOException {
         Terms terms = r.terms("body");
         TermsEnum iterator = terms.iterator(null);
         IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
@@ -82,7 +82,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     DirectoryReader open = DirectoryReader.open(dir);
     IndexReader[] sequentialSubReaders = open.getSequentialSubReaders();
     for (IndexReader indexReader : sequentialSubReaders) {
-      Terms terms = ((AtomicIndexReader) indexReader).terms("body");
+      Terms terms = ((AtomicReader) indexReader).terms("body");
       TermsEnum iterator = terms.iterator(null);
       IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
       MatchNoBits bits = new Bits.MatchNoBits(open.maxDoc());
@@ -130,7 +130,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     IndexReader[] sequentialSubReaders2 = secondReader.getSequentialSubReaders();
     
     for (IndexReader indexReader : sequentialSubReaders) {
-      Terms terms = ((AtomicIndexReader) indexReader).terms("body");
+      Terms terms = ((AtomicReader) indexReader).terms("body");
       TermsEnum iterator = terms.iterator(null);
       IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
       MatchNoBits bits = new Bits.MatchNoBits(firstReader.maxDoc());
@@ -159,7 +159,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     if (random.nextInt(10) == 0) {
       return null;
     }
-    AtomicIndexReader indexReader = (AtomicIndexReader) readers[random.nextInt(readers.length)];
+    AtomicReader indexReader = (AtomicReader) readers[random.nextInt(readers.length)];
     return indexReader.termDocsEnum(bits, field, term, random.nextBoolean());
   }
 

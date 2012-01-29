@@ -50,27 +50,27 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * yourself.</p>
  */
 
-public final class SlowCompositeReaderWrapper extends AtomicIndexReader {
+public final class SlowCompositeReaderWrapper extends AtomicReader {
 
-  private final CompositeIndexReader in;
+  private final CompositeReader in;
   private final Map<String, DocValues> normsCache = new HashMap<String, DocValues>();
   private final Fields fields;
   private final Bits liveDocs;
   
-  /** This method is sugar for getting an {@link AtomicIndexReader} from
+  /** This method is sugar for getting an {@link AtomicReader} from
    * an {@link IndexReader} of any kind. If the reader is already atomic,
    * it is returned unchanged, otherwise wrapped by this class.
    */
-  public static AtomicIndexReader wrap(IndexReader reader) throws IOException {
-    if (reader instanceof CompositeIndexReader) {
-      return new SlowCompositeReaderWrapper((CompositeIndexReader) reader);
+  public static AtomicReader wrap(IndexReader reader) throws IOException {
+    if (reader instanceof CompositeReader) {
+      return new SlowCompositeReaderWrapper((CompositeReader) reader);
     } else {
-      assert reader instanceof AtomicIndexReader;
-      return (AtomicIndexReader) reader;
+      assert reader instanceof AtomicReader;
+      return (AtomicReader) reader;
     }
   }
   
-  public SlowCompositeReaderWrapper(CompositeIndexReader reader) throws IOException {
+  public SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
     super();
     in = reader;
     fields = MultiFields.getFields(in);

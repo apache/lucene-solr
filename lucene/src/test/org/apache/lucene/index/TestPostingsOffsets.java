@@ -290,7 +290,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     final String[] terms = new String[] {"a", "b", "c", "d"};
     for(IndexReader reader : r.getSequentialSubReaders()) {
       // TODO: improve this
-      AtomicIndexReader sub = (AtomicIndexReader) reader;
+      AtomicReader sub = (AtomicReader) reader;
       //System.out.println("\nsub=" + sub);
       final TermsEnum termsEnum = sub.fields().terms("content").iterator(null);
       DocsEnum docs = null;

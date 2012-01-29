@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -42,7 +42,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -750,7 +750,7 @@ public class MemoryIndex {
    * Search support for Lucene framework integration; implements all methods
    * required by the Lucene IndexReader contracts.
    */
-  private final class MemoryIndexReader extends AtomicIndexReader {
+  private final class MemoryIndexReader extends AtomicReader {
     
     private IndexSearcher searcher; // needed to find searcher.getSimilarity() 
     

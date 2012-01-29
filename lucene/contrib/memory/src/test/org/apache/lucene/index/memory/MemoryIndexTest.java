@@ -33,7 +33,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -186,7 +186,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Analyzer analyzer = new MockAnalyzer(random);
     MemoryIndex memory = new MemoryIndex();
     memory.addField("foo", "bar", analyzer);
-    AtomicIndexReader reader = (AtomicIndexReader) memory.createSearcher().getIndexReader();
+    AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
     DocsEnum disi = _TestUtil.docs(random, reader, "foo", new BytesRef("bar"), null, null, false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
@@ -206,7 +206,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Analyzer analyzer = new MockAnalyzer(random);
     MemoryIndex memory = new MemoryIndex();
     memory.addField("foo", "bar", analyzer);
-    AtomicIndexReader reader = (AtomicIndexReader) memory.createSearcher().getIndexReader();
+    AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
     DocsAndPositionsEnum disi = reader.termPositionsEnum(null, "foo", new BytesRef("bar"), false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);

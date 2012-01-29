@@ -22,10 +22,10 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -220,7 +220,7 @@ public class PhraseQuery extends Query {
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
       assert !terms.isEmpty();
-      final AtomicIndexReader reader = context.reader();
+      final AtomicReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
 
@@ -271,7 +271,7 @@ public class PhraseQuery extends Query {
     }
     
     // only called from assert
-    private boolean termNotInReader(AtomicIndexReader reader, String field, BytesRef bytes) throws IOException {
+    private boolean termNotInReader(AtomicReader reader, String field, BytesRef bytes) throws IOException {
       return reader.docFreq(field, bytes) == 0;
     }
 

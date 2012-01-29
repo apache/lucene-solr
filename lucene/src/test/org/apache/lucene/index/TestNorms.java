@@ -98,7 +98,7 @@ public class TestNorms extends LuceneTestCase {
   public void testMaxByteNorms() throws IOException {
     Directory dir = newDirectory();
     buildIndex(dir, true);
-    AtomicIndexReader open = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
+    AtomicReader open = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
     DocValues normValues = open.normValues(byteTestField);
     assertNotNull(normValues);
     Source source = normValues.getSource();
@@ -129,7 +129,7 @@ public class TestNorms extends LuceneTestCase {
     boolean secondWriteNorm = random.nextBoolean();
     buildIndex(otherDir, secondWriteNorm);
 
-    AtomicIndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(otherDir));
+    AtomicReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(otherDir));
     FieldInfos fieldInfos = reader.getFieldInfos();
     FieldInfo fieldInfo = fieldInfos.fieldInfo(byteTestField);
     assertFalse(fieldInfo.omitNorms);
@@ -144,7 +144,7 @@ public class TestNorms extends LuceneTestCase {
         new MockAnalyzer(random));
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     writer.addIndexes(reader);
-    AtomicIndexReader mergedReader = SlowCompositeReaderWrapper.wrap(writer.getReader());
+    AtomicReader mergedReader = SlowCompositeReaderWrapper.wrap(writer.getReader());
     if (!firstWriteNorm && !secondWriteNorm) {
       DocValues normValues = mergedReader.normValues(byteTestField);
       assertNull(normValues);

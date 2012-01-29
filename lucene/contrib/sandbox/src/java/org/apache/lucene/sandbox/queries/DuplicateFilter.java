@@ -17,7 +17,7 @@ package org.apache.lucene.sandbox.queries;
  */
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
@@ -78,7 +78,7 @@ public class DuplicateFilter extends Filter {
     }
   }
 
-  private FixedBitSet correctBits(AtomicIndexReader reader, Bits acceptDocs) throws IOException {
+  private FixedBitSet correctBits(AtomicReader reader, Bits acceptDocs) throws IOException {
     FixedBitSet bits = new FixedBitSet(reader.maxDoc()); //assume all are INvalid
     Terms terms = reader.fields().terms(fieldName);
 
@@ -115,7 +115,7 @@ public class DuplicateFilter extends Filter {
     return bits;
   }
 
-  private FixedBitSet fastBits(AtomicIndexReader reader, Bits acceptDocs) throws IOException {
+  private FixedBitSet fastBits(AtomicReader reader, Bits acceptDocs) throws IOException {
     FixedBitSet bits = new FixedBitSet(reader.maxDoc());
     bits.set(0, reader.maxDoc()); //assume all are valid
     Terms terms = reader.fields().terms(fieldName);

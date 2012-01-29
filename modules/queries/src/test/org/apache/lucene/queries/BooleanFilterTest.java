@@ -21,8 +21,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicIndexReader;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -42,7 +42,7 @@ import java.io.IOException;
 
 public class BooleanFilterTest extends LuceneTestCase {
   private Directory directory;
-  private AtomicIndexReader reader;
+  private AtomicReader reader;
 
   @Override
   public void setUp() throws Exception {

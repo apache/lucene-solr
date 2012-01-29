@@ -26,7 +26,7 @@ import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -56,7 +56,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.close();
     
-    AtomicIndexReader segment = getOnlySegmentReader(ir);
+    AtomicReader segment = getOnlySegmentReader(ir);
     DocsEnum reuse = null;
     Map<DocsEnum,Boolean> allEnums = new IdentityHashMap<DocsEnum,Boolean>();
     TermsEnum te = segment.terms("foo").iterator(null);
@@ -98,7 +98,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.close();
     
-    AtomicIndexReader segment = getOnlySegmentReader(ir);
+    AtomicReader segment = getOnlySegmentReader(ir);
     DocsEnum reuse = null;
     Map<DocsEnum,Boolean> allEnums = new IdentityHashMap<DocsEnum,Boolean>();
     TermsEnum te = segment.terms("foo").iterator(null);

@@ -17,7 +17,7 @@ package org.apache.lucene.misc;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Fields;
@@ -188,7 +188,7 @@ public class HighFreqTerms {
     new ReaderUtil.Gather(reader) {
 
       @Override
-      protected void add(int base, AtomicIndexReader r) throws IOException {
+      protected void add(int base, AtomicReader r) throws IOException {
         Bits liveDocs = r.getLiveDocs();
         if (liveDocs == null) {
           // TODO: we could do this up front, during the scan

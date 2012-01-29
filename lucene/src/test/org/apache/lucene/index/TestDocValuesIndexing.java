@@ -696,7 +696,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, ((AtomicIndexReader) r.getSequentialSubReaders()[0]).docValues("field").load().getInt(0));
+    assertEquals(17, ((AtomicReader) r.getSequentialSubReaders()[0]).docValues("field").load().getInt(0));
     r.close();
     d.close();
   }
@@ -795,7 +795,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         int ord = asSortedSource.getByValue(expected, actual);
         assertEquals(i, ord);
       }
-      AtomicIndexReader slowR = SlowCompositeReaderWrapper.wrap(reader);
+      AtomicReader slowR = SlowCompositeReaderWrapper.wrap(reader);
       Set<Entry<String, String>> entrySet = docToString.entrySet();
 
       for (Entry<String, String> entry : entrySet) {
@@ -810,7 +810,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     }
   }
   
-  public int docId(AtomicIndexReader reader, Term term) throws IOException {
+  public int docId(AtomicReader reader, Term term) throws IOException {
     int docFreq = reader.docFreq(term);
     assertEquals(1, docFreq);
     DocsEnum termDocsEnum = reader.termDocsEnum(null, term.field, term.bytes, false);

@@ -31,10 +31,10 @@ import org.apache.lucene.util.InfoStream;
 public class MergeState {
 
   public static class IndexReaderAndLiveDocs {
-    public final AtomicIndexReader reader;
+    public final AtomicReader reader;
     public final Bits liveDocs;
 
-    public IndexReaderAndLiveDocs(AtomicIndexReader reader, Bits liveDocs) {
+    public IndexReaderAndLiveDocs(AtomicReader reader, Bits liveDocs) {
       this.reader = reader;
       this.liveDocs = liveDocs;
     }

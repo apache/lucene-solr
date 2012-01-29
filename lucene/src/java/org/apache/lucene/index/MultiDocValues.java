@@ -43,11 +43,11 @@ public class MultiDocValues extends DocValues {
   
   private static DocValuesPuller DEFAULT_PULLER = new DocValuesPuller();
   private static final DocValuesPuller NORMS_PULLER = new DocValuesPuller() {
-    public DocValues pull(AtomicIndexReader reader, String field) throws IOException {
+    public DocValues pull(AtomicReader reader, String field) throws IOException {
       return reader.normValues(field);
     }
     
-    public boolean stopLoadingOnNull(AtomicIndexReader reader, String field) throws IOException {
+    public boolean stopLoadingOnNull(AtomicReader reader, String field) throws IOException {
       // for norms we drop all norms if one leaf reader has no norms and the field is present
       FieldInfos fieldInfos = reader.getFieldInfos();
       FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
@@ -69,11 +69,11 @@ public class MultiDocValues extends DocValues {
   }
   
   private static class DocValuesPuller {
-    public DocValues pull(AtomicIndexReader reader, String field) throws IOException {
+    public DocValues pull(AtomicReader reader, String field) throws IOException {
       return reader.docValues(field);
     }
     
-    public boolean stopLoadingOnNull(AtomicIndexReader reader, String field) throws IOException {
+    public boolean stopLoadingOnNull(AtomicReader reader, String field) throws IOException {
       return false;
     }
   }
@@ -115,12 +115,12 @@ public class MultiDocValues extends DocValues {
   
  
   private static DocValues getDocValues(IndexReader r, final String field, final DocValuesPuller puller) throws IOException {
-    if (r instanceof AtomicIndexReader) {
+    if (r instanceof AtomicReader) {
       // already an atomic reader
-      return puller.pull((AtomicIndexReader) r, field);
+      return puller.pull((AtomicReader) r, field);
     }
-    assert r instanceof CompositeIndexReader;
-    final IndexReader[] subs = ((CompositeIndexReader) r).getSequentialSubReaders();
+    assert r instanceof CompositeReader;
+    final IndexReader[] subs = ((CompositeReader) r).getSequentialSubReaders();
     if (subs.length == 0) {
       // no fields
       return null;
@@ -138,7 +138,7 @@ public class MultiDocValues extends DocValues {
       new ReaderUtil.Gather(r) {
         boolean stop = false;
         @Override
-        protected void add(int base, AtomicIndexReader r) throws IOException {
+        protected void add(int base, AtomicReader r) throws IOException {
           if (stop) {
             return;
           }

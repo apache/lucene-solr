@@ -25,7 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -94,7 +94,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     directory.close();
   }
 
-  public DocsAndPositionsEnum getDocsAndPositions(AtomicIndexReader reader,
+  public DocsAndPositionsEnum getDocsAndPositions(AtomicReader reader,
       BytesRef bytes, Bits liveDocs) throws IOException {
     return reader.termPositionsEnum(null, fieldName, bytes, false);
   }
@@ -332,7 +332,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     doc.add(newField("foo", "bar", StringField.TYPE_UNSTORED));
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
-    AtomicIndexReader r = getOnlySegmentReader(reader);
+    AtomicReader r = getOnlySegmentReader(reader);
     DocsEnum disi = _TestUtil.docs(random, r, "foo", new BytesRef("bar"), null, null, false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
@@ -357,7 +357,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     doc.add(newField("foo", "bar", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
-    AtomicIndexReader r = getOnlySegmentReader(reader);
+    AtomicReader r = getOnlySegmentReader(reader);
     DocsAndPositionsEnum disi = r.termPositionsEnum(null, "foo", new BytesRef("bar"), false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);

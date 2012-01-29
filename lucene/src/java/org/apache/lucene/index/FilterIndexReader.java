@@ -32,7 +32,7 @@ import java.util.Comparator;
  * further override some of these methods and may also provide additional
  * methods and fields.
  */
-public class FilterIndexReader extends AtomicIndexReader {
+public class FilterIndexReader extends AtomicReader {
 
   /** Base class for filtering {@link Fields}
    *  implementations. */
@@ -272,14 +272,14 @@ public class FilterIndexReader extends AtomicIndexReader {
     }
   }
 
-  protected AtomicIndexReader in;
+  protected AtomicReader in;
 
   /**
    * <p>Construct a FilterIndexReader based on the specified base reader.
    * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
    * @param in specified base reader.
    */
-  public FilterIndexReader(AtomicIndexReader in) {
+  public FilterIndexReader(AtomicReader in) {
     super();
     this.in = in;
   }

@@ -28,7 +28,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -499,7 +499,7 @@ public class SpellChecker implements java.io.Closeable {
       if (reader.maxDoc() > 0) {
         new ReaderUtil.Gather(reader) {
           @Override
-          protected void add(int base, AtomicIndexReader r) throws IOException {
+          protected void add(int base, AtomicReader r) throws IOException {
             Terms terms = r.terms(F_WORD);
             if (terms != null)
               termsEnums.add(terms.iterator(null));

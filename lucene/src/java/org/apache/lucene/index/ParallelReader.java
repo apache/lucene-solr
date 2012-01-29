@@ -41,13 +41,13 @@ import org.apache.lucene.util.BytesRef;
  * same order to the other indexes. <em>Failure to do so will result in
  * undefined behavior</em>.
  */
-public class ParallelReader extends AtomicIndexReader {
-  private List<AtomicIndexReader> readers = new ArrayList<AtomicIndexReader>();
+public class ParallelReader extends AtomicReader {
+  private List<AtomicReader> readers = new ArrayList<AtomicReader>();
   private List<Boolean> decrefOnClose = new ArrayList<Boolean>(); // remember which subreaders to decRef on close
   boolean incRefReaders = false;
-  private SortedMap<String,AtomicIndexReader> fieldToReader = new TreeMap<String,AtomicIndexReader>();
-  private Map<AtomicIndexReader,Collection<String>> readerToFields = new HashMap<AtomicIndexReader,Collection<String>>();
-  private List<AtomicIndexReader> storedFieldReaders = new ArrayList<AtomicIndexReader>();
+  private SortedMap<String,AtomicReader> fieldToReader = new TreeMap<String,AtomicReader>();
+  private Map<AtomicReader,Collection<String>> readerToFields = new HashMap<AtomicReader,Collection<String>>();
+  private List<AtomicReader> storedFieldReaders = new ArrayList<AtomicReader>();
   private Map<String, DocValues> normsCache = new HashMap<String,DocValues>();
   private int maxDoc;
   private int numDocs;
@@ -75,7 +75,7 @@ public class ParallelReader extends AtomicIndexReader {
   @Override
   public String toString() {
     final StringBuilder buffer = new StringBuilder("ParallelReader(");
-    final Iterator<AtomicIndexReader> iter = readers.iterator();
+    final Iterator<AtomicReader> iter = readers.iterator();
     if (iter.hasNext()) {
       buffer.append(iter.next());
     }
@@ -89,7 +89,7 @@ public class ParallelReader extends AtomicIndexReader {
  /** Add an AtomicIndexReader.
   * @throws IOException if there is a low-level IO error
   */
-  public void add(AtomicIndexReader reader) throws IOException {
+  public void add(AtomicReader reader) throws IOException {
     ensureOpen();
     add(reader, false);
   }
@@ -101,10 +101,10 @@ public class ParallelReader extends AtomicIndexReader {
   * @throws IllegalArgumentException if not all indexes contain the same number
   *     of documents
   * @throws IllegalArgumentException if not all indexes have the same value
-  *     of {@link AtomicIndexReader#maxDoc()}
+  *     of {@link AtomicReader#maxDoc()}
   * @throws IOException if there is a low-level IO error
   */
-  public void add(AtomicIndexReader reader, boolean ignoreStoredFields)
+  public void add(AtomicReader reader, boolean ignoreStoredFields)
     throws IOException {
 
     ensureOpen();
@@ -233,7 +233,7 @@ public class ParallelReader extends AtomicIndexReader {
   @Override
   public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     ensureOpen();
-    for (final AtomicIndexReader reader: storedFieldReaders) {
+    for (final AtomicReader reader: storedFieldReaders) {
       reader.document(docID, visitor);
     }
   }
@@ -243,7 +243,7 @@ public class ParallelReader extends AtomicIndexReader {
   public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
     ParallelFields fields = new ParallelFields();
-    for (Map.Entry<String,AtomicIndexReader> ent : fieldToReader.entrySet()) {
+    for (Map.Entry<String,AtomicReader> ent : fieldToReader.entrySet()) {
       String fieldName = ent.getKey();
       Terms vector = ent.getValue().getTermVector(docID, fieldName);
       if (vector != null) {
@@ -257,20 +257,20 @@ public class ParallelReader extends AtomicIndexReader {
   @Override
   public boolean hasNorms(String field) throws IOException {
     ensureOpen();
-    AtomicIndexReader reader = fieldToReader.get(field);
+    AtomicReader reader = fieldToReader.get(field);
     return reader==null ? false : reader.hasNorms(field);
   }
 
   @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     ensureOpen();
-    AtomicIndexReader reader = fieldToReader.get(field);
+    AtomicReader reader = fieldToReader.get(field);
     return reader == null? 0 : reader.docFreq(field, term);
   }
 
   // for testing
-  AtomicIndexReader[] getSubReaders() {
-    return readers.toArray(new AtomicIndexReader[readers.size()]);
+  AtomicReader[] getSubReaders() {
+    return readers.toArray(new AtomicReader[readers.size()]);
   }
 
   @Override
@@ -287,7 +287,7 @@ public class ParallelReader extends AtomicIndexReader {
   // TODO: I suspect this is completely untested!!!!!
   @Override
   public DocValues docValues(String field) throws IOException {
-    AtomicIndexReader reader = fieldToReader.get(field);
+    AtomicReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.docValues(field);
   }
   
@@ -296,7 +296,7 @@ public class ParallelReader extends AtomicIndexReader {
   public synchronized DocValues normValues(String field) throws IOException {
     DocValues values = normsCache.get(field);
     if (values == null) {
-      AtomicIndexReader reader = fieldToReader.get(field);
+      AtomicReader reader = fieldToReader.get(field);
       values = reader == null ? null : reader.normValues(field);
       normsCache.put(field, values);
     } 

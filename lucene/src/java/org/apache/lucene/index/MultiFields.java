@@ -61,12 +61,12 @@ public final class MultiFields extends Fields {
    *  Gather}) and iterate through them
    *  yourself. */
   public static Fields getFields(IndexReader r) throws IOException {
-    if (r instanceof AtomicIndexReader) {
+    if (r instanceof AtomicReader) {
       // already an atomic reader
-      return ((AtomicIndexReader) r).fields();
+      return ((AtomicReader) r).fields();
     }
-    assert r instanceof CompositeIndexReader;
-    final IndexReader[] subs = ((CompositeIndexReader) r).getSequentialSubReaders();
+    assert r instanceof CompositeReader;
+    final IndexReader[] subs = ((CompositeReader) r).getSequentialSubReaders();
     if (subs.length == 0) {
       // no fields
       return null;
@@ -76,7 +76,7 @@ public final class MultiFields extends Fields {
 
       new ReaderUtil.Gather(r) {
         @Override
-        protected void add(int base, AtomicIndexReader r) throws IOException {
+        protected void add(int base, AtomicReader r) throws IOException {
           final Fields f = r.fields();
           if (f != null) {
             fields.add(f);
@@ -104,7 +104,7 @@ public final class MultiFields extends Fields {
       try {
         final int maxDoc = new ReaderUtil.Gather(r) {
             @Override
-            protected void add(int base, AtomicIndexReader r) throws IOException {
+            protected void add(int base, AtomicReader r) throws IOException {
               // record all liveDocs, even if they are null
               liveDocs.add(r.getLiveDocs());
               starts.add(base);
@@ -246,10 +246,10 @@ public final class MultiFields extends Fields {
   /** Call this to get the (merged) FieldInfos for a
    *  composite reader */
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
-    final List<AtomicIndexReader> subReaders = new ArrayList<AtomicIndexReader>();
+    final List<AtomicReader> subReaders = new ArrayList<AtomicReader>();
     ReaderUtil.gatherSubReaders(subReaders, reader);
     final FieldInfos fieldInfos = new FieldInfos();
-    for(AtomicIndexReader subReader : subReaders) {
+    for(AtomicReader subReader : subReaders) {
       fieldInfos.add(subReader.getFieldInfos());
     }
     return fieldInfos;

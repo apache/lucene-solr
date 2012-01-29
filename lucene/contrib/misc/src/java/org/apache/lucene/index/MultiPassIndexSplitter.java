@@ -182,15 +182,15 @@ public class MultiPassIndexSplitter {
       super(initSubReaders(reader), false /* dont close */);
     }
     
-    private static AtomicIndexReader[] initSubReaders(IndexReader reader) throws IOException {
-      final ArrayList<AtomicIndexReader> subs = new ArrayList<AtomicIndexReader>();
+    private static AtomicReader[] initSubReaders(IndexReader reader) throws IOException {
+      final ArrayList<AtomicReader> subs = new ArrayList<AtomicReader>();
       new ReaderUtil.Gather(reader) {
         @Override
-        protected void add(int base, AtomicIndexReader r) {
+        protected void add(int base, AtomicReader r) {
           subs.add(new FakeDeleteAtomicIndexReader(r));
         }
       }.run();
-      return subs.toArray(new AtomicIndexReader[subs.size()]);
+      return subs.toArray(new AtomicReader[subs.size()]);
     }
         
     public void deleteDocument(int docID) {
@@ -226,7 +226,7 @@ public class MultiPassIndexSplitter {
   private static final class FakeDeleteAtomicIndexReader extends FilterIndexReader {
     FixedBitSet liveDocs;
 
-    public FakeDeleteAtomicIndexReader(AtomicIndexReader reader) {
+    public FakeDeleteAtomicIndexReader(AtomicReader reader) {
       super(reader);
       undeleteAll(); // initialize main bitset
     }

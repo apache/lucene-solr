@@ -1288,7 +1288,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r3 = w.getReader();
     w.close();
-    AtomicIndexReader sr = getOnlySegmentReader(r3);
+    AtomicReader sr = getOnlySegmentReader(r3);
     assertEquals(2, sr.numDocs());
     DocValues docValues = sr.docValues("dv");
     assertNotNull(docValues);

@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.index.AtomicIndexReader;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 
@@ -76,7 +76,7 @@ public class CachingWrapperFilter extends Filter {
    *  returns <code>true</code>, else it copies the {@link DocIdSetIterator} into
    *  a {@link FixedBitSet}.
    */
-  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, AtomicIndexReader reader) throws IOException {
+  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, AtomicReader reader) throws IOException {
     if (docIdSet == null) {
       // this is better than returning null, as the nonnull result can be cached
       return DocIdSet.EMPTY_DOCIDSET;
@@ -102,7 +102,7 @@ public class CachingWrapperFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-    final AtomicIndexReader reader = context.reader();
+    final AtomicReader reader = context.reader();
 
     // Only cache if incoming acceptDocs is == live docs;
     // if Lucene passes in more interesting acceptDocs in

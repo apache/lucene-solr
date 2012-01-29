@@ -17,17 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import org.apache.lucene.index.CompositeIndexReader.CompositeReaderContext;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.index.CompositeReader.CompositeReaderContext;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
@@ -66,11 +58,11 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  <code>IndexReader</code> instance; use your own
  (non-Lucene) objects instead.
 */
-public abstract class AtomicIndexReader extends IndexReader {
+public abstract class AtomicReader extends IndexReader {
 
   private final AtomicReaderContext readerContext = new AtomicReaderContext(this);
   
-  protected AtomicIndexReader() {
+  protected AtomicReader() {
     super();
   }
 
@@ -287,7 +279,7 @@ public abstract class AtomicIndexReader extends IndexReader {
   public abstract Bits getLiveDocs();
   
   /**
-   * {@link ReaderContext} for {@link AtomicIndexReader} instances
+   * {@link ReaderContext} for {@link AtomicReader} instances
    * @lucene.experimental
    */
   public static final class AtomicReaderContext extends ReaderContext {
@@ -296,12 +288,12 @@ public abstract class AtomicIndexReader extends IndexReader {
     /** The readers absolute doc base */
     public final int docBase;
     
-    private final AtomicIndexReader reader;
+    private final AtomicReader reader;
 
     /**
      * Creates a new {@link AtomicReaderContext} 
      */    
-    public AtomicReaderContext(CompositeReaderContext parent, AtomicIndexReader reader,
+    public AtomicReaderContext(CompositeReaderContext parent, AtomicReader reader,
         int ord, int docBase, int leafOrd, int leafDocBase) {
       super(parent, ord, docBase);
       this.ord = leafOrd;
@@ -309,7 +301,7 @@ public abstract class AtomicIndexReader extends IndexReader {
       this.reader = reader;
     }
     
-    public AtomicReaderContext(AtomicIndexReader atomicReader) {
+    public AtomicReaderContext(AtomicReader atomicReader) {
       this(null, atomicReader, 0, 0, 0, 0);
     }
     
@@ -324,7 +316,7 @@ public abstract class AtomicIndexReader extends IndexReader {
     }
     
     @Override
-    public AtomicIndexReader reader() {
+    public AtomicReader reader() {
       return reader;
     }
   }

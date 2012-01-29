@@ -776,7 +776,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.addDocument(doc);  
     writer.close();
     DirectoryReader reader = IndexReader.open(dir);
-    AtomicIndexReader subreader = getOnlySegmentReader(reader);
+    AtomicReader subreader = getOnlySegmentReader(reader);
     TermsEnum te = subreader.fields().terms("").iterator(null);
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
@@ -797,7 +797,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.addDocument(doc);  
     writer.close();
     DirectoryReader reader = IndexReader.open(dir);
-    AtomicIndexReader subreader = getOnlySegmentReader(reader);
+    AtomicReader subreader = getOnlySegmentReader(reader);
     TermsEnum te = subreader.fields().terms("").iterator(null);
     assertEquals(new BytesRef(""), te.next());
     assertEquals(new BytesRef("a"), te.next());
@@ -1301,7 +1301,7 @@ public class TestIndexWriter extends LuceneTestCase {
     d.add(f);
     w.addDocument(d);
 
-    AtomicIndexReader r = getOnlySegmentReader(w.getReader());
+    AtomicReader r = getOnlySegmentReader(w.getReader());
     TermsEnum t = r.fields().terms("field").iterator(null);
     int count = 0;
     while(t.next() != null) {

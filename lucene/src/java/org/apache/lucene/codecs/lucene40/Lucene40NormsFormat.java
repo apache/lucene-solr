@@ -26,7 +26,7 @@ import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
@@ -88,7 +88,7 @@ public class Lucene40NormsFormat extends NormsFormat {
     }
 
     @Override
-    protected DocValues getDocValuesForMerge(AtomicIndexReader reader, FieldInfo info)
+    protected DocValues getDocValuesForMerge(AtomicReader reader, FieldInfo info)
         throws IOException {
       return reader.normValues(info.name);
     }

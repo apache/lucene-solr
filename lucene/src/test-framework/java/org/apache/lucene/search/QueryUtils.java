@@ -24,10 +24,10 @@ import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
@@ -239,7 +239,7 @@ public class QueryUtils {
         // FUTURE: ensure scorer.doc()==-1
 
         final float maxDiff = 1e-5f;
-        final AtomicIndexReader lastReader[] = {null};
+        final AtomicReader lastReader[] = {null};
 
         s.search(q, new Collector() {
           private Scorer sc;
@@ -301,7 +301,7 @@ public class QueryUtils {
             // confirm that skipping beyond the last doc, on the
             // previous reader, hits NO_MORE_DOCS
             if (lastReader[0] != null) {
-              final AtomicIndexReader previousReader = lastReader[0];
+              final AtomicReader previousReader = lastReader[0];
               IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
               Weight w = indexSearcher.createNormalizedWeight(q);
               AtomicReaderContext ctx = (AtomicReaderContext)indexSearcher.getTopReaderContext();
@@ -327,7 +327,7 @@ public class QueryUtils {
         if (lastReader[0] != null) {
           // confirm that skipping beyond the last doc, on the
           // previous reader, hits NO_MORE_DOCS
-          final AtomicIndexReader previousReader = lastReader[0];
+          final AtomicReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
           Weight w = indexSearcher.createNormalizedWeight(q);
           AtomicReaderContext ctx = previousReader.getTopReaderContext();
@@ -345,7 +345,7 @@ public class QueryUtils {
     //System.out.println("checkFirstSkipTo: "+q);
     final float maxDiff = 1e-3f;
     final int lastDoc[] = {-1};
-    final AtomicIndexReader lastReader[] = {null};
+    final AtomicReader lastReader[] = {null};
     final AtomicReaderContext[] context = ReaderUtil.leaves(s.getTopReaderContext());
     s.search(q,new Collector() {
       private Scorer scorer;
@@ -386,7 +386,7 @@ public class QueryUtils {
         // confirm that skipping beyond the last doc, on the
         // previous reader, hits NO_MORE_DOCS
         if (lastReader[0] != null) {
-          final AtomicIndexReader previousReader = lastReader[0];
+          final AtomicReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
           Weight w = indexSearcher.createNormalizedWeight(q);
           Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), true, false, previousReader.getLiveDocs());
@@ -410,7 +410,7 @@ public class QueryUtils {
     if (lastReader[0] != null) {
       // confirm that skipping beyond the last doc, on the
       // previous reader, hits NO_MORE_DOCS
-      final AtomicIndexReader previousReader = lastReader[0];
+      final AtomicReader previousReader = lastReader[0];
       IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
       Weight w = indexSearcher.createNormalizedWeight(q);
       Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), true, false, previousReader.getLiveDocs());

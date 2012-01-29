@@ -20,7 +20,7 @@ package org.apache.lucene.sandbox.queries;
 import java.io.IOException;
 import java.text.Collator;
 
-import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldComparator;

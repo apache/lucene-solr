@@ -29,7 +29,7 @@ import java.util.WeakHashMap;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.AtomicIndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SegmentReader;
@@ -75,7 +75,7 @@ class FieldCacheImpl implements FieldCache {
     init();
   }
 
-  public synchronized void purge(AtomicIndexReader r) {
+  public synchronized void purge(AtomicReader r) {
     for(Cache c : caches.values()) {
       c.purge(r);
     }
@@ -154,23 +154,23 @@ class FieldCacheImpl implements FieldCache {
   };
 
   // composite/SlowMultiReaderWrapper fieldcaches don't purge until composite reader is closed.
-  final AtomicIndexReader.ReaderClosedListener purgeReader = new AtomicIndexReader.ReaderClosedListener() {
+  final IndexReader.ReaderClosedListener purgeReader = new IndexReader.ReaderClosedListener() {
     @Override
     public void onClose(IndexReader owner) {
-      assert owner instanceof AtomicIndexReader;
-      FieldCacheImpl.this.purge((AtomicIndexReader) owner);
+      assert owner instanceof AtomicReader;
+      FieldCacheImpl.this.purge((AtomicReader) owner);
     }
   };
   
-  private void initReader(AtomicIndexReader reader) {
+  private void initReader(AtomicReader reader) {
     if (reader instanceof SegmentReader) {
       ((SegmentReader) reader).addCoreClosedListener(purgeCore);
     } else {
       // we have a slow reader of some sort, try to register a purge event
       // rather than relying on gc:
       Object key = reader.getCoreCacheKey();
-      if (key instanceof AtomicIndexReader) {
-        ((AtomicIndexReader)key).addReaderClosedListener(purgeReader); 
+      if (key instanceof AtomicReader) {
+        ((AtomicReader)key).addReaderClosedListener(purgeReader); 
       } else {
         // last chance
         reader.addReaderClosedListener(purgeReader); 				
@@ -189,11 +189,11 @@ class FieldCacheImpl implements FieldCache {
 
     final Map<Object,Map<Entry,Object>> readerCache = new WeakHashMap<Object,Map<Entry,Object>>();
     
-    protected abstract Object createValue(AtomicIndexReader reader, Entry key, boolean setDocsWithField)
+    protected abstract Object createValue(AtomicReader reader, Entry key, boolean setDocsWithField)
         throws IOException;
 
     /** Remove this reader from the cache, if present. */
-    public void purge(AtomicIndexReader r) {
+    public void purge(AtomicReader r) {
       Object readerKey = r.getCoreCacheKey();
       synchronized(readerCache) {
         readerCache.remove(readerKey);
@@ -202,7 +202,7 @@ class FieldCacheImpl implements FieldCache {
 
     /** Sets the key to the value for the provided reader;
      *  if the key is already set then this doesn't change it. */
-    public void put(AtomicIndexReader reader, Entry key, Object value) {
+    public void put(AtomicReader reader, Entry key, Object value) {
       final Object readerKey = reader.getCoreCacheKey();
       synchronized (readerCache) {
         Map<Entry,Object> innerCache = readerCache.get(readerKey);
@@ -221,7 +221,7 @@ class FieldCacheImpl implements FieldCache {
       }
     }
 
-    public Object get(AtomicIndexReader reader, Entry key, boolean setDocsWithField) throws IOException {
+    public Object get(AtomicReader reader, Entry key, boolean setDocsWithField) throws IOException {
       Map<Entry,Object> innerCache;
       Object value;
       final Object readerKey = reader.getCoreCacheKey();
@@ -319,12 +319,12 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // inherit javadocs
-  public byte[] getBytes (AtomicIndexReader reader, String field, boolean setDocsWithField) throws IOException {
+  public byte[] getBytes (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getBytes(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public byte[] getBytes(AtomicIndexReader reader, String field, ByteParser parser, boolean setDocsWithField)
+  public byte[] getBytes(AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField)
       throws IOException {
     return (byte[]) caches.get(Byte.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
@@ -334,7 +334,7 @@ class FieldCacheImpl implements FieldCache {
       super(wrapper);
     }
     @Override
-    protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       String field = entryKey.field;
       ByteParser parser = (ByteParser) entryKey.custom;
@@ -391,12 +391,12 @@ class FieldCacheImpl implements FieldCache {
   }
   
   // inherit javadocs
-  public short[] getShorts (AtomicIndexReader reader, String field, boolean setDocsWithField) throws IOException {
+  public short[] getShorts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getShorts(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public short[] getShorts(AtomicIndexReader reader, String field, ShortParser parser, boolean setDocsWithField)
+  public short[] getShorts(AtomicReader reader, String field, ShortParser parser, boolean setDocsWithField)
       throws IOException {
     return (short[]) caches.get(Short.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
@@ -407,7 +407,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       String field = entryKey.field;
       ShortParser parser = (ShortParser) entryKey.custom;
@@ -464,7 +464,7 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // null Bits means no docs matched
-  void setDocsWithField(AtomicIndexReader reader, String field, Bits docsWithField) {
+  void setDocsWithField(AtomicReader reader, String field, Bits docsWithField) {
     final int maxDoc = reader.maxDoc();
     final Bits bits;
     if (docsWithField == null) {
@@ -485,12 +485,12 @@ class FieldCacheImpl implements FieldCache {
   }
   
   // inherit javadocs
-  public int[] getInts (AtomicIndexReader reader, String field, boolean setDocsWithField) throws IOException {
+  public int[] getInts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getInts(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public int[] getInts(AtomicIndexReader reader, String field, IntParser parser, boolean setDocsWithField)
+  public int[] getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField)
       throws IOException {
     return (int[]) caches.get(Integer.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
@@ -501,7 +501,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       String field = entryKey.field;
       IntParser parser = (IntParser) entryKey.custom;
@@ -572,7 +572,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
   
-  public Bits getDocsWithField(AtomicIndexReader reader, String field)
+  public Bits getDocsWithField(AtomicReader reader, String field)
       throws IOException {
     return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new Entry(field, null), false);
   }
@@ -583,7 +583,7 @@ class FieldCacheImpl implements FieldCache {
     }
     
     @Override
-      protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
+      protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
     throws IOException {
       final String field = entryKey.field;      
       FixedBitSet res = null;
@@ -633,13 +633,13 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // inherit javadocs
-  public float[] getFloats (AtomicIndexReader reader, String field, boolean setDocsWithField)
+  public float[] getFloats (AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getFloats(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public float[] getFloats(AtomicIndexReader reader, String field, FloatParser parser, boolean setDocsWithField)
+  public float[] getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField)
     throws IOException {
 
     return (float[]) caches.get(Float.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
@@ -651,7 +651,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       String field = entryKey.field;
       FloatParser parser = (FloatParser) entryKey.custom;
@@ -723,12 +723,12 @@ class FieldCacheImpl implements FieldCache {
   }
 
 
-  public long[] getLongs(AtomicIndexReader reader, String field, boolean setDocsWithField) throws IOException {
+  public long[] getLongs(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getLongs(reader, field, null, setDocsWithField);
   }
   
   // inherit javadocs
-  public long[] getLongs(AtomicIndexReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
+  public long[] getLongs(AtomicReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
       throws IOException {
     return (long[]) caches.get(Long.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
@@ -739,7 +739,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       String field = entryKey.field;
       FieldCache.LongParser parser = (FieldCache.LongParser) entryKey.custom;
@@ -811,13 +811,13 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // inherit javadocs
-  public double[] getDoubles(AtomicIndexReader reader, String field, boolean setDocsWithField)
+  public double[] getDoubles(AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getDoubles(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public double[] getDoubles(AtomicIndexReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
+  public double[] getDoubles(AtomicReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
       throws IOException {
     return (double[]) caches.get(Double.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
@@ -828,7 +828,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
       String field = entryKey.field;
       FieldCache.DoubleParser parser = (FieldCache.DoubleParser) entryKey.custom;
@@ -1073,11 +1073,11 @@ class FieldCacheImpl implements FieldCache {
 
   private static boolean DEFAULT_FASTER_BUT_MORE_RAM = true;
 
-  public DocTermsIndex getTermsIndex(AtomicIndexReader reader, String field) throws IOException {
+  public DocTermsIndex getTermsIndex(AtomicReader reader, String field) throws IOException {
     return getTermsIndex(reader, field, DEFAULT_FASTER_BUT_MORE_RAM);
   }
 
-  public DocTermsIndex getTermsIndex(AtomicIndexReader reader, String field, boolean fasterButMoreRAM) throws IOException {
+  public DocTermsIndex getTermsIndex(AtomicReader reader, String field, boolean fasterButMoreRAM) throws IOException {
     return (DocTermsIndex) caches.get(DocTermsIndex.class).get(reader, new Entry(field, Boolean.valueOf(fasterButMoreRAM)), false);
   }
 
@@ -1087,7 +1087,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
 
       Terms terms = reader.terms(entryKey.field);
@@ -1218,11 +1218,11 @@ class FieldCacheImpl implements FieldCache {
 
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
-  public DocTerms getTerms(AtomicIndexReader reader, String field) throws IOException {
+  public DocTerms getTerms(AtomicReader reader, String field) throws IOException {
     return getTerms(reader, field, DEFAULT_FASTER_BUT_MORE_RAM);
   }
 
-  public DocTerms getTerms(AtomicIndexReader reader, String field, boolean fasterButMoreRAM) throws IOException {
+  public DocTerms getTerms(AtomicReader reader, String field, boolean fasterButMoreRAM) throws IOException {
     return (DocTerms) caches.get(DocTerms.class).get(reader, new Entry(field, Boolean.valueOf(fasterButMoreRAM)), false);
   }
 
@@ -1232,7 +1232,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
 
       Terms terms = reader.terms(entryKey.field);
@@ -1306,7 +1306,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  public DocTermOrds getDocTermOrds(AtomicIndexReader reader, String field) throws IOException {
+  public DocTermOrds getDocTermOrds(AtomicReader reader, String field) throws IOException {
     return (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new Entry(field, null), false);
   }
 
@@ -1316,7 +1316,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicIndexReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
         throws IOException {
       return new DocTermOrds(reader, entryKey.field);
     }
