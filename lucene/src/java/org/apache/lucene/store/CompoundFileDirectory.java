@@ -249,14 +249,6 @@ public final class CompoundFileDirectory extends Directory {
     return entries.containsKey(IndexFileNames.stripSegmentName(name));
   }
   
-  
-  /** Returns the time the compound file was last modified. */
-  @Override
-  public long fileModified(String name) throws IOException {
-    ensureOpen();
-    return directory.fileModified(fileName);
-  }
-  
   /** Not implemented
    * @throws UnsupportedOperationException */
   @Override

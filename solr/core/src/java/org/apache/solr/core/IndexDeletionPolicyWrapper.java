@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.update.SolrIndexWriter;
 
 import java.io.IOException;
 import java.util.*;
@@ -65,13 +66,13 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
   /**
    * Set the duration for which commit point is to be reserved by the deletion policy.
    *
-   * @param indexVersion version of the commit point to be reserved
+   * @param indexGen gen of the commit point to be reserved
    * @param reserveTime  time in milliseconds for which the commit point is to be reserved
    */
-  public void setReserveDuration(Long indexVersion, long reserveTime) {
+  public void setReserveDuration(Long indexGen, long reserveTime) {
     long timeToSet = System.currentTimeMillis() + reserveTime;
     for(;;) {
-      Long previousTime = reserves.put(indexVersion, timeToSet);
+      Long previousTime = reserves.put(indexGen, timeToSet);
 
       // this is the common success case: the older time didn't exist, or
       // came before the new time.
@@ -103,19 +104,19 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
   /** Permanently prevent this commit point from being deleted.
    * A counter is used to allow a commit point to be correctly saved and released
    * multiple times. */
-  public synchronized void saveCommitPoint(Long indexCommitVersion) {
-    AtomicInteger reserveCount = savedCommits.get(indexCommitVersion);
+  public synchronized void saveCommitPoint(Long indexCommitGen) {
+    AtomicInteger reserveCount = savedCommits.get(indexCommitGen);
     if (reserveCount == null) reserveCount = new AtomicInteger();
     reserveCount.incrementAndGet();
-    savedCommits.put(indexCommitVersion, reserveCount);
+    savedCommits.put(indexCommitGen, reserveCount);
   }
 
   /** Release a previously saved commit point */
-  public synchronized void releaseCommitPoint(Long indexCommitVersion) {
-    AtomicInteger reserveCount = savedCommits.get(indexCommitVersion);
+  public synchronized void releaseCommitPoint(Long indexCommitGen) {
+    AtomicInteger reserveCount = savedCommits.get(indexCommitGen);
     if (reserveCount == null) return;// this should not happen
     if (reserveCount.decrementAndGet() <= 0) {
-      savedCommits.remove(indexCommitVersion);
+      savedCommits.remove(indexCommitGen);
     }
   }
 
@@ -165,10 +166,10 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
 
     @Override
     public void delete() {
-      Long version = delegate.getVersion();
-      Long reserve = reserves.get(version);
+      Long gen = delegate.getGeneration();
+      Long reserve = reserves.get(gen);
       if (reserve != null && System.currentTimeMillis() < reserve) return;
-      if(savedCommits.containsKey(version)) return;
+      if(savedCommits.containsKey(gen)) return;
       delegate.delete();
     }
 
@@ -188,11 +189,6 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     }
 
     @Override
-    public long getVersion() {
-      return delegate.getVersion();
-    }
-
-    @Override
     public long getGeneration() {
       return delegate.getGeneration();
     }
@@ -203,22 +199,17 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     }
 
     @Override
-    public long getTimestamp() throws IOException {
-      return delegate.getTimestamp();
-    }
-
-    @Override
     public Map getUserData() throws IOException {
       return delegate.getUserData();
     }    
   }
 
   /**
-   * @param version the version of the commit point
+   * @param gen the gen of the commit point
    * @return a commit point corresponding to the given version
    */
-  public IndexCommit getCommitPoint(Long version) {
-    return solrVersionVsCommits.get(version);
+  public IndexCommit getCommitPoint(Long gen) {
+    return solrVersionVsCommits.get(gen);
   }
 
   /**
@@ -236,10 +227,20 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     Map<Long, IndexCommit> map = new ConcurrentHashMap<Long, IndexCommit>();
     for (IndexCommitWrapper wrapper : list) {
       if (!wrapper.isDeleted())
-        map.put(wrapper.getVersion(), wrapper.delegate);
+        map.put(wrapper.delegate.getGeneration(), wrapper.delegate);
     }
     solrVersionVsCommits = map;
     latestCommit = ((list.get(list.size() - 1)).delegate);
+  }
+
+  public static long getCommitTimestamp(IndexCommit commit) throws IOException {
+    final Map<String,String> commitData = commit.getUserData();
+    String commitTime = commitData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+    if (commitTime != null) {
+      return Long.parseLong(commitTime);
+    } else {
+      return 0;
+    }
   }
 }
 

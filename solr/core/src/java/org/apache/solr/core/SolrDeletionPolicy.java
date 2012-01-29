@@ -87,7 +87,6 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
       }
 
       sb.append(",segFN=").append(commit.getSegmentsFileName());
-      sb.append(",version=").append(commit.getVersion());
       sb.append(",generation=").append(commit.getGeneration());
       sb.append(",filenames=").append(commit.getFileNames());
     } catch (Exception e) {
@@ -133,7 +132,7 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
     synchronized (this) {
       long maxCommitAgeTimeStamp = -1L;
       IndexCommit newest = commits.get(commits.size() - 1);
-      log.info("newest commit = " + newest.getVersion());
+      log.info("newest commit = " + newest.getGeneration());
 
       int singleSegKept = (newest.getSegmentCount() == 1) ? 1 : 0;
       int totalKept = 1;
@@ -149,7 +148,7 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
               DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
               maxCommitAgeTimeStamp = dmp.parseMath(maxCommitAge).getTime();
             }
-            if (commit.getTimestamp() < maxCommitAgeTimeStamp) {
+            if (IndexDeletionPolicyWrapper.getCommitTimestamp(commit) < maxCommitAgeTimeStamp) {
               commit.delete();
               continue;
             }
@@ -191,8 +190,6 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
 
     sb.append('/');
     sb.append(commit.getGeneration());
-    sb.append('_');
-    sb.append(commit.getVersion());
     return sb.toString();
   }
 

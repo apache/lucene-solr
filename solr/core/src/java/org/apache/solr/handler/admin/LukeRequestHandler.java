@@ -48,6 +48,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -562,7 +563,10 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("current", reader.isCurrent() );
     indexInfo.add("hasDeletions", reader.hasDeletions() );
     indexInfo.add("directory", dir );
-    indexInfo.add("lastModified", new Date(IndexReader.lastModified(dir)) );
+    String s = reader.getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+    if (s != null) {
+      indexInfo.add("lastModified", new Date(Long.parseLong(s)));
+    }
     return indexInfo;
   }
   //////////////////////// SolrInfoMBeans methods //////////////////////

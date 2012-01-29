@@ -469,36 +469,6 @@ public abstract class IndexReader implements Closeable {
   }
 
   /**
-   * Returns the time the index in the named directory was last modified. 
-   * Do not use this to check whether the reader is still up-to-date, use
-   * {@link #isCurrent()} instead. 
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static long lastModified(final Directory directory2) throws CorruptIndexException, IOException {
-    return ((Long) new SegmentInfos.FindSegmentsFile(directory2) {
-        @Override
-        public Object doBody(String segmentFileName) throws IOException {
-          return Long.valueOf(directory2.fileModified(segmentFileName));
-        }
-      }.run()).longValue();
-  }
-  
-  /**
-   * Reads version number from segments files. The version number is
-   * initialized with a timestamp and then increased by one for each change of
-   * the index.
-   * 
-   * @param directory where the index resides.
-   * @return version number.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static long getCurrentVersion(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentVersion(directory);
-  }
-  
-  /**
    * Reads commitUserData, previously passed to {@link
    * IndexWriter#commit(Map)}, from current index
    * segments file.  This will return null if {@link
@@ -525,18 +495,7 @@ public abstract class IndexReader implements Closeable {
    * a reader based on a Directory), then this method
    * returns the version recorded in the commit that the
    * reader opened.  This version is advanced every time
-   * {@link IndexWriter#commit} is called.</p>
-   *
-   * <p>If instead this reader is a near real-time reader
-   * (ie, obtained by a call to {@link
-   * IndexWriter#getReader}, or by calling {@link #openIfChanged}
-   * on a near real-time reader), then this method returns
-   * the version of the last commit done by the writer.
-   * Note that even as further changes are made with the
-   * writer, the version will not changed until a commit is
-   * completed.  Thus, you should not rely on this method to
-   * determine when a near real-time reader should be
-   * opened.  Use {@link #isCurrent} instead.</p>
+   * a change is made with {@link IndexWriter}.</p>
    *
    * @throws UnsupportedOperationException unless overridden in subclass
    */

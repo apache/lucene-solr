@@ -703,12 +703,6 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   @Override
-  public synchronized long fileModified(String name) throws IOException {
-    maybeYield();
-    return delegate.fileModified(name);
-  }
-
-  @Override
   public synchronized long fileLength(String name) throws IOException {
     maybeYield();
     return delegate.fileLength(name);

@@ -348,12 +348,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         dir.deleteFile(name);
       }
       @Override
-      public long fileModified(String name)
-        throws IOException
-      {
-        return dir.fileModified(name);
-      }
-      @Override
       public boolean fileExists(String name)
         throws IOException
       {

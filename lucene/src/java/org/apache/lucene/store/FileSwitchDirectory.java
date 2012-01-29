@@ -138,11 +138,6 @@ public class FileSwitchDirectory extends Directory {
   }
 
   @Override
-  public long fileModified(String name) throws IOException {
-    return getDirectory(name).fileModified(name);
-  }
-
-  @Override
   public void deleteFile(String name) throws IOException {
     getDirectory(name).deleteFile(name);
   }

@@ -98,19 +98,6 @@ public class RAMDirectory extends Directory {
     return fileMap.containsKey(name);
   }
 
-  /** Returns the time the named file was last modified.
-   * @throws IOException if the file does not exist
-   */
-  @Override
-  public final long fileModified(String name) throws IOException {
-    ensureOpen();
-    RAMFile file = fileMap.get(name);
-    if (file == null) {
-      throw new FileNotFoundException(name);
-    }
-    return file.getLastModified();
-  }
-
   /** Returns the length in bytes of a file in the directory.
    * @throws IOException if the file does not exist
    */

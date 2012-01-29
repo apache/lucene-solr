@@ -748,6 +748,10 @@ Changes in backwards compatibility policy
   
 * LUCENE-3712: Removed unused and untested ReaderUtil#subReader methods.
   (Uwe Schindler)
+
+* LUCENE-3672: Deprecate Directory.fileModified and
+  IndexCommit.getTimestamp and .getVersion. (Andrzej Bialecki, Robert
+  Muir, Mike McCandless)
   
 Security fixes
 

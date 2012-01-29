@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.index.IndexReader;
 
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrConfig.HttpCachingConfig.LastModFrom;
@@ -157,7 +158,7 @@ public final class HttpCacheHeaderUtil {
       // assume default, change if needed (getOpenTime() should be fast)
       lastMod =
         LastModFrom.DIRLASTMOD == lastModFrom
-        ? IndexReader.lastModified(searcher.getIndexReader().directory())
+        ? IndexDeletionPolicyWrapper.getCommitTimestamp(searcher.getIndexReader().getIndexCommit())
         : searcher.getOpenTime();
     } catch (IOException e) {
       // we're pretty freaking screwed if this happens

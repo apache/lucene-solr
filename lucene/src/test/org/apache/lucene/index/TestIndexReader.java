@@ -381,60 +381,6 @@ public class TestIndexReader extends LuceneTestCase {
         _TestUtil.rmDir(dirFile);
     }
 
-    public void testLastModified() throws Exception {
-      for(int i=0;i<2;i++) {
-        final Directory dir = newDirectory();
-        assertFalse(IndexReader.indexExists(dir));
-        IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
-        addDocumentWithFields(writer);
-        assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
-        writer.close();
-        assertTrue(IndexReader.indexExists(dir));
-        IndexReader reader = IndexReader.open(dir);
-        assertFalse(IndexWriter.isLocked(dir));		// reader only, no lock
-        long version = IndexReader.lastModified(dir);
-        if (i == 1) {
-          long version2 = IndexReader.lastModified(dir);
-          assertEquals(version, version2);
-        }
-        reader.close();
-        // modify index and check version has been
-        // incremented:
-        Thread.sleep(1000);
-
-        writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
-        addDocumentWithFields(writer);
-        writer.close();
-        reader = IndexReader.open(dir);
-        assertTrue("old lastModified is " + version + "; new lastModified is " + IndexReader.lastModified(dir), version <= IndexReader.lastModified(dir));
-        reader.close();
-        dir.close();
-      }
-    }
-
-    public void testVersion() throws IOException {
-      Directory dir = newDirectory();
-      assertFalse(IndexReader.indexExists(dir));
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      addDocumentWithFields(writer);
-      assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
-      writer.close();
-      assertTrue(IndexReader.indexExists(dir));
-      IndexReader reader = IndexReader.open(dir);
-      assertFalse(IndexWriter.isLocked(dir));		// reader only, no lock
-      long version = IndexReader.getCurrentVersion(dir);
-      reader.close();
-      // modify index and check version has been
-      // incremented:
-      writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
-      addDocumentWithFields(writer);
-      writer.close();
-      reader = IndexReader.open(dir);
-      assertTrue("old version is " + version + "; new version is " + IndexReader.getCurrentVersion(dir), version < IndexReader.getCurrentVersion(dir));
-      reader.close();
-      dir.close();
-    }
-
     public void testOpenReaderAfterDelete() throws IOException {
       File dirFile = _TestUtil.getTempDir("deletetest");
       Directory dir = newFSDirectory(dirFile);

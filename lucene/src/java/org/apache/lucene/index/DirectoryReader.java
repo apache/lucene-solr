@@ -425,7 +425,6 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     Collection<String> files;
     Directory dir;
     long generation;
-    long version;
     final Map<String,String> userData;
     private final int segmentCount;
 
@@ -434,7 +433,6 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
       this.dir = dir;
       userData = infos.getUserData();
       files = Collections.unmodifiableCollection(infos.files(dir, true));
-      version = infos.getVersion();
       generation = infos.getGeneration();
       segmentCount = infos.size();
     }
@@ -462,11 +460,6 @@ final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     @Override
     public Directory getDirectory() {
       return dir;
-    }
-
-    @Override
-    public long getVersion() {
-      return version;
     }
 
     @Override
