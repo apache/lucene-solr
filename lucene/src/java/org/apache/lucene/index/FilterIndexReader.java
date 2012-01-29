@@ -17,12 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Comparator;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
@@ -33,11 +31,6 @@ import java.util.Comparator;
  * contained index reader. Subclasses of <code>FilterIndexReader</code> may
  * further override some of these methods and may also provide additional
  * methods and fields.
- * <p><b>Note:</b> The default implementation of {@link FilterIndexReader#doOpenIfChanged}
- * throws {@link UnsupportedOperationException} (like the base class),
- * so it's not possible to reopen a <code>FilterIndexReader</code>.
- * To reopen, you have to first reopen the underlying reader
- * and wrap it again with the custom filter.
  */
 public class FilterIndexReader extends AtomicIndexReader {
 
@@ -376,7 +369,7 @@ public class FilterIndexReader extends AtomicIndexReader {
 
   @Override
   public String toString() {
-    final StringBuilder buffer = new StringBuilder("FilterReader(");
+    final StringBuilder buffer = new StringBuilder("FilterIndexReader(");
     buffer.append(in);
     buffer.append(')');
     return buffer.toString();

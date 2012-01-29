@@ -441,8 +441,7 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     if (writer == this.writer && applyAllDeletes == this.applyAllDeletes) {
       return doOpenFromWriter(null);
     } else {
-      // fail by calling supers impl throwing UOE
-      throw new UnsupportedOperationException("This reader cannot be reopened from the given IndexWriter, as they don't match.");
+      return writer.getReader(applyAllDeletes);
     }
   }
 
