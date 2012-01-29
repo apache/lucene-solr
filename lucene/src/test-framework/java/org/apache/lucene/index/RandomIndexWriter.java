@@ -328,7 +328,7 @@ public class RandomIndexWriter implements Closeable {
     w.deleteAll();
   }
 
-  public IndexReader getReader() throws IOException {
+  public DirectoryReader getReader() throws IOException {
     return getReader(true);
   }
 
@@ -367,7 +367,7 @@ public class RandomIndexWriter implements Closeable {
     switchDoDocValues();
   }
 
-  public IndexReader getReader(boolean applyDeletions) throws IOException {
+  public DirectoryReader getReader(boolean applyDeletions) throws IOException {
     getReaderCalled = true;
     if (r.nextInt(4) == 2) {
       doRandomForceMerge();
