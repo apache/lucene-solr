@@ -31,5 +31,5 @@ import org.apache.lucene.store.IOContext;
 public abstract class TermVectorsFormat {
   public abstract TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException;
   public abstract TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException;
-  public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
+  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

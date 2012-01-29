@@ -674,7 +674,7 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
     return new Lucene3xTermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, docStoreOffset, format);
   }
   
-  public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public static void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getHasVectors()) {
       if (info.getDocStoreOffset() != -1) {
         assert info.getDocStoreSegment() != null;

@@ -88,7 +88,7 @@ public class Lucene3xCodec extends Codec {
     }
 
     @Override
-    public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {}
+    public void files(SegmentInfo info, Set<String> files) throws IOException {}
   };
   
   @Override
@@ -133,20 +133,20 @@ public class Lucene3xCodec extends Codec {
   
   // overrides the default implementation in codec.java to handle CFS without CFE
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getUseCompoundFile()) {
       files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
       // NOTE: we don't add the CFE extension: because 3.x format doesn't use it.
     } else {
-      super.files(dir, info, files);
+      super.files(info, files);
     }
   }
 
   // override the default implementation in codec.java to handle separate norms files, and shared compound docstores
   @Override
-  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    super.separateFiles(dir, info, files);
-    normsFormat().separateFiles(dir, info, files);
+  public void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
+    super.separateFiles(info, files);
+    normsFormat().separateFiles(info, files);
     if (info.getDocStoreOffset() != -1) {
       // We are sharing doc stores (stored fields, term
       // vectors) with other segments

@@ -217,7 +217,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo info, String segmentSuffix, Collection<String> files) {
+  public static void files(SegmentInfo info, String segmentSuffix, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(info.name, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 

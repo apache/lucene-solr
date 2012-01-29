@@ -27,7 +27,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.store.Directory;
 
 /** For debugging, curiosity, transparency only!!  Do not
  *  use this codec in production.
@@ -61,7 +60,7 @@ public class SimpleTextPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
     files.add(getPostingsFileName(segmentInfo.name, segmentSuffix));
   }
 }

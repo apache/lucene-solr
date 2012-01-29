@@ -23,7 +23,6 @@ import java.util.Set;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.NamedSPILoader;
-import org.apache.lucene.store.Directory;
 
 /**
  * Encodes/decodes an inverted index segment
@@ -47,19 +46,19 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   /** Populates <code>files</code> with all filenames needed for 
    * the <code>info</code> segment.
    */
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getUseCompoundFile()) {
       files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
       files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
     } else {
-      postingsFormat().files(dir, info, "", files);
-      storedFieldsFormat().files(dir, info, files);
-      termVectorsFormat().files(dir, info, files);
-      fieldInfosFormat().files(dir, info, files);
+      postingsFormat().files(info, "", files);
+      storedFieldsFormat().files(info, files);
+      termVectorsFormat().files(info, files);
+      fieldInfosFormat().files(info, files);
       // TODO: segmentInfosFormat should be allowed to declare additional files
       // if it wants, in addition to segments_N
-      docValuesFormat().files(dir, info, files);
-      normsFormat().files(dir, info, files);
+      docValuesFormat().files(info, files);
+      normsFormat().files(info, files);
     }
   }
   
@@ -67,8 +66,8 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
    * stored outside of CFS for the <code>info</code> segment.
    */
   // TODO: can we somehow totally remove this?
-  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    liveDocsFormat().separateFiles(dir, info, files);
+  public void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
+    liveDocsFormat().separateFiles(info, files);
   }
   
   /** Encodes/decodes postings */

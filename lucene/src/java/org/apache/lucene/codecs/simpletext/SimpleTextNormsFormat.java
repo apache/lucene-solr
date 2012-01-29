@@ -26,7 +26,6 @@ import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.Directory;
 
 /**
  * plain-text norms format
@@ -47,9 +46,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files)
-      throws IOException {
-    SimpleTextNormsConsumer.files(dir, info, files);
-
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
+    SimpleTextNormsConsumer.files(info, files);
   }   
 }

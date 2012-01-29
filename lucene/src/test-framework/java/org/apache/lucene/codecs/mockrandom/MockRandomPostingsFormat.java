@@ -413,20 +413,20 @@ public class MockRandomPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
     final String seedFileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, SEED_EXT);    
     files.add(seedFileName);
     SepPostingsReader.files(segmentInfo, segmentSuffix, files);
-    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
-    BlockTermsReader.files(dir, segmentInfo, segmentSuffix, files);
-    BlockTreeTermsReader.files(dir, segmentInfo, segmentSuffix, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
-    VariableGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
+    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
+    BlockTermsReader.files(segmentInfo, segmentSuffix, files);
+    BlockTreeTermsReader.files(segmentInfo, segmentSuffix, files);
+    FixedGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
+    VariableGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
     // hackish!
     Iterator<String> it = files.iterator();
     while(it.hasNext()) {
       final String file = it.next();
-      if (!dir.fileExists(file)) {
+      if (!segmentInfo.dir.fileExists(file)) {
         it.remove();
       }
     }

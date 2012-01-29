@@ -31,5 +31,5 @@ import org.apache.lucene.store.IOContext;
 public abstract class StoredFieldsFormat {
   public abstract StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException;
   public abstract StoredFieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException;
-  public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
+  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

@@ -43,7 +43,6 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -826,7 +825,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION));
   }
 }

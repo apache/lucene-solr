@@ -26,7 +26,6 @@ import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.Directory;
 
 /** 
  * Provides a {@link PostingsReaderBase} and {@link
@@ -52,7 +51,7 @@ public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
   }
   
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
   }
 }

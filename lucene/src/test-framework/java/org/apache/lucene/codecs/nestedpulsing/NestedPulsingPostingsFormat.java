@@ -34,7 +34,6 @@ import org.apache.lucene.codecs.pulsing.PulsingPostingsWriter;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.Directory;
 
 /**
  * Pulsing(1, Pulsing(2, Lucene40))
@@ -92,8 +91,8 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
-    BlockTreeTermsReader.files(dir, segmentInfo, segmentSuffix, files);
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
+    BlockTreeTermsReader.files(segmentInfo, segmentSuffix, files);
   }
 }

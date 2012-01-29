@@ -47,7 +47,7 @@ public class SimpleTextStoredFieldsFormat extends StoredFieldsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextStoredFieldsReader.files(dir, info, files);
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
+    SimpleTextStoredFieldsReader.files(info, files);
   }
 }

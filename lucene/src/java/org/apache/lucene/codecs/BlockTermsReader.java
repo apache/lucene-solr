@@ -186,7 +186,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Collection<String> files) {
+  public static void files(SegmentInfo segmentInfo, String segmentSuffix, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockTermsWriter.TERMS_EXTENSION));
   }
 

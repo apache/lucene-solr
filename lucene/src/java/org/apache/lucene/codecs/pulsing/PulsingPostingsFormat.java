@@ -31,7 +31,6 @@ import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.Directory;
 
 /** This postings format "inlines" the postings for terms that have
  *  low docFreq.  It wraps another postings format, which is used for
@@ -115,8 +114,8 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    wrappedPostingsBaseFormat.files(dir, segmentInfo, segmentSuffix, files);
-    BlockTreeTermsReader.files(dir, segmentInfo, segmentSuffix, files);
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    wrappedPostingsBaseFormat.files(segmentInfo, segmentSuffix, files);
+    BlockTreeTermsReader.files(segmentInfo, segmentSuffix, files);
   }
 }

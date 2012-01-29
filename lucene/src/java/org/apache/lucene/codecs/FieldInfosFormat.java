@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.Directory;
 
 /**
  * @lucene.experimental
@@ -29,5 +28,5 @@ import org.apache.lucene.store.Directory;
 public abstract class FieldInfosFormat {
   public abstract FieldInfosReader getFieldInfosReader() throws IOException;
   public abstract FieldInfosWriter getFieldInfosWriter() throws IOException;
-  public abstract void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException;
+  public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

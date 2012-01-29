@@ -23,7 +23,6 @@ import java.util.Set;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.Directory;
 
 /** 
  * Provides a {@link PostingsReaderBase} and {@link
@@ -51,5 +50,5 @@ public abstract class PostingsBaseFormat {
 
   public abstract PostingsWriterBase postingsWriterBase(SegmentWriteState state) throws IOException;
 
-  public abstract void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException;
+  public abstract void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException;
 }

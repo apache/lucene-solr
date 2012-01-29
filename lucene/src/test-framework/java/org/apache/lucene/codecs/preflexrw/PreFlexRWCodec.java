@@ -32,7 +32,6 @@ import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
 
@@ -115,7 +114,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getUseCompoundFile() && LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
       // because we don't fully emulate 3.x codec, PreFlexRW actually writes 4.x format CFS files.
       // so we must check segment version here to see if its a "real" 3.x segment or a "fake"
@@ -126,7 +125,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
         files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
       }
     } else {
-      super.files(dir, info, files);
+      super.files(info, files);
     }
   }
 }

@@ -1548,7 +1548,7 @@ public class TestIndexWriter extends LuceneTestCase {
       SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
       assertFalse(s.getHasVectors());
       Set<String> files = new HashSet<String>();
-      s.getCodec().termVectorsFormat().files(dir, s, files);
+      s.getCodec().termVectorsFormat().files(s, files);
       assertTrue(files.isEmpty());
     }
     

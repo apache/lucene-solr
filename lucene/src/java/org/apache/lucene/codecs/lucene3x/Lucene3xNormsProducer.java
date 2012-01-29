@@ -193,11 +193,11 @@ class Lucene3xNormsProducer extends PerDocProducer {
     
   }
   
-  static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  static void files(SegmentInfo info, Set<String> files) throws IOException {
     // TODO: This is what SI always did... but we can do this cleaner?
     // like first FI that has norms but doesn't have separate norms?
     final String normsFileName = IndexFileNames.segmentFileName(info.name, "", NORMS_EXTENSION);
-    if (dir.fileExists(normsFileName)) {
+    if (info.dir.fileExists(normsFileName)) {
       // only needed to do this in 3x - 4x can decide if the norms are present
       files.add(normsFileName);
     }
@@ -205,7 +205,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
   
   /** @deprecated */
   @Deprecated
-  static void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  static void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
     Map<Integer,Long> normGen = info.getNormGen();
     if (normGen != null) {
       for (Entry<Integer,Long> entry : normGen.entrySet()) {

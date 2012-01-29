@@ -117,7 +117,7 @@ public class Lucene3xFieldInfosReader extends FieldInfosReader {
     }
   }
   
-  public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public static void files(SegmentInfo info, Set<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(info.name, "", FIELD_INFOS_EXTENSION));
   }
 }

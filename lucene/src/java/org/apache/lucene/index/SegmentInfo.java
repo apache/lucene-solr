@@ -258,10 +258,12 @@ public final class SegmentInfo implements Cloneable {
     }
   }
   
+  // nocommit: wrong to call this if (compoundFile)
+  // wrong to call this at all... nuke it
   Set<String> codecDocStoreFiles() throws IOException {
     Set<String> docStoreFiles = new HashSet<String>();
-    codec.storedFieldsFormat().files(dir, this, docStoreFiles);
-    codec.termVectorsFormat().files(dir, this, docStoreFiles);
+    codec.storedFieldsFormat().files(this, docStoreFiles);
+    codec.termVectorsFormat().files(this, docStoreFiles);
     return docStoreFiles;
   }
 
@@ -472,10 +474,10 @@ public final class SegmentInfo implements Cloneable {
     }
     final Set<String> fileSet = new HashSet<String>();
 
-    codec.files(dir, this, fileSet);
+    codec.files(this, fileSet);
     
     // regardless of compound file setting: these files are always in the directory
-    codec.separateFiles(dir, this, fileSet);
+    codec.separateFiles(this, fileSet);
 
     files = new ArrayList<String>(fileSet);
 
