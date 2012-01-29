@@ -53,15 +53,26 @@ import org.apache.lucene.index.MultiReader; // javadoc
 public final class SlowMultiReaderWrapper extends AtomicIndexReader {
 
   private final CompositeIndexReader in;
-  private final AtomicReaderContext readerContext;
   private final Map<String, DocValues> normsCache = new HashMap<String, DocValues>();
   private final Fields fields;
   private final Bits liveDocs;
   
-  public SlowMultiReaderWrapper(CompositeIndexReader other) throws IOException {
+  /** This method is sugar for getting an {@link AtomicIndexReader} from
+   * an {@link IndexReader} of any kind. If the reader is already atomic,
+   * it is returned unchanged, otherwise wrapped by this class.
+   */
+  public static AtomicIndexReader wrap(IndexReader reader) throws IOException {
+    if (reader instanceof CompositeIndexReader) {
+      return new SlowMultiReaderWrapper((CompositeIndexReader) reader);
+    } else {
+      assert reader instanceof AtomicIndexReader;
+      return (AtomicIndexReader) reader;
+    }
+  }
+  
+  public SlowMultiReaderWrapper(CompositeIndexReader reader) throws IOException {
     super();
-    in = other;
-    readerContext = new AtomicReaderContext(this);
+    in = reader;
     fields = MultiFields.getFields(in);
     liveDocs = MultiFields.getLiveDocs(in);
   }
@@ -124,12 +135,6 @@ public final class SlowMultiReaderWrapper extends AtomicIndexReader {
     ensureOpen();
     return liveDocs;
   }
-  
-  @Override
-  public AtomicReaderContext getTopReaderContext() {
-    ensureOpen();
-    return readerContext;
-  }
 
   @Override
   public FieldInfos getFieldInfos() {
@@ -145,7 +150,7 @@ public final class SlowMultiReaderWrapper extends AtomicIndexReader {
 
   @Override
   protected void doClose() throws IOException {
-    // TODO: as this is a wrapper, should we really close the delegate?
+    // nocommit: as this is a wrapper, should we really close the delegate?
     in.close();
   }
 }

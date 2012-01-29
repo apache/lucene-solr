@@ -26,7 +26,6 @@ import org.apache.lucene.util.ReaderUtil;
 abstract class BaseMultiReader<R extends IndexReader> extends CompositeIndexReader {
   protected final R[] subReaders;
   protected final int[] starts;       // 1st docno for each segment
-  private final CompositeReaderContext topLevelContext;
   private final int maxDoc;
   private final int numDocs;
   private final boolean hasDeletions;
@@ -40,7 +39,6 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeIndexRead
       starts[i] = maxDoc;
       maxDoc += subReaders[i].maxDoc();      // compute maxDocs
       numDocs += subReaders[i].numDocs();    // compute numDocs
-
       if (subReaders[i].hasDeletions()) {
         hasDeletions = true;
       }
@@ -49,7 +47,6 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeIndexRead
     this.maxDoc = maxDoc;
     this.numDocs = numDocs;
     this.hasDeletions = hasDeletions;
-    topLevelContext = (CompositeReaderContext) ReaderUtil.buildReaderContext(this);
   }
 
   @Override
@@ -105,10 +102,5 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeIndexRead
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;
-  }
-  
-  @Override
-  public CompositeReaderContext getTopReaderContext() {
-    return topLevelContext;
   }
 }

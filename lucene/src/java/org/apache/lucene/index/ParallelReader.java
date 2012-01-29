@@ -49,7 +49,6 @@ public class ParallelReader extends AtomicIndexReader {
   private Map<AtomicIndexReader,Collection<String>> readerToFields = new HashMap<AtomicIndexReader,Collection<String>>();
   private List<AtomicIndexReader> storedFieldReaders = new ArrayList<AtomicIndexReader>();
   private Map<String, DocValues> normsCache = new HashMap<String,DocValues>();
-  private final AtomicReaderContext topLevelReaderContext = new AtomicReaderContext(this);
   private int maxDoc;
   private int numDocs;
   private boolean hasDeletions;
@@ -283,12 +282,6 @@ public class ParallelReader extends AtomicIndexReader {
         readers.get(i).close();
       }
     }
-  }
-
-  @Override
-  public AtomicReaderContext getTopReaderContext() {
-    ensureOpen();
-    return topLevelReaderContext;
   }
 
   // TODO: I suspect this is completely untested!!!!!

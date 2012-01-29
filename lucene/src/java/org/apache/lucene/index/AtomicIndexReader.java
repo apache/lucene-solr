@@ -68,12 +68,17 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
 */
 public abstract class AtomicIndexReader extends IndexReader {
 
+  private final AtomicReaderContext readerContext = new AtomicReaderContext(this);
+  
   protected AtomicIndexReader() {
     super();
   }
 
   @Override
-  public abstract AtomicReaderContext getTopReaderContext();
+  public final AtomicReaderContext getTopReaderContext() {
+    ensureOpen();
+    return readerContext;
+  }
 
   /** Returns true if there are norms stored for this field. */
   public boolean hasNorms(String field) throws IOException {

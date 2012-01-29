@@ -34,6 +34,7 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;         // for javadocs
+import org.apache.lucene.util.SetOnce;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -69,6 +70,8 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
 */
 public abstract class CompositeIndexReader extends IndexReader {
 
+  private CompositeReaderContext readerContext = null; // lazy init
+
   protected CompositeIndexReader() { 
     super();
   }
@@ -90,11 +93,19 @@ public abstract class CompositeIndexReader extends IndexReader {
   }
 
   @Override
-  public abstract CompositeReaderContext getTopReaderContext();
-
+  public final CompositeReaderContext getTopReaderContext() {
+    ensureOpen();
+    // lazy init without thread safety for perf resaons: Building the readerContext twice does not hurt!
+    if (readerContext == null) {
+      assert getSequentialSubReaders() != null;
+      readerContext = (CompositeReaderContext) ReaderUtil.buildReaderContext(this);
+    }
+    return readerContext;
+  }
+  
   /** Expert: returns the sequential sub readers that this
-   *  reader is logically composed of. If this reader is not composed
-   *  of sequential child readers, it should return null.
+   *  reader is logically composed of. It contrast to previous
+   *  Lucene versions may not return null.
    *  If this method returns an empty array, that means this
    *  reader is a null reader (for example a MultiReader
    *  that has no sub readers).

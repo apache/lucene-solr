@@ -33,8 +33,6 @@ import org.apache.lucene.util.Bits;
 public final class SegmentReader extends AtomicIndexReader {
 
   private final SegmentInfo si;
-  private final AtomicReaderContext readerContext = new AtomicReaderContext(this);
-  
   private final Bits liveDocs;
 
   // Normally set to si.docCount - si.delDocCount, unless we
@@ -186,12 +184,6 @@ public final class SegmentReader extends AtomicIndexReader {
     return si.toString(core.dir, si.docCount - numDocs - si.getDelCount());
   }
   
-  @Override
-  public AtomicReaderContext getTopReaderContext() {
-    ensureOpen();
-    return readerContext;
-  }
-
   /**
    * Return the name of the segment this reader is reading.
    */

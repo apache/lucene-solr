@@ -351,12 +351,6 @@ public class FilterIndexReader extends AtomicIndexReader {
   }
   
   @Override
-  public AtomicReaderContext getTopReaderContext() {
-    ensureOpen();
-    return in.getTopReaderContext();
-  }
-
-  @Override
   public Fields fields() throws IOException {
     ensureOpen();
     return in.fields();
