@@ -66,7 +66,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final DocTermOrds dto = new DocTermOrds(new SlowMultiReaderWrapper(r), "field");
+    final DocTermOrds dto = new DocTermOrds(SlowCompositeReaderWrapper.wrap(r), "field");
 
     TermOrdsIterator iter = dto.lookup(0, null);
     final int[] buffer = new int[5];
@@ -168,7 +168,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: top reader");
     }
-    verify(new SlowMultiReaderWrapper(r), idToOrds, termsArray, null);
+    verify(SlowCompositeReaderWrapper.wrap(r), idToOrds, termsArray, null);
 
     FieldCache.DEFAULT.purge(r);
 
@@ -285,7 +285,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: top reader");
       }
-      verify(new SlowMultiReaderWrapper(r), idToOrdsPrefix, termsArray, prefixRef);
+      verify(SlowCompositeReaderWrapper.wrap(r), idToOrdsPrefix, termsArray, prefixRef);
     }
 
     FieldCache.DEFAULT.purge(r);

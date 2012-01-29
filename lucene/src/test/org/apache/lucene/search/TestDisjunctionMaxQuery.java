@@ -25,7 +25,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Norm;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -156,7 +156,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       writer.addDocument(d4);
     }
     
-    r = new SlowMultiReaderWrapper(writer.getReader());
+    r = SlowCompositeReaderWrapper.wrap(writer.getReader());
     writer.close();
     s = newSearcher(r);
     s.setSimilarityProvider(sim);

@@ -795,7 +795,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         int ord = asSortedSource.getByValue(expected, actual);
         assertEquals(i, ord);
       }
-      reader = new SlowMultiReaderWrapper(reader);
+      reader = SlowCompositeReaderWrapper.wrap(reader);
       Set<Entry<String, String>> entrySet = docToString.entrySet();
 
       for (Entry<String, String> entry : entrySet) {

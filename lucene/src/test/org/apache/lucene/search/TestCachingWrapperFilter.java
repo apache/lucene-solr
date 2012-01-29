@@ -26,7 +26,7 @@ import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -41,7 +41,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir));
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     MockFilter filter = new MockFilter();
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
@@ -67,7 +67,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir));
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
@@ -90,7 +90,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir));
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
@@ -135,7 +135,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.addDocument(new Document());
     writer.close();
 
-    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir));
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
 
     // not cacheable:
     assertDocIdSetCacheable(reader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);

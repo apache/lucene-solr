@@ -115,7 +115,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
     }
     
     public TestReader(IndexReader reader) {
-      super(new SlowMultiReaderWrapper(reader));
+      super(SlowCompositeReaderWrapper.wrap(reader));
     }
 
     @Override

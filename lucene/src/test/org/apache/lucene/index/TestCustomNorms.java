@@ -79,7 +79,7 @@ public class TestCustomNorms extends LuceneTestCase {
     }
     writer.commit();
     writer.close();
-    IndexReader open = new SlowMultiReaderWrapper(IndexReader.open(dir));
+    IndexReader open = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
     DocValues normValues = open.normValues(floatTestField);
     assertNotNull(normValues);
     Source source = normValues.getSource();

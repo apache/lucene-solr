@@ -23,7 +23,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
@@ -88,12 +88,12 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getDoubles(new SlowMultiReaderWrapper(readerA), "theDouble", false);
-    cache.getDoubles(new SlowMultiReaderWrapper(readerA), "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
-    cache.getDoubles(new SlowMultiReaderWrapper(readerB), "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
+    cache.getDoubles(SlowCompositeReaderWrapper.wrap(readerA), "theDouble", false);
+    cache.getDoubles(SlowCompositeReaderWrapper.wrap(readerA), "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
+    cache.getDoubles(SlowCompositeReaderWrapper.wrap(readerB), "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
 
-    cache.getInts(new SlowMultiReaderWrapper(readerX), "theInt", false);
-    cache.getInts(new SlowMultiReaderWrapper(readerX), "theInt", FieldCache.DEFAULT_INT_PARSER, false);
+    cache.getInts(SlowCompositeReaderWrapper.wrap(readerX), "theInt", false);
+    cache.getInts(SlowCompositeReaderWrapper.wrap(readerX), "theInt", FieldCache.DEFAULT_INT_PARSER, false);
 
     // // // 
 
@@ -111,9 +111,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getInts(new SlowMultiReaderWrapper(readerX), "theInt", FieldCache.DEFAULT_INT_PARSER, false);
-    cache.getTerms(new SlowMultiReaderWrapper(readerX), "theInt");
-    cache.getBytes(new SlowMultiReaderWrapper(readerX), "theByte", false);
+    cache.getInts(SlowCompositeReaderWrapper.wrap(readerX), "theInt", FieldCache.DEFAULT_INT_PARSER, false);
+    cache.getTerms(SlowCompositeReaderWrapper.wrap(readerX), "theInt");
+    cache.getBytes(SlowCompositeReaderWrapper.wrap(readerX), "theByte", false);
 
     // // // 
 
@@ -135,11 +135,11 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getTerms(new SlowMultiReaderWrapper(readerA), "theString");
-    cache.getTerms(new SlowMultiReaderWrapper(readerB), "theString");
-    cache.getTerms(new SlowMultiReaderWrapper(readerX), "theString");
+    cache.getTerms(SlowCompositeReaderWrapper.wrap(readerA), "theString");
+    cache.getTerms(SlowCompositeReaderWrapper.wrap(readerB), "theString");
+    cache.getTerms(SlowCompositeReaderWrapper.wrap(readerX), "theString");
 
-    cache.getBytes(new SlowMultiReaderWrapper(readerX), "theByte", false);
+    cache.getBytes(SlowCompositeReaderWrapper.wrap(readerX), "theByte", false);
 
 
     // // // 

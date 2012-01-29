@@ -27,7 +27,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicIndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.store.Directory;
@@ -57,7 +57,7 @@ public class TestTermScorer extends LuceneTestCase {
           .add(newField(FIELD, values[i], TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
-    indexReader = new SlowMultiReaderWrapper(writer.getReader());
+    indexReader = SlowCompositeReaderWrapper.wrap(writer.getReader());
     writer.close();
     indexSearcher = newSearcher(indexReader);
     indexSearcher.setSimilarityProvider(new DefaultSimilarityProvider());
