@@ -56,12 +56,6 @@ public class Lucene3xNormsFormat extends NormsFormat {
 
   @Override
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
-    return docsProducer(state, null);
-  }
-
-  @Override
-  public PerDocProducer docsProducer(SegmentReadState state,
-      Directory separateNormsDir) throws IOException {
-    return new Lucene3xNormsProducer(state.dir, state.segmentInfo, state.fieldInfos, state.context, separateNormsDir);
+    return new Lucene3xNormsProducer(state.dir, state.segmentInfo, state.fieldInfos, state.context);
   }
 }

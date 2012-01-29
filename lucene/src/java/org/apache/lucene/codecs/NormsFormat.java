@@ -39,13 +39,4 @@ public abstract class NormsFormat {
    */
   @Deprecated
   public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {};
-  
-  /**
-   * Note: this should not be overridden!
-   * @deprecated
-   */
-  @Deprecated
-  public PerDocProducer docsProducer(SegmentReadState state, Directory separateNormsDir) throws IOException {
-    return docsProducer(state);
-  }
 }
