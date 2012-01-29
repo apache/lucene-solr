@@ -9,6 +9,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -133,7 +134,7 @@ public class FacetTestUtils {
   }
 
   public static class IndexTaxonomyReaderPair {
-    public IndexReader indexReader;
+    public DirectoryReader indexReader;
     public TaxonomyReader taxReader;
     public IndexSearcher indexSearcher;
 

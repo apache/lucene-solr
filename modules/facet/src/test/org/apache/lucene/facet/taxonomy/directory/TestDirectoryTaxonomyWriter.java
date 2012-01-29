@@ -3,6 +3,7 @@ package org.apache.lucene.facet.taxonomy.directory;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -54,7 +55,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // commit() wasn't called.
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
-    assertFalse(IndexReader.indexExists(dir));
+    assertFalse(DirectoryReader.indexExists(dir));
     ltw.commit(); // first commit, so that an index will be created
     ltw.addCategory(new CategoryPath("a"));
     
@@ -70,7 +71,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // Verifies that committed data is retrievable
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter ltw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
-    assertFalse(IndexReader.indexExists(dir));
+    assertFalse(DirectoryReader.indexExists(dir));
     ltw.commit(); // first commit, so that an index will be created
     ltw.addCategory(new CategoryPath("a"));
     ltw.addCategory(new CategoryPath("b"));
@@ -78,7 +79,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     userCommitData.put("testing", "1 2 3");
     ltw.commit(userCommitData);
     ltw.close();
-    IndexReader r = IndexReader.open(dir);
+    DirectoryReader r = IndexReader.open(dir);
     assertEquals("2 categories plus root should have been committed to the underlying directory", 3, r.numDocs());
     Map <String, String> readUserCommitData = r.getCommitUserData();
     assertTrue("wrong value extracted from commit data", 
