@@ -209,14 +209,31 @@ final class OverseerElectionContext extends ElectionContext {
   private final ZkStateReader stateReader;
 
   public OverseerElectionContext(final String zkNodeName, SolrZkClient zkClient, ZkStateReader stateReader) {
-    super(zkNodeName, "/overseer_elect", null, null);
+    super(zkNodeName, "/overseer_elect", "/overseer_elect/leader", null);
     this.zkClient = zkClient;
     this.stateReader = stateReader;
   }
 
   @Override
   void runLeaderProcess(String leaderSeqPath, boolean weAreReplacement) throws KeeperException, InterruptedException {
-    new Overseer(zkClient, stateReader);
+    
+    final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf("/")+1);
+    ZkNodeProps myProps = new ZkNodeProps("id", id);
+
+    try {
+      zkClient.makePath(leaderPath,
+          ZkStateReader.toJSON(myProps),
+          CreateMode.EPHEMERAL, true);
+    } catch (NodeExistsException e) {
+      // if a previous leader ephemeral still exists for some reason, try and
+      // remove it
+      zkClient.delete(leaderPath, -1, true);
+      zkClient.makePath(leaderPath,
+          ZkStateReader.toJSON(myProps),
+          CreateMode.EPHEMERAL, true);
+    }
+  
+    new Overseer(zkClient, stateReader, id);
   }
   
 }
