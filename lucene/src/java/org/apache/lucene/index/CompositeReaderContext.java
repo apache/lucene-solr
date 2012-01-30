@@ -17,6 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import org.apache.lucene.util.ReaderUtil;
+
 /**
  * {@link IndexReaderContext} for {@link CompositeReader} instance.
  * @lucene.experimental
@@ -25,6 +28,10 @@ public final class CompositeReaderContext extends IndexReaderContext {
   private final IndexReaderContext[] children;
   private final AtomicReaderContext[] leaves;
   private final CompositeReader reader;
+  
+  static CompositeReaderContext create(CompositeReader reader) {
+    return new Builder(reader).build();
+  }
 
   /**
    * Creates a {@link CompositeReaderContext} for intermediate readers that aren't
@@ -66,4 +73,64 @@ public final class CompositeReaderContext extends IndexReaderContext {
   public CompositeReader reader() {
     return reader;
   }
+  
+  private static final class Builder {
+    private final CompositeReader reader;
+    private final AtomicReaderContext[] leaves;
+    private int leafOrd = 0;
+    private int leafDocBase = 0;
+    
+    public Builder(CompositeReader reader) {
+      this.reader = reader;
+      leaves = new AtomicReaderContext[numLeaves(reader)];
+    }
+    
+    public CompositeReaderContext build() {
+      return (CompositeReaderContext) build(null, reader, 0, 0);
+    }
+    
+    private IndexReaderContext build(CompositeReaderContext parent, IndexReader reader, int ord, int docBase) {
+      if (reader instanceof AtomicReader) {
+        final AtomicReader ar = (AtomicReader) reader;
+        final AtomicReaderContext atomic = new AtomicReaderContext(parent, ar, ord, docBase, leafOrd, leafDocBase);
+        leaves[leafOrd++] = atomic;
+        leafDocBase += reader.maxDoc();
+        return atomic;
+      } else {
+        final CompositeReader cr = (CompositeReader) reader;
+        final IndexReader[] sequentialSubReaders = cr.getSequentialSubReaders();
+        final IndexReaderContext[] children = new IndexReaderContext[sequentialSubReaders.length];
+        final CompositeReaderContext newParent;
+        if (parent == null) {
+          newParent = new CompositeReaderContext(cr, children, leaves);
+        } else {
+          newParent = new CompositeReaderContext(parent, cr, ord, docBase, children);
+        }
+        int newDocBase = 0;
+        for (int i = 0; i < sequentialSubReaders.length; i++) {
+          children[i] = build(newParent, sequentialSubReaders[i], i, newDocBase);
+          newDocBase += sequentialSubReaders[i].maxDoc();
+        }
+        return newParent;
+      }
+    }
+    
+    private int numLeaves(IndexReader reader) {
+      final int[] numLeaves = new int[1];
+      try {
+        new ReaderUtil.Gather(reader) {
+          @Override
+          protected void add(int base, AtomicReader r) {
+            numLeaves[0]++;
+          }
+        }.run();
+      } catch (IOException ioe) {
+        // won't happen
+        throw new RuntimeException(ioe);
+      }
+      return numLeaves[0];
+    }
+    
+  }
+
 }

@@ -17,11 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
-import org.apache.lucene.util.ReaderUtil;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -57,7 +54,7 @@ import org.apache.lucene.util.ReaderUtil;
 */
 public abstract class CompositeReader extends IndexReader {
 
-  private CompositeReaderContext readerContext = null; // lazy init
+  private volatile CompositeReaderContext readerContext = null; // lazy init
 
   protected CompositeReader() { 
     super();
@@ -69,7 +66,8 @@ public abstract class CompositeReader extends IndexReader {
     buffer.append(getClass().getSimpleName());
     buffer.append('(');
     final IndexReader[] subReaders = getSequentialSubReaders();
-    if ((subReaders != null) && (subReaders.length > 0)) {
+    assert subReaders != null;
+    if (subReaders.length > 0) {
       buffer.append(subReaders[0]);
       for (int i = 1; i < subReaders.length; ++i) {
         buffer.append(" ").append(subReaders[i]);
@@ -94,66 +92,8 @@ public abstract class CompositeReader extends IndexReader {
     // lazy init without thread safety for perf reasons: Building the readerContext twice does not hurt!
     if (readerContext == null) {
       assert getSequentialSubReaders() != null;
-      readerContext = new ReaderContextBuilder(this).build();
+      readerContext = CompositeReaderContext.create(this);
     }
     return readerContext;
-  }
-  
-  private static class ReaderContextBuilder {
-    private final CompositeReader reader;
-    private final AtomicReaderContext[] leaves;
-    private int leafOrd = 0;
-    private int leafDocBase = 0;
-    public ReaderContextBuilder(CompositeReader reader) {
-      this.reader = reader;
-      leaves = new AtomicReaderContext[numLeaves(reader)];
-    }
-    
-    public CompositeReaderContext build() {
-      return (CompositeReaderContext) build(null, reader, 0, 0);
-    }
-    
-    private IndexReaderContext build(CompositeReaderContext parent, IndexReader reader, int ord, int docBase) {
-      if (reader instanceof AtomicReader) {
-        final AtomicReader ar = (AtomicReader) reader;
-        final AtomicReaderContext atomic = new AtomicReaderContext(parent, ar, ord, docBase, leafOrd, leafDocBase);
-        leaves[leafOrd++] = atomic;
-        leafDocBase += reader.maxDoc();
-        return atomic;
-      } else {
-        final CompositeReader cr = (CompositeReader) reader;
-        final IndexReader[] sequentialSubReaders = cr.getSequentialSubReaders();
-        final IndexReaderContext[] children = new IndexReaderContext[sequentialSubReaders.length];
-        final CompositeReaderContext newParent;
-        if (parent == null) {
-          newParent = new CompositeReaderContext(cr, children, leaves);
-        } else {
-          newParent = new CompositeReaderContext(parent, cr, ord, docBase, children);
-        }
-        int newDocBase = 0;
-        for (int i = 0; i < sequentialSubReaders.length; i++) {
-          children[i] = build(newParent, sequentialSubReaders[i], i, newDocBase);
-          newDocBase += sequentialSubReaders[i].maxDoc();
-        }
-        return newParent;
-      }
-    }
-    
-    private int numLeaves(IndexReader reader) {
-      final int[] numLeaves = new int[1];
-      try {
-        new ReaderUtil.Gather(reader) {
-          @Override
-          protected void add(int base, AtomicReader r) {
-            numLeaves[0]++;
-          }
-        }.run();
-      } catch (IOException ioe) {
-        // won't happen
-        throw new RuntimeException(ioe);
-      }
-      return numLeaves[0];
-    }
-    
   }
 }
