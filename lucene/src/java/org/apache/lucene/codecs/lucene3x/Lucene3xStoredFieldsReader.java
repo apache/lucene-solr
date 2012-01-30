@@ -216,10 +216,6 @@ public final class Lucene3xStoredFieldsReader extends StoredFieldsReader impleme
     }
   }
 
-  public final int size() {
-    return size;
-  }
-
   private void seekIndex(int docID) throws IOException {
     indexStream.seek(FORMAT_SIZE + (docID + docStoreOffset) * 8L);
   }
@@ -301,32 +297,6 @@ public final class Lucene3xStoredFieldsReader extends StoredFieldsReader impleme
     }
   }
 
-  /** Returns the length in bytes of each raw document in a
-   *  contiguous range of length numDocs starting with
-   *  startDocID.  Returns the IndexInput (the fieldStream),
-   *  already seeked to the starting point for startDocID.*/
-  public final IndexInput rawDocs(int[] lengths, int startDocID, int numDocs) throws IOException {
-    seekIndex(startDocID);
-    long startOffset = indexStream.readLong();
-    long lastOffset = startOffset;
-    int count = 0;
-    while (count < numDocs) {
-      final long offset;
-      final int docID = docStoreOffset + startDocID + count + 1;
-      assert docID <= numTotalDocs;
-      if (docID < numTotalDocs) 
-        offset = indexStream.readLong();
-      else
-        offset = fieldsStream.length();
-      lengths[count++] = (int) (offset-lastOffset);
-      lastOffset = offset;
-    }
-
-    fieldsStream.seek(startOffset);
-
-    return fieldsStream;
-  }
-  
   // note: if there are shared docstores, we are also called by Lucene3xCodec even in 
   // the CFS case. so logic here must handle this.
   public static void files(SegmentInfo info, Set<String> files) throws IOException {
