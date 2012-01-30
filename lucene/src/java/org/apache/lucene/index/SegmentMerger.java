@@ -323,9 +323,12 @@ final class SegmentMerger {
       docBase += docCount;
 
       if (mergeState.payloadProcessorProvider != null) {
-        // nocommit: this does not work anymore as SR/AtomicIndexReader does not know the directory anymore:
-        // mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(reader.reader.directory());
-        throw new UnsupportedOperationException("PayloadProcessorProvider is not supported at the moment :(");
+        // TODO: the PayloadProcessorProvider should take AtomicReader as parameter
+        // and find out by itself if it can provide a processor:
+        if (!(reader.reader instanceof SegmentReader))
+          throw new UnsupportedOperationException("Payload processing currently requires exclusively SegmentReaders to be merged.");
+        final Directory dir = ((SegmentReader) reader.reader).directory();
+        mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(dir);
       }
 
       i++;

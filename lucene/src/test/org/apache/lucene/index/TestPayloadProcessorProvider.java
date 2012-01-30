@@ -37,7 +37,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
-import org.junit.Ignore;
 
 public class TestPayloadProcessorProvider extends LuceneTestCase {
 
@@ -215,8 +214,6 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     dir.close();
   }
 
-  @Ignore("This test does not work, as PerDirPayloadProcessor is currently broken (see nocommit in SegmentMerger): "+
-      "SegmentReader/AtomicReader does not know its directory. This is broken, it should be a PayLoadProcessorProvider per AtomicReader!")
   @Test
   public void testAddIndexes() throws Exception {
     // addIndexes - single commit in each
@@ -226,8 +223,6 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     doTest(random, true, 0, true);
   }
 
-  @Ignore("This test does not work, as PerDirPayloadProcessor is currently broken (see nocommit in SegmentMerger): "+
-      "SegmentReader/AtomicReader does not know its directory. This is broken, it should be a PayLoadProcessorProvider per AtomicReader!")
   @Test
   public void testAddIndexesIntoExisting() throws Exception {
     // addIndexes - single commit in each
@@ -237,8 +232,6 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     doTest(random, false, NUM_DOCS, true);
   }
 
-  @Ignore("This test does not work, as PerDirPayloadProcessor is currently broken (see nocommit in SegmentMerger): "+
-      "SegmentReader/AtomicReader does not know its directory. This is broken, it should be a PayLoadProcessorProvider per AtomicReader!")
   @Test
   public void testRegularMerges() throws Exception {
     Directory dir = newDirectory();
