@@ -102,6 +102,9 @@ Bug Fixes
    getRefCount() no longer checks if the taxonomy reader is already closed.
    (Doron Cohen, Shai Erera)
  
+ * LUCENE-3719: FVH: slow performance on very large queries.
+   (Igor Motov via Koji Sekiguchi)
+
 Documentation
 
  * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly 
