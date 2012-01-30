@@ -52,6 +52,8 @@
 	<classpathentry kind="src" path="lucene/contrib/spellchecker/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/xml-query-parser/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/xml-query-parser/src/test"/>
+	<classpathentry kind="src" path="lucene/contrib/pruning/src/java"/>
+	<classpathentry kind="src" path="lucene/contrib/pruning/src/test"/>
 	<classpathentry kind="src" path="solr/core/src/java"/>
 	<classpathentry kind="src" path="solr/core/src/test"/>
 	<classpathentry kind="src" path="solr/core/src/test-files"/>

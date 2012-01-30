@@ -44,6 +44,9 @@ New Features
    joins in both parent to child and child to parent directions.
    (Mike McCandless)
   
+ * LUCENE-1812: Added static index pruning contrib module.
+   (Andrzej Bialecki, Doron Cohen)
+  
 API Changes
 
  * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an 
