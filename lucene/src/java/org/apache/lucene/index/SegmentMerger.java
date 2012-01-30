@@ -227,20 +227,10 @@ final class SegmentMerger {
                                             reader, matchingFieldsReader);
         }
       }
+      fieldsWriter.finish(docCount);
     } finally {
       fieldsWriter.close();
     }
-
-    final String fileName = IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_INDEX_EXTENSION);
-    final long fdxFileLength = directory.fileLength(fileName);
-
-    if (4+((long) docCount)*8 != fdxFileLength)
-      // This is most likely a bug in Sun JRE 1.6.0_04/_05;
-      // we detect that the bug has struck, here, and
-      // throw an exception to prevent the corruption from
-      // entering the index.  See LUCENE-1282 for
-      // details.
-      throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
 
     segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, null);
     return docCount;
@@ -348,20 +338,10 @@ final class SegmentMerger {
           
         }
       }
+      termVectorsWriter.finish(mergedDocs);
     } finally {
       termVectorsWriter.close();
     }
-
-    final String fileName = IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_INDEX_EXTENSION);
-    final long tvxSize = directory.fileLength(fileName);
-
-    if (4+((long) mergedDocs)*16 != tvxSize)
-      // This is most likely a bug in Sun JRE 1.6.0_04/_05;
-      // we detect that the bug has struck, here, and
-      // throw an exception to prevent the corruption from
-      // entering the index.  See LUCENE-1282 for
-      // details.
-      throw new RuntimeException("mergeVectors produced an invalid result: mergedDocs is " + mergedDocs + " but tvx size is " + tvxSize + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
   }
 
   private void copyVectorsWithDeletions(final TermVectorsWriter termVectorsWriter,

@@ -31,9 +31,14 @@ final class TermVectorsWriter {
   private FieldInfos fieldInfos;
   final UnicodeUtil.UTF8Result[] utf8Results = new UnicodeUtil.UTF8Result[] {new UnicodeUtil.UTF8Result(),
                                                                              new UnicodeUtil.UTF8Result()};
+  // used only by assert/checks
+  final String segment;
+  final Directory directory;
 
   public TermVectorsWriter(Directory directory, String segment,
                            FieldInfos fieldInfos) throws IOException {
+    this.segment = segment;
+    this.directory = directory;
     boolean success = false;
     try {
       // Open files for TermVector storage
@@ -195,6 +200,18 @@ final class TermVectorsWriter {
     tvf.copyBytes(reader.getTvfStream(), tvfPosition-tvfStart);
     assert tvd.getFilePointer() == tvdPosition;
     assert tvf.getFilePointer() == tvfPosition;
+  }
+  
+  void finish(int numDocs) throws IOException {
+    if (4 + ((long) numDocs) * 16 != tvx.getFilePointer()) {
+      String idxName = IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_INDEX_EXTENSION);
+      // This is most likely a bug in Sun JRE 1.6.0_04/_05;
+      // we detect that the bug has struck, here, and
+      // throw an exception to prevent the corruption from
+      // entering the index.  See LUCENE-1282 for
+      // details.
+      throw new RuntimeException("ergeVectors produced an invalid result: mergedDocs is " + numDocs + " docs vs " + tvx.getFilePointer() + " length in bytes of " + idxName + " file exists?=" + directory.fileExists(idxName));
+    }
   }
   
   /** Close all streams. */

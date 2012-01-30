@@ -52,13 +52,21 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   synchronized void flush(Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
     if (tvx != null) {
       // At least one doc in this run had term vectors enabled
-      fill(state.numDocs);
-      IOUtils.close(tvx, tvf, tvd);
-      tvx = tvd = tvf = null;
       assert state.segmentName != null;
-      String idxName = IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.VECTORS_INDEX_EXTENSION);
-      if (4 + ((long) state.numDocs) * 16 != state.directory.fileLength(idxName)) {
-        throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(idxName) + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
+      fill(state.numDocs);
+      try {
+        if (4 + ((long) state.numDocs) * 16 != tvx.getFilePointer()) {
+          // This is most likely a bug in Sun JRE 1.6.0_04/_05;
+          // we detect that the bug has struck, here, and
+          // throw an exception to prevent the corruption from
+          // entering the index.  See LUCENE-1282 for
+          // details
+          String idxName = IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.VECTORS_INDEX_EXTENSION);
+          throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocs + " docs vs " + tvx.getFilePointer() + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
+        }
+      } finally {
+        IOUtils.close(tvx, tvf, tvd);
+        tvx = tvd = tvf = null;
       }
 
       lastDocID = 0;

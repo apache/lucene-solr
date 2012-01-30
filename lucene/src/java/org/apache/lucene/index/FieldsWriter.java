@@ -121,6 +121,18 @@ final class FieldsWriter {
     fieldsStream.writeVInt(0);
   }
 
+  void finish(int numDocs) throws IOException {
+    if (4 + ((long) numDocs) * 8 != indexStream.getFilePointer()) {
+      // This is most likely a bug in Sun JRE 1.6.0_04/_05;
+      // we detect that the bug has struck, here, and
+      // throw an exception to prevent the corruption from
+      // entering the index.  See LUCENE-1282 for
+      // details
+      String fieldsIdxName = IndexFileNames.segmentFileName(segment,  IndexFileNames.FIELDS_INDEX_EXTENSION);
+      throw new RuntimeException("after flush: fdx size mismatch: " + numDocs + " docs vs " + indexStream.getFilePointer() + " length in bytes of " + fieldsIdxName + " file exists?=" + directory.fileExists(fieldsIdxName));
+    }
+  }
+
   void close() throws IOException {
     if (directory != null) {
       try {
