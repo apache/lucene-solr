@@ -29,13 +29,13 @@ import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
-import java.nio.charset.Charset;
 import java.util.Set;
 
 /**
@@ -93,6 +93,10 @@ public final class Lucene3xStoredFieldsReader extends StoredFieldsReader impleme
   // The docID offset where our docs begin in the index
   // file.  This will be 0 if we have our own private file.
   private int docStoreOffset;
+  
+  // when we are inside a compound share doc store (CFX),
+  // (lucene 3.0 indexes only), we privately open our own fd.
+  private final CompoundFileDirectory storeCFSReader;
 
   /** Returns a cloned FieldsReader that shares open
    *  IndexInputs with the original one.  It is the caller's
@@ -131,6 +135,7 @@ public final class Lucene3xStoredFieldsReader extends StoredFieldsReader impleme
     this.docStoreOffset = docStoreOffset;
     this.fieldsStream = fieldsStream;
     this.indexStream = indexStream;
+    this.storeCFSReader = null;
   }
 
   public Lucene3xStoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
@@ -140,6 +145,12 @@ public final class Lucene3xStoredFieldsReader extends StoredFieldsReader impleme
     boolean success = false;
     fieldInfos = fn;
     try {
+      if (docStoreOffset != -1 && si.getDocStoreIsCompoundFile()) {
+        d = storeCFSReader = new CompoundFileDirectory(si.dir, 
+            IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), context, false);
+      } else {
+        storeCFSReader = null;
+      }
       fieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION);
       indexStream = d.openInput(indexStreamFN, context);
@@ -200,7 +211,7 @@ public final class Lucene3xStoredFieldsReader extends StoredFieldsReader impleme
    */
   public final void close() throws IOException {
     if (!closed) {
-      IOUtils.close(fieldsStream, indexStream);
+      IOUtils.close(fieldsStream, indexStream, storeCFSReader);
       closed = true;
     }
   }

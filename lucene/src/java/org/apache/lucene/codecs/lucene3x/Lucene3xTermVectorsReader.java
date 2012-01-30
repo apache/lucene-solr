@@ -38,6 +38,7 @@ import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -90,6 +91,12 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
   // file.  This will be 0 if we have our own private file.
   private int docStoreOffset;
   
+  // when we are inside a compound share doc store (CFX),
+  // (lucene 3.0 indexes only), we privately open our own fd.
+  // TODO: if we are worried, maybe we could eliminate the
+  // extra fd somehow when you also have vectors...
+  private final CompoundFileDirectory storeCFSReader;
+  
   private final int format;
 
   // used by clone
@@ -102,6 +109,7 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
     this.numTotalDocs = numTotalDocs;
     this.docStoreOffset = docStoreOffset;
     this.format = format;
+    this.storeCFSReader = null;
   }
     
   public Lucene3xTermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
@@ -113,6 +121,12 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
     boolean success = false;
 
     try {
+      if (docStoreOffset != -1 && si.getDocStoreIsCompoundFile()) {
+        d = storeCFSReader = new CompoundFileDirectory(si.dir, 
+            IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), context, false);
+      } else {
+        storeCFSReader = null;
+      }
       String idxName = IndexFileNames.segmentFileName(segment, "", VECTORS_INDEX_EXTENSION);
       tvx = d.openInput(idxName, context);
       format = checkValidFormat(tvx);
@@ -170,7 +184,7 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
   }
 
   public void close() throws IOException {
-    IOUtils.close(tvx, tvd, tvf);
+    IOUtils.close(tvx, tvd, tvf, storeCFSReader);
   }
 
   /**

@@ -65,7 +65,6 @@ final class SegmentCoreReaders {
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
   final CompoundFileDirectory cfsReader;
-  final CompoundFileDirectory storeCFSReader;
 
   final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
     @Override
@@ -121,34 +120,11 @@ final class SegmentCoreReaders {
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
       norms = codec.normsFormat().docsProducer(segmentReadState);
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
-
-      final Directory storeDir;
-      if (si.getDocStoreOffset() != -1) {
-        if (si.getDocStoreIsCompoundFile()) {
-          storeCFSReader = new CompoundFileDirectory(dir,
-              IndexFileNames.segmentFileName(si.getDocStoreSegment(), "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION),
-              context, false);
-          storeDir = storeCFSReader;
-          assert storeDir != null;
-        } else {
-          storeCFSReader = null;
-          storeDir = dir;
-          assert storeDir != null;
-        }
-      } else if (si.getUseCompoundFile()) {
-        storeDir = cfsReader;
-        storeCFSReader = null;
-        assert storeDir != null;
-      } else {
-        storeDir = dir;
-        storeCFSReader = null;
-        assert storeDir != null;
-      }
-      
-      fieldsReaderOrig = si.getCodec().storedFieldsFormat().fieldsReader(storeDir, si, fieldInfos, context);
+  
+      fieldsReaderOrig = si.getCodec().storedFieldsFormat().fieldsReader(cfsDir, si, fieldInfos, context);
  
       if (si.getHasVectors()) { // open term vector files only as needed
-        termVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(storeDir, si, fieldInfos, context);
+        termVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(cfsDir, si, fieldInfos, context);
       } else {
         termVectorsReaderOrig = null;
       }
@@ -175,7 +151,7 @@ final class SegmentCoreReaders {
     //System.out.println("core.decRef seg=" + owner.getSegmentInfo() + " rc=" + ref);
     if (ref.decrementAndGet() == 0) {
       IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, perDocProducer,
-        termVectorsReaderOrig, fieldsReaderOrig, cfsReader, storeCFSReader, norms);
+        termVectorsReaderOrig, fieldsReaderOrig, cfsReader, norms);
       notifyCoreClosedListeners();
     }
   }
