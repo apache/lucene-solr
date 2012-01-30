@@ -36,26 +36,32 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  index.  Search of an index is done entirely through this abstract interface,
  so that any subclass which implements it is searchable.
 
- <p> Concrete subclasses of IndexReader are usually constructed with a call to
- one of the static <code>open()</code> methods, e.g. {@link
- #open(Directory)}.
+ <p>There are two different types of IndexReaders:
+ <ul>
+  <li>{@link AtomicReader}: These indexes do not consist of several sub-readers,
+  they are atomic. They support retrieval of stored fields, doc values, terms,
+  and postings.
+  <li>{@link CompositeReader}: Instances (like {@link DirectoryReader})
+  of this reader can only
+  be used to get stored fields from the underlying AtomicReaders,
+  but it is not possible to directly retrieve postings. To do that, get
+  the sub-readers via {@link CompositeReader#getSequentialSubReaders}.
+  Alternatively, you can mimic an {@link AtomicReader} (with a serious slowdown),
+  by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
+ </ul>
+ 
+ <p>IndexReader instances for indexes on disk are usually constructed
+ with a call to one of the static <code>DirectoryReader,open()</code> methods,
+ e.g. {@link DirectoryReader#open(Directory)}. {@link DirectoryReader} implements
+ the {@link CompositeReader} interface, it is not possible to directly get postings.
 
  <p> For efficiency, in this API documents are often referred to via
  <i>document numbers</i>, non-negative integers which each name a unique
- document in the index.  These document numbers are ephemeral--they may change
+ document in the index.  These document numbers are ephemeral -- they may change
  as documents are added to and deleted from an index.  Clients should thus not
  rely on a given document having the same number between sessions.
 
  <p>
- <b>NOTE</b>: for backwards API compatibility, several methods are not listed 
- as abstract, but have no useful implementations in this base class and 
- instead always throw UnsupportedOperationException.  Subclasses are 
- strongly encouraged to override these methods, but in many cases may not 
- need to.
- </p>
-
- <p>
-
  <a name="thread-safety"></a><p><b>NOTE</b>: {@link
  IndexReader} instances are completely thread
  safe, meaning multiple threads can call any of its methods,
