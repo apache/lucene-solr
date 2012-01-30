@@ -1761,7 +1761,7 @@ public final class FST<T> {
       this.count = count;
     }
     
-    @Override
+    //@Override
     public int compareTo(NodeAndInCount other) {
       if (count > other.count) {
         return 1;
