@@ -37,7 +37,6 @@ import org.apache.lucene.codecs.sep.SepPostingsWriter;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -130,9 +129,9 @@ public class MockSepPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
     SepPostingsReader.files(segmentInfo, segmentSuffix, files);
-    BlockTermsReader.files(dir, segmentInfo, segmentSuffix, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTermsReader.files(segmentInfo, segmentSuffix, files);
+    FixedGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
   }
 }

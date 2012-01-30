@@ -36,7 +36,6 @@ import org.apache.lucene.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
 // TODO: we could make separate base class that can wrapp
@@ -137,9 +136,9 @@ public class Lucene40WithOrds extends PostingsFormat {
   static final String PROX_EXTENSION = "prx";
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
-    BlockTermsReader.files(dir, segmentInfo, segmentSuffix, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
+    BlockTermsReader.files(segmentInfo, segmentSuffix, files);
+    FixedGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
   }
 }

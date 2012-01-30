@@ -135,34 +135,4 @@ public class TestSegmentMerger extends LuceneTestCase {
     TestSegmentReader.checkNorms(mergedReader);
     mergedReader.close();
   }
-  
-  // LUCENE-3143
-  public void testInvalidFilesToCreateCompound() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
-    IndexWriter w = new IndexWriter(dir, iwc);
-    
-    // Create an index w/ .del file
-    w.addDocument(new Document());
-    Document doc = new Document();
-    doc.add(new TextField("c", "test"));
-    w.addDocument(doc);
-    w.commit();
-    w.deleteDocuments(new Term("c", "test"));
-    w.close();
-    
-    // Assert that SM fails if .del exists
-    SegmentMerger sm = new SegmentMerger(InfoStream.getDefault(), dir, 1, "a", MergeState.CheckAbort.NONE, null, null, Codec.getDefault(), newIOContext(random));
-    boolean doFail = false;
-    try {
-      IndexWriter.createCompoundFile(dir, "b1", MergeState.CheckAbort.NONE, w.segmentInfos.info(0), newIOContext(random));
-      doFail = true; // should never get here
-    } catch (AssertionError e) {
-      // expected
-    }
-    assertFalse("should not have been able to create a .cfs with .del and .s* files", doFail);
-    
-    dir.close();
-  }
-
 }

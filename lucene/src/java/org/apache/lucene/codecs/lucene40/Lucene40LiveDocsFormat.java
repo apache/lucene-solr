@@ -48,7 +48,7 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.hasDeletions()) {
       files.add(IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen()));
     }

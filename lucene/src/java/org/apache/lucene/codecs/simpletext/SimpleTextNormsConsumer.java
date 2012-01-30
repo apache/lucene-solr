@@ -280,7 +280,7 @@ public class SimpleTextNormsConsumer extends PerDocConsumer {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public static void files(SegmentInfo info, Set<String> files) throws IOException {
     FieldInfos fieldInfos = info.getFieldInfos();
     
     for (FieldInfo fieldInfo : fieldInfos) {

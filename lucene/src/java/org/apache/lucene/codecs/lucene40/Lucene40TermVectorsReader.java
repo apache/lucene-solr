@@ -699,7 +699,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     return new Lucene40TermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, format);
   }
   
-  public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public static void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getHasVectors()) {
       files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_INDEX_EXTENSION));
       files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_FIELDS_EXTENSION));

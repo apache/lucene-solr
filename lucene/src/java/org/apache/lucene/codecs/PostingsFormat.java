@@ -25,8 +25,6 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.NamedSPILoader;
 
-import org.apache.lucene.store.Directory;
-
 /** @lucene.experimental */
 public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
 
@@ -59,12 +57,11 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   /**
    * Gathers files associated with this segment
    * 
-   * @param dir the {@link Directory} this segment was written to
    * @param segmentInfo the {@link SegmentInfo} for this segment 
    * @param segmentSuffix the format's suffix within this segment
    * @param files the of files to add the codec files to.
    */
-  public abstract void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException;
+  public abstract void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException;
 
   @Override
   public String toString() {

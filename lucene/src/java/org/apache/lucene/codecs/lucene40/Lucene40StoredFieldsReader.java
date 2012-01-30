@@ -24,8 +24,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexFormatTooNewException;
-import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -35,7 +33,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
-import java.nio.charset.Charset;
 import java.util.Set;
 
 /**
@@ -54,11 +51,6 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
   private int numTotalDocs;
   private int size;
   private boolean closed;
-  private final int format;
-
-  // The docID offset where our docs begin in the index
-  // file.  This will be 0 if we have our own private file.
-  private int docStoreOffset;
 
   /** Returns a cloned FieldsReader that shares open
    *  IndexInputs with the original one.  It is the caller's
@@ -68,41 +60,20 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
   @Override
   public Lucene40StoredFieldsReader clone() {
     ensureOpen();
-    return new Lucene40StoredFieldsReader(fieldInfos, numTotalDocs, size, format, docStoreOffset, (IndexInput)fieldsStream.clone(), (IndexInput)indexStream.clone());
-  }
-
-  /** Verifies that the code version which wrote the segment is supported. */
-  public static void checkCodeVersion(Directory dir, String segment) throws IOException {
-    final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION);
-    IndexInput idxStream = dir.openInput(indexStreamFN, IOContext.DEFAULT);
-    
-    try {
-      int format = idxStream.readInt();
-      if (format < Lucene40StoredFieldsWriter.FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(idxStream, format, Lucene40StoredFieldsWriter.FORMAT_MINIMUM, Lucene40StoredFieldsWriter.FORMAT_CURRENT);
-      if (format > Lucene40StoredFieldsWriter.FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(idxStream, format, Lucene40StoredFieldsWriter.FORMAT_MINIMUM, Lucene40StoredFieldsWriter.FORMAT_CURRENT);
-    } finally {
-      idxStream.close();
-    }
+    return new Lucene40StoredFieldsReader(fieldInfos, numTotalDocs, size, (IndexInput)fieldsStream.clone(), (IndexInput)indexStream.clone());
   }
   
   // Used only by clone
-  private Lucene40StoredFieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, int format, int docStoreOffset,
-                       IndexInput fieldsStream, IndexInput indexStream) {
+  private Lucene40StoredFieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, IndexInput fieldsStream, IndexInput indexStream) {
     this.fieldInfos = fieldInfos;
     this.numTotalDocs = numTotalDocs;
     this.size = size;
-    this.format = format;
-    this.docStoreOffset = docStoreOffset;
     this.fieldsStream = fieldsStream;
     this.indexStream = indexStream;
   }
 
   public Lucene40StoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
-    final String segment = si.getDocStoreSegment();
-    final int docStoreOffset = si.getDocStoreOffset();
-    final int size = si.docCount;
+    final String segment = si.name;
     boolean success = false;
     fieldInfos = fn;
     try {
@@ -110,30 +81,17 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION);
       indexStream = d.openInput(indexStreamFN, context);
       
-      format = indexStream.readInt();
-
-      if (format < Lucene40StoredFieldsWriter.FORMAT_MINIMUM)
-        throw new IndexFormatTooOldException(indexStream, format, Lucene40StoredFieldsWriter.FORMAT_MINIMUM, Lucene40StoredFieldsWriter.FORMAT_CURRENT);
-      if (format > Lucene40StoredFieldsWriter.FORMAT_CURRENT)
-        throw new IndexFormatTooNewException(indexStream, format, Lucene40StoredFieldsWriter.FORMAT_MINIMUM, Lucene40StoredFieldsWriter.FORMAT_CURRENT);
+      // its a 4.0 codec: so its not too-old, its corrupt.
+      // TODO: change this to CodecUtil.checkHeader
+      if (Lucene40StoredFieldsWriter.FORMAT_CURRENT != indexStream.readInt()) {
+        throw new CorruptIndexException("unexpected fdx header: " + indexStream);
+      }
 
       final long indexSize = indexStream.length() - FORMAT_SIZE;
-      
-      if (docStoreOffset != -1) {
-        // We read only a slice out of this shared fields file
-        this.docStoreOffset = docStoreOffset;
-        this.size = size;
-
-        // Verify the file is long enough to hold all of our
-        // docs
-        assert ((int) (indexSize / 8)) >= size + this.docStoreOffset: "indexSize=" + indexSize + " size=" + size + " docStoreOffset=" + docStoreOffset;
-      } else {
-        this.docStoreOffset = 0;
-        this.size = (int) (indexSize >> 3);
-        // Verify two sources of "maxDoc" agree:
-        if (this.size != si.docCount) {
-          throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + this.size + " but segmentInfo shows " + si.docCount);
-        }
+      this.size = (int) (indexSize >> 3);
+      // Verify two sources of "maxDoc" agree:
+      if (this.size != si.docCount) {
+        throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + this.size + " but segmentInfo shows " + si.docCount);
       }
       numTotalDocs = (int) (indexSize >> 3);
       success = true;
@@ -176,7 +134,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
   }
 
   private void seekIndex(int docID) throws IOException {
-    indexStream.seek(FORMAT_SIZE + (docID + docStoreOffset) * 8L);
+    indexStream.seek(FORMAT_SIZE + docID * 8L);
   }
 
   public final void visitDocument(int n, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
@@ -203,8 +161,6 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       }
     }
   }
-  
-  static final Charset UTF8 = Charset.forName("UTF-8");
 
   private void readField(StoredFieldVisitor visitor, FieldInfo info, int bits) throws IOException {
     final int numeric = bits & Lucene40StoredFieldsWriter.FIELD_IS_NUMERIC_MASK;
@@ -232,7 +188,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       if ((bits & Lucene40StoredFieldsWriter.FIELD_IS_BINARY) != 0) {
         visitor.binaryField(info, bytes, 0, bytes.length);
       } else {
-        visitor.stringField(info, new String(bytes, 0, bytes.length, UTF8));
+        visitor.stringField(info, new String(bytes, 0, bytes.length, IOUtils.CHARSET_UTF_8));
       }
     }
   }
@@ -269,7 +225,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     int count = 0;
     while (count < numDocs) {
       final long offset;
-      final int docID = docStoreOffset + startDocID + count + 1;
+      final int docID = startDocID + count + 1;
       assert docID <= numTotalDocs;
       if (docID < numTotalDocs) 
         offset = indexStream.readLong();
@@ -283,19 +239,9 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
 
     return fieldsStream;
   }
-  
-  // TODO: split into PreFlexFieldsReader so it can handle this shared docstore crap?
-  // only preflex segments refer to these?
-  public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    if (info.getDocStoreOffset() != -1) {
-      assert info.getDocStoreSegment() != null;
-      if (!info.getDocStoreIsCompoundFile()) {
-        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION));
-        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", Lucene40StoredFieldsWriter.FIELDS_EXTENSION));
-      }
-    } else {
-      files.add(IndexFileNames.segmentFileName(info.name, "", Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(info.name, "", Lucene40StoredFieldsWriter.FIELDS_EXTENSION));
-    }
+
+  public static void files(SegmentInfo info, Set<String> files) throws IOException {
+    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", Lucene40StoredFieldsWriter.FIELDS_EXTENSION));
   }
 }

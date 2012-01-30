@@ -35,7 +35,7 @@ changing norms, finding high freq terms, and others.
 have to compile on your platform.
 
 <p>
-{@link NativeUnixDirectory} is a Directory implementation that bypasses the
+{@link org.apache.lucene.store.NativeUnixDirectory} is a Directory implementation that bypasses the
 OS's buffer cache (using direct IO) for any IndexInput and IndexOutput
 used during merging of segments larger than a specified size (default
 10 MB).  This avoids evicting hot pages that are still in-use for

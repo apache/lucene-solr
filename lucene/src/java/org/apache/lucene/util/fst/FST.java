@@ -231,7 +231,7 @@ public final class FST<T> {
         b.append(" hasOutput");
       }
       if (flag(BIT_ARC_HAS_FINAL_OUTPUT)) {
-        b.append(" hasOutput");
+        b.append(" hasFinalOutput");
       }
       if (bytesPerArc != 0) {
         b.append(" arcArray(idx=" + arcIdx + " of " + numArcs + ")");
@@ -1447,6 +1447,7 @@ public final class FST<T> {
     // Find top nodes with highest number of incoming arcs:
     NodeQueue q = new NodeQueue(topN);
 
+    // TODO: we could use more RAM efficient selection algo here...
     NodeAndInCount bottom = null;
     for(int node=0;node<inCounts.length;node++) {
       if (inCounts[node] >= minInCountDeref) {
@@ -1515,6 +1516,8 @@ public final class FST<T> {
 
       int addressError = 0;
 
+      //int totWasted = 0;
+
       // Since we re-reverse the bytes, we now write the
       // nodes backwards, so that BIT_TARGET_NEXT is
       // unchanged:
@@ -1554,10 +1557,11 @@ public final class FST<T> {
             writer.writeByte(ARCS_AS_FIXED_ARRAY);
             writer.writeVInt(arc.numArcs);
             writer.writeVInt(bytesPerArc);
+            //System.out.println("node " + node + ": " + arc.numArcs + " arcs");
           }
 
           int maxBytesPerArc = 0;
-
+          //int wasted = 0;
           while(true) {  // iterate over all arcs for this node
 
             //System.out.println("    arc label=" + arc.label + " target=" + arc.target + " pos=" + writer.posWrite);
@@ -1680,6 +1684,7 @@ public final class FST<T> {
               // incoming FST did... but in this case we
               // will retry (below) so it's OK to ovewrite
               // bytes:
+              //wasted += bytesPerArc - arcBytes;
               writer.setPosWrite(arcStartPos + bytesPerArc);
             }
 
@@ -1693,6 +1698,8 @@ public final class FST<T> {
           if (useArcArray) {
             if (maxBytesPerArc == bytesPerArc || (retry && maxBytesPerArc <= bytesPerArc)) {
               // converged
+              //System.out.println("  bba=" + bytesPerArc + " wasted=" + wasted);
+              //totWasted += wasted;
               break;
             }
           } else {
@@ -1719,6 +1726,7 @@ public final class FST<T> {
         // other nodes because we only produce acyclic FSTs
         // w/ nodes only pointing "forwards":
         assert !negDelta;
+        //System.out.println("TOT wasted=" + totWasted);
         // Converged!
         break;
       }
@@ -1730,7 +1738,7 @@ public final class FST<T> {
     }
 
     fst.startNode = newNodeAddress[startNode];
-    //System.out.println("new startNode=" + startNode);
+    //System.out.println("new startNode=" + fst.startNode + " old startNode=" + startNode);
 
     if (emptyOutput != null) {
       fst.setEmptyOutput(emptyOutput);

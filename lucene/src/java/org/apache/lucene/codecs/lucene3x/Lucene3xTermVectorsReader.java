@@ -38,6 +38,7 @@ import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -45,6 +46,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
+/** @deprecated */
+@Deprecated
 public class Lucene3xTermVectorsReader extends TermVectorsReader {
 
   // NOTE: if you make a new format, it must be larger than
@@ -88,6 +91,12 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
   // file.  This will be 0 if we have our own private file.
   private int docStoreOffset;
   
+  // when we are inside a compound share doc store (CFX),
+  // (lucene 3.0 indexes only), we privately open our own fd.
+  // TODO: if we are worried, maybe we could eliminate the
+  // extra fd somehow when you also have vectors...
+  private final CompoundFileDirectory storeCFSReader;
+  
   private final int format;
 
   // used by clone
@@ -100,6 +109,7 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
     this.numTotalDocs = numTotalDocs;
     this.docStoreOffset = docStoreOffset;
     this.format = format;
+    this.storeCFSReader = null;
   }
     
   public Lucene3xTermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
@@ -111,6 +121,12 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
     boolean success = false;
 
     try {
+      if (docStoreOffset != -1 && si.getDocStoreIsCompoundFile()) {
+        d = storeCFSReader = new CompoundFileDirectory(si.dir, 
+            IndexFileNames.segmentFileName(segment, "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION), context, false);
+      } else {
+        storeCFSReader = null;
+      }
       String idxName = IndexFileNames.segmentFileName(segment, "", VECTORS_INDEX_EXTENSION);
       tvx = d.openInput(idxName, context);
       format = checkValidFormat(tvx);
@@ -168,7 +184,7 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
   }
 
   public void close() throws IOException {
-    IOUtils.close(tvx, tvd, tvf);
+    IOUtils.close(tvx, tvd, tvf, storeCFSReader);
   }
 
   /**
@@ -674,16 +690,20 @@ public class Lucene3xTermVectorsReader extends TermVectorsReader {
     return new Lucene3xTermVectorsReader(fieldInfos, cloneTvx, cloneTvd, cloneTvf, size, numTotalDocs, docStoreOffset, format);
   }
   
-  public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  // note: if there are shared docstores, we are also called by Lucene3xCodec even in 
+  // the CFS case. so logic here must handle this.
+  public static void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getHasVectors()) {
       if (info.getDocStoreOffset() != -1) {
         assert info.getDocStoreSegment() != null;
-        if (!info.getDocStoreIsCompoundFile()) {
+        if (info.getDocStoreIsCompoundFile()) {
+          files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION));
+        } else {
           files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_INDEX_EXTENSION));
           files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_FIELDS_EXTENSION));
           files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", VECTORS_DOCUMENTS_EXTENSION));
         }
-      } else {
+      } else if (!info.getUseCompoundFile()) {
         files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_INDEX_EXTENSION));
         files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_FIELDS_EXTENSION));
         files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_DOCUMENTS_EXTENSION));

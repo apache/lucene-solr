@@ -202,9 +202,9 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
     SepPostingsReader.files(segmentInfo, segmentSuffix, files);
-    BlockTermsReader.files(dir, segmentInfo, segmentSuffix, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, segmentSuffix, files);
+    BlockTermsReader.files(segmentInfo, segmentSuffix, files);
+    FixedGapTermsIndexReader.files(segmentInfo, segmentSuffix, files);
   }
 }

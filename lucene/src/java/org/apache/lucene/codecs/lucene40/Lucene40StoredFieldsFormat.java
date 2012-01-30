@@ -44,7 +44,7 @@ public class Lucene40StoredFieldsFormat extends StoredFieldsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    Lucene40StoredFieldsReader.files(dir, info, files);
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
+    Lucene40StoredFieldsReader.files(info, files);
   }
 }

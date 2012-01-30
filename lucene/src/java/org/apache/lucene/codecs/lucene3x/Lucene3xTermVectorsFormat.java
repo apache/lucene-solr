@@ -48,8 +48,8 @@ public class Lucene3xTermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xTermVectorsReader.files(dir, info, files);
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
+    Lucene3xTermVectorsReader.files(info, files);
   }
   
 }

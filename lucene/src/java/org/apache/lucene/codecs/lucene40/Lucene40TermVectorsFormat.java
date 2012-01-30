@@ -41,7 +41,7 @@ public class Lucene40TermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    Lucene40TermVectorsReader.files(dir, info, files);
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
+    Lucene40TermVectorsReader.files(info, files);
   }
 }

@@ -530,7 +530,7 @@ public class TestFSTs extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: now rewrite");
         }
-        final FST<T> packed =fst.pack(_TestUtil.nextInt(random, 1, 10), _TestUtil.nextInt(random, 0, 10000000));
+        final FST<T> packed = fst.pack(_TestUtil.nextInt(random, 1, 10), _TestUtil.nextInt(random, 0, 10000000));
         if (VERBOSE) {
           System.out.println("TEST: now verify packed FST");
         }
@@ -1308,13 +1308,13 @@ public class TestFSTs extends LuceneTestCase {
           System.out.println("Pack...");
           fst = fst.pack(4, 100000000);
           System.out.println("New size " + fst.sizeInBytes() + " bytes");
-        } else {
-          Directory dir = FSDirectory.open(new File(dirOut));
-          IndexOutput out = dir.createOutput("fst.bin", IOContext.DEFAULT);
-          fst.save(out);
-          out.close();
-          System.out.println("Saved FST to fst.bin.");
         }
+        
+        Directory dir = FSDirectory.open(new File(dirOut));
+        IndexOutput out = dir.createOutput("fst.bin", IOContext.DEFAULT);
+        fst.save(out);
+        out.close();
+        System.out.println("Saved FST to fst.bin.");
 
         if (!verify) {
           return;

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.simpletext;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,26 +28,24 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
-/**
- * plain text stored fields format.
- * <p>
- * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
- * @lucene.experimental
- */
-public class SimpleTextStoredFieldsFormat extends StoredFieldsFormat {
+/** @deprecated */
+@Deprecated
+public class Lucene3xStoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
-  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
-    return new SimpleTextStoredFieldsReader(directory, si, fn, context);
+  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si,
+      FieldInfos fn, IOContext context) throws IOException {
+    return new Lucene3xStoredFieldsReader(directory, si, fn, context);
   }
 
   @Override
-  public StoredFieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
-    return new SimpleTextStoredFieldsWriter(directory, segment, context);
+  public StoredFieldsWriter fieldsWriter(Directory directory, String segment,
+      IOContext context) throws IOException {
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override
   public void files(SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextStoredFieldsReader.files(info, files);
+    Lucene3xStoredFieldsReader.files(info, files);
   }
 }

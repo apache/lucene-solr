@@ -38,6 +38,7 @@ import org.apache.lucene.util.IOUtils;
 public class SepDocValuesConsumer extends DocValuesWriterBase {
   private final Directory directory;
   private final FieldInfos fieldInfos;
+
   public SepDocValuesConsumer(PerDocWriteState state) throws IOException {
     super(state);
     this.directory = state.directory;
@@ -49,9 +50,9 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
     return directory;
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo,
+  public static void files(SegmentInfo segmentInfo,
       Set<String> files) throws IOException {
-    files(dir, segmentInfo.getFieldInfos(), segmentInfo.name, files);
+    files(segmentInfo.dir, segmentInfo.getFieldInfos(), segmentInfo.name, files);
   }
   
   @SuppressWarnings("fallthrough")
