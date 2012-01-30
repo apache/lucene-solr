@@ -316,8 +316,6 @@ public final class Lucene3xStoredFieldsReader extends StoredFieldsReader impleme
     return fieldsStream;
   }
   
-  // TODO: split into PreFlexFieldsReader so it can handle this shared docstore crap?
-  // only preflex segments refer to these?
   public static void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getDocStoreOffset() != -1) {
       assert info.getDocStoreSegment() != null;
