@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -55,7 +55,7 @@ import org.apache.lucene.util.TermContext;
  * 
  */
 public class PayloadSpanUtil {
-  private ReaderContext context;
+  private IndexReaderContext context;
 
   /**
    * @param context
@@ -63,7 +63,7 @@ public class PayloadSpanUtil {
    *          
    * @see IndexReader#getTopReaderContext()
    */
-  public PayloadSpanUtil(ReaderContext context) {
+  public PayloadSpanUtil(IndexReaderContext context) {
     this.context = context;
   }
 

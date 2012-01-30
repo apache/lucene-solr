@@ -20,12 +20,12 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
-import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocValues.Type;
@@ -629,12 +629,12 @@ public class TestGrouping extends LuceneTestCase {
       List<AtomicReader> subReaders = new ArrayList<AtomicReader>();
       ReaderUtil.gatherSubReaders(subReaders, s.getIndexReader());
       subSearchers = new ShardSearcher[subReaders.size()];
-      final IndexReader.ReaderContext ctx = s.getTopReaderContext();
+      final IndexReaderContext ctx = s.getTopReaderContext();
       if (ctx instanceof AtomicReaderContext) {
         assert subSearchers.length == 1;
         subSearchers[0] = new ShardSearcher((AtomicReaderContext) ctx, ctx);
       } else {
-        final CompositeReader.CompositeReaderContext compCTX = (CompositeReader.CompositeReaderContext) ctx;
+        final CompositeReaderContext compCTX = (CompositeReaderContext) ctx;
         for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) {
           subSearchers[searcherIDX] = new ShardSearcher(compCTX.leaves()[searcherIDX], compCTX);
         }
@@ -1315,7 +1315,7 @@ public class TestGrouping extends LuceneTestCase {
   private static class ShardSearcher extends IndexSearcher {
     private final AtomicReaderContext[] ctx;
 
-    public ShardSearcher(AtomicReaderContext ctx, IndexReader.ReaderContext parent) {
+    public ShardSearcher(AtomicReaderContext ctx, IndexReaderContext parent) {
       super(parent);
       this.ctx = new AtomicReaderContext[] {ctx};
     }

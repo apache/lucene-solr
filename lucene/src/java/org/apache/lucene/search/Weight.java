@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.util.Bits;
 
@@ -38,7 +38,7 @@ import org.apache.lucene.util.Bits;
  * {@link AtomicReaderContext} ({@link #scorer(IndexReader.AtomicReaderContext, 
  * boolean, boolean, Bits)})
  * callers must maintain the relationship between the searcher's top-level
- * {@link ReaderContext} and the context used to create a {@link Scorer}. 
+ * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
  * A <code>Weight</code> is used in the following way:
  * <ol>

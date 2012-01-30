@@ -28,8 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexReader.ReaderContext;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.Directory;
@@ -120,7 +118,7 @@ public class TestTypePromotion extends LuceneTestCase {
       throws CorruptIndexException, IOException {
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.getSequentialSubReaders().length);
-    ReaderContext topReaderContext = reader.getTopReaderContext();
+    IndexReaderContext topReaderContext = reader.getTopReaderContext();
     AtomicReaderContext[] children = topReaderContext.leaves();
     assertEquals(1, children.length);
     DocValues docValues = children[0].reader().docValues("promote");
@@ -335,7 +333,7 @@ public class TestTypePromotion extends LuceneTestCase {
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.getSequentialSubReaders().length);
-    ReaderContext topReaderContext = reader.getTopReaderContext();
+    IndexReaderContext topReaderContext = reader.getTopReaderContext();
     AtomicReaderContext[] children = topReaderContext.leaves();
     DocValues docValues = children[0].reader().docValues("promote");
     assertNotNull(docValues);

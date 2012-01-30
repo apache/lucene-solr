@@ -18,7 +18,6 @@ package org.apache.lucene.queries;
  */
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;

@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -189,7 +189,7 @@ public class PhraseQuery extends Query {
     public PhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = searcher.getSimilarityProvider().get(field);
-      final ReaderContext context = searcher.getTopReaderContext();
+      final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.size()];
       TermStatistics termStats[] = new TermStatistics[terms.size()];
       for (int i = 0; i < terms.size(); i++) {

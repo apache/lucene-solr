@@ -20,12 +20,12 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.*;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -143,7 +143,7 @@ public class MultiPhraseQuery extends Query {
     public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = searcher.getSimilarityProvider().get(field);
-      final ReaderContext context = searcher.getTopReaderContext();
+      final IndexReaderContext context = searcher.getTopReaderContext();
       
       // compute idf
       ArrayList<TermStatistics> allTermStats = new ArrayList<TermStatistics>();

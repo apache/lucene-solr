@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.TermContext;
 
@@ -53,7 +53,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
 
   }
   
-  public static Spans wrap(ReaderContext topLevelReaderContext, SpanQuery query) throws IOException {
+  public static Spans wrap(IndexReaderContext topLevelReaderContext, SpanQuery query) throws IOException {
     Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
     TreeSet<Term> terms = new TreeSet<Term>();
     query.extractTerms(terms);

@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;

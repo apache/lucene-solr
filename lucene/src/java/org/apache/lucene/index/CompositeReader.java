@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ReaderUtil;
@@ -79,17 +78,6 @@ public abstract class CompositeReader extends IndexReader {
     buffer.append(')');
     return buffer.toString();
   }
-
-  @Override
-  public final CompositeReaderContext getTopReaderContext() {
-    ensureOpen();
-    // lazy init without thread safety for perf resaons: Building the readerContext twice does not hurt!
-    if (readerContext == null) {
-      assert getSequentialSubReaders() != null;
-      readerContext = (CompositeReaderContext) new ReaderContextBuilder(this).build();
-    }
-    return readerContext;
-  }
   
   /** Expert: returns the sequential sub readers that this
    *  reader is logically composed of. It contrast to previous
@@ -99,89 +87,49 @@ public abstract class CompositeReader extends IndexReader {
    *  that has no sub readers).
    */
   public abstract IndexReader[] getSequentialSubReaders();
-  
-  /**
-   * {@link ReaderContext} for {@link CompositeReader} instance.
-   * @lucene.experimental
-   */
-  public static final class CompositeReaderContext extends ReaderContext {
-    private final ReaderContext[] children;
-    private final AtomicReaderContext[] leaves;
-    private final CompositeReader reader;
 
-    /**
-     * Creates a {@link CompositeReaderContext} for intermediate readers that aren't
-     * not top-level readers in the current context
-     */
-    CompositeReaderContext(CompositeReaderContext parent, CompositeReader reader,
-        int ordInParent, int docbaseInParent, ReaderContext[] children) {
-      this(parent, reader, ordInParent, docbaseInParent, children, null);
+  @Override
+  public final CompositeReaderContext getTopReaderContext() {
+    ensureOpen();
+    // lazy init without thread safety for perf reasons: Building the readerContext twice does not hurt!
+    if (readerContext == null) {
+      assert getSequentialSubReaders() != null;
+      readerContext = new ReaderContextBuilder(this).build();
     }
-    
-    /**
-     * Creates a {@link CompositeReaderContext} for top-level readers with parent set to <code>null</code>
-     */
-    CompositeReaderContext(CompositeReader reader, ReaderContext[] children, AtomicReaderContext[] leaves) {
-      this(null, reader, 0, 0, children, leaves);
-    }
-    
-    private CompositeReaderContext(CompositeReaderContext parent, CompositeReader reader,
-        int ordInParent, int docbaseInParent, ReaderContext[] children,
-        AtomicReaderContext[] leaves) {
-      super(parent, ordInParent, docbaseInParent);
-      this.children = children;
-      this.leaves = leaves;
-      this.reader = reader;
-    }
-
-    @Override
-    public AtomicReaderContext[] leaves() {
-      return leaves;
-    }
-    
-    
-    @Override
-    public ReaderContext[] children() {
-      return children;
-    }
-    
-    @Override
-    public CompositeReader reader() {
-      return reader;
-    }
+    return readerContext;
   }
-
+  
   private static class ReaderContextBuilder {
-    private final IndexReader reader;
+    private final CompositeReader reader;
     private final AtomicReaderContext[] leaves;
     private int leafOrd = 0;
     private int leafDocBase = 0;
-    public ReaderContextBuilder(IndexReader reader) {
+    public ReaderContextBuilder(CompositeReader reader) {
       this.reader = reader;
       leaves = new AtomicReaderContext[numLeaves(reader)];
     }
     
-    public ReaderContext build() {
-      return build(null, reader, 0, 0);
+    public CompositeReaderContext build() {
+      return (CompositeReaderContext) build(null, reader, 0, 0);
     }
     
-    private ReaderContext build(CompositeReaderContext parent, IndexReader reader, int ord, int docBase) {
+    private IndexReaderContext build(CompositeReaderContext parent, IndexReader reader, int ord, int docBase) {
       if (reader instanceof AtomicReader) {
-        AtomicReaderContext atomic = new AtomicReaderContext(parent, (AtomicReader) reader, ord, docBase, leafOrd, leafDocBase);
+        final AtomicReader ar = (AtomicReader) reader;
+        final AtomicReaderContext atomic = new AtomicReaderContext(parent, ar, ord, docBase, leafOrd, leafDocBase);
         leaves[leafOrd++] = atomic;
         leafDocBase += reader.maxDoc();
         return atomic;
       } else {
-        CompositeReader cr = (CompositeReader) reader;
-        IndexReader[] sequentialSubReaders = cr.getSequentialSubReaders();
-        ReaderContext[] children = new ReaderContext[sequentialSubReaders.length];
+        final CompositeReader cr = (CompositeReader) reader;
+        final IndexReader[] sequentialSubReaders = cr.getSequentialSubReaders();
+        final IndexReaderContext[] children = new IndexReaderContext[sequentialSubReaders.length];
         final CompositeReaderContext newParent;
         if (parent == null) {
           newParent = new CompositeReaderContext(cr, children, leaves);
         } else {
           newParent = new CompositeReaderContext(parent, cr, ord, docBase, children);
         }
-        
         int newDocBase = 0;
         for (int i = 0; i < sequentialSubReaders.length; i++) {
           children[i] = build(newParent, sequentialSubReaders[i], i, newDocBase);

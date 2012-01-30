@@ -31,11 +31,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -76,7 +76,7 @@ public class IndexSearcher {
   
   // NOTE: these members might change in incompatible ways
   // in the next release
-  protected final ReaderContext readerContext;
+  protected final IndexReaderContext readerContext;
   protected final AtomicReaderContext[] leafContexts;
   // used with executor - each slice holds a set of leafs executed within one thread
   protected final LeafSlice[] leafSlices;
@@ -122,7 +122,7 @@ public class IndexSearcher {
   }
 
   /**
-   * Creates a searcher searching the provided top-level {@link ReaderContext}.
+   * Creates a searcher searching the provided top-level {@link IndexReaderContext}.
    * <p>
    * Given a non-<code>null</code> {@link ExecutorService} this method runs
    * searches for each segment separately, using the provided ExecutorService.
@@ -133,11 +133,11 @@ public class IndexSearcher {
    * silently close file descriptors (see <a
    * href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
    * 
-   * @see ReaderContext
+   * @see IndexReaderContext
    * @see IndexReader#getTopReaderContext()
    * @lucene.experimental
    */
-  public IndexSearcher(ReaderContext context, ExecutorService executor) {
+  public IndexSearcher(IndexReaderContext context, ExecutorService executor) {
     assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
     reader = context.reader();
     this.executor = executor;
@@ -147,13 +147,13 @@ public class IndexSearcher {
   }
 
   /**
-   * Creates a searcher searching the provided top-level {@link ReaderContext}.
+   * Creates a searcher searching the provided top-level {@link IndexReaderContext}.
    *
-   * @see ReaderContext
+   * @see IndexReaderContext
    * @see IndexReader#getTopReaderContext()
    * @lucene.experimental
    */
-  public IndexSearcher(ReaderContext context) {
+  public IndexSearcher(IndexReaderContext context) {
     this(context, null);
   }
   
@@ -589,11 +589,11 @@ public class IndexSearcher {
   }
   
   /**
-   * Returns this searchers the top-level {@link ReaderContext}.
+   * Returns this searchers the top-level {@link IndexReaderContext}.
    * @see IndexReader#getTopReaderContext()
    */
   /* sugar for #getReader().getTopReaderContext() */
-  public ReaderContext getTopReaderContext() {
+  public IndexReaderContext getTopReaderContext() {
     return readerContext;
   }
 

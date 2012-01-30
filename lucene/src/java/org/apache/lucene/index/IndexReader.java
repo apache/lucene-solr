@@ -24,8 +24,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.index.CompositeReader.CompositeReaderContext;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.SearcherManager; // javadocs
@@ -67,7 +65,13 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  (non-Lucene) objects instead.
 */
 public abstract class IndexReader implements Closeable {
-
+  
+  IndexReader() {
+    if (!(this instanceof CompositeReader || this instanceof AtomicReader))
+      throw new Error("This class should never be directly extended, subclass AtomicReader or CompositeReader instead!");
+    refCount.set(1);
+  }
+  
   /**
    * A custom listener that's invoked when the IndexReader
    * is closed.
@@ -198,10 +202,6 @@ public abstract class IndexReader implements Closeable {
     } else if (rc < 0) {
       throw new IllegalStateException("too many decRef calls: refCount is " + rc + " after decrement");
     }
-  }
-  
-  protected IndexReader() { 
-    refCount.set(1);
   }
   
   /**
@@ -408,12 +408,12 @@ public abstract class IndexReader implements Closeable {
   protected abstract void doClose() throws IOException;
 
   /**
-   * Expert: Returns a the root {@link ReaderContext} for this
+   * Expert: Returns a the root {@link IndexReaderContext} for this
    * {@link IndexReader}'s sub-reader tree. Iff this reader is composed of sub
    * readers ,ie. this reader being a composite reader, this method returns a
    * {@link CompositeReaderContext} holding the reader's direct children as well as a
    * view of the reader tree's atomic leaf contexts. All sub-
-   * {@link ReaderContext} instances referenced from this readers top-level
+   * {@link IndexReaderContext} instances referenced from this readers top-level
    * context are private to this reader and are not shared with another context
    * tree. For example, IndexSearcher uses this API to drive searching by one
    * atomic leaf reader at a time. If this reader is not composed of child
@@ -426,7 +426,7 @@ public abstract class IndexReader implements Closeable {
    * 
    * @lucene.experimental
    */
-  public abstract ReaderContext getTopReaderContext();
+  public abstract IndexReaderContext getTopReaderContext();
 
   /** Expert: Returns a key for this IndexReader, so FieldCache/CachingWrapperFilter can find
    * it again.
@@ -456,48 +456,4 @@ public abstract class IndexReader implements Closeable {
    * account deleted documents that have not yet been merged
    * away. */
   public abstract int docFreq(String field, BytesRef term) throws IOException;
-
-  /**
-   * A struct like class that represents a hierarchical relationship between
-   * {@link IndexReader} instances. 
-   * @lucene.experimental
-   */
-  public static abstract class ReaderContext {
-    /** The reader context for this reader's immediate parent, or null if none */
-    public final CompositeReaderContext parent;
-    /** <code>true</code> if this context struct represents the top level reader within the hierarchical context */
-    public final boolean isTopLevel;
-    /** the doc base for this reader in the parent, <tt>0</tt> if parent is null */
-    public final int docBaseInParent;
-    /** the ord for this reader in the parent, <tt>0</tt> if parent is null */
-    public final int ordInParent;
-    
-    ReaderContext(CompositeReaderContext parent, int ordInParent, int docBaseInParent) {
-      this.parent = parent;
-      this.docBaseInParent = docBaseInParent;
-      this.ordInParent = ordInParent;
-      this.isTopLevel = parent==null;
-    }
-    
-    public abstract IndexReader reader();
-    
-    /**
-     * Returns the context's leaves if this context is a top-level context
-     * otherwise <code>null</code>.
-     * <p>
-     * Note: this is convenience method since leaves can always be obtained by
-     * walking the context tree.
-     */
-    public abstract AtomicReaderContext[] leaves();
-    
-    /**
-     * Returns the context's children iff this context is a composite context
-     * otherwise <code>null</code>.
-     * <p>
-     * Note: this method is a convenience method to prevent
-     * <code>instanceof</code> checks and type-casts to
-     * {@link CompositeReaderContext}.
-     */
-    public abstract ReaderContext[] children();
-  }
 }

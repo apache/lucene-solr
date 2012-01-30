@@ -20,7 +20,7 @@ package org.apache.lucene.search.grouping;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;       // javadocs
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;

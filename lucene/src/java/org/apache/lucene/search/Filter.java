@@ -19,8 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader; // javadocs
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 
 /** 

@@ -25,10 +25,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -38,11 +39,11 @@ import org.apache.lucene.util._TestUtil;
 public class TestTopDocsMerge extends LuceneTestCase {
 
   private static class ShardSearcher extends IndexSearcher {
-    private final AtomicReader.AtomicReaderContext[] ctx;
+    private final AtomicReaderContext[] ctx;
 
-    public ShardSearcher(AtomicReader.AtomicReaderContext ctx, CompositeReader.CompositeReaderContext parent) {
+    public ShardSearcher(AtomicReaderContext ctx, CompositeReaderContext parent) {
       super(parent);
-      this.ctx = new AtomicReader.AtomicReaderContext[] {ctx};
+      this.ctx = new AtomicReaderContext[] {ctx};
     }
 
     public void search(Weight weight, Collector collector) throws IOException {
@@ -118,18 +119,18 @@ public class TestTopDocsMerge extends LuceneTestCase {
     // NOTE: sometimes reader has just one segment, which is
     // important to test
     final IndexSearcher searcher = newSearcher(reader);
-    final IndexReader.ReaderContext ctx = searcher.getTopReaderContext();
+    final IndexReaderContext ctx = searcher.getTopReaderContext();
 
     final ShardSearcher[] subSearchers;
     final int[] docStarts;
     
-    if (ctx instanceof AtomicReader.AtomicReaderContext) {
+    if (ctx instanceof AtomicReaderContext) {
       subSearchers = new ShardSearcher[1];
       docStarts = new int[1];
-      subSearchers[0] = new ShardSearcher((AtomicReader.AtomicReaderContext) ctx, null);
+      subSearchers[0] = new ShardSearcher((AtomicReaderContext) ctx, null);
       docStarts[0] = 0;
     } else {
-      final CompositeReader.CompositeReaderContext compCTX = (CompositeReader.CompositeReaderContext) ctx;
+      final CompositeReaderContext compCTX = (CompositeReaderContext) ctx;
       subSearchers = new ShardSearcher[compCTX.leaves().length];
       docStarts = new int[compCTX.leaves().length];
       int docBase = 0;

@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Iterator;
 
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.DocIdSet;

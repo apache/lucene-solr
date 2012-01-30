@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.CompositeReader.CompositeReaderContext;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
@@ -277,47 +276,4 @@ public abstract class AtomicReader extends IndexReader {
    *  synchronization.
    */
   public abstract Bits getLiveDocs();
-  
-  /**
-   * {@link ReaderContext} for {@link AtomicReader} instances
-   * @lucene.experimental
-   */
-  public static final class AtomicReaderContext extends ReaderContext {
-    /** The readers ord in the top-level's leaves array */
-    public final int ord;
-    /** The readers absolute doc base */
-    public final int docBase;
-    
-    private final AtomicReader reader;
-
-    /**
-     * Creates a new {@link AtomicReaderContext} 
-     */    
-    AtomicReaderContext(CompositeReaderContext parent, AtomicReader reader,
-        int ord, int docBase, int leafOrd, int leafDocBase) {
-      super(parent, ord, docBase);
-      this.ord = leafOrd;
-      this.docBase = leafDocBase;
-      this.reader = reader;
-    }
-    
-    AtomicReaderContext(AtomicReader atomicReader) {
-      this(null, atomicReader, 0, 0, 0, 0);
-    }
-    
-    @Override
-    public AtomicReaderContext[] leaves() {
-      return null;
-    }
-    
-    @Override
-    public ReaderContext[] children() {
-      return null;
-    }
-    
-    @Override
-    public AtomicReader reader() {
-      return reader;
-    }
-  }
 }

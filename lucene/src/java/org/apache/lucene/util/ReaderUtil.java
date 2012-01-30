@@ -21,13 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
 
 /**
  * Common util methods for dealing with {@link IndexReader}s.
@@ -126,7 +126,7 @@ public final class ReaderUtil {
    * <code>null</code> the given context must be an instance of
    * {@link AtomicReaderContext}
    */
-  public static AtomicReaderContext[] leaves(ReaderContext context) {
+  public static AtomicReaderContext[] leaves(IndexReaderContext context) {
     assert context != null && context.isTopLevel : "context must be non-null & top-level";
     final AtomicReaderContext[] leaves = context.leaves();
     if (leaves == null) {
@@ -139,7 +139,7 @@ public final class ReaderUtil {
    * Walks up the reader tree and return the given context's top level reader
    * context, or in other words the reader tree's root context.
    */
-  public static ReaderContext getTopLevelContext(ReaderContext context) {
+  public static IndexReaderContext getTopLevelContext(IndexReaderContext context) {
     while (context.parent != null) {
       context = context.parent;
     }

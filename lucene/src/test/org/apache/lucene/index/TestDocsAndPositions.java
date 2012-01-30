@@ -25,8 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -66,7 +64,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("1");
-      ReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext atomicReaderContext : leaves) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
@@ -142,7 +140,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
-      ReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext atomicReaderContext : leaves) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
@@ -218,7 +216,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
-      ReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext context : leaves) {
         int maxDoc = context.reader().maxDoc();
@@ -297,7 +295,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("even");
 
-      ReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext atomicReaderContext : leaves) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
