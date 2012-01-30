@@ -226,6 +226,9 @@ public final class SynonymFilter extends TokenFilter {
 
   private final FST<BytesRef> fst;
 
+  private final FST.BytesReader fstReader;
+
+
   private final BytesRef scratchBytes = new BytesRef();
   private final CharsRef scratchChars = new CharsRef();
 
@@ -241,7 +244,7 @@ public final class SynonymFilter extends TokenFilter {
     this.synonyms = synonyms;
     this.ignoreCase = ignoreCase;
     this.fst = synonyms.fst;
-
+    this.fstReader = fst.getBytesReader(0);
     if (fst == null) {
       throw new IllegalArgumentException("fst must be non-null");
     }
@@ -366,7 +369,7 @@ public final class SynonymFilter extends TokenFilter {
       int bufUpto = 0;
       while(bufUpto < bufferLen) {
         final int codePoint = Character.codePointAt(buffer, bufUpto, bufferLen);
-        if (fst.findTargetArc(ignoreCase ? Character.toLowerCase(codePoint) : codePoint, scratchArc, scratchArc) == null) {
+        if (fst.findTargetArc(ignoreCase ? Character.toLowerCase(codePoint) : codePoint, scratchArc, scratchArc, fstReader) == null) {
           //System.out.println("    stop");
           break byToken;
         }
@@ -388,7 +391,7 @@ public final class SynonymFilter extends TokenFilter {
 
       // See if the FST wants to continue matching (ie, needs to
       // see the next input token):
-      if (fst.findTargetArc(SynonymMap.WORD_SEPARATOR, scratchArc, scratchArc) == null) {
+      if (fst.findTargetArc(SynonymMap.WORD_SEPARATOR, scratchArc, scratchArc, fstReader) == null) {
         // No further rules can match here; we're done
         // searching for matching rules starting at the
         // current input position.

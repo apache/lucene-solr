@@ -393,8 +393,9 @@ public class FSTLookup extends Lookup {
   private boolean descendWithPrefix(Arc<Object> arc, String term) throws IOException {
     final int max = term.length();
 
+    final FST.BytesReader fstReader = automaton.getBytesReader(0);
     for (int i = 0; i < max; i++) {
-      if (automaton.findTargetArc(term.charAt(i) & 0xffff, arc, arc) == null) {
+      if (automaton.findTargetArc(term.charAt(i) & 0xffff, arc, arc, fstReader) == null) {
         // No matching prefixes, return an empty result.
         return false;
       }

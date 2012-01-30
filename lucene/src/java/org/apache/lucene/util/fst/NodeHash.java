@@ -35,7 +35,7 @@ final class NodeHash<T> {
   }
 
   private boolean nodesEqual(Builder.UnCompiledNode<T> node, int address, FST.BytesReader in) throws IOException {
-    fst.readFirstRealArc(address, scratchArc, in);
+    fst.readFirstRealTargetArc(address, scratchArc, in);
     if (scratchArc.bytesPerArc != 0 && node.numArcs != scratchArc.numArcs) {
       return false;
     }
@@ -43,7 +43,7 @@ final class NodeHash<T> {
       final Builder.Arc<T> arc = node.arcs[arcUpto];
       if (arc.label != scratchArc.label ||
           !arc.output.equals(scratchArc.output) ||
-          ((Builder.CompiledNode) arc.target).address != scratchArc.target ||
+          ((Builder.CompiledNode) arc.target).node != scratchArc.target ||
           !arc.nextFinalOutput.equals(scratchArc.nextFinalOutput) ||
           arc.isFinal != scratchArc.isFinal()) {
         return false;
@@ -71,9 +71,9 @@ final class NodeHash<T> {
     // TODO: maybe if number of arcs is high we can safely subsample?
     for(int arcIdx=0;arcIdx<node.numArcs;arcIdx++) {
       final Builder.Arc<T> arc = node.arcs[arcIdx];
-      //System.out.println("  label=" + arc.label + " target=" + ((Builder.CompiledNode) arc.target).address + " h=" + h + " output=" + fst.outputs.outputToString(arc.output) + " isFinal?=" + arc.isFinal);
+      //System.out.println("  label=" + arc.label + " target=" + ((Builder.CompiledNode) arc.target).node + " h=" + h + " output=" + fst.outputs.outputToString(arc.output) + " isFinal?=" + arc.isFinal);
       h = PRIME * h + arc.label;
-      h = PRIME * h + ((Builder.CompiledNode) arc.target).address;
+      h = PRIME * h + ((Builder.CompiledNode) arc.target).node;
       h = PRIME * h + arc.output.hashCode();
       h = PRIME * h + arc.nextFinalOutput.hashCode();
       if (arc.isFinal) {
@@ -88,9 +88,9 @@ final class NodeHash<T> {
   private int hash(int node) throws IOException {
     final int PRIME = 31;
     final FST.BytesReader in = fst.getBytesReader(0);
-    //System.out.println("hash frozen");
+    //System.out.println("hash frozen node=" + node);
     int h = 0;
-    fst.readFirstRealArc(node, scratchArc, in);
+    fst.readFirstRealTargetArc(node, scratchArc, in);
     while(true) {
       //System.out.println("  label=" + scratchArc.label + " target=" + scratchArc.target + " h=" + h + " output=" + fst.outputs.outputToString(scratchArc.output) + " next?=" + scratchArc.flag(4) + " final?=" + scratchArc.isFinal());
       h = PRIME * h + scratchArc.label;
@@ -109,26 +109,26 @@ final class NodeHash<T> {
     return h & Integer.MAX_VALUE;
   }
 
-  public int add(Builder.UnCompiledNode<T> node) throws IOException {
+  public int add(Builder.UnCompiledNode<T> nodeIn) throws IOException {
     // System.out.println("hash: add count=" + count + " vs " + table.length);
     final FST.BytesReader in = fst.getBytesReader(0);
-    final int h = hash(node);
+    final int h = hash(nodeIn);
     int pos = h & mask;
     int c = 0;
     while(true) {
       final int v = table[pos];
       if (v == 0) {
         // freeze & add
-        final int address = fst.addNode(node);
-        //System.out.println("  now freeze addr=" + address);
-        assert hash(address) == h : "frozenHash=" + hash(address) + " vs h=" + h;
+        final int node = fst.addNode(nodeIn);
+        //System.out.println("  now freeze node=" + node);
+        assert hash(node) == h : "frozenHash=" + hash(node) + " vs h=" + h;
         count++;
-        table[pos] = address;
+        table[pos] = node;
         if (table.length < 2*count) {
           rehash();
         }
-        return address;
-      } else if (nodesEqual(node, v, in)) {
+        return node;
+      } else if (nodesEqual(nodeIn, v, in)) {
         // same node is already here
         return v;
       }

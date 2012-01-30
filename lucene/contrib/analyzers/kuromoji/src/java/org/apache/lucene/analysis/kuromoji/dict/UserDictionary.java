@@ -113,7 +113,7 @@ public final class UserDictionary implements Dictionary {
       for (int i = 0; i < token.length(); i++) {
         scratch.ints[i] = (int) token.charAt(i);
       }
-      fstBuilder.add(scratch, fstOutput.get(ord));
+      fstBuilder.add(scratch, ord);
       segmentations.add(wordIdAndLength);
       ord++;
     }
@@ -134,6 +134,8 @@ public final class UserDictionary implements Dictionary {
     TreeMap<Integer, int[]> result = new TreeMap<Integer, int[]>(); // index, [length, length...]
     boolean found = false; // true if we found any results
 
+    final FST.BytesReader fstReader = fst.getBytesReader(0);
+
     FST.Arc<Long> arc = new FST.Arc<Long>();
     int end = off + len;
     for (int startOffset = off; startOffset < end; startOffset++) {
@@ -142,7 +144,7 @@ public final class UserDictionary implements Dictionary {
       int remaining = end - startOffset;
       for (int i = 0; i < remaining; i++) {
         int ch = chars[startOffset+i];
-        if (fst.findTargetArc(ch, arc, arc, i == 0) == null) {
+        if (fst.findTargetArc(ch, arc, arc, i == 0, fstReader) == null) {
           break; // continue to next position
         }
         output += arc.output.intValue();
