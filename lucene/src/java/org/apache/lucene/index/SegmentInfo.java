@@ -73,8 +73,7 @@ public final class SegmentInfo implements Cloneable {
   private volatile List<String> files;                     // cached list of files that this segment uses
                                                   // in the Directory
 
-  private volatile long sizeInBytesNoStore = -1;           // total byte size of all but the store files (computed on demand)
-  private volatile long sizeInBytesWithStore = -1;         // total byte size of all of our files (computed on demand)
+  private volatile long sizeInBytes = -1;           // total byte size of all files (computed on demand)
 
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
@@ -212,50 +211,12 @@ public final class SegmentInfo implements Cloneable {
    * Returns total size in bytes of all of files used by this segment
    */
   public long sizeInBytes() throws IOException {
-    return sizeInBytes(true);
-  }
-  
-  /**
-   * Returns total size in bytes of all of files used by this segment (if
-   * {@code includeDocStores} is true), or the size of all files except the
-   * store files otherwise.
-   * <p>
-   * NOTE: includeDocStores=false should only be used for debugging.
-   * Theoretically a codec could combine its files however it wants (after-
-   * the-fact or something), and this calculation is not particularly
-   * efficient.
-   */
-  long sizeInBytes(boolean includeDocStores) throws IOException {
-    // TODO: based on how this is used, can't we just forget about all this docstore crap?
-    // its really an abstraction violation into the codec
-    if (includeDocStores) {
-      if (sizeInBytesWithStore != -1) {
-        return sizeInBytesWithStore;
-      }
       long sum = 0;
       for (final String fileName : files()) {
-        // We don't count bytes used by a shared doc store
-        // against this segment
-        if (docStoreOffset == -1 || !isDocStoreFile(fileName)) {
-          sum += dir.fileLength(fileName);
-        }
-      }
-      sizeInBytesWithStore = sum;
-      return sizeInBytesWithStore;
-    } else {
-      if (sizeInBytesNoStore != -1) {
-        return sizeInBytesNoStore;
-      }
-      long sum = 0;
-      for (final String fileName : files()) {
-        if (isDocStoreFile(fileName)) {
-          continue;
-        }
         sum += dir.fileLength(fileName);
       }
-      sizeInBytesNoStore = sum;
-      return sizeInBytesNoStore;
-    }
+      sizeInBytes = sum;
+      return sizeInBytes;
   }
   
   // nocommit: wrong to call this if (compoundFile)
@@ -265,12 +226,6 @@ public final class SegmentInfo implements Cloneable {
     codec.storedFieldsFormat().files(this, docStoreFiles);
     codec.termVectorsFormat().files(this, docStoreFiles);
     return docStoreFiles;
-  }
-
-  // TODO: a little messy, but sizeInBytes above that uses this is the real problem.
-  private boolean isDocStoreFile(String fileName) throws IOException {
-    Set<String> docStoreFiles = codecDocStoreFiles();
-    return fileName.endsWith(IndexFileNames.COMPOUND_FILE_STORE_EXTENSION) || docStoreFiles.contains(fileName);
   }
 
   public boolean getHasVectors() throws IOException {
@@ -488,8 +443,7 @@ public final class SegmentInfo implements Cloneable {
    * files this segment has. */
   private void clearFilesCache() {
     files = null;
-    sizeInBytesNoStore = -1;
-    sizeInBytesWithStore = -1;
+    sizeInBytes = -1;
   }
 
   /** {@inheritDoc} */
