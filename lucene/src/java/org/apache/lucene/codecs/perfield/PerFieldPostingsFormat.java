@@ -306,8 +306,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(final Directory dir, final SegmentInfo info, String segmentSuffix, final Set<String> files)
-      throws IOException {
+  public void files(final SegmentInfo info, String segmentSuffix, final Set<String> files) throws IOException {
+    final Directory dir = info.dir;
 
     final String mapFileName = IndexFileNames.segmentFileName(info.name, segmentSuffix, PER_FIELD_EXTENSION);
     files.add(mapFileName);
@@ -316,7 +316,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       new VisitPerFieldFile(dir, info.name, segmentSuffix) {
         @Override
         protected void visitOneFormat(String segmentSuffix, PostingsFormat format) throws IOException {
-          format.files(dir, info, segmentSuffix, files);
+          format.files(info, segmentSuffix, files);
         }
 
         @Override

@@ -36,7 +36,9 @@ import org.apache.lucene.util.packed.PackedInts;
  * index segment. Pairs are accessed either by Term or by ordinal position the
  * set. The Terms and TermInfo are actually serialized and stored into a byte
  * array and pointers to the position of each are stored in a int array.
+ * @deprecated
  */
+@Deprecated
 class TermInfosReaderIndex {
 
   private static final int MAX_PAGE_BITS = 18; // 256 KB block

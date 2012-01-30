@@ -55,10 +55,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   // currently unused: static final int FIELD_IS_NUMERIC_SHORT = 5 << _NUMERIC_BIT_SHIFT;
   // currently unused: static final int FIELD_IS_NUMERIC_BYTE = 6 << _NUMERIC_BIT_SHIFT;
 
-  // Lucene 3.0: Removal of compressed fields
-  static final int FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS = 2;
-
-  // Lucene 3.2: NumericFields are stored in binary format
+  // (Happens to be the same as for now) Lucene 3.2: NumericFields are stored in binary format
   static final int FORMAT_LUCENE_3_2_NUMERIC_FIELDS = 3;
 
   // NOTE: if you introduce a new format, make it 1 higher
@@ -67,7 +64,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   static final int FORMAT_CURRENT = FORMAT_LUCENE_3_2_NUMERIC_FIELDS;
 
   // when removing support for old versions, leave the last supported version here
-  static final int FORMAT_MINIMUM = FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS;
+  static final int FORMAT_MINIMUM = FORMAT_LUCENE_3_2_NUMERIC_FIELDS;
 
   /** Extension of stored fields file */
   public static final String FIELDS_EXTENSION = "fdt";
@@ -211,7 +208,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       // throw an exception to prevent the corruption from
       // entering the index.  See LUCENE-1282 for
       // details.
-      throw new RuntimeException("mergeFields produced an invalid result: docCount is " + numDocs + " but fdx file size is " + indexStream.getFilePointer() + " file=" + indexStream.toString() + "; now aborting this merge to prevent index corruption");
+      throw new RuntimeException("fdx size mismatch: docCount is " + numDocs + " but fdx file size is " + indexStream.getFilePointer() + " file=" + indexStream.toString() + "; now aborting this merge to prevent index corruption");
   }
   
   @Override

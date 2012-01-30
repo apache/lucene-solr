@@ -66,14 +66,14 @@ public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
+  public static void files(SegmentInfo segmentInfo, Set<String> files) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
       if (fieldInfo.hasDocValues()) {
         files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION));
         files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
-        assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
+        assert segmentInfo.dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
+        assert segmentInfo.dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
         break;
       }
     }

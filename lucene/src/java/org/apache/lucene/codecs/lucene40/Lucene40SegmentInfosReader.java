@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.SegmentInfosReader;
-import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexInput;

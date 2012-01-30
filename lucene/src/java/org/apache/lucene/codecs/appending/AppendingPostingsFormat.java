@@ -83,9 +83,8 @@ class AppendingPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String segmentSuffix, Set<String> files)
-          throws IOException {
-    Lucene40PostingsReader.files(dir, segmentInfo, segmentSuffix, files);
-    BlockTreeTermsReader.files(dir, segmentInfo, segmentSuffix, files);
+  public void files(SegmentInfo segmentInfo, String segmentSuffix, Set<String> files) throws IOException {
+    Lucene40PostingsReader.files(segmentInfo, segmentSuffix, files);
+    BlockTreeTermsReader.files(segmentInfo, segmentSuffix, files);
   }
 }

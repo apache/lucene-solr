@@ -26,7 +26,6 @@ import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.Directory;
 
 /**
  * Lucene3x ReadOnly NormsFormat implementation
@@ -39,13 +38,12 @@ public class Lucene3xNormsFormat extends NormsFormat {
 
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xNormsProducer.files(dir, info, files);
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
+    Lucene3xNormsProducer.files(info, files);
   }
 
-  @Override
-  public void separateFiles(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    Lucene3xNormsProducer.separateFiles(dir, info, files);
+  public void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
+    Lucene3xNormsProducer.separateFiles(info, files);
   }
 
 
@@ -56,12 +54,6 @@ public class Lucene3xNormsFormat extends NormsFormat {
 
   @Override
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
-    return docsProducer(state, null);
-  }
-
-  @Override
-  public PerDocProducer docsProducer(SegmentReadState state,
-      Directory separateNormsDir) throws IOException {
-    return new Lucene3xNormsProducer(state.dir, state.segmentInfo, state.fieldInfos, state.context, separateNormsDir);
+    return new Lucene3xNormsProducer(state.dir, state.segmentInfo, state.fieldInfos, state.context);
   }
 }

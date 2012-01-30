@@ -494,14 +494,11 @@ public class DocumentsWriterPerThread {
       }
 
       if (infoStream.isEnabled("DWPT")) {
-        final double newSegmentSizeNoStore = newSegment.sizeInBytes(false)/1024./1024.;
-        final double newSegmentSize = newSegment.sizeInBytes(true)/1024./1024.;
+        final double newSegmentSize = newSegment.sizeInBytes()/1024./1024.;
         infoStream.message("DWPT", "flushed: segment=" + newSegment + 
                 " ramUsed=" + nf.format(startMBUsed) + " MB" +
-                " newFlushedSize=" + nf.format(newSegmentSize) + " MB" +
-                " (" + nf.format(newSegmentSizeNoStore) + " MB w/o doc stores)" +
-                " docs/MB=" + nf.format(flushedDocCount / newSegmentSize) +
-                " new/old=" + nf.format(100.0 * newSegmentSizeNoStore / startMBUsed) + "%");
+                " newFlushedSize(includes docstores)=" + nf.format(newSegmentSize) + " MB" +
+                " docs/MB=" + nf.format(flushedDocCount / newSegmentSize));
       }
       doAfterFlush();
       success = true;

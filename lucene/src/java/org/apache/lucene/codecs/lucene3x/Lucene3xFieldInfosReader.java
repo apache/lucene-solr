@@ -34,7 +34,9 @@ import org.apache.lucene.store.IndexInput;
 
 /**
  * @lucene.experimental
+ * @deprecated
  */
+@Deprecated
 public class Lucene3xFieldInfosReader extends FieldInfosReader {
   /** Extension of field infos */
   static final String FIELD_INFOS_EXTENSION = "fnm";
@@ -117,7 +119,7 @@ public class Lucene3xFieldInfosReader extends FieldInfosReader {
     }
   }
   
-  public static void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
+  public static void files(SegmentInfo info, Set<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(info.name, "", FIELD_INFOS_EXTENSION));
   }
 }

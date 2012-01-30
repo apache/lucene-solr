@@ -133,7 +133,7 @@ public class Lucene3xFields extends FieldsProducer {
     return true;
   }
 
-  static void files(Directory dir, SegmentInfo info, Collection<String> files) throws IOException {
+  static void files(SegmentInfo info, Collection<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.TERMS_EXTENSION));
     files.add(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION));
     files.add(IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.FREQ_EXTENSION));
@@ -144,7 +144,7 @@ public class Lucene3xFields extends FieldsProducer {
       // file, when it should have been false.  So we do the
       // extra check, here:
       final String prx = IndexFileNames.segmentFileName(info.name, "", Lucene3xPostingsFormat.PROX_EXTENSION);
-      if (dir.fileExists(prx)) {
+      if (info.dir.fileExists(prx)) {
         files.add(prx);
       }
     }

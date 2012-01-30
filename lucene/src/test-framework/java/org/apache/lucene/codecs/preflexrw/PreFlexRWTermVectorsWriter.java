@@ -202,7 +202,7 @@ public final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
       // throw an exception to prevent the corruption from
       // entering the index.  See LUCENE-1282 for
       // details.
-      throw new RuntimeException("mergeVectors produced an invalid result: mergedDocs is " + numDocs + " but tvx size is " + tvx.getFilePointer() + " file=" + tvx.toString() + "; now aborting this merge to prevent index corruption");
+      throw new RuntimeException("tvx size mismatch: mergedDocs is " + numDocs + " but tvx size is " + tvx.getFilePointer() + " file=" + tvx.toString() + "; now aborting this merge to prevent index corruption");
   }
 
   /** Close all streams. */

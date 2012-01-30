@@ -2545,27 +2545,27 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // only relevant for segments that share doc store with others,
     // because the DS might have been copied already, in which case we
     // just want to update the DS name of this SegmentInfo.
-    // NOTE: pre-3x segments include a null DSName if they don't share doc
-    // store. The following code ensures we don't accidentally insert
-    // 'null' to the map.
     String dsName = info.getDocStoreSegment();
+    assert dsName != null;
     final String newDsName;
-    if (dsName != null) {
-      if (dsNames.containsKey(dsName)) {
-        newDsName = dsNames.get(dsName);
-      } else {
-        dsNames.put(dsName, segName);
-        newDsName = segName;
-      }
+    if (dsNames.containsKey(dsName)) {
+      newDsName = dsNames.get(dsName);
     } else {
+      dsNames.put(dsName, segName);
       newDsName = segName;
     }
     
-    Set<String> codecDocStoreFiles = info.codecDocStoreFiles();
+    Set<String> codecDocStoreFiles = new HashSet<String>();
+    if (info.getDocStoreOffset() != -1) {
+      // only violate the codec this way if its preflex
+      codec.storedFieldsFormat().files(info, codecDocStoreFiles);
+      codec.termVectorsFormat().files(info, codecDocStoreFiles);
+    }
+    
     // Copy the segment files
     for (String file: info.files()) {
       final String newFileName;
-      if (codecDocStoreFiles.contains(file) || file.endsWith(IndexFileNames.COMPOUND_FILE_STORE_EXTENSION)) {
+      if (codecDocStoreFiles.contains(file)) {
         newFileName = newDsName + IndexFileNames.stripSegmentName(file);
         if (dsFilesCopied.contains(newFileName)) {
           continue;
@@ -4070,12 +4070,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   static final Collection<String> createCompoundFile(Directory directory, String fileName, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
           throws IOException {
-
+    assert info.getDocStoreOffset() == -1;
     // Now merge all added files
     Collection<String> files = info.files();
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
     try {
-      assert assertNoSeparateFiles(files, directory, info);
       for (String file : files) {
         directory.copy(cfsDir, file, file, context);
         checkAbort.work(directory.fileLength(file));
@@ -4085,21 +4084,5 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     return files;
-  }
-  
-  
-  /**
-   * used only by assert: checks that filenames about to be put in cfs belong.
-   */
-  private static boolean assertNoSeparateFiles(Collection<String> files, 
-      Directory dir, SegmentInfo info) throws IOException {
-    // maybe this is overkill, but codec naming clashes would be bad.
-    Set<String> separateFiles = new HashSet<String>();
-    info.getCodec().separateFiles(dir, info, separateFiles);
-    
-    for (String file : files) {
-      assert !separateFiles.contains(file) : file + " should not go in CFS!";
-    }
-    return true;
   }
 }

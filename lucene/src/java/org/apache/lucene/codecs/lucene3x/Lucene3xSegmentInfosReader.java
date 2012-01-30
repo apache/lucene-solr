@@ -37,7 +37,9 @@ import org.apache.lucene.store.IOContext;
 /**
  * Lucene 3x implementation of {@link SegmentInfosReader}.
  * @lucene.experimental
+ * @deprecated
  */
+@Deprecated
 public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
   @Override
@@ -56,7 +58,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
           if (si.getDocStoreIsCompoundFile()) {
             dir = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(
                 si.getDocStoreSegment(), "",
-                IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), context, false);
+                Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION), context, false);
           }
         } else if (si.getUseCompoundFile()) {
           dir = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(
@@ -64,7 +66,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
         }
 
         try {
-          Lucene40StoredFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
+          Lucene3xStoredFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
         } finally {
           // If we opened the directory, close it
           if (dir != directory) dir.close();
@@ -142,7 +144,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
       if (docStoreOffset != -1) {
         storesSegment = docStoreSegment;
         storeIsCompoundFile = docStoreIsCompoundFile;
-        ext = IndexFileNames.COMPOUND_FILE_STORE_EXTENSION;
+        ext = Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION;
       } else {
         storesSegment = name;
         storeIsCompoundFile = isCompoundFile;

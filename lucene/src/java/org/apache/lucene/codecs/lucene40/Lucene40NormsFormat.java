@@ -30,7 +30,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.Directory;
 
 /**
  * Norms Format for the default codec. 
@@ -50,10 +49,8 @@ public class Lucene40NormsFormat extends NormsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files)
-      throws IOException {
-    Lucene40NormsDocValuesConsumer.files(dir, info, files);
-
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
+    Lucene40NormsDocValuesConsumer.files(info, files);
   }
  
   public static class Lucene40NormsDocValuesProducer extends Lucene40DocValuesProducer {
@@ -103,7 +100,7 @@ public class Lucene40NormsFormat extends NormsFormat {
       return info.getNormType();
     }
     
-    public static void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
+    public static void files(SegmentInfo segmentInfo, Set<String> files) throws IOException {
       final String normsFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION);
       FieldInfos fieldInfos = segmentInfo.getFieldInfos();
       for (FieldInfo fieldInfo : fieldInfos) {

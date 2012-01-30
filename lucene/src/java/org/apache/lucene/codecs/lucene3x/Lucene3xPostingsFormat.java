@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.lucene3x;
 import java.util.Set;
 import java.io.IOException;
 
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -66,8 +65,8 @@ public class Lucene3xPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, String segmentSuffix, Set<String> files) throws IOException {
+  public void files(SegmentInfo info, String segmentSuffix, Set<String> files) throws IOException {
     // preflex fields have no segmentSuffix - we ignore it here
-    Lucene3xFields.files(dir, info, files);
+    Lucene3xFields.files(info, files);
   }
 }

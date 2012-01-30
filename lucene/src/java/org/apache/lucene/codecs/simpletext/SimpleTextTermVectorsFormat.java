@@ -47,7 +47,7 @@ public class SimpleTextTermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextTermVectorsReader.files(dir, info, files);
+  public void files(SegmentInfo info, Set<String> files) throws IOException {
+    SimpleTextTermVectorsReader.files(info, files);
   }
 }
