@@ -43,6 +43,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -844,11 +845,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         replicateOnStart = true;
         RefCounted<SolrIndexSearcher> s = core.getNewestSearcher(false);
         try {
-          IndexReader reader = s==null ? null : s.get().getIndexReader();
+          DirectoryReader reader = s==null ? null : s.get().getIndexReader();
           if (reader!=null && reader.getIndexCommit() != null && reader.getIndexCommit().getGeneration() != 1L) {
             try {
               if(replicateOnOptimize){
-                Collection<IndexCommit> commits = IndexReader.listCommits(reader.directory());
+                Collection<IndexCommit> commits = DirectoryReader.listCommits(reader.directory());
                 for (IndexCommit ic : commits) {
                   if(ic.getSegmentCount() == 1){
                     if(indexCommitPoint == null || indexCommitPoint.getGeneration() < ic.getGeneration()) indexCommitPoint = ic;

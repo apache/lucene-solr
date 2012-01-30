@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
@@ -31,7 +32,7 @@ public class DelegatingCollector extends Collector {
 
   protected Collector delegate;
   protected Scorer scorer;
-  protected IndexReader.AtomicReaderContext context;
+  protected AtomicReaderContext context;
   protected int docBase;
 
   public Collector getDelegate() {
@@ -62,7 +63,7 @@ public class DelegatingCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+  public void setNextReader(AtomicReaderContext context) throws IOException {
     this.context = context;
     this.docBase = context.docBase;
     delegate.setNextReader(context);

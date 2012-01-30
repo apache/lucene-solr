@@ -32,7 +32,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -80,7 +80,7 @@ public class FileFloatSource extends ValueSource {
     final int off = readerContext.docBase;
     IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
 
-    final float[] arr = getCachedFloats(topLevelContext.reader);
+    final float[] arr = getCachedFloats(topLevelContext.reader());
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {

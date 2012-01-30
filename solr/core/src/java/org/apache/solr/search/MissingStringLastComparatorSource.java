@@ -17,8 +17,8 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
@@ -118,7 +118,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
 
   @Override
   public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-    return TermOrdValComparator_SML.createComparator(context.reader, this);
+    return TermOrdValComparator_SML.createComparator(context.reader(), this);
   }
 
   // Base class for specialized (per bit width of the
@@ -159,7 +159,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      return TermOrdValComparator_SML.createComparator(context.reader, parent);
+      return TermOrdValComparator_SML.createComparator(context.reader(), parent);
     }
 
     @Override
@@ -432,7 +432,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
     }
   }
 
-  public static FieldComparator createComparator(IndexReader reader, TermOrdValComparator_SML parent) throws IOException {
+  public static FieldComparator createComparator(AtomicReader reader, TermOrdValComparator_SML parent) throws IOException {
     parent.termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, parent.field);
     final PackedInts.Reader docToOrd = parent.termsIndex.getDocToOrd();
     PerSegmentComparator perSegComp = null;

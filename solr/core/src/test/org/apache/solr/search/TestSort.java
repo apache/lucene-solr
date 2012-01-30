@@ -24,8 +24,8 @@ import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.*;
@@ -194,7 +194,7 @@ public class TestSort extends SolrTestCaseJ4 {
       iw.close();
 
 
-      IndexReader reader = IndexReader.open(dir);
+      DirectoryReader reader = DirectoryReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(reader);
       // System.out.println("segments="+searcher.getIndexReader().getSequentialSubReaders().length);
       assertTrue(reader.getSequentialSubReaders().length > 1);
@@ -203,7 +203,7 @@ public class TestSort extends SolrTestCaseJ4 {
         Filter filt = new Filter() {
           @Override
           public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-            return BitsFilteredDocIdSet.wrap(randSet(context.reader.maxDoc()), acceptDocs);
+            return BitsFilteredDocIdSet.wrap(randSet(context.reader().maxDoc()), acceptDocs);
           }
         };
 

@@ -24,7 +24,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 
 import java.io.IOException;
 
@@ -658,7 +658,7 @@ public class SortedIntDocSet extends DocSetBase {
 
       @Override
       public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-        IndexReader reader = context.reader;
+        IndexReader reader = context.reader();
 
         final int base = context.docBase;
         final int maxDoc = reader.maxDoc();

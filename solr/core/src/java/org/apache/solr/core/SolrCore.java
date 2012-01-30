@@ -19,7 +19,7 @@ package org.apache.solr.core;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
@@ -758,7 +758,7 @@ public final class SolrCore implements SolrInfoMBean {
     }
 
     try {
-      updateHandler.close();
+      if (updateHandler != null) updateHandler.close();
     } catch (Throwable e) {
       SolrException.log(log,e);
     }
@@ -1082,17 +1082,17 @@ public final class SolrCore implements SolrInfoMBean {
       if (newestSearcher != null && solrConfig.reopenReaders
           && (nrt || indexDirFile.equals(newIndexDirFile))) {
 
-        IndexReader newReader;
-        IndexReader currentReader = newestSearcher.get().getIndexReader();
+        DirectoryReader newReader;
+        DirectoryReader currentReader = newestSearcher.get().getIndexReader();
 
         if (updateHandlerReopens) {
           // SolrCore.verbose("start reopen from",previousSearcher,"writer=",writer);
           IndexWriter writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
-          newReader = IndexReader.openIfChanged(currentReader, writer, true);
+          newReader = DirectoryReader.openIfChanged(currentReader, writer, true);
 
         } else {
           // verbose("start reopen without writer, reader=", currentReader);
-          newReader = IndexReader.openIfChanged(currentReader);
+          newReader = DirectoryReader.openIfChanged(currentReader);
           // verbose("reopen result", newReader);
         }
 

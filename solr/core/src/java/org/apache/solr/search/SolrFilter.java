@@ -22,8 +22,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 
 import java.util.Map;
 import java.io.IOException;

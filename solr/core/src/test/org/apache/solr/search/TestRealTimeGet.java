@@ -1342,7 +1342,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
 
   // The purpose of this test is to roughly model how solr uses lucene
-  IndexReader reader;
+  DirectoryReader reader;
   @Test
   public void testStressLuceneNRT() throws Exception {
     final int commitPercent = 5 + random.nextInt(20);
@@ -1408,7 +1408,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     // reader = IndexReader.open(dir);
     // make this reader an NRT reader from the start to avoid the first non-writer openIfChanged
     // to only opening at the last commit point.
-    reader = IndexReader.open(writer.w, true);
+    reader = DirectoryReader.open(writer.w, true);
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
@@ -1424,7 +1424,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
                   Map<Integer,DocInfo> newCommittedModel;
                   long version;
-                  IndexReader oldReader;
+                  DirectoryReader oldReader;
 
                   boolean softCommit = rand.nextInt(100) < softCommitPercent;
 
@@ -1452,12 +1452,12 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                   verbose("reopen start using", oldReader);
 
-                  IndexReader newReader;
+                  DirectoryReader newReader;
                   if (softCommit) {
-                    newReader = IndexReader.openIfChanged(oldReader, writer.w, true);
+                    newReader = DirectoryReader.openIfChanged(oldReader, writer.w, true);
                   } else {
                     // will only open to last commit
-                   newReader = IndexReader.openIfChanged(oldReader);
+                   newReader = DirectoryReader.openIfChanged(oldReader);
                   }
 
 

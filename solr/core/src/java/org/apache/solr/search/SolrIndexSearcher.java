@@ -31,7 +31,7 @@ import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -81,7 +81,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private long openTime = System.currentTimeMillis();
   private long registerTime = 0;
   private long warmupTime = 0;
-  private final IndexReader reader;
+  private final DirectoryReader reader;
   private final boolean closeReader;
 
   private final int queryResultWindowSize;
@@ -108,16 +108,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final Collection<String> fieldNames;
   private Collection<String> storedHighlightFieldNames;
   private DirectoryFactory directoryFactory;
+  
+  private final AtomicReader atomicReader; 
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
     // we don't need to reserve the directory because we get it from the factory
     this(core, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, config.lockType)), true, enableCache, false, directoryFactory);
   }
 
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) {
+  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, DirectoryReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
     super(r);
     this.directoryFactory = directoryFactory;
-    this.reader = getIndexReader();
+    this.reader = r;
+    this.atomicReader = SlowCompositeReaderWrapper.wrap(r);
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
@@ -184,7 +187,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
 
     fieldNames = new HashSet<String>();
-    for(FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(r)) {
+    for(FieldInfo fieldInfo : atomicReader.getFieldInfos()) {
       fieldNames.add(fieldInfo.name);
     }
 
@@ -207,6 +210,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   
   public final int docFreq(Term term) throws IOException {
     return reader.docFreq(term);
+  }
+  
+  public final AtomicReader getAtomicReader() {
+    return atomicReader;
+  }
+  
+  @Override
+  public final DirectoryReader getIndexReader() {
+    assert reader == super.getIndexReader();
+    return reader; 
   }
 
   /** Register sub-objects such as caches
@@ -556,7 +569,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * @return the first document number containing the term
    */
   public int getFirstMatch(Term t) throws IOException {
-    Fields fields = MultiFields.getFields(reader);
+    Fields fields = atomicReader.fields();
     if (fields == null) return -1;
     Terms terms = fields.terms(t.field());
     if (terms == null) return -1;
@@ -565,7 +578,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (!termsEnum.seekExact(termBytes, false)) {
       return -1;
     }
-    DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(reader), null, false);
+    DocsEnum docs = termsEnum.docs(atomicReader.getLiveDocs(), null, false);
     if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
@@ -582,7 +595,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     for (int i=0; i<leaves.length; i++) {
       final AtomicReaderContext leaf = leaves[i];
-      final IndexReader reader = leaf.reader;
+      final AtomicReader reader = leaf.reader();
 
       final Fields fields = reader.fields();
       if (fields == null) continue;
@@ -736,7 +749,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     for (int i=0; i<leaves.length; i++) {
       final AtomicReaderContext leaf = leaves[i];
-      final IndexReader reader = leaf.reader;
+      final AtomicReader reader = leaf.reader();
       final Bits liveDocs = reader.getLiveDocs();   // TODO: the filter may already only have liveDocs...
       DocIdSet idSet = null;
       if (pf.filter != null) {
@@ -968,7 +981,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
         for (int i=0; i<leaves.length; i++) {
           final AtomicReaderContext leaf = leaves[i];
-          final IndexReader reader = leaf.reader;
+          final AtomicReader reader = leaf.reader();
           collector.setNextReader(leaf);
           Fields fields = reader.fields();
           Terms terms = fields.terms(t.field());
@@ -979,7 +992,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           if (terms != null) {
             final TermsEnum termsEnum = terms.iterator(null);
             if (termsEnum.seekExact(termBytes, false)) {
-              docsEnum = termsEnum.docs(MultiFields.getLiveDocs(reader), null, false);
+              docsEnum = termsEnum.docs(liveDocs, null, false);
             }
           }
 
@@ -1768,7 +1781,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       while (doc>=end) {
         AtomicReaderContext leaf = leafContexts[readerIndex++];
         base = leaf.docBase;
-        end = base + leaf.reader.maxDoc();
+        end = base + leaf.reader().maxDoc();
         topCollector.setNextReader(leaf);
         // we should never need to set the scorer given the settings for the collector
       }
@@ -2173,7 +2186,7 @@ class FilterImpl extends Filter {
         iterators.add(iter);
       }
       for (Weight w : weights) {
-        Scorer scorer = w.scorer(context, true, false, context.reader.getLiveDocs());
+        Scorer scorer = w.scorer(context, true, false, context.reader().getLiveDocs());
         if (scorer == null) return null;
         iterators.add(scorer);
       }

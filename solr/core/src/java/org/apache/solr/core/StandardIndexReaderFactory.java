@@ -18,7 +18,7 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -30,7 +30,7 @@ import org.apache.lucene.store.Directory;
 public class StandardIndexReaderFactory extends IndexReaderFactory {
   
   @Override
-  public IndexReader newReader(Directory indexDir) throws IOException {
-    return IndexReader.open(indexDir, termInfosIndexDivisor);
+  public DirectoryReader newReader(Directory indexDir) throws IOException {
+    return DirectoryReader.open(indexDir, termInfosIndexDivisor);
   }
 }

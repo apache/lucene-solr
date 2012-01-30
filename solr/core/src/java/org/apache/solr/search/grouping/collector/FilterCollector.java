@@ -17,7 +17,7 @@ package org.apache.solr.search.grouping.collector;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.solr.search.DocSet;
@@ -52,7 +52,7 @@ public class FilterCollector extends Collector {
     }
   }
 
-  public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+  public void setNextReader(AtomicReaderContext context) throws IOException {
     this.docBase = context.docBase;
     delegate.setNextReader(context);
   }

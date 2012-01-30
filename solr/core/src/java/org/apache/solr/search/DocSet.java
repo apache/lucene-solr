@@ -25,7 +25,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 
 import java.io.IOException;
 
@@ -273,7 +273,7 @@ abstract class DocSetBase implements DocSet {
     return new Filter() {
       @Override
       public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-        IndexReader reader = context.reader;
+        IndexReader reader = context.reader();
 
         if (context.isTopLevel) {
           return BitsFilteredDocIdSet.wrap(bs, acceptDocs);

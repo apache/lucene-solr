@@ -25,7 +25,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.search.DocIdSet;
@@ -353,11 +353,6 @@ public class TestDocSet extends LuceneTestCase {
       @Override
       public boolean hasDeletions() {
         return false;
-      }
-
-      @Override
-      public IndexReader[] getSequentialSubReaders() {
-        return null;
       }
 
       @Override
