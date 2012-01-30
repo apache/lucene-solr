@@ -223,6 +223,10 @@ public abstract class AtomicReader extends IndexReader {
    */
   public abstract DocValues docValues(String field) throws IOException;
   
+  /**
+   * Returns {@link DocValues} for this field's normalization values.
+   * This method may return null if the field has no norms.
+   */
   public abstract DocValues normValues(String field) throws IOException;
 
   /**
