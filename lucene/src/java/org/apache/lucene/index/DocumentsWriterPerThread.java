@@ -495,10 +495,9 @@ public class DocumentsWriterPerThread {
 
       if (infoStream.isEnabled("DWPT")) {
         final double newSegmentSize = newSegment.sizeInBytes()/1024./1024.;
-        // nocommit: some of this is confusing since it includes docstores
         infoStream.message("DWPT", "flushed: segment=" + newSegment + 
                 " ramUsed=" + nf.format(startMBUsed) + " MB" +
-                " newFlushedSize=" + nf.format(newSegmentSize) + " MB" +
+                " newFlushedSize(includes docstores)=" + nf.format(newSegmentSize) + " MB" +
                 " docs/MB=" + nf.format(flushedDocCount / newSegmentSize) +
                 " new/old=" + nf.format(100.0 * newSegmentSize / startMBUsed) + "%");
       }
