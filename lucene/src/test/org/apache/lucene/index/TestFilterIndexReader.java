@@ -114,18 +114,13 @@ public class TestFilterIndexReader extends LuceneTestCase {
       }
     }
     
-    public TestReader(IndexReader reader) {
-      super(new SlowMultiReaderWrapper(reader));
+    public TestReader(IndexReader reader) throws IOException {
+      super(SlowCompositeReaderWrapper.wrap(reader));
     }
 
     @Override
     public Fields fields() throws IOException {
       return new TestFields(super.fields());
-    }
-
-    @Override
-    public FieldInfos getFieldInfos() {
-      return ReaderUtil.getMergedFieldInfos(in);
     }
   }
     
@@ -183,22 +178,16 @@ public class TestFilterIndexReader extends LuceneTestCase {
   }
 
   public void testOverrideMethods() throws Exception {
-    HashSet<String> methodsThatShouldNotBeOverridden = new HashSet<String>();
-    methodsThatShouldNotBeOverridden.add("doOpenIfChanged");
-    methodsThatShouldNotBeOverridden.add("clone");
     boolean fail = false;
     for (Method m : FilterIndexReader.class.getMethods()) {
       int mods = m.getModifiers();
-      if (Modifier.isStatic(mods) || Modifier.isFinal(mods)) {
+      if (Modifier.isStatic(mods) || Modifier.isFinal(mods) || m.isSynthetic()) {
         continue;
       }
-      Class< ? > declaringClass = m.getDeclaringClass();
+      Class<?> declaringClass = m.getDeclaringClass();
       String name = m.getName();
-      if (declaringClass != FilterIndexReader.class && declaringClass != Object.class && !methodsThatShouldNotBeOverridden.contains(name)) {
+      if (declaringClass != FilterIndexReader.class && declaringClass != Object.class) {
         System.err.println("method is not overridden by FilterIndexReader: " + name);
-        fail = true;
-      } else if (declaringClass == FilterIndexReader.class && methodsThatShouldNotBeOverridden.contains(name)) {
-        System.err.println("method should not be overridden by FilterIndexReader: " + name);
         fail = true;
       }
     }

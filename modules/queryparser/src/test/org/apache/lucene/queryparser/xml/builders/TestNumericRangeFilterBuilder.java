@@ -17,10 +17,11 @@ package org.apache.lucene.queryparser.xml.builders;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.store.Directory;
@@ -63,7 +64,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     writer.commit();
     try {
-      IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(ramDir));
+      AtomicReader reader = new SlowCompositeReaderWrapper(IndexReader.open(ramDir));
       try {
         assertNull(filter.getDocIdSet((AtomicReaderContext) reader.getTopReaderContext(), reader.getLiveDocs()));
       }

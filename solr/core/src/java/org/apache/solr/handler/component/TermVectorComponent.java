@@ -13,8 +13,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.StoredFieldVisitor.Status;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -390,13 +388,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   private static int getDocFreq(IndexReader reader, String field, BytesRef term) {
     int result = 1;
     try {
-      Terms terms = MultiFields.getTerms(reader, field);
-      if (terms != null) {
-        TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term, true)) {
-          result = termsEnum.docFreq();
-        }
-      }
+      result = reader.docFreq(field, term);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

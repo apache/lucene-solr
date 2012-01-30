@@ -2,22 +2,25 @@ package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Set;
 
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FilterIndexReader;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.InconsistentTaxonomyException;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
@@ -92,8 +95,7 @@ public class TestIndexClose extends LuceneTestCase {
   }
 
   private static class LeakChecker {
-    int ireader=0;
-    Set<Integer> openReaders = new HashSet<Integer>();
+    Set<DirectoryReader> readers = new MapBackedSet<DirectoryReader>(new IdentityHashMap<DirectoryReader,Boolean>());
 
     int iwriter=0;
     Set<Integer> openWriters = new HashSet<Integer>();
@@ -110,9 +112,15 @@ public class TestIndexClose extends LuceneTestCase {
 
     public int nopen() {
       int ret=0;
-      for (int i: openReaders) {
-        System.err.println("reader "+i+" still open");
-        ret++;
+      for (DirectoryReader r: readers) {
+        try {
+          // this should throw ex, if already closed!
+          r.getTopReaderContext();
+          System.err.println("reader "+r+" still open");
+          ret++;
+        } catch (AlreadyClosedException e) {
+          // fine
+        }
       }
       for (int i: openWriters) {
         System.err.println("writer "+i+" still open");
@@ -126,8 +134,16 @@ public class TestIndexClose extends LuceneTestCase {
         super(dir);
       }    
       @Override
-      protected IndexReader openReader() throws IOException {
-        return new InstrumentedIndexReader(super.openReader()); 
+      protected DirectoryReader openReader() throws IOException {
+        DirectoryReader r = super.openReader();
+        readers.add(r);
+        return r; 
+      }
+      @Override
+      protected synchronized void refreshReader() throws IOException {
+        super.refreshReader();
+        final DirectoryReader r = getInternalIndexReader();
+        if (r != null) readers.add(r);
       }
       @Override
       protected IndexWriter openIndexWriter (Directory directory, IndexWriterConfig config) throws IOException {
@@ -146,44 +162,19 @@ public class TestIndexClose extends LuceneTestCase {
         super(dir);
       }  
       @Override
-      protected IndexReader openIndexReader(Directory dir) throws CorruptIndexException, IOException {
-        return new InstrumentedIndexReader(IndexReader.open(dir)); 
-      }
-
-    }
-
-    private class InstrumentedIndexReader extends FilterIndexReader {
-      int mynum;
-      public InstrumentedIndexReader(IndexReader in) {
-        super(in);
-        this.in = in;
-        mynum = ireader++;
-        openReaders.add(mynum);
-        //        System.err.println("opened "+mynum);
+      protected DirectoryReader openIndexReader(Directory dir) throws CorruptIndexException, IOException {
+        DirectoryReader r = super.openIndexReader(dir);
+        readers.add(r);
+        return r; 
       }
       @Override
-      protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-        IndexReader n = IndexReader.openIfChanged(in);
-        if (n == null) {
-          return null;
-        }
-        return new InstrumentedIndexReader(n);
-      }
-
-      // Unfortunately, IndexReader.close() is marked final so we can't
-      // change it! Fortunately, close() calls (if the object wasn't
-      // already closed) doClose() so we can override it to do our thing -
-      // just like FilterIndexReader does.
-      @Override
-      public void doClose() throws IOException {
-        in.close();
-        if (!openReaders.contains(mynum)) { // probably can't happen...
-          fail("Reader #"+mynum+" was closed twice!");
-        }
-        openReaders.remove(mynum);
-        //        System.err.println("closed "+mynum);
+      public synchronized boolean refresh() throws IOException, InconsistentTaxonomyException {
+        final boolean ret = super.refresh();
+        readers.add(getInternalIndexReader());
+        return ret;
       }
     }
+
     private class InstrumentedIndexWriter extends IndexWriter {
       int mynum;
       public InstrumentedIndexWriter(Directory d, IndexWriterConfig conf) throws CorruptIndexException, LockObtainFailedException, IOException {

@@ -17,6 +17,7 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
@@ -41,7 +42,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
   final BytesRef scratchBytesRef = new BytesRef();
 
   FieldCache.DocTermsIndex groupIndex;
-  IndexReader.AtomicReaderContext readerContext;
+  AtomicReaderContext readerContext;
 
   protected TermAllGroupHeadsCollector(String groupField, int numberOfSorts) {
     super(numberOfSorts);
@@ -142,9 +143,9 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       return groups.values();
     }
 
-    public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+    public void setNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
-      groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, groupField);
+      groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
 
       for (GroupHead groupHead : groups.values()) {
         for (int i = 0; i < groupHead.comparators.length; i++) {
@@ -243,15 +244,15 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       temporalResult.groupHead = groupHead;
     }
 
-    public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+    public void setNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
-      groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, groupField);
+      groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
       for (int i = 0; i < fields.length; i++) {
         if (fields[i].getType() == SortField.Type.SCORE) {
           continue;
         }
 
-        sortsIndex[i] = FieldCache.DEFAULT.getTermsIndex(context.reader, fields[i].getField());
+        sortsIndex[i] = FieldCache.DEFAULT.getTermsIndex(context.reader(), fields[i].getField());
       }
 
       // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
@@ -380,11 +381,11 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       temporalResult.groupHead = groupHead;
     }
 
-    public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+    public void setNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
-      groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, groupField);
+      groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
       for (int i = 0; i < fields.length; i++) {
-        sortsIndex[i] = FieldCache.DEFAULT.getTermsIndex(context.reader, fields[i].getField());
+        sortsIndex[i] = FieldCache.DEFAULT.getTermsIndex(context.reader(), fields[i].getField());
       }
 
       // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
@@ -488,9 +489,9 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       temporalResult.groupHead = groupHead;
     }
 
-    public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+    public void setNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
-      groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, groupField);
+      groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
 
       // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
       ordSet.clear();

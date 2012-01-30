@@ -20,7 +20,7 @@ package org.apache.lucene.search.grouping;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;       // javadocs
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -505,7 +505,7 @@ public class BlockGroupingCollector extends Collector {
     subDocUpto = 0;
     docBase = readerContext.docBase;
     //System.out.println("setNextReader base=" + docBase + " r=" + readerContext.reader);
-    lastDocPerGroupBits = lastDocPerGroup.getDocIdSet(readerContext, readerContext.reader.getLiveDocs()).iterator();
+    lastDocPerGroupBits = lastDocPerGroup.getDocIdSet(readerContext, readerContext.reader().getLiveDocs()).iterator();
     groupEndDocID = -1;
 
     currentReaderContext = readerContext;

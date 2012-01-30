@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;       // javadocs
 import org.apache.lucene.index.Term;
@@ -120,7 +120,7 @@ public class ToChildBlockJoinQuery extends Query {
         return null;
       }
 
-      final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, readerContext.reader.getLiveDocs());
+      final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, readerContext.reader().getLiveDocs());
       // TODO: once we do random-access filters we can
       // generalize this:
       if (parents == null) {

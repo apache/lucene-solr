@@ -17,8 +17,8 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -50,15 +50,15 @@ public class SumTotalTermFreqValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, IndexReader.AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return (FunctionValues)context.get(this);
   }
 
   @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     long sumTotalTermFreq = 0;
-    for (IndexReader.AtomicReaderContext readerContext : searcher.getTopReaderContext().leaves()) {
-      Fields fields = readerContext.reader.fields();
+    for (AtomicReaderContext readerContext : searcher.getTopReaderContext().leaves()) {
+      Fields fields = readerContext.reader().fields();
       if (fields == null) continue;
       Terms terms = fields.terms(indexedField);
       if (terms == null) continue;

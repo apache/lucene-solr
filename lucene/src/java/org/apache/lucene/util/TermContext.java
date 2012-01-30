@@ -20,10 +20,10 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -39,7 +39,7 @@ import org.apache.lucene.index.TermsEnum;
  * @lucene.experimental
  */
 public final class TermContext {
-  public final ReaderContext topReaderContext; // for asserting!
+  public final IndexReaderContext topReaderContext; // for asserting!
   private final TermState[] states;
   private int docFreq;
   private long totalTermFreq;
@@ -47,9 +47,9 @@ public final class TermContext {
   //public static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   /**
-   * Creates an empty {@link TermContext} from a {@link ReaderContext}
+   * Creates an empty {@link TermContext} from a {@link IndexReaderContext}
    */
-  public TermContext(ReaderContext context) {
+  public TermContext(IndexReaderContext context) {
     assert context != null && context.isTopLevel;
     topReaderContext = context;
     docFreq = 0;
@@ -66,20 +66,20 @@ public final class TermContext {
    * Creates a {@link TermContext} with an initial {@link TermState},
    * {@link IndexReader} pair.
    */
-  public TermContext(ReaderContext context, TermState state, int ord, int docFreq, long totalTermFreq) {
+  public TermContext(IndexReaderContext context, TermState state, int ord, int docFreq, long totalTermFreq) {
     this(context);
     register(state, ord, docFreq, totalTermFreq);
   }
 
   /**
-   * Creates a {@link TermContext} from a top-level {@link ReaderContext} and the
+   * Creates a {@link TermContext} from a top-level {@link IndexReaderContext} and the
    * given {@link Term}. This method will lookup the given term in all context's leaf readers 
    * and register each of the readers containing the term in the returned {@link TermContext}
    * using the leaf reader's ordinal.
    * <p>
    * Note: the given context must be a top-level context.
    */
-  public static TermContext build(ReaderContext context, Term term, boolean cache)
+  public static TermContext build(IndexReaderContext context, Term term, boolean cache)
       throws IOException {
     assert context != null && context.isTopLevel;
     final String field = term.field();
@@ -89,7 +89,7 @@ public final class TermContext {
     //if (DEBUG) System.out.println("prts.build term=" + term);
     for (int i = 0; i < leaves.length; i++) {
       //if (DEBUG) System.out.println("  r=" + leaves[i].reader);
-      final Fields fields = leaves[i].reader.fields();
+      final Fields fields = leaves[i].reader().fields();
       if (fields != null) {
         final Terms terms = fields.terms(field);
         if (terms != null) {
@@ -116,7 +116,7 @@ public final class TermContext {
 
   /**
    * Registers and associates a {@link TermState} with an leaf ordinal. The leaf ordinal
-   * should be derived from a {@link ReaderContext}'s leaf ord.
+   * should be derived from a {@link IndexReaderContext}'s leaf ord.
    */
   public void register(TermState state, final int ord, final int docFreq, final long totalTermFreq) {
     assert state != null : "state must not be null";

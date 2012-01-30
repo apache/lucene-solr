@@ -184,7 +184,7 @@ public class TestJoinUtil extends LuceneTestCase {
             actualResult.set(doc + docBase);
           }
 
-          public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+          public void setNextReader(AtomicReaderContext context) throws IOException {
             docBase = context.docBase;
           }
 

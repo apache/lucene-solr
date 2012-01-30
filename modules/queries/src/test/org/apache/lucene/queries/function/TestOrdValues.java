@@ -19,11 +19,9 @@ package org.apache.lucene.queries.function;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
 import org.apache.lucene.queries.function.valuesource.ReverseOrdFieldSource;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.ReaderUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

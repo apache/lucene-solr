@@ -9,6 +9,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -299,7 +300,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     writers[0].taxWriter.close();
 
     readers[0].taxReader.refresh();
-    IndexReader r2 = IndexReader.openIfChanged(readers[0].indexReader);
+    DirectoryReader r2 = DirectoryReader.openIfChanged(readers[0].indexReader);
     assertNotNull(r2);
     // Hold on to the 'original' reader so we can do some checks with it
     IndexReader origReader = null;

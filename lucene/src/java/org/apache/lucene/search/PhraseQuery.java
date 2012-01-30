@@ -21,10 +21,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -188,7 +189,7 @@ public class PhraseQuery extends Query {
     public PhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = searcher.getSimilarityProvider().get(field);
-      final ReaderContext context = searcher.getTopReaderContext();
+      final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.size()];
       TermStatistics termStats[] = new TermStatistics[terms.size()];
       for (int i = 0; i < terms.size(); i++) {
@@ -219,7 +220,7 @@ public class PhraseQuery extends Query {
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
       assert !terms.isEmpty();
-      final IndexReader reader = context.reader;
+      final AtomicReader reader = context.reader();
       final Bits liveDocs = acceptDocs;
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
 
@@ -270,13 +271,13 @@ public class PhraseQuery extends Query {
     }
     
     // only called from assert
-    private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
+    private boolean termNotInReader(AtomicReader reader, String field, BytesRef bytes) throws IOException {
       return reader.docFreq(field, bytes) == 0;
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader.getLiveDocs());
+      Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

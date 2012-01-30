@@ -76,7 +76,7 @@ final class SegmentMerger {
     try {
       new ReaderUtil.Gather(reader) {
         @Override
-        protected void add(int base, IndexReader r) {
+        protected void add(int base, AtomicReader r) {
           mergeState.readers.add(new MergeState.IndexReaderAndLiveDocs(r, r.getLiveDocs()));
         }
       }.run();
@@ -201,7 +201,7 @@ final class SegmentMerger {
     Map<FieldInfo,TypePromoter> normValuesTypes = new HashMap<FieldInfo,TypePromoter>();
 
     for (MergeState.IndexReaderAndLiveDocs readerAndLiveDocs : mergeState.readers) {
-      final IndexReader reader = readerAndLiveDocs.reader;
+      final AtomicReader reader = readerAndLiveDocs.reader;
       FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fi : readerFieldInfos) {
         FieldInfo merged = mergeState.fieldInfos.add(fi);
@@ -323,7 +323,12 @@ final class SegmentMerger {
       docBase += docCount;
 
       if (mergeState.payloadProcessorProvider != null) {
-        mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(reader.reader.directory());
+        // TODO: the PayloadProcessorProvider should take AtomicReader as parameter
+        // and find out by itself if it can provide a processor:
+        if (!(reader.reader instanceof SegmentReader))
+          throw new UnsupportedOperationException("Payload processing currently requires exclusively SegmentReaders to be merged.");
+        final Directory dir = ((SegmentReader) reader.reader).directory();
+        mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(dir);
       }
 
       i++;

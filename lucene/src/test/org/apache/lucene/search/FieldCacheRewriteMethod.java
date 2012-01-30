@@ -20,8 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
@@ -88,7 +88,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
      */
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-      final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader, query.field);
+      final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), query.field);
       // Cannot use FixedBitSet because we require long index (ord):
       final OpenBitSet termSet = new OpenBitSet(fcsi.numOrd());
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {
@@ -137,7 +137,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         return DocIdSet.EMPTY_DOCIDSET;
       }
       
-      return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
+      return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
           return termSet.get(fcsi.getOrd(doc));

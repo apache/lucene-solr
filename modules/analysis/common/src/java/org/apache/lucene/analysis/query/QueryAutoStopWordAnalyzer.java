@@ -29,7 +29,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 
@@ -85,7 +84,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
       Analyzer delegate,
       IndexReader indexReader,
       int maxDocFreq) throws IOException {
-    this(matchVersion, delegate, indexReader, ReaderUtil.getIndexedFields(indexReader), maxDocFreq);
+    this(matchVersion, delegate, indexReader, MultiFields.getIndexedFields(indexReader), maxDocFreq);
   }
 
   /**
@@ -105,7 +104,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
       Analyzer delegate,
       IndexReader indexReader,
       float maxPercentDocs) throws IOException {
-    this(matchVersion, delegate, indexReader, ReaderUtil.getIndexedFields(indexReader), maxPercentDocs);
+    this(matchVersion, delegate, indexReader, MultiFields.getIndexedFields(indexReader), maxPercentDocs);
   }
 
   /**

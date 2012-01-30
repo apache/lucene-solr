@@ -31,7 +31,7 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * This class forces a composite reader (eg a {@link
  * MultiReader} or {@link DirectoryReader} or any other
  * IndexReader subclass that returns non-null from {@link
- * IndexReader#getSequentialSubReaders}) to emulate an
+ * CompositeReader#getSequentialSubReaders}) to emulate an
  * atomic reader.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
  * MultiFields}, {@link MultiDocValues}, 
@@ -50,25 +50,42 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * yourself.</p>
  */
 
-public final class SlowMultiReaderWrapper extends FilterIndexReader {
+public final class SlowCompositeReaderWrapper extends AtomicReader {
 
-  private final ReaderContext readerContext;
+  private final CompositeReader in;
   private final Map<String, DocValues> normsCache = new HashMap<String, DocValues>();
+  private final Fields fields;
+  private final Bits liveDocs;
   
-  public SlowMultiReaderWrapper(IndexReader other) {
-    super(other);
-    readerContext = new AtomicReaderContext(this); // emulate atomic reader!
+  /** This method is sugar for getting an {@link AtomicReader} from
+   * an {@link IndexReader} of any kind. If the reader is already atomic,
+   * it is returned unchanged, otherwise wrapped by this class.
+   */
+  public static AtomicReader wrap(IndexReader reader) throws IOException {
+    if (reader instanceof CompositeReader) {
+      return new SlowCompositeReaderWrapper((CompositeReader) reader);
+    } else {
+      assert reader instanceof AtomicReader;
+      return (AtomicReader) reader;
+    }
+  }
+  
+  public SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
+    super();
+    in = reader;
+    fields = MultiFields.getFields(in);
+    liveDocs = MultiFields.getLiveDocs(in);
   }
 
   @Override
   public String toString() {
-    return "SlowMultiReaderWrapper(" + in + ")";
+    return "SlowCompositeReaderWrapper(" + in + ")";
   }
 
   @Override
   public Fields fields() throws IOException {
     ensureOpen();
-    return MultiFields.getFields(in);
+    return fields;
   }
 
   @Override
@@ -87,25 +104,63 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
     }
     return values;
   }
+  
+  @Override
+  public Fields getTermVectors(int docID)
+          throws IOException {
+    ensureOpen();
+    return in.getTermVectors(docID);
+  }
+
+  @Override
+  public int numDocs() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return in.numDocs();
+  }
+
+  @Override
+  public int maxDoc() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return in.maxDoc();
+  }
+
+  @Override
+  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+    ensureOpen();
+    in.document(docID, visitor);
+  }
+
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
-    return MultiFields.getLiveDocs(in);
-  }
-  
-  @Override
-  public IndexReader[] getSequentialSubReaders() {
-    return null;
-  }
-  
-  @Override
-  public ReaderContext getTopReaderContext() {
-    ensureOpen();
-    return readerContext;
+    return liveDocs;
   }
 
   @Override
   public FieldInfos getFieldInfos() {
-    return ReaderUtil.getMergedFieldInfos(in);
+    ensureOpen();
+    return MultiFields.getMergedFieldInfos(in);
+  }
+  
+  @Override
+  public boolean hasDeletions() {
+    ensureOpen();
+    return liveDocs != null;
+  }
+
+  @Override
+  public Object getCoreCacheKey() {
+    return in.getCoreCacheKey();
+  }
+
+  @Override
+  public Object getCombinedCoreAndDeletesKey() {
+    return in.getCombinedCoreAndDeletesKey();
+  }
+
+  @Override
+  protected void doClose() throws IOException {
+    // TODO: as this is a wrapper, should we really close the delegate?
+    in.close();
   }
 }

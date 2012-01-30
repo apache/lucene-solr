@@ -24,10 +24,10 @@ import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -165,7 +165,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
     @Override
     public ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
       final ExactDocScorer sub = sim.exactDocScorer(stats, fieldName, context);
-      final Source values = context.reader.docValues(boostField).getSource();
+      final Source values = context.reader().docValues(boostField).getSource();
 
       return new ExactDocScorer() {
         @Override
@@ -188,7 +188,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
     @Override
     public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
       final SloppyDocScorer sub = sim.sloppyDocScorer(stats, fieldName, context);
-      final Source values = context.reader.docValues(boostField).getSource();
+      final Source values = context.reader().docValues(boostField).getSource();
       
       return new SloppyDocScorer() {
         @Override

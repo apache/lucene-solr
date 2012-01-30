@@ -69,8 +69,9 @@ public class TestFlex extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newField("f", "a b c", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
-    IndexReader r = w.getReader();
-    TermsEnum terms = r.getSequentialSubReaders()[0].fields().terms("f").iterator(null);
+    w.forceMerge(1);
+    DirectoryReader r = w.getReader();
+    TermsEnum terms = getOnlySegmentReader(r).fields().terms("f").iterator(null);
     assertTrue(terms.next() != null);
     try {
       assertEquals(0, terms.ord());

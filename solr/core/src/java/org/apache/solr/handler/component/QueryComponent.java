@@ -19,8 +19,8 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
@@ -582,7 +582,7 @@ public class QueryComponent extends SearchComponent
       SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       NamedList<List> sortVals = new NamedList<List>(); // order is important for the sort fields
       Field field = new StringField("dummy", ""); // a dummy Field
-      ReaderContext topReaderContext = searcher.getTopReaderContext();
+      IndexReaderContext topReaderContext = searcher.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       AtomicReaderContext currentLeaf = null;
       if (leaves.length==1) {

@@ -19,10 +19,14 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.CompositeReaderContext;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.queries.function.ValueSource;
@@ -553,7 +557,7 @@ public class TestGrouping extends LuceneTestCase {
     }
   }
 
-  private IndexReader getDocBlockReader(Directory dir, GroupDoc[] groupDocs) throws IOException {
+  private DirectoryReader getDocBlockReader(Directory dir, GroupDoc[] groupDocs) throws IOException {
     // Coalesce by group, but in random order:
     Collections.shuffle(Arrays.asList(groupDocs), random);
     final Map<BytesRef,List<GroupDoc>> groupMap = new HashMap<BytesRef,List<GroupDoc>>();
@@ -610,7 +614,7 @@ public class TestGrouping extends LuceneTestCase {
       w.updateDocuments(new Term("group", docs.get(0).get("group")), docs);
     }
 
-    final IndexReader r = w.getReader();
+    final DirectoryReader r = w.getReader();
     w.close();
 
     return r;
@@ -622,19 +626,17 @@ public class TestGrouping extends LuceneTestCase {
     public final int[] docStarts;
 
     public ShardState(IndexSearcher s) {
-      IndexReader[] subReaders = s.getIndexReader().getSequentialSubReaders();
-      if (subReaders == null) {
-        subReaders = new IndexReader[] {s.getIndexReader()};
-      }
-      subSearchers = new ShardSearcher[subReaders.length];
-      final IndexReader.ReaderContext ctx = s.getTopReaderContext();
-      if (ctx instanceof IndexReader.AtomicReaderContext) {
+      List<AtomicReader> subReaders = new ArrayList<AtomicReader>();
+      ReaderUtil.gatherSubReaders(subReaders, s.getIndexReader());
+      subSearchers = new ShardSearcher[subReaders.size()];
+      final IndexReaderContext ctx = s.getTopReaderContext();
+      if (ctx instanceof AtomicReaderContext) {
         assert subSearchers.length == 1;
-        subSearchers[0] = new ShardSearcher((IndexReader.AtomicReaderContext) ctx, ctx);
+        subSearchers[0] = new ShardSearcher((AtomicReaderContext) ctx, ctx);
       } else {
-        final IndexReader.CompositeReaderContext compCTX = (IndexReader.CompositeReaderContext) ctx;
+        final CompositeReaderContext compCTX = (CompositeReaderContext) ctx;
         for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) {
-          subSearchers[searcherIDX] = new ShardSearcher(compCTX.leaves[searcherIDX], compCTX);
+          subSearchers[searcherIDX] = new ShardSearcher(compCTX.leaves()[searcherIDX], compCTX);
         }
       }
 
@@ -642,7 +644,7 @@ public class TestGrouping extends LuceneTestCase {
       int docBase = 0;
       for(int subIDX=0;subIDX<docStarts.length;subIDX++) {
         docStarts[subIDX] = docBase;
-        docBase += subReaders[subIDX].maxDoc();
+        docBase += subReaders.get(subIDX).maxDoc();
         //System.out.println("docStarts[" + subIDX + "]=" + docStarts[subIDX]);
       }
     }
@@ -762,17 +764,17 @@ public class TestGrouping extends LuceneTestCase {
       final GroupDoc[] groupDocsByID = new GroupDoc[groupDocs.length];
       System.arraycopy(groupDocs, 0, groupDocsByID, 0, groupDocs.length);
 
-      final IndexReader r = w.getReader();
+      final DirectoryReader r = w.getReader();
       w.close();
 
       // NOTE: intentional but temporary field cache insanity!
-      final int[] docIDToID = FieldCache.DEFAULT.getInts(new SlowMultiReaderWrapper(r), "id", false);
-      IndexReader rBlocks = null;
+      final int[] docIDToID = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(r), "id", false);
+      DirectoryReader rBlocks = null;
       Directory dirBlocks = null;
 
       try {
         final IndexSearcher s = newSearcher(r);
-        if (SlowMultiReaderWrapper.class.isAssignableFrom(s.getIndexReader().getClass())) {
+        if (SlowCompositeReaderWrapper.class.isAssignableFrom(s.getIndexReader().getClass())) {
           canUseIDV = false;
         } else {
           canUseIDV = !preFlex;
@@ -799,7 +801,7 @@ public class TestGrouping extends LuceneTestCase {
         dirBlocks = newDirectory();
         rBlocks = getDocBlockReader(dirBlocks, groupDocs);
         final Filter lastDocInBlock = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupend", "x"))));
-        final int[] docIDToIDBlocks = FieldCache.DEFAULT.getInts(new SlowMultiReaderWrapper(rBlocks), "id", false);
+        final int[] docIDToIDBlocks = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(rBlocks), "id", false);
 
         final IndexSearcher sBlocks = newSearcher(rBlocks);
         final ShardState shardsBlocks = new ShardState(sBlocks);
@@ -1138,9 +1140,9 @@ public class TestGrouping extends LuceneTestCase {
           assertEquals(docIDToIDBlocks, expectedGroups, topGroupsBlockShards, false, false, fillFields, getScores, false);
         }
       } finally {
-        FieldCache.DEFAULT.purge(r);
+        // TODO: FieldCache.DEFAULT.purge(r);
         if (rBlocks != null) {
-          FieldCache.DEFAULT.purge(rBlocks);
+          // TODO: FieldCache.DEFAULT.purge(rBlocks);
         }
       }
 
@@ -1177,7 +1179,7 @@ public class TestGrouping extends LuceneTestCase {
     List<AbstractFirstPassGroupingCollector> firstPassGroupingCollectors = new ArrayList<AbstractFirstPassGroupingCollector>();
     AbstractFirstPassGroupingCollector firstPassCollector = null;
     for(int shardIDX=0;shardIDX<subSearchers.length;shardIDX++) {
-      if (SlowMultiReaderWrapper.class.isAssignableFrom(subSearchers[shardIDX].getIndexReader().getClass())) {
+      if (SlowCompositeReaderWrapper.class.isAssignableFrom(subSearchers[shardIDX].getIndexReader().getClass())) {
         canUseIDV = false;
       } else {
         canUseIDV = !preFlex;
@@ -1311,11 +1313,11 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   private static class ShardSearcher extends IndexSearcher {
-    private final IndexReader.AtomicReaderContext[] ctx;
+    private final AtomicReaderContext[] ctx;
 
-    public ShardSearcher(IndexReader.AtomicReaderContext ctx, IndexReader.ReaderContext parent) {
+    public ShardSearcher(AtomicReaderContext ctx, IndexReaderContext parent) {
       super(parent);
-      this.ctx = new IndexReader.AtomicReaderContext[] {ctx};
+      this.ctx = new AtomicReaderContext[] {ctx};
     }
 
     public void search(Weight weight, Collector collector) throws IOException {
@@ -1328,7 +1330,7 @@ public class TestGrouping extends LuceneTestCase {
 
     @Override
     public String toString() {
-      return "ShardSearcher(" + ctx[0].reader + ")";
+      return "ShardSearcher(" + ctx[0].reader() + ")";
     }
   }
 

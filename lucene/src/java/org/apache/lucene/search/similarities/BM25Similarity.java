@@ -19,9 +19,9 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -168,7 +168,7 @@ public class BM25Similarity extends Similarity {
 
   @Override
   public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    final DocValues norms = context.reader.normValues(fieldName);
+    final DocValues norms = context.reader().normValues(fieldName);
     return norms == null 
       ? new ExactBM25DocScorerNoNorms((BM25Stats)stats)
       : new ExactBM25DocScorer((BM25Stats)stats, norms);
@@ -176,7 +176,7 @@ public class BM25Similarity extends Similarity {
 
   @Override
   public final SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new SloppyBM25DocScorer((BM25Stats) stats, context.reader.normValues(fieldName));
+    return new SloppyBM25DocScorer((BM25Stats) stats, context.reader().normValues(fieldName));
   }
   
   private class ExactBM25DocScorer extends ExactDocScorer {

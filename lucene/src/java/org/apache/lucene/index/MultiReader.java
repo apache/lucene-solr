@@ -22,7 +22,7 @@ import java.io.IOException;
 /** An IndexReader which reads multiple indexes, appending
  *  their content. */
 public class MultiReader extends BaseMultiReader<IndexReader> {
-  private final boolean[] decrefOnClose; // remember which subreaders to decRef on close
+  private final boolean closeSubReaders;
   
  /**
   * <p>Construct a MultiReader aggregating the named set of (sub)readers.
@@ -41,68 +41,11 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     super(subReaders.clone());
-    decrefOnClose = new boolean[subReaders.length];
-    for (int i = 0; i < subReaders.length; i++) {
-      if (!closeSubReaders) {
+    this.closeSubReaders = closeSubReaders;
+    if (!closeSubReaders) {
+      for (int i = 0; i < subReaders.length; i++) {
         subReaders[i].incRef();
-        decrefOnClose[i] = true;
-      } else {
-        decrefOnClose[i] = false;
       }
-    }
-  }
-  
-  // used only by openIfChaged
-  private MultiReader(IndexReader[] subReaders, boolean[] decrefOnClose)
-                      throws IOException {
-    super(subReaders);
-    this.decrefOnClose = decrefOnClose;
-  }
-
-  @Override
-  protected synchronized IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-    ensureOpen();
-    
-    boolean changed = false;
-    IndexReader[] newSubReaders = new IndexReader[subReaders.length];
-    
-    boolean success = false;
-    try {
-      for (int i = 0; i < subReaders.length; i++) {
-        final IndexReader newSubReader = IndexReader.openIfChanged(subReaders[i]);
-        if (newSubReader != null) {
-          newSubReaders[i] = newSubReader;
-          changed = true;
-        } else {
-          newSubReaders[i] = subReaders[i];
-        }
-      }
-      success = true;
-    } finally {
-      if (!success && changed) {
-        for (int i = 0; i < newSubReaders.length; i++) {
-          if (newSubReaders[i] != subReaders[i]) {
-            try {
-              newSubReaders[i].close();
-            } catch (IOException ignore) {
-              // keep going - we want to clean up as much as possible
-            }
-          }
-        }
-      }
-    }
-
-    if (changed) {
-      boolean[] newDecrefOnClose = new boolean[subReaders.length];
-      for (int i = 0; i < subReaders.length; i++) {
-        if (newSubReaders[i] == subReaders[i]) {
-          newSubReaders[i].incRef();
-          newDecrefOnClose[i] = true;
-        }
-      }
-      return new MultiReader(newSubReaders, newDecrefOnClose);
-    } else {
-      return null;
     }
   }
 
@@ -111,10 +54,10 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
     IOException ioe = null;
     for (int i = 0; i < subReaders.length; i++) {
       try {
-        if (decrefOnClose[i]) {
-          subReaders[i].decRef();
-        } else {
+        if (closeSubReaders) {
           subReaders[i].close();
+        } else {
+          subReaders[i].decRef();
         }
       } catch (IOException e) {
         if (ioe == null) ioe = e;
@@ -122,26 +65,5 @@ public class MultiReader extends BaseMultiReader<IndexReader> {
     }
     // throw the first exception
     if (ioe != null) throw ioe;
-  }
-  
-  @Override
-  public boolean isCurrent() throws CorruptIndexException, IOException {
-    ensureOpen();
-    for (int i = 0; i < subReaders.length; i++) {
-      if (!subReaders[i].isCurrent()) {
-        return false;
-      }
-    }
-    
-    // all subreaders are up to date
-    return true;
-  }
-  
-  /** Not implemented.
-   * @throws UnsupportedOperationException
-   */
-  @Override
-  public long getVersion() {
-    throw new UnsupportedOperationException("MultiReader does not support this method.");
   }
 }

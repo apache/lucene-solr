@@ -284,11 +284,13 @@ public class TestPostingsOffsets extends LuceneTestCase {
       doc.add(new Field("content", new CannedAnalyzer.CannedTokenizer(tokens.toArray(new Token[tokens.size()])), ft));
       w.addDocument(doc);
     }
-    final IndexReader r = w.getReader();
+    final DirectoryReader r = w.getReader();
     w.close();
 
     final String[] terms = new String[] {"a", "b", "c", "d"};
-    for(IndexReader sub : r.getSequentialSubReaders()) {
+    for(IndexReader reader : r.getSequentialSubReaders()) {
+      // TODO: improve this
+      AtomicReader sub = (AtomicReader) reader;
       //System.out.println("\nsub=" + sub);
       final TermsEnum termsEnum = sub.fields().terms("content").iterator(null);
       DocsEnum docs = null;

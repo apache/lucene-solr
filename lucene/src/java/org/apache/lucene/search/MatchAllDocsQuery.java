@@ -17,8 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
@@ -106,7 +106,7 @@ public class MatchAllDocsQuery extends Query {
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
-      return new MatchAllScorer(context.reader, acceptDocs, this, queryWeight);
+      return new MatchAllScorer(context.reader(), acceptDocs, this, queryWeight);
     }
 
     @Override

@@ -20,7 +20,7 @@ package org.apache.lucene.sandbox.queries;
 import java.io.IOException;
 import java.text.Collator;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldComparator;
@@ -91,7 +91,7 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   @Override
   public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-    currentDocTerms = FieldCache.DEFAULT.getTerms(context.reader, field);
+    currentDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
     return this;
   }
   

@@ -17,8 +17,8 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocTermOrds;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldCache;
@@ -94,9 +94,9 @@ abstract class TermsCollector extends Collector {
       } while (chunk >= buffer.length);
     }
 
-    public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
-      docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader, field);
-      docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader);
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+      docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
+      docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
       reuse = null; // LUCENE-3377 needs to be fixed first then this statement can be removed...
     }
   }
@@ -115,8 +115,8 @@ abstract class TermsCollector extends Collector {
       collectorTerms.add(fromDocTerms.getTerm(doc, spare));
     }
 
-    public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
-      fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader, field);
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+      fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
     }
   }
 

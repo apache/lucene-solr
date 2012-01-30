@@ -22,8 +22,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 
@@ -53,13 +54,13 @@ public class CachingWrapperFilter extends Filter {
 
   /** Wraps another filter's result and caches it. If
    * {@code recacheDeletes} is {@code true}, then new deletes (for example
-   * after {@link IndexReader#openIfChanged}) will cause the filter
+   * after {@link DirectoryReader#openIfChanged}) will cause the filter
    * {@link DocIdSet} to be recached.
    *
    * <p>If your index changes seldom, it is recommended to use {@code recacheDeletes=true},
    * as recaching will only occur when the index is reopened.
    * For near-real-time indexes or indexes that are often
-   * reopened with (e.g., {@link IndexReader#openIfChanged} is used), you should
+   * reopened with (e.g., {@link DirectoryReader#openIfChanged} is used), you should
    * pass {@code recacheDeletes=false}. This will cache the filter results omitting
    * deletions and will AND them in while scoring.
    * @param filter Filter to cache results of
@@ -76,7 +77,7 @@ public class CachingWrapperFilter extends Filter {
    *  returns <code>true</code>, else it copies the {@link DocIdSetIterator} into
    *  a {@link FixedBitSet}.
    */
-  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, IndexReader reader) throws IOException {
+  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, AtomicReader reader) throws IOException {
     if (docIdSet == null) {
       // this is better than returning null, as the nonnull result can be cached
       return DocIdSet.EMPTY_DOCIDSET;
@@ -102,7 +103,7 @@ public class CachingWrapperFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-    final IndexReader reader = context.reader;
+    final AtomicReader reader = context.reader();
 
     // Only cache if incoming acceptDocs is == live docs;
     // if Lucene passes in more interesting acceptDocs in

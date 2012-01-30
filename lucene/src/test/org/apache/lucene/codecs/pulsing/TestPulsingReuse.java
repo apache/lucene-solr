@@ -26,7 +26,9 @@ import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -51,10 +53,10 @@ public class TestPulsingReuse extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("foo", "a b b c c c d e f g g h i i j j k", TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
-    IndexReader ir = iw.getReader();
+    DirectoryReader ir = iw.getReader();
     iw.close();
     
-    IndexReader segment = ir.getSequentialSubReaders()[0];
+    AtomicReader segment = getOnlySegmentReader(ir);
     DocsEnum reuse = null;
     Map<DocsEnum,Boolean> allEnums = new IdentityHashMap<DocsEnum,Boolean>();
     TermsEnum te = segment.terms("foo").iterator(null);
@@ -93,10 +95,10 @@ public class TestPulsingReuse extends LuceneTestCase {
     // this is because we only track the 'last' enum we reused (not all).
     // but this seems 'good enough' for now.
     iw.addDocument(doc);
-    IndexReader ir = iw.getReader();
+    DirectoryReader ir = iw.getReader();
     iw.close();
     
-    IndexReader segment = ir.getSequentialSubReaders()[0];
+    AtomicReader segment = getOnlySegmentReader(ir);
     DocsEnum reuse = null;
     Map<DocsEnum,Boolean> allEnums = new IdentityHashMap<DocsEnum,Boolean>();
     TermsEnum te = segment.terms("foo").iterator(null);

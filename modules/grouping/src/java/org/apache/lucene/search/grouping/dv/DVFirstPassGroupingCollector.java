@@ -17,6 +17,7 @@ package org.apache.lucene.search.grouping.dv;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.index.IndexReader;
@@ -69,10 +70,10 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
   }
 
   @Override
-  public void setNextReader(IndexReader.AtomicReaderContext readerContext) throws IOException {
+  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     super.setNextReader(readerContext);
 
-    final DocValues dv = readerContext.reader.docValues(groupField);
+    final DocValues dv = readerContext.reader().docValues(groupField);
     final DocValues.Source dvSource;
     if (dv != null) {
       dvSource = diskResident ? dv.getDirectSource() : dv.getSource();
@@ -93,7 +94,7 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
    * @return The default source when no doc values are available.
    * @param readerContext The current reader context
    */
-  protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+  protected DocValues.Source getDefaultSource(AtomicReaderContext readerContext) {
     return DocValues.getDefaultSource(valueType);
   }
 
@@ -197,8 +198,8 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
     }
 
     @Override
-    protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-      return DocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
+    protected DocValues.Source getDefaultSource(AtomicReaderContext readerContext) {
+      return DocValues.getDefaultSortedSource(valueType, readerContext.reader().maxDoc());
     }
   }
 

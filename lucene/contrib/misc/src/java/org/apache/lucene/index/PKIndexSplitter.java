@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -84,7 +83,7 @@ public class PKIndexSplitter {
   
   public void split() throws IOException {
     boolean success = false;
-    IndexReader reader = IndexReader.open(input);
+    DirectoryReader reader = DirectoryReader.open(input);
     try {
       // pass an individual config in here since one config can not be reused!
       createIndex(config1, dir1, reader, docsInFirstIndex, false);
@@ -124,7 +123,7 @@ public class PKIndexSplitter {
     final int numDocs;
     
     public DocumentFilteredAtomicIndexReader(AtomicReaderContext context, Filter preserveFilter, boolean negateFilter) throws IOException {
-      super(context.reader);
+      super(context.reader());
       final int maxDoc = in.maxDoc();
       final FixedBitSet bits = new FixedBitSet(maxDoc);
       // ignore livedocs here, as we filter them later:

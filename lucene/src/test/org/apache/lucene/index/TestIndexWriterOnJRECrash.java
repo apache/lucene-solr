@@ -128,7 +128,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     if (file.isDirectory()) {
       MockDirectoryWrapper dir = newFSDirectory(file);
       dir.setCheckIndexOnClose(false); // don't double-checkindex
-      if (IndexReader.indexExists(dir)) {
+      if (DirectoryReader.indexExists(dir)) {
         if (VERBOSE) {
           System.err.println("Checking index: " + file);
         }

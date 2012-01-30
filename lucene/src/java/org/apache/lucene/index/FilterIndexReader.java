@@ -17,12 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Comparator;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
@@ -33,13 +31,8 @@ import java.util.Comparator;
  * contained index reader. Subclasses of <code>FilterIndexReader</code> may
  * further override some of these methods and may also provide additional
  * methods and fields.
- * <p><b>Note:</b> The default implementation of {@link FilterIndexReader#doOpenIfChanged}
- * throws {@link UnsupportedOperationException} (like the base class),
- * so it's not possible to reopen a <code>FilterIndexReader</code>.
- * To reopen, you have to first reopen the underlying reader
- * and wrap it again with the custom filter.
  */
-public class FilterIndexReader extends IndexReader {
+public class FilterIndexReader extends AtomicReader {
 
   /** Base class for filtering {@link Fields}
    *  implementations. */
@@ -279,24 +272,18 @@ public class FilterIndexReader extends IndexReader {
     }
   }
 
-  protected IndexReader in;
+  protected AtomicReader in;
 
   /**
    * <p>Construct a FilterIndexReader based on the specified base reader.
    * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
    * @param in specified base reader.
    */
-  public FilterIndexReader(IndexReader in) {
+  public FilterIndexReader(AtomicReader in) {
     super();
     this.in = in;
   }
 
-  @Override
-  public Directory directory() {
-    ensureOpen();
-    return in.directory();
-  }
-  
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
@@ -346,42 +333,8 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  public int docFreq(String field, BytesRef t) throws IOException {
-    ensureOpen();
-    return in.docFreq(field, t);
-  }
-  
-  @Override
   protected void doClose() throws IOException {
     in.close();
-  }
-
-  @Override
-  public long getVersion() {
-    ensureOpen();
-    return in.getVersion();
-  }
-
-  @Override
-  public boolean isCurrent() throws CorruptIndexException, IOException {
-    ensureOpen();
-    return in.isCurrent();
-  }
-  
-  @Override
-  public IndexReader[] getSequentialSubReaders() {
-    return in.getSequentialSubReaders();
-  }
-  
-  @Override
-  public ReaderContext getTopReaderContext() {
-    ensureOpen();
-    return in.getTopReaderContext();
-  }
-
-  @Override
-  public Map<String, String> getCommitUserData() { 
-    return in.getCommitUserData();
   }
   
   @Override
@@ -410,7 +363,7 @@ public class FilterIndexReader extends IndexReader {
 
   @Override
   public String toString() {
-    final StringBuilder buffer = new StringBuilder("FilterReader(");
+    final StringBuilder buffer = new StringBuilder("FilterIndexReader(");
     buffer.append(in);
     buffer.append(')');
     return buffer.toString();
@@ -427,14 +380,4 @@ public class FilterIndexReader extends IndexReader {
     ensureOpen();
     return in.normValues(field);
   }
-
-  @Override
-  public IndexCommit getIndexCommit() throws IOException {
-    return in.getIndexCommit();
-  }
-
-  @Override
-  public int getTermInfosIndexDivisor() {
-    return in.getTermInfosIndexDivisor();
-  }  
 }

@@ -23,10 +23,9 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 
-abstract class BaseMultiReader<R extends IndexReader> extends IndexReader {
+abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
   protected final R[] subReaders;
   protected final int[] starts;       // 1st docno for each segment
-  private final ReaderContext topLevelContext;
   private final int maxDoc;
   private final int numDocs;
   private final boolean hasDeletions;
@@ -40,7 +39,6 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader {
       starts[i] = maxDoc;
       maxDoc += subReaders[i].maxDoc();      // compute maxDocs
       numDocs += subReaders[i].numDocs();    // compute numDocs
-
       if (subReaders[i].hasDeletions()) {
         hasDeletions = true;
       }
@@ -49,25 +47,6 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader {
     this.maxDoc = maxDoc;
     this.numDocs = numDocs;
     this.hasDeletions = hasDeletions;
-    topLevelContext = ReaderUtil.buildReaderContext(this);
-  }
-  
-  @Override
-  public FieldInfos getFieldInfos() {
-    throw new UnsupportedOperationException("call getFieldInfos() on each sub reader, or use ReaderUtil.getMergedFieldInfos, instead");
-  }
-
-  @Override
-  public Fields fields() throws IOException {
-    throw new UnsupportedOperationException("please use MultiFields.getFields, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
-  }
-
-  @Override
-  protected abstract IndexReader doOpenIfChanged() throws CorruptIndexException, IOException;
-  
-  @Override
-  public Bits getLiveDocs() {
-    throw new UnsupportedOperationException("please use MultiFields.getLiveDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Bits liveDocs");
   }
 
   @Override
@@ -102,23 +81,6 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader {
     return hasDeletions;
   }
 
-  /** Helper method for subclasses to get the corresponding reader for a doc ID */
-  protected final int readerIndex(int docID) {
-    if (docID < 0 || docID >= maxDoc) {
-      throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc + " (got docID=" + docID + ")");
-    }
-    return ReaderUtil.subIndex(docID, this.starts);
-  }
-
-  @Override
-  public boolean hasNorms(String field) throws IOException {
-    ensureOpen();
-    for (int i = 0; i < subReaders.length; i++) {
-      if (subReaders[i].hasNorms(field)) return true;
-    }
-    return false;
-  }
-  
   @Override
   public int docFreq(String field, BytesRef t) throws IOException {
     ensureOpen();
@@ -129,23 +91,16 @@ abstract class BaseMultiReader<R extends IndexReader> extends IndexReader {
     return total;
   }
 
+  /** Helper method for subclasses to get the corresponding reader for a doc ID */
+  protected final int readerIndex(int docID) {
+    if (docID < 0 || docID >= maxDoc) {
+      throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc + " (got docID=" + docID + ")");
+    }
+    return ReaderUtil.subIndex(docID, this.starts);
+  }
+  
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;
-  }
-  
-  @Override
-  public ReaderContext getTopReaderContext() {
-    return topLevelContext;
-  }
-  
-  @Override
-  public DocValues docValues(String field) throws IOException {
-    throw new UnsupportedOperationException("please use MultiDocValues#getDocValues, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level DocValues");
-  }
-  
-  @Override
-  public DocValues normValues(String field) throws IOException {
-    throw new UnsupportedOperationException("please use MultiDocValues#getNormValues, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Norm DocValues ");
   }
 }

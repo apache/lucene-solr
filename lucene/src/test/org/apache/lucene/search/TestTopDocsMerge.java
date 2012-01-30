@@ -25,8 +25,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -36,11 +39,11 @@ import org.apache.lucene.util._TestUtil;
 public class TestTopDocsMerge extends LuceneTestCase {
 
   private static class ShardSearcher extends IndexSearcher {
-    private final IndexReader.AtomicReaderContext[] ctx;
+    private final AtomicReaderContext[] ctx;
 
-    public ShardSearcher(IndexReader.AtomicReaderContext ctx, IndexReader.ReaderContext parent) {
+    public ShardSearcher(AtomicReaderContext ctx, CompositeReaderContext parent) {
       super(parent);
-      this.ctx = new IndexReader.AtomicReaderContext[] {ctx};
+      this.ctx = new AtomicReaderContext[] {ctx};
     }
 
     public void search(Weight weight, Collector collector) throws IOException {
@@ -116,20 +119,25 @@ public class TestTopDocsMerge extends LuceneTestCase {
     // NOTE: sometimes reader has just one segment, which is
     // important to test
     final IndexSearcher searcher = newSearcher(reader);
-    IndexReader[] subReaders = searcher.getIndexReader().getSequentialSubReaders();
-    if (subReaders == null) {
-      subReaders = new IndexReader[] {searcher.getIndexReader()};
-    }
-    final ShardSearcher[] subSearchers = new ShardSearcher[subReaders.length];
-    final IndexReader.ReaderContext ctx = searcher.getTopReaderContext();
+    final IndexReaderContext ctx = searcher.getTopReaderContext();
 
-    if (ctx instanceof IndexReader.AtomicReaderContext) {
-      assert subSearchers.length == 1;
-      subSearchers[0] = new ShardSearcher((IndexReader.AtomicReaderContext) ctx, ctx);
+    final ShardSearcher[] subSearchers;
+    final int[] docStarts;
+    
+    if (ctx instanceof AtomicReaderContext) {
+      subSearchers = new ShardSearcher[1];
+      docStarts = new int[1];
+      subSearchers[0] = new ShardSearcher((AtomicReaderContext) ctx, null);
+      docStarts[0] = 0;
     } else {
-      final IndexReader.CompositeReaderContext compCTX = (IndexReader.CompositeReaderContext) ctx;
+      final CompositeReaderContext compCTX = (CompositeReaderContext) ctx;
+      subSearchers = new ShardSearcher[compCTX.leaves().length];
+      docStarts = new int[compCTX.leaves().length];
+      int docBase = 0;
       for(int searcherIDX=0;searcherIDX<subSearchers.length;searcherIDX++) { 
-        subSearchers[searcherIDX] = new ShardSearcher(compCTX.leaves[searcherIDX], compCTX);
+        subSearchers[searcherIDX] = new ShardSearcher(compCTX.leaves()[searcherIDX], compCTX);
+        docStarts[searcherIDX] = docBase;
+        docBase += compCTX.leaves()[searcherIDX].reader().maxDoc();
       }
     }
 
@@ -144,14 +152,6 @@ public class TestTopDocsMerge extends LuceneTestCase {
     sortFields.add(new SortField(null, SortField.Type.SCORE, false));
     sortFields.add(new SortField(null, SortField.Type.DOC, true));
     sortFields.add(new SortField(null, SortField.Type.DOC, false));
-
-    final int[] docStarts = new int[subSearchers.length];
-    int docBase = 0;
-    for(int subIDX=0;subIDX<docStarts.length;subIDX++) {
-      docStarts[subIDX] = docBase;
-      docBase += subReaders[subIDX].maxDoc();
-      //System.out.println("docStarts[" + subIDX + "]=" + docStarts[subIDX]);
-    }
 
     for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
 

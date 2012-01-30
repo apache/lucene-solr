@@ -58,7 +58,7 @@ public class TestIndexReader extends LuceneTestCase {
       addDocumentWithFields(writer);
       writer.close();
       // set up reader:
-      IndexReader reader = IndexReader.open(d);
+      DirectoryReader reader = DirectoryReader.open(d);
       assertTrue(reader.isCurrent());
       // modify index by adding another document:
       writer = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -101,8 +101,8 @@ public class TestIndexReader extends LuceneTestCase {
 
         writer.close();
         // set up reader
-        IndexReader reader = IndexReader.open(d);
-        FieldInfos fieldInfos = ReaderUtil.getMergedFieldInfos(reader);
+        DirectoryReader reader = DirectoryReader.open(d);
+        FieldInfos fieldInfos = MultiFields.getMergedFieldInfos(reader);
         assertNotNull(fieldInfos.fieldInfo("keyword"));
         assertNotNull(fieldInfos.fieldInfo("text"));
         assertNotNull(fieldInfos.fieldInfo("unindexed"));
@@ -162,8 +162,8 @@ public class TestIndexReader extends LuceneTestCase {
         writer.close();
 
         // verify fields again
-        reader = IndexReader.open(d);
-        fieldInfos = ReaderUtil.getMergedFieldInfos(reader);
+        reader = DirectoryReader.open(d);
+        fieldInfos = MultiFields.getMergedFieldInfos(reader);
 
         Collection<String> allFieldNames = new HashSet<String>();
         Collection<String> indexedFieldNames = new HashSet<String>();
@@ -301,7 +301,7 @@ public class TestIndexReader extends LuceneTestCase {
         doc.add(new TextField("junk", "junk text"));
         writer.addDocument(doc);
         writer.close();
-        IndexReader reader = IndexReader.open(dir);
+        DirectoryReader reader = DirectoryReader.open(dir);
         Document doc2 = reader.document(reader.maxDoc() - 1);
         IndexableField[] fields = doc2.getFields("bin1");
         assertNotNull(fields);
@@ -320,7 +320,7 @@ public class TestIndexReader extends LuceneTestCase {
         writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
         writer.forceMerge(1);
         writer.close();
-        reader = IndexReader.open(dir);
+        reader = DirectoryReader.open(dir);
         doc2 = reader.document(reader.maxDoc() - 1);
         fields = doc2.getFields("bin1");
         assertNotNull(fields);
@@ -343,8 +343,8 @@ public class TestIndexReader extends LuceneTestCase {
         fileDirName.mkdir();
       }
       try {
-        IndexReader.open(fileDirName);
-        fail("opening IndexReader on empty directory failed to produce FileNotFoundException");
+        DirectoryReader.open(fileDirName);
+        fail("opening DirectoryReader on empty directory failed to produce FileNotFoundException");
       } catch (FileNotFoundException e) {
         // GOOD
       }
@@ -372,7 +372,7 @@ public class TestIndexReader extends LuceneTestCase {
 
         // Now open existing directory and test that reader closes all files
         dir = newFSDirectory(dirFile);
-        IndexReader reader1 = IndexReader.open(dir);
+        DirectoryReader reader1 = DirectoryReader.open(dir);
         reader1.close();
         dir.close();
 
@@ -385,7 +385,7 @@ public class TestIndexReader extends LuceneTestCase {
       File dirFile = _TestUtil.getTempDir("deletetest");
       Directory dir = newFSDirectory(dirFile);
       try {
-        IndexReader.open(dir);
+        DirectoryReader.open(dir);
         fail("expected FileNotFoundException");
       } catch (FileNotFoundException e) {
         // expected
@@ -395,7 +395,7 @@ public class TestIndexReader extends LuceneTestCase {
 
       // Make sure we still get a CorruptIndexException (not NPE):
       try {
-        IndexReader.open(dir);
+        DirectoryReader.open(dir);
         fail("expected FileNotFoundException");
       } catch (FileNotFoundException e) {
         // expected
@@ -461,17 +461,15 @@ public class TestIndexReader extends LuceneTestCase {
     }
 
     // TODO: maybe this can reuse the logic of test dueling codecs?
-    public static void assertIndexEquals(IndexReader index1, IndexReader index2) throws IOException {
+    public static void assertIndexEquals(DirectoryReader index1, DirectoryReader index2) throws IOException {
       assertEquals("IndexReaders have different values for numDocs.", index1.numDocs(), index2.numDocs());
       assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
       assertEquals("Only one IndexReader has deletions.", index1.hasDeletions(), index2.hasDeletions());
-      if (!(index1 instanceof ParallelReader)) {
-        assertEquals("Single segment test differs.", index1.getSequentialSubReaders().length == 1, index2.getSequentialSubReaders().length == 1);
-      }
+      assertEquals("Single segment test differs.", index1.getSequentialSubReaders().length == 1, index2.getSequentialSubReaders().length == 1);
       
       // check field names
-      FieldInfos fieldInfos1 = ReaderUtil.getMergedFieldInfos(index1);
-      FieldInfos fieldInfos2 = ReaderUtil.getMergedFieldInfos(index2);
+      FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(index1);
+      FieldInfos fieldInfos2 = MultiFields.getMergedFieldInfos(index2);
       assertEquals("IndexReaders have different numbers of fields.", fieldInfos1.size(), fieldInfos2.size());
       final int numFields = fieldInfos1.size();
       for(int fieldID=0;fieldID<numFields;fieldID++) {
@@ -581,7 +579,7 @@ public class TestIndexReader extends LuceneTestCase {
 
       SegmentInfos sis = new SegmentInfos();
       sis.read(d);
-      IndexReader r = IndexReader.open(d);
+      DirectoryReader r = DirectoryReader.open(d);
       IndexCommit c = r.getIndexCommit();
 
       assertEquals(sis.getCurrentSegmentFileName(), c.getSegmentsFileName());
@@ -600,7 +598,7 @@ public class TestIndexReader extends LuceneTestCase {
         addDocumentWithFields(writer);
       writer.close();
 
-      IndexReader r2 = IndexReader.openIfChanged(r);
+      DirectoryReader r2 = DirectoryReader.openIfChanged(r);
       assertNotNull(r2);
       assertFalse(c.equals(r2.getIndexCommit()));
       assertFalse(r2.getIndexCommit().getSegmentCount() == 1);
@@ -612,9 +610,9 @@ public class TestIndexReader extends LuceneTestCase {
       writer.forceMerge(1);
       writer.close();
 
-      r2 = IndexReader.openIfChanged(r);
+      r2 = DirectoryReader.openIfChanged(r);
       assertNotNull(r2);
-      assertNull(IndexReader.openIfChanged(r2));
+      assertNull(DirectoryReader.openIfChanged(r2));
       assertEquals(1, r2.getIndexCommit().getSegmentCount());
 
       r.close();
@@ -633,12 +631,12 @@ public class TestIndexReader extends LuceneTestCase {
   }
 
   // LUCENE-1468 -- make sure on attempting to open an
-  // IndexReader on a non-existent directory, you get a
+  // DirectoryReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
     Directory dir = newFSDirectory(_TestUtil.getTempDir("doesnotexist"));
     try {
-      IndexReader.open(dir);
+      DirectoryReader.open(dir);
       fail("did not hit expected exception");
     } catch (NoSuchDirectoryException nsde) {
       // expected
@@ -659,7 +657,7 @@ public class TestIndexReader extends LuceneTestCase {
     writer.addDocument(createDocument("a"));
     writer.close();
     
-    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
     for (final IndexCommit commit : commits) {
       Collection<String> files = commit.getFileNames();
       HashSet<String> seen = new HashSet<String>();
@@ -688,8 +686,8 @@ public class TestIndexReader extends LuceneTestCase {
     writer.commit();
 
     // Open reader1
-    IndexReader r = IndexReader.open(dir);
-    IndexReader r1 = getOnlySegmentReader(r);
+    DirectoryReader r = DirectoryReader.open(dir);
+    AtomicReader r1 = getOnlySegmentReader(r);
     final int[] ints = FieldCache.DEFAULT.getInts(r1, "number", false);
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
@@ -699,10 +697,10 @@ public class TestIndexReader extends LuceneTestCase {
     writer.commit();
 
     // Reopen reader1 --> reader2
-    IndexReader r2 = IndexReader.openIfChanged(r);
+    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
     r.close();
-    IndexReader sub0 = r2.getSequentialSubReaders()[0];
+    AtomicReader sub0 = (AtomicReader) r2.getSequentialSubReaders()[0];
     final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
     r2.close();
     assertTrue(ints == ints2);
@@ -722,19 +720,18 @@ public class TestIndexReader extends LuceneTestCase {
     writer.addDocument(doc);
     writer.commit();
 
-    IndexReader r = IndexReader.open(dir);
-    IndexReader r1 = getOnlySegmentReader(r);
+    DirectoryReader r = DirectoryReader.open(dir);
+    AtomicReader r1 = getOnlySegmentReader(r);
     assertEquals(36, r1.getUniqueTermCount());
     writer.addDocument(doc);
     writer.commit();
-    IndexReader r2 = IndexReader.openIfChanged(r);
+    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
     r.close();
-    assertEquals(-1, r2.getUniqueTermCount());
 
     IndexReader[] subs = r2.getSequentialSubReaders();
     for(int i=0;i<subs.length;i++) {
-      assertEquals(36, subs[i].getUniqueTermCount());
+      assertEquals(36, ((AtomicReader) subs[i]).getUniqueTermCount());
     }
     r2.close();
     writer.close();
@@ -752,7 +749,7 @@ public class TestIndexReader extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader r = IndexReader.open(dir, -1);
+    DirectoryReader r = DirectoryReader.open(dir, -1);
     try {
       r.docFreq(new Term("field", "f"));
       fail("did not hit expected exception");
@@ -771,9 +768,9 @@ public class TestIndexReader extends LuceneTestCase {
     writer.close();
 
     // LUCENE-1718: ensure re-open carries over no terms index:
-    IndexReader r2 = IndexReader.openIfChanged(r);
+    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
-    assertNull(IndexReader.openIfChanged(r2));
+    assertNull(DirectoryReader.openIfChanged(r2));
     r.close();
     IndexReader[] subReaders = r2.getSequentialSubReaders();
     assertEquals(2, subReaders.length);
@@ -797,12 +794,12 @@ public class TestIndexReader extends LuceneTestCase {
     writer.commit();
     Document doc = new Document();
     writer.addDocument(doc);
-    IndexReader r = IndexReader.open(dir);
+    DirectoryReader r = DirectoryReader.open(dir);
     assertTrue(r.isCurrent());
     writer.addDocument(doc);
     writer.prepareCommit();
     assertTrue(r.isCurrent());
-    IndexReader r2 = IndexReader.openIfChanged(r);
+    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNull(r2);
     writer.commit();
     assertFalse(r.isCurrent());
@@ -828,7 +825,7 @@ public class TestIndexReader extends LuceneTestCase {
     sdp.snapshot("c3");
     writer.close();
     long currentGen = 0;
-    for (IndexCommit ic : IndexReader.listCommits(dir)) {
+    for (IndexCommit ic : DirectoryReader.listCommits(dir)) {
       assertTrue("currentGen=" + currentGen + " commitGen=" + ic.getGeneration(), currentGen < ic.getGeneration());
       currentGen = ic.getGeneration();
     }
@@ -841,9 +838,9 @@ public class TestIndexReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(new Document());
     writer.prepareCommit();
-    assertFalse(IndexReader.indexExists(dir));
+    assertFalse(DirectoryReader.indexExists(dir));
     writer.close();
-    assertTrue(IndexReader.indexExists(dir));
+    assertTrue(DirectoryReader.indexExists(dir));
     dir.close();
   }
 
@@ -855,7 +852,7 @@ public class TestIndexReader extends LuceneTestCase {
     Document d = new Document();
     d.add(newField("f", "a a b", TextField.TYPE_UNSTORED));
     writer.addDocument(d);
-    IndexReader r = writer.getReader();
+    DirectoryReader r = writer.getReader();
     writer.close();
     try {
       // Make sure codec impls totalTermFreq (eg PreFlex doesn't)
@@ -878,7 +875,7 @@ public class TestIndexReader extends LuceneTestCase {
     writer.commit();
     writer.addDocument(new Document());
     writer.commit();
-    final IndexReader reader = writer.getReader();
+    final DirectoryReader reader = writer.getReader();
     final int[] closeCount = new int[1];
     final IndexReader.ReaderClosedListener listener = new IndexReader.ReaderClosedListener() {
       public void onClose(IndexReader reader) {
@@ -894,7 +891,7 @@ public class TestIndexReader extends LuceneTestCase {
     assertEquals(1, closeCount[0]);
     writer.close();
 
-    IndexReader reader2 = IndexReader.open(dir);
+    DirectoryReader reader2 = DirectoryReader.open(dir);
     reader2.addReaderClosedListener(listener);
 
     closeCount[0] = 0;
@@ -907,7 +904,7 @@ public class TestIndexReader extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(new Document());
-    IndexReader r = writer.getReader();
+    DirectoryReader r = writer.getReader();
     writer.close();
     r.document(0);
     try {
@@ -925,7 +922,7 @@ public class TestIndexReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(new Document());
     writer.commit();
-    IndexReader r = IndexReader.open(dir);
+    DirectoryReader r = DirectoryReader.open(dir);
     assertTrue(r.tryIncRef());
     r.decRef();
     r.close();
@@ -939,7 +936,7 @@ public class TestIndexReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(new Document());
     writer.commit();
-    IndexReader r = IndexReader.open(dir);
+    DirectoryReader r = DirectoryReader.open(dir);
     int numThreads = atLeast(2);
     
     IncThread[] threads = new IncThread[numThreads];
@@ -993,7 +990,7 @@ public class TestIndexReader extends LuceneTestCase {
     doc.add(newField("field1", "foobar", StringField.TYPE_STORED));
     doc.add(newField("field2", "foobaz", StringField.TYPE_STORED));
     writer.addDocument(doc);
-    IndexReader r = writer.getReader();
+    DirectoryReader r = writer.getReader();
     writer.close();
     Set<String> fieldsToLoad = new HashSet<String>();
     assertEquals(0, r.document(0, fieldsToLoad).getFields().size());

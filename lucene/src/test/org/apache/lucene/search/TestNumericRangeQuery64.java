@@ -21,11 +21,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
@@ -206,16 +206,16 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   
   @Test
   public void testInverseRange() throws Exception {
-    AtomicReaderContext context = (AtomicReaderContext) new SlowMultiReaderWrapper(searcher.getIndexReader()).getTopReaderContext();
+    AtomicReaderContext context = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).getTopReaderContext();
     NumericRangeFilter<Long> f = NumericRangeFilter.newLongRange("field8", 8, 1000L, -1000L, true, true);
     assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET,
-        f.getDocIdSet(context, context.reader.getLiveDocs()));
+        f.getDocIdSet(context, context.reader().getLiveDocs()));
     f = NumericRangeFilter.newLongRange("field8", 8, Long.MAX_VALUE, null, false, false);
     assertSame("A exclusive range starting with Long.MAX_VALUE should return the EMPTY_DOCIDSET instance",
-               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context, context.reader.getLiveDocs()));
+               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context, context.reader().getLiveDocs()));
     f = NumericRangeFilter.newLongRange("field8", 8, null, Long.MIN_VALUE, false, false);
     assertSame("A exclusive range ending with Long.MIN_VALUE should return the EMPTY_DOCIDSET instance",
-               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context, context.reader.getLiveDocs()));
+               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context, context.reader().getLiveDocs()));
   }
   
   @Test

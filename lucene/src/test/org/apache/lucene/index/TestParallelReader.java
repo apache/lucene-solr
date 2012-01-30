@@ -71,8 +71,8 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = getDir1(random);
     Directory dir2 = getDir2(random);
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)));
+    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
     FieldInfos fieldInfos = pr.getFieldInfos();
     assertEquals(4, fieldInfos.size());
     assertNotNull(fieldInfos.fieldInfo("f1"));
@@ -98,10 +98,10 @@ public class TestParallelReader extends LuceneTestCase {
     w2.close();
     
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    IndexReader ir = IndexReader.open(dir2);
+    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)));
+    DirectoryReader ir = DirectoryReader.open(dir2);
     try {
-      pr.add(ir);
+      pr.add(SlowCompositeReaderWrapper.wrap(ir));
       fail("didn't get exptected exception: indexes don't have same number of documents");
     } catch (IllegalArgumentException e) {
       // expected exception
@@ -145,7 +145,7 @@ public class TestParallelReader extends LuceneTestCase {
     w.addDocument(d2);
     w.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    DirectoryReader ir = DirectoryReader.open(dir);
     return newSearcher(ir);
   }
 
@@ -154,8 +154,8 @@ public class TestParallelReader extends LuceneTestCase {
     dir1 = getDir1(random);
     dir2 = getDir2(random);
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)));
+    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
     return newSearcher(pr);
   }
 

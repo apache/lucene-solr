@@ -17,6 +17,7 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
@@ -97,8 +98,8 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
     return groups;
   }
 
-  public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
-    index = FieldCache.DEFAULT.getTermsIndex(context.reader, groupField);
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    index = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
 
     // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
     ordSet.clear();

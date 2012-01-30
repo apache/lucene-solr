@@ -117,8 +117,8 @@ public class TermsComponent extends SearchComponent {
     boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
 
 
-    final IndexReader indexReader = rb.req.getSearcher().getTopReaderContext().reader;
-    Fields lfields = MultiFields.getFields(indexReader);
+    final AtomicReader indexReader = rb.req.getSearcher().getAtomicReader();
+    Fields lfields = indexReader.fields();
 
     for (String field : fields) {
       NamedList<Integer> fieldTerms = new NamedList<Integer>();

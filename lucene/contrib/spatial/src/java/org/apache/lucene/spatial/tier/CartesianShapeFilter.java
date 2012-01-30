@@ -19,8 +19,8 @@ package org.apache.lucene.spatial.tier;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -57,7 +57,7 @@ public class CartesianShapeFilter extends Filter {
       return new DocIdSet() {
         @Override
         public DocIdSetIterator iterator() throws IOException {
-          return context.reader.termDocsEnum(acceptDocs, fieldName, bytesRef, false);
+          return context.reader().termDocsEnum(acceptDocs, fieldName, bytesRef, false);
         }
         
         @Override
@@ -66,11 +66,11 @@ public class CartesianShapeFilter extends Filter {
         }
       };
     } else {
-      final FixedBitSet bits = new FixedBitSet(context.reader.maxDoc());
+      final FixedBitSet bits = new FixedBitSet(context.reader().maxDoc());
       for (int i =0; i< sz; i++) {
         double boxId = area.get(i).doubleValue();
         NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(boxId), 0, bytesRef);
-        final DocsEnum docsEnum = context.reader.termDocsEnum(acceptDocs, fieldName, bytesRef, false);
+        final DocsEnum docsEnum = context.reader().termDocsEnum(acceptDocs, fieldName, bytesRef, false);
         if (docsEnum == null) continue;
         // iterate through all documents
         // which have this boxId

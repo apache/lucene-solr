@@ -39,6 +39,7 @@ import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
@@ -51,7 +52,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
@@ -97,7 +98,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     // 4. test specific checks after the benchmark run completed.
     assertEquals("TestSearchTask was supposed to be called!",279,CountingSearchTestTask.numSearches);
-    assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
+    assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -185,7 +186,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     //we probably should use a different doc/query maker, but...
     assertTrue("TestSearchTask was supposed to be called!", CountingHighlighterTestTask.numDocsRetrieved >= CountingHighlighterTestTask.numHighlightedResults && CountingHighlighterTestTask.numHighlightedResults > 0);
 
-    assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
+    assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     iw.close();
@@ -224,7 +225,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     //we probably should use a different doc/query maker, but...
     assertTrue("TestSearchTask was supposed to be called!", CountingHighlighterTestTask.numDocsRetrieved >= CountingHighlighterTestTask.numHighlightedResults && CountingHighlighterTestTask.numHighlightedResults > 0);
 
-    assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
+    assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     iw.close();
@@ -297,7 +298,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     // 4. test specific checks after the benchmark run completed.
     assertEquals("TestSearchTask was supposed to be called!",139,CountingSearchTestTask.numSearches);
-    assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
+    assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     iw.close();
@@ -332,8 +333,8 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // 3. execute the algorithm  (required in every "logic" test)
     Benchmark benchmark = execBenchmark(algLines);
 
-    IndexReader r = IndexReader.open(benchmark.getRunData().getDirectory());
-    DocTermsIndex idx = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(r), "country");
+    DirectoryReader r = IndexReader.open(benchmark.getRunData().getDirectory());
+    DocTermsIndex idx = FieldCache.DEFAULT.getTermsIndex(new SlowCompositeReaderWrapper(r), "country");
     final int maxDoc = r.maxDoc();
     assertEquals(1000, maxDoc);
     BytesRef br = new BytesRef();

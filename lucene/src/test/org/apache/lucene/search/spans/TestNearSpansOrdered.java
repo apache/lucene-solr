@@ -20,10 +20,10 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
@@ -166,9 +166,9 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   public void testSpanNearScorerSkipTo1() throws Exception {
     SpanNearQuery q = makeQuery();
     Weight w = searcher.createNormalizedWeight(q);
-    ReaderContext topReaderContext = searcher.getTopReaderContext();
+    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
     AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
-    Scorer s = w.scorer(leaves[0], true, false, leaves[0].reader.getLiveDocs());
+    Scorer s = w.scorer(leaves[0], true, false, leaves[0].reader().getLiveDocs());
     assertEquals(1, s.advance(1));
   }
   

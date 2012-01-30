@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Bits.MatchAllBits;
 import org.apache.lucene.util.Bits.MatchNoBits;
@@ -77,12 +77,12 @@ public class FieldValueFilter extends Filter {
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs)
       throws IOException {
     final Bits docsWithField = FieldCache.DEFAULT.getDocsWithField(
-        context.reader, field);
+        context.reader(), field);
     if (negate) {
       if (docsWithField instanceof MatchAllBits) {
         return null;
       }
-      return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
+      return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) {
           return !docsWithField.get(doc);
@@ -97,7 +97,7 @@ public class FieldValueFilter extends Filter {
         // :-)
         return BitsFilteredDocIdSet.wrap((DocIdSet) docsWithField, acceptDocs);
       }
-      return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
+      return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) {
           return docsWithField.get(doc);

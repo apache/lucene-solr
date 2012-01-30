@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.Directory;
@@ -99,7 +98,7 @@ public class TestTypePromotion extends LuceneTestCase {
       } else {
         // do a real merge here
         IndexReader open = IndexReader.open(dir_2);
-        writer.addIndexes(new SlowMultiReaderWrapper(open));
+        writer.addIndexes(SlowCompositeReaderWrapper.wrap(open));
         open.close();
       }
       dir_2.close();
@@ -117,12 +116,12 @@ public class TestTypePromotion extends LuceneTestCase {
   
   private void assertValues(TestType type, Directory dir, long[] values)
       throws CorruptIndexException, IOException {
-    IndexReader reader = IndexReader.open(dir);
+    DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.getSequentialSubReaders().length);
-    ReaderContext topReaderContext = reader.getTopReaderContext();
-    ReaderContext[] children = topReaderContext.children();
-    DocValues docValues = children[0].reader.docValues("promote");
+    IndexReaderContext topReaderContext = reader.getTopReaderContext();
+    AtomicReaderContext[] children = topReaderContext.leaves();
     assertEquals(1, children.length);
+    DocValues docValues = children[0].reader().docValues("promote");
     Source directSource = docValues.getDirectSource();
     for (int i = 0; i < values.length; i++) {
       int id = Integer.parseInt(reader.document(i).get("id"));
@@ -332,11 +331,11 @@ public class TestTypePromotion extends LuceneTestCase {
     // now merge
     writer.forceMerge(1);
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.getSequentialSubReaders().length);
-    ReaderContext topReaderContext = reader.getTopReaderContext();
-    ReaderContext[] children = topReaderContext.children();
-    DocValues docValues = children[0].reader.docValues("promote");
+    IndexReaderContext topReaderContext = reader.getTopReaderContext();
+    AtomicReaderContext[] children = topReaderContext.leaves();
+    DocValues docValues = children[0].reader().docValues("promote");
     assertNotNull(docValues);
     assertValues(TestType.Byte, dir, values);
     assertEquals(Type.BYTES_VAR_STRAIGHT, docValues.type());

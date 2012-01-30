@@ -22,6 +22,8 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -34,6 +36,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util._TestUtil;
 
 public class TestReuseDocsEnum extends LuceneTestCase {
@@ -47,20 +50,22 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     createRandomIndex(numdocs, writer, random);
     writer.commit();
 
-    IndexReader open = IndexReader.open(dir);
-    IndexReader[] sequentialSubReaders = open.getSequentialSubReaders();
-    for (IndexReader indexReader : sequentialSubReaders) {
-      Terms terms = indexReader.terms("body");
-      TermsEnum iterator = terms.iterator(null);
-      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
-      MatchNoBits bits = new Bits.MatchNoBits(open.maxDoc());
-      while ((iterator.next()) != null) {
-        DocsEnum docs = iterator.docs(random.nextBoolean() ? bits : new Bits.MatchNoBits(open.maxDoc()), null, random.nextBoolean());
-        enums.put(docs, true);
+    DirectoryReader open = DirectoryReader.open(dir);
+    new ReaderUtil.Gather(open) {
+      @Override
+      protected void add(int base, AtomicReader r) throws IOException {
+        Terms terms = r.terms("body");
+        TermsEnum iterator = terms.iterator(null);
+        IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
+        MatchNoBits bits = new Bits.MatchNoBits(r.maxDoc());
+        while ((iterator.next()) != null) {
+          DocsEnum docs = iterator.docs(random.nextBoolean() ? bits : new Bits.MatchNoBits(r.maxDoc()), null, random.nextBoolean());
+          enums.put(docs, true);
+        }
+        
+        assertEquals(terms.getUniqueTermCount(), enums.size());  
       }
-      
-      assertEquals(terms.getUniqueTermCount(), enums.size());  
-    }
+    }.run();
     IOUtils.close(writer, open, dir);
   }
   
@@ -74,10 +79,10 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     createRandomIndex(numdocs, writer, random);
     writer.commit();
 
-    IndexReader open = IndexReader.open(dir);
+    DirectoryReader open = DirectoryReader.open(dir);
     IndexReader[] sequentialSubReaders = open.getSequentialSubReaders();
     for (IndexReader indexReader : sequentialSubReaders) {
-      Terms terms = indexReader.terms("body");
+      Terms terms = ((AtomicReader) indexReader).terms("body");
       TermsEnum iterator = terms.iterator(null);
       IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
       MatchNoBits bits = new Bits.MatchNoBits(open.maxDoc());
@@ -119,13 +124,13 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     createRandomIndex(numdocs, writer, random);
     writer.commit();
 
-    IndexReader firstReader = IndexReader.open(dir);
-    IndexReader secondReader = IndexReader.open(dir);
+    DirectoryReader firstReader = DirectoryReader.open(dir);
+    DirectoryReader secondReader = DirectoryReader.open(dir);
     IndexReader[] sequentialSubReaders = firstReader.getSequentialSubReaders();
     IndexReader[] sequentialSubReaders2 = secondReader.getSequentialSubReaders();
     
     for (IndexReader indexReader : sequentialSubReaders) {
-      Terms terms = indexReader.terms("body");
+      Terms terms = ((AtomicReader) indexReader).terms("body");
       TermsEnum iterator = terms.iterator(null);
       IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
       MatchNoBits bits = new Bits.MatchNoBits(firstReader.maxDoc());
@@ -154,7 +159,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     if (random.nextInt(10) == 0) {
       return null;
     }
-    IndexReader indexReader = readers[random.nextInt(readers.length)];
+    AtomicReader indexReader = (AtomicReader) readers[random.nextInt(readers.length)];
     return indexReader.termDocsEnum(bits, field, term, random.nextBoolean());
   }
 

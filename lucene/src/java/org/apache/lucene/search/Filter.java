@@ -19,8 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReader; // javadocs
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader; // javadocs
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 
 /** 
@@ -44,7 +45,7 @@ public abstract class Filter {
    *         represent the whole underlying index i.e. if the index has more than
    *         one segment the given reader only represents a single segment.
    *         The provided context is always an atomic context, so you can call 
-   *         {@link IndexReader#fields()}
+   *         {@link AtomicReader#fields()}
    *         on the context's reader, for example.
    *
    * @param acceptDocs

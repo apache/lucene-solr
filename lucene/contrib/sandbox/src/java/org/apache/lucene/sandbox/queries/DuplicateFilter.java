@@ -17,7 +17,6 @@ package org.apache.lucene.sandbox.queries;
  */
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
@@ -72,13 +71,13 @@ public class DuplicateFilter extends Filter {
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     if (processingMode == ProcessingMode.PM_FAST_INVALIDATION) {
-      return fastBits(context.reader, acceptDocs);
+      return fastBits(context.reader(), acceptDocs);
     } else {
-      return correctBits(context.reader, acceptDocs);
+      return correctBits(context.reader(), acceptDocs);
     }
   }
 
-  private FixedBitSet correctBits(IndexReader reader, Bits acceptDocs) throws IOException {
+  private FixedBitSet correctBits(AtomicReader reader, Bits acceptDocs) throws IOException {
     FixedBitSet bits = new FixedBitSet(reader.maxDoc()); //assume all are INvalid
     Terms terms = reader.fields().terms(fieldName);
 
@@ -115,7 +114,7 @@ public class DuplicateFilter extends Filter {
     return bits;
   }
 
-  private FixedBitSet fastBits(IndexReader reader, Bits acceptDocs) throws IOException {
+  private FixedBitSet fastBits(AtomicReader reader, Bits acceptDocs) throws IOException {
     FixedBitSet bits = new FixedBitSet(reader.maxDoc());
     bits.set(0, reader.maxDoc()); //assume all are valid
     Terms terms = reader.fields().terms(fieldName);

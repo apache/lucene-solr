@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.search.NRTManager;        // javadocs
-import org.apache.lucene.index.IndexReader;        // javadocs
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.IOUtils;
 
@@ -85,9 +85,9 @@ import org.apache.lucene.util.IOUtils;
  * <p><b>NOTE</b>: keeping many searchers around means
  * you'll use more resources (open files, RAM) than a single
  * searcher.  However, as long as you are using {@link
- * IndexReader#openIfChanged}, the searchers will usually
- * share almost all segments and the added resource usage is
- * contained.  When a large merge has completed, and
+ * DirectoryReader#openIfChanged(DirectoryReader)}, the searchers
+ * will usually share almost all segments and the added resource usage
+ * is contained.  When a large merge has completed, and
  * you reopen, because that is a large change, the new
  * searcher will use higher additional RAM than other
  * searchers; but large merges don't complete very often and
@@ -109,7 +109,7 @@ public class SearcherLifetimeManager implements Closeable {
 
     public SearcherTracker(IndexSearcher searcher) {
       this.searcher = searcher;
-      version = searcher.getIndexReader().getVersion();
+      version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
       searcher.getIndexReader().incRef();
       // Use nanoTime not currentTimeMillis since it [in
       // theory] reduces risk from clock shift
@@ -168,7 +168,7 @@ public class SearcherLifetimeManager implements Closeable {
     // TODO: we don't have to use IR.getVersion to track;
     // could be risky (if it's buggy); we could get better
     // bug isolation if we assign our own private ID:
-    final long version = searcher.getIndexReader().getVersion();
+    final long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
     SearcherTracker tracker = searchers.get(version);
     if (tracker == null) {
       //System.out.println("RECORD version=" + version + " ms=" + System.currentTimeMillis());

@@ -19,8 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
 
 /**
  * <p>Expert: Collectors are primarily meant to be used to
@@ -145,9 +145,9 @@ public abstract class Collector {
 
   /**
    * Called before collecting from each {@link AtomicReaderContext}. All doc ids in
-   * {@link #collect(int)} will correspond to {@link ReaderContext#reader}.
+   * {@link #collect(int)} will correspond to {@link IndexReaderContext#reader}.
    * 
-   * Add {@link AtomicReaderContext#docBase} to the current  {@link ReaderContext#reader}'s
+   * Add {@link AtomicReaderContext#docBase} to the current  {@link IndexReaderContext#reader}'s
    * internal document id to re-base ids in {@link #collect(int)}.
    * 
    * @param context

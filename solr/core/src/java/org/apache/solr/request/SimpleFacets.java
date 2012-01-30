@@ -408,7 +408,7 @@ public class SimpleFacets {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
     NamedList<Integer> res = new NamedList<Integer>();
 
-    FieldCache.DocTermsIndex si = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(searcher.getIndexReader()), fieldName);
+    FieldCache.DocTermsIndex si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), fieldName);
 
     final BytesRef prefixRef;
     if (prefix == null) {
@@ -609,7 +609,7 @@ public class SimpleFacets {
 
 
     IndexSchema schema = searcher.getSchema();
-    IndexReader r = searcher.getIndexReader();
+    AtomicReader r = searcher.getAtomicReader();
     FieldType ft = schema.getFieldType(field);
 
     boolean sortByCount = sort.equals("count") || sort.equals("true");
@@ -627,7 +627,7 @@ public class SimpleFacets {
       startTermBytes = new BytesRef(indexedPrefix);
     }
 
-    Fields fields = MultiFields.getFields(r);
+    Fields fields = r.fields();
     Terms terms = fields==null ? null : fields.terms(field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;
@@ -673,7 +673,7 @@ public class SimpleFacets {
             if (deState==null) {
               deState = new SolrIndexSearcher.DocsEnumState();
               deState.fieldName = field;
-              deState.liveDocs = MultiFields.getLiveDocs(r);
+              deState.liveDocs = r.getLiveDocs();
               deState.termsEnum = termsEnum;
               deState.docsEnum = docsEnum;
             }

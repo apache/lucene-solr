@@ -17,7 +17,7 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
@@ -81,6 +81,6 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
   @Override
   public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     super.setNextReader(readerContext);
-    index = FieldCache.DEFAULT.getTermsIndex(readerContext.reader, groupField);
+    index = FieldCache.DEFAULT.getTermsIndex(readerContext.reader(), groupField);
   }
 }

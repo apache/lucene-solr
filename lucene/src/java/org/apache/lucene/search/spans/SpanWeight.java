@@ -17,8 +17,8 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.Similarity;
@@ -48,7 +48,7 @@ public class SpanWeight extends Weight {
     termContexts = new HashMap<Term,TermContext>();
     TreeSet<Term> terms = new TreeSet<Term>();
     query.extractTerms(terms);
-    final ReaderContext context = searcher.getTopReaderContext();
+    final IndexReaderContext context = searcher.getTopReaderContext();
     final TermStatistics termStats[] = new TermStatistics[terms.size()];
     int i = 0;
     for (Term term : terms) {
@@ -84,7 +84,7 @@ public class SpanWeight extends Weight {
 
   @Override
   public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-    Scorer scorer = scorer(context, true, false, context.reader.getLiveDocs());
+    Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
     if (scorer != null) {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {

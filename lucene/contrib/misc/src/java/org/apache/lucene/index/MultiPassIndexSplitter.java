@@ -135,7 +135,7 @@ public class MultiPassIndexSplitter {
         }
         Directory dir = FSDirectory.open(new File(args[i]));
         try {
-          if (!IndexReader.indexExists(dir)) {
+          if (!DirectoryReader.indexExists(dir)) {
             System.err.println("Invalid input index - skipping: " + file);
             continue;
           }
@@ -143,7 +143,7 @@ public class MultiPassIndexSplitter {
           System.err.println("Invalid input index - skipping: " + file);
           continue;
         }
-        indexes.add(IndexReader.open(dir));
+        indexes.add(DirectoryReader.open(dir));
       }
     }
     if (outDir == null) {
@@ -182,15 +182,15 @@ public class MultiPassIndexSplitter {
       super(initSubReaders(reader), false /* dont close */);
     }
     
-    private static IndexReader[] initSubReaders(IndexReader reader) throws IOException {
-      final ArrayList<IndexReader> subs = new ArrayList<IndexReader>();
+    private static AtomicReader[] initSubReaders(IndexReader reader) throws IOException {
+      final ArrayList<AtomicReader> subs = new ArrayList<AtomicReader>();
       new ReaderUtil.Gather(reader) {
         @Override
-        protected void add(int base, IndexReader r) {
+        protected void add(int base, AtomicReader r) {
           subs.add(new FakeDeleteAtomicIndexReader(r));
         }
       }.run();
-      return subs.toArray(new IndexReader[subs.size()]);
+      return subs.toArray(new AtomicReader[subs.size()]);
     }
         
     public void deleteDocument(int docID) {
@@ -226,7 +226,7 @@ public class MultiPassIndexSplitter {
   private static final class FakeDeleteAtomicIndexReader extends FilterIndexReader {
     FixedBitSet liveDocs;
 
-    public FakeDeleteAtomicIndexReader(IndexReader reader) {
+    public FakeDeleteAtomicIndexReader(AtomicReader reader) {
       super(reader);
       undeleteAll(); // initialize main bitset
     }

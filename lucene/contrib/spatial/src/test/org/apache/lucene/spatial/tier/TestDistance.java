@@ -23,8 +23,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -119,7 +119,7 @@ public class TestDistance extends LuceneTestCase {
 
     AtomicReaderContext[] leaves = ReaderUtil.leaves(r.getTopReaderContext());
     for (int i = 0; i < leaves.length; i++) {
-      f.getDocIdSet(leaves[i], leaves[i].reader.getLiveDocs());
+      f.getDocIdSet(leaves[i], leaves[i].reader().getLiveDocs());
     }
     r.close();
   }

@@ -17,6 +17,7 @@ package org.apache.lucene.search.grouping.function;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -78,7 +79,7 @@ public class FunctionAllGroupsCollector extends AbstractAllGroupsCollector<Mutab
   /**
    * {@inheritDoc}
    */
-  public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+  public void setNextReader(AtomicReaderContext context) throws IOException {
     FunctionValues docValues = groupBy.getValues(vsContext, context);
     filler = docValues.getValueFiller();
     mval = filler.getValue();

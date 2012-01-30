@@ -60,7 +60,7 @@ public class TestIndexSplitter extends LuceneTestCase {
       iw.addDocument(doc);
     }
     iw.commit();
-    IndexReader iwReader = iw.getReader();
+    DirectoryReader iwReader = iw.getReader();
     assertEquals(3, iwReader.getSequentialSubReaders().length);
     iwReader.close();
     iw.close();
@@ -69,7 +69,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     String splitSegName = is.infos.info(1).name;
     is.split(destDir, new String[] {splitSegName});
     Directory fsDirDest = newFSDirectory(destDir);
-    IndexReader r = IndexReader.open(fsDirDest);
+    DirectoryReader r = DirectoryReader.open(fsDirDest);
     assertEquals(50, r.maxDoc());
     r.close();
     fsDirDest.close();
@@ -81,14 +81,14 @@ public class TestIndexSplitter extends LuceneTestCase {
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), destDir2.getAbsolutePath(), splitSegName});
     assertEquals(4, destDir2.listFiles().length);
     Directory fsDirDest2 = newFSDirectory(destDir2);
-    r = IndexReader.open(fsDirDest2);
+    r = DirectoryReader.open(fsDirDest2);
     assertEquals(50, r.maxDoc());
     r.close();
     fsDirDest2.close();
     
     // now remove the copied segment from src
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), "-d", splitSegName});
-    r = IndexReader.open(fsDir);
+    r = DirectoryReader.open(fsDir);
     assertEquals(2, r.getSequentialSubReaders().length);
     r.close();
     fsDir.close();

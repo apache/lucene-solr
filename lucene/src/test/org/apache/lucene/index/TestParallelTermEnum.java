@@ -28,8 +28,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestParallelTermEnum extends LuceneTestCase {
-    private IndexReader ir1;
-    private IndexReader ir2;
+    private AtomicReader ir1;
+    private AtomicReader ir2;
     private Directory rd1;
     private Directory rd2;
     
@@ -58,8 +58,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
         iw2.close();
 
-        this.ir1 = IndexReader.open(rd1);
-        this.ir2 = IndexReader.open(rd2);
+        this.ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1));
+        this.ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd2));
     }
 
     @Override

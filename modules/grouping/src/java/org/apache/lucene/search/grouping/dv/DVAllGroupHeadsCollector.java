@@ -17,6 +17,7 @@ package org.apache.lucene.search.grouping.dv;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.index.IndexReader;
@@ -43,7 +44,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
   final DocValues.Type valueType;
   final BytesRef scratchBytesRef = new BytesRef();
 
-  IndexReader.AtomicReaderContext readerContext;
+  AtomicReaderContext readerContext;
   Scorer scorer;
 
   DVAllGroupHeadsCollector(String groupField, DocValues.Type valueType, int numberOfSorts, boolean diskResident) {
@@ -91,10 +92,10 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
   static class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<Comparable> {
 
     final FieldComparator[] comparators;
-    IndexReader.AtomicReaderContext readerContext;
+    AtomicReaderContext readerContext;
     Scorer scorer;
 
-    GroupHead(Comparable groupValue, Sort sort, int doc, IndexReader.AtomicReaderContext readerContext, Scorer scorer) throws IOException {
+    GroupHead(Comparable groupValue, Sort sort, int doc, AtomicReaderContext readerContext, Scorer scorer) throws IOException {
       super(groupValue, doc + readerContext.docBase);
       final SortField[] sortFields = sort.getSort();
       comparators = new FieldComparator[sortFields.length];
@@ -123,10 +124,10 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
   }
 
   @Override
-  public void setNextReader(IndexReader.AtomicReaderContext readerContext) throws IOException {
+  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     this.readerContext = readerContext;
 
-    final DocValues dv = readerContext.reader.docValues(groupField);
+    final DocValues dv = readerContext.reader().docValues(groupField);
     final DocValues.Source dvSource;
     if (dv != null) {
       dvSource = diskResident ? dv.getDirectSource() : dv.getSource();
@@ -147,7 +148,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
    * @return The default source when no doc values are available.
    * @param readerContext The current reader context
    */
-  protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
+  protected DocValues.Source getDefaultSource(AtomicReaderContext readerContext) {
     return DocValues.getDefaultSource(valueType);
   }
 
@@ -189,7 +190,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       return groups.values();
     }
 
-    public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+    public void setNextReader(AtomicReaderContext context) throws IOException {
       super.setNextReader(context);
       for (GroupHead groupHead : groups.values()) {
         for (int i = 0; i < groupHead.comparators.length; i++) {
@@ -230,8 +231,8 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       }
 
       @Override
-      protected DocValues.Source getDefaultSource(IndexReader.AtomicReaderContext readerContext) {
-        return DocValues.getDefaultSortedSource(valueType, readerContext.reader.maxDoc());
+      protected DocValues.Source getDefaultSource(AtomicReaderContext readerContext) {
+        return DocValues.getDefaultSortedSource(valueType, readerContext.reader().maxDoc());
       }
     }
 

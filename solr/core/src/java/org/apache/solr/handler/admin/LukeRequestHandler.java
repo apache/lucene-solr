@@ -90,7 +90,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   {
     IndexSchema schema = req.getSchema();
     SolrIndexSearcher searcher = req.getSearcher();
-    IndexReader reader = searcher.getIndexReader();
+    DirectoryReader reader = searcher.getIndexReader();
     SolrParams params = req.getParams();
     int numTerms = params.getInt( NUMTERMS, DEFAULT_COUNT );
 
@@ -287,17 +287,17 @@ public class LukeRequestHandler extends RequestHandlerBase
       final SolrIndexSearcher searcher, final Set<String> fields, final int numTerms, Map<String,TopTermQueue> ttinfo)
       throws Exception {
 
-    IndexReader reader = searcher.getIndexReader();
+    AtomicReader reader = searcher.getAtomicReader();
     IndexSchema schema = searcher.getSchema();
 
     Set<String> fieldNames = new TreeSet<String>();
-    for(FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(reader)) {
+    for(FieldInfo fieldInfo : reader.getFieldInfos()) {
       fieldNames.add(fieldInfo.name);
     }
 
     // Walk the term enum and keep a priority queue for each map in our set
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
-    Fields theFields = MultiFields.getFields(reader);
+    Fields theFields = reader.fields();
 
     for (String fieldName : fieldNames) {
       if (fields != null && ! fields.contains(fieldName)) {
@@ -328,8 +328,7 @@ public class LukeRequestHandler extends RequestHandlerBase
           Document doc = null;
           if (topTerms != null && topTerms.getTopTermInfo() != null) {
             Term term = topTerms.getTopTermInfo().term;
-            DocsEnum docsEnum = MultiFields.getTermDocsEnum(reader,
-                MultiFields.getLiveDocs(reader),
+            DocsEnum docsEnum = reader.termDocsEnum(reader.getLiveDocs(),
                 term.field(),
                 new BytesRef(term.text()),
                 false);
@@ -498,10 +497,10 @@ public class LukeRequestHandler extends RequestHandlerBase
     v.add( f.getName() );
     typeusemap.put( ft.getTypeName(), v );
   }
-  public static SimpleOrderedMap<Object> getIndexInfo(IndexReader reader, boolean countTerms) throws IOException {
+  public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader, boolean countTerms) throws IOException {
     return getIndexInfo(reader, countTerms ? 1 : 0, null, null);
   }
-  public static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader, int numTerms,
+  public static SimpleOrderedMap<Object> getIndexInfo( DirectoryReader reader, int numTerms,
                                                        Map<String, TopTermQueue> topTerms,
                                                        Set<String> fieldList) throws IOException {
     Directory dir = reader.directory();

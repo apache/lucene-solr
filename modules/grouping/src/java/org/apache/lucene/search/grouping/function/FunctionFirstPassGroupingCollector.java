@@ -17,6 +17,7 @@ package org.apache.lucene.search.grouping.function;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -78,7 +79,7 @@ public class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupin
   }
 
   @Override
-  public void setNextReader(IndexReader.AtomicReaderContext readerContext) throws IOException {
+  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     super.setNextReader(readerContext);
     docValues = groupByVS.getValues(vsContext, readerContext);
     filler = docValues.getValueFiller();

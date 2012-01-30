@@ -36,14 +36,14 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
 
     boolean anyOpenDelFiles = false;
 
-    IndexReader r = IndexReader.open(writer, true);
+    DirectoryReader r = IndexReader.open(writer, true);
 
     while (System.currentTimeMillis() < stopTime && !failed.get()) {
       if (random.nextBoolean()) {
         if (VERBOSE) {
           System.out.println("TEST: now reopen r=" + r);
         }
-        final IndexReader r2 = IndexReader.openIfChanged(r);
+        final DirectoryReader r2 = DirectoryReader.openIfChanged(r);
         if (r2 != null) {
           r.close();
           r = r2;

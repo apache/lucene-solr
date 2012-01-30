@@ -17,8 +17,8 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -57,7 +57,7 @@ public class NormValueSource extends ValueSource {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }
     final TFIDFSimilarity similarity = (TFIDFSimilarity) sim;
-    DocValues dv = readerContext.reader.normValues(field);
+    DocValues dv = readerContext.reader().normValues(field);
 
     if (dv == null) {
       return new ConstDoubleDocValues(0.0, this);

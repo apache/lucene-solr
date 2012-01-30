@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiReader;
@@ -310,7 +311,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
 
     final int numNodes = shardSearcher.nodeVersions.length;
     int[] base = new int[numNodes];
-    final IndexReader[] subs = mockSearcher.getIndexReader().getSequentialSubReaders();
+    final IndexReader[] subs = ((CompositeReader) mockSearcher.getIndexReader()).getSequentialSubReaders();
     assertEquals(numNodes, subs.length);
 
     int docCount = 0;

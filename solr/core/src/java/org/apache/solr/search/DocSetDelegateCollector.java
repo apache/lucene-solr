@@ -1,6 +1,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
@@ -60,7 +61,7 @@ public class DocSetDelegateCollector extends DocSetCollector {
   }
 
   @Override
-  public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+  public void setNextReader(AtomicReaderContext context) throws IOException {
     collector.setNextReader(context);
     this.base = context.docBase;
   }

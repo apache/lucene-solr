@@ -1279,16 +1279,16 @@ public class TestAddIndexes extends LuceneTestCase {
 
     Directory d3 = newDirectory();
     w = new RandomIndexWriter(random, d3);
-    w.addIndexes(new SlowMultiReaderWrapper(r1), new SlowMultiReaderWrapper(r2));
+    w.addIndexes(SlowCompositeReaderWrapper.wrap(r1), SlowCompositeReaderWrapper.wrap(r2));
     r1.close();
     d1.close();
     r2.close();
     d2.close();
 
     w.forceMerge(1);
-    IndexReader r3 = w.getReader();
+    DirectoryReader r3 = w.getReader();
     w.close();
-    IndexReader sr = getOnlySegmentReader(r3);
+    AtomicReader sr = getOnlySegmentReader(r3);
     assertEquals(2, sr.numDocs());
     DocValues docValues = sr.docValues("dv");
     assertNotNull(docValues);

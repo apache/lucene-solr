@@ -32,6 +32,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
 
 public class TestIndexWriterUnicode extends LuceneTestCase {
@@ -317,10 +318,12 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     IndexReader r = writer.getReader();
 
     // Test each sub-segment
-    final IndexReader[] subs = r.getSequentialSubReaders();
-    for(int i=0;i<subs.length;i++) {
-      checkTermsOrder(subs[i], allTerms, false);
-    }
+    new ReaderUtil.Gather(r) {
+      @Override
+      protected void add(int base, AtomicReader r) throws IOException {
+        checkTermsOrder(r, allTerms, false);
+      }
+    }.run();
     checkTermsOrder(r, allTerms, true);
 
     // Test multi segment

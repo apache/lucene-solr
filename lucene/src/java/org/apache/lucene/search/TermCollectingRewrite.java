@@ -20,13 +20,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
@@ -47,11 +47,11 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
 
   
   protected final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
-    ReaderContext topReaderContext = reader.getTopReaderContext();
+    IndexReaderContext topReaderContext = reader.getTopReaderContext();
     Comparator<BytesRef> lastTermComp = null;
     final AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
     for (AtomicReaderContext context : leaves) {
-      final Fields fields = context.reader.fields();
+      final Fields fields = context.reader().fields();
       if (fields == null) {
         // reader has no fields
         continue;
@@ -87,9 +87,9 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
   protected static abstract class TermCollector {
     
     protected AtomicReaderContext readerContext;
-    protected ReaderContext topReaderContext;
+    protected IndexReaderContext topReaderContext;
 
-    public void setReaderContext(ReaderContext topReaderContext, AtomicReaderContext readerContext) {
+    public void setReaderContext(IndexReaderContext topReaderContext, AtomicReaderContext readerContext) {
       this.readerContext = readerContext;
       this.topReaderContext = topReaderContext;
     }

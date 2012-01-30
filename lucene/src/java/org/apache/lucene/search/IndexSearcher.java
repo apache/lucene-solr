@@ -31,11 +31,12 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -56,10 +57,11 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * multiple searches instead of creating a new one
  * per-search.  If your index has changed and you wish to
  * see the changes reflected in searching, you should
- * use {@link IndexReader#openIfChanged} to obtain a new reader and
+ * use {@link DirectoryReader#openIfChanged(DirectoryReader)}
+ * to obtain a new reader and
  * then create a new IndexSearcher from that.  Also, for
  * low-latency turnaround it's best to use a near-real-time
- * reader ({@link IndexReader#open(IndexWriter,boolean)}).
+ * reader ({@link DirectoryReader#open(IndexWriter,boolean)}).
  * Once you have a new {@link IndexReader}, it's relatively
  * cheap to create a new IndexSearcher from it.
  * 
@@ -76,7 +78,7 @@ public class IndexSearcher {
   
   // NOTE: these members might change in incompatible ways
   // in the next release
-  protected final ReaderContext readerContext;
+  protected final IndexReaderContext readerContext;
   protected final AtomicReaderContext[] leafContexts;
   // used with executor - each slice holds a set of leafs executed within one thread
   protected final LeafSlice[] leafSlices;
@@ -122,7 +124,7 @@ public class IndexSearcher {
   }
 
   /**
-   * Creates a searcher searching the provided top-level {@link ReaderContext}.
+   * Creates a searcher searching the provided top-level {@link IndexReaderContext}.
    * <p>
    * Given a non-<code>null</code> {@link ExecutorService} this method runs
    * searches for each segment separately, using the provided ExecutorService.
@@ -133,13 +135,13 @@ public class IndexSearcher {
    * silently close file descriptors (see <a
    * href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
    * 
-   * @see ReaderContext
+   * @see IndexReaderContext
    * @see IndexReader#getTopReaderContext()
    * @lucene.experimental
    */
-  public IndexSearcher(ReaderContext context, ExecutorService executor) {
-    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader;
-    reader = context.reader;
+  public IndexSearcher(IndexReaderContext context, ExecutorService executor) {
+    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
+    reader = context.reader();
     this.executor = executor;
     this.readerContext = context;
     leafContexts = ReaderUtil.leaves(context);
@@ -147,13 +149,13 @@ public class IndexSearcher {
   }
 
   /**
-   * Creates a searcher searching the provided top-level {@link ReaderContext}.
+   * Creates a searcher searching the provided top-level {@link IndexReaderContext}.
    *
-   * @see ReaderContext
+   * @see IndexReaderContext
    * @see IndexReader#getTopReaderContext()
    * @lucene.experimental
    */
-  public IndexSearcher(ReaderContext context) {
+  public IndexSearcher(IndexReaderContext context) {
     this(context, null);
   }
   
@@ -402,7 +404,7 @@ public class IndexSearcher {
    * <p>NOTE: this does not compute scores by default.  If you
    * need scores, create a {@link TopFieldCollector}
    * instance by calling {@link TopFieldCollector#create} and
-   * then pass that to {@link #search(IndexReader.AtomicReaderContext[], Weight,
+   * then pass that to {@link #search(AtomicReaderContext[], Weight,
    * Collector)}.</p>
    */
   protected TopFieldDocs search(Weight weight, int nDocs,
@@ -451,7 +453,7 @@ public class IndexSearcher {
    * <p>NOTE: this does not compute scores by default.  If you
    * need scores, create a {@link TopFieldCollector}
    * instance by calling {@link TopFieldCollector#create} and
-   * then pass that to {@link #search(IndexReader.AtomicReaderContext[], Weight, 
+   * then pass that to {@link #search(AtomicReaderContext[], Weight, 
    * Collector)}.</p>
    */
   protected TopFieldDocs search(AtomicReaderContext[] leaves, Weight weight, int nDocs,
@@ -501,7 +503,7 @@ public class IndexSearcher {
     // always use single thread:
     for (int i = 0; i < leaves.length; i++) { // search each subreader
       collector.setNextReader(leaves[i]);
-      Scorer scorer = weight.scorer(leaves[i], !collector.acceptsDocsOutOfOrder(), true, leaves[i].reader.getLiveDocs());
+      Scorer scorer = weight.scorer(leaves[i], !collector.acceptsDocsOutOfOrder(), true, leaves[i].reader().getLiveDocs());
       if (scorer != null) {
         scorer.score(collector);
       }
@@ -589,11 +591,11 @@ public class IndexSearcher {
   }
   
   /**
-   * Returns this searchers the top-level {@link ReaderContext}.
+   * Returns this searchers the top-level {@link IndexReaderContext}.
    * @see IndexReader#getTopReaderContext()
    */
   /* sugar for #getReader().getTopReaderContext() */
-  public ReaderContext getTopReaderContext() {
+  public IndexReaderContext getTopReaderContext() {
     return readerContext;
   }
 

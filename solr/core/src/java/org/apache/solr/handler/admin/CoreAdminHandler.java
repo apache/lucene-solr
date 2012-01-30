@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -218,7 +218,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     SolrCore[] sourceCores = null;
     RefCounted<SolrIndexSearcher>[] searchers = null;
     // stores readers created from indexDir param values
-    IndexReader[] readersToBeClosed = null;
+    DirectoryReader[] readersToBeClosed = null;
     Directory[] dirsToBeReleased = null;
     if (core != null) {
       try {
@@ -239,22 +239,22 @@ public class CoreAdminHandler extends RequestHandlerBase {
             sourceCores[i] = srcCore;
           }
         } else  {
-          readersToBeClosed = new IndexReader[dirNames.length];
+          readersToBeClosed = new DirectoryReader[dirNames.length];
           dirsToBeReleased = new Directory[dirNames.length];
           DirectoryFactory dirFactory = core.getDirectoryFactory();
           for (int i = 0; i < dirNames.length; i++) {
             Directory dir = dirFactory.get(dirNames[i], core.getSolrConfig().mainIndexConfig.lockType);
             dirsToBeReleased[i] = dir;
             // TODO: why doesn't this use the IR factory? what is going on here?
-            readersToBeClosed[i] = IndexReader.open(dir);
+            readersToBeClosed[i] = DirectoryReader.open(dir);
           }
         }
 
-        IndexReader[] readers = null;
+        DirectoryReader[] readers = null;
         if (readersToBeClosed != null)  {
           readers = readersToBeClosed;
         } else {
-          readers = new IndexReader[sourceCores.length];
+          readers = new DirectoryReader[sourceCores.length];
           searchers = new RefCounted[sourceCores.length];
           for (int i = 0; i < sourceCores.length; i++) {
             SolrCore solrCore = sourceCores[i];

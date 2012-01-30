@@ -19,7 +19,6 @@ package org.apache.solr.request;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.DocTermOrds;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
@@ -175,7 +174,7 @@ public class UnInvertedField extends DocTermOrds {
     final String prefix = TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
     this.searcher = searcher;
     try {
-      uninvert(new SlowMultiReaderWrapper(searcher.getIndexReader()), prefix == null ? null : new BytesRef(prefix));
+      uninvert(searcher.getAtomicReader(), prefix == null ? null : new BytesRef(prefix));
     } catch (IllegalStateException ise) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ise.getMessage());
     }
@@ -227,7 +226,7 @@ public class UnInvertedField extends DocTermOrds {
       int startTerm = 0;
       int endTerm = numTermsInField;  // one past the end
 
-      TermsEnum te = getOrdTermsEnum(new SlowMultiReaderWrapper(searcher.getIndexReader()));
+      TermsEnum te = getOrdTermsEnum(searcher.getAtomicReader());
       if (prefix != null && prefix.length() > 0) {
         final BytesRef prefixBr = new BytesRef(prefix);
         if (te.seekCeil(prefixBr, true) == TermsEnum.SeekStatus.END) {
@@ -485,7 +484,7 @@ public class UnInvertedField extends DocTermOrds {
     for (String f : facet) {
       SchemaField facet_sf = searcher.getSchema().getField(f);
       try {
-        si = FieldCache.DEFAULT.getTermsIndex(new SlowMultiReaderWrapper(searcher.getIndexReader()), f);
+        si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), f);
       }
       catch (IOException e) {
         throw new RuntimeException("failed to open field cache for: " + f, e);
@@ -497,7 +496,7 @@ public class UnInvertedField extends DocTermOrds {
     final int[] index = this.index;
     final int[] counts = new int[numTermsInField];//keep track of the number of times we see each word in the field for all the documents in the docset
 
-    TermsEnum te = getOrdTermsEnum(new SlowMultiReaderWrapper(searcher.getIndexReader()));
+    TermsEnum te = getOrdTermsEnum(searcher.getAtomicReader());
 
     boolean doNegative = false;
     if (finfo.length == 0) {

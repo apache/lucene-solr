@@ -20,7 +20,7 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSourceScorer;
@@ -57,8 +57,8 @@ public class IntFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final int[] arr = cache.getInts(readerContext.reader, field, parser, true);
-    final Bits valid = cache.getDocsWithField(readerContext.reader, field);
+    final int[] arr = cache.getInts(readerContext.reader(), field, parser, true);
+    final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
     
     return new IntDocValues(this) {
       final MutableValueInt val = new MutableValueInt();

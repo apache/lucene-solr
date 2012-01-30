@@ -252,7 +252,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     writer = new IndexWriter(dir, getConfig(random, sdp));
     writer.deleteUnusedFiles();
     writer.close();
-    assertEquals("no snapshots should exist", 1, IndexReader.listCommits(dir).size());
+    assertEquals("no snapshots should exist", 1, DirectoryReader.listCommits(dir).size());
     
     for (int i = 0; i < numSnapshots; i++) {
       try {
@@ -304,7 +304,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
       sdp.release(t.getName());
       writer.deleteUnusedFiles();
     }
-    assertEquals(1, IndexReader.listCommits(dir).size());
+    assertEquals(1, DirectoryReader.listCommits(dir).size());
     writer.close();
     dir.close();
   }

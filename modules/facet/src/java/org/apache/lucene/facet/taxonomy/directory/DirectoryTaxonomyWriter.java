@@ -22,6 +22,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -112,7 +113,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * that some of the cached data was cleared).
    */
   private boolean cacheIsComplete;
-  private IndexReader reader;
+  private DirectoryReader reader;
   private int cacheMisses;
 
   /**
@@ -188,7 +189,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   throws CorruptIndexException, LockObtainFailedException,
   IOException {
 
-    if (!IndexReader.indexExists(directory) || openMode==OpenMode.CREATE) {
+    if (!DirectoryReader.indexExists(directory) || openMode==OpenMode.CREATE) {
       taxoIndexCreateTime = Long.toString(System.nanoTime());
     }
     
@@ -281,8 +282,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * calling {@link IndexReader#open(IndexWriter, boolean)}. Extending classes can override
    * this method to return their own {@link IndexReader}.
    */
-  protected IndexReader openReader() throws IOException {
-    return IndexReader.open(indexWriter, true); 
+  protected DirectoryReader openReader() throws IOException {
+    return DirectoryReader.open(indexWriter, true); 
   }
 
   /**
@@ -616,9 +617,9 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
   }
 
-  private synchronized void refreshReader() throws IOException {
+  protected synchronized void refreshReader() throws IOException {
     if (reader != null) {
-      IndexReader r2 = IndexReader.openIfChanged(reader);
+      DirectoryReader r2 = DirectoryReader.openIfChanged(reader);
       if (r2 != null) {
         reader.close();
         reader = r2;
@@ -982,6 +983,18 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       ordinalMaps[i].addMapping(0, 0);
       ordinalMaps[i].addDone();
     }
+  }
+
+  /**
+   * Expert:  This method is only for expert use.
+   * Note also that any call to refresh() will invalidate the returned reader,
+   * so the caller needs to take care of appropriate locking.
+   * 
+   * @return lucene indexReader
+   */
+  DirectoryReader getInternalIndexReader() {
+    ensureOpen();
+    return this.reader;
   }
 
   /**

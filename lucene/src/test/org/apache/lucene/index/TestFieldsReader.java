@@ -272,13 +272,13 @@ public class TestFieldsReader extends LuceneTestCase {
       doc.add(new NumericField("id", id, ft));
       w.addDocument(doc);
     }
-    final IndexReader r = w.getReader();
+    final DirectoryReader r = w.getReader();
     w.close();
     
     assertEquals(numDocs, r.numDocs());
 
     for(IndexReader sub : r.getSequentialSubReaders()) {
-      final int[] ids = FieldCache.DEFAULT.getInts(sub, "id", false);
+      final int[] ids = FieldCache.DEFAULT.getInts((AtomicReader) sub, "id", false);
       for(int docID=0;docID<sub.numDocs();docID++) {
         final Document doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");

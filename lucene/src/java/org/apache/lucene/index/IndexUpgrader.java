@@ -134,7 +134,7 @@ public final class IndexUpgrader {
   }
   
   public void upgrade() throws IOException {
-    if (!IndexReader.indexExists(dir)) {
+    if (!DirectoryReader.indexExists(dir)) {
       throw new IndexNotFoundException(dir.toString());
     }
   

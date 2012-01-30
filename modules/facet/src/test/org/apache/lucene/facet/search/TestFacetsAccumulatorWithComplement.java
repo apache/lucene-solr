@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.ParallelReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.junit.After;
@@ -68,7 +69,7 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
   public void testComplementsWithParallerReader() throws Exception {
     IndexReader origReader = indexReader; 
     ParallelReader pr = new ParallelReader(true);
-    pr.add(origReader);
+    pr.add(SlowCompositeReaderWrapper.wrap(origReader));
     indexReader = pr;
     try {
       doTestComplements();

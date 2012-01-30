@@ -7,7 +7,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -67,7 +67,7 @@ public class FacetsPayloadProcessorProviderTest extends LuceneTestCase {
   }
 
   private void verifyResults(Directory dir, Directory taxDir) throws IOException {
-    IndexReader reader1 = IndexReader.open(dir);
+    DirectoryReader reader1 = DirectoryReader.open(dir);
     DirectoryTaxonomyReader taxReader = new DirectoryTaxonomyReader(taxDir);
     IndexSearcher searcher = newSearcher(reader1);
     FacetSearchParams fsp = new FacetSearchParams();

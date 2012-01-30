@@ -51,7 +51,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     // System.out.println("Attempting to rollback to "+id);
     String ids="-"+id;
     IndexCommit last=null;
-    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
     for (Iterator<IndexCommit> iterator = commits.iterator(); iterator.hasNext();) {
       IndexCommit commit =  iterator.next();
       Map<String,String> ud=commit.getUserData();
@@ -107,7 +107,7 @@ public class TestTransactionRollback extends LuceneTestCase {
 
   /*
   private void showAvailableCommitPoints() throws Exception {
-    Collection commits = IndexReader.listCommits(dir);
+    Collection commits = DirectoryReader.listCommits(dir);
     for (Iterator iterator = commits.iterator(); iterator.hasNext();) {
       IndexCommit comm = (IndexCommit) iterator.next();
       System.out.print("\t Available commit point:["+comm.getUserData()+"] files=");

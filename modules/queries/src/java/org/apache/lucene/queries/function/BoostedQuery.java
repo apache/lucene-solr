@@ -18,8 +18,8 @@ package org.apache.lucene.queries.function;
  */
 
 import org.apache.lucene.search.*;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 

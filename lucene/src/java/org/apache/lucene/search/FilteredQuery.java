@@ -17,8 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
@@ -100,7 +100,7 @@ public class FilteredQuery extends Query {
       public Explanation explain (AtomicReaderContext ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
         Filter f = FilteredQuery.this.filter;
-        DocIdSet docIdSet = f.getDocIdSet(ir, ir.reader.getLiveDocs());
+        DocIdSet docIdSet = f.getDocIdSet(ir, ir.reader().getLiveDocs());
         DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSet.EMPTY_DOCIDSET.iterator() : docIdSet.iterator();
         if (docIdSetIterator == null) {
           docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();

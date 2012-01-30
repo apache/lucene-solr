@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.DocValues.Type;
 
@@ -65,13 +65,13 @@ public abstract class PerDocConsumer implements Closeable {
   /**
    * Returns a {@link DocValues} instance for merging from the given reader for the given
    * {@link FieldInfo}. This method is used for merging and uses
-   * {@link IndexReader#docValues(String)} by default.
+   * {@link AtomicReader#docValues(String)} by default.
    * <p>
    * To enable {@link DocValues} merging for different {@link DocValues} than
    * the default override this method accordingly.
    * <p>
    */
-  protected DocValues getDocValuesForMerge(IndexReader reader, FieldInfo info) throws IOException {
+  protected DocValues getDocValuesForMerge(AtomicReader reader, FieldInfo info) throws IOException {
     return reader.docValues(info.name);
   }
   

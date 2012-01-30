@@ -17,7 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -93,7 +93,7 @@ public class SpanTermQuery extends SpanQuery {
     if (termContext == null) {
       // this happens with span-not query, as it doesn't include the NOT side in extractTerms()
       // so we seek to the term now in this segment..., this sucks because its ugly mostly!
-      final Fields fields = context.reader.fields();
+      final Fields fields = context.reader().fields();
       if (fields != null) {
         final Terms terms = fields.terms(term.field());
         if (terms != null) {
@@ -117,7 +117,7 @@ public class SpanTermQuery extends SpanQuery {
       return TermSpans.EMPTY_TERM_SPANS;
     }
     
-    final TermsEnum termsEnum = context.reader.terms(term.field()).iterator(null);
+    final TermsEnum termsEnum = context.reader().terms(term.field()).iterator(null);
     termsEnum.seekExact(term.bytes(), state);
     
     final DocsAndPositionsEnum postings = termsEnum.docsAndPositions(acceptDocs, null, false);

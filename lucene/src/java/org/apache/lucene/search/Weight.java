@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.AtomicReader; // javadocs
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReaderContext; // javadocs
 import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.util.Bits;
 
@@ -32,13 +32,13 @@ import org.apache.lucene.util.Bits;
  * {@link Query}, so that a {@link Query} instance can be reused. <br>
  * {@link IndexSearcher} dependent state of the query should reside in the
  * {@link Weight}. <br>
- * {@link IndexReader} dependent state should reside in the {@link Scorer}.
+ * {@link AtomicReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link AtomicReaderContext} ({@link #scorer(IndexReader.AtomicReaderContext, 
+ * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, 
  * boolean, boolean, Bits)})
  * callers must maintain the relationship between the searcher's top-level
- * {@link ReaderContext} and the context used to create a {@link Scorer}. 
+ * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
  * A <code>Weight</code> is used in the following way:
  * <ol>
@@ -51,7 +51,7 @@ import org.apache.lucene.util.Bits;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(IndexReader.AtomicReaderContext, boolean, boolean, Bits)}.
+ * {@link #scorer(AtomicReaderContext, boolean, boolean, Bits)}.
  * </ol>
  * 
  * @since 2.9
@@ -117,7 +117,7 @@ public abstract class Weight {
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
    * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #scorer(IndexReader.AtomicReaderContext, boolean, boolean, Bits)} to
+   * {@link #scorer(AtomicReaderContext, boolean, boolean, Bits)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.
    * <p>

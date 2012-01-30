@@ -17,8 +17,8 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.Bits;
@@ -96,7 +96,7 @@ public class FunctionQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      return ((AllScorer)scorer(context, true, true, context.reader.getLiveDocs())).explain(doc);
+      return ((AllScorer)scorer(context, true, true, context.reader().getLiveDocs())).explain(doc);
     }
   }
 
@@ -113,7 +113,7 @@ public class FunctionQuery extends Query {
       super(w);
       this.weight = w;
       this.qWeight = qWeight;
-      this.reader = context.reader;
+      this.reader = context.reader();
       this.maxDoc = reader.maxDoc();
       this.liveDocs = acceptDocs;
       vals = func.getValues(weight.context, context);

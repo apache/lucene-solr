@@ -20,8 +20,8 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -703,12 +703,12 @@ public abstract class TFIDFSimilarity extends Similarity {
 
   @Override
   public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new ExactTFIDFDocScorer((IDFStats)stats, context.reader.normValues(fieldName));
+    return new ExactTFIDFDocScorer((IDFStats)stats, context.reader().normValues(fieldName));
   }
 
   @Override
   public final SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new SloppyTFIDFDocScorer((IDFStats)stats, context.reader.normValues(fieldName));
+    return new SloppyTFIDFDocScorer((IDFStats)stats, context.reader().normValues(fieldName));
   }
   
   // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.

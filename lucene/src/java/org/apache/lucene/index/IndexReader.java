@@ -21,8 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,26 +36,32 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  index.  Search of an index is done entirely through this abstract interface,
  so that any subclass which implements it is searchable.
 
- <p> Concrete subclasses of IndexReader are usually constructed with a call to
- one of the static <code>open()</code> methods, e.g. {@link
- #open(Directory)}.
+ <p>There are two different types of IndexReaders:
+ <ul>
+  <li>{@link AtomicReader}: These indexes do not consist of several sub-readers,
+  they are atomic. They support retrieval of stored fields, doc values, terms,
+  and postings.
+  <li>{@link CompositeReader}: Instances (like {@link DirectoryReader})
+  of this reader can only
+  be used to get stored fields from the underlying AtomicReaders,
+  but it is not possible to directly retrieve postings. To do that, get
+  the sub-readers via {@link CompositeReader#getSequentialSubReaders}.
+  Alternatively, you can mimic an {@link AtomicReader} (with a serious slowdown),
+  by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
+ </ul>
+ 
+ <p>IndexReader instances for indexes on disk are usually constructed
+ with a call to one of the static <code>DirectoryReader,open()</code> methods,
+ e.g. {@link DirectoryReader#open(Directory)}. {@link DirectoryReader} implements
+ the {@link CompositeReader} interface, it is not possible to directly get postings.
 
  <p> For efficiency, in this API documents are often referred to via
  <i>document numbers</i>, non-negative integers which each name a unique
- document in the index.  These document numbers are ephemeral--they may change
+ document in the index.  These document numbers are ephemeral -- they may change
  as documents are added to and deleted from an index.  Clients should thus not
  rely on a given document having the same number between sessions.
 
  <p>
- <b>NOTE</b>: for backwards API compatibility, several methods are not listed 
- as abstract, but have no useful implementations in this base class and 
- instead always throw UnsupportedOperationException.  Subclasses are 
- strongly encouraged to override these methods, but in many cases may not 
- need to.
- </p>
-
- <p>
-
  <a name="thread-safety"></a><p><b>NOTE</b>: {@link
  IndexReader} instances are completely thread
  safe, meaning multiple threads can call any of its methods,
@@ -67,7 +71,13 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
  (non-Lucene) objects instead.
 */
 public abstract class IndexReader implements Closeable {
-
+  
+  IndexReader() {
+    if (!(this instanceof CompositeReader || this instanceof AtomicReader))
+      throw new Error("This class should never be directly extended, subclass AtomicReader or CompositeReader instead!");
+    refCount.set(1);
+  }
+  
   /**
    * A custom listener that's invoked when the IndexReader
    * is closed.
@@ -109,8 +119,6 @@ public abstract class IndexReader implements Closeable {
   private volatile boolean closed;
   
   private final AtomicInteger refCount = new AtomicInteger();
-
-  static int DEFAULT_TERMS_INDEX_DIVISOR = 1;
 
   /** Expert: returns the current refCount for this reader */
   public final int getRefCount() {
@@ -172,23 +180,6 @@ public abstract class IndexReader implements Closeable {
     return false;
   }
 
-  /** {@inheritDoc} */
-  @Override
-  public String toString() {
-    final StringBuilder buffer = new StringBuilder();
-    buffer.append(getClass().getSimpleName());
-    buffer.append('(');
-    final IndexReader[] subReaders = getSequentialSubReaders();
-    if ((subReaders != null) && (subReaders.length > 0)) {
-      buffer.append(subReaders[0]);
-      for (int i = 1; i < subReaders.length; ++i) {
-        buffer.append(" ").append(subReaders[i]);
-      }
-    }
-    buffer.append(')');
-    return buffer.toString();
-  }
-
   /**
    * Expert: decreases the refCount of this IndexReader
    * instance.  If the refCount drops to 0, then this
@@ -219,10 +210,6 @@ public abstract class IndexReader implements Closeable {
     }
   }
   
-  protected IndexReader() { 
-    refCount.set(1);
-  }
-  
   /**
    * @throws AlreadyClosedException if this IndexReader is closed
    */
@@ -237,9 +224,11 @@ public abstract class IndexReader implements Closeable {
    * @param directory the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link DirectoryReader#open(Directory)}
    */
-  public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(directory, null, DEFAULT_TERMS_INDEX_DIVISOR);
+  @Deprecated
+  public static DirectoryReader open(final Directory directory) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(directory);
   }
   
   /** Expert: Returns a IndexReader reading the index in the given
@@ -257,9 +246,11 @@ public abstract class IndexReader implements Closeable {
    *  to -1 to skip loading the terms index entirely.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link DirectoryReader#open(Directory,int)}
    */
-  public static IndexReader open(final Directory directory, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(directory, null, termInfosIndexDivisor);
+  @Deprecated
+  public static DirectoryReader open(final Directory directory, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(directory, termInfosIndexDivisor);
   }
   
   /**
@@ -277,12 +268,14 @@ public abstract class IndexReader implements Closeable {
    * @throws CorruptIndexException
    * @throws IOException if there is a low-level IO error
    *
-   * @see #openIfChanged(IndexReader,IndexWriter,boolean)
+   * @see DirectoryReader#openIfChanged(DirectoryReader,IndexWriter,boolean)
    *
    * @lucene.experimental
+   * @deprecated Use {@link DirectoryReader#open(IndexWriter,boolean)}
    */
-  public static IndexReader open(final IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
-    return writer.getReader(applyAllDeletes);
+  @Deprecated
+  public static DirectoryReader open(final IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(writer, applyAllDeletes);
   }
 
   /** Expert: returns an IndexReader reading the index in the given
@@ -290,9 +283,11 @@ public abstract class IndexReader implements Closeable {
    * @param commit the commit point to open
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link DirectoryReader#open(IndexCommit)}
    */
-  public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(commit.getDirectory(), commit, DEFAULT_TERMS_INDEX_DIVISOR);
+  @Deprecated
+  public static DirectoryReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(commit);
   }
 
 
@@ -311,240 +306,11 @@ public abstract class IndexReader implements Closeable {
    *  to -1 to skip loading the terms index entirely.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link DirectoryReader#open(IndexCommit,int)}
    */
-  public static IndexReader open(final IndexCommit commit, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(commit.getDirectory(), commit, termInfosIndexDivisor);
-  }
-
-  /**
-   * If the index has changed since the provided reader was
-   * opened, open and return a new reader; else, return
-   * null.  The new reader, if not null, will be the same
-   * type of reader as the previous one, ie an NRT reader
-   * will open a new NRT reader, a MultiReader will open a
-   * new MultiReader,  etc.
-   *
-   * <p>This method is typically far less costly than opening a
-   * fully new <code>IndexReader</code> as it shares
-   * resources (for example sub-readers) with the provided
-   * <code>IndexReader</code>, when possible.
-   *
-   * <p>The provided reader is not closed (you are responsible
-   * for doing so); if a new reader is returned you also
-   * must eventually close it.  Be sure to never close a
-   * reader while other threads are still using it; see
-   * {@link SearcherManager} to simplify managing this.
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   * @return null if there are no changes; else, a new
-   * IndexReader instance which you must eventually close
-   */  
-  public static IndexReader openIfChanged(IndexReader oldReader) throws IOException {
-    final IndexReader newReader = oldReader.doOpenIfChanged();
-    assert newReader != oldReader;
-    return newReader;
-  }
-
-  /**
-   * If the IndexCommit differs from what the
-   * provided reader is searching, open and return a new
-   * reader; else, return null.
-   *
-   * @see #openIfChanged(IndexReader)
-   */
-  public static IndexReader openIfChanged(IndexReader oldReader, IndexCommit commit) throws IOException {
-    final IndexReader newReader = oldReader.doOpenIfChanged(commit);
-    assert newReader != oldReader;
-    return newReader;
-  }
-
-  /**
-   * Expert: If there changes (committed or not) in the
-   * {@link IndexWriter} versus what the provided reader is
-   * searching, then open and return a new
-   * IndexReader searching both committed and uncommitted
-   * changes from the writer; else, return null (though, the
-   * current implementation never returns null).
-   *
-   * <p>This provides "near real-time" searching, in that
-   * changes made during an {@link IndexWriter} session can be
-   * quickly made available for searching without closing
-   * the writer nor calling {@link IndexWriter#commit}.
-   *
-   * <p>It's <i>near</i> real-time because there is no hard
-   * guarantee on how quickly you can get a new reader after
-   * making changes with IndexWriter.  You'll have to
-   * experiment in your situation to determine if it's
-   * fast enough.  As this is a new and experimental
-   * feature, please report back on your findings so we can
-   * learn, improve and iterate.</p>
-   *
-   * <p>The very first time this method is called, this
-   * writer instance will make every effort to pool the
-   * readers that it opens for doing merges, applying
-   * deletes, etc.  This means additional resources (RAM,
-   * file descriptors, CPU time) will be consumed.</p>
-   *
-   * <p>For lower latency on reopening a reader, you should
-   * call {@link IndexWriterConfig#setMergedSegmentWarmer} to
-   * pre-warm a newly merged segment before it's committed
-   * to the index.  This is important for minimizing
-   * index-to-search delay after a large merge.  </p>
-   *
-   * <p>If an addIndexes* call is running in another thread,
-   * then this reader will only search those segments from
-   * the foreign index that have been successfully copied
-   * over, so far.</p>
-   *
-   * <p><b>NOTE</b>: Once the writer is closed, any
-   * outstanding readers may continue to be used.  However,
-   * if you attempt to reopen any of those readers, you'll
-   * hit an {@link AlreadyClosedException}.</p>
-   *
-   * @return IndexReader that covers entire index plus all
-   * changes made so far by this IndexWriter instance, or
-   * null if there are no new changes
-   *
-   * @param writer The IndexWriter to open from
-   *
-   * @param applyAllDeletes If true, all buffered deletes will
-   * be applied (made visible) in the returned reader.  If
-   * false, the deletes are not applied but remain buffered
-   * (in IndexWriter) so that they will be applied in the
-   * future.  Applying deletes can be costly, so if your app
-   * can tolerate deleted documents being returned you might
-   * gain some performance by passing false.
-   *
-   * @throws IOException
-   *
-   * @lucene.experimental
-   */
-  public static IndexReader openIfChanged(IndexReader oldReader, IndexWriter writer, boolean applyAllDeletes) throws IOException {
-    final IndexReader newReader = oldReader.doOpenIfChanged(writer, applyAllDeletes);
-    assert newReader != oldReader;
-    return newReader;
-  }
-
-  /**
-   * If the index has changed since it was opened, open and return a new reader;
-   * else, return {@code null}.
-   * 
-   * @see #openIfChanged(IndexReader)
-   */
-  protected IndexReader doOpenIfChanged() throws CorruptIndexException, IOException {
-    throw new UnsupportedOperationException("This reader does not support reopen().");
-  }
-  
-  /**
-   * If the index has changed since it was opened, open and return a new reader;
-   * else, return {@code null}.
-   * 
-   * @see #openIfChanged(IndexReader, IndexCommit)
-   */
-  protected IndexReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
-    throw new UnsupportedOperationException("This reader does not support reopen(IndexCommit).");
-  }
-
-  /**
-   * If the index has changed since it was opened, open and return a new reader;
-   * else, return {@code null}.
-   * 
-   * @see #openIfChanged(IndexReader, IndexWriter, boolean)
-   */
-  protected IndexReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
-    return writer.getReader(applyAllDeletes);
-  }
-
-  /** 
-   * Returns the directory associated with this index.  The Default 
-   * implementation returns the directory specified by subclasses when 
-   * delegating to the IndexReader(Directory) constructor, or throws an 
-   * UnsupportedOperationException if one was not specified.
-   * @throws UnsupportedOperationException if no directory
-   */
-  public Directory directory() {
-    ensureOpen();
-    throw new UnsupportedOperationException("This reader does not support this method.");  
-  }
-
-  /**
-   * Reads commitUserData, previously passed to {@link
-   * IndexWriter#commit(Map)}, from current index
-   * segments file.  This will return null if {@link
-   * IndexWriter#commit(Map)} has never been called for
-   * this index.
-   * 
-   * @param directory where the index resides.
-   * @return commit userData.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   *
-   * @see #getCommitUserData()
-   */
-  public static Map<String, String> getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentUserData(directory);
-  }
-
-  /**
-   * Version number when this IndexReader was opened. Not
-   * implemented in the IndexReader base class.
-   *
-   * <p>If this reader is based on a Directory (ie, was
-   * created by calling {@link #open}, or {@link #openIfChanged} on
-   * a reader based on a Directory), then this method
-   * returns the version recorded in the commit that the
-   * reader opened.  This version is advanced every time
-   * a change is made with {@link IndexWriter}.</p>
-   *
-   * @throws UnsupportedOperationException unless overridden in subclass
-   */
-  public long getVersion() {
-    throw new UnsupportedOperationException("This reader does not support this method.");
-  }
-
-  /**
-   * Retrieve the String userData optionally passed to
-   * IndexWriter#commit.  This will return null if {@link
-   * IndexWriter#commit(Map)} has never been called for
-   * this index.
-   *
-   * @see #getCommitUserData(Directory)
-   */
-  public Map<String,String> getCommitUserData() {
-    throw new UnsupportedOperationException("This reader does not support this method.");
-  }
-
-
-  /**
-   * Check whether any new changes have occurred to the
-   * index since this reader was opened.
-   *
-   * <p>If this reader is based on a Directory (ie, was
-   * created by calling {@link #open}, or {@link #openIfChanged} on
-   * a reader based on a Directory), then this method checks
-   * if any further commits (see {@link IndexWriter#commit}
-   * have occurred in that directory).</p>
-   *
-   * <p>If instead this reader is a near real-time reader
-   * (ie, obtained by a call to {@link
-   * IndexWriter#getReader}, or by calling {@link #openIfChanged}
-   * on a near real-time reader), then this method checks if
-   * either a new commit has occurred, or any new
-   * uncommitted changes have taken place via the writer.
-   * Note that even if the writer has only performed
-   * merging, this method will still return false.</p>
-   *
-   * <p>In any event, if this returns false, you should call
-   * {@link #openIfChanged} to get a new reader that sees the
-   * changes.</p>
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException           if there is a low-level IO error
-   * @throws UnsupportedOperationException unless overridden in subclass
-   */
-  public boolean isCurrent() throws CorruptIndexException, IOException {
-    throw new UnsupportedOperationException("This reader does not support this method.");
+  @Deprecated
+  public static DirectoryReader open(final IndexCommit commit, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(commit, termInfosIndexDivisor);
   }
 
   /** Retrieve term vectors for this document, or null if
@@ -565,21 +331,6 @@ public abstract class IndexReader implements Closeable {
       return null;
     }
     return vectors.terms(field);
-  }
-
-  /**
-   * Returns <code>true</code> if an index exists at the specified directory.
-   * @param  directory the directory to check for an index
-   * @return <code>true</code> if an index exists; <code>false</code> otherwise
-   * @throws IOException if there is a problem with accessing the index
-   */
-  public static boolean indexExists(Directory directory) throws IOException {
-    try {
-      new SegmentInfos().read(directory);
-      return true;
-    } catch (IOException ioe) {
-      return false;
-    }
   }
 
   /** Returns the number of documents in this index. */
@@ -646,166 +397,6 @@ public abstract class IndexReader implements Closeable {
   /** Returns true if any documents have been deleted */
   public abstract boolean hasDeletions();
 
-  /** Returns true if there are norms stored for this field. */
-  public boolean hasNorms(String field) throws IOException {
-    // backward compatible implementation.
-    // SegmentReader has an efficient implementation.
-    ensureOpen();
-    return normValues(field) != null;
-  }
-
-  /**
-   * Returns {@link Fields} for this reader.
-   * This method may return null if the reader has no
-   * postings.
-   *
-   * <p><b>NOTE</b>: if this is a multi reader ({@link
-   * #getSequentialSubReaders} is not null) then this
-   * method will throw UnsupportedOperationException.  If
-   * you really need a {@link Fields} for such a reader,
-   * use {@link MultiFields#getFields}.  However, for
-   * performance reasons, it's best to get all sub-readers
-   * using {@link ReaderUtil#gatherSubReaders} and iterate
-   * through them yourself. */
-  public abstract Fields fields() throws IOException;
-  
-  public final int docFreq(Term term) throws IOException {
-    return docFreq(term.field(), term.bytes());
-  }
-
-  /** Returns the number of documents containing the term
-   * <code>t</code>.  This method returns 0 if the term or
-   * field does not exists.  This method does not take into
-   * account deleted documents that have not yet been merged
-   * away. */
-  public int docFreq(String field, BytesRef term) throws IOException {
-    final Fields fields = fields();
-    if (fields == null) {
-      return 0;
-    }
-    final Terms terms = fields.terms(field);
-    if (terms == null) {
-      return 0;
-    }
-    final TermsEnum termsEnum = terms.iterator(null);
-    if (termsEnum.seekExact(term, true)) {
-      return termsEnum.docFreq();
-    } else {
-      return 0;
-    }
-  }
-
-  /** Returns the number of documents containing the term
-   * <code>t</code>.  This method returns 0 if the term or
-   * field does not exists.  This method does not take into
-   * account deleted documents that have not yet been merged
-   * away. */
-  public final long totalTermFreq(String field, BytesRef term) throws IOException {
-    final Fields fields = fields();
-    if (fields == null) {
-      return 0;
-    }
-    final Terms terms = fields.terms(field);
-    if (terms == null) {
-      return 0;
-    }
-    final TermsEnum termsEnum = terms.iterator(null);
-    if (termsEnum.seekExact(term, true)) {
-      return termsEnum.totalTermFreq();
-    } else {
-      return 0;
-    }
-  }
-
-  /** This may return null if the field does not exist.*/
-  public final Terms terms(String field) throws IOException {
-    final Fields fields = fields();
-    if (fields == null) {
-      return null;
-    }
-    return fields.terms(field);
-  }
-
-  /** Returns {@link DocsEnum} for the specified field &
-   *  term.  This may return null, if either the field or
-   *  term does not exist. */
-  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, boolean needsFreqs) throws IOException {
-    assert field != null;
-    assert term != null;
-    final Fields fields = fields();
-    if (fields != null) {
-      final Terms terms = fields.terms(field);
-      if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term, true)) {
-          return termsEnum.docs(liveDocs, null, needsFreqs);
-        }
-      }
-    }
-    return null;
-  }
-
-  /** Returns {@link DocsAndPositionsEnum} for the specified
-   *  field & term.  This may return null, if either the
-   *  field or term does not exist, or needsOffsets is
-   *  true but offsets were not indexed for this field. */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, boolean needsOffsets) throws IOException {
-    assert field != null;
-    assert term != null;
-    final Fields fields = fields();
-    if (fields != null) {
-      final Terms terms = fields.terms(field);
-      if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term, true)) {
-          return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
-        }
-      }
-    }
-    return null;
-  }
-  
-  /**
-   * Returns {@link DocsEnum} for the specified field and
-   * {@link TermState}. This may return null, if either the field or the term
-   * does not exists or the {@link TermState} is invalid for the underlying
-   * implementation.*/
-  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsFreqs) throws IOException {
-    assert state != null;
-    assert field != null;
-    final Fields fields = fields();
-    if (fields != null) {
-      final Terms terms = fields.terms(field);
-      if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator(null);
-        termsEnum.seekExact(term, state);
-        return termsEnum.docs(liveDocs, null, needsFreqs);
-      }
-    }
-    return null;
-  }
-  
-  /**
-   * Returns {@link DocsAndPositionsEnum} for the specified field and
-   * {@link TermState}. This may return null, if either the field or the term
-   * does not exists, the {@link TermState} is invalid for the underlying
-   * implementation, or needsOffsets is true but offsets
-   * were not indexed for this field. */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsOffsets) throws IOException {
-    assert state != null;
-    assert field != null;
-    final Fields fields = fields();
-    if (fields != null) {
-      final Terms terms = fields.terms(field);
-      if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator(null);
-        termsEnum.seekExact(term, state);
-        return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
-      }
-    }
-    return null;
-  }
-
   /**
    * Closes files associated with this index.
    * Also saves any new deletions to disk.
@@ -823,76 +414,12 @@ public abstract class IndexReader implements Closeable {
   protected abstract void doClose() throws IOException;
 
   /**
-   * Get the {@link FieldInfos} describing all fields in
-   * this reader.  NOTE: do not make any changes to the
-   * returned FieldInfos!
-   *
-   * @lucene.experimental
-   */
-  public abstract FieldInfos getFieldInfos();
-
-  /** Returns the {@link Bits} representing live (not
-   *  deleted) docs.  A set bit indicates the doc ID has not
-   *  been deleted.  If this method returns null it means
-   *  there are no deleted documents (all documents are
-   *  live).
-   *
-   *  The returned instance has been safely published for
-   *  use by multiple threads without additional
-   *  synchronization.
-   * @lucene.experimental */
-  public abstract Bits getLiveDocs();
-
-  /**
-   * Expert: return the IndexCommit that this reader has
-   * opened.  This method is only implemented by those
-   * readers that correspond to a Directory with its own
-   * segments_N file.
-   *
-   * @lucene.experimental
-   */
-  public IndexCommit getIndexCommit() throws IOException {
-    throw new UnsupportedOperationException("This reader does not support this method.");
-  }
-  
-  /** Returns all commit points that exist in the Directory.
-   *  Normally, because the default is {@link
-   *  KeepOnlyLastCommitDeletionPolicy}, there would be only
-   *  one commit point.  But if you're using a custom {@link
-   *  IndexDeletionPolicy} then there could be many commits.
-   *  Once you have a given commit, you can open a reader on
-   *  it by calling {@link IndexReader#open(IndexCommit)}
-   *  There must be at least one commit in
-   *  the Directory, else this method throws {@link
-   *  IndexNotFoundException}.  Note that if a commit is in
-   *  progress while this method is running, that commit
-   *  may or may not be returned.
-   *  
-   *  @return a sorted list of {@link IndexCommit}s, from oldest 
-   *  to latest. */
-  public static List<IndexCommit> listCommits(Directory dir) throws IOException {
-    return DirectoryReader.listCommits(dir);
-  }
-
-  /** Expert: returns the sequential sub readers that this
-   *  reader is logically composed of. If this reader is not composed
-   *  of sequential child readers, it should return null.
-   *  If this method returns an empty array, that means this
-   *  reader is a null reader (for example a MultiReader
-   *  that has no sub readers).
-   */
-  public IndexReader[] getSequentialSubReaders() {
-    ensureOpen();
-    return null;
-  }
-  
-  /**
-   * Expert: Returns a the root {@link ReaderContext} for this
+   * Expert: Returns a the root {@link IndexReaderContext} for this
    * {@link IndexReader}'s sub-reader tree. Iff this reader is composed of sub
    * readers ,ie. this reader being a composite reader, this method returns a
    * {@link CompositeReaderContext} holding the reader's direct children as well as a
    * view of the reader tree's atomic leaf contexts. All sub-
-   * {@link ReaderContext} instances referenced from this readers top-level
+   * {@link IndexReaderContext} instances referenced from this readers top-level
    * context are private to this reader and are not shared with another context
    * tree. For example, IndexSearcher uses this API to drive searching by one
    * atomic leaf reader at a time. If this reader is not composed of child
@@ -905,7 +432,7 @@ public abstract class IndexReader implements Closeable {
    * 
    * @lucene.experimental
    */
-  public abstract ReaderContext getTopReaderContext();
+  public abstract IndexReaderContext getTopReaderContext();
 
   /** Expert: Returns a key for this IndexReader, so FieldCache/CachingWrapperFilter can find
    * it again.
@@ -924,191 +451,15 @@ public abstract class IndexReader implements Closeable {
     // on close
     return this;
   }
-
-  /** Returns the number of unique terms (across all fields)
-   *  in this reader.
-   *
-   *  @return number of unique terms or -1 if this count
-   *  cannot be easily determined (eg Multi*Readers).
-   *  Instead, you should call {@link
-   *  #getSequentialSubReaders} and ask each sub reader for
-   *  its unique term count. */
-  public final long getUniqueTermCount() throws IOException {
-    if (!getTopReaderContext().isAtomic) {
-      return -1;
-    }
-    final Fields fields = fields();
-    if (fields == null) {
-      return 0;
-    }
-    return fields.getUniqueTermCount();
-  }
-
-  /** For IndexReader implementations that use
-   *  TermInfosReader to read terms, this returns the
-   *  current indexDivisor as specified when the reader was
-   *  opened.
-   */
-  public int getTermInfosIndexDivisor() {
-    throw new UnsupportedOperationException("This reader does not support this method.");
-  }
   
-  /**
-   * Returns {@link DocValues} for this field.
-   * This method may return null if the reader has no per-document
-   * values stored.
-   *
-   * <p><b>NOTE</b>: if this is a multi reader ({@link
-   * #getSequentialSubReaders} is not null) then this
-   * method will throw UnsupportedOperationException.  If
-   * you really need {@link DocValues} for such a reader,
-   * use {@link MultiDocValues#getDocValues(IndexReader,String)}.  However, for
-   * performance reasons, it's best to get all sub-readers
-   * using {@link ReaderUtil#gatherSubReaders} and iterate
-   * through them yourself. */
-  public abstract DocValues docValues(String field) throws IOException;
-  
-  public abstract DocValues normValues(String field) throws IOException;
-
-  private volatile Fields fields;
-
-  /** @lucene.internal */
-  void storeFields(Fields fields) {
-    ensureOpen();
-    this.fields = fields;
+  public final int docFreq(Term term) throws IOException {
+    return docFreq(term.field(), term.bytes());
   }
 
-  /** @lucene.internal */
-  Fields retrieveFields() {
-    ensureOpen();
-    return fields;
-  }
-  
-  /**
-   * A struct like class that represents a hierarchical relationship between
-   * {@link IndexReader} instances. 
-   * @lucene.experimental
-   */
-  public static abstract class ReaderContext {
-    /** The reader context for this reader's immediate parent, or null if none */
-    public final ReaderContext parent;
-    /** The actual reader */
-    public final IndexReader reader;
-    /** <code>true</code> iff the reader is an atomic reader */
-    public final boolean isAtomic;
-    /** <code>true</code> if this context struct represents the top level reader within the hierarchical context */
-    public final boolean isTopLevel;
-    /** the doc base for this reader in the parent, <tt>0</tt> if parent is null */
-    public final int docBaseInParent;
-    /** the ord for this reader in the parent, <tt>0</tt> if parent is null */
-    public final int ordInParent;
-    
-    ReaderContext(ReaderContext parent, IndexReader reader,
-        boolean isAtomic, int ordInParent, int docBaseInParent) {
-      this.parent = parent;
-      this.reader = reader;
-      this.isAtomic = isAtomic;
-      this.docBaseInParent = docBaseInParent;
-      this.ordInParent = ordInParent;
-      this.isTopLevel = parent==null;
-    }
-    
-    /**
-     * Returns the context's leaves if this context is a top-level context
-     * otherwise <code>null</code>.
-     * <p>
-     * Note: this is convenience method since leaves can always be obtained by
-     * walking the context tree.
-     */
-    public AtomicReaderContext[] leaves() {
-      return null;
-    }
-    
-    /**
-     * Returns the context's children iff this context is a composite context
-     * otherwise <code>null</code>.
-     * <p>
-     * Note: this method is a convenience method to prevent
-     * <code>instanceof</code> checks and type-casts to
-     * {@link CompositeReaderContext}.
-     */
-    public ReaderContext[] children() {
-      return null;
-    }
-  }
-  
-  /**
-   * {@link ReaderContext} for composite {@link IndexReader} instance.
-   * @lucene.experimental
-   */
-  public static final class CompositeReaderContext extends ReaderContext {
-    /** the composite readers immediate children */
-    public final ReaderContext[] children;
-    /** the composite readers leaf reader contexts if this is the top level reader in this context */
-    public final AtomicReaderContext[] leaves;
-
-    /**
-     * Creates a {@link CompositeReaderContext} for intermediate readers that aren't
-     * not top-level readers in the current context
-     */
-    public CompositeReaderContext(ReaderContext parent, IndexReader reader,
-        int ordInParent, int docbaseInParent, ReaderContext[] children) {
-      this(parent, reader, ordInParent, docbaseInParent, children, null);
-    }
-    
-    /**
-     * Creates a {@link CompositeReaderContext} for top-level readers with parent set to <code>null</code>
-     */
-    public CompositeReaderContext(IndexReader reader, ReaderContext[] children, AtomicReaderContext[] leaves) {
-      this(null, reader, 0, 0, children, leaves);
-    }
-    
-    private CompositeReaderContext(ReaderContext parent, IndexReader reader,
-        int ordInParent, int docbaseInParent, ReaderContext[] children,
-        AtomicReaderContext[] leaves) {
-      super(parent, reader, false, ordInParent, docbaseInParent);
-      this.children = children;
-      this.leaves = leaves;
-    }
-
-    @Override
-    public AtomicReaderContext[] leaves() {
-      return leaves;
-    }
-    
-    
-    @Override
-    public ReaderContext[] children() {
-      return children;
-    }
-  }
-  
-  /**
-   * {@link ReaderContext} for atomic {@link IndexReader} instances
-   * @lucene.experimental
-   */
-  public static final class AtomicReaderContext extends ReaderContext {
-    /** The readers ord in the top-level's leaves array */
-    public final int ord;
-    /** The readers absolute doc base */
-    public final int docBase;
-    /**
-     * Creates a new {@link AtomicReaderContext} 
-     */    
-    public AtomicReaderContext(ReaderContext parent, IndexReader reader,
-        int ord, int docBase, int leafOrd, int leafDocBase) {
-      super(parent, reader, true, ord, docBase);
-      assert reader.getSequentialSubReaders() == null : "Atomic readers must not have subreaders";
-      this.ord = leafOrd;
-      this.docBase = leafDocBase;
-    }
-    
-    /**
-     * Creates a new {@link AtomicReaderContext} for a atomic reader without an immediate
-     * parent.
-     */
-    public AtomicReaderContext(IndexReader atomicReader) {
-      this(null, atomicReader, 0, 0, 0, 0);
-    }
-  }
+  /** Returns the number of documents containing the term
+   * <code>t</code>.  This method returns 0 if the term or
+   * field does not exists.  This method does not take into
+   * account deleted documents that have not yet been merged
+   * away. */
+  public abstract int docFreq(String field, BytesRef term) throws IOException;
 }

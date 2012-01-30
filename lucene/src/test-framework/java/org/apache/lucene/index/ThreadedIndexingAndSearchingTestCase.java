@@ -455,7 +455,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     conf.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
       @Override
-      public void warm(IndexReader reader) throws IOException {
+      public void warm(AtomicReader reader) throws IOException {
         if (VERBOSE) {
           System.out.println("TEST: now warm merged reader=" + reader);
         }

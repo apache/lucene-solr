@@ -20,10 +20,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
@@ -32,9 +33,10 @@ import java.io.IOException;
 
 public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
-  protected IndexReader readerA;
-  protected IndexReader readerB;
-  protected IndexReader readerX;
+  protected AtomicReader readerA;
+  protected AtomicReader readerB;
+  protected AtomicReader readerX;
+  protected AtomicReader readerAclone;
   protected Directory dirA, dirB;
   private static final int NUM_DOCS = 1000;
 
@@ -69,14 +71,18 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     }
     wA.close();
     wB.close();
-    readerA = IndexReader.open(dirA);
-    readerB = IndexReader.open(dirB);
-    readerX = new MultiReader(readerA, readerB);
+    DirectoryReader rA = DirectoryReader.open(dirA);
+    readerA = SlowCompositeReaderWrapper.wrap(rA);
+    readerAclone = SlowCompositeReaderWrapper.wrap(rA);
+    readerA = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dirA));
+    readerB = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dirB));
+    readerX = SlowCompositeReaderWrapper.wrap(new MultiReader(readerA, readerB));
   }
 
   @Override
   public void tearDown() throws Exception {
     readerA.close();
+    readerAclone.close();
     readerB.close();
     readerX.close();
     dirA.close();
@@ -88,12 +94,13 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getDoubles(new SlowMultiReaderWrapper(readerA), "theDouble", false);
-    cache.getDoubles(new SlowMultiReaderWrapper(readerA), "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
-    cache.getDoubles(new SlowMultiReaderWrapper(readerB), "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
+    cache.getDoubles(readerA, "theDouble", false);
+    cache.getDoubles(readerA, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
+    cache.getDoubles(readerAclone, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
+    cache.getDoubles(readerB, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
 
-    cache.getInts(new SlowMultiReaderWrapper(readerX), "theInt", false);
-    cache.getInts(new SlowMultiReaderWrapper(readerX), "theInt", FieldCache.DEFAULT_INT_PARSER, false);
+    cache.getInts(readerX, "theInt", false);
+    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER, false);
 
     // // // 
 
@@ -111,9 +118,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getInts(new SlowMultiReaderWrapper(readerX), "theInt", FieldCache.DEFAULT_INT_PARSER, false);
-    cache.getTerms(new SlowMultiReaderWrapper(readerX), "theInt");
-    cache.getBytes(new SlowMultiReaderWrapper(readerX), "theByte", false);
+    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER, false);
+    cache.getTerms(readerX, "theInt");
+    cache.getBytes(readerX, "theByte", false);
 
     // // // 
 
@@ -129,38 +136,6 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
     // we expect bad things, don't let tearDown complain about them
     cache.purgeAllCaches();
-  }
-
-  public void testInsanity2() throws IOException {
-    FieldCache cache = FieldCache.DEFAULT;
-    cache.purgeAllCaches();
-
-    cache.getTerms(new SlowMultiReaderWrapper(readerA), "theString");
-    cache.getTerms(new SlowMultiReaderWrapper(readerB), "theString");
-    cache.getTerms(new SlowMultiReaderWrapper(readerX), "theString");
-
-    cache.getBytes(new SlowMultiReaderWrapper(readerX), "theByte", false);
-
-
-    // // // 
-
-    Insanity[] insanity = 
-      FieldCacheSanityChecker.checkSanity(cache.getCacheEntries());
-    
-    assertEquals("wrong number of cache errors", 1, insanity.length);
-    assertEquals("wrong type of cache error", 
-                 InsanityType.SUBREADER,
-                 insanity[0].getType());
-    assertEquals("wrong number of entries in cache error", 3,
-                 insanity[0].getCacheEntries().length);
-
-    // we expect bad things, don't let tearDown complain about them
-    cache.purgeAllCaches();
-  }
-  
-  public void testInsanity3() throws IOException {
-
-    // :TODO: subreader tree walking is really hairy ... add more crazy tests.
   }
 
 }

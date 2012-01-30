@@ -17,7 +17,7 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -66,7 +66,7 @@ public class ScaleFloatFunction extends ValueSource {
     float maxVal = Float.NEGATIVE_INFINITY;
 
     for (AtomicReaderContext leaf : leaves) {
-      int maxDoc = leaf.reader.maxDoc();
+      int maxDoc = leaf.reader().maxDoc();
       FunctionValues vals =  source.getValues(context, leaf);
       for (int i=0; i<maxDoc; i++) {
 

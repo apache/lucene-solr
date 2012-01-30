@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum; // javadoc @link
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -118,7 +118,7 @@ public class FieldCacheTermsFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-    final FieldCache.DocTermsIndex fcsi = getFieldCache().getTermsIndex(context.reader, field);
+    final FieldCache.DocTermsIndex fcsi = getFieldCache().getTermsIndex(context.reader(), field);
     final FixedBitSet bits = new FixedBitSet(fcsi.numOrd());
     final BytesRef spare = new BytesRef();
     for (int i=0;i<terms.length;i++) {
@@ -127,7 +127,7 @@ public class FieldCacheTermsFilter extends Filter {
         bits.set(termNumber);
       }
     }
-    return new FieldCacheDocIdSet(context.reader.maxDoc(), acceptDocs) {
+    return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
       @Override
       protected final boolean matchDoc(int doc) {
         return bits.get(fcsi.getOrd(doc));

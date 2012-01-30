@@ -60,8 +60,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
 
       @Override
-      protected IndexReader openReader() throws IOException {
-        return IndexReader.open(dir1);
+      protected DirectoryReader openReader() throws IOException {
+        return DirectoryReader.open(dir1);
       }
       
     });
@@ -78,69 +78,14 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
 
       @Override
-      protected IndexReader openReader() throws IOException {
-        return IndexReader.open(dir2);
+      protected DirectoryReader openReader() throws IOException {
+        return DirectoryReader.open(dir2);
       }
       
     });
     dir2.close();
   }
   
-  public void testParallelReaderReopen() throws Exception {
-    final Directory dir1 = newDirectory();
-    createIndex(random, dir1, true);
-    final Directory dir2 = newDirectory();
-    createIndex(random, dir2, true);
-    
-    performDefaultTests(new TestReopen() {
-
-      @Override
-      protected void modifyIndex(int i) throws IOException {
-        TestIndexReaderReopen.modifyIndex(i, dir1);
-        TestIndexReaderReopen.modifyIndex(i, dir2);
-      }
-
-      @Override
-      protected IndexReader openReader() throws IOException {
-        ParallelReader pr = new ParallelReader();
-        pr.add(IndexReader.open(dir1));
-        pr.add(IndexReader.open(dir2));
-        return pr;
-      }
-      
-    });
-    dir1.close();
-    dir2.close();
-    
-    final Directory dir3 = newDirectory();
-    createIndex(random, dir3, true);
-    final Directory dir4 = newDirectory();
-    createIndex(random, dir4, true);
-
-    performTestsWithExceptionInReopen(new TestReopen() {
-
-      @Override
-      protected void modifyIndex(int i) throws IOException {
-        TestIndexReaderReopen.modifyIndex(i, dir3);
-        TestIndexReaderReopen.modifyIndex(i, dir4);
-      }
-
-      @Override
-      protected IndexReader openReader() throws IOException {
-        ParallelReader pr = new ParallelReader();
-        pr.add(IndexReader.open(dir3));
-        pr.add(IndexReader.open(dir4));
-        // Does not implement reopen, so
-        // hits exception:
-        pr.add(new FilterIndexReader(IndexReader.open(dir3)));
-        return pr;
-      }
-      
-    });
-    dir3.close();
-    dir4.close();
-  }
-
   // LUCENE-1228: IndexWriter.commit() does not update the index version
   // populate an index in iterations.
   // at the end of every iteration, commit the index and reopen/recreate the reader.
@@ -162,7 +107,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(
                                                               OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(newLogMergePolicy()));
     iwriter.commit();
-    IndexReader reader = IndexReader.open(dir);
+    DirectoryReader reader = DirectoryReader.open(dir);
     try {
       int M = 3;
       FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -191,7 +136,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         iwriter.commit();
         if (withReopen) {
           // reopen
-          IndexReader r2 = IndexReader.openIfChanged(reader);
+          DirectoryReader r2 = DirectoryReader.openIfChanged(reader);
           if (r2 != null) {
             reader.close();
             reader = r2;
@@ -199,7 +144,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         } else {
           // recreate
           reader.close();
-          reader = IndexReader.open(dir);
+          reader = DirectoryReader.open(dir);
         }
       }
     } finally {
@@ -207,99 +152,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       reader.close();
     }
   }
-  
-  public void testMultiReaderReopen() throws Exception {
-    final Directory dir1 = newDirectory();
-    createIndex(random, dir1, true);
-
-    final Directory dir2 = newDirectory();
-    createIndex(random, dir2, true);
-
-    performDefaultTests(new TestReopen() {
-
-      @Override
-      protected void modifyIndex(int i) throws IOException {
-        TestIndexReaderReopen.modifyIndex(i, dir1);
-        TestIndexReaderReopen.modifyIndex(i, dir2);
-      }
-
-      @Override
-      protected IndexReader openReader() throws IOException {
-        return new MultiReader(IndexReader.open(dir1),
-            IndexReader.open(dir2));
-      }
-      
-    });
-
-    dir1.close();
-    dir2.close();
     
-    final Directory dir3 = newDirectory();
-    createIndex(random, dir3, true);
-
-    final Directory dir4 = newDirectory();
-    createIndex(random, dir4, true);
-
-    performTestsWithExceptionInReopen(new TestReopen() {
-
-      @Override
-      protected void modifyIndex(int i) throws IOException {
-        TestIndexReaderReopen.modifyIndex(i, dir3);
-        TestIndexReaderReopen.modifyIndex(i, dir4);
-      }
-
-      @Override
-      protected IndexReader openReader() throws IOException {
-        return new MultiReader(IndexReader.open(dir3),
-            IndexReader.open(dir4),
-            // Does not implement reopen, so
-            // hits exception:
-            new FilterIndexReader(IndexReader.open(dir3)));
-      }
-      
-    });
-    dir3.close();
-    dir4.close();
-  }
-
-  public void testMixedReaders() throws Exception {
-    final Directory dir1 = newDirectory();
-    createIndex(random, dir1, true);
-    final Directory dir2 = newDirectory();
-    createIndex(random, dir2, true);
-    final Directory dir3 = newDirectory();
-    createIndex(random, dir3, false);
-    final Directory dir4 = newDirectory();
-    createIndex(random, dir4, true);
-    final Directory dir5 = newDirectory();
-    createIndex(random, dir5, false);
-    
-    performDefaultTests(new TestReopen() {
-
-      @Override
-      protected void modifyIndex(int i) throws IOException {
-        TestIndexReaderReopen.modifyIndex(i, dir4);
-        TestIndexReaderReopen.modifyIndex(i, dir5);
-      }
-
-      @Override
-      protected IndexReader openReader() throws IOException {
-        MultiReader mr1 = new MultiReader(IndexReader.open(dir1), IndexReader.open(dir2));
-        MultiReader mr2 = new MultiReader(IndexReader.open(dir3), IndexReader.open(dir4));
-        return new MultiReader(mr1, mr2, IndexReader.open(dir5));
-      }
-    });
-    dir1.close();
-    dir2.close();
-    dir3.close();
-    dir4.close();
-    dir5.close();
-  }  
-  
   private void performDefaultTests(TestReopen test) throws Exception {
 
-    IndexReader index1 = test.openReader();
-    IndexReader index2 = test.openReader();
+    DirectoryReader index1 = test.openReader();
+    DirectoryReader index2 = test.openReader();
         
     TestIndexReader.assertIndexEquals(index1, index2);
 
@@ -312,7 +169,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     index1.close();
     index1 = couple.newReader;
 
-    IndexReader index2_refreshed = couple.refreshedReader;
+    DirectoryReader index2_refreshed = couple.refreshedReader;
     index2.close();
     
     // test if refreshed reader and newly opened reader return equal results
@@ -328,7 +185,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       index1.close();
       couple = refreshReader(index2, test, i, true);
-      // refresh IndexReader
+      // refresh DirectoryReader
       index2.close();
       
       index2 = couple.refreshedReader;
@@ -341,85 +198,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     assertReaderClosed(index1, true, true);
     assertReaderClosed(index2, true, true);
   }
-
-  public void testReferenceCountingMultiReader() throws IOException {
-    for (int mode = 0; mode <=1; mode++) {
-      Directory dir1 = newDirectory();
-      createIndex(random, dir1, false);
-      Directory dir2 = newDirectory();
-      createIndex(random, dir2, true);
-      
-      IndexReader reader1 = IndexReader.open(dir1);
-      assertRefCountEquals(1, reader1);
-
-      IndexReader initReader2 = IndexReader.open(dir2);
-      IndexReader multiReader1 = new MultiReader(new IndexReader[] {reader1, initReader2}, (mode == 0));
-      modifyIndex(0, dir2);
-      assertRefCountEquals(1 + mode, reader1);
-      
-      IndexReader multiReader2 = IndexReader.openIfChanged(multiReader1);
-      assertNotNull(multiReader2);
-      // index1 hasn't changed, so multiReader2 should share reader1 now with multiReader1
-      assertRefCountEquals(2 + mode, reader1);
-      
-      modifyIndex(0, dir1);
-      IndexReader reader2 = IndexReader.openIfChanged(reader1);
-      assertNotNull(reader2);
-      assertNull(IndexReader.openIfChanged(reader2));
-      assertRefCountEquals(2 + mode, reader1);
-
-      if (mode == 1) {
-        initReader2.close();
-      }
-      
-      modifyIndex(1, dir1);
-      IndexReader reader3 = IndexReader.openIfChanged(reader2);
-      assertNotNull(reader3);
-      assertRefCountEquals(2 + mode, reader1);
-      assertRefCountEquals(1, reader2);
-      
-      multiReader1.close();
-      assertRefCountEquals(1 + mode, reader1);
-      
-      multiReader1.close();
-      assertRefCountEquals(1 + mode, reader1);
-
-      if (mode == 1) {
-        initReader2.close();
-      }
-      
-      reader1.close();
-      assertRefCountEquals(1, reader1);
-      
-      multiReader2.close();
-      assertRefCountEquals(0, reader1);
-      
-      multiReader2.close();
-      assertRefCountEquals(0, reader1);
-      
-      reader3.close();
-      assertRefCountEquals(0, reader1);
-      assertReaderClosed(reader1, true, false);
-      
-      reader2.close();
-      assertRefCountEquals(0, reader1);
-      assertReaderClosed(reader1, true, false);
-      
-      reader2.close();
-      assertRefCountEquals(0, reader1);
-      
-      reader3.close();
-      assertRefCountEquals(0, reader1);
-      assertReaderClosed(reader1, true, true);
-      dir1.close();
-      dir2.close();
-    }
-
-  }
   
   private void performTestsWithExceptionInReopen(TestReopen test) throws Exception {
-    IndexReader index1 = test.openReader();
-    IndexReader index2 = test.openReader();
+    DirectoryReader index1 = test.openReader();
+    DirectoryReader index2 = test.openReader();
 
     TestIndexReader.assertIndexEquals(index1, index2);
     
@@ -459,28 +241,28 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
 
       @Override
-      protected IndexReader openReader() throws IOException {
-        return IndexReader.open(dir);
+      protected DirectoryReader openReader() throws IOException {
+        return DirectoryReader.open(dir);
       }      
     };
     
     final List<ReaderCouple> readers = Collections.synchronizedList(new ArrayList<ReaderCouple>());
-    IndexReader firstReader = IndexReader.open(dir);
-    IndexReader reader = firstReader;
+    DirectoryReader firstReader = DirectoryReader.open(dir);
+    DirectoryReader reader = firstReader;
     final Random rnd = random;
     
     ReaderThread[] threads = new ReaderThread[n];
-    final Set<IndexReader> readersToClose = Collections.synchronizedSet(new HashSet<IndexReader>());
+    final Set<DirectoryReader> readersToClose = Collections.synchronizedSet(new HashSet<DirectoryReader>());
     
     for (int i = 0; i < n; i++) {
       if (i % 2 == 0) {
-        IndexReader refreshed = IndexReader.openIfChanged(reader);
+        DirectoryReader refreshed = DirectoryReader.openIfChanged(reader);
         if (refreshed != null) {
           readersToClose.add(reader);
           reader = refreshed;
         }
       }
-      final IndexReader r = reader;
+      final DirectoryReader r = reader;
       
       final int index = i;    
       
@@ -502,7 +284,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 break;
               } else {
                 // not synchronized
-                IndexReader refreshed = IndexReader.openIfChanged(r);
+                DirectoryReader refreshed = DirectoryReader.openIfChanged(r);
                 if (refreshed == null) {
                   refreshed = r;
                 }
@@ -569,14 +351,14 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
     }
     
-    for (final IndexReader readerToClose : readersToClose) {
+    for (final DirectoryReader readerToClose : readersToClose) {
       readerToClose.close();
     }
     
     firstReader.close();
     reader.close();
     
-    for (final IndexReader readerToClose : readersToClose) {
+    for (final DirectoryReader readerToClose : readersToClose) {
       assertReaderClosed(readerToClose, true, true);
     }
 
@@ -587,13 +369,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   private static class ReaderCouple {
-    ReaderCouple(IndexReader r1, IndexReader r2) {
+    ReaderCouple(DirectoryReader r1, DirectoryReader r2) {
       newReader = r1;
       refreshedReader = r2;
     }
     
-    IndexReader newReader;
-    IndexReader refreshedReader;
+    DirectoryReader newReader;
+    DirectoryReader refreshedReader;
   }
   
   private abstract static class ReaderThreadTask {
@@ -631,21 +413,21 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   private Object createReaderMutex = new Object();
   
-  private ReaderCouple refreshReader(IndexReader reader, boolean hasChanges) throws IOException {
+  private ReaderCouple refreshReader(DirectoryReader reader, boolean hasChanges) throws IOException {
     return refreshReader(reader, null, -1, hasChanges);
   }
   
-  ReaderCouple refreshReader(IndexReader reader, TestReopen test, int modify, boolean hasChanges) throws IOException {
+  ReaderCouple refreshReader(DirectoryReader reader, TestReopen test, int modify, boolean hasChanges) throws IOException {
     synchronized (createReaderMutex) {
-      IndexReader r = null;
+      DirectoryReader r = null;
       if (test != null) {
         test.modifyIndex(modify);
         r = test.openReader();
       }
       
-      IndexReader refreshed = null;
+      DirectoryReader refreshed = null;
       try {
-        refreshed = IndexReader.openIfChanged(reader);
+        refreshed = DirectoryReader.openIfChanged(reader);
         if (refreshed == null) {
           refreshed = reader;
         }
@@ -658,11 +440,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       if (hasChanges) {
         if (refreshed == reader) {
-          fail("No new IndexReader instance created during refresh.");
+          fail("No new DirectoryReader instance created during refresh.");
         }
       } else {
         if (refreshed != reader) {
-          fail("New IndexReader instance created during refresh even though index had no changes.");
+          fail("New DirectoryReader instance created during refresh even though index had no changes.");
         }
       }
       
@@ -689,7 +471,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    DirectoryReader r = DirectoryReader.open(dir);
     if (multiSegment) {
       assertTrue(r.getSequentialSubReaders().length > 1);
     } else {
@@ -758,41 +540,25 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   static void assertReaderClosed(IndexReader reader, boolean checkSubReaders, boolean checkNormsClosed) {
     assertEquals(0, reader.getRefCount());
     
-    if (checkNormsClosed && reader instanceof SegmentReader) {
+    if (checkNormsClosed && reader instanceof AtomicReader) {
       // TODO: should we really assert something here? we check for open files and this is obselete...
       // assertTrue(((SegmentReader) reader).normsClosed());
     }
     
-    if (checkSubReaders) {
-      if (reader instanceof DirectoryReader) {
-        IndexReader[] subReaders = reader.getSequentialSubReaders();
-        for (int i = 0; i < subReaders.length; i++) {
-          assertReaderClosed(subReaders[i], checkSubReaders, checkNormsClosed);
-        }
-      }
-      
-      if (reader instanceof MultiReader) {
-        IndexReader[] subReaders = reader.getSequentialSubReaders();
-        for (int i = 0; i < subReaders.length; i++) {
-          assertReaderClosed(subReaders[i], checkSubReaders, checkNormsClosed);
-        }
-      }
-      
-      if (reader instanceof ParallelReader) {
-        IndexReader[] subReaders = ((ParallelReader) reader).getSubReaders();
-        for (int i = 0; i < subReaders.length; i++) {
-          assertReaderClosed(subReaders[i], checkSubReaders, checkNormsClosed);
-        }
+    if (checkSubReaders && reader instanceof CompositeReader) {
+      IndexReader[] subReaders = ((CompositeReader) reader).getSequentialSubReaders();
+      for (int i = 0; i < subReaders.length; i++) {
+        assertReaderClosed(subReaders[i], checkSubReaders, checkNormsClosed);
       }
     }
   }
 
   /*
-  private void assertReaderOpen(IndexReader reader) {
+  private void assertReaderOpen(DirectoryReader reader) {
     reader.ensureOpen();
     
     if (reader instanceof DirectoryReader) {
-      IndexReader[] subReaders = reader.getSequentialSubReaders();
+      DirectoryReader[] subReaders = reader.getSequentialSubReaders();
       for (int i = 0; i < subReaders.length; i++) {
         assertReaderOpen(subReaders[i]);
       }
@@ -800,13 +566,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   */
 
-  private void assertRefCountEquals(int refCount, IndexReader reader) {
+  private void assertRefCountEquals(int refCount, DirectoryReader reader) {
     assertEquals("Reader has wrong refCount value.", refCount, reader.getRefCount());
   }
 
 
   private abstract static class TestReopen {
-    protected abstract IndexReader openReader() throws IOException;
+    protected abstract DirectoryReader openReader() throws IOException;
     protected abstract void modifyIndex(int i) throws IOException;
   }
   
@@ -842,12 +608,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
     writer.close();
 
-    IndexReader r = IndexReader.open(dir);
+    DirectoryReader r = DirectoryReader.open(dir);
     assertEquals(0, r.numDocs());
 
-    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
     for (final IndexCommit commit : commits) {
-      IndexReader r2 = IndexReader.openIfChanged(r, commit);
+      DirectoryReader r2 = DirectoryReader.openIfChanged(r, commit);
       assertNotNull(r2);
       assertTrue(r2 != r);
 

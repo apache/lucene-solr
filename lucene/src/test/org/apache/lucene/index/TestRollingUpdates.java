@@ -128,7 +128,7 @@ public class TestRollingUpdates extends LuceneTestCase {
 
     public void run() {
       try {
-        IndexReader open = null;
+        DirectoryReader open = null;
         for (int i = 0; i < num; i++) {
           Document doc = new Document();// docs.nextDoc();
           doc.add(newField("id", "test", StringField.TYPE_UNSTORED));
@@ -137,7 +137,7 @@ public class TestRollingUpdates extends LuceneTestCase {
             if (open == null) {
               open = IndexReader.open(writer, true);
             }
-            IndexReader reader = IndexReader.openIfChanged(open);
+            DirectoryReader reader = DirectoryReader.openIfChanged(open);
             if (reader != null) {
               open.close();
               open = reader;

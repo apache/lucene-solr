@@ -82,7 +82,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     writer.close(true);
 
-    IndexReader reader = IndexReader.open(dir, 1);
+    DirectoryReader reader = DirectoryReader.open(dir, 1);
     assertEquals(1, reader.getSequentialSubReaders().length);
 
     IndexSearcher searcher = new IndexSearcher(reader);
@@ -694,9 +694,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.add(f);
     w.addDocument(doc);
     w.forceMerge(1);
-    IndexReader r = w.getReader();
+    DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, r.getSequentialSubReaders()[0].docValues("field").load().getInt(0));
+    assertEquals(17, ((AtomicReader) r.getSequentialSubReaders()[0]).docValues("field").load().getInt(0));
     r.close();
     d.close();
   }
@@ -721,9 +721,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.add(f);
     w.addDocument(doc);
     w.forceMerge(1);
-    IndexReader r = w.getReader();
+    DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, r.getSequentialSubReaders()[0].docValues("field").load().getInt(0));
+    assertEquals(17, getOnlySegmentReader(r).docValues("field").load().getInt(0));
     r.close();
     d.close();
   }
@@ -795,11 +795,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         int ord = asSortedSource.getByValue(expected, actual);
         assertEquals(i, ord);
       }
-      reader = new SlowMultiReaderWrapper(reader);
+      AtomicReader slowR = SlowCompositeReaderWrapper.wrap(reader);
       Set<Entry<String, String>> entrySet = docToString.entrySet();
 
       for (Entry<String, String> entry : entrySet) {
-        int docId = docId(reader, new Term("id", entry.getKey()));
+        int docId = docId(slowR, new Term("id", entry.getKey()));
         expected.copyChars(entry.getValue());
         assertEquals(expected, asSortedSource.getBytes(docId, actual));
       }
@@ -810,7 +810,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     }
   }
   
-  public int docId(IndexReader reader, Term term) throws IOException {
+  public int docId(AtomicReader reader, Term term) throws IOException {
     int docFreq = reader.docFreq(term);
     assertEquals(1, docFreq);
     DocsEnum termDocsEnum = reader.termDocsEnum(null, term.field, term.bytes, false);

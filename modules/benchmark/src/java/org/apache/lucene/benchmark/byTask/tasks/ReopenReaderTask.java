@@ -20,6 +20,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 import java.io.IOException;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 
 /**
@@ -33,8 +34,8 @@ public class ReopenReaderTask extends PerfTask {
 
   @Override
   public int doLogic() throws IOException {
-    IndexReader r = getRunData().getIndexReader();
-    IndexReader nr = IndexReader.openIfChanged(r);
+    DirectoryReader r = getRunData().getIndexReader();
+    DirectoryReader nr = DirectoryReader.openIfChanged(r);
     if (nr != null) {
       getRunData().setIndexReader(nr);
       nr.decRef();

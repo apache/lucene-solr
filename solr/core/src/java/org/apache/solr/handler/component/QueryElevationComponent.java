@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -535,13 +535,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
         //convert the ids to Lucene doc ids, the ordSet and termValues needs to be the same size as the number of elevation docs we have
         ordSet.clear();
-        Fields fields = context.reader.fields();
+        Fields fields = context.reader().fields();
         if (fields == null) return this;
         Terms terms = fields.terms(fieldname);
         if (terms == null) return this;
         termsEnum = terms.iterator(termsEnum);
         BytesRef term = new BytesRef();
-        Bits liveDocs = context.reader.getLiveDocs();
+        Bits liveDocs = context.reader().getLiveDocs();
 
         for (String id : elevations.ids) {
           term.copyChars(id);

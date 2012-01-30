@@ -21,17 +21,16 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.Directory;
@@ -43,7 +42,7 @@ import java.io.IOException;
 
 public class BooleanFilterTest extends LuceneTestCase {
   private Directory directory;
-  private IndexReader reader;
+  private AtomicReader reader;
 
   @Override
   public void setUp() throws Exception {
@@ -57,7 +56,7 @@ public class BooleanFilterTest extends LuceneTestCase {
     addDoc(writer, "guest", "020", "20050101", "Y");
     addDoc(writer, "admin", "020", "20050101", "Maybe");
     addDoc(writer, "admin guest", "030", "20050101", "N");
-    reader = new SlowMultiReaderWrapper(writer.getReader());
+    reader = new SlowCompositeReaderWrapper(writer.getReader());
     writer.close();
   }
 
@@ -97,7 +96,7 @@ public class BooleanFilterTest extends LuceneTestCase {
     return new Filter() {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
-        return new FixedBitSet(context.reader.maxDoc());
+        return new FixedBitSet(context.reader().maxDoc());
       }
     };
   }
@@ -133,7 +132,7 @@ public class BooleanFilterTest extends LuceneTestCase {
   private void tstFilterCard(String mes, int expected, Filter filt)
       throws Exception {
     // BooleanFilter never returns null DIS or null DISI!
-    DocIdSetIterator disi = filt.getDocIdSet(new AtomicReaderContext(reader), reader.getLiveDocs()).iterator();
+    DocIdSetIterator disi = filt.getDocIdSet(reader.getTopReaderContext(), reader.getLiveDocs()).iterator();
     int actual = 0;
     while (disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       actual++;

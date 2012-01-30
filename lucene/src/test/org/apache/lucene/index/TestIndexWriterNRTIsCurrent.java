@@ -32,7 +32,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
 
   public static class ReaderHolder {
-    volatile IndexReader reader;
+    volatile DirectoryReader reader;
     volatile boolean stop = false;
   }
 
@@ -90,7 +90,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
     }
 
     public void run() {
-      IndexReader currentReader = null;
+      DirectoryReader currentReader = null;
       try {
         Document doc = new Document();
         doc.add(new Field("id", "1", TextField.TYPE_UNSTORED));
@@ -117,7 +117,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
           }
           if (random.nextBoolean()) {
             writer.commit();
-            final IndexReader newReader = IndexReader
+            final DirectoryReader newReader = DirectoryReader
                 .openIfChanged(currentReader);
             if (newReader != null) { 
               currentReader.decRef();
@@ -167,7 +167,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
         failed = e;
         return;
       }
-      IndexReader reader;
+      DirectoryReader reader;
       while ((reader = holder.reader) != null) {
         if (reader.tryIncRef()) {
           try {

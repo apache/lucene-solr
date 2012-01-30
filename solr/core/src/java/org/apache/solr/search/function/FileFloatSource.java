@@ -30,9 +30,9 @@ import java.util.WeakHashMap;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -78,9 +78,9 @@ public class FileFloatSource extends ValueSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
-    ReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
+    IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
 
-    final float[] arr = getCachedFloats(topLevelContext.reader);
+    final float[] arr = getCachedFloats(topLevelContext.reader());
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {

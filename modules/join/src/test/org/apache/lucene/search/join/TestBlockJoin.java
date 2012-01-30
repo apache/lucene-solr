@@ -28,7 +28,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -160,7 +160,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final int subIndex = ReaderUtil.subIndex(childDocID, leaves);
     final AtomicReaderContext leaf = leaves[subIndex];
     final FixedBitSet bits = (FixedBitSet) parents.getDocIdSet(leaf, null);
-    return leaf.reader.document(bits.nextSetBit(childDocID - leaf.docBase));
+    return leaf.reader().document(bits.nextSetBit(childDocID - leaf.docBase));
   }
   
   public void testBoostBug() throws Exception {

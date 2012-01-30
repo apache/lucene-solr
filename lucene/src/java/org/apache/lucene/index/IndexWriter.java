@@ -264,7 +264,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // The PayloadProcessorProvider to use when segments are merged
   private PayloadProcessorProvider payloadProcessorProvider;
 
-  IndexReader getReader() throws IOException {
+  DirectoryReader getReader() throws IOException {
     return getReader(true);
   }
 
@@ -327,7 +327,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @throws IOException
    */
-  IndexReader getReader(boolean applyAllDeletes) throws IOException {
+  DirectoryReader getReader(boolean applyAllDeletes) throws IOException {
     ensureOpen();
 
     final long tStart = System.currentTimeMillis();
@@ -339,7 +339,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // obtained during this flush are pooled, the first time
     // this method is called:
     poolReaders = true;
-    final IndexReader r;
+    final DirectoryReader r;
     doBeforeFlush();
     boolean anySegmentFlushed = false;
     /*
@@ -871,7 +871,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         create = false;
       } else {
         // CREATE_OR_APPEND - create only if an index does not exist
-        create = !IndexReader.indexExists(directory);
+        create = !DirectoryReader.indexExists(directory);
       }
 
       // If index is too old, reading the segments will throw
@@ -2631,7 +2631,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  @param commitUserData Opaque Map (String->String)
    *  that's recorded into the segments file in the index,
    *  and retrievable by {@link
-   *  IndexReader#getCommitUserData}.  Note that when
+   *  DirectoryReader#getCommitUserData}.  Note that when
    *  IndexWriter commits itself during {@link #close}, the
    *  commitUserData is unchanged (just carried over from
    *  the prior commit).  If this is null then the previous
@@ -3954,7 +3954,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * <p><b>NOTE</b>: warm is called before any deletes have
    * been carried over to the merged segment. */
   public static abstract class IndexReaderWarmer {
-    public abstract void warm(IndexReader reader) throws IOException;
+    public abstract void warm(AtomicReader reader) throws IOException;
   }
 
   private void handleOOM(OutOfMemoryError oom, String location) {

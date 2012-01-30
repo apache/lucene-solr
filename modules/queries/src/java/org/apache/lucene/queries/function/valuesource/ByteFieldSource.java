@@ -19,7 +19,7 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.search.FieldCache;
 
@@ -51,7 +51,7 @@ public class ByteFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final byte[] arr = cache.getBytes(readerContext.reader, field, parser, false);
+    final byte[] arr = cache.getBytes(readerContext.reader(), field, parser, false);
     
     return new FunctionValues() {
       @Override

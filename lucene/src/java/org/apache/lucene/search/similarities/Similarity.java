@@ -21,9 +21,10 @@ package org.apache.lucene.search.similarities;
 import java.io.IOException;
 
 import org.apache.lucene.document.DocValuesField; // javadoc
+import org.apache.lucene.index.AtomicReader; // javadoc
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader; // javadoc
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.Terms; // javadoc
 import org.apache.lucene.search.BooleanQuery;
@@ -57,7 +58,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * <a name="indextime"/>
  * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState, Norm)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
- * be later accessible via {@link IndexReader#normValues(String)}.  Lucene makes no assumption
+ * be later accessible via {@link AtomicReader#normValues(String)}.  Lucene makes no assumption
  * about what is in this byte, but it is most useful for encoding length normalization 
  * information.
  * <p>
@@ -72,7 +73,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * Because index-time boost is handled entirely at the application level anyway,
  * an application can alternatively store the index-time boost separately using an 
  * {@link DocValuesField}, and access this at query-time with 
- * {@link IndexReader#docValues(String)}.
+ * {@link AtomicReader#docValues(String)}.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or
  * via DocValues), is an inefficient way to boost the scores of different fields if the
@@ -93,9 +94,9 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  *       is called for each query leaf node, {@link SimilarityProvider#queryNorm(float)} is called for the top-level
  *       query, and finally {@link Similarity.Stats#normalize(float, float)} passes down the normalization value
  *       and any top-level boosts (e.g. from enclosing {@link BooleanQuery}s).
- *   <li>For each segment in the index, the Query creates a {@link #exactDocScorer(Stats, String, IndexReader.AtomicReaderContext)}
+ *   <li>For each segment in the index, the Query creates a {@link #exactDocScorer(Stats, String, AtomicReaderContext)}
  *       (for queries with exact frequencies such as TermQuerys and exact PhraseQueries) or a 
- *       {@link #sloppyDocScorer(Stats, String, IndexReader.AtomicReaderContext)} (for queries with sloppy frequencies such as
+ *       {@link #sloppyDocScorer(Stats, String, AtomicReaderContext)} (for queries with sloppy frequencies such as
  *       SpanQuerys and sloppy PhraseQueries). The score() method is called for each matching document.
  * </ol>
  * <p>

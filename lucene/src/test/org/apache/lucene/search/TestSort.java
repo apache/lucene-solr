@@ -32,8 +32,8 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
@@ -688,7 +688,7 @@ public class TestSort extends LuceneTestCase {
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      docValues = FieldCache.DEFAULT.getInts(context.reader, "parser", testIntParser, false);
+      docValues = FieldCache.DEFAULT.getInts(context.reader(), "parser", testIntParser, false);
       return this;
     }
 
@@ -858,8 +858,8 @@ public class TestSort extends LuceneTestCase {
       @Override
       public DocIdSet getDocIdSet (AtomicReaderContext context, Bits acceptDocs) {
         assertNull("acceptDocs should be null, as we have no deletions", acceptDocs);
-        BitSet bs = new BitSet(context.reader.maxDoc());
-        bs.set(0, context.reader.maxDoc());
+        BitSet bs = new BitSet(context.reader().maxDoc());
+        bs.set(0, context.reader().maxDoc());
         bs.set(docs1.scoreDocs[0].doc);
         return new DocIdBitSet(bs);
       }

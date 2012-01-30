@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
@@ -174,11 +174,11 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
     @Override
     protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) throws IOException {
-      final int[] values = FieldCache.DEFAULT.getInts(context.reader, INT_FIELD, false);
+      final int[] values = FieldCache.DEFAULT.getInts(context.reader(), INT_FIELD, false);
       return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subScore, float valSrcScore) throws IOException {
-          assertTrue(doc <= context.reader.maxDoc());
+          assertTrue(doc <= context.reader().maxDoc());
           return values[doc];
         }
       };

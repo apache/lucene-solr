@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -180,8 +181,8 @@ public class TestParser extends LuceneTestCase {
   }
 
   public void testDuplicateFilterQueryXML() throws ParserException, IOException {
-    Assume.assumeTrue(searcher.getIndexReader().getSequentialSubReaders() == null ||
-        searcher.getIndexReader().getSequentialSubReaders().length == 1);
+    AtomicReaderContext leaves[] = searcher.getTopReaderContext().leaves();
+    Assume.assumeTrue(leaves == null || leaves.length == 1);
     Query q = parse("DuplicateFilterQuery.xml");
     int h = searcher.search(q, null, 1000).totalHits;
     assertEquals("DuplicateFilterQuery should produce 1 result ", 1, h);

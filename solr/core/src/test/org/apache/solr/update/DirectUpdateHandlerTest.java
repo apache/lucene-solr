@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
@@ -256,18 +256,16 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     SolrQueryRequest sr = req("q","foo");
-    IndexReader r = sr.getSearcher().getTopReaderContext().reader;
+    DirectoryReader r = sr.getSearcher().getIndexReader();
     assertTrue(r.maxDoc() > r.numDocs());   // should have deletions
-    assertFalse(r.getTopReaderContext().isAtomic);  // more than 1 segment
     sr.close();
 
     assertU(commit("expungeDeletes","true"));
 
     sr = req("q","foo");
-    r = sr.getSearcher().getTopReaderContext().reader;
+    r = r = sr.getSearcher().getIndexReader();
     assertEquals(r.maxDoc(), r.numDocs());  // no deletions
     assertEquals(4,r.maxDoc());             // no dups
-    assertFalse(r.getTopReaderContext().isAtomic);  //still more than 1 segment
     sr.close();
   }
   
@@ -278,7 +276,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertU(commit());       // commit a second time to make sure index files aren't still referenced by the old searcher
 
     SolrQueryRequest sr = req();
-    IndexReader r = sr.getSearcher().getTopReaderContext().reader;
+    DirectoryReader r = sr.getSearcher().getIndexReader();
     Directory d = r.directory();
 
     log.info("FILES before addDoc="+ Arrays.asList(d.listAll()));

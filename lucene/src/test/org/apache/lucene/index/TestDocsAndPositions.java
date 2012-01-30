@@ -25,8 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -66,16 +64,16 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("1");
-      ReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext atomicReaderContext : leaves) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
-            atomicReaderContext.reader, bytes, null);
+            atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
-        if (atomicReaderContext.reader.maxDoc() == 0) {
+        if (atomicReaderContext.reader().maxDoc() == 0) {
           continue;
         }
-        final int advance = docsAndPosEnum.advance(random.nextInt(atomicReaderContext.reader.maxDoc()));
+        final int advance = docsAndPosEnum.advance(random.nextInt(atomicReaderContext.reader().maxDoc()));
         do {
           String msg = "Advanced to: " + advance + " current doc: "
               + docsAndPosEnum.docID(); // TODO: + " usePayloads: " + usePayload;
@@ -94,7 +92,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     directory.close();
   }
 
-  public DocsAndPositionsEnum getDocsAndPositions(IndexReader reader,
+  public DocsAndPositionsEnum getDocsAndPositions(AtomicReader reader,
       BytesRef bytes, Bits liveDocs) throws IOException {
     return reader.termPositionsEnum(null, fieldName, bytes, false);
   }
@@ -142,14 +140,14 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
-      ReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext atomicReaderContext : leaves) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
-            atomicReaderContext.reader, bytes, null);
+            atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
         int initDoc = 0;
-        int maxDoc = atomicReaderContext.reader.maxDoc();
+        int maxDoc = atomicReaderContext.reader().maxDoc();
         // initially advance or do next doc
         if (random.nextBoolean()) {
           initDoc = docsAndPosEnum.nextDoc();
@@ -218,11 +216,11 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
-      ReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext context : leaves) {
-        int maxDoc = context.reader.maxDoc();
-        DocsEnum docsEnum = _TestUtil.docs(random, context.reader, fieldName, bytes, null, null, true);
+        int maxDoc = context.reader().maxDoc();
+        DocsEnum docsEnum = _TestUtil.docs(random, context.reader(), fieldName, bytes, null, null, true);
         if (findNext(freqInDoc, context.docBase, context.docBase + maxDoc) == Integer.MAX_VALUE) {
           assertNull(docsEnum);
           continue;
@@ -297,15 +295,15 @@ public class TestDocsAndPositions extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("even");
 
-      ReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       for (AtomicReaderContext atomicReaderContext : leaves) {
         DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
-            atomicReaderContext.reader, bytes, null);
+            atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
 
         int initDoc = 0;
-        int maxDoc = atomicReaderContext.reader.maxDoc();
+        int maxDoc = atomicReaderContext.reader().maxDoc();
         // initially advance or do next doc
         if (random.nextBoolean()) {
           initDoc = docsAndPosEnum.nextDoc();
@@ -331,8 +329,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newField("foo", "bar", StringField.TYPE_UNSTORED));
     writer.addDocument(doc);
-    IndexReader reader = writer.getReader();
-    IndexReader r = getOnlySegmentReader(reader);
+    DirectoryReader reader = writer.getReader();
+    AtomicReader r = getOnlySegmentReader(reader);
     DocsEnum disi = _TestUtil.docs(random, r, "foo", new BytesRef("bar"), null, null, false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
@@ -356,8 +354,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newField("foo", "bar", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
-    IndexReader reader = writer.getReader();
-    IndexReader r = getOnlySegmentReader(reader);
+    DirectoryReader reader = writer.getReader();
+    AtomicReader r = getOnlySegmentReader(reader);
     DocsAndPositionsEnum disi = r.termPositionsEnum(null, "foo", new BytesRef("bar"), false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);

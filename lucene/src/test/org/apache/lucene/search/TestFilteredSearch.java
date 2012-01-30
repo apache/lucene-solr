@@ -23,8 +23,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -101,10 +101,9 @@ public class TestFilteredSearch extends LuceneTestCase {
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) {
       assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
-      assert context.isAtomic;
-      final FixedBitSet set = new FixedBitSet(context.reader.maxDoc());
+      final FixedBitSet set = new FixedBitSet(context.reader().maxDoc());
       int docBase = context.docBase;
-      final int limit = docBase+context.reader.maxDoc();
+      final int limit = docBase+context.reader().maxDoc();
       for (;index < docs.length; index++) {
         final int docId = docs[index];
         if(docId > limit)

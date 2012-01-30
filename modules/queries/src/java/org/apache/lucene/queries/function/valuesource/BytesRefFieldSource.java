@@ -17,7 +17,7 @@ package org.apache.lucene.queries.function.valuesource;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.StringIndexDocValues;
 import org.apache.lucene.queries.function.ValueSource; //javadoc
@@ -35,7 +35,7 @@ public class BytesRefFieldSource extends FieldCacheSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, IndexReader.AtomicReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new StringIndexDocValues(this, readerContext, field) {
 
       @Override

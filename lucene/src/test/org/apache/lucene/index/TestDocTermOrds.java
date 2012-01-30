@@ -66,7 +66,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final DocTermOrds dto = new DocTermOrds(new SlowMultiReaderWrapper(r), "field");
+    final DocTermOrds dto = new DocTermOrds(SlowCompositeReaderWrapper.wrap(r), "field");
 
     TermOrdsIterator iter = dto.lookup(0, null);
     final int[] buffer = new int[5];
@@ -149,7 +149,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       w.addDocument(doc);
     }
     
-    final IndexReader r = w.getReader();
+    final DirectoryReader r = w.getReader();
     w.close();
 
     if (VERBOSE) {
@@ -160,7 +160,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: sub=" + subR);
       }
-      verify(subR, idToOrds, termsArray, null);
+      verify((AtomicReader) subR, idToOrds, termsArray, null);
     }
 
     // Also test top-level reader: its enum does not support
@@ -168,9 +168,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: top reader");
     }
-    verify(new SlowMultiReaderWrapper(r), idToOrds, termsArray, null);
+    AtomicReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    verify(slowR, idToOrds, termsArray, null);
 
-    FieldCache.DEFAULT.purge(r);
+    FieldCache.DEFAULT.purge(slowR);
 
     r.close();
     dir.close();
@@ -245,13 +246,14 @@ public class TestDocTermOrds extends LuceneTestCase {
       w.addDocument(doc);
     }
     
-    final IndexReader r = w.getReader();
+    final DirectoryReader r = w.getReader();
     w.close();
 
     if (VERBOSE) {
       System.out.println("TEST: reader=" + r);
     }
     
+    AtomicReader slowR = SlowCompositeReaderWrapper.wrap(r);
     for(String prefix : prefixesArray) {
 
       final BytesRef prefixRef = prefix == null ? null : new BytesRef(prefix);
@@ -277,7 +279,7 @@ public class TestDocTermOrds extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("\nTEST: sub=" + subR);
         }
-        verify(subR, idToOrdsPrefix, termsArray, prefixRef);
+        verify((AtomicReader) subR, idToOrdsPrefix, termsArray, prefixRef);
       }
 
       // Also test top-level reader: its enum does not support
@@ -285,16 +287,16 @@ public class TestDocTermOrds extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: top reader");
       }
-      verify(new SlowMultiReaderWrapper(r), idToOrdsPrefix, termsArray, prefixRef);
+      verify(slowR, idToOrdsPrefix, termsArray, prefixRef);
     }
 
-    FieldCache.DEFAULT.purge(r);
+    FieldCache.DEFAULT.purge(slowR);
 
     r.close();
     dir.close();
   }
 
-  private void verify(IndexReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
+  private void verify(AtomicReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
 
     final DocTermOrds dto = new DocTermOrds(r,
                                             "field",

@@ -41,7 +41,7 @@ public class TestSegmentReader extends LuceneTestCase {
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
     SegmentInfo info = DocHelper.writeDoc(random, dir, testDoc);
-    reader = new SegmentReader(info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
+    reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
   }
   
   @Override
@@ -173,7 +173,7 @@ public class TestSegmentReader extends LuceneTestCase {
     checkNorms(reader);
   }
 
-  public static void checkNorms(IndexReader reader) throws IOException {
+  public static void checkNorms(AtomicReader reader) throws IOException {
         // test omit norms
     for (int i=0; i<DocHelper.fields.length; i++) {
       IndexableField f = DocHelper.fields[i];

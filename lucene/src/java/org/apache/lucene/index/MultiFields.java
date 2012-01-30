@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
@@ -59,59 +61,50 @@ public final class MultiFields extends Fields {
    *  Gather}) and iterate through them
    *  yourself. */
   public static Fields getFields(IndexReader r) throws IOException {
-    final IndexReader[] subs = r.getSequentialSubReaders();
-    if (subs == null) {
+    if (r instanceof AtomicReader) {
       // already an atomic reader
-      return r.fields();
-    } else if (subs.length == 0) {
+      return ((AtomicReader) r).fields();
+    }
+    assert r instanceof CompositeReader;
+    final IndexReader[] subs = ((CompositeReader) r).getSequentialSubReaders();
+    if (subs.length == 0) {
       // no fields
       return null;
-    } else if (subs.length == 1) {
-      return getFields(subs[0]);
     } else {
+      final List<Fields> fields = new ArrayList<Fields>();
+      final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
 
-      Fields currentFields = r.retrieveFields();
-      if (currentFields == null) {
-      
-        final List<Fields> fields = new ArrayList<Fields>();
-        final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
-
-        new ReaderUtil.Gather(r) {
-          @Override
-          protected void add(int base, IndexReader r) throws IOException {
-            final Fields f = r.fields();
-            if (f != null) {
-              fields.add(f);
-              slices.add(new ReaderUtil.Slice(base, r.maxDoc(), fields.size()-1));
-            }
+      new ReaderUtil.Gather(r) {
+        @Override
+        protected void add(int base, AtomicReader r) throws IOException {
+          final Fields f = r.fields();
+          if (f != null) {
+            fields.add(f);
+            slices.add(new ReaderUtil.Slice(base, r.maxDoc(), fields.size()-1));
           }
-        }.run();
-
-        if (fields.size() == 0) {
-          return null;
-        } else if (fields.size() == 1) {
-          currentFields = fields.get(0);
-        } else {
-          currentFields = new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
-                                         slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
         }
-        r.storeFields(currentFields);
+      }.run();
+
+      if (fields.isEmpty()) {
+        return null;
+      } else if (fields.size() == 1) {
+        return fields.get(0);
+      } else {
+        return new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
+                                       slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
       }
-      return currentFields;
     }
   }
 
   public static Bits getLiveDocs(IndexReader r) {
-    Bits result;
     if (r.hasDeletions()) {
-
       final List<Bits> liveDocs = new ArrayList<Bits>();
       final List<Integer> starts = new ArrayList<Integer>();
 
       try {
         final int maxDoc = new ReaderUtil.Gather(r) {
             @Override
-            protected void add(int base, IndexReader r) throws IOException {
+            protected void add(int base, AtomicReader r) throws IOException {
               // record all liveDocs, even if they are null
               liveDocs.add(r.getLiveDocs());
               starts.add(base);
@@ -126,16 +119,13 @@ public final class MultiFields extends Fields {
       assert liveDocs.size() > 0;
       if (liveDocs.size() == 1) {
         // Only one actual sub reader -- optimize this case
-        result = liveDocs.get(0);
+        return liveDocs.get(0);
       } else {
-        result = new MultiBits(liveDocs, starts, true);
+        return new MultiBits(liveDocs, starts, true);
       }
-
     } else {
-      result = null;
+      return null;
     }
-
-    return result;
   }
 
   /**  This method may return null if the field does not exist.*/
@@ -237,6 +227,11 @@ public final class MultiFields extends Fields {
     return result;
   }
 
+  @Override
+  public int getUniqueFieldCount() {
+    return -1;
+  }
+
   public static long totalTermFreq(IndexReader r, String field, BytesRef text) throws IOException {
     final Terms terms = getTerms(r, field);
     if (terms != null) {
@@ -248,9 +243,26 @@ public final class MultiFields extends Fields {
     return 0;
   }
 
-  @Override
-  public int getUniqueFieldCount() {
-    return -1;
+  /** Call this to get the (merged) FieldInfos for a
+   *  composite reader */
+  public static FieldInfos getMergedFieldInfos(IndexReader reader) {
+    final List<AtomicReader> subReaders = new ArrayList<AtomicReader>();
+    ReaderUtil.gatherSubReaders(subReaders, reader);
+    final FieldInfos fieldInfos = new FieldInfos();
+    for(AtomicReader subReader : subReaders) {
+      fieldInfos.add(subReader.getFieldInfos());
+    }
+    return fieldInfos;
+  }
+
+  public static Collection<String> getIndexedFields(IndexReader reader) {
+    final Collection<String> fields = new HashSet<String>();
+    for(FieldInfo fieldInfo : getMergedFieldInfos(reader)) {
+      if (fieldInfo.isIndexed) {
+        fields.add(fieldInfo.name);
+      }
+    }
+    return fields;
   }
 }
 

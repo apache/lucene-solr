@@ -98,12 +98,6 @@ public abstract class FacetsAccumulator {
    * is considered, and used to decrement from the overall counts, thereby 
    * walking through less documents, which is faster.
    * <p>
-   * Note that this optimization is only available when searching an index
-   * whose {@link IndexReader} implements both 
-   * {@link IndexReader#directory()} and {@link IndexReader#getVersion()} 
-   * otherwise the optimization is silently disabled regardless of
-   * the complement threshold settings.
-   * <p>
    * For the default settings see {@link #DEFAULT_COMPLEMENT_THRESHOLD}.
    * <p>
    * To forcing complements in all cases pass {@link #FORCE_COMPLEMENT}.

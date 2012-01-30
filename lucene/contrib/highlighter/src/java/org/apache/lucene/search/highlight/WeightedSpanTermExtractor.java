@@ -29,9 +29,9 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
@@ -74,7 +74,7 @@ public class WeightedSpanTermExtractor {
 
     for (final AtomicReaderContext ctx : ctxSet) {
       try {
-        ctx.reader.close();
+        ctx.reader().close();
       } catch (IOException e) {
         // alert?
       }
@@ -153,7 +153,7 @@ public class WeightedSpanTermExtractor {
         query = mtq;
       }
       if (mtq.getField() != null) {
-        IndexReader ir = getLeafContextForField(mtq.getField()).reader;
+        IndexReader ir = getLeafContextForField(mtq.getField()).reader();
         extract(query.rewrite(ir), terms);
       }
     } else if (query instanceof MultiPhraseQuery) {
@@ -244,7 +244,7 @@ public class WeightedSpanTermExtractor {
     final boolean mustRewriteQuery = mustRewriteQuery(spanQuery);
     if (mustRewriteQuery) {
       for (final String field : fieldNames) {
-        final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContextForField(field).reader);
+        final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContextForField(field).reader());
         queries.put(field, rewrittenQuery);
         rewrittenQuery.extractTerms(nonWeightedTerms);
       }
@@ -268,7 +268,7 @@ public class WeightedSpanTermExtractor {
       for (Term term : extractedTerms) {
         termContexts.put(term, TermContext.build(context, term, true));
       }
-      Bits acceptDocs = context.reader.getLiveDocs();
+      Bits acceptDocs = context.reader().getLiveDocs();
       final Spans spans = q.getSpans(context, acceptDocs, termContexts);
 
       // collect span positions

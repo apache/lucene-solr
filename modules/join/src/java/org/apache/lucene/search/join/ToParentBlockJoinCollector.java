@@ -24,7 +24,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;       // javadocs
 import org.apache.lucene.search.Collector;
@@ -107,7 +107,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
   private int docBase;
   private ToParentBlockJoinQuery.BlockJoinScorer[] joinScorers = new ToParentBlockJoinQuery.BlockJoinScorer[0];
-  private IndexReader.AtomicReaderContext currentReaderContext;
+  private AtomicReaderContext currentReaderContext;
   private Scorer scorer;
   private boolean queueFull;
 

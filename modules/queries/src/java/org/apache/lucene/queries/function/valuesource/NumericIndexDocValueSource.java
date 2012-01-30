@@ -19,9 +19,9 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
@@ -43,7 +43,7 @@ public class NumericIndexDocValueSource extends ValueSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final Source source = readerContext.reader.docValues(field)
+    final Source source = readerContext.reader().docValues(field)
         .getSource();
     Type type = source.type();
     switch (type) {

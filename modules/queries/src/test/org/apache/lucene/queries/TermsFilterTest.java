@@ -21,11 +21,11 @@ import java.util.HashSet;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.store.Directory;
@@ -62,27 +62,26 @@ public class TermsFilterTest extends LuceneTestCase {
       doc.add(newField(fieldName, "" + term, StringField.TYPE_STORED));
       w.addDocument(doc);
     }
-    IndexReader reader = new SlowMultiReaderWrapper(w.getReader());
-    assertTrue(reader.getTopReaderContext().isAtomic);
+    IndexReader reader = new SlowCompositeReaderWrapper(w.getReader());
+    assertTrue(reader.getTopReaderContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
-    assertTrue(context.isAtomic);
     w.close();
 
     TermsFilter tf = new TermsFilter();
     tf.addTerm(new Term(fieldName, "19"));
-    FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
+    FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
     assertEquals("Must match nothing", 0, bits.cardinality());
 
     tf.addTerm(new Term(fieldName, "20"));
-    bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
+    bits = (FixedBitSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
     assertEquals("Must match 1", 1, bits.cardinality());
 
     tf.addTerm(new Term(fieldName, "10"));
-    bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
+    bits = (FixedBitSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
     assertEquals("Must match 2", 2, bits.cardinality());
 
     tf.addTerm(new Term(fieldName, "00"));
-    bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
+    bits = (FixedBitSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
     assertEquals("Must match 2", 2, bits.cardinality());
 
     reader.close();
@@ -112,8 +111,8 @@ public class TermsFilterTest extends LuceneTestCase {
     tf.addTerm(new Term(fieldName, "content1"));
     
     MultiReader multi = new MultiReader(reader1, reader2);
-    for (IndexReader.AtomicReaderContext context : ReaderUtil.leaves(multi.getTopReaderContext())) {
-      FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader.getLiveDocs());
+    for (AtomicReaderContext context : ReaderUtil.leaves(multi.getTopReaderContext())) {
+      FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
       assertTrue("Must be >= 0", bits.cardinality() >= 0);      
     }
     multi.close();

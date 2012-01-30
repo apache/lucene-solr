@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.ReaderUtil;
@@ -49,7 +49,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     ValueSource vs = sf.getType().getValueSource(sf, null);
     Map context = ValueSource.newContext(sqr.getSearcher());
     vs.createWeight(context, sqr.getSearcher());
-    ReaderContext topReaderContext = sqr.getSearcher().getTopReaderContext();
+    IndexReaderContext topReaderContext = sqr.getSearcher().getTopReaderContext();
     AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
     int idx = ReaderUtil.subIndex(doc, leaves);
     AtomicReaderContext leaf = leaves[idx];
@@ -64,7 +64,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertU(commit());
 
     SolrQueryRequest sr1 = req("q","foo");
-    ReaderContext rCtx1 = sr1.getSearcher().getTopReaderContext();
+    IndexReaderContext rCtx1 = sr1.getSearcher().getTopReaderContext();
 
     String sval1 = getStringVal(sr1, "v_s1",0);
     assertEquals("string1", sval1);
@@ -74,33 +74,33 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertU(commit());
 
     SolrQueryRequest sr2 = req("q","foo");
-    ReaderContext rCtx2 = sr2.getSearcher().getTopReaderContext();
+    IndexReaderContext rCtx2 = sr2.getSearcher().getTopReaderContext();
 
     // make sure the readers share the first segment
     // Didn't work w/ older versions of lucene2.9 going from segment -> multi
-    assertEquals(ReaderUtil.leaves(rCtx1)[0].reader, ReaderUtil.leaves(rCtx2)[0].reader);
+    assertEquals(ReaderUtil.leaves(rCtx1)[0].reader(), ReaderUtil.leaves(rCtx2)[0].reader());
 
     assertU(adoc("id","5", "v_f","3.14159"));
     assertU(adoc("id","6", "v_f","8983", "v_s1","string6"));
     assertU(commit());
 
     SolrQueryRequest sr3 = req("q","foo");
-    ReaderContext rCtx3 = sr3.getSearcher().getTopReaderContext();
+    IndexReaderContext rCtx3 = sr3.getSearcher().getTopReaderContext();
     // make sure the readers share segments
     // assertEquals(r1.getLeafReaders()[0], r3.getLeafReaders()[0]);
-    assertEquals(ReaderUtil.leaves(rCtx2)[0].reader, ReaderUtil.leaves(rCtx3)[0].reader);
-    assertEquals(ReaderUtil.leaves(rCtx2)[1].reader, ReaderUtil.leaves(rCtx3)[1].reader);
+    assertEquals(ReaderUtil.leaves(rCtx2)[0].reader(), ReaderUtil.leaves(rCtx3)[0].reader());
+    assertEquals(ReaderUtil.leaves(rCtx2)[1].reader(), ReaderUtil.leaves(rCtx3)[1].reader());
 
     sr1.close();
     sr2.close();            
 
     // should currently be 1, but this could change depending on future index management
-    int baseRefCount = rCtx3.reader.getRefCount();
+    int baseRefCount = rCtx3.reader().getRefCount();
     assertEquals(1, baseRefCount);
 
     assertU(commit());
     SolrQueryRequest sr4 = req("q","foo");
-    ReaderContext rCtx4 = sr4.getSearcher().getTopReaderContext();
+    IndexReaderContext rCtx4 = sr4.getSearcher().getTopReaderContext();
 
     // force an index change so the registered searcher won't be the one we are testing (and
     // then we should be able to test the refCount going all the way to 0
@@ -108,23 +108,23 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertU(commit()); 
 
     // test that reader didn't change (according to equals at least... which uses the wrapped reader)
-    assertEquals(rCtx3.reader, rCtx4.reader);
-    assertEquals(baseRefCount+1, rCtx4.reader.getRefCount());
+    assertEquals(rCtx3.reader(), rCtx4.reader());
+    assertEquals(baseRefCount+1, rCtx4.reader().getRefCount());
     sr3.close();
-    assertEquals(baseRefCount, rCtx4.reader.getRefCount());
+    assertEquals(baseRefCount, rCtx4.reader().getRefCount());
     sr4.close();
-    assertEquals(baseRefCount-1, rCtx4.reader.getRefCount());
+    assertEquals(baseRefCount-1, rCtx4.reader().getRefCount());
 
 
     SolrQueryRequest sr5 = req("q","foo");
-    ReaderContext rCtx5 = sr5.getSearcher().getTopReaderContext();
+    IndexReaderContext rCtx5 = sr5.getSearcher().getTopReaderContext();
 
     assertU(delI("1"));
     assertU(commit());
     SolrQueryRequest sr6 = req("q","foo");
-    ReaderContext rCtx6 = sr6.getSearcher().getTopReaderContext();
-    assertEquals(1, ReaderUtil.leaves(rCtx6)[0].reader.numDocs()); // only a single doc left in the first segment
-    assertTrue( !ReaderUtil.leaves(rCtx5)[0].reader.equals(ReaderUtil.leaves(rCtx6)[0].reader) );  // readers now different
+    IndexReaderContext rCtx6 = sr6.getSearcher().getTopReaderContext();
+    assertEquals(1, ReaderUtil.leaves(rCtx6)[0].reader().numDocs()); // only a single doc left in the first segment
+    assertTrue( !ReaderUtil.leaves(rCtx5)[0].reader().equals(ReaderUtil.leaves(rCtx6)[0].reader()) );  // readers now different
 
     sr5.close();
     sr6.close();

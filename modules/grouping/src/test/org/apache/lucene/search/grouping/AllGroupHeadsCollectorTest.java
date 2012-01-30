@@ -19,9 +19,10 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.queries.function.ValueSource;
@@ -113,7 +114,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
     IndexReader reader = w.getReader();
     IndexSearcher indexSearcher = new IndexSearcher(reader);
-    if (SlowMultiReaderWrapper.class.isAssignableFrom(reader.getClass())) {
+    if (SlowCompositeReaderWrapper.class.isAssignableFrom(reader.getClass())) {
       canUseIDV = false;
     }
 
@@ -272,11 +273,11 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         }
       }
 
-      final IndexReader r = w.getReader();
+      final DirectoryReader r = w.getReader();
       w.close();
 
       // NOTE: intentional but temporary field cache insanity!
-      final int[] docIdToFieldId = FieldCache.DEFAULT.getInts(new SlowMultiReaderWrapper(r), "id", false);
+      final int[] docIdToFieldId = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(r), "id", false);
       final int[] fieldIdToDocID = new int[numDocs];
       for (int i = 0; i < docIdToFieldId.length; i++) {
         int fieldId = docIdToFieldId[i];
@@ -285,7 +286,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
       try {
         final IndexSearcher s = newSearcher(r);
-        if (SlowMultiReaderWrapper.class.isAssignableFrom(s.getIndexReader().getClass())) {
+        if (SlowCompositeReaderWrapper.class.isAssignableFrom(s.getIndexReader().getClass())) {
           canUseIDV = false;
         } else {
           canUseIDV = !preFlex;
@@ -365,7 +366,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           }
         }
       } finally {
-        FieldCache.DEFAULT.purge(r);
+        // TODO: FieldCache.DEFAULT.purge(r);
       }
 
       r.close();

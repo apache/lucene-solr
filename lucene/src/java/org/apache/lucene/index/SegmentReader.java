@@ -30,11 +30,9 @@ import org.apache.lucene.util.Bits;
 /**
  * @lucene.experimental
  */
-public final class SegmentReader extends IndexReader {
+public final class SegmentReader extends AtomicReader {
 
   private final SegmentInfo si;
-  private final ReaderContext readerContext = new AtomicReaderContext(this);
-  
   private final Bits liveDocs;
 
   // Normally set to si.docCount - si.delDocCount, unless we
@@ -186,12 +184,6 @@ public final class SegmentReader extends IndexReader {
     return si.toString(si.dir, si.docCount - numDocs - si.getDelCount());
   }
   
-  @Override
-  public ReaderContext getTopReaderContext() {
-    ensureOpen();
-    return readerContext;
-  }
-
   /**
    * Return the name of the segment this reader is reading.
    */
@@ -207,7 +199,6 @@ public final class SegmentReader extends IndexReader {
   }
 
   /** Returns the directory this index resides in. */
-  @Override
   public Directory directory() {
     // Don't ensureOpen here -- in certain cases, when a
     // cloned/reopened reader needs to commit, it may call
@@ -228,7 +219,6 @@ public final class SegmentReader extends IndexReader {
     return this;
   }
   
-  @Override
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }

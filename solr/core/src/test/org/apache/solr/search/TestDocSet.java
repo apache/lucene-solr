@@ -25,9 +25,9 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -356,11 +356,6 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
-      public IndexReader[] getSequentialSubReaders() {
-        return null;
-      }
-
-      @Override
       public FieldInfos getFieldInfos() {
         return new FieldInfos();
       }
@@ -418,7 +413,7 @@ public class TestDocSet extends LuceneTestCase {
   }
 
   public void doFilterTest(IndexReader reader) throws IOException {
-    ReaderContext topLevelContext = reader.getTopReaderContext();
+    IndexReaderContext topLevelContext = reader.getTopReaderContext();
     OpenBitSet bs = getRandomSet(reader.maxDoc(), rand.nextInt(reader.maxDoc()+1));
     DocSet a = new BitDocSet(bs);
     DocSet b = getIntDocSet(bs);

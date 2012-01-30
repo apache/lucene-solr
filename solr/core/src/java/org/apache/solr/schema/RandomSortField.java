@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
@@ -80,7 +80,7 @@ public class RandomSortField extends FieldType {
    * Using dynamic fields, you can force the random order to change 
    */
   private static int getSeed(String fieldName, AtomicReaderContext context) {
-    final IndexReader top = ReaderUtil.getTopLevelContext(context).reader;
+    final DirectoryReader top = (DirectoryReader) ReaderUtil.getTopLevelContext(context).reader();
     // calling getVersion() on a segment will currently give you a null pointer exception, so
     // we use the top-level reader.
     return fieldName.hashCode() + context.docBase + (int)top.getVersion();

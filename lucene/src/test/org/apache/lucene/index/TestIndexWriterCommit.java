@@ -51,7 +51,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       writer.close();
 
       Term searchTerm = new Term("content", "aaa");
-      IndexReader reader = IndexReader.open(dir);
+      DirectoryReader reader = IndexReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("first number of hits", 14, hits.length);
@@ -279,7 +279,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     writer.forceMerge(1);
 
     // Open a reader before closing (commiting) the writer:
-    IndexReader reader = IndexReader.open(dir);
+    DirectoryReader reader = IndexReader.open(dir);
 
     // Reader should see index as multi-seg at this
     // point:
@@ -339,7 +339,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
           public void run() {
             try {
               final Document doc = new Document();
-              IndexReader r = IndexReader.open(dir);
+              DirectoryReader r = IndexReader.open(dir);
               Field f = newField("f", "", StringField.TYPE_UNSTORED);
               doc.add(f);
               int count = 0;
@@ -350,7 +350,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
                   f.setValue(s);
                   w.addDocument(doc);
                   w.commit();
-                  IndexReader r2 = IndexReader.openIfChanged(r);
+                  DirectoryReader r2 = DirectoryReader.openIfChanged(r);
                   assertNotNull(r2);
                   assertTrue(r2 != r);
                   r.close();
@@ -390,10 +390,10 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     for (int i = 0; i < 23; i++)
       TestIndexWriter.addDoc(writer);
 
-    IndexReader reader = IndexReader.open(dir);
+    DirectoryReader reader = IndexReader.open(dir);
     assertEquals(0, reader.numDocs());
     writer.commit();
-    IndexReader reader2 = IndexReader.openIfChanged(reader);
+    DirectoryReader reader2 = DirectoryReader.openIfChanged(reader);
     assertNotNull(reader2);
     assertEquals(0, reader.numDocs());
     assertEquals(23, reader2.numDocs());
@@ -435,7 +435,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     // open "first" with IndexWriter
     IndexCommit commit = null;
-    for(IndexCommit c : IndexReader.listCommits(dir)) {
+    for(IndexCommit c : DirectoryReader.listCommits(dir)) {
       if (c.getUserData().get("tag").equals("first")) {
         commit = c;
         break;
@@ -456,7 +456,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     // make sure "second" commit is still there
     commit = null;
-    for(IndexCommit c : IndexReader.listCommits(dir)) {
+    for(IndexCommit c : DirectoryReader.listCommits(dir)) {
       if (c.getUserData().get("tag").equals("second")) {
         commit = c;
         break;
@@ -475,14 +475,14 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     try {
-      IndexReader.listCommits(dir);
+      DirectoryReader.listCommits(dir);
       fail("listCommits should have thrown an exception over empty index");
     } catch (IndexNotFoundException e) {
       // that's expected !
     }
     // No changes still should generate a commit, because it's a new index.
     writer.close();
-    assertEquals("expected 1 commits!", 1, IndexReader.listCommits(dir).size());
+    assertEquals("expected 1 commits!", 1, DirectoryReader.listCommits(dir).size());
     dir.close();
   }
   
@@ -501,7 +501,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     for (int i = 0; i < 23; i++)
       TestIndexWriter.addDoc(writer);
 
-    IndexReader reader = IndexReader.open(dir);
+    DirectoryReader reader = IndexReader.open(dir);
     assertEquals(0, reader.numDocs());
 
     writer.prepareCommit();
@@ -511,7 +511,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     writer.commit();
 
-    IndexReader reader3 = IndexReader.openIfChanged(reader);
+    IndexReader reader3 = DirectoryReader.openIfChanged(reader);
     assertNotNull(reader3);
     assertEquals(0, reader.numDocs());
     assertEquals(0, reader2.numDocs());
@@ -558,7 +558,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     for (int i = 0; i < 23; i++)
       TestIndexWriter.addDoc(writer);
 
-    IndexReader reader = IndexReader.open(dir);
+    DirectoryReader reader = IndexReader.open(dir);
     assertEquals(0, reader.numDocs());
 
     writer.prepareCommit();
@@ -568,7 +568,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     writer.rollback();
 
-    IndexReader reader3 = IndexReader.openIfChanged(reader);
+    IndexReader reader3 = DirectoryReader.openIfChanged(reader);
     assertNull(reader3);
     assertEquals(0, reader.numDocs());
     assertEquals(0, reader2.numDocs());
@@ -620,9 +620,9 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       TestIndexWriter.addDoc(w);
     w.close();
 
-    assertEquals(0, IndexReader.getCommitUserData(dir).size());
+    assertEquals(0, DirectoryReader.getCommitUserData(dir).size());
 
-    IndexReader r = IndexReader.open(dir);
+    DirectoryReader r = IndexReader.open(dir);
     // commit(Map) never called for this index
     assertEquals(0, r.getCommitUserData().size());
     r.close();
@@ -635,7 +635,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     w.commit(data);
     w.close();
 
-    assertEquals("test1", IndexReader.getCommitUserData(dir).get("label"));
+    assertEquals("test1", DirectoryReader.getCommitUserData(dir).get("label"));
 
     r = IndexReader.open(dir);
     assertEquals("test1", r.getCommitUserData().get("label"));
@@ -645,7 +645,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     w.forceMerge(1);
     w.close();
 
-    assertEquals("test1", IndexReader.getCommitUserData(dir).get("label"));
+    assertEquals("test1", DirectoryReader.getCommitUserData(dir).get("label"));
 
     dir.close();
   }

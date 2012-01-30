@@ -21,9 +21,9 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.util.Bits;
 
 /** 
@@ -38,7 +38,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
     this.random = new Random(random.nextLong());
   }
   
-  public  AssertingIndexSearcher(Random random, ReaderContext context) {
+  public  AssertingIndexSearcher(Random random, IndexReaderContext context) {
     super(context);
     this.random = new Random(random.nextLong());
   }
@@ -48,7 +48,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
     this.random = new Random(random.nextLong());
   }
   
-  public  AssertingIndexSearcher(Random random, ReaderContext context, ExecutorService ex) {
+  public  AssertingIndexSearcher(Random random, IndexReaderContext context, ExecutorService ex) {
     super(context, ex);
     this.random = new Random(random.nextLong());
   }

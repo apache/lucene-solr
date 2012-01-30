@@ -151,10 +151,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
     assertEquals(info, leftReader.numDocs(), rightReader.numDocs());
     assertEquals(info, leftReader.numDeletedDocs(), rightReader.numDeletedDocs());
     assertEquals(info, leftReader.hasDeletions(), rightReader.hasDeletions());
-    
-    if (leftReader.getUniqueTermCount() != -1 && rightReader.getUniqueTermCount() != -1) {
-      assertEquals(info, leftReader.getUniqueTermCount(), rightReader.getUniqueTermCount());
-    }
   }
   
   /** 
@@ -462,11 +458,13 @@ public class TestDuelingCodecs extends LuceneTestCase {
     FieldsEnum fieldsEnum = leftFields.iterator();
     String field;
     while ((field = fieldsEnum.next()) != null) {
-      assertEquals(info, leftReader.hasNorms(field), rightReader.hasNorms(field));
-      if (leftReader.hasNorms(field)) {
-        DocValues leftNorms = MultiDocValues.getNormDocValues(leftReader, field);
-        DocValues rightNorms = MultiDocValues.getNormDocValues(rightReader, field);
+      DocValues leftNorms = MultiDocValues.getNormDocValues(leftReader, field);
+      DocValues rightNorms = MultiDocValues.getNormDocValues(rightReader, field);
+      if (leftNorms != null && rightNorms != null) {
         assertDocValues(leftNorms, rightNorms);
+      } else {
+        assertNull(leftNorms);
+        assertNull(rightNorms);
       }
     }
   }
@@ -519,7 +517,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
 
   private static Set<String> getDVFields(IndexReader reader) {
     Set<String> fields = new HashSet<String>();
-    for(FieldInfo fi : ReaderUtil.getMergedFieldInfos(reader)) {
+    for(FieldInfo fi : MultiFields.getMergedFieldInfos(reader)) {
       if (fi.hasDocValues()) {
         fields.add(fi.name);
       }
@@ -539,7 +537,12 @@ public class TestDuelingCodecs extends LuceneTestCase {
     for (String field : leftValues) {
       DocValues leftDocValues = MultiDocValues.getDocValues(leftReader, field);
       DocValues rightDocValues = MultiDocValues.getDocValues(rightReader, field);
-      assertDocValues(leftDocValues, rightDocValues);
+      if (leftDocValues != null && rightDocValues != null) {
+        assertDocValues(leftDocValues, rightDocValues);
+      } else {
+        assertNull(leftDocValues);
+        assertNull(rightDocValues);
+      }
     }
   }
   

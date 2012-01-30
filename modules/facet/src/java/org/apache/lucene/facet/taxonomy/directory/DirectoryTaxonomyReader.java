@@ -15,6 +15,7 @@ import org.apache.lucene.facet.taxonomy.InconsistentTaxonomyException;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.Consts.LoadFullPathOnly;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -58,7 +59,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
 
   private static final Logger logger = Logger.getLogger(DirectoryTaxonomyReader.class.getName());
   
-  private IndexReader indexReader;
+  private DirectoryReader indexReader;
 
   // The following lock is used to allow multiple threads to read from the
   // index concurrently, while having them block during the very short
@@ -126,8 +127,8 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     parentArray.refresh(indexReader);
   }
 
-  protected IndexReader openIndexReader(Directory directory) throws CorruptIndexException, IOException {
-    return IndexReader.open(directory);
+  protected DirectoryReader openIndexReader(Directory directory) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(directory);
   }
 
   /**
@@ -353,7 +354,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     // safely read indexReader without holding the write lock, because
     // no other thread can be writing at this time (this method is the
     // only possible writer, and it is "synchronized" to avoid this case).
-    IndexReader r2 = IndexReader.openIfChanged(indexReader);
+    DirectoryReader r2 = DirectoryReader.openIfChanged(indexReader);
     if (r2 == null) {
     	return false; // no changes, nothing to do
     } 
@@ -557,7 +558,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
    * 
    * @return lucene indexReader
    */
-  IndexReader getInternalIndexReader() {
+  DirectoryReader getInternalIndexReader() {
     ensureOpen();
     return this.indexReader;
   }

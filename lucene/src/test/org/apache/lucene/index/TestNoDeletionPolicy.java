@@ -76,7 +76,7 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
       doc.add(newField("c", "a" + i, TextField.TYPE_STORED));
       writer.addDocument(doc);
       writer.commit();
-      assertEquals("wrong number of commits !", i + 1, IndexReader.listCommits(dir).size());
+      assertEquals("wrong number of commits !", i + 1, DirectoryReader.listCommits(dir).size());
     }
     writer.close();
     dir.close();

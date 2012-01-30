@@ -80,7 +80,7 @@ public class TestNeverDelete extends LuceneTestCase {
 
     final Set<String> allFiles = new HashSet<String>();
 
-    IndexReader r = IndexReader.open(d);
+    DirectoryReader r = IndexReader.open(d);
     while(System.currentTimeMillis() < stopTime) {
       final IndexCommit ic = r.getIndexCommit();
       if (VERBOSE) {
@@ -91,7 +91,7 @@ public class TestNeverDelete extends LuceneTestCase {
       for(String fileName : allFiles) {
         assertTrue("file " + fileName + " does not exist", d.fileExists(fileName));
       }
-      IndexReader r2 = IndexReader.openIfChanged(r);
+      DirectoryReader r2 = DirectoryReader.openIfChanged(r);
       if (r2 != null) {
         r.close();
         r = r2;
