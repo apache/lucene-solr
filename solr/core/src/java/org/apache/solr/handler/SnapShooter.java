@@ -70,7 +70,7 @@ public class SnapShooter {
   }
 
   void createSnapAsync(final IndexCommit indexCommit, final int numberToKeep, final ReplicationHandler replicationHandler) {
-    replicationHandler.core.getDeletionPolicy().saveCommitPoint(indexCommit.getVersion());
+    replicationHandler.core.getDeletionPolicy().saveCommitPoint(indexCommit.getGeneration());
 
     new Thread() {
       @Override
@@ -112,7 +112,7 @@ public class SnapShooter {
       LOG.error("Exception while creating snapshot", e);
       details.add("snapShootException", e.getMessage());
     } finally {
-      replicationHandler.core.getDeletionPolicy().releaseCommitPoint(indexCommit.getVersion());   
+      replicationHandler.core.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
       replicationHandler.snapShootDetails = details;
       if (lock != null) {
         try {

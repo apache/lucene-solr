@@ -153,15 +153,6 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
-  public synchronized long fileModified(String name) throws IOException {
-    if (cache.fileExists(name)) {
-      return cache.fileModified(name);
-    } else {
-      return delegate.fileModified(name);
-    }
-  }
-
-  @Override
   public synchronized void deleteFile(String name) throws IOException {
     if (VERBOSE) {
       System.out.println("nrtdir.deleteFile name=" + name);

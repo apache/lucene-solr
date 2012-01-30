@@ -83,32 +83,20 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
   public boolean equals(Object other) {
     if (other instanceof IndexCommit) {
       IndexCommit otherCommit = (IndexCommit) other;
-      return otherCommit.getDirectory().equals(getDirectory()) && otherCommit.getVersion() == getVersion();
-    } else
+      return otherCommit.getDirectory().equals(getDirectory()) && otherCommit.getGeneration() == getGeneration();
+    } else {
       return false;
+    }
   }
 
   @Override
   public int hashCode() {
-    return (int) (getDirectory().hashCode() + getVersion());
+    return getDirectory().hashCode() + Long.valueOf(getGeneration()).hashCode();
   }
-
-  /** Returns the version for this IndexCommit.  This is the
-   *  same value that {@link IndexReader#getVersion} would
-   *  return if it were opened on this commit. */
-  public abstract long getVersion();
 
   /** Returns the generation (the _N in segments_N) for this
    *  IndexCommit */
   public abstract long getGeneration();
-
-  /** Convenience method that returns the last modified time
-   *  of the segments_N file corresponding to this index
-   *  commit, equivalent to
-   *  getDirectory().fileModified(getSegmentsFileName()). */
-  public long getTimestamp() throws IOException {
-    return getDirectory().fileModified(getSegmentsFileName());
-  }
 
   /** Returns userData, previously passed to {@link
    *  IndexWriter#commit(Map)} for this commit.  Map is
@@ -116,6 +104,10 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
   public abstract Map<String,String> getUserData() throws IOException;
   
   public int compareTo(IndexCommit commit) {
+    if (getDirectory() != commit.getDirectory()) {
+      throw new UnsupportedOperationException("cannot compare IndexCommits from different Directory instances");
+    }
+
     long gen = getGeneration();
     long comgen = commit.getGeneration();
     if (gen < comgen) {
@@ -126,5 +118,4 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
       return 0;
     }
   }
-
 }

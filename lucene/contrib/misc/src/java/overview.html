@@ -27,33 +27,29 @@
 The misc package has various tools for splitting/merging indices,
 changing norms, finding high freq terms, and others.
 
-<h2>DirectIOLinuxDirectory</h2>
+<a name="NativeUnixDirectory"></a>
+<h2>NativeUnixDirectory</h2>
 
 <p>
 <b>NOTE</b>: This uses C++ sources (accessible via JNI), which you'll
-have to compile on your platform.  Further, this is a very
-platform-specific extensions (runs only on Linux, and likely only on
-2.6.x kernels).
+have to compile on your platform.
 
 <p>
-DirectIOLinuxDirectory is a Directory implementation that bypasses the
-OS's buffer cache for any IndexInput and IndexOutput opened through it
-(using the linux-specific O_DIRECT flag).
+{@link org.apache.lucene.store.NativeUnixDirectory} is a Directory implementation that bypasses the
+OS's buffer cache (using direct IO) for any IndexInput and IndexOutput
+used during merging of segments larger than a specified size (default
+10 MB).  This avoids evicting hot pages that are still in-use for
+searching, keeping search more responsive while large merges run.
 
 <p>
-Note that doing so typically results in bad performance loss!  You
-should not use this for searching, but rather for indexing (or maybe
-just merging during indexing), to avoid evicting useful pages from the
-buffer cache.
-
-See <a target=_top href="http://chbits.blogspot.com/2010/06/lucene-and-fadvisemadvise.html">here</a>
+See <a target=_top href="http://blog.mikemccandless.com/2010/06/lucene-and-fadvisemadvise.html">this blog post</a>
 for details.
 
 Steps to build:
 <ul>
   <li> <tt>cd lucene/contrib/misc/</tt>
 
-  <li> To compile NativePosixUtil.cpp -> libNativePosixUtil.so on Linux run<tt> ant build-native-unix</tt>.
+  <li> To compile NativePosixUtil.cpp -> libNativePosixUtil.so, run<tt> ant build-native-unix</tt>.
   
   <li><tt>libNativePosixUtil.so</tt> will be located in the <tt>lucene/build/native/</tt> folder
 
@@ -61,13 +57,6 @@ Steps to build:
 
   <li> <tt>ant jar</tt> to compile the java source and put that JAR on your CLASSPATH
 </ul>
-
-<p>
-To use this, you'll likely want to make a custom subclass of
-FSDirectory that only opens direct IndexInput/Output for merging.  One
-hackish way to do this is to check if the current thread's name starts
-with "Lucene Merge Thread".  Alternatively, you could use this Dir as
-is for all indexing ops, but not for searching.
 
 <p>
 NativePosixUtil.cpp/java also expose access to the posix_madvise,

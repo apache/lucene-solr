@@ -38,7 +38,8 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
     public final A output1;
     public final B output2;
 
-    public Pair(A output1, B output2) {
+    // use newPair
+    private Pair(A output1, B output2) {
       this.output1 = output1;
       this.output2 = output2;
     }
@@ -66,35 +67,79 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
     this.outputs2 = outputs2;
     NO_OUTPUT = new Pair<A,B>(outputs1.getNoOutput(), outputs2.getNoOutput());
   }
-  
-  public Pair<A,B> get(A output1, B output2) {
-    if (output1 == outputs1.getNoOutput() && output2 == outputs2.getNoOutput()) {
+
+  /** Create a new Pair */
+  public Pair<A,B> newPair(A a, B b) {
+    if (a.equals(outputs1.getNoOutput())) {
+      a = outputs1.getNoOutput();
+    }
+    if (b.equals(outputs2.getNoOutput())) {
+      b = outputs2.getNoOutput();
+    }
+
+    if (a == outputs1.getNoOutput() && b == outputs2.getNoOutput()) {
       return NO_OUTPUT;
     } else {
-      return new Pair<A,B>(output1, output2);
+      final Pair<A,B> p = new Pair<A,B>(a, b);
+      assert valid(p);
+      return p;
     }
   }
- 
+
+  // for assert
+  private boolean valid(Pair<A,B> pair) {
+    final boolean noOutput1 = pair.output1.equals(outputs1.getNoOutput());
+    final boolean noOutput2 = pair.output2.equals(outputs2.getNoOutput());
+
+    if (noOutput1 && pair.output1 != outputs1.getNoOutput()) {
+      System.out.println("invalid0");
+      return false;
+    }
+
+    if (noOutput2 && pair.output2 != outputs2.getNoOutput()) {
+      System.out.println("invalid1");
+      return false;
+    }
+
+    if (noOutput1 && noOutput2) {
+      if (pair != NO_OUTPUT) {
+        System.out.println("invalid2");
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return true;
+    }
+  }
+  
   @Override
   public Pair<A,B> common(Pair<A,B> pair1, Pair<A,B> pair2) {
-    return get(outputs1.common(pair1.output1, pair2.output1),
-               outputs2.common(pair1.output2, pair2.output2));
+    assert valid(pair1);
+    assert valid(pair2);
+    return newPair(outputs1.common(pair1.output1, pair2.output1),
+                   outputs2.common(pair1.output2, pair2.output2));
   }
 
   @Override
   public Pair<A,B> subtract(Pair<A,B> output, Pair<A,B> inc) {
-    return get(outputs1.subtract(output.output1, inc.output1),
-               outputs2.subtract(output.output2, inc.output2));
+    assert valid(output);
+    assert valid(inc);
+    return newPair(outputs1.subtract(output.output1, inc.output1),
+                    outputs2.subtract(output.output2, inc.output2));
   }
 
   @Override
   public Pair<A,B> add(Pair<A,B> prefix, Pair<A,B> output) {
-    return get(outputs1.add(prefix.output1, output.output1),
-               outputs2.add(prefix.output2, output.output2));
+    assert valid(prefix);
+    assert valid(output);
+    return newPair(outputs1.add(prefix.output1, output.output1),
+                    outputs2.add(prefix.output2, output.output2));
   }
 
   @Override
   public void write(Pair<A,B> output, DataOutput writer) throws IOException {
+    assert valid(output);
     outputs1.write(output.output1, writer);
     outputs2.write(output.output2, writer);
   }
@@ -103,7 +148,7 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
   public Pair<A,B> read(DataInput in) throws IOException {
     A output1 = outputs1.read(in);
     B output2 = outputs2.read(in);
-    return get(output1, output2);
+    return newPair(output1, output2);
   }
 
   @Override
@@ -113,6 +158,12 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
 
   @Override
   public String outputToString(Pair<A,B> output) {
+    assert valid(output);
     return "<pair:" + outputs1.outputToString(output.output1) + "," + outputs2.outputToString(output.output2) + ">";
+  }
+
+  @Override
+  public String toString() {
+    return "PairOutputs<" + outputs1 + "," + outputs2 + ">";
   }
 }

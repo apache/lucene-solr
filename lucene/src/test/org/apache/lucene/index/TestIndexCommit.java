@@ -34,12 +34,10 @@ public class TestIndexCommit extends LuceneTestCase {
     
     IndexCommit ic1 = new IndexCommit() {
       @Override public String getSegmentsFileName() { return "a"; }
-      @Override public long getVersion() { return 12; }
       @Override public Directory getDirectory() { return dir; }
       @Override public Collection<String> getFileNames() throws IOException { return null; }
       @Override public void delete() {}
       @Override public long getGeneration() { return 0; }
-      @Override public long getTimestamp() throws IOException { return 1;}
       @Override public Map<String, String> getUserData() throws IOException { return null; }
       @Override public boolean isDeleted() { return false; }
       @Override public int getSegmentCount() { return 2; }
@@ -47,12 +45,10 @@ public class TestIndexCommit extends LuceneTestCase {
     
     IndexCommit ic2 = new IndexCommit() {
       @Override public String getSegmentsFileName() { return "b"; }
-      @Override public long getVersion() { return 12; }
       @Override public Directory getDirectory() { return dir; }
       @Override public Collection<String> getFileNames() throws IOException { return null; }
       @Override public void delete() {}
       @Override public long getGeneration() { return 0; }
-      @Override public long getTimestamp() throws IOException { return 1;}
       @Override public Map<String, String> getUserData() throws IOException { return null; }
       @Override public boolean isDeleted() { return false; }
       @Override public int getSegmentCount() { return 2; }

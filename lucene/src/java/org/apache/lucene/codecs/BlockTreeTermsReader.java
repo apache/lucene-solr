@@ -398,7 +398,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     final long indexStartFP;
     final long rootBlockFP;
     final BytesRef rootCode;
-    private FST<BytesRef> index;
+    private final FST<BytesRef> index;
 
     //private boolean DEBUG;
 
@@ -433,6 +433,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
           w.close();
         }
         */
+      } else {
+        index = null;
       }
     }
 
@@ -494,6 +496,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
       private Frame currentFrame;
 
       private final BytesRef term = new BytesRef();
+
+      private final FST.BytesReader fstReader;
 
       // TODO: can we share this with the frame in STE?
       private final class Frame {
@@ -755,6 +759,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
           arcs[arcIdx] = new FST.Arc<BytesRef>();
         }
 
+        if (index == null) {
+          fstReader = null;
+        } else {
+          fstReader = index.getBytesReader(0);
+        }
+
         // TODO: if the automaton is "smallish" we really
         // should use the terms index to seek at least to
         // the initial term and likely to subsequent terms
@@ -842,7 +852,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // TODO: we could be more efficient for the next()
           // case by using current arc as starting point,
           // passed to findTargetArc
-          arc = index.findTargetArc(target, arc, getArc(1+idx));
+          arc = index.findTargetArc(target, arc, getArc(1+idx), fstReader);
           assert arc != null;
           output = fstOutputs.add(output, arc.output);
           idx++;
@@ -1186,6 +1196,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       private boolean eof;
 
       final BytesRef term = new BytesRef();
+      private final FST.BytesReader fstReader;
 
       @SuppressWarnings("unchecked") private FST.Arc<BytesRef>[] arcs = new FST.Arc[1];
 
@@ -1195,6 +1206,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
         
         // Used to hold seek by TermState, or cached seek
         staticFrame = new Frame(-1);
+
+        if (index == null) {
+          fstReader = null;
+        } else {
+          fstReader = index.getBytesReader(0);
+        }
 
         // Init w/ root block; don't use index since it may
         // not (and need not) have been loaded
@@ -1581,7 +1598,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
 
-          final FST.Arc<BytesRef> nextArc = index.findTargetArc(targetLabel, arc, getArc(1+targetUpto));
+          final FST.Arc<BytesRef> nextArc = index.findTargetArc(targetLabel, arc, getArc(1+targetUpto), fstReader);
 
           if (nextArc == null) {
 
@@ -1838,7 +1855,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
 
-          final FST.Arc<BytesRef> nextArc = index.findTargetArc(targetLabel, arc, getArc(1+targetUpto));
+          final FST.Arc<BytesRef> nextArc = index.findTargetArc(targetLabel, arc, getArc(1+targetUpto), fstReader);
 
           if (nextArc == null) {
 

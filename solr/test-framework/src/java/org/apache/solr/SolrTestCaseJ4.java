@@ -132,7 +132,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      // wait a bit in case any ending threads have anything to release
      int retries = 0;
      while (endNumOpens - numOpens != endNumCloses - numCloses) {
-       if (retries++ > 60) {
+       if (retries++ > 120) {
          break;
        }
        try {

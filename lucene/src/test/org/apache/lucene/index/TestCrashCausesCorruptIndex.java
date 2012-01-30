@@ -228,14 +228,6 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
      * {@inheritDoc}
      */
     @Override
-    public long fileModified(String name) throws IOException {
-      return realDirectory.fileModified(name);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public String[] listAll() throws IOException {
       return realDirectory.listAll();
     }

@@ -131,7 +131,7 @@ public class TokenInfoDictionaryBuilder {
     System.out.println("  encode...");
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton(true);
-    Builder<Long> fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE2, fstOutput);
+    Builder<Long> fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, true);
     IntsRef scratch = new IntsRef();
     long ord = -1; // first ord will be 0
     String lastValue = null;
@@ -155,13 +155,14 @@ public class TokenInfoDictionaryBuilder {
         for (int i = 0; i < token.length(); i++) {
           scratch.ints[i] = (int) token.charAt(i);
         }
-        fstBuilder.add(scratch, fstOutput.get(ord));
+        fstBuilder.add(scratch, ord);
       }
       dictionary.addMapping((int)ord, offset);
       offset = next;
     }
     
-    FST<Long> fst = fstBuilder.finish();
+    final FST<Long> fst = fstBuilder.finish().pack(2, 100000);
+    
     System.out.print("  " + fst.getNodeCount() + " nodes, " + fst.getArcCount() + " arcs, " + fst.sizeInBytes() + " bytes...  ");
     dictionary.setFST(fst);
     System.out.println(" done");

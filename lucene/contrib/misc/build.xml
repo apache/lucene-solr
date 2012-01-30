@@ -40,11 +40,13 @@
       <fileset file="${src.dir}/org/apache/lucene/store/NativePosixUtil.cpp" />  
       <includepath>
         <pathelement location="${java.home}/../include"/>
+        <pathelement location="${java.home}/include"/>
         <pathelement location="${java.home}/../include/linux"/>
         <pathelement location="${java.home}/../include/solaris"/>
       </includepath>
 
       <compilerarg value="-fPIC" />
+      <linkerarg value="-lstdc++" />
     </cc>
   </target>
 

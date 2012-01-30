@@ -27,68 +27,120 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.apache.lucene.store.Directory; // javadoc
-import org.apache.lucene.store.NativeFSLockFactory; // javadoc
+import org.apache.lucene.store.IOContext.Context;
+
+// TODO
+//   - newer Linux kernel versions (after 2.6.29) have
+//     improved MADV_SEQUENTIAL (and hopefully also
+//     FADV_SEQUENTIAL) interaction with the buffer
+//     cache; we should explore using that instead of direct
+//     IO when context is merge
 
 /**
- * An {@link Directory} implementation that uses the
- * Linux-specific O_DIRECT flag to bypass all OS level
- * caching.  To use this you must compile
+ * A {@link Directory} implementation for all Unixes that uses
+ * DIRECT I/O to bypass OS level IO caching during
+ * merging.  For all other cases (searching, writing) we delegate
+ * to the provided Directory instance.
+ *
+ * <p>See <a
+ * href="../../../../../contrib-misc/overview-summary.html#NativeUnixDirectory">Overview</a>
+ * for more details.
+ *
+ * <p>To use this you must compile
  * NativePosixUtil.cpp (exposes Linux-specific APIs through
- * JNI) for your platform.
+ * JNI) for your platform, by running <code>ant
+ * build-native-unix</code>, and then putting the resulting
+ * <code>libNativePosixUtil.so</code> (from
+ * <code>lucene/build/native</code>) onto your dynamic
+ * linker search path.
  *
  * <p><b>WARNING</b>: this code is very new and quite easily
  * could contain horrible bugs.  For example, here's one
- * known issue: if you use seek in IndexOutput, and then
+ * known issue: if you use seek in <code>IndexOutput</code>, and then
  * write more than one buffer's worth of bytes, then the
- * file will be wrong.  Lucene does not do this (only writes
- * small number of bytes after seek).
-
+ * file will be wrong.  Lucene does not do this today (only writes
+ * small number of bytes after seek), but that may change.
+ *
+ * <p>This directory passes Solr and Lucene tests on Linux
+ * and OS X; other Unixes should work but have not been
+ * tested!  Use at your own risk.
+ *
  * @lucene.experimental
  */
-public class DirectIOLinuxDirectory extends FSDirectory {
+public class NativeUnixDirectory extends FSDirectory {
 
+  // TODO: this is OS dependent, but likely 512 is the LCD
   private final static long ALIGN = 512;
   private final static long ALIGN_NOT_MASK = ~(ALIGN-1);
+  
+  /** Default buffer size before writing to disk (256 MB);
+   *  larger means less IO load but more RAM and direct
+   *  buffer storage space consumed during merging. */
 
-  private final int forcedBufferSize;
+  public final static int DEFAULT_MERGE_BUFFER_SIZE = 262144;
+
+  /** Default min expected merge size before direct IO is
+   *  used (10 MB): */
+  public final static long DEFAULT_MIN_BYTES_DIRECT = 10*1024*1024;
+
+  private final int mergeBufferSize;
+  private final long minBytesDirect;
+  private final Directory delegate;
 
   /** Create a new NIOFSDirectory for the named location.
    * 
    * @param path the path of the directory
-   * @param lockFactory the lock factory to use, or null for the default
-   * ({@link NativeFSLockFactory});
-   * @param forcedBufferSize if this is 0, just use Lucene's
-   *    default buffer size; else, force this buffer size.
-   *    For best performance, force the buffer size to
-   *    something fairly large (eg 1 MB), but note that this
-   *    will eat up the JRE's direct buffer storage space
+   * @param mergeBufferSize Size of buffer to use for
+   *    merging.  See {@link #DEFAULT_MERGE_BUFFER_SIZE}.
+   * @param minBytesDirect Merges, or files to be opened for
+   *   reading, smaller than this will
+   *   not use direct IO.  See {@link
+   *   #DEFAULT_MIN_BYTES_DIRECT}
+   * @param delegate fallback Directory for non-merges
    * @throws IOException
    */
-  public DirectIOLinuxDirectory(File path, LockFactory lockFactory, int forcedBufferSize) throws IOException {
-    super(path, lockFactory);
-    this.forcedBufferSize = forcedBufferSize;
+  public NativeUnixDirectory(File path, int mergeBufferSize, long minBytesDirect, Directory delegate) throws IOException {
+    super(path, delegate.getLockFactory());
+    if ((mergeBufferSize & ALIGN) != 0) {
+      throw new IllegalArgumentException("mergeBufferSize must be 0 mod " + ALIGN + " (got: " + mergeBufferSize + ")");
+    }
+    this.mergeBufferSize = mergeBufferSize;
+    this.minBytesDirect = minBytesDirect;
+    this.delegate = delegate;
   }
+  
+  /** Create a new NIOFSDirectory for the named location.
+   * 
+   * @param path the path of the directory
+   * @param delegate fallback Directory for non-merges
+   * @throws IOException
+   */
+  public NativeUnixDirectory(File path, Directory delegate) throws IOException {
+    this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, delegate);
+  }  
 
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new DirectIOLinuxIndexInput(new File(getDirectory(), name),
-        bufferSize(context));
+    if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect || fileLength(name) < minBytesDirect) {
+      return delegate.openInput(name, context);
+    } else {
+      return new NativeUnixIndexInput(new File(getDirectory(), name), mergeBufferSize);
+    }
   }
 
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-    ensureCanWrite(name);
-    return new DirectIOLinuxIndexOutput(new File(getDirectory(), name), bufferSize(context));
-  }
-  
-  private int bufferSize(IOContext context) {
-    return forcedBufferSize != 0 ? forcedBufferSize : BufferedIndexInput
-        .bufferSize(context);
+    if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect) {
+      return delegate.createOutput(name, context);
+    } else {
+      ensureCanWrite(name);
+      return new NativeUnixIndexOutput(new File(getDirectory(), name), mergeBufferSize);
+    }
   }
 
-  private final static class DirectIOLinuxIndexOutput extends IndexOutput {
+  private final static class NativeUnixIndexOutput extends IndexOutput {
     private final ByteBuffer buffer;
     private final FileOutputStream fos;
     private final FileChannel channel;
@@ -101,9 +153,9 @@ public class DirectIOLinuxDirectory extends FSDirectory {
     private long fileLength;
     private boolean isOpen;
 
-    public DirectIOLinuxIndexOutput(File path, int bufferSize) throws IOException {
+    public NativeUnixIndexOutput(File path, int bufferSize) throws IOException {
       //this.path = path;
-      FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), false);
+      final FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), false);
       fos = new FileOutputStream(fd);
       //fos = new FileOutputStream(path);
       channel = fos.getChannel();
@@ -206,7 +258,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
 
     @Override
     public long length() throws IOException {
-      return fileLength;
+      return fileLength + bufferPos;
     }
 
     @Override
@@ -233,7 +285,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
     }
   }
 
-  private final static class DirectIOLinuxIndexInput extends IndexInput {
+  private final static class NativeUnixIndexInput extends IndexInput {
     private final ByteBuffer buffer;
     private final FileInputStream fis;
     private final FileChannel channel;
@@ -244,10 +296,9 @@ public class DirectIOLinuxDirectory extends FSDirectory {
     private long filePos;
     private int bufferPos;
 
-    public DirectIOLinuxIndexInput(File path, int bufferSize) throws IOException {
-      // TODO make use of IOContext
-      super("DirectIOLinuxIndexInput(path=\"" + path.getPath() + "\")");
-      FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), true);
+    public NativeUnixIndexInput(File path, int bufferSize) throws IOException {
+      super("NativeUnixIndexInput(path=\"" + path.getPath() + "\")");
+      final FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), true);
       fis = new FileInputStream(fd);
       channel = fis.getChannel();
       this.bufferSize = bufferSize;
@@ -260,7 +311,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
     }
 
     // for clone
-    public DirectIOLinuxIndexInput(DirectIOLinuxIndexInput other) throws IOException {
+    public NativeUnixIndexInput(NativeUnixIndexInput other) throws IOException {
       super(other.toString());
       this.fis = null;
       channel = other.channel;
@@ -296,13 +347,17 @@ public class DirectIOLinuxDirectory extends FSDirectory {
     public void seek(long pos) throws IOException {
       if (pos != getFilePointer()) {
         final long alignedPos = pos & ALIGN_NOT_MASK;
-        //System.out.println("seek pos=" + pos + " aligned=" + alignedPos + " bufferSize=" + bufferSize + " this=" + this);
         filePos = alignedPos-bufferSize;
-        refill();
         
         final int delta = (int) (pos - alignedPos);
-        buffer.position(delta);
-        bufferPos = delta;
+        if (delta != 0) {
+          refill();
+          buffer.position(delta);
+          bufferPos = delta;
+        } else {
+          // force refill on next read
+          bufferPos = bufferSize;
+        }
       }
     }
 
@@ -371,7 +426,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
     @Override
     public Object clone() {
       try {
-        return new DirectIOLinuxIndexInput(this);
+        return new NativeUnixIndexInput(this);
       } catch (IOException ioe) {
         throw new RuntimeException("IOException during clone: " + this, ioe);
       }

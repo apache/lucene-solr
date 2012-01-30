@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import java.net.BindException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -297,13 +296,7 @@ public class ChaosMonkey {
     JettySolrRunner jetty;
     if (chance <= 5 && aggressivelyKillLeaders) {
       // if killLeader, really aggressively go after leaders
-      Collection<CloudJettyRunner> leaders = shardToLeaderJetty.values();
-      List<CloudJettyRunner> leadersList = new ArrayList<CloudJettyRunner>(leaders.size());
-     
-      leadersList.addAll(leaders);
-
-      int index = random.nextInt(leadersList.size());
-      jetty = leadersList.get(index).jetty;
+      jetty = shardToLeaderJetty.get(slice).jetty;
     } else {
       // get random shard
       List<CloudJettyRunner> jetties = shardToJetty.get(slice);

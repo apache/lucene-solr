@@ -62,6 +62,14 @@ New Features
 
  * LUCENE-3602: Added query time joining under the join module. (Martijn van Groningen, Michael McCandless)
 
+ * LUCENE-2795: Generified DirectIOLinuxDirectory to work across any
+   unix supporting the O_DIRECT flag when opening a file (tested on
+   Linux and OS X but likely other Unixes will work), and improved it
+   so it can be used for indexing and searching.  The directory uses
+   direct IO when doing large merges to avoid  unnecessarily evicting
+   cached IO pages due to large merges.  (Varun Thacker, Mike
+   McCandless)
+
 API Changes
 
  * LUCENE-2606: Changed RegexCapabilities interface to fix thread 
@@ -191,6 +199,9 @@ Bug Fixes
 
  * LUCENE-3697: SimpleBoundaryScanner does not work well when highlighting
    at the beginning of the text. (Shay Banon via Koji Sekiguchi)
+
+ * LUCENE-3719: FVH: slow performance on very large queries.
+   (Igor Motov via Koji Sekiguchi)
 
 Documentation
 

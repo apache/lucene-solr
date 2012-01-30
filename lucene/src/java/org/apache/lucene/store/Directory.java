@@ -62,10 +62,6 @@ public abstract class Directory implements Closeable {
   public abstract boolean fileExists(String name)
        throws IOException;
 
-  /** Returns the time the named file was last modified. */
-  public abstract long fileModified(String name)
-       throws IOException;
-
   /** Removes an existing file in the directory. */
   public abstract void deleteFile(String name)
        throws IOException;

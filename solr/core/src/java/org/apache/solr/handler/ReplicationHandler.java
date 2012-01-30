@@ -60,6 +60,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -139,8 +140,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         // in a catastrophic failure, but will result in the client getting an empty file list for
         // the CMD_GET_FILE_LIST command.
         //
-        core.getDeletionPolicy().setReserveDuration(commitPoint.getVersion(), reserveCommitDuration);
-        rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
+        core.getDeletionPolicy().setReserveDuration(commitPoint.getGeneration(), reserveCommitDuration);
+        rsp.add(CMD_INDEX_VERSION, core.getDeletionPolicy().getCommitTimestamp(commitPoint));
         rsp.add(GENERATION, commitPoint.getGeneration());
       } else {
         // This happens when replication is not configured to happen after startup and no commit/optimize
@@ -219,7 +220,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     for (IndexCommit c : commits.values()) {
       try {
         NamedList<Object> nl = new NamedList<Object>();
-        nl.add("indexVersion", c.getVersion());
+        nl.add("indexVersion", core.getDeletionPolicy().getCommitTimestamp(c));
         nl.add(GENERATION, c.getGeneration());
         nl.add(CMD_GET_FILE_LIST, c.getFileNames());
         l.add(nl);
@@ -332,21 +333,21 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   @SuppressWarnings("unchecked")
   private void getFileList(SolrParams solrParams, SolrQueryResponse rsp) {
-    String v = solrParams.get(CMD_INDEX_VERSION);
+    String v = solrParams.get(GENERATION);
     if (v == null) {
-      rsp.add("status", "no indexversion specified");
+      rsp.add("status", "no index generation specified");
       return;
     }
-    long version = Long.parseLong(v);
-    IndexCommit commit = core.getDeletionPolicy().getCommitPoint(version);
+    long gen = Long.parseLong(v);
+    IndexCommit commit = core.getDeletionPolicy().getCommitPoint(gen);
  
     //System.out.println("ask for files for gen:" + commit.getGeneration() + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
     if (commit == null) {
-      rsp.add("status", "invalid indexversion");
+      rsp.add("status", "invalid index generation");
       return;
     }
     // reserve the indexcommit for sometime
-    core.getDeletionPolicy().setReserveDuration(version, reserveCommitDuration);
+    core.getDeletionPolicy().setReserveDuration(gen, reserveCommitDuration);
     List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
     try {
       //get all the files in the commit
@@ -359,10 +360,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         result.add(fileMeta);
       }
     } catch (IOException e) {
-      rsp.add("status", "unable to get file names for given indexversion");
+      rsp.add("status", "unable to get file names for given index generation");
       rsp.add("exception", e);
-      LOG.warn("Unable to get file names for indexCommit version: "
-               + version, e);
+      LOG.warn("Unable to get file names for indexCommit generation: "
+               + gen, e);
     }
     rsp.add(CMD_GET_FILE_LIST, result);
     if (confFileNameAlias.size() < 1)
@@ -487,8 +488,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     long version[] = new long[2];
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     try {
-      version[0] = searcher.get().getIndexReader().getIndexCommit().getVersion();
-      version[1] = searcher.get().getIndexReader().getIndexCommit().getGeneration();
+      final IndexCommit commit = searcher.get().getIndexReader().getIndexCommit();
+      final Map<String,String> commitData = commit.getUserData();
+      String commitTime = commitData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+      if (commitTime != null) {
+        version[0] = Long.parseLong(commitTime);
+      }
+      version[1] = commit.getGeneration();
     } catch (IOException e) {
       LOG.warn("Unable to get index version : ", e);
     } finally {
@@ -574,7 +580,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     if (isMaster && commit != null) {
-      master.add("replicatableIndexVersion", commit.getVersion());
       master.add("replicatableGeneration", commit.getGeneration());
     }
 
@@ -846,7 +851,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                 Collection<IndexCommit> commits = IndexReader.listCommits(reader.directory());
                 for (IndexCommit ic : commits) {
                   if(ic.getSegmentCount() == 1){
-                    if(indexCommitPoint == null || indexCommitPoint.getVersion() < ic.getVersion()) indexCommitPoint = ic;
+                    if(indexCommitPoint == null || indexCommitPoint.getGeneration() < ic.getGeneration()) indexCommitPoint = ic;
                   }
                 }
               } else{
@@ -857,7 +862,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               // always saves the last commit point (and the last optimized commit point, if needed)
               /***
               if(indexCommitPoint != null){
-                core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getVersion());
+                core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getGeneration());
               }
               ***/
             }
@@ -958,10 +963,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           // always saves the last commit point (and the last optimized commit point, if needed)
           /***
           if (indexCommitPoint != null) {
-            core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getVersion());
+            core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getGeneration());
           }
           if(oldCommitPoint != null){
-            core.getDeletionPolicy().releaseCommitPoint(oldCommitPoint.getVersion());
+            core.getDeletionPolicy().releaseCommitPoint(oldCommitPoint.getGeneration());
           }
           ***/
         }
@@ -989,7 +994,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     private FastOutputStream fos;
 
-    private Long indexVersion;
+    private Long indexGen;
     private IndexDeletionPolicyWrapper delPolicy;
 
     public FileStream(SolrParams solrParams) {
@@ -1004,8 +1009,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       String sLen = params.get(LEN);
       String compress = params.get(COMPRESSION);
       String sChecksum = params.get(CHECKSUM);
-      String sindexVersion = params.get(CMD_INDEX_VERSION);
-      if (sindexVersion != null) indexVersion = Long.parseLong(sindexVersion);
+      String sGen = params.get(GENERATION);
+      if (sGen != null) indexGen = Long.parseLong(sGen);
       if (Boolean.parseBoolean(compress)) {
         fos = new FastOutputStream(new DeflaterOutputStream(out));
       } else {
@@ -1063,9 +1068,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             }
             fos.write(buf, 0, (int) bytesRead);
             fos.flush();
-            if (indexVersion != null && (packetsWritten % 5 == 0)) {
+            if (indexGen != null && (packetsWritten % 5 == 0)) {
               //after every 5 packets reserve the commitpoint for some time
-              delPolicy.setReserveDuration(indexVersion, reserveCommitDuration);
+              delPolicy.setReserveDuration(indexGen, reserveCommitDuration);
             }
             packetsWritten++;
           }

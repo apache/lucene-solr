@@ -15,6 +15,16 @@
  * the License.
  */
 
+#ifdef LINUX
+  #define DIRECT_FLAG O_DIRECT | O_NOATIME
+  #define LINUX
+#elif __APPLE__
+  #define DIRECT_FLAG 0
+  #define OSX
+#else
+  #define DIRECT_FLAG O_DIRECT  // __unix__ is not used as even Linux falls under it.
+#endif
+
 #include <jni.h>
 #include <fcntl.h>   // posix_fadvise, constants for open
 #include <string.h>   // strerror
@@ -26,6 +36,7 @@
 
 // java -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/java:./build/classes/demo -Dlucene.version=2.9-dev -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.TestDoc
 
+#ifdef LINUX
 /*
  * Class:     org_apache_lucene_store_NativePosixUtil
  * Method:    posix_fadvise
@@ -89,7 +100,7 @@ JNIEXPORT jint JNICALL Java_org_apache_lucene_store_NativePosixUtil_posix_1fadvi
 
   return 0;
 }
-
+#endif
 
 /*
  * Class:     org_apache_lucene_store_NativePosixUtil
@@ -107,16 +118,26 @@ JNIEXPORT jobject JNICALL Java_org_apache_lucene_store_NativePosixUtil_open_1dir
   char *fname;
 
   class_ioex = env->FindClass("java/io/IOException");
-  if (class_ioex == NULL) return NULL;
+  if (class_ioex == NULL) {
+    return NULL;
+  }
   class_fdesc = env->FindClass("java/io/FileDescriptor");
-  if (class_fdesc == NULL) return NULL;
+  if (class_fdesc == NULL) {
+    return NULL;
+  }
 
   fname = (char *) env->GetStringUTFChars(filename, NULL);
 
   if (readOnly) {
-    fd = open(fname, O_RDONLY | O_DIRECT | O_NOATIME);
+	fd = open(fname, O_RDONLY | DIRECT_FLAG);
+	#ifdef OSX
+	  fcntl(fd, F_NOCACHE, 1);
+	#endif
   } else {
-    fd = open(fname, O_RDWR | O_CREAT | O_DIRECT | O_NOATIME, 0666);
+	fd = open(fname, O_RDWR | O_CREAT | DIRECT_FLAG, 0666);
+	#ifdef OSX
+	  fcntl(fd, F_NOCACHE, 1);
+	#endif
   }
 
   //printf("open %s -> %d; ro %d\n", fname, fd, readOnly); fflush(stdout);
@@ -131,18 +152,21 @@ JNIEXPORT jobject JNICALL Java_org_apache_lucene_store_NativePosixUtil_open_1dir
 
   // construct a new FileDescriptor
   const_fdesc = env->GetMethodID(class_fdesc, "<init>", "()V");
-  if (const_fdesc == NULL) return NULL;
+  if (const_fdesc == NULL) {
+    return NULL;
+  }
   ret = env->NewObject(class_fdesc, const_fdesc);
 
   // poke the "fd" field with the file descriptor
   field_fd = env->GetFieldID(class_fdesc, "fd", "I");
-  if (field_fd == NULL) return NULL;
+  if (field_fd == NULL) {
+    return NULL;
+  }
   env->SetIntField(ret, field_fd, fd);
 
   // and return it
   return ret;
 }
-
 
 /*
  * Class:     org_apache_lucene_store_NativePosixUtil

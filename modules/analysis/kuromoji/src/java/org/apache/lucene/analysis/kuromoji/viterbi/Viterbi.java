@@ -35,7 +35,7 @@ import org.apache.lucene.util.fst.FST;
 public class Viterbi {
   
   private final TokenInfoFST fst;
-  
+
   private final TokenInfoDictionary dictionary;
   
   private final UnknownDictionary unkDictionary;
@@ -214,6 +214,8 @@ public class Viterbi {
     ViterbiNode bosNode = new ViterbiNode(-1, BOS, 0, BOS.length, 0, 0, 0, -1, Type.KNOWN);
     addToArrays(bosNode, 0, 1, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
     
+    final FST.BytesReader fstReader = fst.getBytesReader(0);
+
     // Process user dictionary;
     if (useUserDictionary) {
       processUserDictionary(text, offset, length, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
@@ -238,7 +240,7 @@ public class Viterbi {
       for (int endIndex = 1; endIndex < suffixLength + 1; endIndex++) {
         int ch = text[suffixStart + endIndex - 1];
         
-        if (fst.findTargetArc(ch, arc, arc, endIndex == 1) == null) {
+        if (fst.findTargetArc(ch, arc, arc, endIndex == 1, fstReader) == null) {
           break; // continue to next position
         }
         output += arc.output.intValue();

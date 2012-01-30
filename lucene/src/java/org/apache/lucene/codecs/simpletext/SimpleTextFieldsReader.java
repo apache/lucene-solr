@@ -521,9 +521,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private void loadTerms() throws IOException {
       PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton(false);
       final Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> b;
-      b = new Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(FST.INPUT_TYPE.BYTE1,
-                                                                          new PairOutputs<Long,PairOutputs.Pair<Long,Long>>(posIntOutputs,
-                                                                                                                            new PairOutputs<Long,Long>(posIntOutputs, posIntOutputs)));
+      final PairOutputs<Long,Long> outputsInner = new PairOutputs<Long,Long>(posIntOutputs, posIntOutputs);
+      final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<Long,PairOutputs.Pair<Long,Long>>(posIntOutputs,
+                                                                                                                      outputsInner);
+      b = new Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(FST.INPUT_TYPE.BYTE1, outputs);
       IndexInput in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
       in.seek(termsStart);
       final BytesRef lastTerm = new BytesRef(10);
@@ -536,9 +537,9 @@ class SimpleTextFieldsReader extends FieldsProducer {
         SimpleTextUtil.readLine(in, scratch);
         if (scratch.equals(END) || StringHelper.startsWith(scratch, FIELD)) {
           if (lastDocsStart != -1) {
-            b.add(Util.toIntsRef(lastTerm, scratchIntsRef), new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,
-                                                                                   new PairOutputs.Pair<Long,Long>((long) docFreq,
-                                                                                                                   posIntOutputs.get(totalTermFreq))));
+            b.add(Util.toIntsRef(lastTerm, scratchIntsRef),
+                  outputs.newPair(lastDocsStart,
+                                  outputsInner.newPair((long) docFreq, totalTermFreq)));
             sumTotalTermFreq += totalTermFreq;
           }
           break;
@@ -553,9 +554,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
           totalTermFreq += ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
         } else if (StringHelper.startsWith(scratch, TERM)) {
           if (lastDocsStart != -1) {
-            b.add(Util.toIntsRef(lastTerm, scratchIntsRef), new PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>(lastDocsStart,
-                                                                                   new PairOutputs.Pair<Long,Long>((long) docFreq,
-                                                                                                                   posIntOutputs.get(totalTermFreq))));
+            b.add(Util.toIntsRef(lastTerm, scratchIntsRef), outputs.newPair(lastDocsStart,
+                                                                            outputsInner.newPair((long) docFreq, totalTermFreq)));
           }
           lastDocsStart = in.getFilePointer();
           final int len = scratch.length - TERM.length;

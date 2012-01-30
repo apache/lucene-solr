@@ -176,20 +176,24 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
         return false;
       }
       /**
-       * Try to assign core to the cluster
+       * Try to assign core to the cluster. 
        * @throws KeeperException 
        * @throws InterruptedException 
        */
       private CloudState updateState(CloudState state, String nodeName, CoreState coreState) throws KeeperException, InterruptedException {
         String collection = coreState.getCollectionName();
         String zkCoreNodeName = coreState.getCoreNodeName();
-        
-          String shardId;
-          if (coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP) == null) {
-            shardId = AssignShard.assignShard(collection, state);
-          } else {
-            shardId = coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP);
-          }
+
+        // use the provided non null shardId
+        String shardId = coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP);
+        if(shardId==null) {
+          //use shardId from CloudState
+          shardId = getAssignedId(state, nodeName, coreState);
+        }
+        if(shardId==null) {
+          //request new shardId 
+          shardId = AssignShard.assignShard(collection, state);
+        }
           
           Map<String,String> props = new HashMap<String,String>();
           for (Entry<String,String> entry : coreState.getProperties().entrySet()) {
@@ -208,6 +212,23 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
           slice = new Slice(shardId, shardProps);
           CloudState newCloudState = updateSlice(state, collection, slice);
           return newCloudState;
+      }
+
+      /*
+       * Return an already assigned id or null if not assigned
+       */
+      private String getAssignedId(final CloudState state, final String nodeName,
+          final CoreState coreState) {
+        final String key = coreState.getProperties().get(ZkStateReader.NODE_NAME_PROP) + "_" +  coreState.getProperties().get(ZkStateReader.CORE_NAME_PROP);
+        Map<String, Slice> slices = state.getSlices(coreState.getCollectionName());
+        if (slices != null) {
+          for (Slice slice : slices.values()) {
+            if (slice.getShards().get(key) != null) {
+              return slice.getName();
+            }
+          }
+        }
+        return null;
       }
       
       private CloudState updateSlice(CloudState state, String collection, Slice slice) {
@@ -480,6 +501,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
     Set<String> downNodes = complement(oldLiveNodes, liveNodes);
     for(String node: downNodes) {
       NodeStateWatcher watcher = nodeStateWatches.remove(node);
+      log.debug("Removed NodeStateWatcher for node:" + node);
     }
   }
   
@@ -491,6 +513,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
         if (!nodeStateWatches.containsKey(nodeName)) {
           zkCmdExecutor.ensureExists(path, zkClient);
           nodeStateWatches.put(nodeName, new NodeStateWatcher(zkClient, nodeName, path, this));
+          log.debug("Added NodeStateWatcher for node " + nodeName);
         } else {
           log.debug("watch already added");
         }

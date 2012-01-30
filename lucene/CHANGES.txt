@@ -748,6 +748,10 @@ Changes in backwards compatibility policy
   
 * LUCENE-3712: Removed unused and untested ReaderUtil#subReader methods.
   (Uwe Schindler)
+
+* LUCENE-3672: Deprecate Directory.fileModified and
+  IndexCommit.getTimestamp and .getVersion. (Andrzej Bialecki, Robert
+  Muir, Mike McCandless)
   
 Security fixes
 
@@ -802,6 +806,9 @@ New Features
 
 * LUCENE-3690: Added HTMLStripCharFilter, a CharFilter that strips HTML
   markup. (Steve Rowe)
+
+* LUCENE-3725: Added optional packing to FST building; this uses extra
+  RAM during building but results in a smaller FST.  (Mike McCandless)
   
 Bug fixes
 
@@ -845,6 +852,12 @@ Bug fixes
   TermAllGroupsCollector or TermAllGroupHeadsCollector if instantiated with a
   non default small size. (Martijn van Groningen, yonik)
 
+* LUCENE-3727: When writing stored fields and term vectors, Lucene
+  checks file sizes to detect a bug in some Sun JREs (LUCENE-1282),
+  however, on some NFS filesystems File.length() could be stale,
+  resulting in false errors like "fdx size mismatch while indexing".
+  These checks now use getFilePointer instead to avoid this.
+  (Jamir Shaikh, Mike McCandless, Robert Muir)
 
 Optimizations
 
