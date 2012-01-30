@@ -129,7 +129,7 @@ final class FieldsWriter {
       // entering the index.  See LUCENE-1282 for
       // details
       String fieldsIdxName = IndexFileNames.segmentFileName(segment,  IndexFileNames.FIELDS_INDEX_EXTENSION);
-      throw new RuntimeException("after flush: fdx size mismatch: " + numDocs + " docs vs " + indexStream.getFilePointer() + " length in bytes of " + fieldsIdxName + " file exists?=" + directory.fileExists(fieldsIdxName));
+      throw new RuntimeException("fdx size mismatch: " + numDocs + " docs vs " + indexStream.getFilePointer() + " length in bytes of " + fieldsIdxName + " file exists?=" + directory.fileExists(fieldsIdxName));
     }
   }
 

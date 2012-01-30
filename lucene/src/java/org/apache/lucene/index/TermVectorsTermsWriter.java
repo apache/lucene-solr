@@ -62,7 +62,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
           // entering the index.  See LUCENE-1282 for
           // details
           String idxName = IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.VECTORS_INDEX_EXTENSION);
-          throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocs + " docs vs " + tvx.getFilePointer() + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
+          throw new RuntimeException("tvx size mismatch: " + state.numDocs + " docs vs " + tvx.getFilePointer() + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
         }
       } finally {
         IOUtils.close(tvx, tvf, tvd);

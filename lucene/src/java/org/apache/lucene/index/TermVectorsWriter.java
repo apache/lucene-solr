@@ -210,7 +210,7 @@ final class TermVectorsWriter {
       // throw an exception to prevent the corruption from
       // entering the index.  See LUCENE-1282 for
       // details.
-      throw new RuntimeException("ergeVectors produced an invalid result: mergedDocs is " + numDocs + " docs vs " + tvx.getFilePointer() + " length in bytes of " + idxName + " file exists?=" + directory.fileExists(idxName));
+      throw new RuntimeException("tvx size mismatch: " + numDocs + " docs vs " + tvx.getFilePointer() + " length in bytes of " + idxName + " file exists?=" + directory.fileExists(idxName));
     }
   }
   
