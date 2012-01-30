@@ -852,6 +852,12 @@ Bug fixes
   TermAllGroupsCollector or TermAllGroupHeadsCollector if instantiated with a
   non default small size. (Martijn van Groningen, yonik)
 
+* LUCENE-3727: When writing stored fields and term vectors, Lucene
+  checks file sizes to detect a bug in some Sun JREs (LUCENE-1282),
+  however, on some NFS filesystems File.length() could be stale,
+  resulting in false errors like "fdx size mismatch while indexing".
+  These checks now use getFilePointer instead to avoid this.
+  (Jamir Shaikh, Mike McCandless, Robert Muir)
 
 Optimizations
 

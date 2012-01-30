@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
-import org.apache.lucene.util.ReaderUtil;         // for javadocs
+import org.apache.lucene.util.ReaderUtil;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
