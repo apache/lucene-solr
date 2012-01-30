@@ -54,7 +54,6 @@ final class SegmentCoreReaders {
   final PerDocProducer perDocProducer;
   final PerDocProducer norms;
 
-  private final Directory cfsDir;
   final int termsIndexDivisor;
   
   private final SegmentReader owner;
@@ -88,7 +87,8 @@ final class SegmentCoreReaders {
     }
     
     final Codec codec = si.getCodec();
-    
+    final Directory cfsDir; // confusing name: if (cfs) its the cfsdir, otherwise its the segment's directory.
+
     boolean success = false;
     
     try {
