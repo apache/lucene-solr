@@ -29,10 +29,8 @@ import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
@@ -53,13 +51,7 @@ public class Lucene3xCodec extends Codec {
 
   private final PostingsFormat postingsFormat = new Lucene3xPostingsFormat();
   
-  // TODO: this should really be a different impl
-  private final StoredFieldsFormat fieldsFormat = new Lucene40StoredFieldsFormat() {
-    @Override
-    public StoredFieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
-      throw new UnsupportedOperationException("this codec can only be used for reading");
-    }
-  };
+  private final StoredFieldsFormat fieldsFormat = new Lucene3xStoredFieldsFormat();
   
   private final TermVectorsFormat vectorsFormat = new Lucene3xTermVectorsFormat();
   

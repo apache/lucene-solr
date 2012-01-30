@@ -66,7 +66,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
         }
 
         try {
-          Lucene40StoredFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
+          Lucene3xStoredFieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
         } finally {
           // If we opened the directory, close it
           if (dir != directory) dir.close();
