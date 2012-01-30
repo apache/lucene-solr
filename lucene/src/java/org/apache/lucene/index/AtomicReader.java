@@ -83,19 +83,11 @@ public abstract class AtomicReader extends IndexReader {
    * Returns {@link Fields} for this reader.
    * This method may return null if the reader has no
    * postings.
-   *
-   * <p><b>NOTE</b>: if this is a multi reader ({@link
-   * #getSequentialSubReaders} is not null) then this
-   * method will throw UnsupportedOperationException.  If
-   * you really need a {@link Fields} for such a reader,
-   * use {@link MultiFields#getFields}.  However, for
-   * performance reasons, it's best to get all sub-readers
-   * using {@link ReaderUtil#gatherSubReaders} and iterate
-   * through them yourself. */
+   */
   public abstract Fields fields() throws IOException;
   
   @Override
-  public int docFreq(String field, BytesRef term) throws IOException {
+  public final int docFreq(String field, BytesRef term) throws IOException {
     final Fields fields = fields();
     if (fields == null) {
       return 0;
@@ -225,12 +217,7 @@ public abstract class AtomicReader extends IndexReader {
 
   /** Returns the number of unique terms (across all fields)
    *  in this reader.
-   *
-   *  @return number of unique terms or -1 if this count
-   *  cannot be easily determined (eg Multi*Readers).
-   *  Instead, you should call {@link
-   *  #getSequentialSubReaders} and ask each sub reader for
-   *  its unique term count. */
+   */
   public final long getUniqueTermCount() throws IOException {
     final Fields fields = fields();
     if (fields == null) {
@@ -243,15 +230,7 @@ public abstract class AtomicReader extends IndexReader {
    * Returns {@link DocValues} for this field.
    * This method may return null if the reader has no per-document
    * values stored.
-   *
-   * <p><b>NOTE</b>: if this is a multi reader ({@link
-   * #getSequentialSubReaders} is not null) then this
-   * method will throw UnsupportedOperationException.  If
-   * you really need {@link DocValues} for such a reader,
-   * use {@link MultiDocValues#getDocValues(IndexReader,String)}.  However, for
-   * performance reasons, it's best to get all sub-readers
-   * using {@link ReaderUtil#gatherSubReaders} and iterate
-   * through them yourself. */
+   */
   public abstract DocValues docValues(String field) throws IOException;
   
   public abstract DocValues normValues(String field) throws IOException;

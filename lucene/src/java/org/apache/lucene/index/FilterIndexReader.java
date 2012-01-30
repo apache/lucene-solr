@@ -333,12 +333,6 @@ public class FilterIndexReader extends AtomicReader {
   }
 
   @Override
-  public int docFreq(String field, BytesRef t) throws IOException {
-    ensureOpen();
-    return in.docFreq(field, t);
-  }
-  
-  @Override
   protected void doClose() throws IOException {
     in.close();
   }

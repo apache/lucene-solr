@@ -261,13 +261,6 @@ public class ParallelReader extends AtomicReader {
     return reader==null ? false : reader.hasNorms(field);
   }
 
-  @Override
-  public int docFreq(String field, BytesRef term) throws IOException {
-    ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
-    return reader == null? 0 : reader.docFreq(field, term);
-  }
-
   // for testing
   AtomicReader[] getSubReaders() {
     return readers.toArray(new AtomicReader[readers.size()]);

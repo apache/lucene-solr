@@ -776,15 +776,6 @@ public class MemoryIndex {
       return fieldInfos;
     }
 
-    @Override
-    public int docFreq(String field, BytesRef term) {
-      Info info = getInfo(field);
-      int freq = 0;
-      if (info != null) freq = info.getPositions(term) != null ? 1 : 0;
-      if (DEBUG) System.err.println("MemoryIndexReader.docFreq: " + field + ":" + term + ", freq:" + freq);
-      return freq;
-    }
-
     private class MemoryFields extends Fields {
       @Override
       public FieldsEnum iterator() {
