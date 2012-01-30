@@ -17,11 +17,11 @@ package org.apache.lucene.search.vectorhighlight;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,7 +60,7 @@ public class FieldQuery {
 
   FieldQuery( Query query, IndexReader reader, boolean phraseHighlight, boolean fieldMatch ) throws IOException {
     this.fieldMatch = fieldMatch;
-    List<Query> flatQueries = new ArrayList<Query>();
+    Set<Query> flatQueries = new LinkedHashSet<Query>();
     flatten( query, reader, flatQueries );
     saveTerms( flatQueries, reader );
     Collection<Query> expandQueries = expand( flatQueries );
@@ -133,7 +133,7 @@ public class FieldQuery {
    *      => expandQueries={a,"b c","c d","b c d"}
    */
   Collection<Query> expand( Collection<Query> flatQueries ){
-    List<Query> expandQueries = new ArrayList<Query>();
+    Set<Query> expandQueries = new LinkedHashSet<Query>();
     for( Iterator<Query> i = flatQueries.iterator(); i.hasNext(); ){
       Query query = i.next();
       i.remove();
