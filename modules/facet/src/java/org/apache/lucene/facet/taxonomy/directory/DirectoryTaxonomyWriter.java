@@ -283,7 +283,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * this method to return their own {@link IndexReader}.
    */
   protected DirectoryReader openReader() throws IOException {
-    return IndexReader.open(indexWriter, true); 
+    return DirectoryReader.open(indexWriter, true); 
   }
 
   /**
@@ -617,7 +617,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
   }
 
-  private synchronized void refreshReader() throws IOException {
+  protected synchronized void refreshReader() throws IOException {
     if (reader != null) {
       DirectoryReader r2 = DirectoryReader.openIfChanged(reader);
       if (r2 != null) {
@@ -983,6 +983,18 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       ordinalMaps[i].addMapping(0, 0);
       ordinalMaps[i].addDone();
     }
+  }
+
+  /**
+   * Expert:  This method is only for expert use.
+   * Note also that any call to refresh() will invalidate the returned reader,
+   * so the caller needs to take care of appropriate locking.
+   * 
+   * @return lucene indexReader
+   */
+  DirectoryReader getInternalIndexReader() {
+    ensureOpen();
+    return this.reader;
   }
 
   /**

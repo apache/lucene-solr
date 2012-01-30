@@ -128,7 +128,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
   }
 
   protected DirectoryReader openIndexReader(Directory directory) throws CorruptIndexException, IOException {
-    return IndexReader.open(directory);
+    return DirectoryReader.open(directory);
   }
 
   /**
@@ -558,7 +558,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
    * 
    * @return lucene indexReader
    */
-  IndexReader getInternalIndexReader() {
+  DirectoryReader getInternalIndexReader() {
     ensureOpen();
     return this.indexReader;
   }
