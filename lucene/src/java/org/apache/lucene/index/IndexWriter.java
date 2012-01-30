@@ -4075,8 +4075,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     Collection<String> files = info.files();
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
     try {
-      // nocommit: we could make a crappy regex like before...
-      // assert assertNoSeparateFiles(files, directory, info);
       for (String file : files) {
         directory.copy(cfsDir, file, file, context);
         checkAbort.work(directory.fileLength(file));
