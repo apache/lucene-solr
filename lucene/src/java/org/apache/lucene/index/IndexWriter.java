@@ -2555,10 +2555,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       newDsName = segName;
     }
     
-    // nocommit: remove this
     Set<String> codecDocStoreFiles = new HashSet<String>();
-    codec.storedFieldsFormat().files(info, codecDocStoreFiles);
-    codec.termVectorsFormat().files(info, codecDocStoreFiles);
+    if (info.getDocStoreOffset() != -1) {
+      // only violate the codec this way if its preflex
+      codec.storedFieldsFormat().files(info, codecDocStoreFiles);
+      codec.termVectorsFormat().files(info, codecDocStoreFiles);
+    }
     
     // Copy the segment files
     for (String file: info.files()) {
