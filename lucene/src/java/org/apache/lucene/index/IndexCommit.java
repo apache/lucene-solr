@@ -95,7 +95,9 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
 
   /** Returns the version for this IndexCommit.  This is the
    *  same value that {@link IndexReader#getVersion} would
-   *  return if it were opened on this commit. */
+   *  return if it were opened on this commit.
+   * @deprecated use {@link #getGeneration} instead */
+  @Deprecated
   public abstract long getVersion();
 
   /** Returns the generation (the _N in segments_N) for this
@@ -105,7 +107,12 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
   /** Convenience method that returns the last modified time
    *  of the segments_N file corresponding to this index
    *  commit, equivalent to
-   *  getDirectory().fileModified(getSegmentsFileName()). */
+   *  getDirectory().fileModified(getSegmentsFileName()).
+   * @deprecated If you need to track commit time of
+   * an index, you can store it in the commit data (see
+   * {@link IndexWriter#commit(Map)}
+   */
+  @Deprecated
   public long getTimestamp() throws IOException {
     return getDirectory().fileModified(getSegmentsFileName());
   }
@@ -116,6 +123,10 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
   public abstract Map<String,String> getUserData() throws IOException;
   
   public int compareTo(IndexCommit commit) {
+    if (getDirectory() != commit.getDirectory()) {
+      throw new UnsupportedOperationException("cannot compare IndexCommits from different Directory instances");
+    }
+
     long gen = getGeneration();
     long comgen = commit.getGeneration();
     if (gen < comgen) {

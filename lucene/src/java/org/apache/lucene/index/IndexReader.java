@@ -910,7 +910,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * {@link #isCurrent()} instead. 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated If you need to track commit time of
+   * an index, you can store it in the commit data (see
+   * {@link IndexWriter#commit(Map)}
    */
+  @Deprecated
   public static long lastModified(final Directory directory2) throws CorruptIndexException, IOException {
     return ((Long) new SegmentInfos.FindSegmentsFile(directory2) {
         @Override
@@ -929,7 +933,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @return version number.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link SegmentInfos#readCurrentVersion}.
    */
+  @Deprecated
   public static long getCurrentVersion(Directory directory) throws CorruptIndexException, IOException {
     return SegmentInfos.readCurrentVersion(directory);
   }
@@ -962,17 +968,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * returns the version recorded in the commit that the
    * reader opened.  This version is advanced every time
    * {@link IndexWriter#commit} is called.</p>
-   *
-   * <p>If instead this reader is a near real-time reader
-   * (ie, obtained by a call to {@link
-   * IndexWriter#getReader}, or by calling {@link #openIfChanged}
-   * on a near real-time reader), then this method returns
-   * the version of the last commit done by the writer.
-   * Note that even as further changes are made with the
-   * writer, the version will not changed until a commit is
-   * completed.  Thus, you should not rely on this method to
-   * determine when a near real-time reader should be
-   * opened.  Use {@link #isCurrent} instead.</p>
    *
    * @throws UnsupportedOperationException unless overridden in subclass
    */

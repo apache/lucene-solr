@@ -62,7 +62,9 @@ public abstract class Directory implements Closeable {
   public abstract boolean fileExists(String name)
        throws IOException;
 
-  /** Returns the time the named file was last modified. */
+  /** Returns the time the named file was last modified.
+   * @deprecated */
+  @Deprecated
   public abstract long fileModified(String name)
        throws IOException;
 
