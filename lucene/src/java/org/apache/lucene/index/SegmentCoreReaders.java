@@ -48,16 +48,13 @@ final class SegmentCoreReaders {
   // SegmentReaders:
   private final AtomicInteger ref = new AtomicInteger(1);
   
-  final String segment;
   final FieldInfos fieldInfos;
   
   final FieldsProducer fields;
   final PerDocProducer perDocProducer;
   final PerDocProducer norms;
 
-  final Directory dir;
-  final Directory cfsDir;
-  final IOContext context;
+  private final Directory cfsDir;
   final int termsIndexDivisor;
   
   private final SegmentReader owner;
@@ -90,22 +87,17 @@ final class SegmentCoreReaders {
       throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
     }
     
-    segment = si.name;
     final Codec codec = si.getCodec();
-    this.context = context;
-    this.dir = dir;
     
     boolean success = false;
     
     try {
-      Directory dir0 = dir;
       if (si.getUseCompoundFile()) {
-        cfsReader = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
-        dir0 = cfsReader;
+        cfsDir = cfsReader = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
       } else {
         cfsReader = null;
+        cfsDir = dir;
       }
-      cfsDir = dir0;
       si.loadFieldInfos(cfsDir, false); // prevent opening the CFS to load fieldInfos
       fieldInfos = si.getFieldInfos();
       

@@ -183,7 +183,7 @@ public final class SegmentReader extends IndexReader {
   public String toString() {
     // SegmentInfo.toString takes dir and number of
     // *pending* deletions; so we reverse compute that here:
-    return si.toString(core.dir, si.docCount - numDocs - si.getDelCount());
+    return si.toString(si.dir, si.docCount - numDocs - si.getDelCount());
   }
   
   @Override
@@ -196,7 +196,7 @@ public final class SegmentReader extends IndexReader {
    * Return the name of the segment this reader is reading.
    */
   public String getSegmentName() {
-    return core.segment;
+    return si.name;
   }
   
   /**
@@ -212,7 +212,7 @@ public final class SegmentReader extends IndexReader {
     // Don't ensureOpen here -- in certain cases, when a
     // cloned/reopened reader needs to commit, it may call
     // this method on the closed original reader
-    return core.dir;
+    return si.dir;
   }
 
   // This is necessary so that cloned SegmentReaders (which
