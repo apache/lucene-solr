@@ -211,7 +211,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       // throw an exception to prevent the corruption from
       // entering the index.  See LUCENE-1282 for
       // details.
-      throw new RuntimeException("mergeFields produced an invalid result: docCount is " + numDocs + " but fdx file size is " + indexStream.getFilePointer() + " file=" + indexStream.toString() + "; now aborting this merge to prevent index corruption");
+      throw new RuntimeException("fdx size mismatch: docCount is " + numDocs + " but fdx file size is " + indexStream.getFilePointer() + " file=" + indexStream.toString() + "; now aborting this merge to prevent index corruption");
   }
   
   @Override
