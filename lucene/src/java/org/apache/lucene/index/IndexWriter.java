@@ -2545,23 +2545,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // only relevant for segments that share doc store with others,
     // because the DS might have been copied already, in which case we
     // just want to update the DS name of this SegmentInfo.
-    // NOTE: pre-3x segments include a null DSName if they don't share doc
-    // store. The following code ensures we don't accidentally insert
-    // 'null' to the map.
     String dsName = info.getDocStoreSegment();
+    assert dsName != null;
     final String newDsName;
-    if (dsName != null) {
-      if (dsNames.containsKey(dsName)) {
-        newDsName = dsNames.get(dsName);
-      } else {
-        dsNames.put(dsName, segName);
-        newDsName = segName;
-      }
+    if (dsNames.containsKey(dsName)) {
+      newDsName = dsNames.get(dsName);
     } else {
+      dsNames.put(dsName, segName);
       newDsName = segName;
     }
     
-    Set<String> codecDocStoreFiles = info.codecDocStoreFiles();
+    // nocommit: remove this
+    Set<String> codecDocStoreFiles = new HashSet<String>();
+    codec.storedFieldsFormat().files(info, codecDocStoreFiles);
+    codec.termVectorsFormat().files(info, codecDocStoreFiles);
+    
     // Copy the segment files
     for (String file: info.files()) {
       final String newFileName;

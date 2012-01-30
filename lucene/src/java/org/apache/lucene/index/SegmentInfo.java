@@ -218,15 +218,6 @@ public final class SegmentInfo implements Cloneable {
       sizeInBytes = sum;
       return sizeInBytes;
   }
-  
-  // nocommit: wrong to call this if (compoundFile)
-  // wrong to call this at all... nuke it
-  Set<String> codecDocStoreFiles() throws IOException {
-    Set<String> docStoreFiles = new HashSet<String>();
-    codec.storedFieldsFormat().files(this, docStoreFiles);
-    codec.termVectorsFormat().files(this, docStoreFiles);
-    return docStoreFiles;
-  }
 
   public boolean getHasVectors() throws IOException {
     return hasVectors == CHECK_FIELDINFO ? getFieldInfos().hasVectors() : hasVectors == YES;
