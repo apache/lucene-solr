@@ -2565,7 +2565,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // Copy the segment files
     for (String file: info.files()) {
       final String newFileName;
-      if (codecDocStoreFiles.contains(file) || file.endsWith(IndexFileNames.COMPOUND_FILE_STORE_EXTENSION)) {
+      if (codecDocStoreFiles.contains(file)) {
         newFileName = newDsName + IndexFileNames.stripSegmentName(file);
         if (dsFilesCopied.contains(newFileName)) {
           continue;
@@ -4070,12 +4070,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   static final Collection<String> createCompoundFile(Directory directory, String fileName, CheckAbort checkAbort, final SegmentInfo info, IOContext context)
           throws IOException {
-
+    assert info.getDocStoreOffset() == -1;
     // Now merge all added files
     Collection<String> files = info.files();
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
     try {
-      assert assertNoSeparateFiles(files, directory, info);
+      // nocommit: we could make a crappy regex like before...
+      // assert assertNoSeparateFiles(files, directory, info);
       for (String file : files) {
         directory.copy(cfsDir, file, file, context);
         checkAbort.work(directory.fileLength(file));
@@ -4085,21 +4086,5 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     return files;
-  }
-  
-  
-  /**
-   * used only by assert: checks that filenames about to be put in cfs belong.
-   */
-  private static boolean assertNoSeparateFiles(Collection<String> files, 
-      Directory dir, SegmentInfo info) throws IOException {
-    // maybe this is overkill, but codec naming clashes would be bad.
-    Set<String> separateFiles = new HashSet<String>();
-    info.getCodec().separateFiles(info, separateFiles);
-    
-    for (String file : files) {
-      assert !separateFiles.contains(file) : file + " should not go in CFS!";
-    }
-    return true;
   }
 }

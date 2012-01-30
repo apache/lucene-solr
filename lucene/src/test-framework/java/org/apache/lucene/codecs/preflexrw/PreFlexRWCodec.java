@@ -117,14 +117,13 @@ public class PreFlexRWCodec extends Lucene3xCodec {
     if (info.getUseCompoundFile() && LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
       // because we don't fully emulate 3.x codec, PreFlexRW actually writes 4.x format CFS files.
       // so we must check segment version here to see if its a "real" 3.x segment or a "fake"
-      // one that we wrote with a 4.x-format CFS+CFE
-      files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+      // one that we wrote with a 4.x-format CFS+CFE, in this case we must add the .CFE
       String version = info.getVersion();
       if (version != null && StringHelper.getVersionComparator().compare("4.0", version) <= 0) {
         files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
       }
-    } else {
-      super.files(info, files);
     }
+    
+    super.files(info, files);
   }
 }

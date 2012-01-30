@@ -421,9 +421,6 @@ public final class SegmentInfo implements Cloneable {
     final Set<String> fileSet = new HashSet<String>();
 
     codec.files(this, fileSet);
-    
-    // regardless of compound file setting: these files are always in the directory
-    codec.separateFiles(this, fileSet);
 
     files = new ArrayList<String>(fileSet);
 

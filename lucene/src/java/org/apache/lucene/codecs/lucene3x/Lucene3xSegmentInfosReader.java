@@ -58,7 +58,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
           if (si.getDocStoreIsCompoundFile()) {
             dir = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(
                 si.getDocStoreSegment(), "",
-                IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), context, false);
+                Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION), context, false);
           }
         } else if (si.getUseCompoundFile()) {
           dir = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(
@@ -144,7 +144,7 @@ public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
       if (docStoreOffset != -1) {
         storesSegment = docStoreSegment;
         storeIsCompoundFile = docStoreIsCompoundFile;
-        ext = IndexFileNames.COMPOUND_FILE_STORE_EXTENSION;
+        ext = Lucene3xCodec.COMPOUND_FILE_STORE_EXTENSION;
       } else {
         storesSegment = name;
         storeIsCompoundFile = isCompoundFile;

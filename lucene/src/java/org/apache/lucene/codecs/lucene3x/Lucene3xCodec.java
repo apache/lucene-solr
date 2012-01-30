@@ -61,6 +61,9 @@ public class Lucene3xCodec extends Codec {
   
   private final Lucene3xNormsFormat normsFormat = new Lucene3xNormsFormat();
   
+  /** Extension of compound file for doc store files*/
+  static final String COMPOUND_FILE_STORE_EXTENSION = "cfx";
+  
   // TODO: this should really be a different impl
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat() {
     @Override
@@ -125,31 +128,30 @@ public class Lucene3xCodec extends Codec {
     return liveDocsFormat;
   }
   
-  // overrides the default implementation in codec.java to handle CFS without CFE
+  // overrides the default implementation in codec.java to handle CFS without CFE, 
+  // shared doc stores, compound doc stores, separate norms, etc
   @Override
   public void files(SegmentInfo info, Set<String> files) throws IOException {
     if (info.getUseCompoundFile()) {
       files.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-      // NOTE: we don't add the CFE extension: because 3.x format doesn't use it.
     } else {
-      super.files(info, files);
+      postingsFormat().files(info, "", files);
+      storedFieldsFormat().files(info, files);
+      termVectorsFormat().files(info, files);
+      fieldInfosFormat().files(info, files);
+      // TODO: segmentInfosFormat should be allowed to declare additional files
+      // if it wants, in addition to segments_N
+      docValuesFormat().files(info, files);
+      normsFormat().files(info, files);
     }
-  }
-
-  // override the default implementation in codec.java to handle separate norms files, and shared compound docstores
-  @Override
-  public void separateFiles(SegmentInfo info, Set<String> files) throws IOException {
-    super.separateFiles(info, files);
+    // never inside CFS
+    liveDocsFormat().files(info, files);
     normsFormat().separateFiles(info, files);
+    
+    // shared docstores: these guys check the hair
     if (info.getDocStoreOffset() != -1) {
-      // We are sharing doc stores (stored fields, term
-      // vectors) with other segments
-      assert info.getDocStoreSegment() != null;
-      if (info.getDocStoreIsCompoundFile()) {
-        files.add(IndexFileNames.segmentFileName(info.getDocStoreSegment(), "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
-      }
-      // otherwise, if its not a compound docstore, storedfieldsformat/termvectorsformat are each adding their relevant files
+      storedFieldsFormat().files(info, files);
+      termVectorsFormat().files(info, files);
     }
-  }
-  
+  }  
 }
