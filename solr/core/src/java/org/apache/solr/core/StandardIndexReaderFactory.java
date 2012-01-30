@@ -23,9 +23,9 @@ import org.apache.lucene.store.Directory;
 
 /**
  * Default IndexReaderFactory implementation. Returns a standard Lucene
- * IndexReader.
+ * {@link DirectoryReader}.
  * 
- * @see IndexReader#open(Directory)
+ * @see DirectoryReader#open(Directory)
  */
 public class StandardIndexReaderFactory extends IndexReaderFactory {
   

@@ -77,12 +77,12 @@ public final class SearcherManager implements Closeable {
    * Creates and returns a new SearcherManager from the given {@link IndexWriter}. 
    * @param writer the IndexWriter to open the IndexReader from.
    * @param applyAllDeletes If <code>true</code>, all buffered deletes will
-   *        be applied (made visible) in the {@link IndexSearcher} / {@link IndexReader}.
+   *        be applied (made visible) in the {@link IndexSearcher} / {@link DirectoryReader}.
    *        If <code>false</code>, the deletes may or may not be applied, but remain buffered 
    *        (in IndexWriter) so that they will be applied in the future.
    *        Applying deletes can be costly, so if your app can tolerate deleted documents
    *        being returned you might gain some performance by passing <code>false</code>.
-   *        See {@link IndexReader#openIfChanged(IndexReader, IndexWriter, boolean)}.
+   *        See {@link DirectoryReader#openIfChanged(DirectoryReader, IndexWriter, boolean)}.
    * @param searcherFactory An optional {@link SearcherFactory}. Pass
    *        <code>null</code> if you don't require the searcher to be warmed
    *        before going live or other custom behavior.
@@ -99,7 +99,7 @@ public final class SearcherManager implements Closeable {
 
   /**
    * Creates and returns a new SearcherManager from the given {@link Directory}. 
-   * @param dir the directory to open the IndexReader on.
+   * @param dir the directory to open the DirectoryReader on.
    * @param searcherFactory An optional {@link SearcherFactory}. Pass
    *        <code>null</code> if you don't require the searcher to be warmed
    *        before going live or other custom behavior.
@@ -116,7 +116,7 @@ public final class SearcherManager implements Closeable {
 
   /**
    * You must call this, periodically, to perform a reopen. This calls
-   * {@link IndexReader#openIfChanged(IndexReader)} with the underlying reader, and if that returns a
+   * {@link DirectoryReader#openIfChanged(DirectoryReader)} with the underlying reader, and if that returns a
    * new reader, it's warmed (if you provided a {@link SearcherFactory} and then
    * swapped into production.
    * 

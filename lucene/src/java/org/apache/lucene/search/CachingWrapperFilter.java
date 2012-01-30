@@ -24,6 +24,7 @@ import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 
@@ -53,13 +54,13 @@ public class CachingWrapperFilter extends Filter {
 
   /** Wraps another filter's result and caches it. If
    * {@code recacheDeletes} is {@code true}, then new deletes (for example
-   * after {@link IndexReader#openIfChanged}) will cause the filter
+   * after {@link DirectoryReader#openIfChanged}) will cause the filter
    * {@link DocIdSet} to be recached.
    *
    * <p>If your index changes seldom, it is recommended to use {@code recacheDeletes=true},
    * as recaching will only occur when the index is reopened.
    * For near-real-time indexes or indexes that are often
-   * reopened with (e.g., {@link IndexReader#openIfChanged} is used), you should
+   * reopened with (e.g., {@link DirectoryReader#openIfChanged} is used), you should
    * pass {@code recacheDeletes=false}. This will cache the filter results omitting
    * deletions and will AND them in while scoring.
    * @param filter Filter to cache results of

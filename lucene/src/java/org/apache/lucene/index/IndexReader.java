@@ -262,7 +262,7 @@ public abstract class IndexReader implements Closeable {
    * @throws CorruptIndexException
    * @throws IOException if there is a low-level IO error
    *
-   * @see #openIfChanged(IndexReader,IndexWriter,boolean)
+   * @see DirectoryReader#openIfChanged(DirectoryReader,IndexWriter,boolean)
    *
    * @lucene.experimental
    * @deprecated Use {@link DirectoryReader#open(IndexWriter,boolean)}

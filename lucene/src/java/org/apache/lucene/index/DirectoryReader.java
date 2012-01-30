@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
@@ -88,7 +89,7 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
    * @throws CorruptIndexException
    * @throws IOException if there is a low-level IO error
    *
-   * @see #openIfChanged(IndexReader,IndexWriter,boolean)
+   * @see #openIfChanged(DirectoryReader,IndexWriter,boolean)
    *
    * @lucene.experimental
    */
@@ -298,9 +299,9 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
    * new MultiReader,  etc.
    *
    * <p>This method is typically far less costly than opening a
-   * fully new <code>IndexReader</code> as it shares
+   * fully new <code>DirectoryReader</code> as it shares
    * resources (for example sub-readers) with the provided
-   * <code>IndexReader</code>, when possible.
+   * <code>DirectoryReader</code>, when possible.
    *
    * <p>The provided reader is not closed (you are responsible
    * for doing so); if a new reader is returned you also
@@ -311,7 +312,7 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @return null if there are no changes; else, a new
-   * IndexReader instance which you must eventually close
+   * DirectoryReader instance which you must eventually close
    */  
   public static DirectoryReader openIfChanged(DirectoryReader oldReader) throws IOException {
     final DirectoryReader newReader = oldReader.doOpenIfChanged();
@@ -324,7 +325,7 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
    * provided reader is searching, open and return a new
    * reader; else, return null.
    *
-   * @see #openIfChanged(IndexReader)
+   * @see #openIfChanged(DirectoryReader)
    */
   public static DirectoryReader openIfChanged(DirectoryReader oldReader, IndexCommit commit) throws IOException {
     final DirectoryReader newReader = oldReader.doOpenIfChanged(commit);
@@ -373,9 +374,9 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
    * <p><b>NOTE</b>: Once the writer is closed, any
    * outstanding readers may continue to be used.  However,
    * if you attempt to reopen any of those readers, you'll
-   * hit an {@link AlreadyClosedException}.</p>
+   * hit an {@link org.apache.lucene.store.AlreadyClosedException}.</p>
    *
-   * @return IndexReader that covers entire index plus all
+   * @return DirectoryReader that covers entire index plus all
    * changes made so far by this IndexWriter instance, or
    * null if there are no new changes
    *
@@ -568,7 +569,21 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     return new ReaderCommit(segmentInfos, directory);
   }
 
-  /** @see org.apache.lucene.index.IndexReader#listCommits */
+  /** Returns all commit points that exist in the Directory.
+   *  Normally, because the default is {@link
+   *  KeepOnlyLastCommitDeletionPolicy}, there would be only
+   *  one commit point.  But if you're using a custom {@link
+   *  IndexDeletionPolicy} then there could be many commits.
+   *  Once you have a given commit, you can open a reader on
+   *  it by calling {@link IndexReader#open(IndexCommit)}
+   *  There must be at least one commit in
+   *  the Directory, else this method throws {@link
+   *  IndexNotFoundException}.  Note that if a commit is in
+   *  progress while this method is running, that commit
+   *  may or may not be returned.
+   *  
+   *  @return a sorted list of {@link IndexCommit}s, from oldest 
+   *  to latest. */
   public static List<IndexCommit> listCommits(Directory dir) throws IOException {
     final String[] files = dir.listAll();
 

@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.util.BytesRef;
 /**
  * Contains statistics for a specific term
@@ -42,13 +42,13 @@ public class TermStatistics {
   }
   
   /** returns the number of documents this term occurs in 
-   * @see IndexReader#docFreq(String, BytesRef) */
+   * @see AtomicReader#docFreq(String, BytesRef) */
   public final long docFreq() {
     return docFreq;
   }
   
   /** returns the total number of occurrences of this term
-   * @see IndexReader#totalTermFreq(String, BytesRef) */
+   * @see AtomicReader#totalTermFreq(String, BytesRef) */
   public final long totalTermFreq() {
     return totalTermFreq;
   }

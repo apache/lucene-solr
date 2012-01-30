@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.search.NRTManager;        // javadocs
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;        // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.IOUtils;
 
@@ -86,9 +85,9 @@ import org.apache.lucene.util.IOUtils;
  * <p><b>NOTE</b>: keeping many searchers around means
  * you'll use more resources (open files, RAM) than a single
  * searcher.  However, as long as you are using {@link
- * IndexReader#openIfChanged}, the searchers will usually
- * share almost all segments and the added resource usage is
- * contained.  When a large merge has completed, and
+ * DirectoryReader#openIfChanged(DirectoryReader)}, the searchers
+ * will usually share almost all segments and the added resource usage
+ * is contained.  When a large merge has completed, and
  * you reopen, because that is a large change, the new
  * searcher will use higher additional RAM than other
  * searchers; but large merges don't complete very often and

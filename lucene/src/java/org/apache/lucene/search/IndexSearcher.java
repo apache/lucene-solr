@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReaderContext;
@@ -56,10 +57,11 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * multiple searches instead of creating a new one
  * per-search.  If your index has changed and you wish to
  * see the changes reflected in searching, you should
- * use {@link IndexReader#openIfChanged} to obtain a new reader and
+ * use {@link DirectoryReader#openIfChanged(DirectoryReader)}
+ * to obtain a new reader and
  * then create a new IndexSearcher from that.  Also, for
  * low-latency turnaround it's best to use a near-real-time
- * reader ({@link IndexReader#open(IndexWriter,boolean)}).
+ * reader ({@link DirectoryReader#open(IndexWriter,boolean)}).
  * Once you have a new {@link IndexReader}, it's relatively
  * cheap to create a new IndexSearcher from it.
  * 
@@ -402,7 +404,7 @@ public class IndexSearcher {
    * <p>NOTE: this does not compute scores by default.  If you
    * need scores, create a {@link TopFieldCollector}
    * instance by calling {@link TopFieldCollector#create} and
-   * then pass that to {@link #search(IndexReader.AtomicReaderContext[], Weight,
+   * then pass that to {@link #search(AtomicReaderContext[], Weight,
    * Collector)}.</p>
    */
   protected TopFieldDocs search(Weight weight, int nDocs,
@@ -451,7 +453,7 @@ public class IndexSearcher {
    * <p>NOTE: this does not compute scores by default.  If you
    * need scores, create a {@link TopFieldCollector}
    * instance by calling {@link TopFieldCollector#create} and
-   * then pass that to {@link #search(IndexReader.AtomicReaderContext[], Weight, 
+   * then pass that to {@link #search(AtomicReaderContext[], Weight, 
    * Collector)}.</p>
    */
   protected TopFieldDocs search(AtomicReaderContext[] leaves, Weight weight, int nDocs,

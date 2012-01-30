@@ -25,7 +25,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.index.MultiFields;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -89,7 +88,7 @@ public abstract class ValueSource implements Serializable {
   /**
    * EXPERIMENTAL: This method is subject to change.
    * <p>
-   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, IndexReader.AtomicReaderContext)}
+   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, AtomicReaderContext)}
    * to populate the SortField.
    *
    * @param reverse true if this is a reverse sort.

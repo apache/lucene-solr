@@ -20,9 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache.ByteParser;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
@@ -72,7 +72,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *       priority queue.  The {@link FieldValueHitQueue}
  *       calls this method when a new hit is competitive.
  *
- *  <li> {@link #setNextReader(IndexReader.AtomicReaderContext)} Invoked
+ *  <li> {@link #setNextReader(AtomicReaderContext)} Invoked
  *       when the search is switching to the next segment.
  *       You may need to update internal state of the
  *       comparator, for example retrieving new values from
@@ -1885,7 +1885,7 @@ public abstract class FieldComparator<T> {
    *  comparisons are done using BytesRef.compareTo, which is
    *  slow for medium to large result sets but possibly
    *  very fast for very small results sets.  The BytesRef
-   *  values are obtained using {@link IndexReader#docValues}. */
+   *  values are obtained using {@link AtomicReader#docValues}. */
   public static final class TermValDocValuesComparator extends FieldComparator<BytesRef> {
 
     private BytesRef[] values;
