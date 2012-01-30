@@ -293,7 +293,7 @@ public abstract class AtomicReader extends IndexReader {
     /**
      * Creates a new {@link AtomicReaderContext} 
      */    
-    public AtomicReaderContext(CompositeReaderContext parent, AtomicReader reader,
+    AtomicReaderContext(CompositeReaderContext parent, AtomicReader reader,
         int ord, int docBase, int leafOrd, int leafDocBase) {
       super(parent, ord, docBase);
       this.ord = leafOrd;
@@ -301,7 +301,7 @@ public abstract class AtomicReader extends IndexReader {
       this.reader = reader;
     }
     
-    public AtomicReaderContext(AtomicReader atomicReader) {
+    AtomicReaderContext(AtomicReader atomicReader) {
       this(null, atomicReader, 0, 0, 0, 0);
     }
     

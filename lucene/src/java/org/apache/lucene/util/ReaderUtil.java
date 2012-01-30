@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.CompositeReader;
-import org.apache.lucene.index.CompositeReader.CompositeReaderContext;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -121,68 +120,6 @@ public final class ReaderUtil {
     protected abstract void add(int base, AtomicReader r) throws IOException;
   }
   
-  public static ReaderContext buildReaderContext(IndexReader reader) {
-    return new ReaderContextBuilder(reader).build();
-  }
-  
-  public static class ReaderContextBuilder {
-    private final IndexReader reader;
-    private final AtomicReaderContext[] leaves;
-    private int leafOrd = 0;
-    private int leafDocBase = 0;
-    public ReaderContextBuilder(IndexReader reader) {
-      this.reader = reader;
-      leaves = new AtomicReaderContext[numLeaves(reader)];
-    }
-    
-    public ReaderContext build() {
-      return build(null, reader, 0, 0);
-    }
-    
-    private ReaderContext build(CompositeReaderContext parent, IndexReader reader, int ord, int docBase) {
-      if (reader instanceof AtomicReader) {
-        AtomicReaderContext atomic = new AtomicReaderContext(parent, (AtomicReader) reader, ord, docBase, leafOrd, leafDocBase);
-        leaves[leafOrd++] = atomic;
-        leafDocBase += reader.maxDoc();
-        return atomic;
-      } else {
-        CompositeReader cr = (CompositeReader) reader;
-        IndexReader[] sequentialSubReaders = cr.getSequentialSubReaders();
-        ReaderContext[] children = new ReaderContext[sequentialSubReaders.length];
-        final CompositeReaderContext newParent;
-        if (parent == null) {
-          newParent = new CompositeReaderContext(cr, children, leaves);
-        } else {
-          newParent = new CompositeReaderContext(parent, cr, ord, docBase, children);
-        }
-        
-        int newDocBase = 0;
-        for (int i = 0; i < sequentialSubReaders.length; i++) {
-          children[i] = build(newParent, sequentialSubReaders[i], i, newDocBase);
-          newDocBase += sequentialSubReaders[i].maxDoc();
-        }
-        return newParent;
-      }
-    }
-    
-    private int numLeaves(IndexReader reader) {
-      final int[] numLeaves = new int[1];
-      try {
-        new Gather(reader) {
-          @Override
-          protected void add(int base, AtomicReader r) {
-            numLeaves[0]++;
-          }
-        }.run();
-      } catch (IOException ioe) {
-        // won't happen
-        throw new RuntimeException(ioe);
-      }
-      return numLeaves[0];
-    }
-    
-  }
-
   /**
    * Returns the context's leaves or the context itself as the only element of
    * the returned array. If the context's #leaves() method returns
