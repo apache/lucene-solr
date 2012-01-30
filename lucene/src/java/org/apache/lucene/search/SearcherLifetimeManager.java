@@ -109,7 +109,6 @@ public class SearcherLifetimeManager implements Closeable {
 
     public SearcherTracker(IndexSearcher searcher) {
       this.searcher = searcher;
-      // nocommit: what happens if this is no DirectoryReader?
       version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
       searcher.getIndexReader().incRef();
       // Use nanoTime not currentTimeMillis since it [in
@@ -169,7 +168,6 @@ public class SearcherLifetimeManager implements Closeable {
     // TODO: we don't have to use IR.getVersion to track;
     // could be risky (if it's buggy); we could get better
     // bug isolation if we assign our own private ID:
-    // nocommit: fix getVersion() usage for atomic readers
     final long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
     SearcherTracker tracker = searchers.get(version);
     if (tracker == null) {

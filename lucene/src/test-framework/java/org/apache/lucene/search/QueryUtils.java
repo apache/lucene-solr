@@ -116,13 +116,13 @@ public class QueryUtils {
         if (wrap) {
           IndexSearcher wrapped;
           check(random, q1, wrapped = wrapUnderlyingReader(random, s, -1), false);
-          // nocommit: I removed that as we can never get insanity by composite readers anymore... Is this ok?
+          // TODO: I removed that as we can never get insanity by composite readers anymore... Is this ok?
           //FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
           check(random, q1, wrapped = wrapUnderlyingReader(random, s,  0), false);
-          // nocommit: I removed that as we can never get insanity by composite readers anymore... Is this ok?
+          // TODO: I removed that as we can never get insanity by composite readers anymore... Is this ok?
           //FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
           check(random, q1, wrapped = wrapUnderlyingReader(random, s, +1), false);
-          // nocommit: I removed that as we can never get insanity by composite readers anymore... Is this ok?
+          // TODO: I removed that as we can never get insanity by composite readers anymore... Is this ok?
           //FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
         }
         checkExplanations(q1,s);

@@ -160,7 +160,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
 
   @Override
   protected void doClose() throws IOException {
-    // nocommit: as this is a wrapper, should we really close the delegate?
+    // TODO: as this is a wrapper, should we really close the delegate?
     in.close();
   }
 }

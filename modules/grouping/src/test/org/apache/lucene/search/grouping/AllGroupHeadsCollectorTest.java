@@ -366,7 +366,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           }
         }
       } finally {
-        // nocommit FieldCache.DEFAULT.purge(r);
+        // TODO: FieldCache.DEFAULT.purge(r);
       }
 
       r.close();

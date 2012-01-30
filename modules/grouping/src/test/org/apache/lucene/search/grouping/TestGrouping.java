@@ -1140,9 +1140,9 @@ public class TestGrouping extends LuceneTestCase {
           assertEquals(docIDToIDBlocks, expectedGroups, topGroupsBlockShards, false, false, fillFields, getScores, false);
         }
       } finally {
-        // nocommit FieldCache.DEFAULT.purge(r);
+        // TODO: FieldCache.DEFAULT.purge(r);
         if (rBlocks != null) {
-          // nocommit FieldCache.DEFAULT.purge(rBlocks);
+          // TODO: FieldCache.DEFAULT.purge(rBlocks);
         }
       }
 
