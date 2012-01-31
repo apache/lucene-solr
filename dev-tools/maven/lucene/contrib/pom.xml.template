@@ -42,13 +42,13 @@
     <module>join</module>
     <module>memory</module>
     <module>misc</module>
+    <module>pruning</module>
     <module>queries</module>
     <module>queryparser</module>
     <module>remote</module>
     <module>spatial</module>
     <module>spellchecker</module>
     <module>xml-query-parser</module>
-    <module>pruning</module>
   </modules>
   <build>
     <directory>../build/contrib/lucene-contrib-aggregator</directory>
