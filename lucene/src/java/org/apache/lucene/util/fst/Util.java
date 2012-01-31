@@ -119,6 +119,7 @@ public final class Util {
     //System.out.println("reverseLookup output=" + targetOutput);
 
     while(true) {
+      //System.out.println("loop: output=" + output + " upto=" + upto + " arc=" + arc);
       if (arc.isFinal()) {
         final long finalOutput = output + arc.nextFinalOutput;
         //System.out.println("  isFinal finalOutput=" + finalOutput);
@@ -140,47 +141,91 @@ public final class Util {
         
         fst.readFirstRealTargetArc(arc.target, arc, in);
 
-        FST.Arc<Long> prevArc = null;
+        if (arc.bytesPerArc != 0) {
 
-        // TODO: we could do binary search here if node arcs
-        // are array'd:
-        while(true) {
-          //System.out.println("    cycle label=" + arc.label + " output=" + arc.output);
-
-          // This is the min output we'd hit if we follow
-          // this arc:
-          final long minArcOutput = output + arc.output;
-
-          if (minArcOutput == targetOutput) {
-            // Recurse on this arc:
-            //System.out.println("  match!  break");
-            output = minArcOutput;
-            result.ints[upto++] = arc.label;
-            break;
-          } else if (minArcOutput > targetOutput) {
-            if (prevArc == null) {
-              // Output doesn't exist
-              return null;
+          int low = 0;
+          int high = arc.numArcs-1;
+          int mid = 0;
+          //System.out.println("bsearch: numArcs=" + arc.numArcs + " target=" + targetOutput + " output=" + output);
+          boolean exact = false;
+          while (low <= high) {
+            mid = (low + high) >>> 1;
+            in.pos = arc.posArcsStart;
+            in.skip(arc.bytesPerArc*mid);
+            final byte flags = in.readByte();
+            fst.readLabel(in);
+            final long minArcOutput;
+            if ((flags & fst.BIT_ARC_HAS_OUTPUT) != 0) {
+              final long arcOutput = fst.outputs.read(in);
+              minArcOutput = output + arcOutput;
             } else {
-              // Recurse on previous arc:
-              arc.copyFrom(prevArc);
-              result.ints[upto++] = arc.label;
-              output += arc.output;
-              //System.out.println("    recurse prev label=" + (char) arc.label + " output=" + output);
-              break;
+              minArcOutput = output;
             }
-          } else if (arc.isLast()) {
-            // Recurse on this arc:
-            output = minArcOutput;
-            //System.out.println("    recurse last label=" + (char) arc.label + " output=" + output);
-            result.ints[upto++] = arc.label;
-            break;
+            //System.out.println("  cycle mid=" + mid + " label=" + (char) label + " output=" + minArcOutput);
+            if (minArcOutput == targetOutput) {
+              exact = true;
+              break;
+            } else if (minArcOutput < targetOutput) {
+              low = mid + 1;
+            } else {
+              high = mid - 1;
+            }
+          }
+
+          if (high == -1) {
+            return null;
+          } else if (exact) {
+            arc.arcIdx = mid-1;
           } else {
-            // Read next arc in this node:
-            prevArc = scratchArc;
-            prevArc.copyFrom(arc);
-            //System.out.println("      after copy label=" + (char) prevArc.label + " vs " + (char) arc.label);
-            fst.readNextRealArc(arc, in);
+            arc.arcIdx = low-2;
+          }
+
+          fst.readNextRealArc(arc, in);
+          result.ints[upto++] = arc.label;
+          output += arc.output;
+
+        } else {
+
+          FST.Arc<Long> prevArc = null;
+
+          while(true) {
+            //System.out.println("    cycle label=" + arc.label + " output=" + arc.output);
+
+            // This is the min output we'd hit if we follow
+            // this arc:
+            final long minArcOutput = output + arc.output;
+
+            if (minArcOutput == targetOutput) {
+              // Recurse on this arc:
+              //System.out.println("  match!  break");
+              output = minArcOutput;
+              result.ints[upto++] = arc.label;
+              break;
+            } else if (minArcOutput > targetOutput) {
+              if (prevArc == null) {
+                // Output doesn't exist
+                return null;
+              } else {
+                // Recurse on previous arc:
+                arc.copyFrom(prevArc);
+                result.ints[upto++] = arc.label;
+                output += arc.output;
+                //System.out.println("    recurse prev label=" + (char) arc.label + " output=" + output);
+                break;
+              }
+            } else if (arc.isLast()) {
+              // Recurse on this arc:
+              output = minArcOutput;
+              //System.out.println("    recurse last label=" + (char) arc.label + " output=" + output);
+              result.ints[upto++] = arc.label;
+              break;
+            } else {
+              // Read next arc in this node:
+              prevArc = scratchArc;
+              prevArc.copyFrom(arc);
+              //System.out.println("      after copy label=" + (char) prevArc.label + " vs " + (char) arc.label);
+              fst.readNextRealArc(arc, in);
+            }
           }
         }
       } else {
