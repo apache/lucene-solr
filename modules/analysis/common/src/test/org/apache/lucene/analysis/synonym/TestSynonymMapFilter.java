@@ -606,6 +606,32 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         new String[] { "zoo", "zoo", "zoo", "zoo", "zoo", "$", "zoo", "zoo", "zoo", "zoo" },
         new int[] { 1, 0, 1, 0, 0, 1, 0, 1, 0, 1 });
   }
+
+  public void testOutputHangsOffEnd() throws Exception {
+    b = new SynonymMap.Builder(true);
+    final boolean keepOrig = false;
+    // b hangs off the end (no input token under it):
+    add("a", "a b", keepOrig);
+    final SynonymMap map = b.build();
+    tokensIn = new MockTokenizer(new StringReader("a"),
+                                 MockTokenizer.WHITESPACE,
+                                 true);
+    tokensIn.reset();
+    assertTrue(tokensIn.incrementToken());
+    assertFalse(tokensIn.incrementToken());
+    tokensIn.end();
+    tokensIn.close();
+
+    tokensOut = new SynonymFilter(tokensIn,
+                                     b.build(),
+                                     true);
+    termAtt = tokensOut.addAttribute(CharTermAttribute.class);
+    posIncrAtt = tokensOut.addAttribute(PositionIncrementAttribute.class);
+    offsetAtt = tokensOut.addAttribute(OffsetAttribute.class);
+
+    // Make sure endOffset inherits from previous input token:
+    verify("a", "a b:1");
+  }
   
   public void testIncludeOrig() throws Exception {
     b = new SynonymMap.Builder(true);

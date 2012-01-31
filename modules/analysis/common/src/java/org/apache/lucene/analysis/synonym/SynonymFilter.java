@@ -290,6 +290,8 @@ public final class SynonymFilter extends TokenFilter {
    capture the state if no further tokens were checked.  So
    caller must then forward state to our caller, or capture:
   */
+  private int lastStartOffset;
+  private int lastEndOffset;
 
   private void parse() throws IOException {
     //System.out.println("\nS: parse");
@@ -338,8 +340,8 @@ public final class SynonymFilter extends TokenFilter {
             buffer = termAtt.buffer();
             bufferLen = termAtt.length();
             final PendingInput input = futureInputs[nextWrite];
-            input.startOffset = offsetAtt.startOffset();
-            input.endOffset = offsetAtt.endOffset();
+            lastStartOffset = input.startOffset = offsetAtt.startOffset();
+            lastEndOffset = input.endOffset = offsetAtt.endOffset();
             inputEndOffset = input.endOffset;
             //System.out.println("  new token=" + new String(buffer, 0, bufferLen));
             if (nextRead != nextWrite) {
@@ -582,6 +584,8 @@ public final class SynonymFilter extends TokenFilter {
             nextWrite = nextRead = rollIncr(nextRead);
           }
           clearAttributes();
+          // Keep offset from last input token:
+          offsetAtt.setOffset(lastStartOffset, lastEndOffset);
           termAtt.copyBuffer(output.chars, output.offset, output.length);
           typeAtt.setType(TYPE_SYNONYM);
           //System.out.println("  set posIncr=" + outputs.posIncr + " outputs=" + outputs);
