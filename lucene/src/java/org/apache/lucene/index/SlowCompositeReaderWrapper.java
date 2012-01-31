@@ -85,6 +85,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   @Override
   public Fields fields() throws IOException {
     ensureOpen();
+    in.ensureOpen(); // as we cached the fields, we better check the original reader
     return fields;
   }
 
@@ -133,6 +134,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
+    in.ensureOpen(); // as we cached the liveDocs, we better check the original reader
     return liveDocs;
   }
 

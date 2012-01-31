@@ -114,6 +114,7 @@ public final class SegmentReader extends AtomicReader {
 
   @Override
   public FieldInfos getFieldInfos() {
+    ensureOpen();
     return core.fieldInfos;
   }
 
