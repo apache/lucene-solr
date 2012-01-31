@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -300,6 +301,11 @@ public class HttpShardHandler extends ShardHandler {
           // If no collections were specified, default to the collection for
           // this core.
           slices = cloudState.getSlices(cloudDescriptor.getCollectionName());
+          if (slices == null) {
+            throw new SolrException(ErrorCode.BAD_REQUEST,
+                "Could not find collection:"
+                    + cloudDescriptor.getCollectionName());
+          }
         }
         
         // Store the logical slices in the ResponseBuilder and create a new
