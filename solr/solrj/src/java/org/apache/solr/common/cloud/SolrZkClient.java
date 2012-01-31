@@ -491,6 +491,15 @@ public class SolrZkClient {
             keeper.create(currentPath, bytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, mode);
           }
         } catch (NodeExistsException e) {
+          
+          if (!failOnExists) {
+            // TODO: version ? for now, don't worry about race
+            setData(currentPath, data, -1, retryOnConnLoss);
+            // set new watch
+            exists(currentPath, watcher, retryOnConnLoss);
+            return;
+          }
+          
           // ignore unless it's the last node in the path
           if (i == paths.length - 1) {
             throw e;
@@ -643,6 +652,7 @@ public class SolrZkClient {
    * @throws InterruptedException
    */
   public void close() throws InterruptedException {
+    if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;
     keeper.close();
     numCloses.incrementAndGet();

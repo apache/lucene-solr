@@ -243,9 +243,8 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     }
     container1.shutdown();
     container2.shutdown();
-    if (!container3.isShutDown()) {
-      container3.shutdown();
-    }
+    container3.shutdown();
+
     zkServer.shutdown();
     super.tearDown();
     System.clearProperty("zkClientTimeout");
