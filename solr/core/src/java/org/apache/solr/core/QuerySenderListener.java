@@ -49,6 +49,10 @@ public class QuerySenderListener extends AbstractSolrEventListener {
       try {
         // bind the request to a particular searcher (the newSearcher)
         NamedList params = addEventParms(currentSearcher, nlst);
+        // for this, we default to distrib = false
+        if (params.get("distrib") == null) {
+          params.add("distrib", false);
+        }
         req = new LocalSolrQueryRequest(core,params) {
           @Override public SolrIndexSearcher getSearcher() { return searcher; }
           @Override public void close() { }
