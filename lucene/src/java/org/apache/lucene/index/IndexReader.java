@@ -452,12 +452,17 @@ public abstract class IndexReader implements Closeable {
     return this;
   }
   
+  /** Returns the number of documents containing the 
+   * <code>term</code>.  This method returns 0 if the term or
+   * field does not exists.  This method does not take into
+   * account deleted documents that have not yet been merged
+   * away. */
   public final int docFreq(Term term) throws IOException {
     return docFreq(term.field(), term.bytes());
   }
 
-  /** Returns the number of documents containing the term
-   * <code>t</code>.  This method returns 0 if the term or
+  /** Returns the number of documents containing the
+   * <code>term</code>.  This method returns 0 if the term or
    * field does not exists.  This method does not take into
    * account deleted documents that have not yet been merged
    * away. */
