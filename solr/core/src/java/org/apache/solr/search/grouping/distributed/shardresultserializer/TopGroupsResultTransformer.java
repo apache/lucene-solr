@@ -184,7 +184,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         documents.add(document);
 
         Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc);
-        document.add("id", uniqueField.getType().toObject(doc.getField(uniqueField.getName())));
+        document.add("id", uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
         if (!Float.isNaN(searchGroup.scoreDocs[i].score))  {
           document.add("score", searchGroup.scoreDocs[i].score);
         }
@@ -237,7 +237,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       documents.add(document);
 
       Document doc = retrieveDocument(uniqueField, scoreDoc.doc);
-      document.add("id", uniqueField.getType().toObject(doc.getField(uniqueField.getName())));
+      document.add("id", uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
       if (rb.getGroupingSpec().isNeedScore())  {
         document.add("score", scoreDoc.score);
       }

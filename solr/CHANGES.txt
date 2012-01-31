@@ -541,6 +541,9 @@ Bug Fixes
 
 * SOLR-2280: commitWithin ignored for a delete query (Juan Grande via janhoy)
 
+* SOLR-3073: Fixed 'Invalid UUID string' error when having an UUID field as
+  the unique key and executing a distributed grouping request. (Devon Krisman, Martijn van Groningen)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
