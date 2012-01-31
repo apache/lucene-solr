@@ -366,7 +366,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           }
         }
       } finally {
-        // TODO: FieldCache.DEFAULT.purge(r);
+        QueryUtils.purgeFieldCache(r);
       }
 
       r.close();

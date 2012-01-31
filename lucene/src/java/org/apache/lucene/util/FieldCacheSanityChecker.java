@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 
@@ -146,6 +148,9 @@ public final class FieldCacheSanityChecker {
     insanity.addAll(checkValueMismatch(valIdToItems, 
                                        readerFieldToValIds, 
                                        valMismatchKeys));
+    insanity.addAll(checkSubreaders(valIdToItems, 
+                                    readerFieldToValIds));
+                    
     return insanity.toArray(new Insanity[insanity.size()]);
   }
 
@@ -184,6 +189,107 @@ public final class FieldCacheSanityChecker {
       }
     }
     return insanity;
+  }
+
+  /** 
+   * Internal helper method used by check that iterates over 
+   * the keys of readerFieldToValIds and generates a Collection 
+   * of Insanity instances whenever two (or more) ReaderField instances are 
+   * found that have an ancestry relationships.  
+   *
+   * @see InsanityType#SUBREADER
+   */
+  private Collection<Insanity> checkSubreaders( MapOfSets<Integer, CacheEntry>  valIdToItems,
+                                      MapOfSets<ReaderField, Integer> readerFieldToValIds) {
+
+    final List<Insanity> insanity = new ArrayList<Insanity>(23);
+
+    Map<ReaderField, Set<ReaderField>> badChildren = new HashMap<ReaderField, Set<ReaderField>>(17);
+    MapOfSets<ReaderField, ReaderField> badKids = new MapOfSets<ReaderField, ReaderField>(badChildren); // wrapper
+
+    Map<Integer, Set<CacheEntry>> viToItemSets = valIdToItems.getMap();
+    Map<ReaderField, Set<Integer>> rfToValIdSets = readerFieldToValIds.getMap();
+
+    Set<ReaderField> seen = new HashSet<ReaderField>(17);
+
+    Set<ReaderField> readerFields = rfToValIdSets.keySet();
+    for (final ReaderField rf : readerFields) {
+      
+      if (seen.contains(rf)) continue;
+
+      List<Object> kids = getAllDescendantReaderKeys(rf.readerKey);
+      for (Object kidKey : kids) {
+        ReaderField kid = new ReaderField(kidKey, rf.fieldName);
+        
+        if (badChildren.containsKey(kid)) {
+          // we've already process this kid as RF and found other problems
+          // track those problems as our own
+          badKids.put(rf, kid);
+          badKids.putAll(rf, badChildren.get(kid));
+          badChildren.remove(kid);
+          
+        } else if (rfToValIdSets.containsKey(kid)) {
+          // we have cache entries for the kid
+          badKids.put(rf, kid);
+        }
+        seen.add(kid);
+      }
+      seen.add(rf);
+    }
+
+    // every mapping in badKids represents an Insanity
+    for (final ReaderField parent : badChildren.keySet()) {
+      Set<ReaderField> kids = badChildren.get(parent);
+
+      List<CacheEntry> badEntries = new ArrayList<CacheEntry>(kids.size() * 2);
+
+      // put parent entr(ies) in first
+      {
+        for (final Integer value  : rfToValIdSets.get(parent)) {
+          badEntries.addAll(viToItemSets.get(value));
+        }
+      }
+
+      // now the entries for the descendants
+      for (final ReaderField kid : kids) {
+        for (final Integer value : rfToValIdSets.get(kid)) {
+          badEntries.addAll(viToItemSets.get(value));
+        }
+      }
+
+      CacheEntry[] badness = new CacheEntry[badEntries.size()];
+      badness = badEntries.toArray(badness);
+
+      insanity.add(new Insanity(InsanityType.SUBREADER,
+                                "Found caches for descendants of " + 
+                                parent.toString(),
+                                badness));
+    }
+
+    return insanity;
+
+  }
+
+  /**
+   * Checks if the seed is an IndexReader, and if so will walk
+   * the hierarchy of subReaders building up a list of the objects 
+   * returned by obj.getFieldCacheKey()
+   */
+  private List<Object> getAllDescendantReaderKeys(Object seed) {
+    List<Object> all = new ArrayList<Object>(17); // will grow as we iter
+    all.add(seed);
+    for (int i = 0; i < all.size(); i++) {
+      Object obj = all.get(i);
+      if (obj instanceof CompositeReader) {
+        IndexReader[] subs = ((CompositeReader)obj).getSequentialSubReaders();
+        for (int j = 0; (null != subs) && (j < subs.length); j++) {
+          all.add(subs[j].getCoreCacheKey());
+        }
+      }
+      
+    }
+    // need to skip the first, because it was the seed
+    return all.subList(1, all.size());
   }
 
   /**

@@ -138,4 +138,31 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     cache.purgeAllCaches();
   }
 
+  public void testInsanity2() throws IOException {
+    FieldCache cache = FieldCache.DEFAULT;
+    cache.purgeAllCaches();
+
+    cache.getTerms(readerA, "theString");
+    cache.getTerms(readerB, "theString");
+    cache.getTerms(readerX, "theString");
+
+    cache.getBytes(readerX, "theByte", false);
+
+
+    // // // 
+
+    Insanity[] insanity = 
+      FieldCacheSanityChecker.checkSanity(cache.getCacheEntries());
+    
+    assertEquals("wrong number of cache errors", 1, insanity.length);
+    assertEquals("wrong type of cache error", 
+                 InsanityType.SUBREADER,
+                 insanity[0].getType());
+    assertEquals("wrong number of entries in cache error", 3,
+                 insanity[0].getCacheEntries().length);
+
+    // we expect bad things, don't let tearDown complain about them
+    cache.purgeAllCaches();
+  }
+
 }

@@ -31,6 +31,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -116,14 +117,11 @@ public class QueryUtils {
         if (wrap) {
           IndexSearcher wrapped;
           check(random, q1, wrapped = wrapUnderlyingReader(random, s, -1), false);
-          // TODO: I removed that as we can never get insanity by composite readers anymore... Is this ok?
-          //FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
+          purgeFieldCache(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
           check(random, q1, wrapped = wrapUnderlyingReader(random, s,  0), false);
-          // TODO: I removed that as we can never get insanity by composite readers anymore... Is this ok?
-          //FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
+          purgeFieldCache(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
           check(random, q1, wrapped = wrapUnderlyingReader(random, s, +1), false);
-          // TODO: I removed that as we can never get insanity by composite readers anymore... Is this ok?
-          //FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
+          purgeFieldCache(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
         }
         checkExplanations(q1,s);
         
@@ -134,6 +132,11 @@ public class QueryUtils {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+  
+  public static void purgeFieldCache(IndexReader r) throws IOException {
+    // this is just a hack, to get an atomic reader that contains all subreaders for insanity checks
+    FieldCache.DEFAULT.purge(SlowCompositeReaderWrapper.wrap(r));
   }
 
   /**
