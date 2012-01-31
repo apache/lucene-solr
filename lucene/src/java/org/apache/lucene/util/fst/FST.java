@@ -69,14 +69,14 @@ public final class FST<T> {
   public static enum INPUT_TYPE {BYTE1, BYTE2, BYTE4};
   public final INPUT_TYPE inputType;
 
-  private final static int BIT_FINAL_ARC = 1 << 0;
-  private final static int BIT_LAST_ARC = 1 << 1;
+  final static int BIT_FINAL_ARC = 1 << 0;
+  final static int BIT_LAST_ARC = 1 << 1;
   final static int BIT_TARGET_NEXT = 1 << 2;
 
   // TODO: we can free up a bit if we can nuke this:
-  private final static int BIT_STOP_NODE = 1 << 3;
-  private final static int BIT_ARC_HAS_OUTPUT = 1 << 4;
-  private final static int BIT_ARC_HAS_FINAL_OUTPUT = 1 << 5;
+  final static int BIT_STOP_NODE = 1 << 3;
+  final static int BIT_ARC_HAS_OUTPUT = 1 << 4;
+  final static int BIT_ARC_HAS_FINAL_OUTPUT = 1 << 5;
 
   // Arcs are stored as fixed-size (per entry) array, so
   // that we can find an arc using binary search.  We do
@@ -228,10 +228,10 @@ public final class FST<T> {
         b.append(" targetNext");
       }
       if (flag(BIT_ARC_HAS_OUTPUT)) {
-        b.append(" hasOutput");
+        b.append(" output=" + output);
       }
       if (flag(BIT_ARC_HAS_FINAL_OUTPUT)) {
-        b.append(" hasFinalOutput");
+        b.append(" nextFinalOutput=" + nextFinalOutput);
       }
       if (bytesPerArc != 0) {
         b.append(" arcArray(idx=" + arcIdx + " of " + numArcs + ")");

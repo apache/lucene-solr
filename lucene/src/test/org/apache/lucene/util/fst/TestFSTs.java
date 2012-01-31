@@ -1259,7 +1259,7 @@ public class TestFSTs extends LuceneTestCase {
 
     protected abstract T getOutput(IntsRef input, int ord) throws IOException;
 
-    public void run(int limit, boolean verify) throws IOException {
+    public void run(int limit, boolean verify, boolean verifyByOutput) throws IOException {
       BufferedReader is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), "UTF-8"), 65536);
       try {
         final IntsRef intsRef = new IntsRef(10);
@@ -1323,37 +1323,55 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("\nNow verify...");
 
         while(true) {
-          is.close();
-          is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), "UTF-8"), 65536);
+          for(int iter=0;iter<2;iter++) {
+            is.close();
+            is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), "UTF-8"), 65536);
 
-          ord = 0;
-          tStart = System.currentTimeMillis();
-          while(true) {
-            String w = is.readLine();
-            if (w == null) {
-              break;
-            }
-            toIntsRef(w, inputMode, intsRef);
-            T expected = getOutput(intsRef, ord);
-            T actual = Util.get(fst, intsRef);
-            if (actual == null) {
-              throw new RuntimeException("unexpected null output on input=" + w);
-            }
-            if (!actual.equals(expected)) {
-              throw new RuntimeException("wrong output (got " + outputs.outputToString(actual) + " but expected " + outputs.outputToString(expected) + ") on input=" + w);
+            ord = 0;
+            tStart = System.currentTimeMillis();
+            while(true) {
+              String w = is.readLine();
+              if (w == null) {
+                break;
+              }
+              toIntsRef(w, inputMode, intsRef);
+              if (iter == 0) {
+                T expected = getOutput(intsRef, ord);
+                T actual = Util.get(fst, intsRef);
+                if (actual == null) {
+                  throw new RuntimeException("unexpected null output on input=" + w);
+                }
+                if (!actual.equals(expected)) {
+                  throw new RuntimeException("wrong output (got " + outputs.outputToString(actual) + " but expected " + outputs.outputToString(expected) + ") on input=" + w);
+                }
+              } else {
+                // Get by output
+                final Long output = (Long) getOutput(intsRef, ord);
+                @SuppressWarnings("unchecked") final IntsRef actual = Util.getByOutput((FST<Long>) fst, output.longValue());
+                if (actual == null) {
+                  throw new RuntimeException("unexpected null input from output=" + output);
+                }
+                if (!actual.equals(intsRef)) {
+                  throw new RuntimeException("wrong input (got " + actual + " but expected " + intsRef + " from output=" + output);
+                }
+              }
+
+              ord++;
+              if (ord % 500000 == 0) {
+                System.out.println(((System.currentTimeMillis()-tStart)/1000.0) + "s: " + ord + "...");
+              }
+              if (ord >= limit) {
+                break;
+              }
             }
 
-            ord++;
-            if (ord % 500000 == 0) {
-              System.out.println(((System.currentTimeMillis()-tStart)/1000.0) + "s: " + ord + "...");
-            }
-            if (ord >= limit) {
+            double totSec = ((System.currentTimeMillis() - tStart)/1000.0);
+            System.out.println("Verify " + (iter == 1 ? "(by output) " : "") + "took " + totSec + " sec + (" + (int) ((totSec*1000000000/ord)) + " nsec per lookup)");
+
+            if (!verifyByOutput) {
               break;
             }
           }
-
-          double totSec = ((System.currentTimeMillis() - tStart)/1000.0);
-          System.out.println("Verify took " + totSec + " sec + (" + (int) ((totSec*1000000000/ord)) + " nsec per lookup)");
 
           // NOTE: comment out to profile lookup...
           break;
@@ -1438,7 +1456,7 @@ public class TestFSTs extends LuceneTestCase {
           return outputs.newPair((long) ord,
                                  (long) _TestUtil.nextInt(rand, 1, 5000));
         }
-      }.run(limit, verify);
+      }.run(limit, verify, false);
     } else if (storeOrds) {
       // Store only ords
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
@@ -1447,7 +1465,7 @@ public class TestFSTs extends LuceneTestCase {
         public Long getOutput(IntsRef input, int ord) {
           return (long) ord;
         }
-      }.run(limit, verify);
+      }.run(limit, verify, true);
     } else if (storeDocFreqs) {
       // Store only docFreq
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(false);
@@ -1460,7 +1478,7 @@ public class TestFSTs extends LuceneTestCase {
           }
           return (long) _TestUtil.nextInt(rand, 1, 5000);
         }
-      }.run(limit, verify);
+      }.run(limit, verify, false);
     } else {
       // Store nothing
       final NoOutputs outputs = NoOutputs.getSingleton();
@@ -1470,7 +1488,7 @@ public class TestFSTs extends LuceneTestCase {
         public Object getOutput(IntsRef input, int ord) {
           return NO_OUTPUT;
         }
-      }.run(limit, verify);
+      }.run(limit, verify, false);
     }
   }
 
