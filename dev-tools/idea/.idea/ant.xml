@@ -19,13 +19,13 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/join/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/memory/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/misc/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/pruning/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/queries/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/queryparser/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/remote/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/spatial/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/spellchecker/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/xml-query-parser/build.xml" />
-    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/pruning/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/core/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/analysis-extras/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/clustering/build.xml" />

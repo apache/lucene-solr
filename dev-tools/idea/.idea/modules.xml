@@ -19,13 +19,13 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/join/join.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/memory/memory.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/misc/misc.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/contrib/pruning/pruning.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/queries/queries.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/queryparser/queryparser.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/remote/remote.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spatial/spatial.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spellchecker/spellchecker.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/xml-query-parser/xml-query-parser.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/pruning/pruning.iml" />
       <module filepath="$PROJECT_DIR$/solr/solr.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/analysis-extras/analysis-extras.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/clustering/clustering.iml" />
