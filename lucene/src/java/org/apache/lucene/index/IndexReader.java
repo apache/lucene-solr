@@ -377,7 +377,6 @@ public abstract class IndexReader implements Closeable {
   // Document returned here contains that class not
   // IndexableField
   public final Document document(int docID) throws CorruptIndexException, IOException {
-    ensureOpen();
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
     document(docID, visitor);
     return visitor.getDocument();
