@@ -527,11 +527,42 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     return segmentInfos.getVersion();
   }
 
+  /**
+   * Retrieve the String userData optionally passed to
+   * IndexWriter#commit.  This will return null if {@link
+   * IndexWriter#commit(Map)} has never been called for
+   * this index.
+   */
   public Map<String,String> getCommitUserData() {
     ensureOpen();
     return segmentInfos.getUserData();
   }
 
+  /**
+   * Check whether any new changes have occurred to the
+   * index since this reader was opened.
+   *
+   * <p>If this reader was created by calling {@link #open},  
+   * then this method checks if any further commits 
+   * (see {@link IndexWriter#commit}) have occurred in the 
+   * directory.</p>
+   *
+   * <p>If instead this reader is a near real-time reader
+   * (ie, obtained by a call to {@link
+   * IndexWriter#getReader}, or by calling {@link #openIfChanged}
+   * on a near real-time reader), then this method checks if
+   * either a new commmit has occurred, or any new
+   * uncommitted changes have taken place via the writer.
+   * Note that even if the writer has only performed
+   * merging, this method will still return false.</p>
+   *
+   * <p>In any event, if this returns false, you should call
+   * {@link #openIfChanged} to get a new reader that sees the
+   * changes.</p>
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException           if there is a low-level IO error
+   */
   public boolean isCurrent() throws CorruptIndexException, IOException {
     ensureOpen();
     if (writer == null || writer.isClosed()) {
@@ -572,6 +603,9 @@ public final class DirectoryReader extends BaseMultiReader<SegmentReader> {
     return directory;
   }
 
+  /** This returns the current indexDivisor as 
+   * specified when the reader was opened.
+   */
   public int getTermInfosIndexDivisor() {
     ensureOpen();
     return termInfosIndexDivisor;
