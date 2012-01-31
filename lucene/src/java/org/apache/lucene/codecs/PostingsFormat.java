@@ -25,7 +25,9 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.NamedSPILoader;
 
-/** @lucene.experimental */
+/** 
+ * Encodes/decodes terms, postings, and proximity data.
+ * @lucene.experimental */
 public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
 
   private static final NamedSPILoader<PostingsFormat> loader =

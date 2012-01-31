@@ -26,7 +26,7 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.Terms;
 
-/** Abstract API that consumes terms, doc, freq, prox and
+/** Abstract API that consumes terms, doc, freq, prox, offset and
  *  payloads postings.  Concrete implementations of this
  *  actually do "something" with the postings (write it into
  *  the index in a specific format).

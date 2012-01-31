@@ -791,7 +791,10 @@ public class IndexSearcher {
   }
   
   /**
-   * Returns {@link TermStatistics} for a term
+   * Returns {@link TermStatistics} for a term.
+   * 
+   * This can be overridden for example, to return a term's statistics
+   * across a distributed collection.
    * @lucene.experimental
    */
   public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
@@ -799,7 +802,10 @@ public class IndexSearcher {
   };
   
   /**
-   * Returns {@link CollectionStatistics} for a field
+   * Returns {@link CollectionStatistics} for a field.
+   * 
+   * This can be overridden for example, to return a field's statistics
+   * across a distributed collection.
    * @lucene.experimental
    */
   public CollectionStatistics collectionStatistics(String field) throws IOException {

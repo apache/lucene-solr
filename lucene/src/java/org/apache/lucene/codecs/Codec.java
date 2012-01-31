@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexWriterConfig; // javadocs
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.NamedSPILoader;
 
@@ -38,6 +39,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     this.name = name;
   }
   
+  /** Returns this codec's name */
   @Override
   public String getName() {
     return name;
@@ -100,11 +102,17 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   private static Codec defaultCodec = Codec.forName("Lucene40");
   
+  /** expert: returns the default codec used for newly created
+   *  {@link IndexWriterConfig}s.
+   */
   // TODO: should we use this, or maybe a system property is better?
   public static Codec getDefault() {
     return defaultCodec;
   }
   
+  /** expert: sets the default codec used for newly created
+   *  {@link IndexWriterConfig}s.
+   */
   public static void setDefault(Codec codec) {
     defaultCodec = codec;
   }

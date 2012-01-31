@@ -20,10 +20,15 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.DocValues; // javadocs
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 
+/**
+ * Encodes/decodes {@link DocValues}
+ * @lucene.experimental
+ */
 public abstract class DocValuesFormat {
   public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
   public abstract PerDocProducer docsProducer(SegmentReadState state) throws IOException;
