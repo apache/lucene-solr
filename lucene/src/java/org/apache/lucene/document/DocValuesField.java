@@ -30,47 +30,31 @@ import org.apache.lucene.util.BytesRef;
  * <p>
  * This class provides a {@link Field} that enables storing of typed
  * per-document values for scoring, sorting or value retrieval. Here's an
- * example usage, adding an int value:
+ * example usage, adding an int value (<code>22</code>):
  * 
  * <pre>
- * DocValuesField field = new DocValuesField(name, DocValues.Type.VAR_INTS);
- * field.setInt(value);
- * document.add(field);
+ *   document.add(new DocValuesField(name, 22, DocValues.Type.VAR_INTS));
  * </pre>
  * 
  * For optimal performance, re-use the <code>DocValuesField</code> and
  * {@link Document} instance for more than one document:
  * 
  * <pre>
- *  DocValuesField field = new DocValuesField(name, DocValues.Type.VAR_INTS);
+ *  DocValuesField field = new DocValuesField(name, 0, DocValues.Type.VAR_INTS);
  *  Document document = new Document();
  *  document.add(field);
  * 
  *  for(all documents) {
  *    ...
- *    field.setInt(value)
+ *    field.setValue(value)
  *    writer.addDocument(document);
  *    ...
  *  }
  * </pre>
  * 
  * <p>
- * If doc values are stored in addition to an indexed ({@link FieldType#setIndexed(boolean)}) or stored
- * ({@link FieldType#setStored(boolean)}) value it's recommended to pass the appropriate {@link FieldType}
- * when creating the field:
- * 
- * <pre>
- *  DocValuesField field = new DocValuesField(name, StringField.TYPE_STORED);
- *  Document document = new Document();
- *  document.add(field);
- *  for(all documents) {
- *    ...
- *    field.setInt(value)
- *    writer.addDocument(document);
- *    ...
- *  }
- * </pre>
- * 
+ * If you also need to store the value, you should add a
+ * separate {@link StoredField} instance.
  * */
 
 public class DocValuesField extends Field {
