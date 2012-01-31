@@ -35,7 +35,6 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
  * than the number of active {@link ThreadState}s threads are released and can
  * continue indexing.
  */
-//TODO: rename this to DocumentsWriterStallControl (or something like that)?
 final class DocumentsWriterStallControl {
   @SuppressWarnings("serial")
   private static final class Sync extends AbstractQueuedSynchronizer {
