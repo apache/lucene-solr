@@ -28,6 +28,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
@@ -41,7 +42,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
   private static class ShardSearcher extends IndexSearcher {
     private final AtomicReaderContext[] ctx;
 
-    public ShardSearcher(AtomicReaderContext ctx, CompositeReaderContext parent) {
+    public ShardSearcher(AtomicReaderContext ctx, IndexReaderContext parent) {
       super(parent);
       this.ctx = new AtomicReaderContext[] {ctx};
     }
@@ -127,7 +128,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
     if (ctx instanceof AtomicReaderContext) {
       subSearchers = new ShardSearcher[1];
       docStarts = new int[1];
-      subSearchers[0] = new ShardSearcher((AtomicReaderContext) ctx, null);
+      subSearchers[0] = new ShardSearcher((AtomicReaderContext) ctx, ctx);
       docStarts[0] = 0;
     } else {
       final CompositeReaderContext compCTX = (CompositeReaderContext) ctx;
