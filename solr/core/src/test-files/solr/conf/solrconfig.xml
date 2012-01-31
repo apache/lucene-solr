@@ -238,7 +238,7 @@
 
   </query>
     
-  <requestHandler name="/replication" class="solr.ReplicationHandler" /> 
+  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
 
   <!-- An alternate set representation that uses an integer hash to store filters (sets of docids).
        If the set cardinality <= maxSize elements, then HashDocSet will be used instead of the bitset

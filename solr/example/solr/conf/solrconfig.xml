@@ -1075,7 +1075,7 @@
     
          This is the config need for SolrCloud's recovery replication.
     -->
-	<requestHandler name="/replication" class="solr.ReplicationHandler" /> 
+	<requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
 
 
   <!-- Search Components
