@@ -533,7 +533,6 @@ public class CoreContainer
         // if register fails, this is really bad - close the zkController to
         // minimize any damage we can cause
         zkController.publish(core, ZkStateReader.DOWN);
-        zkController.close();
         log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
