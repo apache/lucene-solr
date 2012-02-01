@@ -216,9 +216,13 @@ public abstract class QParser {
    */
   public ScoreDoc getPaging() throws ParseException
   {
-	  String pageScoreS = null;
-	  String pageDocS = null;
-	  
+    return null;
+
+    /*** This is not ready for prime-time... see SOLR-1726
+
+    String pageScoreS = null;
+    String pageDocS = null;
+
 	  pageScoreS = params.get(CommonParams.PAGESCORE);
 	  pageDocS = params.get(CommonParams.PAGEDOC);
 		  
@@ -233,6 +237,8 @@ public abstract class QParser {
 	  else {
       return null;
     }
+
+    ***/
   }
   
   /**

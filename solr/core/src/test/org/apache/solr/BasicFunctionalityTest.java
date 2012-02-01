@@ -55,6 +55,7 @@ import org.apache.solr.update.DirectUpdateHandler2;
 
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -763,7 +764,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     }
   }
 
-
+  @Ignore("See SOLR-1726")
   @Test
   public void testDeepPaging() throws Exception {
     for (int i = 0; i < 1000; i++){
