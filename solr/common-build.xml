@@ -82,6 +82,7 @@
 
   <path id="solr.base.classpath">
   	<pathelement path="${analyzers-common.jar}"/>
+  	<pathelement path="${analyzers-kuromoji.jar}"/>
   	<pathelement path="${analyzers-phonetic.jar}"/>
   	<pathelement path="${highlighter.jar}"/>
   	<pathelement path="${memory.jar}"/>
@@ -172,7 +173,7 @@
   </target>
 
   <target name="prep-lucene-jars" 
-  	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-suggest, jar-highlighter, jar-memory,
+  	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-suggest, jar-highlighter, jar-memory,
   	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser">
   	  <property name="solr.deps.compiled" value="true"/>
   </target>
@@ -186,6 +187,7 @@
     <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset file="${lucene-core.jar}" />
       <fileset file="${analyzers-common.jar}" />
+      <fileset file="${analyzers-kuromoji.jar}" />
       <fileset file="${analyzers-phonetic.jar}" />
       <fileset file="${suggest.jar}" />
       <fileset file="${grouping.jar}" />

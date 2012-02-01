@@ -454,6 +454,9 @@ New Features
   that filters tokens based on their TypeAttribute.  (Tommaso Teofili via
   Uwe Schindler)
 
+* LUCENE-3305, SOLR-3056: Added Kuromoji morphological analyzer for Japanese.
+  (Christian Moen, Masaru Hasegawa via Robert Muir)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
