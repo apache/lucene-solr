@@ -119,6 +119,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   
   @Test
   public void testSomeStuff() throws Exception {
+    clearIndex();
+
     // test merge factor picked up
     SolrCore core = h.getCore();
 
