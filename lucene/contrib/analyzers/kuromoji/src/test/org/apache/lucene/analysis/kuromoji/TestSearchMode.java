@@ -17,24 +17,24 @@ package org.apache.lucene.analysis.kuromoji;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.IOUtils;
 
-public class TestExtendedMode extends BaseTokenStreamTestCase {
-  private final Segmenter segmenter = new Segmenter(Mode.EXTENDED);
+public class TestSearchMode extends BaseTokenStreamTestCase {
+  private final static String SEGMENTATION_FILENAME = "search-segmentation-tests.txt";
+  private final Segmenter segmenter = new Segmenter(Mode.SEARCH);
   private final Analyzer analyzer = new ReusableAnalyzerBase() {
-    
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new KuromojiTokenizer(segmenter, reader);
@@ -42,23 +42,32 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
     }
   };
   
-  /** simple test for supplementary characters */
-  public void testSurrogates() throws IOException {
-    assertAnalyzesTo(analyzer, "𩬅艱鍟䇹愯瀛",
-      new String[] { "𩬅", "艱", "鍟", "䇹", "愯", "瀛" });
-  }
-  
-  /** random test ensuring we don't ever split supplementaries */
-  public void testSurrogates2() throws IOException {
-    int numIterations = atLeast(10000);
-    for (int i = 0; i < numIterations; i++) {
-      String s = _TestUtil.randomUnicodeString(random, 100);
-      TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
-      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-      ts.reset();
-      while (ts.incrementToken()) {
-        assertTrue(UnicodeUtil.validUTF16String(termAtt));
+  /** Test search mode segmentation */
+  public void testSearchSegmentation() throws IOException {
+    InputStream is = TestSearchMode.class.getResourceAsStream(SEGMENTATION_FILENAME);
+    if (is == null) {
+      throw new FileNotFoundException("Cannot find " + SEGMENTATION_FILENAME + " in test classpath");
+    }
+    try {
+      LineNumberReader reader = new LineNumberReader(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+        // Remove comments
+        line = line.replaceAll("#.*$", "");
+        // Skip empty lines or comment lines
+        if (line.trim().isEmpty()) {
+          continue;
+        }
+        if (VERBOSE) {
+          System.out.println("Line no. " + reader.getLineNumber() + ": " + line);
+        }
+        String[] fields = line.split("\t", 2);
+        String sourceText = fields[0];
+        String[] expectedTokens = fields[1].split("\\s+");
+        assertAnalyzesTo(analyzer, sourceText, expectedTokens);
       }
+    } finally {
+      is.close();
     }
   }
 }

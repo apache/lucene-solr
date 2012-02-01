@@ -54,11 +54,13 @@ public class Viterbi {
   
   private static final int DEFAULT_COST = 10000000;
   
-  private static final int SEARCH_MODE_LENGTH_KANJI = 3;
-  
-  private static final int SEARCH_MODE_LENGTH = 7;
-  
-  private static final int SEARCH_MODE_PENALTY = 10000;
+  private static final int SEARCH_MODE_KANJI_LENGTH = 2;
+
+  private static final int SEARCH_MODE_OTHER_LENGTH = 7; // Must be >= SEARCH_MODE_KANJI_LENGTH
+
+  private static final int SEARCH_MODE_KANJI_PENALTY = 3000;
+
+  private static final int SEARCH_MODE_OTHER_PENALTY = 1700;
   
   private static final char[] BOS = "BOS".toCharArray();
   
@@ -137,7 +139,7 @@ public class Viterbi {
             char[] surfaceForm = node.getSurfaceForm();
             int offset = node.getOffset();
             int length = node.getLength();
-            if (length > SEARCH_MODE_LENGTH_KANJI) {
+            if (length > SEARCH_MODE_KANJI_LENGTH) {
               boolean allKanji = true;
               // check if node consists of only kanji
               for (int pos = 0; pos < length; pos++) {
@@ -148,9 +150,9 @@ public class Viterbi {
               }
               
               if (allKanji) {	// Process only Kanji keywords
-                pathCost += (length - SEARCH_MODE_LENGTH_KANJI) * SEARCH_MODE_PENALTY;
-              } else if (length > SEARCH_MODE_LENGTH) {
-                pathCost += (length - SEARCH_MODE_LENGTH) * SEARCH_MODE_PENALTY;								
+                pathCost += (length - SEARCH_MODE_KANJI_LENGTH) * SEARCH_MODE_KANJI_PENALTY;
+              } else if (length > SEARCH_MODE_OTHER_LENGTH) {
+                pathCost += (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY;								
               }
             }
           }
