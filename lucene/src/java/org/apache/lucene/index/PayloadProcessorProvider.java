@@ -52,7 +52,7 @@ public abstract class PayloadProcessorProvider {
    * concurrency issues, then you shouldn't worry about any such issues when
    * {@link PayloadProcessor}s are requested for different terms.
    */
-  public static abstract class DirPayloadProcessor {
+  public static abstract class ReaderPayloadProcessor {
 
     /** Returns a {@link PayloadProcessor} for the given term. */
     public abstract PayloadProcessor getProcessor(String field, BytesRef text) throws IOException;
@@ -76,6 +76,6 @@ public abstract class PayloadProcessorProvider {
    * through which {@link PayloadProcessor}s can be obtained for each
    * {@link Term}, or <code>null</code> if none should be used.
    */
-  public abstract DirPayloadProcessor getDirProcessor(Directory dir) throws IOException;
+  public abstract ReaderPayloadProcessor getReaderProcessor(AtomicReader reader) throws IOException;
 
 }

@@ -134,8 +134,8 @@ public abstract class TermsConsumer {
         // set PayloadProcessor
         if (mergeState.payloadProcessorProvider != null) {
           for (int i = 0; i < mergeState.readers.size(); i++) {
-            if (mergeState.dirPayloadProcessor[i] != null) {
-              mergeState.currentPayloadProcessor[i] = mergeState.dirPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
+            if (mergeState.readerPayloadProcessor[i] != null) {
+              mergeState.currentPayloadProcessor[i] = mergeState.readerPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
             }
           }
         }
@@ -168,8 +168,8 @@ public abstract class TermsConsumer {
         // set PayloadProcessor
         if (mergeState.payloadProcessorProvider != null) {
           for (int i = 0; i < mergeState.readers.size(); i++) {
-            if (mergeState.dirPayloadProcessor[i] != null) {
-              mergeState.currentPayloadProcessor[i] = mergeState.dirPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
+            if (mergeState.readerPayloadProcessor[i] != null) {
+              mergeState.currentPayloadProcessor[i] = mergeState.readerPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
             }
           }
         }

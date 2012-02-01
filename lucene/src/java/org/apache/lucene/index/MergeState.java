@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.util.List;
 
-import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
+import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -55,7 +55,7 @@ public class MergeState {
   // TODO: this is a FactoryFactory here basically
   // and we could make a codec(wrapper) to do all of this privately so IW is uninvolved
   public PayloadProcessorProvider payloadProcessorProvider;
-  public DirPayloadProcessor[] dirPayloadProcessor;
+  public ReaderPayloadProcessor[] readerPayloadProcessor;
   public PayloadProcessor[] currentPayloadProcessor;
 
   // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)

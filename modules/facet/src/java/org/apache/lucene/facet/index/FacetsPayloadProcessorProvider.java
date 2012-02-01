@@ -7,7 +7,9 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.PayloadProcessorProvider;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 
@@ -94,7 +96,7 @@ public class FacetsPayloadProcessorProvider extends PayloadProcessorProvider {
   
   private final Directory workDir;
   
-  private final DirPayloadProcessor dirProcessor;
+  private final ReaderPayloadProcessor dirProcessor;
 
   /**
    * Construct FacetsPayloadProcessorProvider with FacetIndexingParams
@@ -110,14 +112,16 @@ public class FacetsPayloadProcessorProvider extends PayloadProcessorProvider {
   }
   
   @Override
-  public DirPayloadProcessor getDirProcessor(Directory dir) throws IOException {
-    if (workDir != dir) {
-      return null;
+  public ReaderPayloadProcessor getReaderProcessor(AtomicReader reader) throws IOException {
+    if (reader instanceof SegmentReader) {
+      if (workDir == ((SegmentReader) reader).directory()) {
+        return dirProcessor;
+      }
     }
-    return dirProcessor;
+    return null;
   }
   
-  public static class FacetsDirPayloadProcessor extends DirPayloadProcessor {
+  public static class FacetsDirPayloadProcessor extends ReaderPayloadProcessor {
     
     private final Map<Term, CategoryListParams> termMap = new HashMap<Term, CategoryListParams>(1);
     

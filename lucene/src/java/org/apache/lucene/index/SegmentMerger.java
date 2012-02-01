@@ -286,7 +286,7 @@ final class SegmentMerger {
     // Remap docIDs
     mergeState.docMaps = new int[numReaders][];
     mergeState.docBase = new int[numReaders];
-    mergeState.dirPayloadProcessor = new PayloadProcessorProvider.DirPayloadProcessor[numReaders];
+    mergeState.readerPayloadProcessor = new PayloadProcessorProvider.ReaderPayloadProcessor[numReaders];
     mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[numReaders];
 
     int docBase = 0;
@@ -323,12 +323,7 @@ final class SegmentMerger {
       docBase += docCount;
 
       if (mergeState.payloadProcessorProvider != null) {
-        // TODO: the PayloadProcessorProvider should take AtomicReader as parameter
-        // and find out by itself if it can provide a processor:
-        if (!(reader.reader instanceof SegmentReader))
-          throw new UnsupportedOperationException("Payload processing currently requires exclusively SegmentReaders to be merged.");
-        final Directory dir = ((SegmentReader) reader.reader).directory();
-        mergeState.dirPayloadProcessor[i] = mergeState.payloadProcessorProvider.getDirProcessor(dir);
+        mergeState.readerPayloadProcessor[i] = mergeState.payloadProcessorProvider.getReaderProcessor(reader.reader);
       }
 
       i++;
