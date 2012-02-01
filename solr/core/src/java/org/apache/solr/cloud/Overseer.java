@@ -144,10 +144,16 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
                     ZkStateReader.toJSON(cloudState), true);
 
               } catch (KeeperException e) {
-                // XXX stop processing, exit
-                return;
+                if (e.code() == KeeperException.Code.SESSIONEXPIRED
+                    || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+                  log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
+                  return;
+                }
+                SolrException.log(log, "", e);
+                throw new ZooKeeperException(
+                    SolrException.ErrorCode.SERVER_ERROR, "", e);
               } catch (InterruptedException e) {
-                // XXX stop processing, exit
+                Thread.currentThread().interrupt();
                 return;
               }
             }
@@ -156,7 +162,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
           try {
             Thread.sleep(STATE_UPDATE_DELAY);
           } catch (InterruptedException e) {
-            //
+            Thread.currentThread().interrupt();
           }
         }
       }
@@ -168,9 +174,9 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
             return true;
           }
         } catch (KeeperException e) {
-          // assume we're dead
+          log.warn("", e);
         } catch (InterruptedException e) {
-          // assume we're dead
+          Thread.currentThread().interrupt();
         }
         log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
         return false;
