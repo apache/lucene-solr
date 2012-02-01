@@ -19,13 +19,12 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 
 abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
   protected final R[] subReaders;
-  protected final int[] starts;       // 1st docno for each segment
+  protected final int[] starts;       // 1st docno for each reader
   private final int maxDoc;
   private final int numDocs;
   private final boolean hasDeletions;
@@ -50,14 +49,14 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
   }
 
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
+  public final Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
     final int i = readerIndex(docID);        // find segment num
     return subReaders[i].getTermVectors(docID - starts[i]); // dispatch to segment
   }
 
   @Override
-  public int numDocs() {
+  public final int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
     return numDocs;
   }
@@ -69,20 +68,20 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
   }
 
   @Override
-  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
+  public final void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     ensureOpen();
     final int i = readerIndex(docID);                          // find segment num
     subReaders[i].document(docID - starts[i], visitor);    // dispatch to segment reader
   }
 
   @Override
-  public boolean hasDeletions() {
+  public final boolean hasDeletions() {
     // Don't call ensureOpen() here (it could affect performance)
     return hasDeletions;
   }
 
   @Override
-  public int docFreq(String field, BytesRef t) throws IOException {
+  public final int docFreq(String field, BytesRef t) throws IOException {
     ensureOpen();
     int total = 0;          // sum freqs in segments
     for (int i = 0; i < subReaders.length; i++) {
@@ -100,7 +99,7 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
   }
   
   @Override
-  public IndexReader[] getSequentialSubReaders() {
+  public final R[] getSequentialSubReaders() {
     return subReaders;
   }
 }

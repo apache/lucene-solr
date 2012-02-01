@@ -700,7 +700,7 @@ public class TestIndexReader extends LuceneTestCase {
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
     r.close();
-    AtomicReader sub0 = (AtomicReader) r2.getSequentialSubReaders()[0];
+    AtomicReader sub0 = r2.getSequentialSubReaders()[0];
     final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
     r2.close();
     assertTrue(ints == ints2);

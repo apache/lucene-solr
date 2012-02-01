@@ -100,7 +100,8 @@ public class MultiPassIndexSplitter {
           null)
           .setOpenMode(OpenMode.CREATE));
       System.err.println("Writing part " + (i + 1) + " ...");
-      w.addIndexes(input);
+      // pass the subreaders directly, as our wrapper's numDocs/hasDeletetions are not up-to-date
+      w.addIndexes(input.getSequentialSubReaders());
       w.close();
     }
     System.err.println("Done.");
@@ -204,23 +205,8 @@ public class MultiPassIndexSplitter {
       }
     }
 
-    // override this as MultiReader precalculates the number of deletions
-    // (this method is never used by MultiPassIndexSplitter)
-    @Override
-    public int numDocs() {
-      int n = 0;
-      for (int i = 0; i < subReaders.length; i++)
-        n += subReaders[i].numDocs();
-      return n;
-    }
-  
-    // override this as MultiReader precalculates the number of deletions
-    // (this method is never used by MultiPassIndexSplitter)
-    @Override
-    public boolean hasDeletions() {
-      return (maxDoc() != numDocs());
-    }
-
+    // no need to override numDocs/hasDeletions,
+    // as we pass the subreaders directly to IW.addIndexes().
   }
   
   private static final class FakeDeleteAtomicIndexReader extends FilterIndexReader {

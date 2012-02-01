@@ -20,7 +20,13 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 /** An IndexReader which reads multiple indexes, appending
- *  their content. */
+ *  their content.
+ 
+ <p><em>Please note:</em> This class extends from an internal (invisible)
+ superclass that is generic: The type parameter {@code R} is
+ {@link IndexReader}, see {@link #subReaders} and
+ {@link #getSequentialSubReaders}.
+ */
 public class MultiReader extends BaseMultiReader<IndexReader> {
   private final boolean closeSubReaders;
   

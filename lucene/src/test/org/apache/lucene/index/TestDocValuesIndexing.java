@@ -696,7 +696,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, ((AtomicReader) r.getSequentialSubReaders()[0]).docValues("field").load().getInt(0));
+    assertEquals(17, r.getSequentialSubReaders()[0].docValues("field").load().getInt(0));
     r.close();
     d.close();
   }
