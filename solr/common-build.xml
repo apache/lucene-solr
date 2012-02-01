@@ -77,6 +77,7 @@
 
   <path id="solr.base.classpath">
   	<pathelement path="${analyzers-common.jar}"/>
+  	<pathelement path="${analyzers-kuromoji.jar}"/>
   	<pathelement path="${analyzers-phonetic.jar}"/>
   	<pathelement path="${highlighter.jar}"/>
   	<pathelement path="${memory.jar}"/>
@@ -164,14 +165,17 @@
   </target>
 
   <target name="prep-lucene-jars" 
-  	      depends="jar-lucene-core, jar-analyzers-common, jar-analyzers-phonetic, jar-spellchecker, jar-highlighter,
-  	               jar-memory, jar-misc, jar-spatial, jar-grouping, jar-queries"/>
-
+  	      depends="jar-lucene-core, jar-analyzers-common, jar-analyzers-kuromoji, jar-analyzers-phonetic, jar-spellchecker, jar-highlighter,
+  	               jar-memory, jar-misc, jar-spatial, jar-grouping, jar-queries">
+  	  <!-- TODO: why was this prop previously not set? <property name="solr.deps.compiled" value="true"/> -->
+  </target>
+	
   <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
     <sequential>
     <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset file="${lucene-core.jar}" />
       <fileset file="${analyzers-common.jar}" />
+      <fileset file="${analyzers-kuromoji.jar}" />
       <fileset file="${analyzers-phonetic.jar}" />
       <fileset file="${spellchecker.jar}" />
       <fileset file="${grouping.jar}" />
