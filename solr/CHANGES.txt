@@ -93,13 +93,21 @@ New Features
   DirectSpellChecker to retrieve correction candidates directly from the term dictionary using
   levenshtein automata.  (James Dyer, rmuir)
    
-* SOLR-1873: SolrCloud - added shared/central config and core/shard management via zookeeper,
-  built-in load balancing, and infrastructure for future SolrCloud work. (yonik, Mark Miller)
+* SOLR-1873, SOLR-2358: SolrCloud - added shared/central config and core/shard management via zookeeper,
+  built-in load balancing, and distributed indexing. 
+  (Jamie Johnson, Sami Siren, Ted Dunning, yonik, Mark Miller)
   Additional Work:
   SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
   (Massimo Schiavon, Mark Miller)
-  SOLR-2799: Update CloudState incrementally rather than always reading the data at each zk 
-  node. (Jamie Johnson via Mark Miller)
+  SOLR-2821, SOLR-2799: Improve how cluster state is managed in ZooKeeper. 
+  (Jamie Johnson via Mark Miller)
+  SOLR-2765: Shard/Node states. (Jamie Johnson, Mark Miller)
+  SOLR-2880: Add an Overseer to handle some tasks. (Sami Siren via Mark Miller)
+  SOLR-2723: SolrCloud should auto assign shard names. (Sami Siren, Mark Miller)
+  SOLR-2287: Allow users to query by multiple, compatible collections with SolrCloud.
+  (Soheb Mahmood, Alex Cowell, Mark Miller)
+  SOLR-2622: ShowFileRequestHandler does not work in SolrCloud mode. 
+  (Stefan Matheis, Mark Miller)
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
