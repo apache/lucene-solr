@@ -303,6 +303,9 @@ Bug Fixes
 * SOLR-3037: When using binary format in solrj the codec screws up parameters
   (Sami Siren via yonik)
 
+* SOLR-3062: A join in the main query was not respecting any filters pushed
+  down to it via acceptDocs since LUCENE-1536. (Mike Hugo, yonik)
+
 
 Other Changes
 ----------------------

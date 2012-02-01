@@ -128,6 +128,12 @@ public class TestJoin extends SolrTestCaseJ4 {
                  "debugQuery","true"),
              davesDepartments);
 
+    // find people that develop stuff - but limit via filter query to a name of "john"
+    // this tests filters being pushed down to queries (SOLR-3062)
+    assertJQ(req("q","{!join from=dept_id_s to=dept_s}text:develop", "fl","id", "fq", "name:john")
+             ,"/response=={'numFound':1,'start':0,'docs':[{'id':'1'}]}"
+            );
+
   }
 
 
