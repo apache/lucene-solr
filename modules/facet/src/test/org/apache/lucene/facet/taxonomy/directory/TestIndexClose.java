@@ -113,13 +113,9 @@ public class TestIndexClose extends LuceneTestCase {
     public int nopen() {
       int ret=0;
       for (DirectoryReader r: readers) {
-        try {
-          // this should throw ex, if already closed!
-          r.getTopReaderContext();
+        if (r.getRefCount() > 0) {
           System.err.println("reader "+r+" still open");
           ret++;
-        } catch (AlreadyClosedException e) {
-          // fine
         }
       }
       for (int i: openWriters) {
