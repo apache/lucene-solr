@@ -23,6 +23,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.junit.internal.AssumptionViolatedException;
 
 /**
  * Tokenizer for testing.
@@ -122,7 +123,10 @@ public class MockTokenizer extends Tokenizer {
     if (ch < 0) {
       return ch;
     } else {
-      assert ch != 0xffff; /* only on 3.x */
+      if (ch == 0xffff) {
+        throw new AssumptionViolatedException
+            ("Test data cannot contain '\\uFFFF' (Lucene 3.x only)");
+      }
       assert !Character.isLowSurrogate((char) ch);
       off++;
       if (Character.isHighSurrogate((char) ch)) {
