@@ -1358,7 +1358,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     } else {
       TopDocsCollector topCollector;
       if (cmd.getSort() == null) {
-        topCollector = TopScoreDocCollector.create(len, true);
+        if(cmd.getScoreDoc() != null) {
+        	topCollector = TopScoreDocCollector.create(len, cmd.getScoreDoc(), true); //create the Collector with InOrderPagingCollector
+        } else {
+          topCollector = TopScoreDocCollector.create(len, true);
+        }
+
       } else {
         topCollector = TopFieldCollector.create(weightSort(cmd.getSort()), len, false, needScores, needScores, true);
       }
@@ -1382,7 +1387,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       TopDocs topDocs = topCollector.topDocs(0, len);
       maxScore = totalHits>0 ? topDocs.getMaxScore() : 0.0f;
       nDocsReturned = topDocs.scoreDocs.length;
-
       ids = new int[nDocsReturned];
       scores = (cmd.getFlags()&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
       for (int i=0; i<nDocsReturned; i++) {
@@ -1391,7 +1395,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         if (scores != null) scores[i] = scoreDoc.score;
       }
     }
-
 
     int sliceLen = Math.min(lastDocRequested,nDocsReturned);
     if (sliceLen < 0) sliceLen=0;
@@ -2011,6 +2014,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     private int supersetMaxDoc;
     private int flags;
     private long timeAllowed = -1;
+    //Issue 1726 start
+    private ScoreDoc scoreDoc;
+    
+    public ScoreDoc getScoreDoc()
+    {
+    	return scoreDoc;
+    }
+    public void setScoreDoc(ScoreDoc scoreDoc)
+    {
+    	this.scoreDoc = scoreDoc;
+    }
+    //Issue 1726 end
 
     // public List<Grouping.Command> groupCommands;
 

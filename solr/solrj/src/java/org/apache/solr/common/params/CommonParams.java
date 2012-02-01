@@ -46,6 +46,14 @@ public interface CommonParams {
   /** number of documents to return starting at "start" */
   public static final String ROWS ="rows";
   
+  //Issue 1726 start
+  /** score of the last document of the previous page */
+  public static final String PAGESCORE ="pageScore";
+  
+  /** docid of the last document of the previous page */
+  public static final String PAGEDOC ="pageDoc";
+  //Issue 1726 end
+  
   /** stylesheet to apply to XML results */
   public static final String XSL ="xsl";
   

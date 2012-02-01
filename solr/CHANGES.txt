@@ -199,6 +199,8 @@ New Features
 * SOLR-3069: Ability to add openSearcher=false to not open a searcher when doing
   a hard commit.  commitWithin now only invokes a softCommit. (yonik)
 
+* SOLR-1726: Added deep paging support to search (sort by score only) which should use less memory when paging deeply into results
+ by keeping the priority queue small. (Manojkumar Rangasamy Kannadasan, gsingers)
 
 Optimizations
 ----------------------

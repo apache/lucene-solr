@@ -18,6 +18,7 @@
 package org.apache.solr.handler.component;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -69,6 +70,9 @@ public class ResponseBuilder
   private List<Query> filters = null;
   private SortSpec sortSpec = null;
   private GroupingSpecification groupingSpec;
+  //used for handling deep paging
+  private ScoreDoc scoreDoc;
+
 
   private DocListAndSet results = null;
   private NamedList<Object> debugInfo = null;
@@ -377,7 +381,8 @@ public class ResponseBuilder
             .setOffset(getSortSpec().getOffset())
             .setLen(getSortSpec().getCount())
             .setFlags(getFieldFlags())
-            .setNeedDocSet(isNeedDocSet());
+            .setNeedDocSet(isNeedDocSet())
+            .setScoreDoc(getScoreDoc()); //Issue 1726
     return cmd;
   }
 
@@ -389,5 +394,15 @@ public class ResponseBuilder
     if (result.isPartialResults()) {
       rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
     }
+  }
+
+  public ScoreDoc getScoreDoc()
+  {
+	  return scoreDoc;
+  }
+  
+  public void setScoreDoc(ScoreDoc scoreDoc)
+  {
+	  this.scoreDoc = scoreDoc;
   }
 }

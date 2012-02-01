@@ -128,7 +128,8 @@ public class QueryComponent extends SearchComponent
       rb.setQuery( q );
       rb.setSortSpec( parser.getSort(true) );
       rb.setQparser(parser);
-
+      rb.setScoreDoc(parser.getPaging());
+      
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs!=null && fqs.length!=0) {
         List<Query> filters = rb.getFilters();
