@@ -32,7 +32,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
+import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -42,20 +42,20 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
   private static final class PerDirPayloadProcessor extends PayloadProcessorProvider {
 
-    private Map<Directory, DirPayloadProcessor> processors;
+    private final Map<Directory, ReaderPayloadProcessor> processors;
 
-    public PerDirPayloadProcessor(Map<Directory, DirPayloadProcessor> processors) {
+    public PerDirPayloadProcessor(Map<Directory, ReaderPayloadProcessor> processors) {
       this.processors = processors;
     }
 
     @Override
-    public DirPayloadProcessor getDirProcessor(Directory dir) throws IOException {
-      return processors.get(dir);
+    public ReaderPayloadProcessor getReaderProcessor(IndexReader reader) throws IOException {
+      return processors.get(reader.directory());
     }
 
   }
 
-  private static final class PerTermPayloadProcessor extends DirPayloadProcessor {
+  private static final class PerTermPayloadProcessor extends ReaderPayloadProcessor {
 
     @Override
     public PayloadProcessor getProcessor(Term term) throws IOException {
@@ -194,7 +194,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
     // Add two source dirs. By not adding the dest dir, we ensure its payloads
     // won't get processed.
-    Map<Directory, DirPayloadProcessor> processors = new HashMap<Directory, DirPayloadProcessor>();
+    Map<Directory, ReaderPayloadProcessor> processors = new HashMap<Directory, ReaderPayloadProcessor>();
     for (Directory d : dirs) {
       processors.put(d, new PerTermPayloadProcessor());
     }
@@ -250,7 +250,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
     // Add two source dirs. By not adding the dest dir, we ensure its payloads
     // won't get processed.
-    Map<Directory, DirPayloadProcessor> processors = new HashMap<Directory, DirPayloadProcessor>();
+    Map<Directory, ReaderPayloadProcessor> processors = new HashMap<Directory, ReaderPayloadProcessor>();
     processors.put(dir, new PerTermPayloadProcessor());
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));

@@ -37,7 +37,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LimitTokenCountAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -4778,7 +4777,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * is merged, not only external ones that are given through
    * {@link #addIndexes}. If you want only the payloads of the external segments
    * to be processed, you can return <code>null</code> whenever a
-   * {@link DirPayloadProcessor} is requested for the {@link Directory} of the
+   * {@link PayloadProcessorProvider.ReaderPayloadProcessor} is requested for the {@link Directory} of the
    * {@link IndexWriter}.
    * <p>
    * The default is <code>null</code> which means payloads are processed

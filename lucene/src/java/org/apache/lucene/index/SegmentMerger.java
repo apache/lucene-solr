@@ -448,7 +448,7 @@ final class SegmentMerger {
       TermEnum termEnum = reader.terms();
       SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
       if (payloadProcessorProvider != null) {
-        smi.dirPayloadProcessor = payloadProcessorProvider.getDirProcessor(reader.directory());
+        smi.readerPayloadProcessor = payloadProcessorProvider.getReaderProcessor(reader);
       }
       int[] docMap  = smi.getDocMap();
       if (docMap != null) {
@@ -533,8 +533,8 @@ final class SegmentMerger {
       postings.seek(smi.termEnum);
 
       PayloadProcessor payloadProcessor = null;
-      if (smi.dirPayloadProcessor != null) {
-        payloadProcessor = smi.dirPayloadProcessor.getProcessor(smi.term);
+      if (smi.readerPayloadProcessor != null) {
+        payloadProcessor = smi.readerPayloadProcessor.getProcessor(smi.term);
       }
 
       while (postings.next()) {

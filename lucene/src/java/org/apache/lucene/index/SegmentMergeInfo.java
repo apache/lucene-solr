@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
+import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
 
 final class SegmentMergeInfo {
   Term term;
@@ -30,7 +30,7 @@ final class SegmentMergeInfo {
   int delCount;
   private TermPositions postings;  // use getPositions()
   private int[] docMap;  // use getDocMap()
-  DirPayloadProcessor dirPayloadProcessor;
+  ReaderPayloadProcessor readerPayloadProcessor;
   
   SegmentMergeInfo(int b, TermEnum te, IndexReader r)
     throws IOException {
