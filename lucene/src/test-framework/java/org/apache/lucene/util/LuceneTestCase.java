@@ -542,11 +542,33 @@ public abstract class LuceneTestCase extends Assert {
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
-        testsFailed = true;
-        uncaughtExceptions.add(new UncaughtExceptionEntry(t, e));
-        if (savedUncaughtExceptionHandler != null)
-          savedUncaughtExceptionHandler.uncaughtException(t, e);
+        // org.junit.internal.AssumptionViolatedException in older releases
+        // org.junit.Assume.AssumptionViolatedException in recent ones
+        if (e.getClass().getName().endsWith("AssumptionViolatedException")) {
+          String where = "<unknown>";
+          for (StackTraceElement elem : e.getStackTrace()) {
+            if ( ! elem.getClassName().startsWith("org.junit")) {
+              where = elem.toString();
+              break;
+            }
+          }
+          if (e.getCause() instanceof _TestIgnoredException)
+            e = e.getCause();
+          System.err.print("NOTE: Assume failed at " + where + " (ignored):");
+          if (VERBOSE) {
+            System.err.println();
+            e.printStackTrace(System.err);
+          } else {
+            System.err.print(" ");
+            System.err.println(e.getMessage());
+          }
+        } else {
+          testsFailed = true;
+          uncaughtExceptions.add(new UncaughtExceptionEntry(t, e));
+          if (savedUncaughtExceptionHandler != null)
+            savedUncaughtExceptionHandler.uncaughtException(t, e);
         }
+      }
     });
 
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
