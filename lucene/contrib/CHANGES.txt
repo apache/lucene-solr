@@ -142,6 +142,9 @@ New Features
  * LUCENE-3305: Added Kuromoji morphological analyzer for Japanese.
    (Christian Moen, Masaru Hasegawa, Simon Willnauer, Uwe Schindler, Mike McCandless, Robert Muir)
 
+ * LUCENE-3730: Refine Kuromoji search mode (Mode.SEARCH) decompounding
+   heuristics.  (Christian Moen via Robert Muir)
+
  * LUCENE-3685: Add ToChildBlockJoinQuery and renamed previous
    BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
    joins in both parent to child and child to parent directions.
