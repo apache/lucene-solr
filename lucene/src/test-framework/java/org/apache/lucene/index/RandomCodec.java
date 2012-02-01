@@ -94,7 +94,7 @@ public class RandomCodec extends Lucene40Codec {
     formats.add(new Lucene40WithOrds());
     if (!useNoMemoryExpensiveCodec) {
       formats.add(new SimpleTextPostingsFormat());
-      formats.add(new MemoryPostingsFormat());
+      formats.add(new MemoryPostingsFormat(random.nextBoolean()));
     }
     Collections.shuffle(formats, random);
   }

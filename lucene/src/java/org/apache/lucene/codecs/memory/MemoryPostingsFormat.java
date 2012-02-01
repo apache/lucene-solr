@@ -81,9 +81,21 @@ import org.apache.lucene.util.fst.Util;
 // the reality that it is actually written to disk, but
 // loads itself in ram?
 public class MemoryPostingsFormat extends PostingsFormat {
-  
+
+  private final boolean doPackFST;
+
   public MemoryPostingsFormat() {
+    this(false);
+  }
+
+  public MemoryPostingsFormat(boolean doPackFST) {
     super("Memory");
+    this.doPackFST = doPackFST;
+  }
+  
+  @Override
+  public String toString() {
+    return "PostingsFormat(name=" + getName() + " doPackFST= " + doPackFST + ")";
   }
 
   private static final boolean VERBOSE = false;
@@ -93,12 +105,14 @@ public class MemoryPostingsFormat extends PostingsFormat {
     private final FieldInfo field;
     private final Builder<BytesRef> builder;
     private final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
+    private final boolean doPackFST;
     private int termCount;
 
-    public TermsWriter(IndexOutput out, FieldInfo field) {
+    public TermsWriter(IndexOutput out, FieldInfo field, boolean doPackFST) {
       this.out = out;
       this.field = field;
-      builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, outputs);
+      this.doPackFST = doPackFST;
+      builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doPackFST);
     }
 
     private class PostingsWriter extends PostingsConsumer {
@@ -230,7 +244,11 @@ public class MemoryPostingsFormat extends PostingsFormat {
         }
         out.writeVLong(sumDocFreq);
         out.writeVInt(docCount);
-        builder.finish().save(out);
+        FST<BytesRef> fst = builder.finish();
+        if (doPackFST) {
+          fst = fst.pack(3, Math.max(10, fst.getNodeCount()/4));
+        }
+        fst.save(out);
         if (VERBOSE) System.out.println("finish field=" + field.name + " fp=" + out.getFilePointer());
       }
     }
@@ -256,7 +274,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
           throw new UnsupportedOperationException("this codec cannot index offsets");
         }
         if (VERBOSE) System.out.println("\naddField field=" + field.name);
-        return new TermsWriter(out, field);
+        return new TermsWriter(out, field, doPackFST);
       }
 
       @Override
@@ -776,6 +794,9 @@ public class MemoryPostingsFormat extends PostingsFormat {
           break;
         }
         final TermsReader termsReader = new TermsReader(state.fieldInfos, in, termCount);
+        if (VERBOSE) {
+          System.out.println("load field=" + termsReader.field.name);
+        }
         fields.put(termsReader.field.name, termsReader);
       }
     } finally {
