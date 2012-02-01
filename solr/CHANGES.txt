@@ -562,6 +562,10 @@ Bug Fixes
 * SOLR-3073: Fixed 'Invalid UUID string' error when having an UUID field as
   the unique key and executing a distributed grouping request. (Devon Krisman, Martijn van Groningen)
 
+* SOLR-3084: Fixed initialiazation error when using 
+  <queryResponseWriter default="true" ... /> (Bernd Fehling and hossman)
+
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)

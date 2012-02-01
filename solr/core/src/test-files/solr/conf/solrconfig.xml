@@ -237,7 +237,10 @@
 
 
   </query>
-    
+  
+  <queryResponseWriter name="xml" default="true"
+                       class="solr.XMLResponseWriter" />
+
   <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
 
   <!-- An alternate set representation that uses an integer hash to store filters (sets of docids).

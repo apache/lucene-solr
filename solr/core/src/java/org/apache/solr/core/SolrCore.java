@@ -1625,9 +1625,9 @@ public final class SolrCore implements SolrInfoMBean {
           log.warn("Multiple queryResponseWriter registered to the same name: " + info.name + " ignoring: " + old.getClass().getName());
         }
         if(info.isDefault()){
-          defaultResponseWriter = writer;
           if(defaultResponseWriter != null)
-            log.warn("Multiple default queryResponseWriter registered ignoring: " + old.getClass().getName());
+            log.warn("Multiple default queryResponseWriter registered, using: " + info.name);
+          defaultResponseWriter = writer;
         }
         log.info("created "+info.name+": " + info.className);
       } catch (Exception ex) {
