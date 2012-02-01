@@ -52,7 +52,7 @@ class MockCharFilter extends CharStream {
       bufferedCh = -1;
       currentOffset++;
       
-      addOffCorrectMap(currentOffset+delta, delta-1);
+      addOffCorrectMap(currentOffset, delta-1);
       delta--;
       return ch;
     }

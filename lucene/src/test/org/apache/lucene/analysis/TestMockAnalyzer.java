@@ -2,6 +2,8 @@ package org.apache.lucene.analysis;
 
 import java.io.StringReader;
 
+import org.apache.lucene.util._TestUtil;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -86,5 +88,22 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, new MockAnalyzer(random), atLeast(1000));
+  }
+  
+  public void testForwardOffsets() throws Exception {
+    int num = atLeast(10000);
+    for (int i = 0; i < num; i++) {
+      String s = _TestUtil.randomHtmlishString(random, 20);
+      StringReader reader = new StringReader(s);
+      MockCharFilter charfilter = new MockCharFilter(CharReader.get(reader), 2);
+      MockAnalyzer analyzer = new MockAnalyzer(random);
+      TokenStream ts = analyzer.tokenStream("bogus", charfilter);
+      ts.reset();
+      while (ts.incrementToken()) {
+        ;
+      }
+      ts.end();
+      ts.close();
+    }
   }
 }

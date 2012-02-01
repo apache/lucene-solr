@@ -69,6 +69,7 @@ public class MockTokenizer extends Tokenizer {
   };
   
   private State streamState = State.CLOSE;
+  private int lastOffset = 0; // only for asserting
   private boolean enableChecks = true;
   
   public MockTokenizer(AttributeFactory factory, Reader input, int pattern, boolean lowerCase, int maxTokenLength) {
@@ -109,7 +110,15 @@ public class MockTokenizer extends Tokenizer {
           }
           cp = readCodePoint();
         } while (cp >= 0 && isTokenChar(cp));
-        offsetAtt.setOffset(correctOffset(startOffset), correctOffset(endOffset));
+        
+        int correctedStartOffset = correctOffset(startOffset);
+        int correctedEndOffset = correctOffset(endOffset);
+        assert correctedStartOffset >= 0;
+        assert correctedEndOffset >= 0;
+        assert correctedStartOffset >= lastOffset;
+        lastOffset = correctedStartOffset;
+        assert correctedEndOffset >= correctedStartOffset;
+        offsetAtt.setOffset(correctedStartOffset, correctedEndOffset);
         streamState = State.INCREMENT;
         return true;
       }
@@ -157,7 +166,7 @@ public class MockTokenizer extends Tokenizer {
   @Override
   public void reset() throws IOException {
     super.reset();
-    off = 0;
+    lastOffset = off = 0;
     assert !enableChecks || streamState != State.RESET : "double reset()";
     streamState = State.RESET;
   }
