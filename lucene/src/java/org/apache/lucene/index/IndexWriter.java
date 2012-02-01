@@ -4035,7 +4035,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * is merged, not only external ones that are given through
    * {@link #addIndexes}. If you want only the payloads of the external segments
    * to be processed, you can return <code>null</code> whenever a
-   * {@link DirPayloadProcessor} is requested for the {@link Directory} of the
+   * {@link PayloadProcessorProvider.ReaderPayloadProcessor} is requested for the {@link Directory} of the
    * {@link IndexWriter}.
    * <p>
    * The default is <code>null</code> which means payloads are processed

@@ -23,20 +23,20 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Provides a {@link DirPayloadProcessor} to be used for a {@link Directory}.
- * This allows using different {@link DirPayloadProcessor}s for different
- * directories, for e.g. to perform different processing of payloads of
+ * Provides a {@link ReaderPayloadProcessor} to be used for a {@link Directory}.
+ * This allows using different {@link ReaderPayloadProcessor}s for different
+ * source {@link AtomicReader}, for e.g. to perform different processing of payloads of
  * different directories.
  * <p>
  * <b>NOTE:</b> to avoid processing payloads of certain directories, you can
- * return <code>null</code> in {@link #getDirProcessor}.
+ * return <code>null</code> in {@link #getReaderProcessor}.
  * <p>
- * <b>NOTE:</b> it is possible that the same {@link DirPayloadProcessor} will be
+ * <b>NOTE:</b> it is possible that the same {@link ReaderPayloadProcessor} will be
  * requested for the same {@link Directory} concurrently. Therefore, to avoid
  * concurrency issues you should return different instances for different
- * threads. Usually, if your {@link DirPayloadProcessor} does not maintain state
+ * threads. Usually, if your {@link ReaderPayloadProcessor} does not maintain state
  * this is not a problem. The merge code ensures that the
- * {@link DirPayloadProcessor} instance you return will be accessed by one
+ * {@link ReaderPayloadProcessor} instance you return will be accessed by one
  * thread to obtain the {@link PayloadProcessor}s for different terms.
  * 
  * @lucene.experimental
@@ -48,7 +48,7 @@ public abstract class PayloadProcessorProvider {
    * processing the payloads of different terms differently. If you intent to
    * process all your payloads the same way, then you can ignore the given term.
    * <p>
-   * <b>NOTE:</b> if you protect your {@link DirPayloadProcessor} from
+   * <b>NOTE:</b> if you protect your {@link ReaderPayloadProcessor} from
    * concurrency issues, then you shouldn't worry about any such issues when
    * {@link PayloadProcessor}s are requested for different terms.
    */
@@ -72,7 +72,7 @@ public abstract class PayloadProcessorProvider {
   }
 
   /**
-   * Returns a {@link DirPayloadProcessor} for the given {@link Directory},
+   * Returns a {@link ReaderPayloadProcessor} for the given {@link Directory},
    * through which {@link PayloadProcessor}s can be obtained for each
    * {@link Term}, or <code>null</code> if none should be used.
    */
