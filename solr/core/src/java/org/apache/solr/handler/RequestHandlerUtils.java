@@ -18,8 +18,9 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.*;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -44,69 +45,27 @@ public class RequestHandlerUtils
   {
     rsp.add( "WARNING", "This response format is experimental.  It is likely to change in the future." ); 
   }
-  
-  /**
-   * Check the request parameters and decide if it should commit or optimize.
-   * If it does, it will check parameters for "waitFlush" and "waitSearcher"
-   * 
-   * @deprecated Use {@link #handleCommit(SolrQueryRequest,UpdateRequestProcessor,SolrParams,boolean)}
-   *
-   * @since solr 1.2
-   */
-  @Deprecated
-  public static boolean handleCommit( SolrQueryRequest req, SolrQueryResponse rsp, boolean force ) throws IOException
-  {
-    SolrParams params = req.getParams();
-    if( params == null ) {
-      params = new MapSolrParams( new HashMap<String, String>() ); 
-    }
-    
-    boolean optimize = params.getBool( UpdateParams.OPTIMIZE, false );
-    boolean commit   = params.getBool( UpdateParams.COMMIT,   false );
-    
-    if( optimize || commit || force ) {
-      CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize );
-      cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
-      cmd.softCommit = params.getBool( UpdateParams.SOFT_COMMIT, cmd.softCommit );
-      cmd.expungeDeletes = params.getBool( UpdateParams.EXPUNGE_DELETES, cmd.expungeDeletes);
-      cmd.maxOptimizeSegments = params.getInt(UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments);
-      req.getCore().getUpdateHandler().commit( cmd );
-      
-      // Lets wait till after solr1.2 to define consistent output format
-      //if( optimize ) {
-      //  rsp.add( "optimize", true );
-      //}
-      //else {
-      //  rsp.add( "commit", true );
-      //}
-      return true;
-    }
-    return false;
-  }
-  
+
 
   /**
    * Check the request parameters and decide if it should commit or optimize.
-   * If it does, it will check parameters for "waitFlush" and "waitSearcher"
+   * If it does, it will check other related parameters such as "waitFlush" and "waitSearcher"
    */
   public static boolean handleCommit(SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force ) throws IOException
   {
-    if( params == null ) {
+    if( params == null) {
       params = new MapSolrParams( new HashMap<String, String>() ); 
     }
     
     boolean optimize = params.getBool( UpdateParams.OPTIMIZE, false );
     boolean commit   = params.getBool( UpdateParams.COMMIT,   false );
+    boolean softCommit = params.getBool( UpdateParams.SOFT_COMMIT,   false );
     boolean prepareCommit = params.getBool( UpdateParams.PREPARE_COMMIT,   false );
 
 
-    if( optimize || commit || prepareCommit || force ) {
+    if( optimize || commit || softCommit || prepareCommit || force ) {
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize );
-      cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
-      cmd.softCommit = params.getBool( UpdateParams.SOFT_COMMIT, cmd.softCommit );
-      cmd.expungeDeletes = params.getBool( UpdateParams.EXPUNGE_DELETES, cmd.expungeDeletes);      
-      cmd.maxOptimizeSegments = params.getInt(UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments);
-      cmd.prepareCommit = prepareCommit;
+      updateCommit(cmd, params);
       processor.processCommit( cmd );
       return true;
     }
@@ -114,6 +73,35 @@ public class RequestHandlerUtils
     
     return false;
   }
+
+  
+  private static Set<String> commitParams = new HashSet<String>(Arrays.asList(new String[]{UpdateParams.OPEN_SEARCHER, UpdateParams.WAIT_SEARCHER, UpdateParams.SOFT_COMMIT, UpdateParams.EXPUNGE_DELETES, UpdateParams.MAX_OPTIMIZE_SEGMENTS, UpdateParams.PREPARE_COMMIT}));
+
+  public static void validateCommitParams(SolrParams params) {
+    Iterator<String> i = params.getParameterNamesIterator();
+    while (i.hasNext()) {
+      String key = i.next();
+      if (!commitParams.contains(key)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown commit parameter '" + key + "'");
+      }
+    }
+  }
+  
+  /**
+   * Modify UpdateCommand based on request parameters
+   */
+  public static void updateCommit(CommitUpdateCommand cmd, SolrParams params) throws IOException
+  {
+    if( params == null ) return;
+
+    cmd.openSearcher = params.getBool( UpdateParams.OPEN_SEARCHER, cmd.openSearcher );
+    cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
+    cmd.softCommit = params.getBool( UpdateParams.SOFT_COMMIT, cmd.softCommit );
+    cmd.expungeDeletes = params.getBool( UpdateParams.EXPUNGE_DELETES, cmd.expungeDeletes );
+    cmd.maxOptimizeSegments = params.getInt( UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments );
+    cmd.prepareCommit = params.getBool( UpdateParams.PREPARE_COMMIT,   cmd.prepareCommit );
+  }
+
 
   /**
    * @since Solr 1.4

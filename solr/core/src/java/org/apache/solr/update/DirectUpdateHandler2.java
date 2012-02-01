@@ -93,7 +93,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         .getUpdateHandlerInfo();
     int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
     int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
-    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, true, false);
+    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, updateHandlerInfo.openSearcher, false);
     
     int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
@@ -114,11 +114,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         .getUpdateHandlerInfo();
     int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
     int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
-    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, true, false);
+    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, updateHandlerInfo.openSearcher, false);
     
     int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
-    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
+    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, updateHandlerInfo.openSearcher, true);
     
     this.ulog = updateHandler.getUpdateLog();
     if (this.ulog != null) {
@@ -186,8 +186,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (ulog != null) ulog.add(cmd);
 
       if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-        commitTracker.addedDocument( cmd.commitWithin );
-        softCommitTracker.addedDocument( -1 ); // TODO: support commitWithin with soft update
+        commitTracker.addedDocument( -1 );
+        softCommitTracker.addedDocument( cmd.commitWithin );
       }
 
       rc = 1;
@@ -203,6 +203,20 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     return rc;
   }
 
+  private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
+    if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
+      softCommitTracker.deletedDocument( cmd.commitWithin );
+
+      if (commitTracker.getTimeUpperBound() > 0) {
+        commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
+      }
+
+      if (softCommitTracker.getTimeUpperBound() > 0) {
+        softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
+      }
+    }
+  }
+  
 
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
@@ -214,21 +228,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     Term deleteTerm = new Term(idField.getName(), cmd.getIndexedId());
 
     // SolrCore.verbose("deleteDocuments",deleteTerm,writer);
-    commitTracker.deletedDocument( cmd.commitWithin );
     writer.deleteDocuments(deleteTerm);
     // SolrCore.verbose("deleteDocuments",deleteTerm,"DONE");
 
     if (ulog != null) ulog.delete(cmd);
 
-    if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-      if (commitTracker.getTimeUpperBound() > 0) {
-        commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
-      }
-
-      if (softCommitTracker.getTimeUpperBound() > 0) {
-        softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
-      }
-    }
+    updateDeleteTrackers(cmd);
   }
 
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
@@ -267,8 +272,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       
       boolean delAll = MatchAllDocsQuery.class == q.getClass();
 
-      commitTracker.deletedDocument(cmd.commitWithin);
-      
       //
       // synchronized to prevent deleteByQuery from running during the "open new searcher"
       // part of a commit.  DBQ needs to signal that a fresh reader will be needed for
@@ -286,15 +289,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
 
       madeIt = true;
-      
-      if (commitTracker.getTimeUpperBound() > 0) {
-        commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
-      } 
-      
-      if (softCommitTracker.getTimeUpperBound()> 0) {
-        softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
-      }
-      
+
+      updateDeleteTrackers(cmd);
+
     } finally {
       if (!madeIt) {
         numErrors.incrementAndGet();
@@ -416,7 +413,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       } else {
         synchronized (this) {
           if (ulog != null) ulog.preSoftCommit(cmd);
-          core.getSearcher(true, false, waitSearcher);
+          if (cmd.openSearcher) {
+            core.getSearcher(true, false, waitSearcher);
+          } else {
+            // force open a new realtime searcher so realtime-get and versioning code can see the latest
+            core.openNewSearcher(true,true);
+          }
           if (ulog != null) ulog.postSoftCommit(cmd);
         }
         if (ulog != null) ulog.postCommit(cmd); // postCommit currently means new searcher has

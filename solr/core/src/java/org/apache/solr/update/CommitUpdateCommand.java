@@ -24,6 +24,7 @@ import org.apache.solr.request.SolrQueryRequest;
  */
 public class CommitUpdateCommand extends UpdateCommand {
   public boolean optimize;
+  public boolean openSearcher=true;     // open a new searcher as part of a hard commit
   public boolean waitSearcher=true;
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
@@ -49,6 +50,7 @@ public class CommitUpdateCommand extends UpdateCommand {
   @Override
   public String toString() {
     return super.toString() + ",optimize="+optimize
+            +",openSearcher="+openSearcher
             +",waitSearcher="+waitSearcher
             +",expungeDeletes="+expungeDeletes
             +",softCommit="+softCommit

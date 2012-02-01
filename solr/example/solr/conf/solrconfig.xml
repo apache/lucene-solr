@@ -291,12 +291,14 @@
          maxTime - Maximum amount of time in ms that is allowed to pass
                    since a document was added before automaticly
                    triggering a new commit. 
+         openSearcher - if false, the commit causes recent index changes
+         to be flushed to stable storage, but does not cause a new
+         searcher to be opened to make those changes visible.
       -->
-    <!--
-       <autoCommit> 
-         <maxTime>60000</maxTime> 
-       </autoCommit>
-      -->
+     <autoCommit> 
+       <maxTime>15000</maxTime> 
+       <openSearcher>false</openSearcher> 
+     </autoCommit>
 
     <!-- softAutoCommit is like autoCommit except it causes a
          'soft' commit which only ensures that changes are visible

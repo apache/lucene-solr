@@ -65,7 +65,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "},\n" +
       "\n" +
       "'commit': {},\n" +
-      "'optimize': { 'waitSearcher':false },\n" +
+      "'optimize': { 'waitSearcher':false, 'openSearcher':false },\n" +
       "\n" +
       "'delete': { 'id':'ID' },\n" +
       "'delete': { 'id':'ID', 'commitWithin':'500' },\n" +
@@ -108,11 +108,13 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     CommitUpdateCommand commit = p.commitCommands.get( 0 );
     assertFalse( commit.optimize );
     assertTrue( commit.waitSearcher );
-    
+    assertTrue( commit.openSearcher );
+
     commit = p.commitCommands.get( 1 );
     assertTrue( commit.optimize );
     assertFalse( commit.waitSearcher );
-    
+    assertFalse( commit.openSearcher );
+
 
     // DELETE COMMANDS
     assertEquals( 4, p.deleteCommands.size() );

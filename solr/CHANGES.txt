@@ -63,6 +63,7 @@ Upgrading from Solr 3.6-dev
   renamed from "update.processor" to "update.chain". The old parameter was
   deprecated but still working since Solr3.2, but is now removed entirely.
 
+
 Detailed Change List
 ----------------------
 
@@ -194,6 +195,10 @@ New Features
   on update URLs. (yonik)
 
 * SOLR-2906: Added LFU cache options to Solr. (Shawn Heisey via Erick Erickson)
+
+* SOLR-3069: Ability to add openSearcher=false to not open a searcher when doing
+  a hard commit.  commitWithin now only invokes a softCommit. (yonik)
+
 
 Optimizations
 ----------------------

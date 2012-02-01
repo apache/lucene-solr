@@ -19,14 +19,18 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Stack;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.noggit.JSONParser;
+import org.apache.noggit.JSONUtil;
+import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -203,34 +207,30 @@ class JsonLoader extends ContentStreamLoader {
   void parseCommitOptions(CommitUpdateCommand cmd ) throws IOException
   {
     assertNextEvent( JSONParser.OBJECT_START );
+    final Map<String,Object> map = (Map)ObjectBuilder.getVal(parser);
 
-    while( true ) {
-      int ev = parser.nextEvent();
-      if( ev == JSONParser.STRING ) {
-        String key = parser.getString();
-        if( parser.wasKey() ) {
-          if( XmlUpdateRequestHandler.WAIT_SEARCHER.equals( key ) ) {
-            cmd.waitSearcher = parser.getBoolean();
-          }
-          else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
-          }
-        }
-        else {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "invalid string: " + key 
-              +" at ["+parser.getPosition()+"]" );
-        }
+    // SolrParams currently expects string values...
+    SolrParams p = new SolrParams() {
+      @Override
+      public String get(String param) {
+        Object o = map.get(param);
+        return o == null ? null : o.toString();
       }
-      else if( ev == JSONParser.OBJECT_END ) {
-        return;
+
+      @Override
+      public String[] getParams(String param) {
+        return new String[]{get(param)};
       }
-      else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Got: "+JSONParser.getEventString( ev  )
-            +" at ["+parser.getPosition()+"]" );
+
+      @Override
+      public Iterator<String> getParameterNamesIterator() {
+        return map.keySet().iterator();
       }
-    }
+    };
+
+    RequestHandlerUtils.validateCommitParams(p);
+    p = SolrParams.wrapDefaults(p, req.getParams());   // default to the normal request params for commit options
+    RequestHandlerUtils.updateCommit(cmd, p);
   }
   
   AddUpdateCommand parseAdd() throws IOException

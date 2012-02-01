@@ -25,10 +25,13 @@ package org.apache.solr.common.params;
  */
 public interface UpdateParams
 {
-  
-  /** wait for the search to warm up */
+
+  /** Open up a new searcher as part of a commit */
+  public static String OPEN_SEARCHER = "openSearcher";
+
+  /** wait for the searcher to be registered/visible */
   public static String WAIT_SEARCHER = "waitSearcher";
-  
+
   public static String SOFT_COMMIT = "softCommit";
   
   /** overwrite indexing fields */

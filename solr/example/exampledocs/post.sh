@@ -24,5 +24,7 @@ for f in $FILES; do
 done
 
 #send the commit command to make sure all the changes are flushed and visible
-curl $URL --data-binary '<commit/>' -H 'Content-type:application/xml'
+#curl $URL --data-binary '<commit softCommit=true/>' -H 'Content-type:application/xml'
+
+curl "$URL?softCommit=true"
 echo

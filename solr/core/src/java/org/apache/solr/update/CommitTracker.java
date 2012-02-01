@@ -61,11 +61,12 @@ final class CommitTracker implements Runnable {
   private final SolrCore core;
 
   private final boolean softCommit;
-  private final boolean waitSearcher;
+  private final boolean openSearcher;
+  private final boolean waitSearcher = true;
 
   private String name;
   
-  public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, boolean waitSearcher, boolean softCommit) {
+  public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, boolean openSearcher, boolean softCommit) {
     this.core = core;
     this.name = name;
     pending = null;
@@ -74,7 +75,7 @@ final class CommitTracker implements Runnable {
     this.timeUpperBound = timeUpperBound;
     
     this.softCommit = softCommit;
-    this.waitSearcher = waitSearcher;
+    this.openSearcher = openSearcher;
 
     SolrCore.log.info(name + " AutoCommit: " + this);
   }
@@ -183,6 +184,7 @@ final class CommitTracker implements Runnable {
         new ModifiableSolrParams());
     try {
       CommitUpdateCommand command = new CommitUpdateCommand(req, false);
+      command.openSearcher = openSearcher;
       command.waitSearcher = waitSearcher;
       command.softCommit = softCommit;
       // no need for command.maxOptimizeSegments = 1; since it is not optimizing

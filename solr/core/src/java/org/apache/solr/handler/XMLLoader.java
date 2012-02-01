@@ -16,6 +16,7 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -139,22 +140,17 @@ class XMLLoader extends ContentStreamLoader {
             XmlUpdateRequestHandler.log.trace("parsing " + currTag);
 
             CommitUpdateCommand cmd = new CommitUpdateCommand(req, XmlUpdateRequestHandler.OPTIMIZE.equals(currTag));
-
+            ModifiableSolrParams mp = new ModifiableSolrParams();
+            
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
               String attrVal = parser.getAttributeValue(i);
-              if (XmlUpdateRequestHandler.WAIT_SEARCHER.equals(attrName)) {
-                cmd.waitSearcher = StrUtils.parseBoolean(attrVal);
-              } else if (XmlUpdateRequestHandler.SOFT_COMMIT.equals(attrName)) {
-                cmd.softCommit = StrUtils.parseBoolean(attrVal);
-              } else if (UpdateParams.MAX_OPTIMIZE_SEGMENTS.equals(attrName)) {
-                cmd.maxOptimizeSegments = Integer.parseInt(attrVal);
-              } else if (UpdateParams.EXPUNGE_DELETES.equals(attrName)) {
-                cmd.expungeDeletes = StrUtils.parseBoolean(attrVal);
-              } else {
-                XmlUpdateRequestHandler.log.warn("unexpected attribute commit/@" + attrName);
-              }
+              mp.set(attrName, attrVal);
             }
+
+            RequestHandlerUtils.validateCommitParams(mp);
+            SolrParams p = SolrParams.wrapDefaults(mp, req.getParams());   // default to the normal request params for commit options
+            RequestHandlerUtils.updateCommit(cmd, p);
 
             processor.processCommit(cmd);
           } // end commit

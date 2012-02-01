@@ -144,7 +144,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     NewSearcherListener trigger = new NewSearcherListener();
 
     DirectUpdateHandler2 updateHandler = (DirectUpdateHandler2)core.getUpdateHandler();
-    CommitTracker tracker = updateHandler.commitTracker;
+    CommitTracker tracker = updateHandler.softCommitTracker;
     tracker.setTimeUpperBound(-1);
     tracker.setDocsUpperBound(14);
     core.registerNewSearcherListener(trigger);
@@ -191,7 +191,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     NewSearcherListener trigger = new NewSearcherListener();    
     core.registerNewSearcherListener(trigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
-    CommitTracker tracker = updater.commitTracker;
+    CommitTracker tracker = updater.softCommitTracker;
     // too low of a number can cause a slow host to commit before the test code checks that it
     // isn't there... causing a failure at "shouldn't find any"
     tracker.setTimeUpperBound(1000);
@@ -264,7 +264,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     NewSearcherListener trigger = new NewSearcherListener();    
     core.registerNewSearcherListener(trigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
-    CommitTracker tracker = updater.commitTracker;
+    CommitTracker tracker = updater.softCommitTracker;
     tracker.setTimeUpperBound(0);
     tracker.setDocsUpperBound(-1);
     
