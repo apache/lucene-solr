@@ -149,8 +149,8 @@ public final class UserDictionary implements Dictionary {
         }
         output += arc.output.intValue();
         if (arc.isFinal()) {
-          output += arc.nextFinalOutput.intValue();
-          result.put(startOffset-off, segmentations[output]);
+          final int finalOutput = output + arc.nextFinalOutput.intValue();
+          result.put(startOffset-off, segmentations[finalOutput]);
           found = true;
         }
       }
