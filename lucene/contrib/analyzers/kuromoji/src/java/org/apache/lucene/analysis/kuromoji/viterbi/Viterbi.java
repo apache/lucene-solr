@@ -248,9 +248,9 @@ public class Viterbi {
         output += arc.output.intValue();
 
         if (arc.isFinal()) {
-          output += arc.nextFinalOutput.intValue();
+          final int finalOutput = output + arc.nextFinalOutput.intValue();
           found = true; // Don't produce unknown word starting from this index
-          dictionary.lookupWordIds(output, wordIdRef);
+          dictionary.lookupWordIds(finalOutput, wordIdRef);
           for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
             final int wordId = wordIdRef.ints[wordIdRef.offset + ofs];
             ViterbiNode node = new ViterbiNode(wordId, text, suffixStart, endIndex, dictionary.getLeftId(wordId), dictionary.getRightId(wordId), dictionary.getWordCost(wordId), startIndex, Type.KNOWN);
