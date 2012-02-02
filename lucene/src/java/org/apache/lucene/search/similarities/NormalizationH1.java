@@ -19,9 +19,25 @@ package org.apache.lucene.search.similarities;
 
 /**
  * Normalization model that assumes a uniform distribution of the term frequency.
+ * <p>While this model is parameterless in the
+ * <a href="http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.742">
+ * original article</a>, <a href="http://dl.acm.org/citation.cfm?id=1835490">
+ * information-based models</a> (see {@link IBSimilarity}) introduced a
+ * multiplying factor.
+ * The default value for the {@code c} parameter is {@code 1}.</p>
  * @lucene.experimental
  */
 public class NormalizationH1 extends Normalization {
+  private final float c;
+  
+  public NormalizationH1(float c) {
+    this.c = c;
+  }
+  
+  public NormalizationH1() {
+    this(1);
+  }
+  
   @Override
   public final float tfn(BasicStats stats, float tf, float len) {
     return tf * stats.getAvgFieldLength() / len;
@@ -30,5 +46,9 @@ public class NormalizationH1 extends Normalization {
   @Override
   public String toString() {
     return "1";
+  }
+  
+  public float getC() {
+    return c;
   }
 }

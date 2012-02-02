@@ -70,8 +70,18 @@ import org.apache.solr.schema.SimilarityFactory;
  *        <ul>
  *           <li>{@link NormalizationH1 H1}: Uniform distribution of term
  *               frequency
+ *               <ul>
+ *                  <li>parameter c (float): hyper-parameter that controls
+ *                      the term frequency normalization with respect to the
+ *                      document length. The default is <code>1</code>
+ *               </ul>
  *           <li>{@link NormalizationH2 H2}: term frequency density inversely
  *               related to length
+ *               <ul>
+ *                  <li>parameter c (float): hyper-parameter that controls
+ *                      the term frequency normalization with respect to the
+ *                      document length. The default is <code>1</code>
+ *                </ul>
  *           <li>{@link NormalizationH3 H3}: term frequency normalization
  *               provided by Dirichlet prior
  *               <ul>
@@ -110,7 +120,7 @@ public class DFRSimilarityFactory extends SimilarityFactory {
     basicModel = parseBasicModel(params.get("basicModel"));
     afterEffect = parseAfterEffect(params.get("afterEffect"));
     normalization = parseNormalization(
-        params.get("normalization"), params.get("mu"), params.get("z"));
+        params.get("normalization"), params.get("c"), params.get("mu"), params.get("z"));
   }
   
   private BasicModel parseBasicModel(String expr) {
@@ -146,11 +156,7 @@ public class DFRSimilarityFactory extends SimilarityFactory {
   }
   
   // also used by IBSimilarityFactory
-  static Normalization parseNormalization(String expr, String mu, String z) {
-    if (mu != null && z != null) {
-      throw new RuntimeException(
-          "specifying mu and z make no sense for: " + expr);
-    }
+  static Normalization parseNormalization(String expr, String c, String mu, String z) {
     if (mu != null && !"H3".equals(expr)) {
       throw new RuntimeException(
           "parameter mu only makes sense for normalization H3");
@@ -159,11 +165,16 @@ public class DFRSimilarityFactory extends SimilarityFactory {
       throw new RuntimeException(
           "parameter z only makes sense for normalization Z");
     }
-    
+    if (c != null && !("H1".equals(expr) || "H2".equals(expr))) {
+      throw new RuntimeException(
+          "parameter c only makese sense for normalizations H1 and H2");
+    }
     if ("H1".equals(expr)) {
-      return new NormalizationH1();
+      return (c != null) ? new NormalizationH1(Float.parseFloat(c))
+                         : new NormalizationH1();
     } else if ("H2".equals(expr)) {
-      return new NormalizationH2();
+      return (c != null) ? new NormalizationH2(Float.parseFloat(c))
+                         : new NormalizationH2();
     } else if ("H3".equals(expr)) {
       return (mu != null) ? new NormalizationH3(Float.parseFloat(mu))
                           : new NormalizationH3();

@@ -79,7 +79,7 @@ public class IBSimilarityFactory extends SimilarityFactory {
     distribution = parseDistribution(params.get("distribution"));
     lambda = parseLambda(params.get("lambda"));
     normalization = DFRSimilarityFactory.parseNormalization(
-        params.get("normalization"), params.get("mu"), params.get("z"));
+        params.get("normalization"), params.get("c"), params.get("mu"), params.get("z"));
   }
   
   private Distribution parseDistribution(String expr) {

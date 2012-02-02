@@ -42,6 +42,17 @@
         <float name="mu">900</float>
       </similarity>
     </fieldType>
+    
+    <!-- with parameter C -->
+    <fieldType name="text_paramc" class="solr.TextField">
+      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+      <similarity class="solr.DFRSimilarityFactory">
+        <str name="basicModel">P</str>
+        <str name="afterEffect">L</str>
+        <str name="normalization">H2</str>
+        <float name="c">7</float>
+      </similarity>
+    </fieldType>
    
   </types>
 
@@ -49,6 +60,7 @@
     <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="text" type="text" indexed="true" stored="false"/>
     <field name="text_params" type="text_params" indexed="true" stored="false"/>
+    <field name="text_paramc" type="text_paramc" indexed="true" stored="false"/>
   </fields>
 
   <defaultSearchField>text</defaultSearchField>
