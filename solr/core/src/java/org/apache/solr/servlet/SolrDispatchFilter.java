@@ -346,6 +346,12 @@ public class SolrDispatchFilter implements Filter
       code = ((SolrException)ex).code();
     }
 
+    String msg = null;
+    for (Throwable th = ex; th != null; th = th.getCause()) {
+      msg = th.getMessage();
+      if (msg != null) break;
+    }
+
     // For any regular code, don't include the stack trace
     if( code == 500 || code < 100 ) {
       StringWriter sw = new StringWriter();
@@ -360,7 +366,8 @@ public class SolrDispatchFilter implements Filter
         code = 500;
       }
     }
-    res.sendError( code, ex.getMessage() + trace );
+
+    res.sendError( code, msg + trace );
   }
 
   //---------------------------------------------------------------------
