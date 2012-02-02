@@ -29,19 +29,12 @@ import org.apache.lucene.index.MultiReader; // javadoc
 
 /**
  * This class forces a composite reader (eg a {@link
- * MultiReader} or {@link DirectoryReader} or any other
- * IndexReader subclass that returns non-null from {@link
- * CompositeReader#getSequentialSubReaders}) to emulate an
+ * MultiReader} or {@link DirectoryReader}) to emulate an
  * atomic reader.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
  * MultiFields}, {@link MultiDocValues}, 
  * by stepping through the sub-readers to merge fields/terms, 
  * appending docs, etc.
- *
- * <p>If you ever hit an UnsupportedOperationException saying
- * "please use MultiXXX.YYY instead", the simple
- * but non-performant workaround is to wrap your reader
- * using this class.</p>
  *
  * <p><b>NOTE</b>: this class almost always results in a
  * performance hit.  If this is important to your use case,
