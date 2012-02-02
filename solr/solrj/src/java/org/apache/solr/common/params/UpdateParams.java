@@ -61,4 +61,7 @@ public interface UpdateParams
   public static final String MAX_OPTIMIZE_SEGMENTS = "maxSegments";
 
   public static final String EXPUNGE_DELETES = "expungeDeletes";
+
+  /** Return versions of updates? */
+  public static final String VERSIONS = "versions";
 }

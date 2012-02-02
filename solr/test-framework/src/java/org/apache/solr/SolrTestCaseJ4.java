@@ -834,6 +834,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
 
   public static Long addAndGetVersion(SolrInputDocument sdoc, SolrParams params) throws Exception {
+    if (params==null || params.get("versions") == null) {
+      ModifiableSolrParams mparams = new ModifiableSolrParams(params);
+      mparams.set("versions","true");
+      params = mparams;
+    }
     String response = updateJ(jsonAdd(sdoc), params);
     Map rsp = (Map)ObjectBuilder.fromJSON(response);
     List lst = (List)rsp.get("adds");
@@ -842,6 +847,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static Long deleteAndGetVersion(String id, SolrParams params) throws Exception {
+    if (params==null || params.get("versions") == null) {
+      ModifiableSolrParams mparams = new ModifiableSolrParams(params);
+      mparams.set("versions","true");
+      params = mparams;
+    }
     String response = updateJ(jsonDelId(id), params);
     Map rsp = (Map)ObjectBuilder.fromJSON(response);
     List lst = (List)rsp.get("deletes");
@@ -850,6 +860,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static Long deleteByQueryAndGetVersion(String q, SolrParams params) throws Exception {
+    if (params==null || params.get("versions") == null) {
+      ModifiableSolrParams mparams = new ModifiableSolrParams(params);
+      mparams.set("versions","true");
+      params = mparams;
+    }
     String response = updateJ(jsonDelQ(q), params);
     Map rsp = (Map)ObjectBuilder.fromJSON(response);
     List lst = (List)rsp.get("deleteByQuery");

@@ -107,7 +107,7 @@ public class FunctionQuery extends Query {
     final float qWeight;
     int doc=-1;
     final FunctionValues vals;
-    final Bits liveDocs;
+    final Bits acceptDocs;
 
     public AllScorer(AtomicReaderContext context, Bits acceptDocs, FunctionWeight w, float qWeight) throws IOException {
       super(w);
@@ -115,7 +115,7 @@ public class FunctionQuery extends Query {
       this.qWeight = qWeight;
       this.reader = context.reader();
       this.maxDoc = reader.maxDoc();
-      this.liveDocs = acceptDocs;
+      this.acceptDocs = acceptDocs;
       vals = func.getValues(weight.context, context);
     }
 
@@ -135,7 +135,7 @@ public class FunctionQuery extends Query {
         if (doc>=maxDoc) {
           return doc=NO_MORE_DOCS;
         }
-        if (liveDocs != null && !liveDocs.get(doc)) continue;
+        if (acceptDocs != null && !acceptDocs.get(doc)) continue;
         return doc;
       }
     }

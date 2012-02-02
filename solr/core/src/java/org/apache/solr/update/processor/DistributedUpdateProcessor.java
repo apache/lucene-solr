@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
@@ -112,7 +113,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     this.ulog = updateHandler.getUpdateLog();
     this.vinfo = ulog == null ? null : ulog.getVersionInfo();
     versionsStored = this.vinfo != null && this.vinfo.getVersionField() != null;
-    returnVersions = versionsStored;
+    returnVersions = req.getParams().getBool(UpdateParams.VERSIONS ,false);
 
     // TODO: better way to get the response, or pass back info to it?
     SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
