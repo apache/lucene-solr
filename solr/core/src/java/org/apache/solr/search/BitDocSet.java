@@ -17,6 +17,7 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
@@ -249,7 +250,9 @@ public class BitDocSet extends DocSetBase {
     return new Filter() {
       @Override
       public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-        IndexReader reader = context.reader();
+        AtomicReader reader = context.reader();
+        // all Solr DocSets that are used as filters only include live docs
+        final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
 
         if (context.isTopLevel) {
           return BitsFilteredDocIdSet.wrap(bs, acceptDocs);
@@ -306,7 +309,7 @@ public class BitDocSet extends DocSetBase {
             };
           }
 
-        }, acceptDocs);
+        }, acceptDocs2);
       }
     };
   }
