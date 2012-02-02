@@ -448,6 +448,64 @@ public class TestRecovery extends SolrTestCaseJ4 {
     );
 
   }
+
+  // make sure that log isn't needlessly replayed after a clean shutdown
+  @Test
+  public void testCleanShutdown() throws Exception {
+    DirectUpdateHandler2.commitOnClose = true;
+    final Semaphore logReplay = new Semaphore(0);
+    final Semaphore logReplayFinish = new Semaphore(0);
+
+    UpdateLog.testing_logReplayHook = new Runnable() {
+      @Override
+      public void run() {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+
+    UpdateLog.testing_logReplayFinishHook = new Runnable() {
+      @Override
+      public void run() {
+        logReplayFinish.release();
+      }
+    };
+
+
+    SolrQueryRequest req = req();
+    UpdateHandler uhandler = req.getCore().getUpdateHandler();
+    UpdateLog ulog = uhandler.getUpdateLog();
+
+    try {
+      clearIndex();
+      assertU(commit());
+
+      assertU(adoc("id","1", "val_i","1"));
+      assertU(adoc("id","2", "val_i","1"));
+
+      // set to a high enough number so this test won't hang on a bug
+      logReplay.release(10);
+
+      h.close();
+      createCore();
+
+      // make sure the docs got committed
+      assertJQ(req("q","*:*"),"/response/numFound==2");
+
+      // make sure no replay happened
+      assertEquals(10, logReplay.availablePermits());
+
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+
+      req().close();
+    }
+  }
   
   
   private void addDocs(int nDocs, int start, LinkedList<Long> versions) throws Exception {

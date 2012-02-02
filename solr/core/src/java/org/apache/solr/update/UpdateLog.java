@@ -20,7 +20,9 @@ package org.apache.solr.update;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -580,7 +582,7 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
-  public void close() {
+  public void close(boolean committed) {
     synchronized (this) {
       try {
         recoveryExecutor.shutdownNow();
@@ -596,6 +598,12 @@ public class UpdateLog implements PluginInfoInitialized {
         prevTlog.forceClose();
       }
       if (tlog != null) {
+        if (committed) {
+          // record a commit
+          CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams((SolrParams)null)), false);
+          tlog.writeCommit(cmd);
+        }
+
         tlog.deleteOnClose = false;
         tlog.decref();
         tlog.forceClose();

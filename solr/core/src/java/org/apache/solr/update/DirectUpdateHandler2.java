@@ -533,7 +533,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
         // we shouldn't close the transaction logs either, but leaving them open
         // means we can't delete them on windows.
-        if (ulog != null) ulog.close();
+        if (ulog != null) ulog.close(false);
 
         return;
       }
@@ -543,11 +543,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
 
       // if the writer hits an exception, it's OK (and perhaps desirable)
-      // to not close the ulog?
+      // to not close the ulog.
 
-      // Closing the log currently deletes the log file.
-      // If this changes, we should record this as a "commit".
-      if (ulog != null) ulog.close();
+      if (ulog != null) ulog.close(true);
     } finally {
       commitLock.unlock();
     }
