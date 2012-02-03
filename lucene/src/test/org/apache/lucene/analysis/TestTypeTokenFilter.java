@@ -23,9 +23,9 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.English;
 
+import java.util.Collections;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Collections;
 import java.util.Set;
 
 
@@ -80,6 +80,13 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
     stpf.end();
     stpf.close();
   }
+
+  public void testTypeFilterWhitelist() throws IOException {
+    StringReader reader = new StringReader("121 is palindrome, while 123 is not");
+    Set<String> stopTypes = Collections.singleton("<NUM>");
+    TokenStream stream = new TypeTokenFilter(true, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopTypes, true);
+    assertTokenStreamContents(stream, new String[]{"121", "123"});
+	}
 
   // print debug info depending on VERBOSE
   private static void log(String s) {
