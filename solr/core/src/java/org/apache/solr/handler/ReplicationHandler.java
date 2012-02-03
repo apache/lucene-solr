@@ -133,7 +133,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
  
-      //System.out.println("The latest index gen is:" + commitPoint.getGeneration() + " " + core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName());
+      if (commitPoint == null) {
+        // if this handler is 'lazy', we may not have tracked the last commit
+        // because our commit listener is registered on inform
+        commitPoint = core.getDeletionPolicy().getLatestCommit();
+      }
+      
       if (commitPoint != null && replicationEnabled.get()) {
         //
         // There is a race condition here.  The commit point may be changed / deleted by the time
