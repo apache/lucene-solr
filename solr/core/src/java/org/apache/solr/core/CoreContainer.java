@@ -147,13 +147,15 @@ public class CoreContainer
     // TODO: remove after updating to an slf4j based zookeeper
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
-    zkServer = new SolrZkServer(zkRun, zookeeperHost, solrHome, hostPort);
-    zkServer.parseConfig();
-    zkServer.start();
-
-    // set client from server config if not already set
-    if (zookeeperHost == null) {
-      zookeeperHost = zkServer.getClientString();
+    if (zkRun != null) {
+      zkServer = new SolrZkServer(zkRun, zookeeperHost, solrHome, hostPort);
+      zkServer.parseConfig();
+      zkServer.start();
+      
+      // set client from server config if not already set
+      if (zookeeperHost == null) {
+        zookeeperHost = zkServer.getClientString();
+      }
     }
 
     int zkClientConnectTimeout = 15000;
