@@ -148,9 +148,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      if (endNumOpens-numOpens != endNumCloses-numCloses) {
        String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);
        log.error(msg);
-       // TODO: re-enable this when we've nailed down why this happens on jenkins so often (and not other systems) - see SOLR-3066
-       // testsFailed = true;
-       // fail(msg);
+        testsFailed = true;
+        fail(msg);
      }
   }
   
