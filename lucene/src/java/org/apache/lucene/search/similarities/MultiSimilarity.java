@@ -46,43 +46,43 @@ public class MultiSimilarity extends Similarity {
   }
 
   @Override
-  public Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
-    Stats subStats[] = new Stats[sims.length];
+  public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    SimWeight subStats[] = new SimWeight[sims.length];
     for (int i = 0; i < subStats.length; i++) {
-      subStats[i] = sims[i].computeStats(collectionStats, queryBoost, termStats);
+      subStats[i] = sims[i].computeWeight(queryBoost, collectionStats, termStats);
     }
     return new MultiStats(subStats);
   }
 
   @Override
-  public ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    ExactDocScorer subScorers[] = new ExactDocScorer[sims.length];
+  public ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+    ExactSimScorer subScorers[] = new ExactSimScorer[sims.length];
     for (int i = 0; i < subScorers.length; i++) {
-      subScorers[i] = sims[i].exactDocScorer(((MultiStats)stats).subStats[i], fieldName, context);
+      subScorers[i] = sims[i].exactSimScorer(((MultiStats)stats).subStats[i], context);
     }
     return new MultiExactDocScorer(subScorers);
   }
 
   @Override
-  public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    SloppyDocScorer subScorers[] = new SloppyDocScorer[sims.length];
+  public SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+    SloppySimScorer subScorers[] = new SloppySimScorer[sims.length];
     for (int i = 0; i < subScorers.length; i++) {
-      subScorers[i] = sims[i].sloppyDocScorer(((MultiStats)stats).subStats[i], fieldName, context);
+      subScorers[i] = sims[i].sloppySimScorer(((MultiStats)stats).subStats[i], context);
     }
     return new MultiSloppyDocScorer(subScorers);
   }
   
-  public static class MultiExactDocScorer extends ExactDocScorer {
-    private final ExactDocScorer subScorers[];
+  public static class MultiExactDocScorer extends ExactSimScorer {
+    private final ExactSimScorer subScorers[];
     
-    MultiExactDocScorer(ExactDocScorer subScorers[]) {
+    MultiExactDocScorer(ExactSimScorer subScorers[]) {
       this.subScorers = subScorers;
     }
     
     @Override
     public float score(int doc, int freq) {
       float sum = 0.0f;
-      for (ExactDocScorer subScorer : subScorers) {
+      for (ExactSimScorer subScorer : subScorers) {
         sum += subScorer.score(doc, freq);
       }
       return sum;
@@ -91,24 +91,24 @@ public class MultiSimilarity extends Similarity {
     @Override
     public Explanation explain(int doc, Explanation freq) {
       Explanation expl = new Explanation(score(doc, (int)freq.getValue()), "sum of:");
-      for (ExactDocScorer subScorer : subScorers) {
+      for (ExactSimScorer subScorer : subScorers) {
         expl.addDetail(subScorer.explain(doc, freq));
       }
       return expl;
     }
   }
   
-  public static class MultiSloppyDocScorer extends SloppyDocScorer {
-    private final SloppyDocScorer subScorers[];
+  public static class MultiSloppyDocScorer extends SloppySimScorer {
+    private final SloppySimScorer subScorers[];
     
-    MultiSloppyDocScorer(SloppyDocScorer subScorers[]) {
+    MultiSloppyDocScorer(SloppySimScorer subScorers[]) {
       this.subScorers = subScorers;
     }
     
     @Override
     public float score(int doc, float freq) {
       float sum = 0.0f;
-      for (SloppyDocScorer subScorer : subScorers) {
+      for (SloppySimScorer subScorer : subScorers) {
         sum += subScorer.score(doc, freq);
       }
       return sum;
@@ -117,7 +117,7 @@ public class MultiSimilarity extends Similarity {
     @Override
     public Explanation explain(int doc, Explanation freq) {
       Explanation expl = new Explanation(score(doc, freq.getValue()), "sum of:");
-      for (SloppyDocScorer subScorer : subScorers) {
+      for (SloppySimScorer subScorer : subScorers) {
         expl.addDetail(subScorer.explain(doc, freq));
       }
       return expl;
@@ -134,17 +134,17 @@ public class MultiSimilarity extends Similarity {
     }
   }
 
-  public static class MultiStats extends Stats {
-    final Stats subStats[];
+  public static class MultiStats extends SimWeight {
+    final SimWeight subStats[];
     
-    MultiStats(Stats subStats[]) {
+    MultiStats(SimWeight subStats[]) {
       this.subStats = subStats;
     }
     
     @Override
     public float getValueForNormalization() {
       float sum = 0.0f;
-      for (Stats stat : subStats) {
+      for (SimWeight stat : subStats) {
         sum += stat.getValueForNormalization();
       }
       return sum / subStats.length;
@@ -152,7 +152,7 @@ public class MultiSimilarity extends Similarity {
 
     @Override
     public void normalize(float queryNorm, float topLevelBoost) {
-      for (Stats stat : subStats) {
+      for (SimWeight stat : subStats) {
         stat.normalize(queryNorm, topLevelBoost);
       }
     }

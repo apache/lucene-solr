@@ -191,7 +191,7 @@ final class JustCompileSearch {
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
     JustCompilePhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-        Similarity.SloppyDocScorer docScorer) throws IOException {
+        Similarity.SloppySimScorer docScorer) throws IOException {
       super(weight, postings, docScorer);
     }
 
@@ -247,17 +247,17 @@ final class JustCompileSearch {
   static final class JustCompileSimilarity extends Similarity {
 
     @Override
-    public Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
+    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+    public ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+    public SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

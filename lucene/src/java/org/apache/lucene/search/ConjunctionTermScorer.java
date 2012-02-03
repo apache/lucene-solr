@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
+import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
 import org.apache.lucene.util.ArrayUtil;
 
 /** Scorer for conjunctions, sets of terms, all of which are required. */
@@ -100,10 +100,10 @@ class ConjunctionTermScorer extends Scorer {
     final DocsEnum docsAndFreqs;
     final DocsEnum docs;
     final int docFreq;
-    final ExactDocScorer docScorer;
+    final ExactSimScorer docScorer;
     int doc = -1;
 
-    DocsAndFreqs(DocsEnum docsAndFreqs, DocsEnum docs, int docFreq, ExactDocScorer docScorer) {
+    DocsAndFreqs(DocsEnum docsAndFreqs, DocsEnum docs, int docFreq, ExactSimScorer docScorer) {
       this.docsAndFreqs = docsAndFreqs;
       this.docs = docs;
       this.docFreq = docFreq;

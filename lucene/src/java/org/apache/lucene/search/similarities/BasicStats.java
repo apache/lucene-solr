@@ -23,7 +23,8 @@ import org.apache.lucene.index.Terms;
  * Stores all statistics commonly used ranking methods.
  * @lucene.experimental
  */
-public class BasicStats extends Similarity.Stats {
+public class BasicStats extends Similarity.SimWeight {
+  final String field;
   /** The number of documents. */
   protected long numberOfDocuments;
   /** The total number of tokens in the field. */
@@ -47,7 +48,8 @@ public class BasicStats extends Similarity.Stats {
   protected float totalBoost;
   
   /** Constructor. Sets the query boost. */
-  public BasicStats(float queryBoost) {
+  public BasicStats(String field, float queryBoost) {
+    this.field = field;
     this.queryBoost = queryBoost;
     this.totalBoost = queryBoost;
   }

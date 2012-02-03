@@ -30,7 +30,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SloppyDocScorer;
+import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -137,7 +137,7 @@ public class MultiPhraseQuery extends Query {
 
   private class MultiPhraseWeight extends Weight {
     private final Similarity similarity;
-    private final Similarity.Stats stats;
+    private final Similarity.SimWeight stats;
     private final Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
 
     public MultiPhraseWeight(IndexSearcher searcher)
@@ -157,8 +157,9 @@ public class MultiPhraseQuery extends Query {
           allTermStats.add(searcher.termStatistics(term, termContext));
         }
       }
-      stats = similarity.computeStats(searcher.collectionStatistics(field), 
-          getBoost(), allTermStats.toArray(new TermStatistics[allTermStats.size()]));
+      stats = similarity.computeWeight(getBoost(),
+          searcher.collectionStatistics(field), 
+          allTermStats.toArray(new TermStatistics[allTermStats.size()]));
     }
 
     @Override
@@ -246,14 +247,14 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactDocScorer(stats, field, context));
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context));
         if (s.noDocs) {
           return null;
         } else {
           return s;
         }
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppyDocScorer(stats, field, context));
+        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context));
       }
     }
 
@@ -264,7 +265,7 @@ public class MultiPhraseQuery extends Query {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
-          SloppyDocScorer docScorer = similarity.sloppyDocScorer(stats, field, context);
+          SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
           Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));

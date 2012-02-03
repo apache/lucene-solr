@@ -33,9 +33,9 @@ public class SpanScorer extends Scorer {
 
   protected int doc;
   protected float freq;
-  protected final Similarity.SloppyDocScorer docScorer;
+  protected final Similarity.SloppySimScorer docScorer;
   
-  protected SpanScorer(Spans spans, Weight weight, Similarity.SloppyDocScorer docScorer)
+  protected SpanScorer(Spans spans, Weight weight, Similarity.SloppySimScorer docScorer)
   throws IOException {
     super(weight);
     this.docScorer = docScorer;

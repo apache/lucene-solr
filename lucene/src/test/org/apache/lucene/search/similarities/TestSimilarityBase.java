@@ -23,11 +23,9 @@ import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
@@ -40,8 +38,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TermContext;
-import org.junit.Ignore;
 
 /**
  * Tests the {@link SimilarityBase}-based Similarities. Contains unit tests and 
@@ -167,7 +163,7 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   /** Creates the default statistics object that the specific tests modify. */
   private BasicStats createStats() {
-    BasicStats stats = new BasicStats(1);
+    BasicStats stats = new BasicStats("spoof", 1);
     stats.setNumberOfDocuments(NUMBER_OF_DOCUMENTS);
     stats.setNumberOfFieldTokens(NUMBER_OF_FIELD_TOKENS);
     stats.setAvgFieldLength(AVG_FIELD_LENGTH);
@@ -177,7 +173,7 @@ public class TestSimilarityBase extends LuceneTestCase {
   }
   
   private CollectionStatistics toCollectionStats(BasicStats stats) {
-    return new CollectionStatistics("spoof", stats.getNumberOfDocuments(), -1, stats.getNumberOfFieldTokens(), -1);
+    return new CollectionStatistics(stats.field, stats.getNumberOfDocuments(), -1, stats.getNumberOfFieldTokens(), -1);
   }
   
   private TermStatistics toTermStats(BasicStats stats) {
@@ -192,8 +188,8 @@ public class TestSimilarityBase extends LuceneTestCase {
   private void unitTestCore(BasicStats stats, float freq, int docLen)
       throws IOException { 
     for (SimilarityBase sim : sims) {
-      BasicStats realStats = (BasicStats) sim.computeStats(toCollectionStats(stats), 
-          stats.getTotalBoost(),
+      BasicStats realStats = (BasicStats) sim.computeWeight(stats.getTotalBoost(),
+          toCollectionStats(stats), 
           toTermStats(stats));
       float score = sim.score(realStats, freq, docLen);
       float explScore = sim.explain(
@@ -525,8 +521,8 @@ public class TestSimilarityBase extends LuceneTestCase {
   private void correctnessTestCore(SimilarityBase sim, float gold)
       throws IOException {
     BasicStats stats = createStats();
-    BasicStats realStats = (BasicStats) sim.computeStats(toCollectionStats(stats), 
-        stats.getTotalBoost(),
+    BasicStats realStats = (BasicStats) sim.computeWeight(stats.getTotalBoost(),
+        toCollectionStats(stats), 
         toTermStats(stats));
     float score = sim.score(realStats, FREQ, DOC_LEN);
     assertEquals(

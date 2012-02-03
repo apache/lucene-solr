@@ -153,7 +153,7 @@ public class BM25Similarity extends Similarity {
   }
 
   @Override
-  public final Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
+  public final SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     Explanation idf = termStats.length == 1 ? idfExplain(collectionStats, termStats[0]) : idfExplain(collectionStats, termStats);
 
     float avgdl = avgFieldLength(collectionStats);
@@ -163,23 +163,25 @@ public class BM25Similarity extends Similarity {
     for (int i = 0; i < cache.length; i++) {
       cache[i] = k1 * ((1 - b) + b * decodeNormValue((byte)i) / avgdl);
     }
-    return new BM25Stats(idf, queryBoost, avgdl, cache);
+    return new BM25Stats(collectionStats.field(), idf, queryBoost, avgdl, cache);
   }
 
   @Override
-  public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    final DocValues norms = context.reader().normValues(fieldName);
+  public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+    BM25Stats bm25stats = (BM25Stats) stats;
+    final DocValues norms = context.reader().normValues(bm25stats.field);
     return norms == null 
-      ? new ExactBM25DocScorerNoNorms((BM25Stats)stats)
-      : new ExactBM25DocScorer((BM25Stats)stats, norms);
+      ? new ExactBM25DocScorerNoNorms(bm25stats)
+      : new ExactBM25DocScorer(bm25stats, norms);
   }
 
   @Override
-  public final SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new SloppyBM25DocScorer((BM25Stats) stats, context.reader().normValues(fieldName));
+  public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+    BM25Stats bm25stats = (BM25Stats) stats;
+    return new SloppyBM25DocScorer(bm25stats, context.reader().normValues(bm25stats.field));
   }
   
-  private class ExactBM25DocScorer extends ExactDocScorer {
+  private class ExactBM25DocScorer extends ExactSimScorer {
     private final BM25Stats stats;
     private final float weightValue;
     private final byte[] norms;
@@ -205,7 +207,7 @@ public class BM25Similarity extends Similarity {
   }
   
   /** there are no norms, we act as if b=0 */
-  private class ExactBM25DocScorerNoNorms extends ExactDocScorer {
+  private class ExactBM25DocScorerNoNorms extends ExactSimScorer {
     private final BM25Stats stats;
     private final float weightValue;
     private static final int SCORE_CACHE_SIZE = 32;
@@ -232,7 +234,7 @@ public class BM25Similarity extends Similarity {
     }
   }
   
-  private class SloppyBM25DocScorer extends SloppyDocScorer {
+  private class SloppyBM25DocScorer extends SloppySimScorer {
     private final BM25Stats stats;
     private final float weightValue; // boost * idf * (k1 + 1)
     private final byte[] norms;
@@ -269,7 +271,7 @@ public class BM25Similarity extends Similarity {
   }
   
   /** Collection statistics for the BM25 model. */
-  private static class BM25Stats extends Stats {
+  private static class BM25Stats extends SimWeight {
     /** BM25's idf */
     private final Explanation idf;
     /** The average document length. */
@@ -280,10 +282,13 @@ public class BM25Similarity extends Similarity {
     private float topLevelBoost;
     /** weight (idf * boost) */
     private float weight;
+    /** field name, for pulling norms */
+    private final String field;
     /** precomputed norm[256] with k1 * ((1 - b) + b * dl / avgdl) */
     private final float cache[];
 
-    BM25Stats(Explanation idf, float queryBoost, float avgdl, float cache[]) {
+    BM25Stats(String field, Explanation idf, float queryBoost, float avgdl, float cache[]) {
+      this.field = field;
       this.idf = idf;
       this.queryBoost = queryBoost;
       this.avgdl = avgdl;

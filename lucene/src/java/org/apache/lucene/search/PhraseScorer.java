@@ -36,10 +36,10 @@ abstract class PhraseScorer extends Scorer {
 
   private float freq; //phrase frequency in current doc as computed by phraseFreq().
 
-  final Similarity.SloppyDocScorer docScorer;
+  final Similarity.SloppySimScorer docScorer;
 
   PhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      Similarity.SloppyDocScorer docScorer) {
+      Similarity.SloppySimScorer docScorer) {
     super(weight);
     this.docScorer = docScorer;
 

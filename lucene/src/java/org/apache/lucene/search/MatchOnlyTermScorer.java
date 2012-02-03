@@ -29,7 +29,7 @@ import org.apache.lucene.search.similarities.Similarity;
 
 final class MatchOnlyTermScorer extends Scorer {
   private final DocsEnum docsEnum;
-  private final Similarity.ExactDocScorer docScorer;
+  private final Similarity.ExactSimScorer docScorer;
   
   /**
    * Construct a <code>TermScorer</code>.
@@ -39,10 +39,10 @@ final class MatchOnlyTermScorer extends Scorer {
    * @param td
    *          An iterator over the documents matching the <code>Term</code>.
    * @param docScorer
-   *          The </code>Similarity.ExactDocScorer</code> implementation 
+   *          The </code>Similarity.ExactSimScorer</code> implementation 
    *          to be used for score computations.
    */
-  MatchOnlyTermScorer(Weight weight, DocsEnum td, Similarity.ExactDocScorer docScorer) throws IOException {
+  MatchOnlyTermScorer(Weight weight, DocsEnum td, Similarity.ExactSimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.docsEnum = td;

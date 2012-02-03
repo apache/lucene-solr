@@ -30,7 +30,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SloppyDocScorer;
+import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -183,7 +183,7 @@ public class PhraseQuery extends Query {
 
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
-    private final Similarity.Stats stats;
+    private final Similarity.SimWeight stats;
     private transient TermContext states[];
 
     public PhraseWeight(IndexSearcher searcher)
@@ -197,7 +197,7 @@ public class PhraseQuery extends Query {
         states[i] = TermContext.build(context, term, true);
         termStats[i] = searcher.termStatistics(term, states[i]);
       }
-      stats = similarity.computeStats(searcher.collectionStatistics(field), getBoost(), termStats);
+      stats = similarity.computeWeight(getBoost(), searcher.collectionStatistics(field), termStats);
     }
 
     @Override
@@ -258,7 +258,7 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0) {				  // optimize exact case
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactDocScorer(stats, field, context));
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context));
         if (s.noDocs) {
           return null;
         } else {
@@ -266,7 +266,7 @@ public class PhraseQuery extends Query {
         }
       } else {
         return
-          new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppyDocScorer(stats, field, context));
+          new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppySimScorer(stats, context));
       }
     }
     
@@ -282,7 +282,7 @@ public class PhraseQuery extends Query {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
-          SloppyDocScorer docScorer = similarity.sloppyDocScorer(stats, field, context);
+          SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
           Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));

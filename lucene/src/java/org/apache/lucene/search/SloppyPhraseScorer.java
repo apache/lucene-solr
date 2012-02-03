@@ -30,7 +30,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
   private PhrasePositions[] nrPps; // non repeating pps ordered by their query offset
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SloppyDocScorer docScorer) {
+      int slop, Similarity.SloppySimScorer docScorer) {
     super(weight, postings, docScorer);
     this.slop = slop;
   }

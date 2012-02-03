@@ -158,16 +158,16 @@ public class TestDocValuesScoring extends LuceneTestCase {
     }
 
     @Override
-    public Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
-      return sim.computeStats(collectionStats, queryBoost, termStats);
+    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return sim.computeWeight(queryBoost, collectionStats, termStats);
     }
 
     @Override
-    public ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-      final ExactDocScorer sub = sim.exactDocScorer(stats, fieldName, context);
+    public ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+      final ExactSimScorer sub = sim.exactSimScorer(stats, context);
       final Source values = context.reader().docValues(boostField).getSource();
 
-      return new ExactDocScorer() {
+      return new ExactSimScorer() {
         @Override
         public float score(int doc, int freq) {
           return (float) values.getFloat(doc) * sub.score(doc, freq);
@@ -186,11 +186,11 @@ public class TestDocValuesScoring extends LuceneTestCase {
     }
 
     @Override
-    public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-      final SloppyDocScorer sub = sim.sloppyDocScorer(stats, fieldName, context);
+    public SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+      final SloppySimScorer sub = sim.sloppySimScorer(stats, context);
       final Source values = context.reader().docValues(boostField).getSource();
       
-      return new SloppyDocScorer() {
+      return new SloppySimScorer() {
         @Override
         public float score(int doc, float freq) {
           return (float) values.getFloat(doc) * sub.score(doc, freq);

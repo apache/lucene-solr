@@ -17,16 +17,13 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-
 import java.io.IOException;
 
 import org.apache.lucene.document.DocValuesField; // javadoc
 import org.apache.lucene.index.AtomicReader; // javadoc
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexReader; // javadoc
 import org.apache.lucene.index.Norm;
-import org.apache.lucene.index.Terms; // javadoc
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -38,7 +35,6 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.spans.SpanQuery; // javadoc
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat; // javadoc
-
 
 /** 
  * Similarity defines the components of Lucene scoring.
@@ -59,21 +55,21 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState, Norm)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
  * be later accessible via {@link AtomicReader#normValues(String)}.  Lucene makes no assumption
- * about what is in this byte, but it is most useful for encoding length normalization 
+ * about what is in this norm, but it is most useful for encoding length normalization 
  * information.
  * <p>
- * Implementations should carefully consider how the normalization byte is encoded: while
+ * Implementations should carefully consider how the normalization is encoded: while
  * Lucene's classical {@link TFIDFSimilarity} encodes a combination of index-time boost
- * and length normalization information with {@link SmallFloat}, this might not be suitable
- * for all purposes.
+ * and length normalization information with {@link SmallFloat} into a single byte, this 
+ * might not be suitable for all purposes.
  * <p>
  * Many formulas require the use of average document length, which can be computed via a 
- * combination of {@link Terms#getSumTotalTermFreq()} and {@link IndexReader#maxDoc()},
+ * combination of {@link CollectionStatistics#sumTotalTermFreq()} and 
+ * {@link CollectionStatistics#maxDoc()} or {@link CollectionStatistics#docCount()}, 
+ * depending upon whether the average should reflect field sparsity.
  * <p>
- * Because index-time boost is handled entirely at the application level anyway,
- * an application can alternatively store the index-time boost separately using an 
- * {@link DocValuesField}, and access this at query-time with 
- * {@link AtomicReader#docValues(String)}.
+ * Additional scoring factors can be stored in named {@link DocValuesField}s, and accessed
+ * at query-time with {@link AtomicReader#docValues(String)}.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or
  * via DocValues), is an inefficient way to boost the scores of different fields if the
@@ -84,19 +80,19 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * <a name="querytime"/>
  * At query-time, Queries interact with the Similarity via these steps:
  * <ol>
- *   <li>The {@link #computeStats(CollectionStatistics, float, TermStatistics...)} method is called a single time,
+ *   <li>The {@link #computeWeight(float, CollectionStatistics, TermStatistics...)} method is called a single time,
  *       allowing the implementation to compute any statistics (such as IDF, average document length, etc)
- *       across <i>the entire collection</i>. The {@link TermStatistics} passed in already contain
- *       the raw statistics involved, so a Similarity can freely use any combination
- *       of term statistics without causing any additional I/O. Lucene makes no assumption about what is 
- *       stored in the returned {@link Similarity.Stats} object.
- *   <li>The query normalization process occurs a single time: {@link Similarity.Stats#getValueForNormalization()}
+ *       across <i>the entire collection</i>. The {@link TermStatistics} and {@link CollectionStatistics} passed in 
+ *       already contain all of the raw statistics involved, so a Similarity can freely use any combination
+ *       of statistics without causing any additional I/O. Lucene makes no assumption about what is 
+ *       stored in the returned {@link Similarity.SimWeight} object.
+ *   <li>The query normalization process occurs a single time: {@link Similarity.SimWeight#getValueForNormalization()}
  *       is called for each query leaf node, {@link SimilarityProvider#queryNorm(float)} is called for the top-level
- *       query, and finally {@link Similarity.Stats#normalize(float, float)} passes down the normalization value
+ *       query, and finally {@link Similarity.SimWeight#normalize(float, float)} passes down the normalization value
  *       and any top-level boosts (e.g. from enclosing {@link BooleanQuery}s).
- *   <li>For each segment in the index, the Query creates a {@link #exactDocScorer(Stats, String, AtomicReaderContext)}
+ *   <li>For each segment in the index, the Query creates a {@link #exactSimScorer(SimWeight, AtomicReaderContext)}
  *       (for queries with exact frequencies such as TermQuerys and exact PhraseQueries) or a 
- *       {@link #sloppyDocScorer(Stats, String, AtomicReaderContext)} (for queries with sloppy frequencies such as
+ *       {@link #sloppySimScorer(SimWeight, AtomicReaderContext)} (for queries with sloppy frequencies such as
  *       SpanQuerys and sloppy PhraseQueries). The score() method is called for each matching document.
  * </ol>
  * <p>
@@ -130,27 +126,40 @@ public abstract class Similarity {
   public abstract void computeNorm(FieldInvertState state, Norm norm);
   
   /**
-   * Compute any collection-level stats (e.g. IDF, average document length, etc) needed for scoring a query.
+   * Compute any collection-level weight (e.g. IDF, average document length, etc) needed for scoring a query.
+   *
+   * @param queryBoost the query-time boost.
+   * @param collectionStats collection-level statistics, such as the number of tokens in the collection.
+   * @param termStats term-level statistics, such as the document frequency of a term across the collection.
+   * @return SimWeight object with the information this Similarity needs to score a query.
    */
-  public abstract Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats);
+  public abstract SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats);
   
   /**
-   * returns a new {@link Similarity.ExactDocScorer}.
+   * Creates a new {@link Similarity.ExactSimScorer} to score matching documents from a segment of the inverted index.
+   * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
+   * @param context segment of the inverted index to be scored.
+   * @return ExactSimScorer for scoring documents across <code>context</code>
+   * @throws IOException
    */
-  public abstract ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException;
+  public abstract ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
   
   /**
-   * returns a new {@link Similarity.SloppyDocScorer}.
+   * Creates a new {@link Similarity.SloppySimScorer} to score matching documents from a segment of the inverted index.
+   * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
+   * @param context segment of the inverted index to be scored.
+   * @return SloppySimScorer for scoring documents across <code>context</code>
+   * @throws IOException
    */
-  public abstract SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException;
+  public abstract SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
   
   /**
    * API for scoring exact queries such as {@link TermQuery} and 
    * exact {@link PhraseQuery}.
    * <p>
-   * Term frequencies are integers (the term or phrase's tf)
+   * Frequencies are integers (the term or phrase frequency within the document)
    */
-  public static abstract class ExactDocScorer {
+  public static abstract class ExactSimScorer {
     /**
      * Score a single document
      * @param doc document id
@@ -177,12 +186,14 @@ public abstract class Similarity {
    * API for scoring "sloppy" queries such as {@link SpanQuery} and 
    * sloppy {@link PhraseQuery}.
    * <p>
-   * Term frequencies are floating point values.
+   * Frequencies are floating-point values: an approximate 
+   * within-document frequency adjusted for "sloppiness" by 
+   * {@link SloppySimScorer#computeSlopFactor(int)}.
    */
-  public static abstract class SloppyDocScorer {
+  public static abstract class SloppySimScorer {
     /**
      * Score a single document
-     * @param doc document id
+     * @param doc document id within the inverted index segment
      * @param freq sloppy term frequency
      * @return document's score
      */
@@ -196,7 +207,7 @@ public abstract class Similarity {
     
     /**
      * Explain the score for a single document
-     * @param doc document id
+     * @param doc document id within the inverted index segment
      * @param freq Explanation of how the sloppy term frequency was computed
      * @return document's score
      */
@@ -208,12 +219,12 @@ public abstract class Similarity {
     }
   }
   
-  /** Stores the statistics for the indexed collection. This abstract
+  /** Stores the weight for a query across the indexed collection. This abstract
    * implementation is empty; descendants of {@code Similarity} should
-   * subclass {@code Stats} and define the statistics they require in the
+   * subclass {@code SimWeight} and define the statistics they require in the
    * subclass. Examples include idf, average field length, etc.
    */
-  public static abstract class Stats {
+  public static abstract class SimWeight {
     
     /** The value for normalization of contained query clauses (e.g. sum of squared weights).
      * <p>

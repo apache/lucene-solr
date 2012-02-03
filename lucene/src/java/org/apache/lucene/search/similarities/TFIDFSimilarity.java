@@ -694,26 +694,28 @@ public abstract class TFIDFSimilarity extends Similarity {
   public abstract float scorePayload(int doc, int start, int end, BytesRef payload);
 
   @Override
-  public final Stats computeStats(CollectionStatistics collectionStats, float queryBoost, TermStatistics... termStats) {
+  public final SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     final Explanation idf = termStats.length == 1
     ? idfExplain(collectionStats, termStats[0])
     : idfExplain(collectionStats, termStats);
-    return new IDFStats(idf, queryBoost);
+    return new IDFStats(collectionStats.field(), idf, queryBoost);
   }
 
   @Override
-  public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new ExactTFIDFDocScorer((IDFStats)stats, context.reader().normValues(fieldName));
+  public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+    IDFStats idfstats = (IDFStats) stats;
+    return new ExactTFIDFDocScorer(idfstats, context.reader().normValues(idfstats.field));
   }
 
   @Override
-  public final SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new SloppyTFIDFDocScorer((IDFStats)stats, context.reader().normValues(fieldName));
+  public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+    IDFStats idfstats = (IDFStats) stats;
+    return new SloppyTFIDFDocScorer(idfstats, context.reader().normValues(idfstats.field));
   }
   
   // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.
 
-  private final class ExactTFIDFDocScorer extends ExactDocScorer {
+  private final class ExactTFIDFDocScorer extends ExactSimScorer {
     private final IDFStats stats;
     private final float weightValue;
     private final byte[] norms;
@@ -744,7 +746,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     }
   }
   
-  private final class SloppyTFIDFDocScorer extends SloppyDocScorer {
+  private final class SloppyTFIDFDocScorer extends SloppySimScorer {
     private final IDFStats stats;
     private final float weightValue;
     private final byte[] norms;
@@ -780,7 +782,8 @@ public abstract class TFIDFSimilarity extends Similarity {
   
   /** Collection statistics for the TF-IDF model. The only statistic of interest
    * to this model is idf. */
-  private static class IDFStats extends Stats {
+  private static class IDFStats extends SimWeight {
+    private final String field;
     /** The idf and its explanation */
     private final Explanation idf;
     private float queryNorm;
@@ -788,8 +791,9 @@ public abstract class TFIDFSimilarity extends Similarity {
     private final float queryBoost;
     private float value;
     
-    public IDFStats(Explanation idf, float queryBoost) {
+    public IDFStats(String field, Explanation idf, float queryBoost) {
       // TODO: Validate?
+      this.field = field;
       this.idf = idf;
       this.queryBoost = queryBoost;
       this.queryWeight = idf.getValue() * queryBoost; // compute query weight

@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
+import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -45,7 +45,7 @@ public class TermQuery extends Query {
 
   final class TermWeight extends Weight {
     private final Similarity similarity;
-    private final Similarity.Stats stats;
+    private final Similarity.SimWeight stats;
     private final TermContext termStates;
 
     public TermWeight(IndexSearcher searcher, TermContext termStates)
@@ -53,9 +53,9 @@ public class TermQuery extends Query {
       assert termStates != null : "TermContext must not be null";
       this.termStates = termStates;
       this.similarity = searcher.getSimilarityProvider().get(term.field());
-      this.stats = similarity.computeStats(
-          searcher.collectionStatistics(term.field()), 
+      this.stats = similarity.computeWeight(
           getBoost(), 
+          searcher.collectionStatistics(term.field()), 
           searcher.termStatistics(term, termStates));
     }
 
@@ -95,10 +95,10 @@ public class TermQuery extends Query {
     }
     
     /**
-     * Creates an {@link ExactDocScorer} for this {@link TermWeight}*/
-    ExactDocScorer createDocScorer(AtomicReaderContext context)
+     * Creates an {@link ExactSimScorer} for this {@link TermWeight}*/
+    ExactSimScorer createDocScorer(AtomicReaderContext context)
         throws IOException {
-      return similarity.exactDocScorer(stats, term.field(), context);
+      return similarity.exactSimScorer(stats, context);
     }
     
     /**
@@ -130,7 +130,7 @@ public class TermQuery extends Query {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
-          ExactDocScorer docScorer = similarity.exactDocScorer(stats, term.field(), context);
+          ExactSimScorer docScorer = similarity.exactSimScorer(stats, context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
           Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "termFreq=" + freq));
