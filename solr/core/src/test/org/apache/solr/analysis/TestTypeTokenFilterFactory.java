@@ -49,6 +49,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenTestCase {
     factory = new TypeTokenFilterFactory();
     args.put("types", "stoptypes-1.txt, stoptypes-2.txt");
     args.put("enablePositionIncrements", "false");
+    args.put("useWhitelist","true");
     factory.init(args);
     factory.inform(loader);
     types = factory.getStopTypes();
@@ -58,7 +59,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenTestCase {
   }
 
   @Test
-  public void testCreation() throws Exception {
+  public void testCreationWithBlackList() throws Exception {
     TypeTokenFilterFactory typeTokenFilterFactory = new TypeTokenFilterFactory();
     Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     args.put("types", "stoptypes-1.txt, stoptypes-2.txt");
@@ -68,6 +69,19 @@ public class TestTypeTokenFilterFactory extends BaseTokenTestCase {
     input.setIntValue(123);
     typeTokenFilterFactory.create(input);
   }
+  
+  @Test
+    public void testCreationWithWhiteList() throws Exception {
+      TypeTokenFilterFactory typeTokenFilterFactory = new TypeTokenFilterFactory();
+      Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+      args.put("types", "stoptypes-1.txt, stoptypes-2.txt");
+      args.put("enablePositionIncrements", "false");
+      args.put("useWhitelist","true");
+      typeTokenFilterFactory.init(args);
+      NumericTokenStream input = new NumericTokenStream();
+      input.setIntValue(123);
+      typeTokenFilterFactory.create(input);
+    }
 
   @Test
   public void testMissingTypesParameter() throws Exception {

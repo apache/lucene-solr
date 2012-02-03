@@ -27,31 +27,26 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
  * Factory class for {@link TypeTokenFilter}
  * <pre class="prettyprint" >
  * &lt;fieldType name="chars" class="solr.TextField" positionIncrementGap="100"&gt;
- *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
- *     &lt;filter class="solr.TypeTokenFilterFactory" types="stoptypes.txt" enablePositionIncrements="true"/&gt;
- *   &lt;/analyzer&gt;
+ * &lt;analyzer&gt;
+ * &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ * &lt;filter class="solr.TypeTokenFilterFactory" types="stoptypes.txt" enablePositionIncrements="true"
+ * useWhiteList="false"/&gt;
+ * &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
 public class TypeTokenFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
 
   @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-  }
-
-  @Override
   public void inform(ResourceLoader loader) {
     String stopTypesFiles = args.get("types");
     enablePositionIncrements = getBoolean("enablePositionIncrements", false);
-
+    useWhitelist = getBoolean("useWhitelist", false);
     if (stopTypesFiles != null) {
       try {
         List<String> files = StrUtils.splitFileNames(stopTypesFiles);
@@ -70,6 +65,7 @@ public class TypeTokenFilterFactory extends BaseTokenFilterFactory implements Re
     }
   }
 
+  private boolean useWhitelist;
   private Set<String> stopTypes;
   private boolean enablePositionIncrements;
 
@@ -83,6 +79,6 @@ public class TypeTokenFilterFactory extends BaseTokenFilterFactory implements Re
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new TypeTokenFilter(enablePositionIncrements, input, stopTypes);
+    return new TypeTokenFilter(enablePositionIncrements, input, stopTypes, useWhitelist);
   }
 }
