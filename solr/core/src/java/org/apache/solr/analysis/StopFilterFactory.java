@@ -48,6 +48,7 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
     assureMatchVersion();
   }
 
+  @Override
   public void inform(ResourceLoader loader) {
     String stopWordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase",false);
@@ -80,7 +81,8 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
     return stopWords;
   }
 
-  public StopFilter create(TokenStream input) {
+  @Override
+  public TokenStream create(TokenStream input) {
     StopFilter stopFilter = new StopFilter(luceneMatchVersion,input,stopWords,ignoreCase);
     stopFilter.setEnablePositionIncrements(enablePositionIncrements);
     return stopFilter;
