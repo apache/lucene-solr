@@ -70,7 +70,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenTestCase {
     typeTokenFilterFactory.create(input);
   }
 
-  @Test         x
+  @Test
   public void testCreationWithWhiteList() throws Exception {
     TypeTokenFilterFactory typeTokenFilterFactory = new TypeTokenFilterFactory();
     Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);

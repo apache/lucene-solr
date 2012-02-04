@@ -42,7 +42,7 @@ import java.util.Set;
  */
 public class TypeTokenFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
 
-  @Override
+  // Not until Java6: @Override
   public void inform(ResourceLoader loader) {
     String stopTypesFiles = args.get("types");
     enablePositionIncrements = getBoolean("enablePositionIncrements", false);
@@ -77,7 +77,7 @@ public class TypeTokenFilterFactory extends BaseTokenFilterFactory implements Re
     return stopTypes;
   }
 
-  @Override
+  // Not until Java6: @Override
   public TokenStream create(TokenStream input) {
     return new TypeTokenFilter(enablePositionIncrements, input, stopTypes, useWhitelist);
   }
