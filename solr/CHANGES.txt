@@ -586,6 +586,8 @@ Other Changes
 
 * SOLR-2901: Upgrade Solr to Tika 1.0 (janhoy)
 
+* SOLR-3059: Example XSL stylesheet for indexing query result XML (janhoy)
+
 Build
 ----------------------
 * SOLR-2487: Add build target to package war without slf4j jars (janhoy)
