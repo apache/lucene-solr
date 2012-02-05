@@ -41,6 +41,34 @@ public class TestKuromojiTokenizerFactory extends BaseTokenTestCase {
     );
   }
   
+  /**
+   * Test that search mode is enabled and working by default
+   */
+  public void testDefaults() throws IOException {
+    KuromojiTokenizerFactory factory = new KuromojiTokenizerFactory();
+    factory.init(DEFAULT_VERSION_PARAM);
+    factory.inform(new SolrResourceLoader(null, null));
+    TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
+    assertTokenStreamContents(ts,
+        new String[] { "シニア", "ソフトウェア", "エンジニア" }
+    );
+  }
+  
+  /**
+   * Test mode parameter: specifying normal mode
+   */
+  public void testMode() throws IOException {
+    KuromojiTokenizerFactory factory = new KuromojiTokenizerFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("mode", "normal");
+    factory.init(args);
+    factory.inform(new SolrResourceLoader(null, null));
+    TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
+    assertTokenStreamContents(ts,
+        new String[] { "シニアソフトウェアエンジニア" }
+    );
+  }
+  
   public void testUserDict() throws IOException {
     String userDict = 
         "# Custom segmentation for long entries\n" +

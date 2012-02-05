@@ -43,6 +43,15 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
   }
   
   /**
+   * Test that search mode is enabled and working by default
+   */
+  public void testDecomposition() throws IOException {
+    assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "シニアソフトウェアエンジニア",
+        new String[] { "シニア", "ソフトウェア", "エンジニア" }
+    );
+  }
+  
+  /**
    * blast random strings against the analyzer
    */
   public void testRandom() throws IOException {
