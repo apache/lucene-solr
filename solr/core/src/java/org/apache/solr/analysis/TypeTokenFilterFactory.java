@@ -30,14 +30,14 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Factory class for {@link TypeTokenFilter}
+ * Factory class for {@link TypeTokenFilter}.
  * <pre class="prettyprint" >
  * &lt;fieldType name="chars" class="solr.TextField" positionIncrementGap="100"&gt;
- * &lt;analyzer&gt;
- * &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
- * &lt;filter class="solr.TypeTokenFilterFactory" types="stoptypes.txt" enablePositionIncrements="true"
- * useWhiteList="false"/&gt;
- * &lt;/analyzer&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.TypeTokenFilterFactory" types="stoptypes.txt"
+ *                   enablePositionIncrements="true" useWhiteList="false"/&gt;
+ *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
 public class TypeTokenFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
