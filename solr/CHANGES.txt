@@ -475,6 +475,10 @@ New Features
 * LUCENE-3305, SOLR-3056: Added Kuromoji morphological analyzer for Japanese.
   (Christian Moen, Masaru Hasegawa via Robert Muir)
 
+* SOLR-1860: StopFilterFactory, CommonGramsFilterFactory, and 
+  CommonGramsQueryFilterFactory can optionally read stopwords in Snowball
+  format (specify format="snowball").  (Robert Muir)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter

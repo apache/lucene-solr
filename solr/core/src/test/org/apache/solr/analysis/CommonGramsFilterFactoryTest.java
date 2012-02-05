@@ -62,6 +62,21 @@ public class CommonGramsFilterFactoryTest extends BaseTokenTestCase {
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory
         .isIgnoreCase() == true);
 
+    factory = new CommonGramsFilterFactory();
+    args.put("words", "stop-snowball.txt");
+    args.put("format", "snowball");
+    factory.init(args);
+    factory.inform(loader);
+    words = factory.getCommonWords();
+    assertEquals(8, words.size());
+    assertTrue(words.contains("he"));
+    assertTrue(words.contains("him"));
+    assertTrue(words.contains("his"));
+    assertTrue(words.contains("himself"));
+    assertTrue(words.contains("she"));
+    assertTrue(words.contains("her"));
+    assertTrue(words.contains("hers"));
+    assertTrue(words.contains("herself"));
   }
   
   /**

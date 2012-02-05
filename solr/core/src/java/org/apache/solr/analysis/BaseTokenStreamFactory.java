@@ -23,11 +23,18 @@ import org.apache.solr.core.Config;
 import org.apache.solr.schema.IndexSchema;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 import org.slf4j.Logger;
@@ -125,6 +132,36 @@ abstract class BaseTokenStreamFactory {
         List<String> wlist = loader.getLines(file.trim());
         words.addAll(StopFilter.makeStopSet(luceneMatchVersion, wlist,
             ignoreCase));
+      }
+    }
+    return words;
+  }
+  
+  /** same as {@link #getWordSet(ResourceLoader, String, boolean)},
+   * except the input is in snowball format. */
+  protected CharArraySet getSnowballWordSet(ResourceLoader loader,
+      String wordFiles, boolean ignoreCase) throws IOException {
+    assureMatchVersion();
+    List<String> files = StrUtils.splitFileNames(wordFiles);
+    CharArraySet words = null;
+    if (files.size() > 0) {
+      // default stopwords list has 35 or so words, but maybe don't make it that
+      // big to start
+      words = new CharArraySet(luceneMatchVersion, 
+          files.size() * 10, ignoreCase);
+      for (String file : files) {
+        InputStream stream = null;
+        Reader reader = null;
+        try {
+          stream = loader.openResource(file.trim());
+          CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+              .onMalformedInput(CodingErrorAction.REPORT)
+              .onUnmappableCharacter(CodingErrorAction.REPORT);
+          reader = new InputStreamReader(stream, decoder);
+          WordlistLoader.getSnowballWordSet(reader, words);
+        } finally {
+          IOUtils.closeWhileHandlingException(reader, stream);
+        }
       }
     }
     return words;

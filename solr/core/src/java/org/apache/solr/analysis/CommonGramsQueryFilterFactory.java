@@ -57,7 +57,11 @@ public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
 
     if (commonWordFiles != null) {
       try {
-        commonWords = getWordSet(loader, commonWordFiles, ignoreCase);
+        if ("snowball".equalsIgnoreCase(args.get("format"))) {
+          commonWords = getSnowballWordSet(loader, commonWordFiles, ignoreCase);
+        } else {
+          commonWords = getWordSet(loader, commonWordFiles, ignoreCase);
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

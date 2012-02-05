@@ -56,7 +56,11 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
 
     if (stopWordFiles != null) {
       try {
-        stopWords = getWordSet(loader, stopWordFiles, ignoreCase);
+        if ("snowball".equalsIgnoreCase(args.get("format"))) {
+          stopWords = getSnowballWordSet(loader, stopWordFiles, ignoreCase);
+        } else {
+          stopWords = getWordSet(loader, stopWordFiles, ignoreCase);
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
