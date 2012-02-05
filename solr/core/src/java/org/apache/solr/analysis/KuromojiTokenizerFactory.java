@@ -24,6 +24,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer;
@@ -62,7 +63,7 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements Re
   
   @Override
   public void inform(ResourceLoader loader) {
-    Mode mode = args.get(MODE) != null ? Mode.valueOf(args.get(MODE).toUpperCase(Locale.ENGLISH)) : Mode.NORMAL;
+    Mode mode = getMode(args);
     String userDictionaryPath = args.get(USER_DICT_PATH);
     try {
       if (userDictionaryPath != null) {
@@ -87,5 +88,14 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements Re
   @Override
   public Tokenizer create(Reader input) {
     return new KuromojiTokenizer(segmenter, input);
+  }
+  
+  private Mode getMode(Map<String, String> args) {
+    String mode = args.get(MODE);
+    if (mode != null) {
+      return Mode.valueOf(mode.toUpperCase(Locale.ENGLISH));
+    } else {
+      return Segmenter.DEFAULT_MODE;
+    }
   }
 }

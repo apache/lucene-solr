@@ -22,7 +22,11 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
-import org.apache.lucene.analysis.kuromoji.dict.*;
+import org.apache.lucene.analysis.kuromoji.dict.ConnectionCosts;
+import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
+import org.apache.lucene.analysis.kuromoji.dict.TokenInfoDictionary;
+import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
+import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
 import org.apache.lucene.analysis.kuromoji.viterbi.GraphvizFormatter;
 import org.apache.lucene.analysis.kuromoji.viterbi.Viterbi;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode;
@@ -37,6 +41,8 @@ public class Segmenter {
     NORMAL, SEARCH, EXTENDED
   }
   
+  public static final Mode DEFAULT_MODE = Mode.SEARCH;
+  
   private final Viterbi viterbi;
   
   private final EnumMap<Type, Dictionary> dictionaryMap = new EnumMap<Type, Dictionary>(Type.class);
@@ -44,31 +50,25 @@ public class Segmenter {
   private final boolean split;
   
   public Segmenter() {
-    this(null, Mode.NORMAL, false);
-  }
-
-  public Segmenter(UserDictionary userDictionary, Mode mode) {
-    this(userDictionary, mode, false);
-  }
-
-  public Segmenter(UserDictionary userDictionary) {
-    this(userDictionary, Mode.NORMAL, false);
+    this(null, DEFAULT_MODE, false);
   }
 
   public Segmenter(Mode mode) {
     this(null, mode, false);
   }
 
+  public Segmenter(UserDictionary userDictionary) {
+    this(userDictionary, DEFAULT_MODE, false);
+  }
+
+  public Segmenter(UserDictionary userDictionary, Mode mode) {
+    this(userDictionary, mode, false);
+  }
+
   public Segmenter(UserDictionary userDictionary, Mode mode, boolean split) {
-    
     final TokenInfoDictionary dict = TokenInfoDictionary.getInstance();
     final UnknownDictionary unknownDict = UnknownDictionary.getInstance();
-    this.viterbi = new Viterbi(dict,
-        unknownDict,
-        ConnectionCosts.getInstance(),
-        userDictionary,
-        mode);
-    
+    this.viterbi = new Viterbi(dict, unknownDict, ConnectionCosts.getInstance(), userDictionary, mode);
     this.split = split;
     
     dictionaryMap.put(Type.KNOWN, dict);
