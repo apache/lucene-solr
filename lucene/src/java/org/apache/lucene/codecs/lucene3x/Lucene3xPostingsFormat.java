@@ -36,7 +36,7 @@ import org.apache.lucene.index.SegmentReadState;
  * @lucene.experimental
  */
 @Deprecated
-public class Lucene3xPostingsFormat extends PostingsFormat {
+class Lucene3xPostingsFormat extends PostingsFormat {
 
   /** Extension of terms file */
   public static final String TERMS_EXTENSION = "tis";

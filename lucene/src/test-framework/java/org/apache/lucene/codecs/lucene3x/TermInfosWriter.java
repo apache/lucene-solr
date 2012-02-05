@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,8 +21,6 @@ package org.apache.lucene.codecs.preflexrw;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.codecs.lucene3x.Lucene3xPostingsFormat;
-import org.apache.lucene.codecs.lucene3x.TermInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;

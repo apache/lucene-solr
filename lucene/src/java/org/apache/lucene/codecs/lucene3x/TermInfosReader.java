@@ -38,7 +38,7 @@ import org.apache.lucene.util.DoubleBarrelLRUCache;
  * @lucene.experimental
  */
 @Deprecated
-public final class TermInfosReader {
+final class TermInfosReader {
   private final Directory directory;
   private final String segment;
   private final FieldInfos fieldInfos;

@@ -35,7 +35,7 @@ import org.apache.lucene.store.IOContext;
  * @lucene.experimental
  */
 @Deprecated
-public class Lucene3xTermVectorsFormat extends TermVectorsFormat {
+class Lucene3xTermVectorsFormat extends TermVectorsFormat {
 
   @Override
   public TermVectorsReader vectorsReader(Directory directory,SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {

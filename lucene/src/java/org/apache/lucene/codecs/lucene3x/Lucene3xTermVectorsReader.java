@@ -48,7 +48,7 @@ import org.apache.lucene.util.IOUtils;
 
 /** @deprecated */
 @Deprecated
-public class Lucene3xTermVectorsReader extends TermVectorsReader {
+class Lucene3xTermVectorsReader extends TermVectorsReader {
 
   // NOTE: if you make a new format, it must be larger than
   // the current format

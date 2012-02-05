@@ -49,7 +49,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * @deprecated (4.0)
  */
 @Deprecated
-public class Lucene3xFields extends FieldsProducer {
+class Lucene3xFields extends FieldsProducer {
   
   private static final boolean DEBUG_SURROGATES = false;
 

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

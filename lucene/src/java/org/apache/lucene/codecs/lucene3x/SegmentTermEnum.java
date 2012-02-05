@@ -31,7 +31,7 @@ import org.apache.lucene.index.IndexFormatTooNewException;
  * @lucene.experimental */
 
 @Deprecated
-public final class SegmentTermEnum implements Cloneable {
+final class SegmentTermEnum implements Cloneable {
   private IndexInput input;
   FieldInfos fieldInfos;
   long size;

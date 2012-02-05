@@ -23,8 +23,6 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.SegmentInfosReader;
-// TODO we need a 3x version of stored fields reader
-import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.SegmentInfo;
@@ -40,7 +38,7 @@ import org.apache.lucene.store.IOContext;
  * @deprecated
  */
 @Deprecated
-public class Lucene3xSegmentInfosReader extends SegmentInfosReader {
+class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
   @Override
   public void read(Directory directory, String segmentsFileName, ChecksumIndexInput input, SegmentInfos infos, IOContext context) throws IOException { 

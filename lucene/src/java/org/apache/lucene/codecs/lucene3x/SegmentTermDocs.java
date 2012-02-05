@@ -30,7 +30,7 @@ import org.apache.lucene.util.Bits;
 /** @deprecated (4.0)
  *  @lucene.experimental */
 @Deprecated
-public class SegmentTermDocs {
+class SegmentTermDocs {
   //protected SegmentReader parent;
   private final FieldInfos fieldInfos;
   private final TermInfosReader tis;

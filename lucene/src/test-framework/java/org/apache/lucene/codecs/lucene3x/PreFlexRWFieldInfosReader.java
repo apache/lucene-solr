@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -36,7 +36,7 @@ import org.apache.lucene.store.IndexInput;
  * @lucene.internal
  * @lucene.experimental
  */
-public class PreFlexRWFieldInfosReader extends FieldInfosReader {
+class PreFlexRWFieldInfosReader extends FieldInfosReader {
   static final int FORMAT_MINIMUM = PreFlexRWFieldInfosWriter.FORMAT_START;
 
   @Override

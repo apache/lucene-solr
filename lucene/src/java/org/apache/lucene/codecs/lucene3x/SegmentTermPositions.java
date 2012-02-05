@@ -29,7 +29,7 @@ import org.apache.lucene.store.IndexInput;
  * @deprecated (4.0)
  */
 @Deprecated
-public final class SegmentTermPositions
+final class SegmentTermPositions
 extends SegmentTermDocs  {
   private IndexInput proxStream;
   private IndexInput proxStreamOrig;

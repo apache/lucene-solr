@@ -46,7 +46,7 @@ import java.util.Set;
  * @deprecated
  */
 @Deprecated
-public final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Cloneable, Closeable {
+final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Cloneable, Closeable {
   private final static int FORMAT_SIZE = 4;
 
   /** Extension of stored fields file */

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,8 +24,6 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.codecs.lucene3x.Lucene3xPostingsFormat;
-import org.apache.lucene.codecs.lucene3x.TermInfo;
 import org.apache.lucene.codecs.lucene40.Lucene40SkipListWriter;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;

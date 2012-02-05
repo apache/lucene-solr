@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,14 +18,13 @@ package org.apache.lucene.codecs.preflexrw;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.codecs.lucene3x.Lucene3xNormsFormat;
 import org.apache.lucene.index.PerDocWriteState;
 
 /**
  * @lucene.internal
  * @lucene.experimental
  */
-public class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
+class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {

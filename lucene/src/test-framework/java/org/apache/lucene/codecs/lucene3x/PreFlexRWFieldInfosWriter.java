@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,7 +31,7 @@ import org.apache.lucene.store.IndexOutput;
  * @lucene.internal
  * @lucene.experimental
  */
-public class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
+class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
   // TODO move to test-framework preflex RW?
   
   /** Extension of field infos */

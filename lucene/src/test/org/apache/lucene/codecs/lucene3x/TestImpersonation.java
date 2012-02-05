@@ -18,7 +18,7 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.preflexrw.PreFlexRWCodec;
+import org.apache.lucene.codecs.lucene3x.PreFlexRWCodec;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**

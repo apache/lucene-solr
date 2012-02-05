@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.lucene.codecs.SegmentInfosWriter;
-import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexOutput;
@@ -36,7 +35,7 @@ import org.apache.lucene.util.IOUtils;
  * PreFlex implementation of {@link SegmentInfosWriter}.
  * @lucene.experimental
  */
-public class PreFlexRWSegmentInfosWriter extends SegmentInfosWriter {
+class PreFlexRWSegmentInfosWriter extends SegmentInfosWriter {
 
   @Override
   public IndexOutput writeInfos(Directory dir, String segmentFileName, String codecID, SegmentInfos infos, IOContext context)

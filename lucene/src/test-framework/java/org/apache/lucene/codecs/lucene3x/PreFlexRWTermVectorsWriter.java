@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.codecs.lucene3x.Lucene3xTermVectorsReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.DataInput;
@@ -33,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 
-public final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
+final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
   private final Directory directory;
   private final String segment;
   private IndexOutput tvx = null, tvd = null, tvf = null;

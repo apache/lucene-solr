@@ -32,7 +32,7 @@ import org.apache.lucene.index.SegmentInfo;
  * @lucene.experimental
  */
 @Deprecated
-public class Lucene3xFieldInfosFormat extends FieldInfosFormat {
+class Lucene3xFieldInfosFormat extends FieldInfosFormat {
   private final FieldInfosReader reader = new Lucene3xFieldInfosReader();
   
   @Override

@@ -23,7 +23,7 @@ package org.apache.lucene.codecs.lucene3x;
  * indexing. */
 
 @Deprecated
-public class TermInfo {
+class TermInfo {
   /** The number of documents which contain the term. */
   public int docFreq = 0;
 

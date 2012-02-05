@@ -1,4 +1,6 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
+
+import org.apache.lucene.codecs.SegmentInfosWriter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,26 +18,15 @@ package org.apache.lucene.codecs.preflexrw;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-
-import org.apache.lucene.codecs.FieldInfosReader;
-import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.codecs.lucene3x.Lucene3xFieldInfosFormat;
 
 /**
- * 
- * @lucene.internal
  * @lucene.experimental
  */
-public class PreFlexRWFieldInfosFormat extends Lucene3xFieldInfosFormat {
-
+class PreFlexRWSegmentInfosFormat extends Lucene3xSegmentInfosFormat {
+  private final SegmentInfosWriter writer = new PreFlexRWSegmentInfosWriter();
+  
   @Override
-  public FieldInfosReader getFieldInfosReader() throws IOException {
-    return new PreFlexRWFieldInfosReader();
-  }
-
-  @Override
-  public FieldInfosWriter getFieldInfosWriter() throws IOException {
-    return new PreFlexRWFieldInfosWriter();
+  public SegmentInfosWriter getSegmentInfosWriter() {
+    return writer;
   }
 }

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,38 +19,24 @@ package org.apache.lucene.codecs.preflexrw;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.lucene3x.Lucene3xFields;
-import org.apache.lucene.codecs.lucene3x.Lucene3xPostingsFormat;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
 
-/** Codec, only for testing, that can write and read the
- *  pre-flex index format.
- *
- * @lucene.experimental
- */
-public class PreFlexRWPostingsFormat extends Lucene3xPostingsFormat {
+class PreFlexRWTermVectorsFormat extends Lucene3xTermVectorsFormat {
 
-  public PreFlexRWPostingsFormat() {
-    // NOTE: we impersonate the PreFlex codec so that it can
-    // read the segments we write!
-  }
-  
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new PreFlexRWFieldsWriter(state);
+  public TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
+    return new PreFlexRWTermVectorsWriter(directory, segment, context);
   }
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-
-    // Whenever IW opens readers, eg for merging, we have to
-    // keep terms order in UTF16:
-
-    return new Lucene3xFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor) {
+  public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
+    return new Lucene3xTermVectorsReader(directory, segmentInfo, fieldInfos, context) {
       @Override
       protected boolean sortTermsByUnicode() {
         // We carefully peek into stack track above us: if
@@ -63,7 +49,7 @@ public class PreFlexRWPostingsFormat extends Lucene3xPostingsFormat {
           if ("merge".equals(trace[i].getMethodName())) {
             unicodeSortOrder = false;
             if (LuceneTestCase.VERBOSE) {
-              System.out.println("NOTE: PreFlexRW codec: forcing legacy UTF16 term sort order");
+              System.out.println("NOTE: PreFlexRW codec: forcing legacy UTF16 vector term sort order");
             }
             break;
           }

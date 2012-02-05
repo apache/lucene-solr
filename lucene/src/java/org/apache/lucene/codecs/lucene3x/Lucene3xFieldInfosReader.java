@@ -37,7 +37,7 @@ import org.apache.lucene.store.IndexInput;
  * @deprecated
  */
 @Deprecated
-public class Lucene3xFieldInfosReader extends FieldInfosReader {
+class Lucene3xFieldInfosReader extends FieldInfosReader {
   /** Extension of field infos */
   static final String FIELD_INFOS_EXTENSION = "fnm";
   

@@ -34,7 +34,7 @@ import org.apache.lucene.index.SegmentReadState;
  * @lucene.experimental
  */
 @Deprecated
-public class Lucene3xNormsFormat extends NormsFormat {
+class Lucene3xNormsFormat extends NormsFormat {
 
 
   @Override

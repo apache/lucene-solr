@@ -30,7 +30,7 @@ import org.apache.lucene.store.IOContext;
 
 /** @deprecated */
 @Deprecated
-public class Lucene3xStoredFieldsFormat extends StoredFieldsFormat {
+class Lucene3xStoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
   public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si,

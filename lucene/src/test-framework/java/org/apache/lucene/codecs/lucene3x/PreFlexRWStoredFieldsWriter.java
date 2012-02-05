@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.preflexrw;
+package org.apache.lucene.codecs.lucene3x;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.preflexrw;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.codecs.lucene3x.Lucene3xStoredFieldsReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
@@ -30,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /** @lucene.experimental */
-public final class PreFlexRWStoredFieldsWriter extends StoredFieldsWriter {
+final class PreFlexRWStoredFieldsWriter extends StoredFieldsWriter {
   private final Directory directory;
   private final String segment;
   private IndexOutput fieldsStream;

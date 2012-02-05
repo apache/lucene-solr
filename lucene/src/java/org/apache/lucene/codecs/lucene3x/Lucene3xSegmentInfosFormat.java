@@ -28,7 +28,7 @@ import org.apache.lucene.codecs.SegmentInfosWriter;
  * @lucene.experimental
  */
 @Deprecated
-public class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
+class Lucene3xSegmentInfosFormat extends SegmentInfosFormat {
   private final SegmentInfosReader reader = new Lucene3xSegmentInfosReader();
   
   @Override
