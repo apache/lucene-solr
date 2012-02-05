@@ -1,6 +1,14 @@
-# set of default stop tags:
-# uncomment a part of speech to treat those words as stopwords.
-# the entire tagset is provided here for convenience.
+#
+# This file defines a Japanese stoptag set for KuromojiPartOfSpeechStopFilter.
+#
+# Any token with a part-of-speech tag that exactly matches those defined in this
+# file are removed from the token stream.
+#
+# Set your own stoptags by uncommenting the lines below.  Note that comments are
+# not allowed on the same line as a stoptag.  See LUCENE-3745 for frequency lists,
+# etc. that can be useful for building you own stoptag set.
+#
+# The entire possible tagset is provided below for convenience.
 #
 #####
 #  noun: unclassified nouns
@@ -188,25 +196,25 @@
 #
 #####
 #  prefix: unclassified prefixes
-接頭詞
+#接頭詞
 #
 #  prefix-nominal: Prefixes that attach to nouns (including adjective stem forms) 
 #  excluding numerical expressions.
 #  e.g. お (水), 某 (氏), 同 (社), 故 (～氏), 高 (品質), お (見事), ご (立派)
-接頭詞-名詞接続
+#接頭詞-名詞接続
 #
 #  prefix-verbal: Prefixes that attach to the imperative form of a verb or a verb
 #  in conjunctive form followed by なる/なさる/くださる.
 #  e.g. お (読みなさい), お (座り)
-接頭詞-動詞接続
+#接頭詞-動詞接続
 #
 #  prefix-adjectival: Prefixes that attach to adjectives.
 #  e.g. お (寒いですねえ), バカ (でかい)
-接頭詞-形容詞接続
+#接頭詞-形容詞接続
 #
 #  prefix-numerical: Prefixes that attach to numerical expressions.
 #  e.g. 約, およそ, 毎時
-接頭詞-数接続
+#接頭詞-数接続
 #
 #####
 #  verb: unclassified verbs
@@ -216,7 +224,7 @@
 #動詞-自立
 #
 #  verb-auxiliary:
-動詞-非自立
+#動詞-非自立
 #
 #  verb-suffix:
 #動詞-接尾
@@ -351,11 +359,11 @@
 #  interjection: Greetings and other exclamations.
 #  e.g. おはよう, おはようございます, こんにちは, こんばんは, ありがとう, どうもありがとう, ありがとうございます, 
 #       いただきます, ごちそうさま, さよなら, さようなら, はい, いいえ, ごめん, ごめんなさい
-感動詞
+#感動詞
 #
 #####
 #  symbol: unclassified Symbols.
-#記号
+記号
 #
 #  symbol-misc: A general symbol not in one of the categories below.
 #  e.g. [○◎@$〒→+]
@@ -408,3 +416,5 @@
 #####
 #  unknown: unknown part of speech.
 #未知語
+#
+##### End of file
