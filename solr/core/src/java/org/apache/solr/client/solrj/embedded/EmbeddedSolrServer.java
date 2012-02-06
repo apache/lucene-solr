@@ -242,4 +242,19 @@ public class EmbeddedSolrServer extends SolrServer
   {
     return BinaryResponseWriter.getParsedResponse(req, rsp);
   }
+  
+  /**
+   * Shutdown all cores within the EmbeddedSolrServer instance
+   */
+  public void shutdown() {
+    coreContainer.shutdown();
+  }
+  
+  /**
+   * Getter method for the CoreContainer
+   * @return the core container
+   */
+  public CoreContainer getCoreContainer() {
+    return coreContainer;
+  }
 }
