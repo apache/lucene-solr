@@ -17,8 +17,8 @@ package org.apache.solr.search.similarities;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -30,17 +30,11 @@ public abstract class BaseSimilarityTestCase extends SolrTestCaseJ4 {
   protected Similarity getSimilarity(String field) {
     SolrCore core = h.getCore();
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    Similarity sim = searcher.get().getSimilarityProvider().get(field);
+    Similarity sim = searcher.get().getSimilarity();
     searcher.decref();
+    while (sim instanceof PerFieldSimilarityWrapper) {
+      sim = ((PerFieldSimilarityWrapper)sim).get(field);
+    }
     return sim;
-  }
-  
-  /** returns the (Solr)SimilarityProvider */
-  protected SimilarityProvider getSimilarityProvider() {
-    SolrCore core = h.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    SimilarityProvider prov = searcher.get().getSimilarityProvider();
-    searcher.decref();
-    return prov;
   }
 }

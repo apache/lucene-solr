@@ -19,7 +19,6 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.TestExplanations;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -38,15 +37,10 @@ public class TestPayloadExplanations extends TestExplanations {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    searcher.setSimilarityProvider(new DefaultSimilarityProvider() {
+    searcher.setSimilarity(new DefaultSimilarity() {
       @Override
-      public Similarity get(String field) {
-        return new DefaultSimilarity() {
-          @Override
-          public float scorePayload(int doc, int start, int end, BytesRef payload) {
-            return 1 + (payload.hashCode() % 10);
-          }
-        };
+      public float scorePayload(int doc, int start, int end, BytesRef payload) {
+        return 1 + (payload.hashCode() % 10);
       }
     });
   }

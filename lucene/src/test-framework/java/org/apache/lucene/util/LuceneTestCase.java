@@ -49,7 +49,8 @@ import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.RandomSimilarityProvider;
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FlushInfo;
@@ -213,7 +214,7 @@ public abstract class LuceneTestCase extends Assert {
   
   private static InfoStream savedInfoStream;
 
-  private static SimilarityProvider similarityProvider;
+  private static Similarity similarity;
 
   private static Locale locale;
   private static Locale savedLocale;
@@ -330,7 +331,7 @@ public abstract class LuceneTestCase extends Assert {
     savedTimeZone = TimeZone.getDefault();
     timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(random) : TimeZone.getTimeZone(TEST_TIMEZONE);
     TimeZone.setDefault(timeZone);
-    similarityProvider = new RandomSimilarityProvider(random);
+    similarity = random.nextBoolean() ? new DefaultSimilarity() : new RandomSimilarityProvider(random);
     testsFailed = false;
   }
 
@@ -407,7 +408,7 @@ public abstract class LuceneTestCase extends Assert {
   /** print some useful debugging information about the environment */
   private static void printDebuggingInformation(String codecDescription) {
     System.err.println("NOTE: test params are: codec=" + codecDescription +
-        ", sim=" + similarityProvider +
+        ", sim=" + similarity +
         ", locale=" + locale +
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
     System.err.println("NOTE: all tests run in this JVM:");
@@ -911,7 +912,7 @@ public abstract class LuceneTestCase extends Assert {
   /** create a new index writer config with random defaults using the specified random */
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(v, a);
-    c.setSimilarityProvider(similarityProvider);
+    c.setSimilarity(similarity);
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
     }
@@ -1261,7 +1262,7 @@ public abstract class LuceneTestCase extends Assert {
         r = SlowCompositeReaderWrapper.wrap(r);
       }
       IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getTopReaderContext());
-      ret.setSimilarityProvider(similarityProvider);
+      ret.setSimilarity(similarity);
       return ret;
     } else {
       int threads = 0;
@@ -1282,7 +1283,7 @@ public abstract class LuceneTestCase extends Assert {
       IndexSearcher ret = random.nextBoolean() 
           ? new AssertingIndexSearcher(random, r, ex)
           : new AssertingIndexSearcher(random, r.getTopReaderContext(), ex);
-      ret.setSimilarityProvider(similarityProvider);
+      ret.setSimilarity(similarity);
       return ret;
     }
   }

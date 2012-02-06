@@ -22,7 +22,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 
@@ -43,11 +42,11 @@ public class TFValueSource extends TermFreqValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     Fields fields = readerContext.reader().fields();
     final Terms terms = fields.terms(field);
-    final Similarity sim = ((IndexSearcher)context.get("searcher")).getSimilarityProvider().get(field);
-    if (!(sim instanceof TFIDFSimilarity)) {
+    IndexSearcher searcher = (IndexSearcher)context.get("searcher");
+    final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(), field);
+    if (similarity == null) {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }
-    final TFIDFSimilarity similarity = (TFIDFSimilarity) sim;
 
     return new FloatDocValues(this) {
       DocsEnum docs ;

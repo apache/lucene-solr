@@ -56,7 +56,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -1085,9 +1084,9 @@ public class MemoryIndex {
       }
     }
 
-    private SimilarityProvider getSimilarityProvider() {
-      if (searcher != null) return searcher.getSimilarityProvider();
-      return IndexSearcher.getDefaultSimilarityProvider();
+    private Similarity getSimilarity() {
+      if (searcher != null) return searcher.getSimilarity();
+      return IndexSearcher.getDefaultSimilarity();
     }
     
     private void setSearcher(IndexSearcher searcher) {
@@ -1131,21 +1130,20 @@ public class MemoryIndex {
     /** performance hack: cache norms to avoid repeated expensive calculations */
     private DocValues cachedNormValues;
     private String cachedFieldName;
-    private SimilarityProvider cachedSimilarity;
+    private Similarity cachedSimilarity;
     
     @Override
     public DocValues normValues(String field) throws IOException {
       DocValues norms = cachedNormValues;
-      SimilarityProvider sim = getSimilarityProvider();
+      Similarity sim = getSimilarity();
       if (!field.equals(cachedFieldName) || sim != cachedSimilarity) { // not cached?
         Info info = getInfo(field);
-        Similarity fieldSim = sim.get(field);
         int numTokens = info != null ? info.numTokens : 0;
         int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
         float boost = info != null ? info.getBoost() : 1.0f; 
-        FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
+        FieldInvertState invertState = new FieldInvertState(field, 0, numTokens, numOverlapTokens, 0, boost);
         Norm norm = new Norm();
-        fieldSim.computeNorm(invertState, norm);
+        sim.computeNorm(invertState, norm);
         SingleValueSource singleByteSource = new SingleValueSource(norm);
         norms = new MemoryIndexNormDocValues(singleByteSource);
         // cache it for future reuse

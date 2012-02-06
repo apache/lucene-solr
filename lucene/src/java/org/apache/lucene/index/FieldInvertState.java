@@ -26,6 +26,7 @@ import org.apache.lucene.util.AttributeSource;
  * @lucene.experimental
  */
 public final class FieldInvertState {
+  String name;
   int position;
   int length;
   int numOverlap;
@@ -35,10 +36,12 @@ public final class FieldInvertState {
   float boost;
   AttributeSource attributeSource;
 
-  public FieldInvertState() {
+  public FieldInvertState(String name) {
+    this.name = name;
   }
-
-  public FieldInvertState(int position, int length, int numOverlap, int offset, float boost) {
+  
+  public FieldInvertState(String name, int position, int length, int numOverlap, int offset, float boost) {
+    this.name = name;
     this.position = position;
     this.length = length;
     this.numOverlap = numOverlap;
@@ -133,5 +136,12 @@ public final class FieldInvertState {
   
   public AttributeSource getAttributeSource() {
     return attributeSource;
+  }
+  
+  /**
+   * Return the field's name
+   */
+  public String getName() {
+    return name;
   }
 }

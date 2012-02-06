@@ -33,7 +33,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
@@ -276,9 +276,9 @@ class DocHelper {
    * @param doc
    * @throws IOException
    */ 
-  public static SegmentInfo writeDoc(Random random, Directory dir, Analyzer analyzer, SimilarityProvider similarity, Document doc) throws IOException {
+  public static SegmentInfo writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig( /* LuceneTestCase.newIndexWriterConfig(random, */ 
-        TEST_VERSION_CURRENT, analyzer).setSimilarityProvider(similarity));
+        TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity));
     //writer.setUseCompoundFile(false);
     writer.addDocument(doc);
     writer.commit();

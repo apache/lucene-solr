@@ -26,7 +26,7 @@ import java.text.NumberFormat;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -88,7 +88,7 @@ public class DocumentsWriterPerThread {
     final DocumentsWriterPerThread docWriter;
     Analyzer analyzer;
     InfoStream infoStream;
-    SimilarityProvider similarityProvider;
+    Similarity similarity;
     int docID;
     Iterable<? extends IndexableField> doc;
     String maxTermPrefix;
@@ -188,8 +188,7 @@ public class DocumentsWriterPerThread {
     this.infoStream = parent.infoStream;
     this.codec = parent.codec;
     this.docState = new DocState(this, infoStream);
-    this.docState.similarityProvider = parent.indexWriter.getConfig()
-        .getSimilarityProvider();
+    this.docState.similarity = parent.indexWriter.getConfig().getSimilarity();
     bytesUsed = Counter.newCounter();
     byteBlockAllocator = new DirectTrackingAllocator(bytesUsed);
     consumer = indexingChain.getChain(this);

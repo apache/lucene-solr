@@ -32,8 +32,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -74,14 +74,15 @@ public class TestDocValuesScoring extends LuceneTestCase {
     
     // no boosting
     IndexSearcher searcher1 = newSearcher(ir);
-    final SimilarityProvider base = searcher1.getSimilarityProvider();
+    final Similarity base = searcher1.getSimilarity();
     // boosting
     IndexSearcher searcher2 = newSearcher(ir);
-    searcher2.setSimilarityProvider(new SimilarityProvider() {
-      final Similarity fooSim = new BoostingSimilarity(base.get("foo"), "foo_boost");
+    searcher2.setSimilarity(new PerFieldSimilarityWrapper() {
+      final Similarity fooSim = new BoostingSimilarity(base, "foo_boost");
 
+      @Override
       public Similarity get(String field) {
-        return "foo".equals(field) ? fooSim : base.get(field);
+        return "foo".equals(field) ? fooSim : base;
       }
 
       @Override

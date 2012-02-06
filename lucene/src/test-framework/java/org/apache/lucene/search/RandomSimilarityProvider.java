@@ -38,7 +38,6 @@ import org.apache.lucene.search.similarities.BasicModelIne;
 import org.apache.lucene.search.similarities.BasicModelP;
 import org.apache.lucene.search.similarities.DFRSimilarity;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Distribution;
 import org.apache.lucene.search.similarities.DistributionLL;
 import org.apache.lucene.search.similarities.DistributionSPL;
@@ -53,9 +52,11 @@ import org.apache.lucene.search.similarities.NormalizationH1;
 import org.apache.lucene.search.similarities.NormalizationH2;
 import org.apache.lucene.search.similarities.NormalizationH3;
 import org.apache.lucene.search.similarities.NormalizationZ;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 
-public class RandomSimilarityProvider extends DefaultSimilarityProvider {
+public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
+  final DefaultSimilarity defaultSim = new DefaultSimilarity();
   final List<Similarity> knownSims;
   Map<String,Similarity> previousMappings = new HashMap<String,Similarity>();
   final int perFieldSeed;
@@ -73,7 +74,7 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
   @Override
   public float coord(int overlap, int maxOverlap) {
     if (shouldCoord) {
-      return super.coord(overlap, maxOverlap);
+      return defaultSim.coord(overlap, maxOverlap);
     } else {
       return 1.0f;
     }
@@ -82,7 +83,7 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
   @Override
   public float queryNorm(float sumOfSquaredWeights) {
     if (shouldQueryNorm) {
-      return super.queryNorm(sumOfSquaredWeights);
+      return defaultSim.queryNorm(sumOfSquaredWeights);
     } else {
       return 1.0f;
     }

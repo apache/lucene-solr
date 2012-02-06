@@ -32,7 +32,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * This builder does the same as the {@link BooleanQueryNodeBuilder}, but this
@@ -41,7 +41,7 @@ import org.apache.lucene.search.similarities.SimilarityProvider;
  * 
  * @see BooleanQueryNodeBuilder
  * @see BooleanQuery
- * @see SimilarityProvider#coord(int, int)
+ * @see Similarity#coord(int, int)
  */
 public class StandardBooleanQueryNodeBuilder implements StandardQueryBuilder {
 

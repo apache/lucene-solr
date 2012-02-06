@@ -40,8 +40,8 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.TermContext;
@@ -86,22 +86,22 @@ public class IndexSearcher {
   // These are only used for multi-threaded search
   private final ExecutorService executor;
 
-  // the default SimilarityProvider
-  private static final SimilarityProvider defaultProvider = new DefaultSimilarityProvider();
+  // the default Similarity
+  private static final Similarity defaultSimilarity = new DefaultSimilarity();
   
   /**
-   * Expert: returns a default SimilarityProvider instance.
+   * Expert: returns a default Similarity instance.
    * In general, this method is only called to initialize searchers and writers.
    * User code and query implementations should respect
-   * {@link IndexSearcher#getSimilarityProvider()}.
+   * {@link IndexSearcher#getSimilarity()}.
    * @lucene.internal
    */
-  public static SimilarityProvider getDefaultSimilarityProvider() {
-    return defaultProvider;
+  public static Similarity getDefaultSimilarity() {
+    return defaultSimilarity;
   }
   
-  /** The SimilarityProvider implementation used by this searcher. */
-  private SimilarityProvider similarityProvider = defaultProvider;
+  /** The Similarity implementation used by this searcher. */
+  private Similarity similarity = defaultSimilarity;
 
   /** Creates a searcher searching the provided index. */
   public IndexSearcher(IndexReader r) {
@@ -193,15 +193,15 @@ public class IndexSearcher {
     return reader.document(docID, fieldsToLoad);
   }
 
-  /** Expert: Set the SimilarityProvider implementation used by this Searcher.
+  /** Expert: Set the Similarity implementation used by this Searcher.
    *
    */
-  public void setSimilarityProvider(SimilarityProvider similarityProvider) {
-    this.similarityProvider = similarityProvider;
+  public void setSimilarity(Similarity similarity) {
+    this.similarity = similarity;
   }
 
-  public SimilarityProvider getSimilarityProvider() {
-    return similarityProvider;
+  public Similarity getSimilarity() {
+    return similarity;
   }
   
   /** @lucene.internal */
@@ -583,7 +583,7 @@ public class IndexSearcher {
     query = rewrite(query);
     Weight weight = query.createWeight(this);
     float v = weight.getValueForNormalization();
-    float norm = getSimilarityProvider().queryNorm(v);
+    float norm = getSimilarity().queryNorm(v);
     if (Float.isInfinite(norm) || Float.isNaN(norm))
       norm = 1.0f;
     weight.normalize(norm, 1.0f);

@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
@@ -342,7 +342,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
           .setMergePolicy(newLogMergePolicy())
-          .setSimilarityProvider(new DefaultSimilarityProvider()));
+          .setSimilarity(new DefaultSimilarity()));
 
     Document doc = new Document();
     doc.add(newField("field", "foo firstname lastname foo", TextField.TYPE_STORED));
@@ -360,7 +360,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(reader);
-    searcher.setSimilarityProvider(new DefaultSimilarityProvider());
+    searcher.setSimilarity(new DefaultSimilarity());
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "firstname"));
     query.add(new Term("field", "lastname"));

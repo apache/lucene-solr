@@ -18,11 +18,9 @@ package org.apache.solr.search.similarities;
  */
 
 import org.apache.lucene.misc.SweetSpotSimilarity;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
-import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * Tests per-field similarity support in the schema
@@ -31,7 +29,7 @@ public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig-basic.xml","schema-sim.xml");
   }
   
   /** test a field where the sim is specified directly */
@@ -61,29 +59,18 @@ public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
   /** test a field where no similarity is specified */
   public void testDefaults() throws Exception {
     Similarity sim = getSimilarity("sim3text");
-    assertEquals(MockConfigurableSimilarity.class, sim.getClass());
-    assertEquals("I am your default sim", ((MockConfigurableSimilarity)sim).getPassthrough());
+    assertEquals(DefaultSimilarity.class, sim.getClass());;
   }
   
   /** ... and for a dynamic field */
   public void testDefaultsDynamic() throws Exception {
     Similarity sim = getSimilarity("text_sim3");
-    assertEquals(MockConfigurableSimilarity.class, sim.getClass());
-    assertEquals("I am your default sim", ((MockConfigurableSimilarity)sim).getPassthrough());
+    assertEquals(DefaultSimilarity.class, sim.getClass());
   }
   
   /** test a field that does not exist */
   public void testNonexistent() throws Exception {
     Similarity sim = getSimilarity("sdfdsfdsfdswr5fsdfdsfdsfs");
-    assertEquals(MockConfigurableSimilarity.class, sim.getClass());
-    assertEquals("I am your default sim", ((MockConfigurableSimilarity)sim).getPassthrough());
-  }
-  
-  @Test
-  public void testSimilarityProviderFactory() {
-    SolrCore core = h.getCore();
-    SimilarityProvider similarityProvider = core.getSchema().getSimilarityProvider();
-    assertTrue("wrong class", similarityProvider instanceof MockConfigurableSimilarityProvider);
-    assertEquals("is there an echo?", ((MockConfigurableSimilarityProvider)similarityProvider).getPassthrough());
+    assertEquals(DefaultSimilarity.class, sim.getClass());
   }
 }

@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.IndexWriterConfig; // javadocs
-import org.apache.lucene.search.similarities.SimilarityProvider; // javadocs
+import org.apache.lucene.search.similarities.Similarity; // javadocs
 
 /**
  * Factory class used by {@link SearcherManager} and {@link NRTManager} to
@@ -38,7 +38,7 @@ import org.apache.lucene.search.similarities.SimilarityProvider; // javadocs
  * 
  * You can pass your own factory instead if you want custom behavior, such as:
  * <ul>
- *   <li>Setting a custom scoring model: {@link IndexSearcher#setSimilarityProvider(SimilarityProvider)}
+ *   <li>Setting a custom scoring model: {@link IndexSearcher#setSimilarity(Similarity)}
  *   <li>Parallel per-segment search: {@link IndexSearcher#IndexSearcher(IndexReader, ExecutorService)}
  *   <li>Return custom subclasses of IndexSearcher (for example that implement distributed scoring)
  *   <li>Run queries to warm your IndexSearcher before it is used. Note: when using near-realtime search

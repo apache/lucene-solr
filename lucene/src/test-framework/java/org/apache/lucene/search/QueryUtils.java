@@ -168,7 +168,7 @@ public class QueryUtils {
           0 < edge ? r : emptyReaders[0])
     };
     IndexSearcher out = LuceneTestCase.newSearcher(new MultiReader(readers));
-    out.setSimilarityProvider(s.getSimilarityProvider());
+    out.setSimilarity(s.getSimilarity());
     return out;
   }
   

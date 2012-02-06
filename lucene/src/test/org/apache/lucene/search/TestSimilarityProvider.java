@@ -28,8 +28,8 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -44,9 +44,9 @@ public class TestSimilarityProvider extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    SimilarityProvider sim = new ExampleSimilarityProvider();
+    PerFieldSimilarityWrapper sim = new ExampleSimilarityProvider();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random)).setSimilarityProvider(sim);
+        new MockAnalyzer(random)).setSimilarity(sim);
     RandomIndexWriter iw = new RandomIndexWriter(random, directory, iwc);
     Document doc = new Document();
     Field field = newField("foo", "", TextField.TYPE_UNSTORED);
@@ -63,7 +63,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     reader = iw.getReader();
     iw.close();
     searcher = newSearcher(reader);
-    searcher.setSimilarityProvider(sim);
+    searcher.setSimilarity(sim);
   }
   
   @Override
@@ -90,18 +90,10 @@ public class TestSimilarityProvider extends LuceneTestCase {
     assertTrue(foodocs.scoreDocs[0].score < bardocs.scoreDocs[0].score);
   }
   
-  private class ExampleSimilarityProvider implements SimilarityProvider {
+  private class ExampleSimilarityProvider extends PerFieldSimilarityWrapper {
     private Similarity sim1 = new Sim1();
     private Similarity sim2 = new Sim2();
     
-    public float coord(int overlap, int maxOverlap) {
-      return 1f;
-    }
-
-    public float queryNorm(float sumOfSquaredWeights) {
-      return 1f;
-    }
-
     public Similarity get(String field) {
       if (field.equals("foo")) {
         return sim1;
@@ -112,6 +104,14 @@ public class TestSimilarityProvider extends LuceneTestCase {
   }
   
   private class Sim1 extends TFIDFSimilarity {
+    
+    public float coord(int overlap, int maxOverlap) {
+      return 1f;
+    }
+
+    public float queryNorm(float sumOfSquaredWeights) {
+      return 1f;
+    }
 
     @Override
     public void computeNorm(FieldInvertState state, Norm norm) {
@@ -140,6 +140,14 @@ public class TestSimilarityProvider extends LuceneTestCase {
   }
   
   private class Sim2 extends TFIDFSimilarity {
+    
+    public float coord(int overlap, int maxOverlap) {
+      return 1f;
+    }
+
+    public float queryNorm(float sumOfSquaredWeights) {
+      return 1f;
+    }
     
     @Override
     public void computeNorm(FieldInvertState state, Norm norm) {

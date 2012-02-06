@@ -27,9 +27,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
@@ -59,8 +58,8 @@ public class TestCustomNorms extends LuceneTestCase {
     dir.setCheckIndexOnClose(false); // can't set sim to checkindex yet
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random));
-    SimilarityProvider provider = new MySimProvider();
-    config.setSimilarityProvider(provider);
+    Similarity provider = new MySimProvider();
+    config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     final LineFileDocs docs = new LineFileDocs(random);
     int num = atLeast(100);
@@ -100,8 +99,8 @@ public class TestCustomNorms extends LuceneTestCase {
     dir.setCheckIndexOnClose(false); // can't set sim to checkindex yet
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random));
-    SimilarityProvider provider = new MySimProvider();
-    config.setSimilarityProvider(provider);
+    Similarity provider = new MySimProvider();
+    config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     final LineFileDocs docs = new LineFileDocs(random);
     int num = atLeast(100);
@@ -130,12 +129,11 @@ public class TestCustomNorms extends LuceneTestCase {
 
   }
 
-  public class MySimProvider implements SimilarityProvider {
-    SimilarityProvider delegate = new DefaultSimilarityProvider();
+  public class MySimProvider extends PerFieldSimilarityWrapper {
+    Similarity delegate = new DefaultSimilarity();
 
     @Override
     public float queryNorm(float sumOfSquaredWeights) {
-
       return delegate.queryNorm(sumOfSquaredWeights);
     }
 
@@ -146,7 +144,7 @@ public class TestCustomNorms extends LuceneTestCase {
       } else if (exceptionTestField.equals(field)) {
         return new RandomTypeSimilarity(random);
       } else {
-        return delegate.get(field);
+        return delegate;
       }
     }
 

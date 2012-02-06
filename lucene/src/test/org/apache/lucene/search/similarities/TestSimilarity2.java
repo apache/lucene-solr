@@ -48,32 +48,32 @@ import org.apache.lucene.util.LuceneTestCase;
  * Tests against all the similarities we have
  */
 public class TestSimilarity2 extends LuceneTestCase {
-  List<SimilarityProvider> simProviders;
+  List<Similarity> sims;
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    simProviders = new ArrayList<SimilarityProvider>();
-    simProviders.add(new BasicSimilarityProvider(new DefaultSimilarity()));
-    simProviders.add(new BasicSimilarityProvider(new BM25Similarity()));
+    sims = new ArrayList<Similarity>();
+    sims.add(new DefaultSimilarity());
+    sims.add(new BM25Similarity());
     // TODO: not great that we dup this all with TestSimilarityBase
     for (BasicModel basicModel : TestSimilarityBase.BASIC_MODELS) {
       for (AfterEffect afterEffect : TestSimilarityBase.AFTER_EFFECTS) {
         for (Normalization normalization : TestSimilarityBase.NORMALIZATIONS) {
-          simProviders.add(new BasicSimilarityProvider(new DFRSimilarity(basicModel, afterEffect, normalization)));
+          sims.add(new DFRSimilarity(basicModel, afterEffect, normalization));
         }
       }
     }
     for (Distribution distribution : TestSimilarityBase.DISTRIBUTIONS) {
       for (Lambda lambda : TestSimilarityBase.LAMBDAS) {
         for (Normalization normalization : TestSimilarityBase.NORMALIZATIONS) {
-          simProviders.add(new BasicSimilarityProvider(new IBSimilarity(distribution, lambda, normalization)));
+          sims.add(new IBSimilarity(distribution, lambda, normalization));
         }
       }
     }
-    simProviders.add(new BasicSimilarityProvider(new LMDirichletSimilarity()));
-    simProviders.add(new BasicSimilarityProvider(new LMJelinekMercerSimilarity(0.1f)));
-    simProviders.add(new BasicSimilarityProvider(new LMJelinekMercerSimilarity(0.7f)));
+    sims.add(new LMDirichletSimilarity());
+    sims.add(new LMJelinekMercerSimilarity(0.1f));
+    sims.add(new LMJelinekMercerSimilarity(0.7f));
   }
   
   /** because of stupid things like querynorm, its possible we computeStats on a field that doesnt exist at all
@@ -86,8 +86,8 @@ public class TestSimilarity2 extends LuceneTestCase {
     iw.close();
     IndexSearcher is = newSearcher(ir);
     
-    for (SimilarityProvider simProvider : simProviders) {
-      is.setSimilarityProvider(simProvider);
+    for (Similarity sim : sims) {
+      is.setSimilarity(sim);
       assertEquals(0, is.search(new TermQuery(new Term("foo", "bar")), 10).totalHits);
     }
     ir.close();
@@ -105,8 +105,8 @@ public class TestSimilarity2 extends LuceneTestCase {
     iw.close();
     IndexSearcher is = newSearcher(ir);
     
-    for (SimilarityProvider simProvider : simProviders) {
-      is.setSimilarityProvider(simProvider);
+    for (Similarity sim : sims) {
+      is.setSimilarity(sim);
       BooleanQuery query = new BooleanQuery(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       query.add(new TermQuery(new Term("bar", "baz")), BooleanClause.Occur.SHOULD);
@@ -127,8 +127,8 @@ public class TestSimilarity2 extends LuceneTestCase {
     iw.close();
     IndexSearcher is = newSearcher(ir);
     
-    for (SimilarityProvider simProvider : simProviders) {
-      is.setSimilarityProvider(simProvider);
+    for (Similarity sim : sims) {
+      is.setSimilarity(sim);
       BooleanQuery query = new BooleanQuery(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       query.add(new TermQuery(new Term("foo", "baz")), BooleanClause.Occur.SHOULD);
@@ -152,8 +152,8 @@ public class TestSimilarity2 extends LuceneTestCase {
     iw.close();
     IndexSearcher is = newSearcher(ir);
     
-    for (SimilarityProvider simProvider : simProviders) {
-      is.setSimilarityProvider(simProvider);
+    for (Similarity sim : sims) {
+      is.setSimilarity(sim);
       BooleanQuery query = new BooleanQuery(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query, 10).totalHits);
@@ -177,8 +177,8 @@ public class TestSimilarity2 extends LuceneTestCase {
     iw.close();
     IndexSearcher is = newSearcher(ir);
     
-    for (SimilarityProvider simProvider : simProviders) {
-      is.setSimilarityProvider(simProvider);
+    for (Similarity sim : sims) {
+      is.setSimilarity(sim);
       BooleanQuery query = new BooleanQuery(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query, 10).totalHits);
@@ -203,8 +203,8 @@ public class TestSimilarity2 extends LuceneTestCase {
     iw.close();
     IndexSearcher is = newSearcher(ir);
     
-    for (SimilarityProvider simProvider : simProviders) {
-      is.setSimilarityProvider(simProvider);
+    for (Similarity sim : sims) {
+      is.setSimilarity(sim);
       BooleanQuery query = new BooleanQuery(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query, 10).totalHits);
@@ -229,8 +229,8 @@ public class TestSimilarity2 extends LuceneTestCase {
     iw.close();
     IndexSearcher is = newSearcher(ir);
     
-    for (SimilarityProvider simProvider : simProviders) {
-      is.setSimilarityProvider(simProvider);
+    for (Similarity sim : sims) {
+      is.setSimilarity(sim);
       SpanTermQuery s1 = new SpanTermQuery(new Term("foo", "bar"));
       SpanTermQuery s2 = new SpanTermQuery(new Term("foo", "baz"));
       Query query = new SpanOrQuery(s1, s2);
@@ -238,7 +238,7 @@ public class TestSimilarity2 extends LuceneTestCase {
       assertEquals(1, td.totalHits);
       float score = td.scoreDocs[0].score;
       assertTrue(score >= 0.0f);
-      assertFalse("inf score for " + simProvider, Float.isInfinite(score));
+      assertFalse("inf score for " + sim, Float.isInfinite(score));
     }
     ir.close();
     dir.close();

@@ -31,28 +31,23 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
 
 
 public class TestOmitTf extends LuceneTestCase {
   
-  public static class SimpleSimilarityProvider implements SimilarityProvider {
+  public static class SimpleSimilarity extends TFIDFSimilarity {
     public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     public float coord(int overlap, int maxOverlap) { return 1.0f; }
-    public Similarity get(String field) {
-      return new TFIDFSimilarity() {
-        @Override public void computeNorm(FieldInvertState state, Norm norm) { norm.setByte(encodeNormValue(state.getBoost())); }
-        @Override public float tf(float freq) { return freq; }
-        @Override public float sloppyFreq(int distance) { return 2.0f; }
-        @Override public float idf(long docFreq, long numDocs) { return 1.0f; }
-        @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
-          return new Explanation(1.0f, "Inexplicable");
-        }
-        @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 1.0f; }
-      };
+    @Override public void computeNorm(FieldInvertState state, Norm norm) { norm.setByte(encodeNormValue(state.getBoost())); }
+    @Override public float tf(float freq) { return freq; }
+    @Override public float sloppyFreq(int distance) { return 2.0f; }
+    @Override public float idf(long docFreq, long numDocs) { return 1.0f; }
+    @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
+      return new Explanation(1.0f, "Inexplicable");
     }
+    @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 1.0f; }
   }
 
   private static final FieldType omitType = new FieldType(TextField.TYPE_UNSTORED);
@@ -257,7 +252,7 @@ public class TestOmitTf extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
             setMaxBufferedDocs(2).
-            setSimilarityProvider(new SimpleSimilarityProvider()).
+            setSimilarity(new SimpleSimilarity()).
             setMergePolicy(newLogMergePolicy(2))
     );
         
@@ -286,7 +281,7 @@ public class TestOmitTf extends LuceneTestCase {
      */         
     IndexReader reader = IndexReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
-    searcher.setSimilarityProvider(new SimpleSimilarityProvider());
+    searcher.setSimilarity(new SimpleSimilarity());
         
     Term a = new Term("noTf", term);
     Term b = new Term("tf", term);

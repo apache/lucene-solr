@@ -28,8 +28,8 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.ConjunctionTermScorer.DocsAndFreqs;
 import org.apache.lucene.search.TermQuery.TermWeight;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -79,18 +79,18 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   /** Constructs an empty boolean query.
    *
-   * {@link SimilarityProvider#coord(int,int)} may be disabled in scoring, as
+   * {@link Similarity#coord(int,int)} may be disabled in scoring, as
    * appropriate. For example, this score factor does not make sense for most
    * automatically generated queries, like {@link WildcardQuery} and {@link
    * FuzzyQuery}.
    *
-   * @param disableCoord disables {@link SimilarityProvider#coord(int,int)} in scoring.
+   * @param disableCoord disables {@link Similarity#coord(int,int)} in scoring.
    */
   public BooleanQuery(boolean disableCoord) {
     this.disableCoord = disableCoord;
   }
 
-  /** Returns true iff {@link SimilarityProvider#coord(int,int)} is disabled in
+  /** Returns true iff {@link Similarity#coord(int,int)} is disabled in
    * scoring for this query instance.
    * @see #BooleanQuery(boolean)
    */
@@ -169,7 +169,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    */
   protected class BooleanWeight extends Weight {
     /** The Similarity implementation. */
-    protected SimilarityProvider similarityProvider;
+    protected Similarity similarity;
     protected ArrayList<Weight> weights;
     protected int maxCoord;  // num optional + num required
     private final boolean disableCoord;
@@ -177,7 +177,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
     public BooleanWeight(IndexSearcher searcher, boolean disableCoord)
       throws IOException {
-      this.similarityProvider = searcher.getSimilarityProvider();
+      this.similarity = searcher.getSimilarity();
       this.disableCoord = disableCoord;
       weights = new ArrayList<Weight>(clauses.size());
       boolean termConjunction = clauses.isEmpty() || minNrShouldMatch != 0 ? false : true;
@@ -213,7 +213,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     public float coord(int overlap, int maxOverlap) {
-      return similarityProvider.coord(overlap, maxOverlap);
+      return similarity.coord(overlap, maxOverlap);
     }
 
     @Override

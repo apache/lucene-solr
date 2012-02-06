@@ -30,9 +30,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -81,18 +80,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     // this test relies upon coord being the default implementation,
     // otherwise scores are different!
-    final SimilarityProvider delegate = s.getSimilarityProvider();
-    s.setSimilarityProvider(new DefaultSimilarityProvider() {
-      @Override
-      public float queryNorm(float sumOfSquaredWeights) {
-        return delegate.queryNorm(sumOfSquaredWeights);
-      }
-
-      @Override
-      public Similarity get(String field) {
-        return delegate.get(field);
-      }
-    });
+    s.setSimilarity(new DefaultSimilarity());
 
     BooleanQuery q = new BooleanQuery();
     q.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);

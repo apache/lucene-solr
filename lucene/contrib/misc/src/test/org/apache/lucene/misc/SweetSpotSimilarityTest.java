@@ -19,9 +19,8 @@
 package org.apache.lucene.misc;
 
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.Norm;
@@ -53,7 +52,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
 
 
     // base case, should degrade
-    final FieldInvertState invertState = new FieldInvertState();
+    FieldInvertState invertState = new FieldInvertState("bogus");
     invertState.setBoost(1.0f);
     for (int i = 1; i < 1000; i++) {
       invertState.setLength(i);
@@ -102,7 +101,8 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     final SweetSpotSimilarity ssB = new SweetSpotSimilarity();
     ssB.setLengthNormFactors(5,8,0.1f, false);
     
-    SimilarityProvider sp = new DefaultSimilarityProvider() {
+    Similarity sp = new PerFieldSimilarityWrapper() {
+      @Override
       public Similarity get(String field) {
         if (field.equals("bar"))
           return ssBar;
@@ -116,53 +116,68 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
           return ss;
       }
     };
-  
+
+    invertState = new FieldInvertState("foo");
+    invertState.setBoost(1.0f);
     for (int i = 3; i <=10; i++) {
       invertState.setLength(i);
       assertEquals("f: 3,10: spot i="+i,
                    1.0f,
-                   computeAndDecodeNorm(ss, sp.get("foo"), invertState),
+                   computeAndDecodeNorm(ss, sp, invertState),
                    0.0f);
     }
+    
     for (int i = 10; i < 1000; i++) {
       invertState.setLength(i-9);
       final byte normD = computeAndGetNorm(d, invertState);
       invertState.setLength(i);
-      final byte normS = computeAndGetNorm(sp.get("foo"), invertState);
+      final byte normS = computeAndGetNorm(sp, invertState);
       assertEquals("f: 3,10: 10<x : i="+i,
                    normD,
                    normS,
                    0.0f);
     }
+    
+    invertState = new FieldInvertState("bar");
+    invertState.setBoost(1.0f);
     for (int i = 8; i <=13; i++) {
       invertState.setLength(i);
       assertEquals("f: 8,13: spot i="+i,
                    1.0f,
-                   computeAndDecodeNorm(ss, sp.get("bar"), invertState),
+                   computeAndDecodeNorm(ss, sp, invertState),
                    0.0f);
     }
+    
+    invertState = new FieldInvertState("yak");
+    invertState.setBoost(1.0f);
     for (int i = 6; i <=9; i++) {
       invertState.setLength(i);
       assertEquals("f: 6,9: spot i="+i,
                    1.0f,
-                   computeAndDecodeNorm(ss, sp.get("yak"), invertState),
+                   computeAndDecodeNorm(ss, sp, invertState),
                    0.0f);
     }
+    
+    invertState = new FieldInvertState("bar");
+    invertState.setBoost(1.0f);
     for (int i = 13; i < 1000; i++) {
       invertState.setLength(i-12);
       final byte normD = computeAndGetNorm(d, invertState);
       invertState.setLength(i);
-      final byte normS = computeAndGetNorm(sp.get("bar"), invertState);
+      final byte normS = computeAndGetNorm(sp, invertState);
       assertEquals("f: 8,13: 13<x : i="+i,
                    normD,
                    normS,
                    0.0f);
     }
+    
+    invertState = new FieldInvertState("yak");
+    invertState.setBoost(1.0f);
     for (int i = 9; i < 1000; i++) {
       invertState.setLength(i-8);
       final byte normD = computeAndGetNorm(d, invertState);
       invertState.setLength(i);
-      final byte normS = computeAndGetNorm(sp.get("yak"), invertState);
+      final byte normS = computeAndGetNorm(sp, invertState);
       assertEquals("f: 6,9: 9<x : i="+i,
                    normD,
                    normS,
@@ -173,9 +188,14 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     // steepness
 
     for (int i = 9; i < 1000; i++) {
+      invertState = new FieldInvertState("a");
+      invertState.setBoost(1.0f);
       invertState.setLength(i);
-      final byte normSS = computeAndGetNorm(sp.get("a"), invertState);
-      final byte normS = computeAndGetNorm(sp.get("b"), invertState);
+      final byte normSS = computeAndGetNorm(sp, invertState);
+      invertState = new FieldInvertState("b");
+      invertState.setBoost(1.0f);
+      invertState.setLength(i);
+      final byte normS = computeAndGetNorm(sp, invertState);
       assertTrue("s: i="+i+" : a="+normSS+
                  " < b="+normS,
                  normSS < normS);

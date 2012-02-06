@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext; // javadocs
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -46,7 +46,7 @@ import org.apache.lucene.util.Bits;
  * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher)}).
  * <li>The {@link #getValueForNormalization()} method is called on the
  * <code>Weight</code> to compute the query normalization factor
- * {@link SimilarityProvider#queryNorm(float)} of the query clauses contained in the
+ * {@link Similarity#queryNorm(float)} of the query clauses contained in the
  * query.
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.

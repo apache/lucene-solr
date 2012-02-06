@@ -42,8 +42,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -307,17 +305,11 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    searcher.setSimilarityProvider(new DefaultSimilarityProvider() {
+    searcher.setSimilarity(new DefaultSimilarity() { 
       @Override
-      public Similarity get(String field) {
-        return new DefaultSimilarity() {
-          
-          @Override
-          public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-            return new Explanation(10f, "just a test");
-          } 
-        };
-      }
+      public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
+        return new Explanation(10f, "just a test");
+      } 
     });
     
     MultiPhraseQuery query = new MultiPhraseQuery();

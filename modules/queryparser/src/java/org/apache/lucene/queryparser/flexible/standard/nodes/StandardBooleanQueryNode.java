@@ -22,14 +22,14 @@ import java.util.List;
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A {@link StandardBooleanQueryNode} has the same behavior as
  * {@link BooleanQueryNode}. It only indicates if the coord should be enabled or
  * not for this boolean query. <br/>
  * 
- * @see SimilarityProvider#coord(int, int)
+ * @see Similarity#coord(int, int)
  * @see BooleanQuery
  */
 public class StandardBooleanQueryNode extends BooleanQueryNode {

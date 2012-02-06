@@ -29,7 +29,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -41,19 +40,15 @@ import org.apache.lucene.document.TextField;
  */
 public class TestSimilarity extends LuceneTestCase {
   
-  public static class SimpleSimilarityProvider implements SimilarityProvider {
+  public static class SimpleSimilarity extends DefaultSimilarity {
     public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     public float coord(int overlap, int maxOverlap) { return 1.0f; }
-    public Similarity get(String field) {
-      return new DefaultSimilarity() {
-        @Override public void computeNorm(FieldInvertState state, Norm norm) { norm.setByte(encodeNormValue(state.getBoost())); }
-        @Override public float tf(float freq) { return freq; }
-        @Override public float sloppyFreq(int distance) { return 2.0f; }
-        @Override public float idf(long docFreq, long numDocs) { return 1.0f; }
-        @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] stats) {
-          return new Explanation(1.0f, "Inexplicable"); 
-        }
-      };
+    @Override public void computeNorm(FieldInvertState state, Norm norm) { norm.setByte(encodeNormValue(state.getBoost())); }
+    @Override public float tf(float freq) { return freq; }
+    @Override public float sloppyFreq(int distance) { return 2.0f; }
+    @Override public float idf(long docFreq, long numDocs) { return 1.0f; }
+    @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] stats) {
+      return new Explanation(1.0f, "Inexplicable"); 
     }
   }
 
@@ -61,7 +56,7 @@ public class TestSimilarity extends LuceneTestCase {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store, 
         newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
-        .setSimilarityProvider(new SimpleSimilarityProvider()));
+        .setSimilarity(new SimpleSimilarity()));
     
     Document d1 = new Document();
     d1.add(newField("field", "a c", TextField.TYPE_STORED));
@@ -75,7 +70,7 @@ public class TestSimilarity extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(reader);
-    searcher.setSimilarityProvider(new SimpleSimilarityProvider());
+    searcher.setSimilarity(new SimpleSimilarity());
 
     Term a = new Term("field", "a");
     Term b = new Term("field", "b");

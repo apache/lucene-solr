@@ -24,9 +24,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -411,21 +409,17 @@ public class TestSpans extends LuceneTestCase {
     for (int i = 0; i < leaves.length; i++) {
       
      
-      final SimilarityProvider sim = new DefaultSimilarityProvider() {
-        public Similarity get(String field) {
-          return new DefaultSimilarity() {
-            @Override
-            public float sloppyFreq(int distance) {
-              return 0.0f;
-            }
-          };
+      final Similarity sim = new DefaultSimilarity() {
+        @Override
+        public float sloppyFreq(int distance) {
+          return 0.0f;
         }
       };
   
-      final SimilarityProvider oldSim = searcher.getSimilarityProvider();
+      final Similarity oldSim = searcher.getSimilarity();
       Scorer spanScorer;
       try {
-        searcher.setSimilarityProvider(sim);
+        searcher.setSimilarity(sim);
         SpanNearQuery snq = new SpanNearQuery(
                                 new SpanQuery[] {
                                   makeSpanTermQuery("t1"),
@@ -435,7 +429,7 @@ public class TestSpans extends LuceneTestCase {
   
         spanScorer = searcher.createNormalizedWeight(snq).scorer(leaves[i], true, false, leaves[i].reader().getLiveDocs());
       } finally {
-        searcher.setSimilarityProvider(oldSim);
+        searcher.setSimilarity(oldSim);
       }
       if (i == subIndex) {
         assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

@@ -24,6 +24,16 @@ import org.apache.lucene.util.BytesRef;
 /** Expert: Default scoring implementation. */
 public class DefaultSimilarity extends TFIDFSimilarity {
   
+  /** Implemented as <code>overlap / maxOverlap</code>. */
+  public float coord(int overlap, int maxOverlap) {
+    return overlap / (float)maxOverlap;
+  }
+
+  /** Implemented as <code>1/sqrt(sumOfSquaredWeights)</code>. */
+  public float queryNorm(float sumOfSquaredWeights) {
+    return (float)(1.0 / Math.sqrt(sumOfSquaredWeights));
+  }
+  
   /** Implemented as
    *  <code>state.getBoost()*lengthNorm(numTerms)</code>, where
    *  <code>numTerms</code> is {@link FieldInvertState#getLength()} if {@link

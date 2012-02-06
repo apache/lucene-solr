@@ -42,7 +42,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
   public DocInverterPerField(DocInverter parent, FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
     docState = parent.docState;
-    fieldState = parent.fieldState;
+    fieldState = new FieldInvertState(fieldInfo.name);
     this.consumer = parent.consumer.addField(this, fieldInfo);
     this.endConsumer = parent.endConsumer.addField(this, fieldInfo);
   }

@@ -37,8 +37,6 @@ final class DocInverter extends DocFieldConsumer {
 
   final DocumentsWriterPerThread.DocState docState;
 
-  final FieldInvertState fieldState = new FieldInvertState();
-
   final SingleTokenAttributeSource singleToken = new SingleTokenAttributeSource();
 
   static class SingleTokenAttributeSource extends AttributeSource {

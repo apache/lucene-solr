@@ -366,8 +366,8 @@ import org.apache.lucene.util.SmallFloat;
  *      Typically, a document that contains more of the query's terms will receive a higher score
  *      than another document with fewer query terms.
  *      This is a search time factor computed in
- *      {@link SimilarityProvider#coord(int, int) coord(q,d)}
- *      by the SimilarityProvider in effect at search time.
+ *      {@link #coord(int, int) coord(q,d)}
+ *      by the Similarity in effect at search time.
  *      <br>&nbsp;<br>
  *    </li>
  *
@@ -381,14 +381,14 @@ import org.apache.lucene.util.SmallFloat;
  *      This is a search time factor computed by the Similarity in effect at search time.
  *
  *      The default computation in
- *      {@link org.apache.lucene.search.similarities.DefaultSimilarityProvider#queryNorm(float) DefaultSimilarityProvider}
+ *      {@link org.apache.lucene.search.similarities.DefaultSimilarity#queryNorm(float) DefaultSimilarity}
  *      produces a <a href="http://en.wikipedia.org/wiki/Euclidean_norm#Euclidean_norm">Euclidean norm</a>:
  *      <br>&nbsp;<br>
  *      <table cellpadding="1" cellspacing="0" border="0" align="center">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            queryNorm(q)  &nbsp; = &nbsp;
- *            {@link org.apache.lucene.search.similarities.DefaultSimilarityProvider#queryNorm(float) queryNorm(sumOfSquaredWeights)}
+ *            {@link org.apache.lucene.search.similarities.DefaultSimilarity#queryNorm(float) queryNorm(sumOfSquaredWeights)}
  *            &nbsp; = &nbsp;
  *          </td>
  *          <td valign="middle" align="center" rowspan="1">
@@ -520,10 +520,41 @@ import org.apache.lucene.util.SmallFloat;
  *    </li>
  * </ol>
  *
- * @see org.apache.lucene.index.IndexWriterConfig#setSimilarityProvider(SimilarityProvider)
- * @see IndexSearcher#setSimilarityProvider(SimilarityProvider)
+ * @see org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)
+ * @see IndexSearcher#setSimilarity(Similarity)
  */
 public abstract class TFIDFSimilarity extends Similarity {
+  
+  /** Computes a score factor based on the fraction of all query terms that a
+   * document contains.  This value is multiplied into scores.
+   *
+   * <p>The presence of a large portion of the query terms indicates a better
+   * match with the query, so implementations of this method usually return
+   * larger values when the ratio between these parameters is large and smaller
+   * values when the ratio between them is small.
+   *
+   * @param overlap the number of query terms matched in the document
+   * @param maxOverlap the total number of terms in the query
+   * @return a score factor based on term overlap with the query
+   */
+  @Override
+  public abstract float coord(int overlap, int maxOverlap);
+  
+  /** Computes the normalization value for a query given the sum of the squared
+   * weights of each of the query terms.  This value is multiplied into the
+   * weight of each query term. While the classic query normalization factor is
+   * computed as 1/sqrt(sumOfSquaredWeights), other implementations might
+   * completely ignore sumOfSquaredWeights (ie return 1).
+   *
+   * <p>This does not affect ranking, but the default implementation does make scores
+   * from different queries more comparable than they would be by eliminating the
+   * magnitude of the Query vector as a factor in the score.
+   *
+   * @param sumOfSquaredWeights the sum of the squares of query term weights
+   * @return a normalization factor for query weights
+   */
+  @Override
+  public abstract float queryNorm(float sumOfSquaredWeights);
   
   /** Computes a score factor based on a term or phrase's frequency in a
    * document.  This value is multiplied by the {@link #idf(long, long)}

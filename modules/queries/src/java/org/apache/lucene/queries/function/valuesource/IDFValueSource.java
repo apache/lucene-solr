@@ -20,6 +20,7 @@ package org.apache.lucene.queries.function.valuesource;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
@@ -41,13 +42,25 @@ public class IDFValueSource extends DocFreqValueSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    Similarity sim = searcher.getSimilarityProvider().get(field);
-    if (!(sim instanceof TFIDFSimilarity)) {
+    TFIDFSimilarity sim = asTFIDF(searcher.getSimilarity(), field);
+    if (sim == null) {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }
     int docfreq = searcher.getIndexReader().docFreq(new Term(indexedField, indexedBytes));
-    float idf = ((TFIDFSimilarity)sim).idf(docfreq, searcher.getIndexReader().maxDoc());
+    float idf = sim.idf(docfreq, searcher.getIndexReader().maxDoc());
     return new ConstDoubleDocValues(idf, this);
+  }
+  
+  // tries extra hard to cast the sim to TFIDFSimilarity
+  static TFIDFSimilarity asTFIDF(Similarity sim, String field) {
+    while (sim instanceof PerFieldSimilarityWrapper) {
+      sim = ((PerFieldSimilarityWrapper)sim).get(field);
+    }
+    if (sim instanceof TFIDFSimilarity) {
+      return (TFIDFSimilarity)sim;
+    } else {
+      return null;
+    }
   }
 }
 

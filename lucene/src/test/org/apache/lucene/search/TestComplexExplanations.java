@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.spans.*;
 
 /**
@@ -36,18 +36,18 @@ public class TestComplexExplanations extends TestExplanations {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    searcher.setSimilarityProvider(createQnorm1Similarity());
+    searcher.setSimilarity(createQnorm1Similarity());
   }
   
   @Override
   public void tearDown() throws Exception {
-    searcher.setSimilarityProvider(IndexSearcher.getDefaultSimilarityProvider());
+    searcher.setSimilarity(IndexSearcher.getDefaultSimilarity());
     super.tearDown();
   }
 
   // must be static for weight serialization tests 
-  private static DefaultSimilarityProvider createQnorm1Similarity() {
-    return new DefaultSimilarityProvider() {
+  private static DefaultSimilarity createQnorm1Similarity() {
+    return new DefaultSimilarity() {
         @Override
         public float queryNorm(float sumOfSquaredWeights) {
           return 1.0f; // / (float) Math.sqrt(1.0f + sumOfSquaredWeights);

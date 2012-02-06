@@ -27,7 +27,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 
 /*******************************************************************************
  * Some expanded tests to make sure my patch doesn't break other SpanTermQuery
@@ -50,7 +50,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random,
             MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true))
             .setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy())
-            .setSimilarityProvider(new DefaultSimilarityProvider()));
+            .setSimilarity(new DefaultSimilarity()));
     addDocument(writer, "A", "Should we, could we, would we?");
     addDocument(writer, "B", "It should.  Should it?");
     addDocument(writer, "C", "It shouldn't.");
@@ -60,7 +60,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     
     // re-open the searcher since we added more docs
     searcher2 = newSearcher(reader2);
-    searcher2.setSimilarityProvider(new DefaultSimilarityProvider());
+    searcher2.setSimilarity(new DefaultSimilarity());
   }
   
   @Override

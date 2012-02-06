@@ -30,7 +30,6 @@ package.
 <p>
     <ol>
         <li><a href="#sims">Summary of the Ranking Methods</a></li>
-        <li><a href="#providers">Similarity Providers<a/></li>
         <li><a href="#changingSimilarity">Changing the Similarity</a></li>
     </ol>
 </p>
@@ -69,27 +68,6 @@ performance is to be expected when using the methods listed above. However,
 optimizations can always be implemented in subclasses; see
 <a href="#changingSimilarity">below</a>.</p>
 
-
-<a name="providers"></a>
-<h2>Similarity Providers</h2>
-
-<p>{@link org.apache.lucene.search.similarities.SimilarityProvider}s are factories
-that return Similarities per-field and compute coordination factors and normalization 
-values for the query.
-{@link org.apache.lucene.search.similarities.DefaultSimilarityProvider} is the
-default implementation used by Lucene, geared towards vector-spaced search: it returns 
-{@link org.apache.lucene.search.similarities.DefaultSimilarity} for every field,
-and implements coordination-level matching and query normalization. 
-{@link org.apache.lucene.search.similarities.BasicSimilarityProvider} is geared towards
-non-vector-space models and does not implement coordination-level matching or query
-normalization. It is a convenience implementation that returns an arbitrary 
-{@link org.apache.lucene.search.similarities.Similarity} for every field.
-You can write your own SimilarityProvider to return different Similarities for different
-fields: for example you might want to use different parameter values for different fields,
-or maybe even entirely different ranking algorithms.
-</p>
-
-
 <a name="changingSimilarity"></a>
 <h2>Changing Similarity</h2>
 
@@ -110,13 +88,11 @@ or maybe even entirely different ranking algorithms.
 <p>To make this change, implement your own {@link org.apache.lucene.search.similarities.Similarity} (likely
     you'll want to simply subclass an existing method, be it
     {@link org.apache.lucene.search.similarities.DefaultSimilarity} or a descendant of
-    {@link org.apache.lucene.search.similarities.SimilarityBase}) and
-    {@link org.apache.lucene.search.similarities.SimilarityProvider} (or use
-    {@link org.apache.lucene.search.similarities.BasicSimilarityProvider}), and
+    {@link org.apache.lucene.search.similarities.SimilarityBase}), and
     then register the new class by calling
-    {@link org.apache.lucene.index.IndexWriterConfig#setSimilarityProvider(SimilarityProvider)}
+    {@link org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)}
     before indexing and
-    {@link org.apache.lucene.search.IndexSearcher#setSimilarityProvider(SimilarityProvider)}
+    {@link org.apache.lucene.search.IndexSearcher#setSimilarity(Similarity)}
     before searching.
 </p>
 

@@ -680,17 +680,7 @@
    <!-- dynamic destination -->
    <copyField source="*_dynamic" dest="dynamic_*"/>
 
- <!-- expert: SimilarityProvider contains scoring routines that are not field-specific,
-      such as coord() and queryNorm(). most scoring customization happens in the fieldtype.
-      A custom similarity provider may be specified here, but the default is fine
-      for most applications.
- -->
- <similarityProvider class="solr.CustomSimilarityProviderFactory">
-   <str name="echo">is there an echo?</str>
- </similarityProvider>
-
- <!-- default similarity, unless otherwise specified by the fieldType
-  -->
+ <!-- example of a custom similarity -->
  <similarity class="solr.CustomSimilarityFactory">
    <str name="echo">I am your default sim</str>
  </similarity>

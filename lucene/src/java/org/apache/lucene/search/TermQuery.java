@@ -52,7 +52,7 @@ public class TermQuery extends Query {
       throws IOException {
       assert termStates != null : "TermContext must not be null";
       this.termStates = termStates;
-      this.similarity = searcher.getSimilarityProvider().get(term.field());
+      this.similarity = searcher.getSimilarity();
       this.stats = similarity.computeWeight(
           getBoost(), 
           searcher.collectionStatistics(term.field()), 

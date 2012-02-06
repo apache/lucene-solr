@@ -17,14 +17,12 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.similarities.MockConfigurableSimilarityProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -78,14 +76,6 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
             ,"//result/doc[1]/int[@name='id'][.='10']"
             );
     clearIndex();
-  }
-
-  @Test
-  public void testSimilarityProviderFactory() {
-    SolrCore core = h.getCore();
-    SimilarityProvider similarityProvider = core.getSchema().getSimilarityProvider();
-    assertTrue("wrong class", similarityProvider instanceof MockConfigurableSimilarityProvider);
-    assertEquals("is there an echo?", ((MockConfigurableSimilarityProvider)similarityProvider).getPassthrough());
   }
 
   @Test

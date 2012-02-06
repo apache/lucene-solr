@@ -502,9 +502,6 @@ public abstract class FieldType extends FieldProperties {
    * has no custom similarity associated with it.
    * </p>
    * 
-   * This method exists to internally support SolrSimilarityProvider. 
-   * Custom application code interested in a field's Similarity should
-   * instead query via the searcher's SimilarityProvider.
    * @lucene.internal
    */
   public Similarity getSimilarity() {

@@ -26,9 +26,8 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -172,18 +171,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     // test for correct application of query normalization
     // must use a non score normalizing method for this.
     
-    final SimilarityProvider delegate = search.getSimilarityProvider();
-    search.setSimilarityProvider(new DefaultSimilarityProvider() {
-      @Override
-      public float coord(int overlap, int maxOverlap) {
-        return delegate.coord(overlap, maxOverlap);
-      }
-
-      @Override
-      public Similarity get(String field) {
-        return delegate.get(field);
-      }
-    });
+    search.setSimilarity(new DefaultSimilarity());
     Query q = csrq("data", "1", "6", T, T);
     q.setBoost(100);
     search.search(q, null, new Collector() {

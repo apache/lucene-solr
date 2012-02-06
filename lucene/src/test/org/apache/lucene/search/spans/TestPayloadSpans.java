@@ -39,15 +39,15 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.payloads.PayloadHelper;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPayloadSpans extends LuceneTestCase {
   private IndexSearcher searcher;
-  private SimilarityProvider similarity = new DefaultSimilarityProvider();
+  private Similarity similarity = new DefaultSimilarity();
   protected IndexReader indexReader;
   private IndexReader closeIndexReader;
   private Directory directory;
@@ -107,7 +107,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarityProvider(similarity));
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = new Document();
     doc.add(newField(PayloadHelper.FIELD, "one two three one four three", TextField.TYPE_STORED));
@@ -366,7 +366,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void testPayloadSpanUtil() throws Exception {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarityProvider(similarity));
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = new Document();
     doc.add(newField(PayloadHelper.FIELD,"xx rr yy mm  pp", TextField.TYPE_STORED));
@@ -426,7 +426,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     directory = newDirectory();
     String[] docs = new String[]{"xx rr yy mm  pp","xx yy mm rr pp", "nopayload qq ss pp np", "one two three four five six seven eight nine ten eleven", "nine one two three four five six seven eight eleven ten"};
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarityProvider(similarity));
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = null;
     for(int i = 0; i < docs.length; i++) {

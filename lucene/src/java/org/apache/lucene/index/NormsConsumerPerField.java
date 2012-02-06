@@ -39,7 +39,7 @@ public class NormsConsumerPerField extends InvertedDocEndConsumerPerField implem
     this.parent = parent;
     docState = docInverterPerField.docState;
     fieldState = docInverterPerField.fieldState;
-    similarity = docState.similarityProvider.get(fieldInfo.name);
+    similarity = docState.similarity;
     norm = new Norm();
   }
 

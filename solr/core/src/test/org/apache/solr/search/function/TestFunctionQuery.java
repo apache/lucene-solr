@@ -344,7 +344,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         "//float[@name='score']='" + similarity.idf(3,6)  + "'");
     assertQ(req("fl","*,score","q", "{!func}tf(a_t,cow)", "fq","id:6"),
         "//float[@name='score']='" + similarity.tf(5)  + "'");
-    FieldInvertState state = new FieldInvertState();
+    FieldInvertState state = new FieldInvertState("a_t");
     state.setBoost(1.0f);
     state.setLength(4);
     Norm norm = new Norm();

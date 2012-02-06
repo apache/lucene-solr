@@ -26,7 +26,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -47,12 +46,7 @@ public class TestUniqueTermCount extends LuceneTestCase {
     dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
                                                     new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy());
-    config.setSimilarityProvider(new DefaultSimilarityProvider() {
-      @Override
-      public Similarity get(String field) {
-        return new TestSimilarity();
-      }
-    });
+    config.setSimilarity(new TestSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     Document doc = new Document();
     Field foo = newField("foo", "", TextField.TYPE_UNSTORED);

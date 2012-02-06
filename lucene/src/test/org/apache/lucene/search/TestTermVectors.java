@@ -29,7 +29,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.IOUtils;
@@ -242,7 +242,7 @@ public class TestTermVectors extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true))
           .setOpenMode(OpenMode.CREATE)
           .setMergePolicy(newLogMergePolicy())
-          .setSimilarityProvider(new DefaultSimilarityProvider()));
+          .setSimilarity(new DefaultSimilarity()));
     writer.addDocument(testDoc1);
     writer.addDocument(testDoc2);
     writer.addDocument(testDoc3);
@@ -250,7 +250,7 @@ public class TestTermVectors extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     IndexSearcher knownSearcher = newSearcher(reader);
-    knownSearcher.setSimilarityProvider(new DefaultSimilarityProvider());
+    knownSearcher.setSimilarity(new DefaultSimilarity());
     FieldsEnum fields = MultiFields.getFields(knownSearcher.reader).iterator();
     
     DocsEnum docs = null;

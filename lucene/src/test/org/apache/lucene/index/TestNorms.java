@@ -26,9 +26,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
@@ -62,12 +61,7 @@ public class TestNorms extends LuceneTestCase {
   public void testCustomEncoder() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
-    config.setSimilarityProvider(new DefaultSimilarityProvider() {
-      @Override
-      public Similarity get(String field) {
-        return new CustomNormEncodingSimilarity();
-      }
-    });
+    config.setSimilarity(new CustomNormEncodingSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     Document doc = new Document();
     Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
@@ -182,8 +176,8 @@ public class TestNorms extends LuceneTestCase {
       CorruptIndexException {
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random));
-    SimilarityProvider provider = new MySimProvider(writeNorms);
-    config.setSimilarityProvider(provider);
+    Similarity provider = new MySimProvider(writeNorms);
+    config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     final LineFileDocs docs = new LineFileDocs(random);
     int num = atLeast(100);
@@ -205,8 +199,8 @@ public class TestNorms extends LuceneTestCase {
   }
 
 
-  public class MySimProvider implements SimilarityProvider {
-    SimilarityProvider delegate = new DefaultSimilarityProvider();
+  public class MySimProvider extends PerFieldSimilarityWrapper {
+    Similarity delegate = new DefaultSimilarity();
     private boolean writeNorms;
     public MySimProvider(boolean writeNorms) {
       this.writeNorms = writeNorms;
@@ -222,7 +216,7 @@ public class TestNorms extends LuceneTestCase {
       if (byteTestField.equals(field)) {
         return new ByteEncodingBoostSimilarity(writeNorms);
       } else {
-        return delegate.get(field);
+        return delegate;
       }
     }
 

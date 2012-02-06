@@ -81,7 +81,7 @@ API Changes
    for API use. (Andrzej Bialecki)
 
  * LUCENE-2912: The field-specific hashmaps in SweetSpotSimilarity were removed.
-   Instead, use SimilarityProvider to return different SweetSpotSimilaritys
+   Instead, use PerFieldSimilarityWrapper to return different SweetSpotSimilaritys
    for different fields, this way all parameters (such as TF factors) can be 
    customized on a per-field basis.  (Robert Muir)
 

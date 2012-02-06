@@ -97,7 +97,7 @@ public final class FieldTypePluginLoader
     // a custom similarity[Factory]
     expression = "./similarity";
     anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
-    Similarity similarity = IndexSchema.readSimilarity(loader, anode);
+    SimilarityFactory simFactory = IndexSchema.readSimilarity(loader, anode);
     
     if (queryAnalyzer==null) queryAnalyzer=analyzer;
     if (analyzer==null) analyzer=queryAnalyzer;
@@ -110,8 +110,8 @@ public final class FieldTypePluginLoader
       if (ft instanceof TextField)
         ((TextField)ft).setMultiTermAnalyzer(multiAnalyzer);
     }
-    if (similarity!=null) {
-      ft.setSimilarity(similarity);
+    if (simFactory!=null) {
+      ft.setSimilarity(simFactory.getSimilarity());
     }
     if (ft instanceof SchemaAware){
       schemaAware.add((SchemaAware) ft);

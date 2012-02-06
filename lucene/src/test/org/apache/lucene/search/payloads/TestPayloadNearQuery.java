@@ -37,7 +37,6 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -53,7 +52,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   private static IndexSearcher searcher;
   private static IndexReader reader;
   private static Directory directory;
-  private static BoostingSimilarityProvider similarityProvider = new BoostingSimilarityProvider();
+  private static BoostingSimilarity similarity = new BoostingSimilarity();
   private static byte[] payload2 = new byte[]{2};
   private static byte[] payload4 = new byte[]{4};
 
@@ -112,7 +111,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
-        .setSimilarityProvider(similarityProvider));
+        .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -125,7 +124,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     writer.close();
 
     searcher = newSearcher(reader);
-    searcher.setSimilarityProvider(similarityProvider);
+    searcher.setSimilarity(similarity);
   }
 
   @AfterClass
@@ -307,8 +306,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);  
   }
 
-  // must be static for weight serialization tests 
-  static class BoostingSimilarityProvider implements SimilarityProvider {
+  static class BoostingSimilarity extends DefaultSimilarity {
 
     public float queryNorm(float sumOfSquaredWeights) {
       return 1.0f;
@@ -318,39 +316,34 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       return 1.0f;
     }
     
-    public Similarity get(String field) {
-      return new DefaultSimilarity() {
+    @Override 
+    public float scorePayload(int docId, int start, int end, BytesRef payload) {
+      //we know it is size 4 here, so ignore the offset/length
+      return payload.bytes[payload.offset];
+    }
     
-        @Override 
-        public float scorePayload(int docId, int start, int end, BytesRef payload) {
-          //we know it is size 4 here, so ignore the offset/length
-          return payload.bytes[payload.offset];
-        }
-    
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        //Make everything else 1 so we see the effect of the payload
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        @Override 
-        public void computeNorm(FieldInvertState state, Norm norm) {
-          norm.setByte(encodeNormValue(state.getBoost()));
-        }
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //Make everything else 1 so we see the effect of the payload
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    @Override 
+    public void computeNorm(FieldInvertState state, Norm norm) {
+      norm.setByte(encodeNormValue(state.getBoost()));
+    }
 
-        @Override 
-        public float sloppyFreq(int distance) {
-          return 1.0f;
-        }
+    @Override 
+    public float sloppyFreq(int distance) {
+      return 1.0f;
+    }
 
-        @Override 
-        public float tf(float freq) {
-          return 1.0f;
-        }
+    @Override 
+    public float tf(float freq) {
+      return 1.0f;
+    }
     
-        // idf used for phrase queries
-        @Override 
-        public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
-          return new Explanation(1.0f, "Inexplicable");
-        }
-      };
+    // idf used for phrase queries
+    @Override 
+    public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
+      return new Explanation(1.0f, "Inexplicable");
     }
   }
 }

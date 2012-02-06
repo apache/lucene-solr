@@ -23,7 +23,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -98,7 +98,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       searcher = newSearcher(reader);
       
       // set a similarity that does not normalize our boost away
-      searcher.setSimilarityProvider(new DefaultSimilarityProvider() {
+      searcher.setSimilarity(new DefaultSimilarity() {
         @Override
         public float queryNorm(float sumOfSquaredWeights) {
           return 1.0f;

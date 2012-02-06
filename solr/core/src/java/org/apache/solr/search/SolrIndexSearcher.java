@@ -141,7 +141,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     }
 
     this.closeReader = closeReader;
-    setSimilarityProvider(schema.getSimilarityProvider());
+    setSimilarity(schema.getSimilarity());
 
     SolrConfig solrConfig = core.getSolrConfig();
     queryResultWindowSize = solrConfig.queryResultWindowSize;

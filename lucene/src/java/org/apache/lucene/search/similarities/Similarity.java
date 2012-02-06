@@ -74,8 +74,8 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * Finally, using index-time boosts (either via folding into the normalization byte or
  * via DocValues), is an inefficient way to boost the scores of different fields if the
  * boost will be the same for every document, instead the Similarity can simply take a constant
- * boost parameter <i>C</i>, and the SimilarityProvider can return different instances with
- * different boosts depending upon field name.
+ * boost parameter <i>C</i>, and {@link PerFieldSimilarityWrapper} can return different 
+ * instances with different boosts depending upon field name.
  * <p>
  * <a name="querytime"/>
  * At query-time, Queries interact with the Similarity via these steps:
@@ -87,7 +87,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  *       of statistics without causing any additional I/O. Lucene makes no assumption about what is 
  *       stored in the returned {@link Similarity.SimWeight} object.
  *   <li>The query normalization process occurs a single time: {@link Similarity.SimWeight#getValueForNormalization()}
- *       is called for each query leaf node, {@link SimilarityProvider#queryNorm(float)} is called for the top-level
+ *       is called for each query leaf node, {@link Similarity#queryNorm(float)} is called for the top-level
  *       query, and finally {@link Similarity.SimWeight#normalize(float, float)} passes down the normalization value
  *       and any top-level boosts (e.g. from enclosing {@link BooleanQuery}s).
  *   <li>For each segment in the index, the Query creates a {@link #exactSimScorer(SimWeight, AtomicReaderContext)}
@@ -101,11 +101,42 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * explanation of how it computed its score. The query passes in a the document id and an explanation of how the frequency
  * was computed.
  *
- * @see org.apache.lucene.index.IndexWriterConfig#setSimilarityProvider(SimilarityProvider)
- * @see IndexSearcher#setSimilarityProvider(SimilarityProvider)
+ * @see org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)
+ * @see IndexSearcher#setSimilarity(Similarity)
  * @lucene.experimental
  */
 public abstract class Similarity {
+  
+  /** Hook to integrate coordinate-level matching.
+   * <p>
+   * By default this is disabled (returns <code>1</code>), as with
+   * most modern models this will only skew performance, but some
+   * implementations such as {@link TFIDFSimilarity} override this.
+   *
+   * @param overlap the number of query terms matched in the document
+   * @param maxOverlap the total number of terms in the query
+   * @return a score factor based on term overlap with the query
+   */
+  public float coord(int overlap, int maxOverlap) {
+    return 1f;
+  }
+  
+  /** Computes the normalization value for a query given the sum of the
+   * normalized weights {@link SimWeight#getValueForNormalization()} of 
+   * each of the query terms.  This value is passed back to the 
+   * weight ({@link SimWeight#normalize(float, float)} of each query 
+   * term, to provide a hook to attempt to make scores from different
+   * queries comparable.
+   * <p>
+   * By default this is disabled (returns <code>1</code>), but some
+   * implementations such as {@link TFIDFSimilarity} override this.
+   * 
+   * @param valueForNormalization the sum of the term normalization values
+   * @return a normalization factor for query weights
+   */
+  public float queryNorm(float valueForNormalization) {
+    return 1f;
+  }
   
   /**
    * Computes the normalization value for a field, given the accumulated

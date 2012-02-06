@@ -28,9 +28,7 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
@@ -59,7 +57,7 @@ import java.io.IOException;
 public class TestPayloadTermQuery extends LuceneTestCase {
   private static IndexSearcher searcher;
   private static IndexReader reader;
-  private static SimilarityProvider similarityProvider = new BoostingSimilarityProvider();
+  private static Similarity similarity = new BoostingSimilarity();
   private static final byte[] payloadField = new byte[]{1};
   private static final byte[] payloadMultiField1 = new byte[]{2};
   private static final byte[] payloadMultiField2 = new byte[]{4};
@@ -122,7 +120,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
-                                                     .setSimilarityProvider(similarityProvider).setMergePolicy(newLogMergePolicy()));
+                                                     .setSimilarity(similarity).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -137,7 +135,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     writer.close();
 
     searcher = newSearcher(reader);
-    searcher.setSimilarityProvider(similarityProvider);
+    searcher.setSimilarity(similarity);
   }
 
   @AfterClass
@@ -234,12 +232,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
     IndexReader reader = IndexReader.open(directory);
     IndexSearcher theSearcher = new IndexSearcher(reader);
-    theSearcher.setSimilarityProvider(new DefaultSimilarityProvider() {
-      @Override
-      public Similarity get(String field) {
-        return new FullSimilarity();
-      }
-    });
+    theSearcher.setSimilarity(new FullSimilarity());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
@@ -301,8 +294,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     CheckHits.checkHitCollector(random, query, PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
   }
 
-  // must be static for weight serialization tests 
-  static class BoostingSimilarityProvider implements SimilarityProvider {
+  static class BoostingSimilarity extends DefaultSimilarity {
 
     public float queryNorm(float sumOfSquaredWeights) {
       return 1;
@@ -312,39 +304,34 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       return 1;
     }
 
-    public Similarity get(String field) {
-      return new DefaultSimilarity() {
-    
-        // TODO: Remove warning after API has been finalized
-        @Override
-        public float scorePayload(int docId, int start, int end, BytesRef payload) {
-          //we know it is size 4 here, so ignore the offset/length
-          return payload.bytes[payload.offset];
-        }
+    // TODO: Remove warning after API has been finalized
+    @Override
+    public float scorePayload(int docId, int start, int end, BytesRef payload) {
+      //we know it is size 4 here, so ignore the offset/length
+      return payload.bytes[payload.offset];
+    }
 
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        //Make everything else 1 so we see the effect of the payload
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        @Override 
-        public void computeNorm(FieldInvertState state, Norm norm) {
-          norm.setByte(encodeNormValue(state.getBoost()));
-        }
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //Make everything else 1 so we see the effect of the payload
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    @Override 
+    public void computeNorm(FieldInvertState state, Norm norm) {
+      norm.setByte(encodeNormValue(state.getBoost()));
+    }
 
-        @Override
-        public float sloppyFreq(int distance) {
-          return 1;
-        }
+    @Override
+    public float sloppyFreq(int distance) {
+      return 1;
+    }
 
-        @Override
-        public float idf(long docFreq, long numDocs) {
-          return 1;
-        }
+    @Override
+    public float idf(long docFreq, long numDocs) {
+      return 1;
+    }
 
-        @Override
-        public float tf(float freq) {
-          return freq == 0 ? 0 : 1;
-        }
-      };
+    @Override
+    public float tf(float freq) {
+      return freq == 0 ? 0 : 1;
     }
   }
 

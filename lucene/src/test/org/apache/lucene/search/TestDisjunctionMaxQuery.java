@@ -30,9 +30,7 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 
 import java.text.DecimalFormat;
@@ -78,12 +76,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
   }
   
-  public SimilarityProvider sim = new DefaultSimilarityProvider() {
-    @Override
-    public Similarity get(String field) {
-      return new TestSimilarity();
-    }
-  };
+  public Similarity sim = new TestSimilarity();
   public Directory index;
   public IndexReader r;
   public IndexSearcher s;
@@ -100,7 +93,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     index = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, index,
         newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
-                                                     .setSimilarityProvider(sim).setMergePolicy(newLogMergePolicy()));
+                                                     .setSimilarity(sim).setMergePolicy(newLogMergePolicy()));
     
     // hed is the most important field, dek is secondary
     
@@ -159,7 +152,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     r = SlowCompositeReaderWrapper.wrap(writer.getReader());
     writer.close();
     s = newSearcher(r);
-    s.setSimilarityProvider(sim);
+    s.setSimilarity(sim);
   }
   
   @Override

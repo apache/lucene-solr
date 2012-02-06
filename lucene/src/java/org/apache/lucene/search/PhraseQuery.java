@@ -188,7 +188,7 @@ public class PhraseQuery extends Query {
 
     public PhraseWeight(IndexSearcher searcher)
       throws IOException {
-      this.similarity = searcher.getSimilarityProvider().get(field);
+      this.similarity = searcher.getSimilarity();
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.size()];
       TermStatistics termStats[] = new TermStatistics[terms.size()];

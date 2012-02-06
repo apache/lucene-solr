@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -33,7 +32,7 @@ import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.search.SolrSimilarityProvider;
+import org.apache.solr.search.similarities.DefaultSimilarityFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.*;
 import org.xml.sax.InputSource;
@@ -181,22 +180,12 @@ public final class IndexSchema {
    */
   public Collection<SchemaField> getRequiredFields() { return requiredFields; }
 
-  private SimilarityProviderFactory similarityProviderFactory;
+  private Similarity similarity;
 
   /**
-   * Returns the SimilarityProvider used for this index
+   * Returns the Similarity used for this index
    */
-  public SimilarityProvider getSimilarityProvider() { return similarityProviderFactory.getSimilarityProvider(this); }
-
-  /**
-   * Returns the SimilarityProviderFactory used for this index
-   */
-  public SimilarityProviderFactory getSimilarityProviderFactory() { return similarityProviderFactory; }
-
-  private Similarity fallbackSimilarity;
-  
-  /** fallback similarity, in the case a field doesnt specify */
-  public Similarity getFallbackSimilarity() { return fallbackSimilarity; }
+  public Similarity getSimilarity() { return similarity; }
 
   /**
    * Returns the Analyzer used when indexing documents for this index
@@ -438,31 +427,14 @@ public final class IndexSchema {
     dynamicFields = dFields.toArray(new DynamicField[dFields.size()]);
 
     Node node = (Node) xpath.evaluate("/schema/similarity", document, XPathConstants.NODE);
-    Similarity similarity = readSimilarity(loader, node);
-    fallbackSimilarity = similarity == null ? new DefaultSimilarity() : similarity;
-
-    node = (Node) xpath.evaluate("/schema/similarityProvider", document, XPathConstants.NODE);
-    if (node==null) {
-      final SolrSimilarityProvider provider = new SolrSimilarityProvider(this);
-      similarityProviderFactory = new SimilarityProviderFactory() {
-        @Override
-        public SolrSimilarityProvider getSimilarityProvider(IndexSchema schema) {
-          return provider;
-        }
-      };
-      log.debug("using default similarityProvider");
-    } else {
-      final Object obj = loader.newInstance(((Element) node).getAttribute("class"), "search.similarities.");
-      // just like always, assume it's a SimilarityProviderFactory and get a ClassCastException - reasonable error handling
-      // configure a factory, get a similarity back
-      NamedList<?> args = DOMUtil.childNodesToNamedList(node);
-      similarityProviderFactory = (SimilarityProviderFactory)obj;
-      similarityProviderFactory.init(args);
-      if (similarityProviderFactory instanceof SchemaAware){
-        schemaAware.add((SchemaAware) similarityProviderFactory);
-      }
-      log.debug("using similarityProvider factory" + similarityProviderFactory.getClass().getName());
+    SimilarityFactory simFactory = readSimilarity(loader, node);
+    if (simFactory == null) {
+      simFactory = new DefaultSimilarityFactory();
     }
+    if (simFactory instanceof SchemaAware) {
+      ((SchemaAware)simFactory).inform(this);
+    }
+    similarity = simFactory.getSimilarity();
 
     node = (Node) xpath.evaluate("/schema/defaultSearchField/text()", document, XPathConstants.NODE);
     if (node==null) {
@@ -686,7 +658,7 @@ public final class IndexSchema {
     return newArr;
   }
 
-  static Similarity readSimilarity(ResourceLoader loader, Node node) throws XPathExpressionException {
+  static SimilarityFactory readSimilarity(ResourceLoader loader, Node node) throws XPathExpressionException {
     if (node==null) {
       return null;
     } else {
@@ -706,7 +678,7 @@ public final class IndexSchema {
           }
         };
       }
-      return similarityFactory.getSimilarity();
+      return similarityFactory;
     }
   }
 

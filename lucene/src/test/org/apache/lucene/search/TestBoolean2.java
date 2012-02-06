@@ -26,8 +26,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -230,9 +230,9 @@ public class TestBoolean2 extends LuceneTestCase {
     query.add(new TermQuery(new Term(field, "zz")), BooleanClause.Occur.SHOULD);
 
     int[] expDocNrs = {2, 3};
-    SimilarityProvider oldSimilarity = searcher.getSimilarityProvider();
+    Similarity oldSimilarity = searcher.getSimilarity();
     try {
-      searcher.setSimilarityProvider(new DefaultSimilarityProvider(){
+      searcher.setSimilarity(new DefaultSimilarity(){
         @Override
         public float coord(int overlap, int maxOverlap) {
           return overlap / ((float)maxOverlap - 1);
@@ -240,7 +240,7 @@ public class TestBoolean2 extends LuceneTestCase {
       });
       queriesTest(query, expDocNrs);
     } finally {
-      searcher.setSimilarityProvider(oldSimilarity);
+      searcher.setSimilarity(oldSimilarity);
     }
   }
 

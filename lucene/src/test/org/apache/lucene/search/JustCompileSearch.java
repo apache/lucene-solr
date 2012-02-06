@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.FieldInvertState;
@@ -263,21 +262,6 @@ final class JustCompileSearch {
 
     @Override
     public void computeNorm(FieldInvertState state, Norm norm) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-  }
-  
-  static final class JustCompileSimilarityProvider implements SimilarityProvider {
-
-    public float queryNorm(float sumOfSquaredWeights) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    public float coord(int overlap, int maxOverlap) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    public Similarity get(String field) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }

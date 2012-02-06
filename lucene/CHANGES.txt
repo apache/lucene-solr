@@ -216,7 +216,7 @@ Changes in backwards compatibility policy
   and clone() no longer take readOnly booleans or IndexDeletionPolicy
   instances. Furthermore, IndexReader.setNorm() was removed. If you need
   customized norm values, the recommended way to do this is by modifying
-  SimilarityProvider to use an external byte[] or one of the new DocValues
+  Similarity to use an external byte[] or one of the new DocValues
   fields (LUCENE-3108). Alternatively, to dynamically change norms (boost
   *and* length norm) at query time, wrap your IndexReader using
   FilterIndexReader, overriding FilterIndexReader.norms(). To persist the
@@ -583,16 +583,12 @@ New features
     for plugging in new ranking algorithms without dealing with all of the
     nuances and implementation details of Lucene. 
 
-  - Added a new helper class BasicSimilarityProvider that just applies one
-    scoring algorithm to all fields, with queryNorm() and coord() returning 1.
-    In general, it is recommended to disable coord() when using the new models.
-    For example, to use BM25 for all fields: 
-     searcher.setSimilarityProvider(
-        new BasicSimilarityProvider(new BM25Similarity()));
+  - For example, to use BM25 for all fields: 
+     searcher.setSimilarity(new BM25Similarity());
 
     If you instead want to apply different similarities (e.g. ones with 
     different parameter values or different algorithms entirely) to different
-    fields, implement SimilarityProvider with your per-field logic.
+    fields, implement PerFieldSimilarityWrapper with your per-field logic.
 
   (David Mark Nemeskey via Robert Muir)
 
@@ -774,7 +770,7 @@ API Changes
   query time, wrap your IndexReader using FilterIndexReader, overriding
   FilterIndexReader.norms(). To persist the changes on disk, copy the
   FilteredIndexReader to a new index using IndexWriter.addIndexes().
-  In Lucene 4.0, SimilarityProvider will allow you to customize scoring
+  In Lucene 4.0, Similarity will allow you to customize scoring
   using external norms, too.  (Uwe Schindler, Robert Muir)
 
 * LUCENE-3735: PayloadProcessorProvider was changed to return a

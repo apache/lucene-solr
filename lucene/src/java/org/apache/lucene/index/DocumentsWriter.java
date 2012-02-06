@@ -31,7 +31,7 @@ import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.similarities.SimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
@@ -106,7 +106,7 @@ final class DocumentsWriter {
   private volatile boolean closed;
 
   final InfoStream infoStream;
-  SimilarityProvider similarityProvider;
+  Similarity similarity;
 
   List<String> newFiles;
 
@@ -140,7 +140,7 @@ final class DocumentsWriter {
     this.directory = directory;
     this.indexWriter = writer;
     this.infoStream = config.getInfoStream();
-    this.similarityProvider = config.getSimilarityProvider();
+    this.similarity = config.getSimilarity();
     this.perThreadPool = config.getIndexerThreadPool();
     this.chain = config.getIndexingChain();
     this.perThreadPool.initialize(this, globalFieldNumbers, config);

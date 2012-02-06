@@ -551,7 +551,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     Query q = new TermQuery(new Term(FIELD_BODY, "heart"));
     
     for (SimilarityBase sim : sims) {
-      searcher.setSimilarityProvider(new BasicSimilarityProvider(sim));
+      searcher.setSimilarity(sim);
       TopDocs topDocs = searcher.search(q, 1000);
       assertEquals("Failed: " + sim.toString(), 3, topDocs.totalHits);
     }
@@ -565,7 +565,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     Query q = new TermQuery(new Term(FIELD_BODY, "heart"));
     
     for (SimilarityBase sim : sims) {
-      searcher.setSimilarityProvider(new BasicSimilarityProvider(sim));
+      searcher.setSimilarity(sim);
       TopDocs topDocs = searcher.search(q, 1000);
       assertEquals("Failed: " + sim.toString(), "2", reader.document(topDocs.scoreDocs[0].doc).get(FIELD_ID));
     }
