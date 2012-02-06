@@ -47,7 +47,8 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
  *     &lt;filter class="solr.WordDelimiterFilterFactory" protected="protectedword.txt"
  *             preserveOriginal="0" splitOnNumerics="1" splitOnCaseChange="1"
  *             catenateWords="0" catenateNumbers="0" catenateAll="0"
- *             generateWordParts="1" generateNumberParts="1" stemEnglishPossessive="1"/&gt;
+ *             generateWordParts="1" generateNumberParts="1" stemEnglishPossessive="1"
+ *             types="wdfftypes.txt" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
  *
@@ -125,7 +126,7 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implement
   // source => type
   private static Pattern typePattern = Pattern.compile( "(.*)\\s*=>\\s*(.*)\\s*$" );
   
-  /** parses a list of MappingCharFilter style rules into a custom byte[] type table */
+  // parses a list of MappingCharFilter style rules into a custom byte[] type table
   private byte[] parseTypes(List<String> rules) {
     SortedMap<Character,Byte> typeMap = new TreeMap<Character,Byte>();
     for( String rule : rules ){
