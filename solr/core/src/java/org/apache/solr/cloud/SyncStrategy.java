@@ -188,6 +188,8 @@ public class SyncStrategy {
             "false"));
         CommonsHttpSolrServer server = new CommonsHttpSolrServer(
             node.getCoreUrl());
+        server.setConnectionTimeout(15000);
+        server.setSoTimeout(15000);
         //System.out.println("ask " + node.getCoreUrl() + " to sync");
         NamedList rsp = server.request(qr);
         //System.out.println("response about syncing to leader:" + rsp + " node:"
