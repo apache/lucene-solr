@@ -581,7 +581,7 @@ public class QueryComponent extends SearchComponent
     if(fsv){
       Sort sort = searcher.weightSort(rb.getSortSpec().getSort());
       SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
-      NamedList<List> sortVals = new NamedList<List>(); // order is important for the sort fields
+      NamedList<Object[]> sortVals = new NamedList<Object[]>(); // order is important for the sort fields
       Field field = new StringField("dummy", ""); // a dummy Field
       IndexReaderContext topReaderContext = searcher.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
@@ -592,35 +592,49 @@ public class QueryComponent extends SearchComponent
         leaves=null;
       }
 
+      DocList docList = rb.getResults().docList;
+
+      // sort ids from lowest to highest so we can access them in order
+      int nDocs = docList.size();
+      long[] sortedIds = new long[nDocs];
+      DocIterator it = rb.getResults().docList.iterator();
+      for (int i=0; i<nDocs; i++) {
+        sortedIds[i] = (((long)it.nextDoc()) << 32) | i;
+      }
+      Arrays.sort(sortedIds);
+
+
       for (SortField sortField: sortFields) {
         SortField.Type type = sortField.getType();
         if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
         FieldComparator comparator = null;
-        FieldComparator comparators[] = (leaves==null) ? null : new FieldComparator[leaves.length];
 
         String fieldname = sortField.getField();
         FieldType ft = fieldname==null ? null : req.getSchema().getFieldTypeNoEx(fieldname);
 
-        DocList docList = rb.getResults().docList;
-        List<Object> vals = new ArrayList<Object>(docList.size());
-        DocIterator it = rb.getResults().docList.iterator();
+        Object[] vals = new Object[nDocs];
+        
 
+        int lastIdx = -1;
         int idx = 0;
 
-        while(it.hasNext()) {
-          int doc = it.nextDoc();
+        for (long idAndPos : sortedIds) {
+          int doc = (int)(idAndPos >>> 32);
+          int position = (int)idAndPos;
+
           if (leaves != null) {
             idx = ReaderUtil.subIndex(doc, leaves);
             currentLeaf = leaves[idx];
-            comparator = comparators[idx];
+            if (idx != lastIdx) {
+              // we switched segments.  invalidate comparator.
+              comparator = null;
+            }
           }
 
           if (comparator == null) {
             comparator = sortField.getComparator(1,0);
             comparator = comparator.setNextReader(currentLeaf);
-            if (comparators != null)
-              comparators[idx] = comparator;
           }
 
           doc -= currentLeaf.docBase;  // adjust for what segment this is in
@@ -647,7 +661,7 @@ public class QueryComponent extends SearchComponent
             val = ft.toObject(field);
           }
 
-          vals.add(val);
+          vals[position] = val;
         }
 
         sortVals.add(fieldname, vals);
