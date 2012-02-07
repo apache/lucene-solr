@@ -49,6 +49,8 @@ New Features
   
  * LUCENE-1812: Added static index pruning contrib module.
    (Andrzej Bialecki, Doron Cohen)
+
+ * LUCENE-3602: Added query time joining under the join contrib. (Martijn van Groningen, Michael McCandless)
   
 API Changes
 
