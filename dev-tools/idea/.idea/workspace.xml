@@ -105,7 +105,7 @@
     <configuration default="false" name="lucene" type="JUnit" factoryName="JUnit">
       <module name="lucene" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/lucene-idea" />
       <option name="VM_PARAMETERS" value="-ea -Dlucene.version=4.0-SNAPSHOT -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
