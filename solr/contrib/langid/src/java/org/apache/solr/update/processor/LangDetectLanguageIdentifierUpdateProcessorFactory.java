@@ -119,8 +119,9 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
   };
 
   public static synchronized void loadData() throws IOException, LangDetectException {
-    if (loaded)
+    if (loaded) {
       return;
+    }
     loaded = true;
     List<String> profileData = new ArrayList<String>();
     Charset encoding = Charset.forName("UTF-8");
@@ -131,5 +132,6 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
       reader.close();
     }
     DetectorFactory.loadProfile(profileData);
+    DetectorFactory.setSeed(0);
   }
 }

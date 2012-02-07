@@ -9,7 +9,9 @@ $Id$
 
 ================== Release 3.6.0 ==================
 
-(No Changes)
+* SOLR-3107: When using the LangDetect implementation of langid, set the random
+  seed to 0, so that the same document is detected as the same language with
+  the same probability every time.  (Christian Moen via rmuir)
 
 ================== Release 3.5.0 ==================
 
