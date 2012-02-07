@@ -10,12 +10,12 @@ later bugfix releases should not be tested (the reason is that the new version m
 compatible to the last base version, bugfixes should not taken into account):
 
 * cd lucene/backwards
-* svn rm src/test src/test-framework lib/lucene-core*.jar
+* svn rm core/src/test test-framework lib/lucene-core*.jar
 * svn commit (1st commit; you must do this, else you will corrupt your checkout)
-* svn cp https://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_X_Y_0/lucene/src/test-framework src
-* svn cp https://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_X_Y_0/lucene/src/test src
+* svn cp https://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_X_Y_0/lucene/test-framework ./
+* svn cp https://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_X_Y_0/lucene/core/src/test core/src/
 * Copy the lucene-core.jar from the last release tarball to lib.
-* Check that everything is correct: The backwards folder should contain a src/ folder
-  that now contains "test" and "test-framework". The files should be the ones from the last version.
+* Check that everything is correct: The backwards folder should contain folders "core/src/test/"
+  and "test-framework/". The files should be the ones from the last version.
 * Run "ant test-backwards"
 * Commit the stuff again (2nd commit)

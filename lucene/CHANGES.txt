@@ -899,6 +899,17 @@ Build
 
   (Steve Rowe, hossman)
 
+* LUCENE-3753: Restructure the Lucene build system:
+  - Created a new Lucene-internal module named "core" by moving the java/
+    and test/ directories from lucene/src/ to lucene/core/src/.
+  - Eliminated lucene/src/ by moving all its directories up one level.
+  - Each internal module (core/, test-framework/, and tools/) now has its own
+    build.xml, from which it is possible to run module-specific targets.
+    lucene/build.xml delegates all build tasks (via
+    <ant dir="internal-module-dir"> calls) to these modules' build.xml files.
+  (Steve Rowe)
+
+
 ======================= Lucene 3.5.0 =======================
 
 Changes in backwards compatibility policy

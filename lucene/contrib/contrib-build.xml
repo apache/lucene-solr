@@ -31,7 +31,7 @@
   
   <!-- if you extend the classpath refid in one contrib's build.xml (add JARs), use this as basis: -->
   <path id="base.classpath">
-   <pathelement location="${common.dir}/build/classes/java"/>
+   <pathelement location="${common.dir}/build/core/classes/java"/>
    <pathelement path="${project.classpath}"/>
   </path>
   
@@ -39,7 +39,7 @@
   <path id="classpath" refid="base.classpath"/>
   
   <path id="test.base.classpath">
-    <pathelement location="${common.dir}/build/classes/test-framework"/>
+    <pathelement location="${common.dir}/build/test-framework/classes/java"/>
     <path refid="classpath"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
@@ -62,28 +62,6 @@
   </target>
   <target name="build-artifacts-and-tests" depends="jar, compile-test" />
 	
-  <available 
-    type="file" 
-    file="pom.xml" 
-    property="pom.xml.present">
-  </available>
-
-  <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src, javadocs">
-    <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
-             uri="antlib:org.apache.maven.artifact.ant" 
-             classpathref="maven-ant-tasks.classpath"/>
-    <sequential>
-      <m2-deploy>
-        <artifact-attachments>
-          <attach file="${build.dir}/${final.name}-src.jar"
-                  classifier="sources"/>
-          <attach file="${build.dir}/${final.name}-javadoc.jar"
-                  classifier="javadoc"/>
-        </artifact-attachments>
-      </m2-deploy>
-    </sequential>
-  </target>
-
   <target name="javadocs" depends="compile-core">
    	<sequential>
        <mkdir dir="${javadoc.dir}/contrib-${name}"/>

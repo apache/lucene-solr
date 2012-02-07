@@ -34,7 +34,7 @@
 
   <target name="compile-core" depends="jar-queries,jar-sandbox,common.compile-core"/>
 
-  <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven"/>
+  <target name="dist-maven" depends="jar-core,javadocs,common.dist-maven"/>
 
   <target name="javacc" depends="init,javacc-check,javacc-QueryParser,javacc-surround,javacc-flexible"/>
 

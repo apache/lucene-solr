@@ -162,7 +162,7 @@
     <property name="validated-solr.uptodate" value="true"/>
   </target>
   <path id="tools.runtime.classpath">
-    <pathelement location="${common.dir}/build/classes/tools"/>
+    <pathelement location="${common.dir}/build/tools/classes/java"/>
   </path>
 
   <target name="init-dist" >

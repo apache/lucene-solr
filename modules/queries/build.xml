@@ -26,5 +26,5 @@
 
   <import file="../../lucene/contrib/contrib-build.xml"/>
 
-  <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven"/>
+  <target name="dist-maven" depends="jar-core,javadocs,common.dist-maven"/>
 </project>

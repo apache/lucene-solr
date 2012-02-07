@@ -17,17 +17,14 @@
     limitations under the License.
  -->
 
-<project name="suggest" default="default">
+<project name="tools" default="default">
+  <description>Lucene Tools</description>
 
-  <description>
-    Suggest
-  </description>
-	
-  <property name="build.dir" location="build/" />
-  <property name="dist.dir" location="dist/" />
-  <property name="maven.dist.dir" location="../dist/maven" />
+  <property name="build.dir" location="../build/tools"/>
 
-  <import file="../../lucene/contrib/contrib-build.xml"/>
+  <import file="../common-build.xml"/>
 
-  <target name="dist-maven" depends="jar-core,javadocs,common.dist-maven" />
+  <target name="javadocs"/> <!-- to make common-build.xml happy -->
+  
+  <path id="classpath"/>
 </project>

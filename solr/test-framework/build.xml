@@ -22,7 +22,7 @@
 
   <path id="javadoc.classpath">
     <path refid="classpath"/>
-    <pathelement location="${common.dir}/build/classes/test-framework"/>
+    <pathelement location="${common.dir}/build/test-framework/classes/java"/>
     <pathelement location="${build.dir}/classes/java"/>
   </path>
 

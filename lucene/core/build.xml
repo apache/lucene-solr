@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="core" default="default">
+  <description>Lucene Core</description>
+
+  <property name="build.dir" location="../build/core"/>
+
+  <import file="../common-build.xml"/>
+
+  <path id="classpath"/>
+  
+  <path id="test.classpath">
+    <pathelement location="${common.dir}/build/test-framework/classes/java"/>
+    <path refid="junit-path"/>
+    <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${build.dir}/classes/test"/>
+  </path>
+
+  <path id="junit.classpath">
+    <path refid="test.classpath"/>
+    <pathelement path="${java.class.path}"/>
+  </path>
+
+  <target name="compile-core" depends="jflex-notice, javacc-notice, common.compile-core"/>
+  
+  <target name="test-core" depends="common.test"/>
+
+  <target name="javadocs-core" depends="javadocs"/>
+  <target name="javadocs" description="Generate javadoc for core classes">
+  	<sequential>
+      <mkdir dir="${javadoc.dir}/core"/>
+      <invoke-javadoc destdir="${javadoc.dir}/core" title="${Name} ${version} core API">
+        <sources>
+          <packageset dir="${src.dir}"/>
+          <link href=""/>
+        </sources>
+      </invoke-javadoc>
+      <mkdir dir="${build.dir}"/>
+     <jarify basedir="${javadoc.dir}/core" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+    </sequential>
+  </target>
+
+  <macrodef name="createLevAutomaton">
+  	<attribute name="n"/>
+  	<sequential>
+      <exec dir="src/java/org/apache/lucene/util/automaton"
+            executable="${python.exe}" failonerror="true">
+        <arg line="createLevAutomata.py @{n} True"/>
+      </exec>
+      <exec dir="src/java/org/apache/lucene/util/automaton"
+            executable="${python.exe}" failonerror="true">
+        <arg line="createLevAutomata.py @{n} False"/>
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <target name="createLevAutomata" depends="check-moman,clone-moman,pull-moman">
+  	<createLevAutomaton n="1"/>
+  	<createLevAutomaton n="2"/>
+  </target>
+  
+  <target name="check-moman">
+    <condition property="moman.cloned">
+      <available file="src/java/org/apache/lucene/util/automaton/moman"/>
+  	</condition>
+  </target>
+	
+  <target name="clone-moman" unless="moman.cloned">
+  	<exec dir="src/java/org/apache/lucene/util/automaton" 
+          executable="${hg.exe}" failonerror="true">
+      <arg line="clone -r ${moman.rev} ${moman.url} moman"/>
+    </exec>
+  </target>
+
+  <target name="pull-moman" if="moman.cloned">
+    <exec dir="src/java/org/apache/lucene/util/automaton/moman" 
+          executable="${hg.exe}" failonerror="true">
+      <arg line="pull -f -r ${moman.rev}"/>
+    </exec>
+  </target>
+</project>

@@ -22,5 +22,5 @@
 
   <target name="init" depends="contrib-build.init,jar-grouping"/>
 
-  <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven" />
+  <target name="dist-maven" depends="jar-core,javadocs,common.dist-maven" />
 </project>

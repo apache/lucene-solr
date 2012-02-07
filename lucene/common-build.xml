@@ -25,7 +25,7 @@
 
   <dirname file="${ant.file.common}" property="common.dir"/>
   <property name="dev-tools.dir" value="${common.dir}/../dev-tools"/>
-  <property name="prettify.dir" value="${common.dir}/src/tools/prettify"/>
+  <property name="prettify.dir" value="${common.dir}/tools/prettify"/>
   <property name="maven.build.dir" value="${build.dir}/maven"/>
 
   <!-- Give user a chance to override without editing this file
@@ -63,7 +63,7 @@
   </path>
 
   <path id="tools.runtime.classpath">
-    <pathelement location="${common.dir}/build/classes/tools"/>
+    <pathelement location="${common.dir}/build/tools/classes/java"/>
   </path>
 
   <path id="maven-ant-tasks.classpath">
@@ -115,7 +115,7 @@
 
   <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
-  <property name="javadoc.packagelist.dir" value="${common.dir}/src/tools/javadoc"/>
+  <property name="javadoc.packagelist.dir" value="${common.dir}/tools/javadoc"/>
   <available file="${javadoc.packagelist.dir}/java6/package-list" property="javadoc.java6.packagelist.exists"/>
   <property name="javadoc.access" value="protected"/>
   <property name="javadoc.charset" value="utf-8"/>
@@ -131,7 +131,7 @@
     </fileset>
   </path>
 	
-  <property name="changes.src.dir" value="${common.dir}/src/site/changes"/>
+  <property name="changes.src.dir" value="${common.dir}/site/changes"/>
   <property name="changes.target.dir" value="${common.dir}/build/docs/changes"/>
 
   <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
@@ -139,13 +139,13 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="tests.src.dir" location="src/test"/>
-  <property name="tests-framework.src.dir" location="${common.dir}/src/test-framework/java"/>
+  <property name="tests-framework.src.dir" location="${common.dir}/test-framework/src/java"/>
   <property name="build.dir" location="build"/>
   <!-- Needed in case a contrib needs the original build, also for compile-tools to be called from contrib -->
   <property name="common.build.dir" location="${common.dir}/build"/>
   <property name="tests.lockdir" location="${common.build.dir}"/>
-  <property name="dist.dir" location="dist"/>
-  <property name="maven.dist.dir" location="dist/maven"/>
+  <property name="dist.dir" location="${common.dir}/dist"/>
+  <property name="maven.dist.dir" location="${dist.dir}/maven"/>
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
 
@@ -222,7 +222,7 @@
 
   <patternset id="lucene.local.src.package.patterns"
               includes="src/,index.html,*build*.xml,docs/,*.txt,contrib/,lib/,backwards/"
-              excludes="**/pom.xml,**/*.iml,src/site/build/"
+              excludes="**/pom.xml,**/*.iml,site/build/"
   />
 
   <target name="clean"
@@ -456,48 +456,37 @@
     </sequential>
   </macrodef>
 
-  <property name="lucene-core.jar" value="${common.dir}/build/lucene-core-${version}.jar"/>
+  <property name="lucene-core.jar" value="${common.dir}/build/core/lucene-core-${version}.jar"/>
   <target name="check-lucene-core-uptodate" unless="lucene-core.uptodate">
     <uptodate property="lucene-core.uptodate" targetfile="${lucene-core.jar}">
-     	<srcfiles dir="${common.dir}/src/java" includes="**/*.java"/>
+     	<srcfiles dir="${common.dir}/core/src/java" includes="**/*.java"/>
     </uptodate>
   </target>
   <target name="jar-lucene-core" unless="lucene-core.uptodate" depends="check-lucene-core-uptodate">
-    <ant dir="${common.dir}" target="jar-core" inheritAll="false">
+    <ant dir="${common.dir}/core" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="lucene-core.uptodate" value="true"/>
   </target>
   <target name="compile-lucene-core" unless="core.compiled">
-    <ant dir="${common.dir}" target="compile-core" inheritAll="false">
+    <ant dir="${common.dir}/core" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="core.compiled" value="true"/>
   </target>
   
-  <path id="test-framework.classpath">
-    <path refid="ant-path"/>
-    <path refid="test.classpath"/>
-  </path>
-  
-  <target name="compile-test-framework" depends="compile-core">
-  	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
-  						test.classpath="test-framework.classpath"/>
-       <!-- Copy the resources folder (if existent) -->
-       <copy todir="${common.dir}/build/classes/test-framework">
-          <fileset dir="${tests-framework.src.dir}/../resources" erroronmissingdir="no"/>
-       </copy>
+  <target name="compile-test-framework" unless="lucene.test.framework.compiled">
+    <ant dir="${common.dir}/test-framework" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="lucene.test.framework.compiled" value="true"/>
   </target>
 
   <target name="compile-tools">
-    <compile
-      srcdir="${common.dir}/src/tools/java"
-      destdir="${common.build.dir}/classes/tools">
-      <classpath refid="classpath"/>
-    </compile>
+    <ant dir="${common.dir}/tools" target="compile-core" inheritAll="false"/>
   </target>
 
-  <target name="compile-test" depends="compile-test-framework">
+  <target name="compile-test" depends="compile-core,compile-test-framework">
   	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
   						test.classpath="test.classpath"/>
   </target>
@@ -778,6 +767,24 @@
 
   <target name="default" depends="jar-core"/>
 
+  <available type="file" file="pom.xml" property="pom.xml.present"/>
+  
+  <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src, javadocs">
+    <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
+             uri="antlib:org.apache.maven.artifact.ant" 
+             classpathref="maven-ant-tasks.classpath"/>
+    <sequential>
+      <m2-deploy>
+        <artifact-attachments>
+          <attach file="${build.dir}/${final.name}-src.jar"
+                  classifier="sources"/>
+          <attach file="${build.dir}/${final.name}-javadoc.jar"
+                  classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
+    </sequential>
+  </target>
+
   <target name="rat-sources-typedef">
     <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:rat.anttasks">
       <classpath>
@@ -948,7 +955,7 @@
        -->
       <!-- Lucene  -->
       <arg value="-c" />
-      <arg value="${basedir}/lib" />
+      <arg value="${common.dir}/lib" />
     </java>
   </target>
 

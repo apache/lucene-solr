@@ -32,8 +32,8 @@
   <name>Lucene Core</name>
   <description>Apache Lucene Java Core</description>
   <properties>
-    <module-directory>lucene</module-directory>
-    <build-directory>../build</build-directory>
+    <module-directory>lucene/core</module-directory>
+    <build-directory>../build/lucene-maven</build-directory>
   </properties>
   <dependencies>
     <dependency>
@@ -56,19 +56,19 @@
     <directory>${build-directory}</directory>
     <outputDirectory>${build-directory}/classes/java</outputDirectory>
     <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
-    <sourceDirectory>java</sourceDirectory>
+    <sourceDirectory>src/java</sourceDirectory>
     <resources>
       <resource>
-        <directory>resources</directory>
+        <directory>src/resources</directory>
       </resource>
     </resources>
-    <testSourceDirectory>test</testSourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
     <testResources>
       <testResource>
-        <directory>test-framework/resources</directory>
+        <directory>../test-framework/src/resources</directory>
       </testResource>
       <testResource>
-        <directory>test-framework/java</directory>
+        <directory>../test-framework/src/java</directory>
         <excludes>
           <exclude>**/*.java</exclude>
         </excludes>
@@ -136,7 +136,7 @@
             </goals>
             <configuration>
               <sources>
-                <source>test-framework</source>
+                <source>../test-framework/src/java</source>
               </sources>
             </configuration>
           </execution>

@@ -104,7 +104,7 @@
          dest="luke/luke-${luke.version}.jar"/>
   </target>
   <path id="luke.classpath">
-    <pathelement location="${common.dir}/build/classes/java" />
+    <pathelement location="${common.dir}/build/core/classes/java" />
     <pathelement location="${common.dir}/../modules/queryparser/build/classes/java" />
   </path>
   <target name="luke" depends="luke-download">
@@ -319,7 +319,7 @@
     <svn-export-source source.dir=".."/>
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/lucene/src/tools/javadoc/java6"/>
+    <delete dir="${svn.export.dir}/lucene/tools/javadoc/java6"/>
 
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir="${svn.export.dir}"
@@ -557,7 +557,7 @@
       typically it is  colon seperated in Unix, semi-colon seperated
       on windows, ie:
  
-      ant stub-factories -Dstub.src.path="core/src:../lucene/contrib:../lucene/src/java:../modules/analysis"
+      ant stub-factories -Dstub.src.path="core/src:../lucene/contrib:../lucene/core/src/java:../modules/analysis"
  
       FYI: The file ${stub.list} contains a list of classes
       that seem to need stub factories. (if java files can be found to

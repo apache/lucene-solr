@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="lucene/src/test-framework/java"/>
-        <classpathentry kind="src" output="bin.tests-framework" path="lucene/src/test-framework/resources"/>
-	<classpathentry kind="src" path="lucene/src/java"/>
-	<classpathentry kind="src" path="lucene/src/resources"/>
-	<classpathentry kind="src" path="lucene/src/test"/>
+	<classpathentry kind="src" path="lucene/core/src/java"/>
+	<classpathentry kind="src" path="lucene/core/src/resources"/>
+	<classpathentry kind="src" path="lucene/core/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/resources"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/test"/>
@@ -18,6 +16,8 @@
 	<classpathentry kind="src" path="lucene/contrib/sandbox/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/spatial/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/spatial/src/test"/>
+	<classpathentry kind="src" path="lucene/test-framework/src/java"/>
+        <classpathentry kind="src" output="bin.tests-framework" path="lucene/test-framework/src/resources"/>
 	<classpathentry kind="src" path="modules/analysis/common/src/java"/>
 	<classpathentry kind="src" path="modules/analysis/common/src/resources"/>
 	<classpathentry kind="src" path="modules/analysis/common/src/test"/>
