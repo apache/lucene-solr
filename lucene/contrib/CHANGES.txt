@@ -60,8 +60,6 @@ New Features
 
  * LUCENE-3496: Support grouping by DocValues. (Martijn van Groningen)
 
- * LUCENE-3602: Added query time joining under the join module. (Martijn van Groningen, Michael McCandless)
-
  * LUCENE-2795: Generified DirectIOLinuxDirectory to work across any
    unix supporting the O_DIRECT flag when opening a file (tested on
    Linux and OS X but likely other Unixes will work), and improved it
@@ -149,6 +147,8 @@ New Features
    BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
    joins in both parent to child and child to parent directions.
    (Mike McCandless)
+
+ * LUCENE-3602: Added query time joining under the join module. (Martijn van Groningen, Michael McCandless)
 
 API Changes
 
