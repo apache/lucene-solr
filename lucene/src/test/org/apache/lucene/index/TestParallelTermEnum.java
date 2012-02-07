@@ -72,7 +72,9 @@ public class TestParallelTermEnum extends LuceneTestCase {
     }
 
     public void test1() throws IOException {
-        ParallelAtomicReader pr = new ParallelAtomicReader.Builder().add(ir1).add(ir2).build();
+        ParallelReader pr = new ParallelReader();
+        pr.add(ir1);
+        pr.add(ir2);
 
         Bits liveDocs = pr.getLiveDocs();
 
