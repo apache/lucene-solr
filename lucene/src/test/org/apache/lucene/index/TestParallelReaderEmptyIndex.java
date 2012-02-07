@@ -30,7 +30,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 
 /**
- * Some tests for {@link ParallelReader}s with empty indexes
+ * Some tests for {@link ParallelAtomicReader}s with empty indexes
  * 
  * @author Christian Kohlschuetter
  */
@@ -52,9 +52,10 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     Directory rdOut = newDirectory();
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    ParallelReader pr = new ParallelReader();
-    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1)));
-    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd2)));
+    ParallelAtomicReader pr = new ParallelAtomicReader.Builder()
+      .add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1)))
+      .add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd2)))
+      .build();
 		
     // When unpatched, Lucene crashes here with a NoSuchElementException (caused by ParallelTermEnum)
     iwOut.addIndexes(pr);
@@ -115,15 +116,21 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     Directory rdOut = newDirectory();
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    ParallelReader pr = new ParallelReader();
-    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1)));
-    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd2)));
+    final DirectoryReader reader1, reader2;
+    ParallelAtomicReader pr = new ParallelAtomicReader.Builder()
+      .add(SlowCompositeReaderWrapper.wrap(reader1 = DirectoryReader.open(rd1)))
+      .add(SlowCompositeReaderWrapper.wrap(reader2 = DirectoryReader.open(rd2)))
+      .build();
 
     // When unpatched, Lucene crashes here with an ArrayIndexOutOfBoundsException (caused by TermVectorsWriter)
     iwOut.addIndexes(pr);
 
     // ParallelReader closes any IndexReader you added to it:
     pr.close();
+    
+    // assert subreaders were closed
+    assertEquals(0, reader1.getRefCount());
+    assertEquals(0, reader2.getRefCount());
 
     rd1.close();
     rd2.close();
