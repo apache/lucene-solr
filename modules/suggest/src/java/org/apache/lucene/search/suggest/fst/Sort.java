@@ -49,6 +49,12 @@ public final class Sort {
   public final static int MIN_BUFFER_SIZE_MB = 32;
 
   /**
+   * Absolute minimum required buffer size for sorting.
+   */
+  public static final int ABSOLUTE_MIN_SORT_BUFFER_SIZE = MB / 2;
+  private static final String MIN_BUFFER_SIZE_MSG = "At least 0.5MB RAM buffer is needed";
+
+  /**
    * Maximum number of temporary files before doing an intermediate merge.
    */
   public final static int MAX_TEMPFILES = 128;
@@ -82,11 +88,26 @@ public final class Sort {
   
     /** 
      * Approximately half of the currently available free heap, but no less
-     * than {@link #MIN_BUFFER_SIZE_MB}.
+     * than {@link #MIN_BUFFER_SIZE_MB}. However if current heap allocation 
+     * is insufficient for sorting consult with max allowed heap size. 
      */
     public static BufferSize automatic() {
-      long freeHeap = Runtime.getRuntime().freeMemory();
-      return new BufferSize(Math.min(MIN_BUFFER_SIZE_MB * MB, freeHeap / 2));
+      Runtime rt = Runtime.getRuntime();
+      
+      // take sizes in "conservative" order
+      long max = rt.maxMemory();
+      long total = rt.totalMemory();
+      long free = rt.freeMemory();
+
+      // by free mem (attempting to not grow the heap for this)
+      long half = free/2;
+      if (half >= ABSOLUTE_MIN_SORT_BUFFER_SIZE) { 
+        return new BufferSize(Math.min(MIN_BUFFER_SIZE_MB * MB, half));
+      }
+      
+      // by max mem (heap will grow)
+      half = (max - total) / 2;
+      return new BufferSize(Math.min(MIN_BUFFER_SIZE_MB * MB, half));
     }
   }
 
@@ -151,10 +172,8 @@ public final class Sort {
    * All-details constructor.
    */
   public Sort(BufferSize ramBufferSize, File tempDirectory, int maxTempfiles) {
-    if (ramBufferSize.bytes < 1024 * 1024 / 2) {
-      // Half-meg buffer is the absolute minimum.
-      throw new IllegalArgumentException("At least 0.5MB RAM buffer is needed: "
-          + ramBufferSize.bytes);
+    if (ramBufferSize.bytes < ABSOLUTE_MIN_SORT_BUFFER_SIZE) {
+      throw new IllegalArgumentException(MIN_BUFFER_SIZE_MSG + ": " + ramBufferSize.bytes);
     }
     
     if (maxTempfiles < 2) {
