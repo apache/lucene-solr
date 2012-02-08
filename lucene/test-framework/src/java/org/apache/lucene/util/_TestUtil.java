@@ -364,8 +364,8 @@ public class _TestUtil {
           
         case 19: sb.append(";"); break;
         case 20: sb.append(nextInt(random, 0, Integer.MAX_VALUE - 1)); break;
-        case 21: sb.append("\n");
-        case 22: sb.append("          ".substring(nextInt(random, 0, 10)));
+        case 21: sb.append("\n"); break;
+        case 22: sb.append("          ".substring(nextInt(random, 0, 10))); break;
         default: sb.append(randomSimpleString(random));
       }
     }
