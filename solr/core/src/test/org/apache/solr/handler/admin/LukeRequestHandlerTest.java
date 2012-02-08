@@ -18,7 +18,9 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.solr.common.luke.FieldFlag;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.EnumSet;
@@ -39,6 +41,40 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     return "solrconfig.xml";
   }
 
+  @Before
+  public void before() {
+    assertU(adoc("id","SOLR1000", "name","Apache Solr",
+        "solr_si", "10",
+        "solr_sl", "10",
+        "solr_sf", "10",
+        "solr_sd", "10",
+        "solr_s", "10",
+        "solr_sI", "10",
+        "solr_sS", "10",
+        "solr_t", "10",
+        "solr_tt", "10",
+        "solr_b", "true",
+        "solr_i", "10",
+        "solr_l", "10",
+        "solr_f", "10",
+        "solr_d", "10",
+        "solr_ti", "10",
+        "solr_tl", "10",
+        "solr_tf", "10",
+        "solr_td", "10",
+        "solr_pi", "10",
+        "solr_pl", "10",
+        "solr_pf", "10",
+        "solr_pd", "10",
+        "solr_dt", "2000-01-01T01:01:01Z",
+        "solr_tdt", "2000-01-01T01:01:01Z",
+        "solr_pdt", "2000-01-01T01:01:01Z"
+    ));
+    assertU(commit());
+
+  }
+
+  @Test
   public void testHistogramBucket() {
     assertHistoBucket(0, 1);
     assertHistoBucket(1, 2);
@@ -65,34 +101,6 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
   @Test
   public void testLuke() {
 
-    assertU(adoc("id","SOLR1000", "name","Apache Solr",
-      "solr_si", "10",
-      "solr_sl", "10",
-      "solr_sf", "10",
-      "solr_sd", "10",
-      "solr_s", "10",
-      "solr_sI", "10",
-      "solr_sS", "10",
-      "solr_t", "10",
-      "solr_tt", "10",
-      "solr_b", "true",
-      "solr_i", "10",
-      "solr_l", "10",
-      "solr_f", "10",
-      "solr_d", "10",
-      "solr_ti", "10",
-      "solr_tl", "10",
-      "solr_tf", "10",
-      "solr_td", "10",
-      "solr_pi", "10",
-      "solr_pl", "10",
-      "solr_pf", "10",
-      "solr_pd", "10",
-      "solr_dt", "2000-01-01T01:01:01Z",
-      "solr_tdt", "2000-01-01T01:01:01Z",
-      "solr_pdt", "2000-01-01T01:01:01Z"
-    ));
-    assertU(commit());
 
     // test that Luke can handle all of the field types
     assertQ(req("qt","/admin/luke", "id","SOLR1000"));
@@ -138,5 +146,37 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
   private static String getFieldXPathPrefix(String field) {
     return "//lst[@name='fields']/lst[@name='"+field+"']/str";
   }
-  
+
+  @Test
+  public void testFlParam() {
+    SolrQueryRequest req = req("qt", "/admin/luke", "fl", "solr_t solr_s");
+    try {
+      // First, determine that the two fields ARE there
+      String response = h.query(req);
+      assertNull(h.validateXPath(response,
+          getFieldXPathPrefix("solr_t") + "[@name='index']",
+          getFieldXPathPrefix("solr_s") + "[@name='index']"
+      ));
+
+      // Now test that the other fields are NOT there
+      for (String f : Arrays.asList("solr_ti",
+          "solr_td", "solr_pl", "solr_dt", "solr_b")) {
+
+        assertNotNull(h.validateXPath(response,
+            getFieldXPathPrefix(f) + "[@name='index']"));
+
+      }
+      // Insure * works
+      req = req("qt", "/admin/luke", "fl", "*");
+      response = h.query(req);
+      for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti",
+          "solr_td", "solr_pl", "solr_dt", "solr_b")) {
+
+        assertNull(h.validateXPath(response,
+            getFieldXPathPrefix(f) + "[@name='index']"));
+      }
+    } catch (Exception e) {
+      fail("Caught unexpected exception " + e.getMessage());
+    }
+  }
 }
