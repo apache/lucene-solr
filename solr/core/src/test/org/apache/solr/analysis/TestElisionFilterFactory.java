@@ -64,4 +64,22 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
     assertTokenStreamContents(stream, new String[] { "avion" });
   }
   
+  /**
+   * Test setting ignoreCase=true
+   */
+  public void testCaseInsensitive() throws Exception {
+    Reader reader = new StringReader("L'avion");
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    ElisionFilterFactory factory = new ElisionFilterFactory();
+    factory.init(DEFAULT_VERSION_PARAM);
+    ResourceLoader loader = new SolrResourceLoader(null, null);
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("articles", "frenchArticles.txt");
+    args.put("ignoreCase", "true");
+    factory.init(args);
+    factory.inform(loader);
+    TokenStream stream = factory.create(tokenizer);
+    assertTokenStreamContents(stream, new String[] { "avion" });
+  }
+  
 }

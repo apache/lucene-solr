@@ -35,8 +35,8 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new PortugueseAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "quilométricas", "quilométr");
-    checkOneTermReuse(a, "quilométricos", "quilométr");
+    checkOneTermReuse(a, "quilométricas", "quilometric");
+    checkOneTermReuse(a, "quilométricos", "quilometric");
     // stopword
     assertAnalyzesTo(a, "não", new String[] {});
   }
@@ -48,7 +48,7 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new PortugueseAnalyzer(TEST_VERSION_CURRENT, 
         PortugueseAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "quilométricas", "quilométricas");
-    checkOneTermReuse(a, "quilométricos", "quilométr");
+    checkOneTermReuse(a, "quilométricos", "quilometric");
   }
   
   /** blast some random strings through the analyzer */

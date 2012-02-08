@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.pt;
+package org.apache.solr.analysis;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,23 +17,23 @@ package org.apache.lucene.analysis.pt;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.de.GermanNormalizationFilter;
+
 /**
- * Minimal Stemmer for Portuguese
- * <p>
- * This follows the "RSLP-S" algorithm presented in:
- * <i>A study on the Use of Stemming for Monolingual Ad-Hoc Portuguese
- * Information Retrieval</i> (Orengo, et al)
- * which is just the plural reduction step of the RSLP
- * algorithm from <i>A Stemming Algorithm for the Portuguese Language</i>,
- * Orengo et al.
- * @see RSLPStemmerBase
+ * Factory for {@link GermanNormalizationFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_denorm" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
+ *     &lt;filter class="solr.GermanNormalizationFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre> 
  */
-public class PortugueseMinimalStemmer extends RSLPStemmerBase {
-  
-  private static final Step pluralStep = 
-    parse(PortugueseMinimalStemmer.class, "portuguese.rslp").get("Plural");
-  
-  public int stem(char s[], int len) {
-    return pluralStep.apply(s, len);
+public class GermanNormalizationFilterFactory extends BaseTokenFilterFactory {
+
+  public TokenStream create(TokenStream input) {
+    return new GermanNormalizationFilter(input);
   }
 }

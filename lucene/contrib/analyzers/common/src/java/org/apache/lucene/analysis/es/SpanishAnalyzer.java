@@ -39,6 +39,13 @@ import org.tartarus.snowball.ext.SpanishStemmer;
 
 /**
  * {@link Analyzer} for Spanish.
+ * <p>
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating SpanishAnalyzer:
+ * <ul>
+ *   <li> As of 3.6, SpanishLightStemFilter is used for less aggressive stemming.
+ * </ul>
  */
 public final class SpanishAnalyzer extends StopwordAnalyzerBase {
   private final Set<?> stemExclusionSet;
@@ -115,7 +122,7 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link KeywordMarkerFilter} if a stem exclusion set is
-   *         provided and {@link SnowballFilter}.
+   *         provided and {@link SpanishLightStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
@@ -126,7 +133,11 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new KeywordMarkerFilter(result, stemExclusionSet);
-    result = new SnowballFilter(result, new SpanishStemmer());
+    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+      result = new SpanishLightStemFilter(result);
+    } else {
+      result = new SnowballFilter(result, new SpanishStemmer());
+    }
     return new TokenStreamComponents(source, result);
   }
 }

@@ -33,7 +33,8 @@ import org.apache.lucene.analysis.TokenStream;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
- *     &lt;filter class="solr.ElisionFilterFactory" articles="stopwordarticles.txt"/&gt;
+ *     &lt;filter class="solr.ElisionFilterFactory" 
+ *       articles="stopwordarticles.txt" ignoreCase="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @version $Id$
@@ -44,10 +45,11 @@ public class ElisionFilterFactory extends BaseTokenFilterFactory implements Reso
 
   public void inform(ResourceLoader loader) {
     String articlesFile = args.get("articles");
+    boolean ignoreCase = getBoolean("ignoreCase", false);
 
     if (articlesFile != null) {
       try {
-        articles = getWordSet(loader, articlesFile, false);
+        articles = getWordSet(loader, articlesFile, ignoreCase);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

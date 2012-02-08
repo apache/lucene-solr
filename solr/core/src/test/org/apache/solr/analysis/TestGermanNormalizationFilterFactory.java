@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.pt;
+package org.apache.solr.analysis;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,23 +17,20 @@ package org.apache.lucene.analysis.pt;
  * limitations under the License.
  */
 
+import java.io.Reader;
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
+
 /**
- * Minimal Stemmer for Portuguese
- * <p>
- * This follows the "RSLP-S" algorithm presented in:
- * <i>A study on the Use of Stemming for Monolingual Ad-Hoc Portuguese
- * Information Retrieval</i> (Orengo, et al)
- * which is just the plural reduction step of the RSLP
- * algorithm from <i>A Stemming Algorithm for the Portuguese Language</i>,
- * Orengo et al.
- * @see RSLPStemmerBase
+ * Simple tests to ensure the German normalization factory is working.
  */
-public class PortugueseMinimalStemmer extends RSLPStemmerBase {
-  
-  private static final Step pluralStep = 
-    parse(PortugueseMinimalStemmer.class, "portuguese.rslp").get("Plural");
-  
-  public int stem(char s[], int len) {
-    return pluralStep.apply(s, len);
+public class TestGermanNormalizationFilterFactory extends BaseTokenTestCase {
+  public void testStemming() throws Exception {
+    Reader reader = new StringReader("weißbier");
+    GermanNormalizationFilterFactory factory = new GermanNormalizationFilterFactory();
+    TokenStream stream = factory.create(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+    assertTokenStreamContents(stream, new String[] { "weissbier" });
   }
 }
