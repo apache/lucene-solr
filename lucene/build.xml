@@ -440,7 +440,7 @@
 	/>
   </target>
   
-  <target name="build-contrib" depends="common.compile-test"
+  <target name="build-contrib" depends="compile-test"
           description="Builds all contrib modules and their tests">
     <contrib-crawl target="build-artifacts-and-tests"/>
   </target>
