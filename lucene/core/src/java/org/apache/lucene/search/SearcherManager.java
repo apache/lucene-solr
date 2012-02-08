@@ -238,10 +238,6 @@ public final class SearcherManager implements Closeable {
 
   private synchronized void swapSearcher(IndexSearcher newSearcher) throws IOException {
     ensureOpen();
-    // Don't allow un-closing!
-    if (currentSearcher == null && newSearcher != null) {
-      throw new AlreadyClosedException("this SearcherManager is closed");
-    }
     final IndexSearcher oldSearcher = currentSearcher;
     currentSearcher = newSearcher;
     release(oldSearcher);
