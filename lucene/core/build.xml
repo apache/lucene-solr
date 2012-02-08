@@ -56,43 +56,4 @@
      <jarify basedir="${javadoc.dir}/core" destfile="${build.dir}/${final.name}-javadoc.jar"/>
     </sequential>
   </target>
-
-  <macrodef name="createLevAutomaton">
-  	<attribute name="n"/>
-  	<sequential>
-      <exec dir="src/java/org/apache/lucene/util/automaton"
-            executable="${python.exe}" failonerror="true">
-        <arg line="createLevAutomata.py @{n} True"/>
-      </exec>
-      <exec dir="src/java/org/apache/lucene/util/automaton"
-            executable="${python.exe}" failonerror="true">
-        <arg line="createLevAutomata.py @{n} False"/>
-      </exec>
-    </sequential>
-  </macrodef>
-
-  <target name="createLevAutomata" depends="check-moman,clone-moman,pull-moman">
-  	<createLevAutomaton n="1"/>
-  	<createLevAutomaton n="2"/>
-  </target>
-  
-  <target name="check-moman">
-    <condition property="moman.cloned">
-      <available file="src/java/org/apache/lucene/util/automaton/moman"/>
-  	</condition>
-  </target>
-	
-  <target name="clone-moman" unless="moman.cloned">
-  	<exec dir="src/java/org/apache/lucene/util/automaton" 
-          executable="${hg.exe}" failonerror="true">
-      <arg line="clone -r ${moman.rev} ${moman.url} moman"/>
-    </exec>
-  </target>
-
-  <target name="pull-moman" if="moman.cloned">
-    <exec dir="src/java/org/apache/lucene/util/automaton/moman" 
-          executable="${hg.exe}" failonerror="true">
-      <arg line="pull -f -r ${moman.rev}"/>
-    </exec>
-  </target>
 </project>
