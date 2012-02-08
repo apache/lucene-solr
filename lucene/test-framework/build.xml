@@ -30,7 +30,20 @@
     <path refid="ant-path"/>
   </path>
 
-  <target name="compile-core" depends="compile-lucene-core,common.compile-core" />
+  <!-- 
+      Specialize compile-core to depend on lucene-core compilation,
+      and *not* to depend on clover; clover already includes the
+      test-framework sources in each module's test instrumentation.
+   -->
+  <target name="compile-core" depends="init,compile-lucene-core"
+          description="Compiles test-framework classes">
+    <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java">
+      <classpath refid="classpath"/>
+    </compile>
+    <copy todir="${build.dir}/classes/java">
+      <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
+    </copy>
+  </target>
 
   <target name="javadocs-core" depends="javadocs"/>
   <target name="javadocs">
