@@ -101,9 +101,11 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     // If no doc is given, show all fields and top terms
     Set<String> fields = null;
-    if( params.get( CommonParams.FL ) != null ) {
-      fields = new TreeSet<String>(Arrays.asList(params.getParams( CommonParams.FL ) ) );
+    String fl = params.get(CommonParams.FL);
+    if (fl != null) {
+      fields = new TreeSet<String>(Arrays.asList(fl.split( "[,\\s]+" )));
     }
+
     if ( "schema".equals( params.get( "show" ))) {
       numTerms = 0; // Abort any statistics gathering.
     }
@@ -301,7 +303,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     // Walk the term enum and keep a priority queue for each map in our set
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     for (String fieldName : fieldNames) {
-      if( fields != null && !fields.contains( fieldName ) ) {
+      if (fields != null && ! fields.contains(fieldName) && ! fields.contains("*")) {
         continue; // if a field is specified, only them
       }
       SimpleOrderedMap<Object> f = new SimpleOrderedMap<Object>();
@@ -536,7 +538,7 @@ public class LukeRequestHandler extends RequestHandlerBase
             lastField = field;
 
             // Skip fields not in fl list (if specified)
-            if (fields != null && !fields.contains(field)) {
+            if (fields != null && !fields.contains(field) && ! fields.contains("*")) {
               continue;
             }
             tiq = new TopTermQueue(numTerms + 1);
