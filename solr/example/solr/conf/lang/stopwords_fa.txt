@@ -1,6 +1,8 @@
 # This file was created by Jacques Savoy and is distributed under the BSD license.
 # See http://members.unine.ch/jacques.savoy/clef/index.html.
 # Also see http://www.opensource.org/licenses/bsd-license.html
+# Note: by default this file is used after normalization, so when adding entries
+# to this file, use the arabic 'ي' instead of 'ی'
 انان
 نداشته
 سراسر
