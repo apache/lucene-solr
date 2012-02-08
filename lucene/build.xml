@@ -143,6 +143,44 @@
 
   <target name="compile-core" depends="compile-lucene-core"/>
 
+  <!--
+   Run after Junit tests.
+   -->
+  <target name="generate-clover-reports" depends="clover.check, clover">
+    <mkdir dir="${clover.report.dir}"/>
+    <!-- This extra path is needed, because from a top-level ant run, the contrib tests would be not visible (report generation is only done on top-level not via subants) -->
+    <fileset dir="contrib" id="clover.contrib.test.src.files">
+      <include name="**/test/**/*.java"/>
+    </fileset>
+    <fileset dir="${tests-framework.src.dir}" id="clover.test-framework.src.files">
+      <include name="**/*.java" />
+    </fileset>
+    <fileset dir="${tests.src.dir}" id="clover.test.src.files">
+      <include name="**/*.java" />
+    </fileset>
+    <fileset dir="${build.dir}" id="clover.test.result.files">
+      <include name="**/test/TEST-*.xml" />
+      <!-- do not include BW tests -->
+      <exclude name="backwards/**"/>
+    </fileset>
+    <clover-report>
+      <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
+        <format type="html" filter="assert"/>
+        <testsources refid="clover.test.src.files"/>
+        <testsources refid="clover.test-framework.src.files"/>
+        <testsources refid="clover.contrib.test.src.files"/>
+        <testresults refid="clover.test.result.files"/>
+      </current>
+      <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
+        <format type="xml" filter="assert"/>
+        <testsources refid="clover.test.src.files"/>
+        <testsources refid="clover.test-framework.src.files"/>
+        <testsources refid="clover.contrib.test.src.files"/>
+        <testresults refid="clover.test.result.files"/>
+      </current>
+    </clover-report>
+  </target>
+
   <!-- ================================================================== -->
   <!-- D O C U M E N T A T I O N                                          -->
   <!-- ================================================================== -->
