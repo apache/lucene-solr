@@ -1,6 +1,10 @@
 # Also see http://www.opensource.org/licenses/bsd-license.html
 # See http://members.unine.ch/jacques.savoy/clef/index.html.
 # This file was created by Jacques Savoy and is distributed under the BSD license.
+# Note: by default this file also contains forms normalized by HindiNormalizer 
+# for spelling variation (see section below), such that it can be used whether or 
+# not you enable that feature. When adding additional entries to this list,
+# please add the normalized form as well. 
 अंदर
 अत
 अपना
