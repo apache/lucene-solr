@@ -192,17 +192,11 @@
                    failonerror="false"/>
   </target>
   	
-  <target name="javadocs-all" description="Generate javadoc for core and contrib classes">
+  <target name="javadocs-all" depends="jar-analyzers-common,jar-queryparser,jar-queries" 
+          description="Generate javadoc for core and contrib classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
       
-      <!-- TODO: remove these dependencies: -->
-      <subant target="default">
-        <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
-        <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
-        <fileset dir="${common.dir}/../modules/queries" includes="build.xml"/>
-      </subant>
-
       <path id="javadoc.classpath">
         <path refid="classpath"/>
         <pathelement location="${ant.home}/lib/ant.jar"/>
@@ -210,9 +204,9 @@
           <exclude name="build/**/*.jar"/>
           <include name="**/lib/*.jar"/>
         </fileset>
-        <pathelement location="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"/>
-        <pathelement location="${common.dir}/../modules/queryparser/build/lucene-queryparser-${version}.jar"/>
-        <pathelement location="${common.dir}/../modules/queries/build/lucene-queries-${version}.jar"/>
+        <pathelement location="${analyzers-common.jar}"/>
+        <pathelement location="${queryparser.jar}"/>
+        <pathelement location="${queries.jar}"/>
       </path>
 
       <invoke-javadoc overview="${common.dir}/core/src/java/overview.html"

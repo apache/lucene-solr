@@ -96,29 +96,6 @@
     </sequential>
   </macrodef>
 
-  <macrodef name="module-uptodate">
-    <attribute name="name"/>
-    <attribute name="property"/>
-    <attribute name="jarfile"/>
-    <attribute name="module-src-name" default="@{name}"/>
-    <sequential>
-      <uptodate property="@{property}" targetfile="@{jarfile}">
-      	<srcfiles dir="${common.dir}/../modules/@{module-src-name}/src/java" includes="**/*.java"/>
-      </uptodate>
-    </sequential>
-  </macrodef>
-
-  <property name="analyzers-common.jar" value="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"/>
-  <target name="check-analyzers-common-uptodate" unless="analyzers-common.uptodate">
-    <module-uptodate name="analysis/common" jarfile="${analyzers-common.jar}" property="analyzers-common.uptodate"/>
-  </target>
-  <target name="jar-analyzers-common" unless="analyzers-common.uptodate" depends="check-analyzers-common-uptodate">
-    <ant dir="${common.dir}/../modules/analysis/common" target="jar-core" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="analyzers-common.uptodate" value="true"/>
-  </target>
-
   <property name="facet.jar" value="${common.dir}/../modules/facet/build/lucene-facet-${version}.jar"/>
   <target name="check-facet-uptodate" unless="facet.uptodate">
     <module-uptodate name="facet" jarfile="${facet.jar}" property="facet.uptodate"/>
@@ -227,28 +204,6 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="misc.uptodate" value="true"/>
-  </target>
-
-  <property name="queries.jar" value="${common.dir}/../modules/queries/build/lucene-queries-${version}.jar"/>
-  <target name="check-queries-uptodate" unless="queries.uptodate">
-    <module-uptodate name="queries" jarfile="${queries.jar}" property="queries.uptodate"/>
-  </target>
-  <target name="jar-queries" unless="queries.uptodate" depends="check-queries-uptodate">
-  	<ant dir="${common.dir}/../modules/queries" target="jar-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="queries.uptodate" value="true"/>
-  </target>
-
-  <property name="queryparser.jar" value="${common.dir}/../modules/queryparser/build/lucene-queryparser-${version}.jar"/>
-  <target name="check-queryparser-uptodate" unless="queryparser.uptodate">
-    <module-uptodate name="queryparser" jarfile="${queryparser.jar}" property="queryparser.uptodate"/>
-  </target>
-  <target name="jar-queryparser" unless="queryparser.uptodate" depends="check-queryparser-uptodate">
-    <ant dir="${common.dir}/../modules/queryparser" target="jar-core" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="queryparser.uptodate" value="true"/>
   </target>
 
   <property name="sandbox.jar" value="${common.dir}/build/contrib/sandbox/lucene-sandbox-${version}.jar"/>
