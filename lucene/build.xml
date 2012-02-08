@@ -17,16 +17,13 @@
     limitations under the License.
  -->
 
-<project name="core" default="default" basedir="."
+<project name="lucene" default="default" basedir="."
          xmlns:artifact="antlib:org.apache.maven.artifact.ant">
-
-  <property name="junit.includes" value="**/Test*.java"/>
 
   <import file="common-build.xml"/>
 
-  <!-- Build classpath -->
   <path id="classpath">
-    <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${common.dir}/build/core/classes/java"/>
   </path>
 
   <path id="demo.classpath">
@@ -34,23 +31,8 @@
     <pathelement location="${build.dir}/classes/demo"/>
   </path>
 
-  <path id="test.classpath">
-  	<path refid="classpath"/>
-    <path refid="junit-path"/>
-    <pathelement location="${build.dir}/classes/test-framework"/>
-    <pathelement location="${build.dir}/classes/test"/>
-  </path>
-
-  <path id="junit.classpath">
-    <path refid="junit-path"/>
-    <pathelement location="${build.dir}/classes/test-framework"/>
-    <pathelement location="${build.dir}/classes/test"/>
-    <pathelement location="${build.dir}/classes/java"/>
-    <pathelement path="${java.class.path}"/>
-  </path>
-
   <patternset id="binary.build.dist.patterns"
-              includes="${final.name}*.jar,lucene-test-framework*.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
+              includes="docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
               excludes="*-src.jar"
   />
   <patternset id="binary.root.dist.patterns"
@@ -62,9 +44,11 @@
   <!-- Prepares the build directory                                       -->
   <!-- ================================================================== -->
 
-  <target name="test-core" depends="common.test"
-          description="Runs unit tests for the core Lucene code"
-  />
+  <target name="test-core" description="Runs unit tests for the core Lucene code">
+    <ant dir="${common.dir}/core" target="test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
   <target name="test" depends="test-core, test-contrib, test-backwards"
           description="Runs all unit tests (core, contrib and back-compat)"
   />
@@ -162,13 +146,7 @@
     </parallel>
   </target>
 
-  <!-- ================================================================== -->
-  <!-- J A R                                                              -->
-  <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-
-  <target name="compile-core" depends="jflex-notice, javacc-notice, common.compile-core"/>
+  <target name="compile-core" depends="compile-lucene-core"/>
 
   <!-- ================================================================== -->
   <!-- D O C U M E N T A T I O N                                          -->
@@ -178,7 +156,7 @@
   <target name="docs">
   <!-- copies the docs over to the docs folder -->
     <copy todir="build/docs">
-      <fileset dir="src/site/build/site"/> 
+      <fileset dir="site/build/site"/> 
     </copy>
   </target>
 
@@ -203,18 +181,15 @@
   </target>
 	
   <target name="javadocs-core" description="Generate javadoc for core classes">
-  	<sequential>
-      <mkdir dir="${javadoc.dir}/core"/>
-      <invoke-javadoc
-        destdir="${javadoc.dir}/core"
-      	title="${Name} ${version} core API">
-        <sources>
-          <packageset dir="src/java"/>
-          <link href=""/>
-        </sources>
-      </invoke-javadoc>
-     <jarify basedir="${javadoc.dir}/core" destfile="${build.dir}/${final.name}-javadoc.jar"/>
-    </sequential>
+    <ant dir="${common.dir}/core" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="javadocs-test-framework">
+    <ant dir="${common.dir}/test-framework" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 
   <target name="javadocs-contrib" description="Generate javadoc for contrib classes">
@@ -235,12 +210,12 @@
         </fileset>
       </path>
 
-      <invoke-javadoc
-        destdir="${javadoc.dir}/all">
+      <invoke-javadoc overview="${common.dir}/core/src/java/overview.html"
+                      destdir="${javadoc.dir}/all">
         <sources>
           <!-- TODO: find a dynamic way to do include multiple source roots -->
-          <packageset dir="src/java"/>
-          <packageset dir="src/test-framework/java"/>
+          <packageset dir="core/src/java"/>
+          <packageset dir="test-framework/src/java"/>
 
           <!-- please keep this list up to date, and in alpha order...   -->
 
@@ -308,7 +283,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, jar-test-framework, docs, javadocs, build-contrib, init-dist, changes-to-html"/>
+  <target name="package" depends="jar-lucene-core, jar-test-framework, docs, javadocs, build-contrib, init-dist, changes-to-html"/>
 
   <target name="nightly" depends="test, package-tgz">
   </target>
@@ -327,6 +302,12 @@
         <patternset refid="binary.root.dist.patterns"/>
       </zipfileset>
       <zipfileset dir="${build.dir}" includes="build-demo.xml" fullpath="lucene-${version}/build.xml"/>
+      <zipfileset prefix="lucene-${version}" dir="${build.dir}/core">
+        <patternset includes="lucene-core*.jar" excludes="*-src.jar"/>
+      </zipfileset>
+      <zipfileset prefix="lucene-${version}" dir="${build.dir}/test-framework">
+        <patternset includes="lucene-test-framework*.jar" excludes="*-src.jar"/>
+      </zipfileset>
       <zipfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </zipfileset>
@@ -345,6 +326,12 @@
     <delete file="${build.dir}/lucene-${version}.tar"/>
     <delete file="${dist.dir}/lucene-${version}.tgz"/>
     <tar tarfile="${build.dir}/lucene-${version}.tar" longfile="gnu">
+      <tarfileset prefix="lucene-${version}" dir="${build.dir}/core">
+        <patternset includes="lucene-core*.jar" excludes="*-src.jar"/>
+      </tarfileset>
+      <tarfileset prefix="lucene-${version}" dir="${build.dir}/test-framework">
+        <patternset includes="lucene-test-framework*.jar" excludes="*-src.jar"/>
+      </tarfileset>
       <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </tarfileset>
@@ -396,9 +383,9 @@
     <svn-export-source source.dir="."/>
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/src/tools/javadoc/java5"/>
+    <delete dir="${svn.export.dir}/tools/javadoc/java5"/>
 
-    <build-changes changes.src.dir="${svn.export.dir}/src/site/changes"
+    <build-changes changes.src.dir="${svn.export.dir}/site/changes"
                    changes.target.dir="${svn.export.dir}/docs/changes"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir="${svn.export.dir}"/>
@@ -437,34 +424,23 @@
 
   <target name="stage" depends="prepare-release, copy-to-stage"/>
 
-  <target name="generate-maven-artifacts"
-          depends="package, jar-src, jar-test-framework-src, javadocs">
+  <target name="generate-maven-artifacts" depends="package, javadocs">
     <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
              uri="antlib:org.apache.maven.artifact.ant" 
              classpathref="maven-ant-tasks.classpath"/>
     <sequential>
+      
       <ant target="get-maven-poms" dir=".."/>
 
       <m2-deploy pom.xml="../pom.xml"/> <!-- Lucene/Solr grandparent POM -->
       <m2-deploy pom.xml="pom.xml"/>    <!-- Lucene parent POM -->
-      <m2-deploy pom.xml="src/pom.xml"> <!-- Lucene core POM -->
-        <artifact-attachments>
-          <attach file="${build.dir}/${final.name}-src.jar"
-                  classifier="sources"/>
-          <attach file="${build.dir}/${final.name}-javadoc.jar"
-                  classifier="javadoc"/>
-        </artifact-attachments>
-      </m2-deploy>
-      <m2-deploy pom.xml="src/test-framework/pom.xml"
-                 jar.file="${build.dir}/lucene-test-framework-${version}.jar">
-        <artifact-attachments>
-          <attach file="${build.dir}/lucene-test-framework-${version}-src.jar"
-                  classifier="sources"/>
-          <attach file="${build.dir}/lucene-test-framework-${version}-javadoc.jar"
-                  classifier="javadoc"/>
-        </artifact-attachments>
-      </m2-deploy>
-
+      
+      <subant target="dist-maven" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="${common.dir}/core" includes="build.xml"/>
+        <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
+      </subant>
+      
       <contrib-crawl target="dist-maven"/>
     </sequential>
   </target>
@@ -593,12 +569,20 @@
     </delete>
   </target>
 
-  <target name="build-contrib" depends="compile-test"
+  <target name="build-contrib" depends="common.compile-test"
           description="Builds all contrib modules and their tests">
     <contrib-crawl target="build-artifacts-and-tests"/>
   </target>
 
-  <target name="test-contrib" depends="build-contrib">
+   <target name="compile-test" depends="compile-lucene-core,compile-test-framework"
+           description="Builds core, test-framework, and contrib tests">
+     <ant dir="${common.dir}/core" target="compile-test" inheritAll="false">
+       <propertyset refid="uptodate.and.compiled.properties"/>
+     </ant>
+     <contrib-crawl target="compile-test" failonerror="true"/>
+   </target>
+
+  <target name="test-contrib" depends="compile-test">
     <contrib-crawl target="test" failonerror="true"/>
   </target>
 
@@ -641,39 +625,18 @@
     <patch patchfile="${patch.file}" strip="0"/>
   </target>
 
-  <target name="jar-test-framework" depends="compile-test-framework">
-    <jarify basedir="${build.dir}/classes/test-framework" destfile="${build.dir}/lucene-test-framework-${version}.jar"
-            title="Lucene Search Engine: Test Framework" />
-  </target>
-
-  <target name="javadocs-test-framework">
-	<sequential>
-      <mkdir dir="${javadoc.dir}/test-framework"/>
-      <invoke-javadoc
-          overview="src/test-framework/java/overview.html"
-          destdir="${javadoc.dir}/test-framework"
-          title="${Name} ${version} Test Framework API">
-        <sources>
-          <packageset dir="src/test-framework/java"/>
-          <link offline="true" href="${javadoc.link.junit}"
-                packagelistLoc="${javadoc.packagelist.dir}/junit"/>
-          <link href=""/>
-        </sources>
-      </invoke-javadoc>
-      <jarify basedir="${javadoc.dir}/test-framework" destfile="${build.dir}/lucene-test-framework-${version}-javadoc.jar"
-	          title="Lucene Search Engine: Test Framework" />
-    </sequential>
-  </target>
-
-  <target name="jar-test-framework-src" depends="init">
-    <jarify basedir="${tests-framework.src.dir}" destfile="${build.dir}/lucene-test-framework-${version}-src.jar"
-            title="Lucene Search Engine: Test Framework">
-      <fileset dir="${tests-framework.src.dir}/../resources" erroronmissingdir="no"/>
-    </jarify>
+  <target name="jar-test-framework">
+    <ant dir="${common.dir}/test-framework" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 
   <!-- Override common-build.xml definition to check for the jar already being up-to-date -->
-  <target name="jar-core" depends="check-lucene-core-uptodate,compile-core" unless="lucene-core.uptodate">
-    <jarify/>
+  <target name="jar-core" depends="check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
+    <ant dir="${common.dir}/core" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="core.compiled" value="true"/>
+    <property name="lucene-core.uptodate" value="true"/>
   </target>
 </project>

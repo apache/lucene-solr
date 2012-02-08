@@ -17,17 +17,14 @@
     limitations under the License.
  -->
 
-<project name="solr-clustering" default="default">
+<project name="tools" default="default">
+  <description>Lucene Tools</description>
 
-  <description>
-    Clustering Integraton
-  </description>
+  <property name="build.dir" location="../build/tools"/>
 
-  <import file="../contrib-build.xml"/>
+  <import file="../common-build.xml"/>
 
-  <dirname file="${ant.file}" property="antfile.dir"/>
-  <target name="dist-maven" depends="common.dist-maven">
-    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-carrot2-core-pom.xml.template"
-                                 jar.file="${antfile.dir}/lib/carrot2-core-3.5.0.jar" />
-  </target>
+  <target name="javadocs"/> <!-- to make common-build.xml happy -->
+  
+  <path id="classpath"/>
 </project>
