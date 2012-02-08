@@ -479,6 +479,9 @@ New Features
   CommonGramsQueryFilterFactory can optionally read stopwords in Snowball
   format (specify format="snowball").  (Robert Muir)
 
+* SOLR-3105: ElisionFilterFactory optionally allows the parameter 
+  ignoreCase (default=false).  (Robert Muir)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
@@ -591,6 +594,9 @@ Other Changes
 * SOLR-2901: Upgrade Solr to Tika 1.0 (janhoy)
 
 * SOLR-3059: Example XSL stylesheet for indexing query result XML (janhoy)
+
+* SOLR-3097, SOLR-3105: Add analysis configurations for different languages to 
+  the example.  (Christian Moen, Robert Muir)
 
 Build
 ----------------------

@@ -41,6 +41,13 @@ public class TestCatalanAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "un", new String[] { });
   }
   
+  /** test use of elisionfilter */
+  public void testContractions() throws IOException {
+    Analyzer a = new CatalanAnalyzer(TEST_VERSION_CURRENT);
+    assertAnalyzesTo(a, "Diccionari de l'Institut d'Estudis Catalans",
+        new String[] { "diccion", "inst", "estud", "catalan" });
+  }
+  
   /** test use of exclusion set */
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();

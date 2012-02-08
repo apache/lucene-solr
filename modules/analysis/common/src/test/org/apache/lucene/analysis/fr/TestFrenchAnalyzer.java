@@ -56,7 +56,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 		assertAnalyzesTo(
 			fa,
 			"mot \"entreguillemet\"",
-			new String[] { "mot", "entreguillemet" });
+			new String[] { "mot", "entreguilemet" });
 
 		// let's do some french specific tests now	
 
@@ -66,7 +66,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 		assertAnalyzesTo(
 			fa,
 			"Jean-François",
-			new String[] { "jean", "françois" });
+			new String[] { "jean", "francoi" });
 
 		// 2. stopwords
 		assertAnalyzesTo(
@@ -81,16 +81,16 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 			new String[] {
 				"lanc",
 				"chism",
-				"habit",
+				"habitabl",
 				"chist",
-				"élément",
+				"element",
 				"captif" });
 
 		// some verbs
 		assertAnalyzesTo(
 			fa,
 			"finissions souffrirent rugissante",
-			new String[] { "fin", "souffr", "rug" });
+			new String[] { "finision", "soufrirent", "rugisant" });
 
 		// some everything else
 		// aujourd'hui stays one term which is OK
@@ -101,16 +101,16 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 				"c3po",
 				"aujourd'hui",
 				"oeuf",
-				"ïâöûàä",
-				"anticonstitutionnel",
-				"jav" });
+				"ïaöuaä",
+				"anticonstitutionel",
+				"java" });
 
 		// some more everything else
 		// here 1940-1945 stays as one term, 1940:1945 not ?
 		assertAnalyzesTo(
 			fa,
 			"33Bis 1940-1945 1940:1945 (---i+++)*",
-			new String[] { "33bis", "1940", "1945", "1940", "1945", "i" });
+			new String[] { "33bi", "1940", "1945", "1940", "1945", "i" });
 
 	}
 	
@@ -217,9 +217,9 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
           new String[] {
               "lanc",
               "chism",
-              "habit",
+              "habitabl",
               "chist",
-              "élément",
+              "element",
               "captif" });
 	}
 
@@ -238,7 +238,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
   
   public void testElision() throws Exception {
     FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
-    assertAnalyzesTo(fa, "voir l'embrouille", new String[] { "voir", "embrouill" });
+    assertAnalyzesTo(fa, "voir l'embrouille", new String[] { "voir", "embrouil" });
   }
   
   /**

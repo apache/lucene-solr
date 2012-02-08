@@ -21,7 +21,9 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -40,14 +42,29 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * testcase for offsets
 	 */
 	public void testOffsets() throws Exception {
-		assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้องแสดงว่างานดี", 
+		assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "การที่ได้ต้องแสดงว่างานดี", 
 		    new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
 				new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
 				new int[] { 3, 6, 9, 13, 17, 20, 23, 25 });
 	}
 	
+	public void testStopWords() throws Exception {
+	  assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้องแสดงว่างานดี", 
+	      new String[] { "แสดง", "งาน", "ดี" },
+	      new int[] { 13, 20, 23 },
+	      new int[] { 17, 23, 25 },
+	      new int[] { 5, 2, 1 });
+	}
+	
+	public void testBackwardsStopWords() throws Exception {
+	   assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_35), "การที่ได้ต้องแสดงว่างานดี", 
+	        new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
+	        new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
+	        new int[] { 3, 6, 9, 13, 17, 20, 23, 25 });
+	}
+	
 	public void testTokenType() throws Exception {
-      assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้องแสดงว่างานดี ๑๒๓", 
+      assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "การที่ได้ต้องแสดงว่างานดี ๑๒๓", 
                        new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี", "๑๒๓" },
                        new String[] { "<SOUTHEAST_ASIAN>", "<SOUTHEAST_ASIAN>", 
                                       "<SOUTHEAST_ASIAN>", "<SOUTHEAST_ASIAN>", 
@@ -96,8 +113,9 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	/*
 	 * Test that position increments are adjusted correctly for stopwords.
 	 */
+	// note this test uses stopfilter's stopset
 	public void testPositionIncrements() throws Exception {
-	  final ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
+	  final ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     assertAnalyzesTo(analyzer, "การที่ได้ต้อง the แสดงว่างานดี", 
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
         new int[] { 0, 3, 6, 9, 18, 22, 25, 28 },
@@ -113,7 +131,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	}
 	
 	public void testReusableTokenStream() throws Exception {
-	  ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
+	  ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 	  assertAnalyzesToReuse(analyzer, "", new String[] {});
 
       assertAnalyzesToReuse(

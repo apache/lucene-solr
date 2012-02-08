@@ -169,6 +169,14 @@ Changes in runtime behavior
 
  * LUCENE-3626: PKIndexSplitter and MultiPassIndexSplitter now work
    per segment.  (Uwe Schindler)
+   
+ * SOLR-3105: When passed LUCENE_36 or greater as version, GermanAnalyzer,
+   SpanishAnalyzer, FrenchAnalyzer, ItalianAnalyzer, and PortugueseAnalyzer
+   use a lighter stemming approach, CatalanAnalyzer uses ElisionFilter 
+   with a set of contractions, HindiAnalyzer uses StandardTokenizer, and
+   ThaiAnalyzer uses thai stopwords. Add GermanNormalizationFilter which applies
+   the Snowball German2 algorithm to ae/oe/ue and case-folds ß. Add 
+   GalicianMinimalStemFilter for plural removal only. (Robert Muir)
 
 Optimizations
 

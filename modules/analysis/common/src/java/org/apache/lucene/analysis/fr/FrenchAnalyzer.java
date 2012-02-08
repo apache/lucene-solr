@@ -52,6 +52,7 @@ import java.util.Set;
  * <p>You must specify the required {@link Version}
  * compatibility when creating FrenchAnalyzer:
  * <ul>
+ *   <li> As of 3.6, FrenchLightStemFilter is used for less aggressive stemming.
  *   <li> As of 3.1, Snowball stemming is done with SnowballFilter, 
  *        LowerCaseFilter is used prior to StopFilter, and ElisionFilter and 
  *        Snowball stopwords are used by default.
@@ -177,7 +178,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    *         {@link StandardFilter}, {@link ElisionFilter},
    *         {@link LowerCaseFilter}, {@link StopFilter},
    *         {@link KeywordMarkerFilter} if a stem exclusion set is
-   *         provided, and {@link SnowballFilter}
+   *         provided, and {@link FrenchLightStemFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
@@ -190,7 +191,11 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
       result = new StopFilter(matchVersion, result, stopwords);
       if(!excltable.isEmpty())
         result = new KeywordMarkerFilter(result, excltable);
-      result = new SnowballFilter(result, new org.tartarus.snowball.ext.FrenchStemmer());
+      if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+        result = new FrenchLightStemFilter(result);
+      } else {
+        result = new SnowballFilter(result, new org.tartarus.snowball.ext.FrenchStemmer());
+      }
       return new TokenStreamComponents(source, result);
     } else {
       final Tokenizer source = new StandardTokenizer(matchVersion, reader);

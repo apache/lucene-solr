@@ -16,7 +16,9 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -24,22 +26,75 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Thai language. It uses {@link java.text.BreakIterator} to break words.
- *
- * <p><b>NOTE</b>: This class uses the same {@link Version}
- * dependent settings as {@link StandardAnalyzer}.</p>
+ * <p>
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating ThaiAnalyzer:
+ * <ul>
+ *   <li> As of 3.6, a set of Thai stopwords is used by default
+ * </ul>
  */
-public final class ThaiAnalyzer extends Analyzer {
-  private final Version matchVersion;
+public final class ThaiAnalyzer extends StopwordAnalyzerBase {
+  
+  /** File containing default Thai stopwords. */
+  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+  /**
+   * The comment character in the stopwords file.  
+   * All lines prefixed with this will be ignored.
+   */
+  private static final String STOPWORDS_COMMENT = "#";
+  
+  /**
+   * Returns an unmodifiable instance of the default stop words set.
+   * @return default stop words set.
+   */
+  public static Set<?> getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_STOP_SET;
+  }
+  
+  /**
+   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class 
+   * accesses the static final set the first time.;
+   */
+  private static class DefaultSetHolder {
+    static final Set<?> DEFAULT_STOP_SET;
 
+    static {
+      try {
+        DEFAULT_STOP_SET = loadStopwordSet(false, ThaiAnalyzer.class, 
+            DEFAULT_STOPWORD_FILE, STOPWORDS_COMMENT);
+      } catch (IOException ex) {
+        // default set should always be present as it is part of the
+        // distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword set");
+      }
+    }
+  }
+
+  /**
+   * Builds an analyzer with the default stop words.
+   * 
+   * @param matchVersion lucene compatibility version
+   */
   public ThaiAnalyzer(Version matchVersion) {
-    this.matchVersion = matchVersion;
+    this(matchVersion, matchVersion.onOrAfter(Version.LUCENE_36) ? DefaultSetHolder.DEFAULT_STOP_SET : StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words.
+   * 
+   * @param matchVersion lucene compatibility version
+   * @param stopwords a stopword set
+   */
+  public ThaiAnalyzer(Version matchVersion, Set<?> stopwords) {
+    super(matchVersion, stopwords);
   }
 
   /**
@@ -61,6 +116,6 @@ public final class ThaiAnalyzer extends Analyzer {
       result = new LowerCaseFilter(matchVersion, result);
     result = new ThaiWordFilter(matchVersion, result);
     return new TokenStreamComponents(source, new StopFilter(matchVersion,
-        result, StopAnalyzer.ENGLISH_STOP_WORDS_SET));
+        result, stopwords));
   }
 }

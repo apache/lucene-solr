@@ -46,6 +46,7 @@ import org.tartarus.snowball.ext.ItalianStemmer;
  * <p>You must specify the required {@link Version}
  * compatibility when creating ItalianAnalyzer:
  * <ul>
+ *   <li> As of 3.6, ItalianLightStemFilter is used for less aggressive stemming.
  *   <li> As of 3.2, ElisionFilter with a set of Italian 
  *        contractions is used by default.
  * </ul>
@@ -132,7 +133,7 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link ElisionFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link KeywordMarkerFilter} if a stem exclusion set is
-   *         provided and {@link SnowballFilter}.
+   *         provided and {@link ItalianLightStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
@@ -146,7 +147,11 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new KeywordMarkerFilter(result, stemExclusionSet);
-    result = new SnowballFilter(result, new ItalianStemmer());
+    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+      result = new ItalianLightStemFilter(result);
+    } else {
+      result = new SnowballFilter(result, new ItalianStemmer());
+    }
     return new TokenStreamComponents(source, result);
   }
 }

@@ -54,6 +54,7 @@ import org.tartarus.snowball.ext.German2Stemmer;
  * <p>You must specify the required {@link Version}
  * compatibility when creating GermanAnalyzer:
  * <ul>
+ *   <li> As of 3.6, GermanLightStemFilter is used for less aggressive stemming.
  *   <li> As of 3.1, Snowball stemming is done with SnowballFilter, and 
  *        Snowball stopwords are used by default.
  *   <li> As of 2.9, StopFilter preserves position
@@ -166,7 +167,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link KeywordMarkerFilter} if a stem exclusion set is
-   *         provided, and {@link SnowballFilter}
+   *         provided, {@link GermanNormalizationFilter} and {@link GermanLightStemFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
@@ -176,10 +177,14 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter( matchVersion, result, stopwords);
     result = new KeywordMarkerFilter(result, exclusionSet);
-    if (matchVersion.onOrAfter(Version.LUCENE_31))
+    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+      result = new GermanNormalizationFilter(result);
+      result = new GermanLightStemFilter(result);
+    } else if (matchVersion.onOrAfter(Version.LUCENE_31)) {
       result = new SnowballFilter(result, new German2Stemmer());
-    else
+    } else {
       result = new GermanStemFilter(result);
+    }
     return new TokenStreamComponents(source, result);
   }
 }

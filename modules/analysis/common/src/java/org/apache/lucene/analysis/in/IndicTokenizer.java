@@ -20,12 +20,15 @@ package org.apache.lucene.analysis.in;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.util.CharTokenizer;
+import org.apache.lucene.analysis.standard.StandardTokenizer; // javadocs
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /**
  * Simple Tokenizer for text in Indian Languages.
+ * @deprecated (3.6) Use {@link StandardTokenizer} instead.
  */
+@Deprecated
 public final class IndicTokenizer extends CharTokenizer {
  
   public IndicTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {

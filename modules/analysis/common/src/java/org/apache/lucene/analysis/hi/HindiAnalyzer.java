@@ -22,6 +22,7 @@ import java.io.Reader;
 import java.util.Set;
 
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -34,6 +35,13 @@ import org.apache.lucene.util.Version;
 
 /**
  * Analyzer for Hindi.
+ * <p>
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating HindiAnalyzer:
+ * <ul>
+ *   <li> As of 3.6, StandardTokenizer is used for tokenization
+ * </ul>
  */
 public final class HindiAnalyzer extends StopwordAnalyzerBase {
   private final Set<?> stemExclusionSet;
@@ -110,7 +118,7 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
    * used to tokenize all the text in the provided {@link Reader}.
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from a {@link IndicTokenizer} filtered with
+   *         built from a {@link StandardTokenizer} filtered with
    *         {@link LowerCaseFilter}, {@link IndicNormalizationFilter},
    *         {@link HindiNormalizationFilter}, {@link KeywordMarkerFilter}
    *         if a stem exclusion set is provided, {@link HindiStemFilter}, and
@@ -119,7 +127,12 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new IndicTokenizer(matchVersion, reader);
+    final Tokenizer source;
+    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+      source = new StandardTokenizer(matchVersion, reader);
+    } else {
+      source = new IndicTokenizer(matchVersion, reader);
+    }
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     if (!stemExclusionSet.isEmpty())
       result = new KeywordMarkerFilter(result, stemExclusionSet);
