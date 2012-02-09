@@ -26,7 +26,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.common.SolrException;
@@ -83,7 +82,7 @@ class PerSegmentSingleValuedFaceting {
     // reuse the translation logic to go from top level set to per-segment set
     baseSet = docs.getTopFilter();
 
-    final AtomicReaderContext[] leaves = ReaderUtil.leaves(searcher.getTopReaderContext());
+    final AtomicReaderContext[] leaves = searcher.getTopReaderContext().leaves();
     // The list of pending tasks that aren't immediately submitted
     // TODO: Is there a completion service, or a delegating executor that can
     // limit the number of concurrent tasks submitted to a bigger executor?

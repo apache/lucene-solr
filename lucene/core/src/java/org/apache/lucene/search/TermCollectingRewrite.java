@@ -30,7 +30,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
-import org.apache.lucene.util.ReaderUtil;
 
 abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.RewriteMethod {
   
@@ -49,7 +48,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
   protected final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
     IndexReaderContext topReaderContext = reader.getTopReaderContext();
     Comparator<BytesRef> lastTermComp = null;
-    final AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
+    final AtomicReaderContext[] leaves = topReaderContext.leaves();
     for (AtomicReaderContext context : leaves) {
       final Fields fields = context.reader().fields();
       if (fields == null) {

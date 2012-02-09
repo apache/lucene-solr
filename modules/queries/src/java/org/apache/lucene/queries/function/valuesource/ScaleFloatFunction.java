@@ -60,7 +60,7 @@ public class ScaleFloatFunction extends ValueSource {
   }
 
   private ScaleInfo createScaleInfo(Map context, AtomicReaderContext readerContext) throws IOException {
-    final AtomicReaderContext[] leaves = ReaderUtil.leaves(ReaderUtil.getTopLevelContext(readerContext));
+    final AtomicReaderContext[] leaves = ReaderUtil.getTopLevelContext(readerContext).leaves();
 
     float minVal = Float.POSITIVE_INFINITY;
     float maxVal = Float.NEGATIVE_INFINITY;

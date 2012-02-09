@@ -43,7 +43,6 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.TermContext;
 
 /**
@@ -184,7 +183,7 @@ public class PayloadSpanUtil {
     for (Term term : terms) {
       termContexts.put(term, TermContext.build(context, term, true));
     }
-    final AtomicReaderContext[] leaves = ReaderUtil.leaves(context);
+    final AtomicReaderContext[] leaves = context.leaves();
     for (AtomicReaderContext atomicReaderContext : leaves) {
       final Spans spans = query.getSpans(atomicReaderContext, atomicReaderContext.reader().getLiveDocs(), termContexts);
       while (spans.next() == true) {

@@ -28,7 +28,8 @@ public final class AtomicReaderContext extends IndexReaderContext {
   public final int docBase;
   
   private final AtomicReader reader;
-
+  private final AtomicReaderContext[] leaves;
+  
   /**
    * Creates a new {@link AtomicReaderContext} 
    */    
@@ -38,6 +39,7 @@ public final class AtomicReaderContext extends IndexReaderContext {
     this.ord = leafOrd;
     this.docBase = leafDocBase;
     this.reader = reader;
+    this.leaves = isTopLevel ? new AtomicReaderContext[] { this } : null;
   }
   
   AtomicReaderContext(AtomicReader atomicReader) {
@@ -46,7 +48,7 @@ public final class AtomicReaderContext extends IndexReaderContext {
   
   @Override
   public AtomicReaderContext[] leaves() {
-    return null;
+    return leaves;
   }
   
   @Override

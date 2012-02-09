@@ -37,7 +37,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util._TestUtil;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
@@ -216,7 +215,7 @@ public class QueryUtils {
    */
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
-    final AtomicReaderContext[] readerContextArray = ReaderUtil.leaves(s.getTopReaderContext());
+    final AtomicReaderContext[] readerContextArray = s.getTopReaderContext().leaves();
     if (s.createNormalizedWeight(q).scoresDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
 
     final int skip_op = 0;
@@ -349,7 +348,7 @@ public class QueryUtils {
     final float maxDiff = 1e-3f;
     final int lastDoc[] = {-1};
     final AtomicReader lastReader[] = {null};
-    final AtomicReaderContext[] context = ReaderUtil.leaves(s.getTopReaderContext());
+    final AtomicReaderContext[] context = s.getTopReaderContext().leaves();
     s.search(q,new Collector() {
       private Scorer scorer;
       private int leafPtr;

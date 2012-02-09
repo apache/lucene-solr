@@ -32,7 +32,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ReaderUtil;
 
 
 public class TestDistance extends LuceneTestCase {
@@ -117,7 +116,7 @@ public class TestDistance extends LuceneTestCase {
     LatLongDistanceFilter f = new LatLongDistanceFilter(new QueryWrapperFilter(new MatchAllDocsQuery()),
                                                         lat, lng, 1.0, latField, lngField);
 
-    AtomicReaderContext[] leaves = ReaderUtil.leaves(r.getTopReaderContext());
+    AtomicReaderContext[] leaves = r.getTopReaderContext().leaves();
     for (int i = 0; i < leaves.length; i++) {
       f.getDocIdSet(leaves[i], leaves[i].reader().getLiveDocs());
     }

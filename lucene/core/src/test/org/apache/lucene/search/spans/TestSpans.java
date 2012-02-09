@@ -404,7 +404,7 @@ public class TestSpans extends LuceneTestCase {
     boolean ordered = true;
     int slop = 1;
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
+    AtomicReaderContext[] leaves = topReaderContext.leaves();
     int subIndex = ReaderUtil.subIndex(11, leaves);
     for (int i = 0; i < leaves.length; i++) {
       

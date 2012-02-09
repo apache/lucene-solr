@@ -60,7 +60,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
     for (Term term : terms) {
       termContexts.put(term, TermContext.build(topLevelReaderContext, term, true));
     }
-    AtomicReaderContext[] leaves = ReaderUtil.leaves(topLevelReaderContext);
+    AtomicReaderContext[] leaves = topLevelReaderContext.leaves();
     if(leaves.length == 1) {
       return query.getSpans(leaves[0], leaves[0].reader().getLiveDocs(), termContexts);
     }

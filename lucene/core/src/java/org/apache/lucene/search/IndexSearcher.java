@@ -144,7 +144,7 @@ public class IndexSearcher {
     reader = context.reader();
     this.executor = executor;
     this.readerContext = context;
-    leafContexts = ReaderUtil.leaves(context);
+    leafContexts = context.leaves();
     this.leafSlices = executor == null ? null : slices(leafContexts);
   }
 

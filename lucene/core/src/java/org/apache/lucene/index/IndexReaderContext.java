@@ -45,7 +45,8 @@ public abstract class IndexReaderContext {
   
   /**
    * Returns the context's leaves if this context is a top-level context
-   * otherwise <code>null</code>.
+   * otherwise <code>null</code>. For convenience, if this is an
+   * {@link AtomicReaderContext} this returns itsself as the only leaf.
    * <p>
    * Note: this is convenience method since leaves can always be obtained by
    * walking the context tree.

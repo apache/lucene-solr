@@ -28,7 +28,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -102,7 +101,7 @@ public class PKIndexSplitter {
     boolean success = false;
     final IndexWriter w = new IndexWriter(target, config);
     try {
-      final AtomicReaderContext[] leaves = ReaderUtil.leaves(reader.getTopReaderContext());
+      final AtomicReaderContext[] leaves = reader.getTopReaderContext().leaves();
       final IndexReader[] subReaders = new IndexReader[leaves.length];
       for (int i = 0; i < leaves.length; i++) {
         subReaders[i] = new DocumentFilteredAtomicIndexReader(leaves[i], preserveFilter, negateFilter);

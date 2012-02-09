@@ -31,7 +31,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ReaderUtil;
 
 public class TermsFilterTest extends LuceneTestCase {
 
@@ -111,7 +110,7 @@ public class TermsFilterTest extends LuceneTestCase {
     tf.addTerm(new Term(fieldName, "content1"));
     
     MultiReader multi = new MultiReader(reader1, reader2);
-    for (AtomicReaderContext context : ReaderUtil.leaves(multi.getTopReaderContext())) {
+    for (AtomicReaderContext context : multi.getTopReaderContext().leaves()) {
       FixedBitSet bits = (FixedBitSet) tf.getDocIdSet(context, context.reader().getLiveDocs());
       assertTrue("Must be >= 0", bits.cardinality() >= 0);      
     }

@@ -156,7 +156,7 @@ public class TestBlockJoin extends LuceneTestCase {
   }
 
   private Document getParentDoc(IndexReader reader, Filter parents, int childDocID) throws IOException {
-    final AtomicReaderContext[] leaves = ReaderUtil.leaves(reader.getTopReaderContext());
+    final AtomicReaderContext[] leaves = reader.getTopReaderContext().leaves();
     final int subIndex = ReaderUtil.subIndex(childDocID, leaves);
     final AtomicReaderContext leaf = leaves[subIndex];
     final FixedBitSet bits = (FixedBitSet) parents.getDocIdSet(leaf, null);
@@ -818,7 +818,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(ReaderUtil.leaves(s.getIndexReader().getTopReaderContext())[0], true, true, null);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves()[0], true, true, null);
     assertEquals(1, disi.advance(1));
     r.close();
     dir.close();
@@ -852,7 +852,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ToParentBlockJoinQuery.ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(ReaderUtil.leaves(s.getIndexReader().getTopReaderContext())[0], true, true, null);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().getTopReaderContext().leaves()[0], true, true, null);
     assertEquals(2, disi.advance(0));
     r.close();
     dir.close();
