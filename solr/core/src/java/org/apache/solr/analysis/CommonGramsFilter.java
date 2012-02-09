@@ -67,7 +67,7 @@ public final class CommonGramsFilter extends TokenFilter {
     this(Version.LUCENE_29, input, commonWords);
   }
   
-  /** @deprecated Use {@link #CommonGramsFilter(Version, TokenStream, Set, boolean)} instead */
+  /** @deprecated Use {@link #CommonGramsFilter(Version, TokenStream, Set)} instead */
   @Deprecated
   public CommonGramsFilter(TokenStream input, Set<?> commonWords, boolean ignoreCase) {
     this(Version.LUCENE_29, input, commonWords, ignoreCase);
@@ -102,7 +102,9 @@ public final class CommonGramsFilter extends TokenFilter {
    * @param input TokenStream input in filter chain.
    * @param commonWords The set of common words.
    * @param ignoreCase -Ignore case when constructing bigrams for common words.
+   * @deprecated Use {@link #CommonGramsFilter(Version, TokenStream, Set)} instead
    */
+  @Deprecated
   public CommonGramsFilter(Version matchVersion, TokenStream input, Set<?> commonWords, boolean ignoreCase) {
     super(input);
     if (commonWords instanceof CharArraySet) {

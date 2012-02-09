@@ -59,6 +59,9 @@ import java.util.Map;
  * <p>You must specify the required {@link Version}
  * compatibility when creating DutchAnalyzer:
  * <ul>
+ *   <li> As of 3.6, {@link #DutchAnalyzer(Version, Set)} and
+ *        {@link #DutchAnalyzer(Version, Set, Set)} also populate
+ *        the default entries for the stem override dictionary
  *   <li> As of 3.1, Snowball stemming is done with SnowballFilter, 
  *        LowerCaseFilter is used prior to StopFilter, and Snowball 
  *        stopwords are used by default.
@@ -99,6 +102,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
   
   private static class DefaultSetHolder {
     static final Set<?> DEFAULT_STOP_SET;
+    static final CharArrayMap<String> DEFAULT_STEM_DICT;
 
     static {
       try {
@@ -109,6 +113,12 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
         // distribution (JAR)
         throw new RuntimeException("Unable to load default stopword set");
       }
+      
+      DEFAULT_STEM_DICT = new CharArrayMap<String>(Version.LUCENE_CURRENT, 4, false);
+      DEFAULT_STEM_DICT.put("fiets", "fiets"); //otherwise fiet
+      DEFAULT_STEM_DICT.put("bromfiets", "bromfiets"); //otherwise bromfiet
+      DEFAULT_STEM_DICT.put("ei", "eier");
+      DEFAULT_STEM_DICT.put("kind", "kinder");
     }
     
   }
@@ -124,7 +134,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
    */
   private Set<?> excltable = Collections.emptySet();
 
-  private Map<Object,String>  stemdict = CharArrayMap.emptyMap();
+  private CharArrayMap<String> stemdict = CharArrayMap.emptyMap();
   private final Version matchVersion;
 
   /**
@@ -133,22 +143,33 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
    * 
    */
   public DutchAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
-    stemdict = new CharArrayMap<String>(matchVersion, 16, false);
-    stemdict.put("fiets", "fiets"); //otherwise fiet
-    stemdict.put("bromfiets", "bromfiets"); //otherwise bromfiet
-    stemdict.put("ei", "eier");
-    stemdict.put("kind", "kinder");
+    // historically, only this ctor populated the stem dict!!!!!
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET, CharArraySet.EMPTY_SET, DefaultSetHolder.DEFAULT_STEM_DICT);
   }
   
   public DutchAnalyzer(Version matchVersion, Set<?> stopwords){
-    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+    // historically, this ctor never the stem dict!!!!!
+    // so we populate it only for >= 3.6
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET, 
+        matchVersion.onOrAfter(Version.LUCENE_36) 
+        ? DefaultSetHolder.DEFAULT_STEM_DICT 
+        : CharArrayMap.<String>emptyMap());
   }
   
   public DutchAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionTable){
-    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
-    excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
+    // historically, this ctor never the stem dict!!!!!
+    // so we populate it only for >= 3.6
+    this(matchVersion, stopwords, stemExclusionTable,
+        matchVersion.onOrAfter(Version.LUCENE_36)
+        ? DefaultSetHolder.DEFAULT_STEM_DICT
+        : CharArrayMap.<String>emptyMap());
+  }
+  
+  public DutchAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionTable, CharArrayMap<String> stemOverrideDict) {
     this.matchVersion = matchVersion;
+    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
+    this.excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
+    this.stemdict = CharArrayMap.unmodifiableMap(CharArrayMap.copy(matchVersion, stemOverrideDict));
   }
 
   /**

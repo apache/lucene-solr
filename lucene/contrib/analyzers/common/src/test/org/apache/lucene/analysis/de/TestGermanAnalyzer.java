@@ -77,6 +77,12 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "tischen", "tischen");
   }
   
+  public void testStemExclusionTable() throws Exception {
+    GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, 
+        new CharArraySet(TEST_VERSION_CURRENT, asSet("tischen"), false));
+    checkOneTermReuse(a, "tischen", "tischen");
+  }
+  
   /** test some features of the new snowball filter
    * these only pass with LUCENE_CURRENT, not if you use o.a.l.a.de.GermanStemmer
    */

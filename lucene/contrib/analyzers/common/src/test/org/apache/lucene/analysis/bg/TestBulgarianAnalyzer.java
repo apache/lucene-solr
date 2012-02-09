@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.bg;
  */
 
 import java.io.IOException;
-import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -43,8 +42,7 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testCustomStopwords() throws IOException {
-    Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT, Collections
-        .emptySet());
+    Analyzer a = new BulgarianAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
     assertAnalyzesTo(a, "Как се казваш?", 
         new String[] {"как", "се", "казваш"});
   }

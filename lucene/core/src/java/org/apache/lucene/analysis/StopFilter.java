@@ -58,7 +58,7 @@ public final class StopFilter extends FilteringTokenFilter {
    * @param input Input TokenStream
    * @param stopWords A Set of Strings or char[] or any other toString()-able set representing the stopwords
    * @param ignoreCase if true, all words are lower cased first
-   * @deprecated use {@link #StopFilter(Version, TokenStream, Set, boolean)} instead
+   * @deprecated Use {@link #StopFilter(Version, TokenStream, Set)} instead
    */
   @Deprecated
   public StopFilter(boolean enablePositionIncrements, TokenStream input, Set<?> stopWords, boolean ignoreCase)
@@ -87,7 +87,9 @@ public final class StopFilter extends FilteringTokenFilter {
    *          representing the stopwords
    * @param ignoreCase
    *          if true, all words are lower cased first
+   * @deprecated Use {@link #StopFilter(Version, TokenStream, Set)} instead
    */
+  @Deprecated
   public StopFilter(Version matchVersion, TokenStream input, Set<?> stopWords, boolean ignoreCase)
   {
    this(matchVersion, matchVersion.onOrAfter(Version.LUCENE_29), input, stopWords, ignoreCase);

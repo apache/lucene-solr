@@ -175,6 +175,26 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "lichamelijk", "somethingentirelydifferent");
   }
   
+  /** 
+   * check that the default stem overrides are used
+   * even if you use a non-default ctor.
+   */
+  public void testStemOverrides() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
+    checkOneTerm(a, "fiets", "fiets");
+  }
+  
+  /**
+   * prior to 3.6, this confusingly did not happen if 
+   * you specified your own stoplist!!!!
+   * @deprecated (3.6) Remove this test in Lucene 5.0
+   */
+  @Deprecated
+  public void testBuggyStemOverrides() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_35, CharArraySet.EMPTY_SET);
+    checkOneTerm(a, "fiets", "fiet");
+  }
+  
   /**
    * Prior to 3.1, this analyzer had no lowercase filter.
    * stopwords were case sensitive. Preserve this for back compat.

@@ -805,7 +805,11 @@ public abstract class LuceneTestCase extends Assert {
   public static void assumeNoException(String msg, Exception e) {
     Assume.assumeNoException(e == null ? null : new _TestIgnoredException(msg, e));
   }
- 
+
+  public static <T> Set<T> asSet(T... args) {
+    return new HashSet<T>(Arrays.asList(args));
+  }
+
   /**
    * Convenience method for logging an iterator.
    *

@@ -91,7 +91,10 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
    * @see WordlistLoader#getWordSet(Reader, Version)
    * @param matchVersion Lucene version to match See {@link
    * <a href="#version">above</a>}
-   * @param stopwords File to read stop words from */
+   * @param stopwords File to read stop words from 
+   * @deprecated Use {@link #ClassicAnalyzer(Version, Reader)} instead. 
+   */
+  @Deprecated
   public ClassicAnalyzer(Version matchVersion, File stopwords) throws IOException {
     this(matchVersion, WordlistLoader.getWordSet(IOUtils.getDecodingReader(stopwords,
         IOUtils.CHARSET_UTF_8), matchVersion));
