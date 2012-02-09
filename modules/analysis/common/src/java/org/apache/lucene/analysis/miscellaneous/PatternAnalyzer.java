@@ -22,7 +22,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -139,7 +138,7 @@ public final class PatternAnalyzer extends Analyzer {
     
   private final Pattern pattern;
   private final boolean toLowerCase;
-  private final Set<?> stopWords;
+  private final CharArraySet stopWords;
 
   private final Version matchVersion;
   
@@ -162,7 +161,7 @@ public final class PatternAnalyzer extends Analyzer {
    *            or <a href="http://www.unine.ch/info/clef/">other stop words
    *            lists </a>.
    */
-  public PatternAnalyzer(Version matchVersion, Pattern pattern, boolean toLowerCase, Set<?> stopWords) {
+  public PatternAnalyzer(Version matchVersion, Pattern pattern, boolean toLowerCase, CharArraySet stopWords) {
     if (pattern == null) 
       throw new IllegalArgumentException("pattern must not be null");
     
@@ -404,12 +403,12 @@ public final class PatternAnalyzer extends Analyzer {
     private int pos;
     private final boolean isLetter;
     private final boolean toLowerCase;
-    private final Set<?> stopWords;
+    private final CharArraySet stopWords;
     private static final Locale locale = Locale.getDefault();
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
-    public FastStringTokenizer(Reader input, String str, boolean isLetter, boolean toLowerCase, Set<?> stopWords) {
+    public FastStringTokenizer(Reader input, String str, boolean isLetter, boolean toLowerCase, CharArraySet stopWords) {
       super(input);
       this.str = str;
       this.isLetter = isLetter;

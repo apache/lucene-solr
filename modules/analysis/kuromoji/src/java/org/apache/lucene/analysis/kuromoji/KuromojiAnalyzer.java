@@ -39,13 +39,13 @@ public class KuromojiAnalyzer extends StopwordAnalyzerBase {
     this(matchVersion, new Segmenter(), DefaultSetHolder.DEFAULT_STOP_SET, DefaultSetHolder.DEFAULT_STOP_TAGS);
   }
   
-  public KuromojiAnalyzer(Version matchVersion, Segmenter segmenter, Set<?> stopwords, Set<String> stoptags) {
+  public KuromojiAnalyzer(Version matchVersion, Segmenter segmenter, CharArraySet stopwords, Set<String> stoptags) {
     super(matchVersion, stopwords);
     this.segmenter = segmenter;
     this.stoptags = stoptags;
   }
   
-  public static Set<?> getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -58,7 +58,7 @@ public class KuromojiAnalyzer extends StopwordAnalyzerBase {
    * outer class accesses the static final set the first time.
    */
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET;
+    static final CharArraySet DEFAULT_STOP_SET;
     static final Set<String> DEFAULT_STOP_TAGS;
 
     static {

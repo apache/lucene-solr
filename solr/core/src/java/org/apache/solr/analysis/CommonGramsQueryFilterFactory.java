@@ -18,7 +18,6 @@ package org.apache.solr.analysis;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
@@ -80,7 +79,7 @@ public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
     return ignoreCase;
   }
 
-  public Set<?> getCommonWords() {
+  public CharArraySet getCommonWords() {
     return commonWords;
   }
 
@@ -88,8 +87,7 @@ public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
    * Create a CommonGramsFilter and wrap it with a CommonGramsQueryFilter
    */
   public CommonGramsQueryFilter create(TokenStream input) {
-    CommonGramsFilter commonGrams = new CommonGramsFilter(luceneMatchVersion, input, commonWords,
-        ignoreCase);
+    CommonGramsFilter commonGrams = new CommonGramsFilter(luceneMatchVersion, input, commonWords);
     CommonGramsQueryFilter commonGramsQuery = new CommonGramsQueryFilter(
         commonGrams);
     return commonGramsQuery;

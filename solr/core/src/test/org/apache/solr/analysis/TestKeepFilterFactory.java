@@ -16,10 +16,10 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
-import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -38,7 +38,7 @@ public class TestKeepFilterFactory extends BaseTokenTestCase{
     args.put("ignoreCase", "true");
     factory.init(args);
     factory.inform(loader);
-    Set<?> words = factory.getWords();
+    CharArraySet words = factory.getWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 2, words.size() == 2);
 

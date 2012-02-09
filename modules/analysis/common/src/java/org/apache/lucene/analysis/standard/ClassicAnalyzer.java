@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
@@ -28,7 +29,6 @@ import org.apache.lucene.util.Version;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Set;
 
 /**
  * Filters {@link ClassicTokenizer} with {@link ClassicFilter}, {@link
@@ -60,13 +60,13 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
 
   /** An unmodifiable set containing some common English words that are usually not
   useful for searching. */
-  public static final Set<?> STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET; 
+  public static final CharArraySet STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET; 
 
   /** Builds an analyzer with the given stop words.
    * @param matchVersion Lucene version to match See {@link
    * <a href="#version">above</a>}
    * @param stopWords stop words */
-  public ClassicAnalyzer(Version matchVersion, Set<?> stopWords) {
+  public ClassicAnalyzer(Version matchVersion, CharArraySet stopWords) {
     super(matchVersion, stopWords);
   }
 
@@ -77,15 +77,6 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
    */
   public ClassicAnalyzer(Version matchVersion) {
     this(matchVersion, STOP_WORDS_SET);
-  }
-
-  /** Builds an analyzer with the stop words from the given file.
-   * @see WordlistLoader#getWordSet(Reader, Version)
-   * @param matchVersion Lucene version to match See {@link
-   * <a href="#version">above</a>}
-   * @param stopwords File to read stop words from */
-  public ClassicAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    this(matchVersion, loadStopwordSet(stopwords, matchVersion));
   }
 
   /** Builds an analyzer with the stop words from the given reader.

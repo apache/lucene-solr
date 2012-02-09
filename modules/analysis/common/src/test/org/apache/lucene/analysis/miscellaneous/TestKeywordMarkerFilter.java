@@ -2,10 +2,7 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.Set;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -47,12 +44,11 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(new LowerCaseFilterMock(
         new KeywordMarkerFilter(new MockTokenizer(new StringReader(
             "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), set)), output);
-    Set<String> jdkSet = new HashSet<String>();
-    jdkSet.add("LuceneFox");
+    CharArraySet mixedCaseSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("LuceneFox"), false);
     assertTokenStreamContents(new LowerCaseFilterMock(
         new KeywordMarkerFilter(new MockTokenizer(new StringReader(
-            "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), jdkSet)), output);
-    Set<?> set2 = set;
+            "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), mixedCaseSet)), output);
+    CharArraySet set2 = set;
     assertTokenStreamContents(new LowerCaseFilterMock(
         new KeywordMarkerFilter(new MockTokenizer(new StringReader(
             "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), set2)), output);
@@ -64,8 +60,8 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
                      new KeywordMarkerFilter(
                      new KeywordMarkerFilter(
                      new MockTokenizer(new StringReader("Dogs Trees Birds Houses"), MockTokenizer.WHITESPACE, false),
-                     new HashSet<String>(Arrays.asList("Birds", "Houses"))), 
-                     new HashSet<String>(Arrays.asList("Dogs", "Trees"))));
+                     new CharArraySet(TEST_VERSION_CURRENT, asSet("Birds", "Houses"), false)), 
+                     new CharArraySet(TEST_VERSION_CURRENT, asSet("Dogs", "Trees"), false)));
     
     assertTokenStreamContents(ts, new String[] { "Dogs", "Trees", "Birds", "Houses" });
   }

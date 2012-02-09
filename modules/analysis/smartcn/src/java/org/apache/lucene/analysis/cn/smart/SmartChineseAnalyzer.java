@@ -18,10 +18,7 @@
 package org.apache.lucene.analysis.cn.smart;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -58,7 +55,7 @@ import org.apache.lucene.util.Version;
  */
 public final class SmartChineseAnalyzer extends Analyzer {
 
-  private final Set<?> stopWords;
+  private final CharArraySet stopWords;
   
   private static final String DEFAULT_STOPWORD_FILE = "stopwords.txt";
   
@@ -120,7 +117,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
    */
   public SmartChineseAnalyzer(Version matchVersion, boolean useDefaultStopWords) {
     stopWords = useDefaultStopWords ? DefaultSetHolder.DEFAULT_STOP_SET
-      : Collections.EMPTY_SET;
+      : CharArraySet.EMPTY_SET;
     this.matchVersion = matchVersion;
   }
 
@@ -133,8 +130,8 @@ public final class SmartChineseAnalyzer extends Analyzer {
    * </p>
    * @param stopWords {@link Set} of stopwords to use.
    */
-  public SmartChineseAnalyzer(Version matchVersion, Set stopWords) {
-    this.stopWords = stopWords==null?Collections.EMPTY_SET:stopWords;
+  public SmartChineseAnalyzer(Version matchVersion, CharArraySet stopWords) {
+    this.stopWords = stopWords==null?CharArraySet.EMPTY_SET:stopWords;
     this.matchVersion = matchVersion;
   }
 
@@ -147,7 +144,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
     // The porter stemming is too strict, this is not a bug, this is a feature:)
     result = new PorterStemFilter(result);
     if (!stopWords.isEmpty()) {
-      result = new StopFilter(matchVersion, result, stopWords, false);
+      result = new StopFilter(matchVersion, result, stopWords);
     }
     return new TokenStreamComponents(tokenizer, result);
   }

@@ -20,11 +20,11 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
 import java.io.StringReader;
-import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -44,7 +44,7 @@ public class CommonGramsFilterFactoryTest extends BaseTokenTestCase {
     args.put("ignoreCase", "true");
     factory.init(args);
     factory.inform(loader);
-    Set<?> words = factory.getCommonWords();
+    CharArraySet words = factory.getCommonWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 2,
         words.size() == 2);
@@ -89,7 +89,7 @@ public class CommonGramsFilterFactoryTest extends BaseTokenTestCase {
     Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     factory.init(args);
     factory.inform(loader);
-    Set<?> words = factory.getCommonWords();
+    CharArraySet words = factory.getCommonWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue(words.contains("the"));
     Tokenizer tokenizer = new MockTokenizer(new StringReader("testing the factory"), MockTokenizer.WHITESPACE, false);

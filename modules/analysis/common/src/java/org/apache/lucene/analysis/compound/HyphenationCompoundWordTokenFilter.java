@@ -18,12 +18,12 @@ package org.apache.lucene.analysis.compound;
  */
 
 import java.io.File;
-import java.util.Set;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.hyphenation.Hyphenation;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 import org.xml.sax.InputSource;
 
@@ -41,13 +41,6 @@ import org.xml.sax.InputSource;
  * supplementary characters in strings and char arrays provided as compound word
  * dictionaries.
  * </ul>
- * <p>If you pass in a {@link org.apache.lucene.analysis.util.CharArraySet} as dictionary,
- * it should be case-insensitive unless it contains only lowercased entries and you
- * have {@link org.apache.lucene.analysis.core.LowerCaseFilter} before this filter in your analysis chain.
- * For optional performance (as this filter does lots of lookups to the dictionary,
- * you should use the latter analysis chain/CharArraySet). Be aware: If you supply arbitrary
- * {@link Set Sets} to the ctors, they will be automatically
- * transformed to case-insensitive!
  */
 public class HyphenationCompoundWordTokenFilter extends
     CompoundWordTokenFilterBase {
@@ -69,7 +62,7 @@ public class HyphenationCompoundWordTokenFilter extends
    *          the word dictionary to match against.
    */
   public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator, Set<?> dictionary) {
+      HyphenationTree hyphenator, CharArraySet dictionary) {
     this(matchVersion, input, hyphenator, dictionary, DEFAULT_MIN_WORD_SIZE,
         DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE, false);
   }
@@ -98,7 +91,7 @@ public class HyphenationCompoundWordTokenFilter extends
    *          Add only the longest matching subword to the stream
    */
   public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator, Set<?> dictionary, int minWordSize,
+      HyphenationTree hyphenator, CharArraySet dictionary, int minWordSize,
       int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(matchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize,
         onlyLongestMatch);
@@ -109,14 +102,14 @@ public class HyphenationCompoundWordTokenFilter extends
   /**
    * Create a HyphenationCompoundWordTokenFilter with no dictionary.
    * <p>
-   * Calls {@link #HyphenationCompoundWordTokenFilter(Version, TokenStream, HyphenationTree, Set, int, int, int, boolean)
+   * Calls {@link #HyphenationCompoundWordTokenFilter(Version, TokenStream, HyphenationTree, CharArraySet, int, int, int, boolean)
    * HyphenationCompoundWordTokenFilter(matchVersion, input, hyphenator,
    * null, minWordSize, minSubwordSize, maxSubwordSize }
    */
   public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
       HyphenationTree hyphenator, int minWordSize, int minSubwordSize,
       int maxSubwordSize) {
-    this(matchVersion, input, hyphenator, (Set<?>) null, minWordSize, minSubwordSize,
+    this(matchVersion, input, hyphenator, null, minWordSize, minSubwordSize,
         maxSubwordSize, false);
   }
   

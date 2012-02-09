@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.th;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -28,6 +27,7 @@ import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.util.Version;
 
@@ -55,7 +55,7 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    * Returns an unmodifiable instance of the default stop words set.
    * @return default stop words set.
    */
-  public static Set<?> getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -64,7 +64,7 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    * accesses the static final set the first time.;
    */
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET;
+    static final CharArraySet DEFAULT_STOP_SET;
 
     static {
       try {
@@ -93,7 +93,7 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    */
-  public ThaiAnalyzer(Version matchVersion, Set<?> stopwords) {
+  public ThaiAnalyzer(Version matchVersion, CharArraySet stopwords) {
     super(matchVersion, stopwords);
   }
 

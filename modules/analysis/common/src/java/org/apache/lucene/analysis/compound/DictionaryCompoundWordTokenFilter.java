@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -38,13 +39,6 @@ import org.apache.lucene.util.Version;
  * supplementary characters in strings and char arrays provided as compound word
  * dictionaries.
  * </ul>
- * <p>If you pass in a {@link org.apache.lucene.analysis.util.CharArraySet} as dictionary,
- * it should be case-insensitive unless it contains only lowercased entries and you
- * have {@link org.apache.lucene.analysis.core.LowerCaseFilter} before this filter in your analysis chain.
- * For optional performance (as this filter does lots of lookups to the dictionary,
- * you should use the latter analysis chain/CharArraySet). Be aware: If you supply arbitrary
- * {@link Set Sets} to the ctors, they will be automatically
- * transformed to case-insensitive!
  */
 public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBase {
   
@@ -61,7 +55,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    * @param dictionary
    *          the word dictionary to match against.
    */
-  public DictionaryCompoundWordTokenFilter(Version matchVersion, TokenStream input, Set<?> dictionary) {
+  public DictionaryCompoundWordTokenFilter(Version matchVersion, TokenStream input, CharArraySet dictionary) {
     super(matchVersion, input, dictionary);
   }
   
@@ -86,7 +80,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    * @param onlyLongestMatch
    *          Add only the longest matching subword to the stream
    */
-  public DictionaryCompoundWordTokenFilter(Version matchVersion, TokenStream input, Set<?> dictionary,
+  public DictionaryCompoundWordTokenFilter(Version matchVersion, TokenStream input, CharArraySet dictionary,
       int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(matchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
   }

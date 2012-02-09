@@ -18,11 +18,10 @@ package org.apache.lucene.analysis.gl;
  */
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 public class TestGalicianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -43,8 +42,7 @@ public class TestGalicianAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    Set<String> exclusionSet = new HashSet<String>();
-    exclusionSet.add("correspondente");
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("correspondente"), false);
     Analyzer a = new GalicianAnalyzer(TEST_VERSION_CURRENT, 
         GalicianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "correspondente", "correspondente");

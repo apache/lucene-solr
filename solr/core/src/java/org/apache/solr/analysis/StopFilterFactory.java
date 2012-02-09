@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 import java.util.Map;
-import java.util.Set;
 import java.io.IOException;
 
 /**
@@ -81,13 +80,13 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
     return ignoreCase;
   }
 
-  public Set<?> getStopWords() {
+  public CharArraySet getStopWords() {
     return stopWords;
   }
 
   @Override
   public TokenStream create(TokenStream input) {
-    StopFilter stopFilter = new StopFilter(luceneMatchVersion,input,stopWords,ignoreCase);
+    StopFilter stopFilter = new StopFilter(luceneMatchVersion,input,stopWords);
     stopFilter.setEnablePositionIncrements(enablePositionIncrements);
     return stopFilter;
   }

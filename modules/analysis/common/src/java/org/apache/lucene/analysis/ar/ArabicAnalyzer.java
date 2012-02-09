@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ar;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -63,7 +62,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static Set<?> getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -72,7 +71,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * accesses the static final set the first time.;
    */
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET;
+    static final CharArraySet DEFAULT_STOP_SET;
 
     static {
       try {
@@ -85,7 +84,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     }
   }
   
-  private final Set<?> stemExclusionSet;
+  private final CharArraySet stemExclusionSet;
 
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
@@ -102,7 +101,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * @param stopwords
    *          a stopword set
    */
-  public ArabicAnalyzer(Version matchVersion, Set<?> stopwords){
+  public ArabicAnalyzer(Version matchVersion, CharArraySet stopwords){
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
@@ -118,7 +117,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * @param stemExclusionSet
    *          a set of terms not to be stemmed
    */
-  public ArabicAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet){
+  public ArabicAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet){
     super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
         matchVersion, stemExclusionSet));

@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.es;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -48,7 +47,7 @@ import org.tartarus.snowball.ext.SpanishStemmer;
  * </ul>
  */
 public final class SpanishAnalyzer extends StopwordAnalyzerBase {
-  private final Set<?> stemExclusionSet;
+  private final CharArraySet stemExclusionSet;
   
   /** File containing default Spanish stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "spanish_stop.txt";
@@ -57,7 +56,7 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
    * Returns an unmodifiable instance of the default stop words set.
    * @return default stop words set.
    */
-  public static Set<?> getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -66,7 +65,7 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
    * accesses the static final set the first time.;
    */
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET;
+    static final CharArraySet DEFAULT_STOP_SET;
 
     static {
       try {
@@ -93,7 +92,7 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
    * @param matchVersion lucene compatibility version
    * @param stopwords a stopword set
    */
-  public SpanishAnalyzer(Version matchVersion, Set<?> stopwords) {
+  public SpanishAnalyzer(Version matchVersion, CharArraySet stopwords) {
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
@@ -106,7 +105,7 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
-  public SpanishAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet) {
+  public SpanishAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
     super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
         matchVersion, stemExclusionSet));

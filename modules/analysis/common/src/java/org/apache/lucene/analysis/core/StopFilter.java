@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.core;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -44,34 +43,6 @@ public final class StopFilter extends FilteringTokenFilter {
 
   private final CharArraySet stopWords;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-
-  /**
-   * Construct a token stream filtering the given input. If
-   * <code>stopWords</code> is an instance of {@link CharArraySet} (true if
-   * <code>makeStopSet()</code> was used to construct the set) it will be
-   * directly used and <code>ignoreCase</code> will be ignored since
-   * <code>CharArraySet</code> directly controls case sensitivity.
-   * <p/>
-   * If <code>stopWords</code> is not an instance of {@link CharArraySet}, a new
-   * CharArraySet will be constructed and <code>ignoreCase</code> will be used
-   * to specify the case sensitivity of that set.
-   * 
-   * @param matchVersion
-   *          Lucene version to enable correct Unicode 4.0 behavior in the stop
-   *          set if Version > 3.0. See <a href="#version">above</a> for details.
-   * @param input
-   *          Input TokenStream
-   * @param stopWords
-   *          A Set of Strings or char[] or any other toString()-able set
-   *          representing the stopwords
-   * @param ignoreCase
-   *          if true, all words are lower cased first
-   */
-  public StopFilter(Version matchVersion, TokenStream input, Set<?> stopWords, boolean ignoreCase)
-  {
-    super(true, input);
-    this.stopWords = stopWords instanceof CharArraySet ? (CharArraySet) stopWords : new CharArraySet(matchVersion, stopWords, ignoreCase);
-  }
   
   /**
    * Constructs a filter which removes words from the input TokenStream that are
@@ -83,12 +54,12 @@ public final class StopFilter extends FilteringTokenFilter {
    * @param in
    *          Input stream
    * @param stopWords
-   *          A Set of Strings or char[] or any other toString()-able set
-   *          representing the stopwords
+   *          A {@link CharArraySet} representing the stopwords.
    * @see #makeStopSet(Version, java.lang.String...)
    */
-  public StopFilter(Version matchVersion, TokenStream in, Set<?> stopWords) {
-    this(matchVersion, in, stopWords, false);
+  public StopFilter(Version matchVersion, TokenStream in, CharArraySet stopWords) {
+    super(true, in);
+    this.stopWords = stopWords;
   }
 
   /**
@@ -101,7 +72,7 @@ public final class StopFilter extends FilteringTokenFilter {
    * @param stopWords An array of stopwords
    * @see #makeStopSet(Version, java.lang.String[], boolean) passing false to ignoreCase
    */
-  public static Set<Object> makeStopSet(Version matchVersion, String... stopWords) {
+  public static CharArraySet makeStopSet(Version matchVersion, String... stopWords) {
     return makeStopSet(matchVersion, stopWords, false);
   }
   
@@ -116,7 +87,7 @@ public final class StopFilter extends FilteringTokenFilter {
    * @return A Set ({@link CharArraySet}) containing the words
    * @see #makeStopSet(Version, java.lang.String[], boolean) passing false to ignoreCase
    */
-  public static Set<Object> makeStopSet(Version matchVersion, List<?> stopWords) {
+  public static CharArraySet makeStopSet(Version matchVersion, List<?> stopWords) {
     return makeStopSet(matchVersion, stopWords, false);
   }
     
@@ -128,7 +99,7 @@ public final class StopFilter extends FilteringTokenFilter {
    * @param ignoreCase If true, all words are lower cased first.  
    * @return a Set containing the words
    */    
-  public static Set<Object> makeStopSet(Version matchVersion, String[] stopWords, boolean ignoreCase) {
+  public static CharArraySet makeStopSet(Version matchVersion, String[] stopWords, boolean ignoreCase) {
     CharArraySet stopSet = new CharArraySet(matchVersion, stopWords.length, ignoreCase);
     stopSet.addAll(Arrays.asList(stopWords));
     return stopSet;
@@ -141,7 +112,7 @@ public final class StopFilter extends FilteringTokenFilter {
    * @param ignoreCase if true, all words are lower cased first
    * @return A Set ({@link CharArraySet}) containing the words
    */
-  public static Set<Object> makeStopSet(Version matchVersion, List<?> stopWords, boolean ignoreCase){
+  public static CharArraySet makeStopSet(Version matchVersion, List<?> stopWords, boolean ignoreCase){
     CharArraySet stopSet = new CharArraySet(matchVersion, stopWords.size(), ignoreCase);
     stopSet.addAll(stopWords);
     return stopSet;

@@ -22,6 +22,7 @@ import java.util.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
@@ -179,7 +180,8 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
     if (stopWords == null) {
       return components;
     }
-    StopFilter stopFilter = new StopFilter(matchVersion, components.getTokenStream(), stopWords);
+    StopFilter stopFilter = new StopFilter(matchVersion, components.getTokenStream(), 
+        new CharArraySet(matchVersion, stopWords, false));
     return new TokenStreamComponents(components.getTokenizer(), stopFilter);
   }
 

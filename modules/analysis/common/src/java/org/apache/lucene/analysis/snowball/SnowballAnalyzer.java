@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
 import java.io.Reader;
-import java.util.Set;
 
 /** Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
  * LowerCaseFilter}, {@link StopFilter} and {@link SnowballFilter}.
@@ -48,7 +47,7 @@ import java.util.Set;
 @Deprecated
 public final class SnowballAnalyzer extends Analyzer {
   private String name;
-  private Set<?> stopSet;
+  private CharArraySet stopSet;
   private final Version matchVersion;
 
   /** Builds the named analyzer with no stop words. */
@@ -58,7 +57,7 @@ public final class SnowballAnalyzer extends Analyzer {
   }
 
   /** Builds the named analyzer with the given stop words. */
-  public SnowballAnalyzer(Version matchVersion, String name, Set<?> stopWords) {
+  public SnowballAnalyzer(Version matchVersion, String name, CharArraySet stopWords) {
     this(matchVersion, name);
     stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion,
         stopWords));

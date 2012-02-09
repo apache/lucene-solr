@@ -18,11 +18,10 @@ package org.apache.lucene.analysis.fi;
  */
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 public class TestFinnishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -43,8 +42,7 @@ public class TestFinnishAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    Set<String> exclusionSet = new HashSet<String>();
-    exclusionSet.add("edeltäjistään");
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("edeltäjistään"), false);
     Analyzer a = new FinnishAnalyzer(TEST_VERSION_CURRENT, 
         FinnishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "edeltäjiinsä", "edeltäj");

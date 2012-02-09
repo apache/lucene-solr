@@ -18,11 +18,10 @@ package org.apache.lucene.analysis.no;
  */
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -43,8 +42,7 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    Set<String> exclusionSet = new HashSet<String>();
-    exclusionSet.add("havnedistriktene");
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("havnedistriktene"), false);
     Analyzer a = new NorwegianAnalyzer(TEST_VERSION_CURRENT, 
         NorwegianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "havnedistriktene", "havnedistriktene");

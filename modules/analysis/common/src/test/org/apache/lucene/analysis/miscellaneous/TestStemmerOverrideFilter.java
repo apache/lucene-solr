@@ -2,12 +2,11 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.en.PorterStemFilter;
+import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
@@ -33,7 +32,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
     // lets make booked stem to books
     // the override filter will convert "booked" to "books",
     // but also mark it with KeywordAttribute so Porter will not change it.
-    Map<String,String> dictionary = new HashMap<String,String>();
+    CharArrayMap<String> dictionary = new CharArrayMap<String>(TEST_VERSION_CURRENT, 1, false);
     dictionary.put("booked", "books");
     Tokenizer tokenizer = new KeywordTokenizer(new StringReader("booked"));
     TokenStream stream = new PorterStemFilter(

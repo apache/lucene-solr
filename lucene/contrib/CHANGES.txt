@@ -218,6 +218,10 @@ Bug Fixes
  * LUCENE-3719: FVH: slow performance on very large queries.
    (Igor Motov via Koji Sekiguchi)
 
+ * LUCENE-3765: As of Version.LUCENE_36, DutchAnalyzer's two ctors
+   that take stopwords and stem exclusion tables also initialize
+   the default stem overrides (e.g. kind/kinder, fiets).  (Robert Muir)
+
 Documentation
 
  * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly

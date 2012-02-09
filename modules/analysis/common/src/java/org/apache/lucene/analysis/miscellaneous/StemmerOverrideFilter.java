@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -46,10 +45,9 @@ public final class StemmerOverrideFilter extends TokenFilter {
    * </p>
    */
   public StemmerOverrideFilter(Version matchVersion, TokenStream input,
-      Map<?,String> dictionary) {
+      CharArrayMap<String> dictionary) {
     super(input);
-    this.dictionary = dictionary instanceof CharArrayMap ? 
-        (CharArrayMap<String>) dictionary : CharArrayMap.copy(matchVersion, dictionary);
+    this.dictionary = CharArrayMap.copy(matchVersion, dictionary);
   }
 
   @Override

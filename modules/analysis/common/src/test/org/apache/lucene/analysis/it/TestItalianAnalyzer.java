@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
 public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
@@ -44,8 +45,7 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    Set<String> exclusionSet = new HashSet<String>();
-    exclusionSet.add("abbandonata");
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("abbandonata"), false);
     Analyzer a = new ItalianAnalyzer(TEST_VERSION_CURRENT, 
         ItalianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "abbandonata", "abbandonata");

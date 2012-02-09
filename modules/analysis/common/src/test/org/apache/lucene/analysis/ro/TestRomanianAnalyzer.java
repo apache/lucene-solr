@@ -18,11 +18,10 @@ package org.apache.lucene.analysis.ro;
  */
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -43,8 +42,7 @@ public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
   
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    Set<String> exclusionSet = new HashSet<String>();
-    exclusionSet.add("absenţa");
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("absenţa"), false);
     Analyzer a = new RomanianAnalyzer(TEST_VERSION_CURRENT, 
         RomanianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "absenţa", "absenţa");

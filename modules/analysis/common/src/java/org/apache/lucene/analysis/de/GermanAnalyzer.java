@@ -21,7 +21,6 @@ package org.apache.lucene.analysis.de;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -90,16 +89,16 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * Returns a set of default German-stopwords 
    * @return a set of default German-stopwords 
    */
-  public static final Set<?> getDefaultStopSet(){
+  public static final CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_SET;
   }
   
   private static class DefaultSetHolder {
     /** @deprecated in 3.1, remove in Lucene 5.0 (index bw compat) */
     @Deprecated
-    private static final Set<?> DEFAULT_SET_30 = CharArraySet.unmodifiableSet(new CharArraySet(
+    private static final CharArraySet DEFAULT_SET_30 = CharArraySet.unmodifiableSet(new CharArraySet(
         Version.LUCENE_CURRENT, Arrays.asList(GERMAN_STOP_WORDS), false));
-    private static final Set<?> DEFAULT_SET;
+    private static final CharArraySet DEFAULT_SET;
     static {
       try {
         DEFAULT_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
@@ -119,7 +118,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   /**
    * Contains words that should be indexed but not stemmed.
    */
-  private final Set<?> exclusionSet;
+  private final CharArraySet exclusionSet;
 
   /**
    * Builds an analyzer with the default stop words:
@@ -139,7 +138,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * @param stopwords
    *          a stopword set
    */
-  public GermanAnalyzer(Version matchVersion, Set<?> stopwords) {
+  public GermanAnalyzer(Version matchVersion, CharArraySet stopwords) {
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
   
@@ -153,7 +152,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * @param stemExclusionSet
    *          a stemming exclusion set
    */
-  public GermanAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet) {
+  public GermanAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
     super(matchVersion, stopwords);
     exclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
   }

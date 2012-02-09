@@ -19,8 +19,6 @@ package org.apache.lucene.analysis.br;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Collections;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -56,12 +54,12 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static Set<?> getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET;
+    static final CharArraySet DEFAULT_STOP_SET;
     
     static {
       try {
@@ -79,7 +77,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 	/**
 	 * Contains words that should be indexed but not stemmed.
 	 */
-	private Set<?> excltable = Collections.emptySet();
+	private CharArraySet excltable = CharArraySet.EMPTY_SET;
 	
 	/**
 	 * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
@@ -96,7 +94,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
    * @param stopwords
    *          a stopword set
    */
-  public BrazilianAnalyzer(Version matchVersion, Set<?> stopwords) {
+  public BrazilianAnalyzer(Version matchVersion, CharArraySet stopwords) {
      super(matchVersion, stopwords);
   }
 
@@ -108,8 +106,8 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
    * @param stopwords
    *          a stopword set
    */
-  public BrazilianAnalyzer(Version matchVersion, Set<?> stopwords,
-      Set<?> stemExclusionSet) {
+  public BrazilianAnalyzer(Version matchVersion, CharArraySet stopwords,
+      CharArraySet stemExclusionSet) {
     this(matchVersion, stopwords);
     excltable = CharArraySet.unmodifiableSet(CharArraySet
         .copy(matchVersion, stemExclusionSet));

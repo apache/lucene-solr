@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.IOUtils;
@@ -46,7 +45,7 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
    * @return the analyzer's stopword set or an empty set if the analyzer has no
    *         stopwords
    */
-  public Set<?> getStopwordSet() {
+  public CharArraySet getStopwordSet() {
     return stopwords;
   }
 
@@ -58,7 +57,7 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
    * @param stopwords
    *          the analyzer's stopword set
    */
-  protected StopwordAnalyzerBase(final Version version, final Set<?> stopwords) {
+  protected StopwordAnalyzerBase(final Version version, final CharArraySet stopwords) {
     matchVersion = version;
     // analyzers should use char array set for stopwords!
     this.stopwords = stopwords == null ? CharArraySet.EMPTY_SET : CharArraySet

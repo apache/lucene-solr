@@ -779,6 +779,11 @@ API Changes
   to be merged. To mimic the old behaviour, just use IndexReader.directory()
   for choosing the provider by Directory.  (Uwe Schindler)
 
+* LUCENE-3765: Deprecated StopFilter ctor that took ignoreCase, because
+  in some cases (if the set is a CharArraySet), the argument is ignored.
+  Deprecated StandardAnalyzer and ClassicAnalyzer ctors that take File,
+  please use the Reader ctor instead.  (Robert Muir)
+
 New Features
 
 * LUCENE-3593: Added a FieldValueFilter that accepts all documents that either

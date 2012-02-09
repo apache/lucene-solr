@@ -10,7 +10,6 @@
 package org.apache.lucene.analysis.commongrams;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -69,35 +68,9 @@ public final class CommonGramsFilter extends TokenFilter {
    * @param input TokenStream input in filter chain
    * @param commonWords The set of common words.
    */
-  public CommonGramsFilter(Version matchVersion, TokenStream input, Set<?> commonWords) {
-    this(matchVersion, input, commonWords, false);
-  }
-
-  /**
-   * Construct a token stream filtering the given input using a Set of common
-   * words to create bigrams, case-sensitive if ignoreCase is false (unless Set
-   * is CharArraySet). If <code>commonWords</code> is an instance of
-   * {@link CharArraySet} (true if <code>makeCommonSet()</code> was used to
-   * construct the set) it will be directly used and <code>ignoreCase</code>
-   * will be ignored since <code>CharArraySet</code> directly controls case
-   * sensitivity.
-   * <p/>
-   * If <code>commonWords</code> is not an instance of {@link CharArraySet}, a
-   * new CharArraySet will be constructed and <code>ignoreCase</code> will be
-   * used to specify the case sensitivity of that set.
-   * 
-   * @param input TokenStream input in filter chain.
-   * @param commonWords The set of common words.
-   * @param ignoreCase -Ignore case when constructing bigrams for common words.
-   */
-  public CommonGramsFilter(Version matchVersion, TokenStream input, Set<?> commonWords, boolean ignoreCase) {
+  public CommonGramsFilter(Version matchVersion, TokenStream input, CharArraySet commonWords) {
     super(input);
-    if (commonWords instanceof CharArraySet) {
-      this.commonWords = (CharArraySet) commonWords;
-    } else {
-      this.commonWords = new CharArraySet(matchVersion, commonWords.size(), ignoreCase);
-      this.commonWords.addAll(commonWords);
-    }
+    this.commonWords = commonWords;
   }
 
   /**

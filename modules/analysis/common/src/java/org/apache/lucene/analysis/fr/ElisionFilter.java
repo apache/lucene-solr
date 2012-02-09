@@ -19,11 +19,9 @@ package org.apache.lucene.analysis.fr;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Set;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
@@ -56,7 +54,7 @@ public final class ElisionFilter extends TokenFilter {
    * @param input the source {@link TokenStream}
    * @param articles a set of stopword articles
    */
-  public ElisionFilter(Version matchVersion, TokenStream input, Set<?> articles) {
+  public ElisionFilter(Version matchVersion, TokenStream input, CharArraySet articles) {
     super(input);
     this.articles = CharArraySet.unmodifiableSet(
         new CharArraySet(matchVersion, articles, true));

@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.el;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -27,6 +26,7 @@ import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.util.Version;
 
@@ -58,12 +58,12 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
    * Returns a set of default Greek-stopwords 
    * @return a set of default Greek-stopwords 
    */
-  public static final Set<?> getDefaultStopSet(){
+  public static final CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_SET;
   }
   
   private static class DefaultSetHolder {
-    private static final Set<?> DEFAULT_SET;
+    private static final CharArraySet DEFAULT_SET;
     
     static {
       try {
@@ -95,7 +95,7 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
    *   See <a href="#version">above</a>
    * @param stopwords a stopword set
    */
-  public GreekAnalyzer(Version matchVersion, Set<?> stopwords) {
+  public GreekAnalyzer(Version matchVersion, CharArraySet stopwords) {
     super(matchVersion, stopwords);
   }
   

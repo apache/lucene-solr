@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.nl;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -148,6 +147,26 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
 
+  }
+  
+  /** 
+   * check that the default stem overrides are used
+   * even if you use a non-default ctor.
+   */
+  public void testStemOverrides() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
+    checkOneTerm(a, "fiets", "fiets");
+  }
+  
+  /**
+   * prior to 3.6, this confusingly did not happen if 
+   * you specified your own stoplist!!!!
+   * @deprecated (3.6) Remove this test in Lucene 5.0
+   */
+  @Deprecated
+  public void testBuggyStemOverrides() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_35, CharArraySet.EMPTY_SET);
+    checkOneTerm(a, "fiets", "fiet");
   }
   
   /**

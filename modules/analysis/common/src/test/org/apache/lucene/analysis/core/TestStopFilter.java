@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.Version;
 
@@ -36,22 +37,15 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
 
   public void testExactCase() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
-    Set<String> stopWords = asSet("is", "the", "Time");
-    TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopWords, false);
+    CharArraySet stopWords = new CharArraySet(TEST_VERSION_CURRENT, asSet("is", "the", "Time"), false);
+    TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopWords);
     assertTokenStreamContents(stream, new String[] { "Now", "The" });
-  }
-
-  public void testIgnoreCase() throws IOException {
-    StringReader reader = new StringReader("Now is The Time");
-    Set<String> stopWords = asSet( "is", "the", "Time" );
-    TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopWords, true);
-    assertTokenStreamContents(stream, new String[] { "Now" });
   }
 
   public void testStopFilt() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
-    Set<Object> stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords);
+    CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords);
     TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet);
     assertTokenStreamContents(stream, new String[] { "Now", "The" });
   }
@@ -70,7 +64,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     log(sb.toString());
     String stopWords[] = a.toArray(new String[0]);
     for (int i=0; i<a.size(); i++) log("Stop: "+stopWords[i]);
-    Set<Object> stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords);
+    CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords);
     // with increments
     StringReader reader = new StringReader(sb.toString());
     StopFilter stpf = new StopFilter(Version.LUCENE_40, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet);
@@ -93,8 +87,8 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     for (int i=0; i<a0.size(); i++) log("Stop0: "+stopWords0[i]);
     String stopWords1[] =  a1.toArray(new String[0]);
     for (int i=0; i<a1.size(); i++) log("Stop1: "+stopWords1[i]);
-    Set<Object> stopSet0 = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords0);
-    Set<Object> stopSet1 = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords1);
+    CharArraySet stopSet0 = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords0);
+    CharArraySet stopSet1 = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords1);
     reader = new StringReader(sb.toString());
     StopFilter stpf0 = new StopFilter(TEST_VERSION_CURRENT, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet0); // first part of the set
     stpf0.setEnablePositionIncrements(true);

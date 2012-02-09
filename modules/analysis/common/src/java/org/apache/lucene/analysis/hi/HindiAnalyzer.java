@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.hi;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Set;
 
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -44,7 +43,7 @@ import org.apache.lucene.util.Version;
  * </ul>
  */
 public final class HindiAnalyzer extends StopwordAnalyzerBase {
-  private final Set<?> stemExclusionSet;
+  private final CharArraySet stemExclusionSet;
   
   /**
    * File containing default Hindi stopwords.
@@ -59,7 +58,7 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static Set<?> getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -68,7 +67,7 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
    * accesses the static final set the first time.;
    */
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET;
+    static final CharArraySet DEFAULT_STOP_SET;
 
     static {
       try {
@@ -88,7 +87,7 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
    * @param stopwords a stopword set
    * @param stemExclusionSet a stemming exclusion set
    */
-  public HindiAnalyzer(Version version, Set<?> stopwords, Set<?> stemExclusionSet) {
+  public HindiAnalyzer(Version version, CharArraySet stopwords, CharArraySet stemExclusionSet) {
     super(version, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(
         CharArraySet.copy(matchVersion, stemExclusionSet));
@@ -100,7 +99,7 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
    * @param version lucene compatibility version
    * @param stopwords a stopword set
    */
-  public HindiAnalyzer(Version version, Set<?> stopwords) {
+  public HindiAnalyzer(Version version, CharArraySet stopwords) {
     this(version, stopwords, CharArraySet.EMPTY_SET);
   }
   

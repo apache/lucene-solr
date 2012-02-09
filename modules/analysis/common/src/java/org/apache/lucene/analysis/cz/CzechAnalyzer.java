@@ -32,7 +32,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.*;
-import java.util.Set;
 
 /**
  * {@link Analyzer} for Czech language.
@@ -62,12 +61,12 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return a set of default Czech-stopwords
    */
-	public static final Set<?> getDefaultStopSet(){
+	public static final CharArraySet getDefaultStopSet(){
 	  return DefaultSetHolder.DEFAULT_SET;
 	}
 	
 	private static class DefaultSetHolder {
-	  private static final Set<?> DEFAULT_SET;
+	  private static final CharArraySet DEFAULT_SET;
 	  
 	  static {
 	    try {
@@ -82,7 +81,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
 	}
 
  
-  private final Set<?> stemExclusionTable;
+  private final CharArraySet stemExclusionTable;
 
   /**
    * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
@@ -101,7 +100,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    *          {@link <a href="#version">above</a>}
    * @param stopwords a stopword set
    */
-  public CzechAnalyzer(Version matchVersion, Set<?> stopwords) {
+  public CzechAnalyzer(Version matchVersion, CharArraySet stopwords) {
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
 
@@ -114,7 +113,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    * @param stopwords a stopword set
    * @param stemExclusionTable a stemming exclusion set
    */
-  public CzechAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionTable) {
+  public CzechAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionTable) {
     super(matchVersion, stopwords);
     this.stemExclusionTable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
   }
@@ -129,7 +128,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , and {@link CzechStemFilter} (only if version is >= LUCENE_31). If
    *         a version is >= LUCENE_31 and a stem exclusion set is provided via
-   *         {@link #CzechAnalyzer(Version, Set, Set)} a
+   *         {@link #CzechAnalyzer(Version, CharArraySet, CharArraySet)} a
    *         {@link KeywordMarkerFilter} is added before
    *         {@link CzechStemFilter}.
    */

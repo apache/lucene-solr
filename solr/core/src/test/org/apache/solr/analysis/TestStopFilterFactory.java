@@ -17,10 +17,10 @@ package org.apache.solr.analysis;
  */
 
 
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
-import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -39,7 +39,7 @@ public class TestStopFilterFactory extends BaseTokenTestCase {
     args.put("ignoreCase", "true");
     factory.init(args);
     factory.inform(loader);
-    Set<?> words = factory.getStopWords();
+    CharArraySet words = factory.getStopWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 2, words.size() == 2);
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory.isIgnoreCase() == true);

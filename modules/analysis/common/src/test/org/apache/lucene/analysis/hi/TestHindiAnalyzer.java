@@ -1,10 +1,8 @@
 package org.apache.lucene.analysis.hi;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -41,8 +39,7 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testExclusionSet() throws Exception {
-    Set<String> exclusionSet = new HashSet<String>();
-    exclusionSet.add("हिंदी");
+    CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("हिंदी"), false);
     Analyzer a = new HindiAnalyzer(TEST_VERSION_CURRENT, 
         HindiAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "हिंदी", "हिंदी");

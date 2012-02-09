@@ -18,14 +18,12 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Marks terms as keywords via the {@link KeywordAttribute}. Each token
@@ -50,25 +48,9 @@ public final class KeywordMarkerFilter extends TokenFilter {
    * @param keywordSet
    *          the keywords set to lookup the current termbuffer
    */
-  public KeywordMarkerFilter(final TokenStream in,
-      final CharArraySet keywordSet) {
+  public KeywordMarkerFilter(final TokenStream in, final CharArraySet keywordSet) {
     super(in);
     this.keywordSet = keywordSet;
-  }
-
-  /**
-   * Create a new KeywordMarkerFilter, that marks the current token as a
-   * keyword if the tokens term buffer is contained in the given set via the
-   * {@link KeywordAttribute}.
-   * 
-   * @param in
-   *          TokenStream to filter
-   * @param keywordSet
-   *          the keywords set to lookup the current termbuffer
-   */
-  public KeywordMarkerFilter(final TokenStream in, final Set<?> keywordSet) {
-    this(in, keywordSet instanceof CharArraySet ? (CharArraySet) keywordSet
-        : CharArraySet.copy(Version.LUCENE_31, keywordSet));
   }
 
   @Override

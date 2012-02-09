@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.ru;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
@@ -78,10 +77,10 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
     private static class DefaultSetHolder {
       /** @deprecated (3.1) remove this for Lucene 5.0 */
       @Deprecated
-      static final Set<?> DEFAULT_STOP_SET_30 = CharArraySet
+      static final CharArraySet DEFAULT_STOP_SET_30 = CharArraySet
           .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, 
               Arrays.asList(RUSSIAN_STOP_WORDS_30), false));
-      static final Set<?> DEFAULT_STOP_SET;
+      static final CharArraySet DEFAULT_STOP_SET;
       
       static {
         try {
@@ -95,14 +94,14 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
       }
     }
     
-    private final Set<?> stemExclusionSet;
+    private final CharArraySet stemExclusionSet;
     
     /**
      * Returns an unmodifiable instance of the default stop-words set.
      * 
      * @return an unmodifiable instance of the default stop-words set.
      */
-    public static Set<?> getDefaultStopSet() {
+    public static CharArraySet getDefaultStopSet() {
       return DefaultSetHolder.DEFAULT_STOP_SET;
     }
 
@@ -120,7 +119,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
      * @param stopwords
      *          a stopword set
      */
-    public RussianAnalyzer(Version matchVersion, Set<?> stopwords){
+    public RussianAnalyzer(Version matchVersion, CharArraySet stopwords){
       this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
     }
     
@@ -133,7 +132,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
      *          a stopword set
      * @param stemExclusionSet a set of words not to be stemmed
      */
-    public RussianAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet){
+    public RussianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet){
       super(matchVersion, stopwords);
       this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
     }

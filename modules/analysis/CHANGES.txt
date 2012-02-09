@@ -29,6 +29,11 @@ API Changes
    since they prevent reuse.  Both Analyzers should be configured at instantiation.
    (Chris Male)
 
+ * LUCENE-3765: Stopset ctors that previously took Set<?> or Map<?,String> now take
+   CharArraySet and CharArrayMap respectively. Previously the behavior was confusing,
+   and sometimes different depending on the type of set, and ultimately a CharArraySet
+   or CharArrayMap was always used anyway.  (Robert Muir)
+
 New Features
 
  * LUCENE-2341: A new analyzer/ filter: Morfologik - a dictionary-driven lemmatizer 

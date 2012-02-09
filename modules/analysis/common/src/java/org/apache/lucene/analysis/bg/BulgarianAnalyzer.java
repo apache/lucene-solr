@@ -56,7 +56,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static Set<?> getDefaultStopSet() {
+  public static CharArraySet getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -65,7 +65,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * class accesses the static final set the first time.;
    */
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET;
+    static final CharArraySet DEFAULT_STOP_SET;
     
     static {
       try {
@@ -78,7 +78,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
     }
   }
   
-  private final Set<?> stemExclusionSet;
+  private final CharArraySet stemExclusionSet;
    
   /**
    * Builds an analyzer with the default stop words:
@@ -91,7 +91,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
   /**
    * Builds an analyzer with the given stop words.
    */
-  public BulgarianAnalyzer(Version matchVersion, Set<?> stopwords) {
+  public BulgarianAnalyzer(Version matchVersion, CharArraySet stopwords) {
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
   
@@ -100,7 +100,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * If a stem exclusion set is provided this analyzer will add a {@link KeywordMarkerFilter} 
    * before {@link BulgarianStemFilter}.
    */
-  public BulgarianAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet) {
+  public BulgarianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
     super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
         matchVersion, stemExclusionSet));  }

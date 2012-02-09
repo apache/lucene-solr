@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
-import java.util.Set;
 import java.util.List;
 
 import org.apache.lucene.analysis.Tokenizer;
@@ -46,7 +45,7 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   
   /** An unmodifiable set containing some common English words that are not usually useful
   for searching.*/
-  public static final Set<?> ENGLISH_STOP_WORDS_SET;
+  public static final CharArraySet ENGLISH_STOP_WORDS_SET;
   
   static {
     final List<String> stopWords = Arrays.asList(
@@ -72,7 +71,7 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   /** Builds an analyzer with the stop words from the given set.
    * @param matchVersion See <a href="#version">above</a>
    * @param stopWords Set of stop words */
-  public StopAnalyzer(Version matchVersion, Set<?> stopWords) {
+  public StopAnalyzer(Version matchVersion, CharArraySet stopWords) {
     super(matchVersion, stopWords);
   }
 

@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.de;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -46,7 +45,8 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStemExclusionTable() throws Exception {
-    GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet(), asSet("tischen"));
+    GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, 
+        new CharArraySet(TEST_VERSION_CURRENT, asSet("tischen"), false));
     checkOneTermReuse(a, "tischen", "tischen");
   }
   

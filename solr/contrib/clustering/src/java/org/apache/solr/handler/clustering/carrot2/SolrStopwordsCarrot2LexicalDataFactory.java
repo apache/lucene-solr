@@ -93,15 +93,14 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements
             .getTokenFilterFactories();
         for (TokenFilterFactory factory : filterFactories) {
           if (factory instanceof StopFilterFactory) {
-            // StopFilterFactory holds the stop words in a CharArraySet, but
-            // the getStopWords() method returns a Set<?>, so we need to cast.
+            // StopFilterFactory holds the stop words in a CharArraySet
             solrStopWords.put(fieldName,
-                (CharArraySet) ((StopFilterFactory) factory).getStopWords());
+                ((StopFilterFactory) factory).getStopWords());
           }
 
           if (factory instanceof CommonGramsFilterFactory) {
             solrStopWords.put(fieldName,
-                (CharArraySet) ((CommonGramsFilterFactory) factory)
+                ((CommonGramsFilterFactory) factory)
                     .getCommonWords());
           }
         }

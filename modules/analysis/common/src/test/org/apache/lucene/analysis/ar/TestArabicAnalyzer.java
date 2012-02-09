@@ -18,9 +18,6 @@ package org.apache.lucene.analysis.ar;
  */
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -79,16 +76,14 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Test that custom stopwords work, and are not case-sensitive.
    */
   public void testCustomStopwords() throws Exception {
-    Set<String> set = new HashSet<String>();
-    Collections.addAll(set, "the", "and", "a");
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, asSet("the", "and", "a"), false);
     ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT, set);
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
   }
   
   public void testWithStemExclusionSet() throws IOException {
-    Set<String> set = new HashSet<String>();
-    set.add("ساهدهات");
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, asSet("ساهدهات"), false);
     ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
     assertAnalyzesToReuse(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
