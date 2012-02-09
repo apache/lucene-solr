@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Removes tokens that match a set of POS tags.
+ * Removes tokens that match a set of part-of-speech tags.
  */
 public final class KuromojiPartOfSpeechStopFilter extends FilteringTokenFilter {
   private final Set<String> stopTags;

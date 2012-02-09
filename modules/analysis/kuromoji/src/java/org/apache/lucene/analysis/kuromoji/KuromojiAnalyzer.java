@@ -63,7 +63,7 @@ public class KuromojiAnalyzer extends StopwordAnalyzerBase {
 
     static {
       try {
-        DEFAULT_STOP_SET = loadStopwordSet(false, KuromojiAnalyzer.class, "stopwords.txt", "#");
+        DEFAULT_STOP_SET = loadStopwordSet(true, KuromojiAnalyzer.class, "stopwords.txt", "#");  // ignore case
         final CharArraySet tagset = loadStopwordSet(false, KuromojiAnalyzer.class, "stoptags.txt", "#");
         DEFAULT_STOP_TAGS = new HashSet<String>();
         for (Object element : tagset) {
@@ -71,9 +71,8 @@ public class KuromojiAnalyzer extends StopwordAnalyzerBase {
           DEFAULT_STOP_TAGS.add(new String(chars));
         }
       } catch (IOException ex) {
-        // default set should always be present as it is part of the
-        // distribution (JAR)
-        throw new RuntimeException("Unable to load default stopword set");
+        // default set should always be present as it is part of the distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword or stoptag set");
       }
     }
   }
@@ -81,11 +80,11 @@ public class KuromojiAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
     Tokenizer tokenizer = new KuromojiTokenizer(this.segmenter, reader);
-    TokenStream stream = new LowerCaseFilter(matchVersion, tokenizer);
-    stream = new CJKWidthFilter(stream);
+    TokenStream stream = new KuromojiBaseFormFilter(tokenizer);
     stream = new KuromojiPartOfSpeechStopFilter(true, stream, stoptags);
+    stream = new CJKWidthFilter(stream);
     stream = new StopFilter(matchVersion, stream, stopwords);
-    stream = new KuromojiBaseFormFilter(stream);
+    stream = new LowerCaseFilter(matchVersion, stream);
     return new TokenStreamComponents(tokenizer, stream);
   }
 }
