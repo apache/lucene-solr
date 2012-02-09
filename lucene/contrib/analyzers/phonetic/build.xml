@@ -25,6 +25,7 @@
 
   <property name="build.dir" location="../../../build/contrib/analyzers/phonetic" />
   <property name="dist.dir" location="../../../dist/contrib/analyzers/phonetic" />
+  <property name="maven.dist.dir" location="../../../dist/maven" />
 
   <path id="additional.dependencies">
     <fileset dir="lib" includes="commons-codec-*.jar"/>
