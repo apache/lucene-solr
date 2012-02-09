@@ -99,11 +99,6 @@ New Features
   Additional Work:
   SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
   (Massimo Schiavon, Mark Miller)
-  SOLR-2821, SOLR-2799: Improve how cluster state is managed in ZooKeeper. 
-  (Jamie Johnson via Mark Miller)
-  SOLR-2765: Shard/Node states. (Jamie Johnson, Mark Miller)
-  SOLR-2880: Add an Overseer to handle some tasks. (Sami Siren via Mark Miller)
-  SOLR-2723: SolrCloud should auto assign shard names. (Sami Siren, Mark Miller)
   SOLR-2287: Allow users to query by multiple, compatible collections with SolrCloud.
   (Soheb Mahmood, Alex Cowell, Mark Miller)
   SOLR-2622: ShowFileRequestHandler does not work in SolrCloud mode. 
