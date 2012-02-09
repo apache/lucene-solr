@@ -485,6 +485,7 @@ New Features
   Uwe Schindler)
 
 * LUCENE-3305, SOLR-3056: Added Kuromoji morphological analyzer for Japanese.
+  See the 'text_ja' fieldtype in the example to get started.
   (Christian Moen, Masaru Hasegawa via Robert Muir)
 
 * SOLR-1860: StopFilterFactory, CommonGramsFilterFactory, and 

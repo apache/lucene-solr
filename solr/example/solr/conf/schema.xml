@@ -491,7 +491,7 @@
       </analyzer>
     </fieldType>
     
-    <!-- CJK bigram (see text_ja for an alternative Japanese configuration) -->
+    <!-- CJK bigram (see text_ja for a Japanese configuration using morphological analysis) -->
     <fieldType name="text_cjk" class="solr.TextField" positionIncrementGap="100">
       <analyzer> 
         <tokenizer class="solr.StandardTokenizerFactory"/>
@@ -673,6 +673,44 @@
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_it.txt" format="snowball" enablePositionIncrements="true"/>
         <filter class="solr.ItalianLightStemFilterFactory"/>
         <!-- more aggressive: <filter class="solr.SnowballPorterFilterFactory" language="Italian"/> -->
+      </analyzer>
+    </fieldType>
+    
+    <!-- Japanese using morphological analysis (see text_cjk for a configuration using bigramming)
+
+         NOTE: If you want to optimize search for precision, use default operator AND in your query
+         parser config with <solrQueryParser defaultOperator="AND"/> further down in this file.  Use 
+         OR if you would like to optimize for recall (default).
+    -->
+    <fieldType name="text_ja" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
+      <analyzer>
+      <!-- Kuromoji Japanese morphological analyzer/tokenizer.
+
+           Uses a search-mode (heuristic) to get a noun-decompounding effect that is useful for search.
+           
+           Example:
+             関西国際空港 (Kansai International Airpart) becomes 関西 (Kansai) 国際 (International) 空港 (airport)
+             so we get a match when searching for 空港 (airport) as we would expect from a good search engine.
+             (With regular segmentation 関西国際空港 becomes one word and we don't get a hit.)
+
+           Valid values for mode are:
+              normal: regular segmentation
+              search: segmentation useful for search with extra splitting (default)
+            extended: same as search mode, but unigrams unknown words (experimental)
+
+           NOTE: Search-mode improves segmentation for search at the expense of part-of-speech and reading accuracy
+        -->
+        <tokenizer class="solr.KuromojiTokenizerFactory" mode="search"/>
+        <!-- Reduces inflected verbs and adjectives to their base/dictionary forms (辞書形) -->	
+        <filter class="solr.KuromojiBaseFormFilterFactory"/>
+        <!-- Removes tokens with certain part-of-speech tags -->
+        <filter class="solr.KuromojiPartOfSpeechStopFilterFactory" tags="lang/stoptags_ja.txt" enablePositionIncrements="true"/> -->
+        <!-- Normalizes full-width romaji to half-width and half-width kana to full-width (Unicode NFKC subset) -->
+        <filter class="solr.CJKWidthFilterFactory"/>
+        <!-- Removes common tokens typically not useful for search, but have a negative effect on ranking -->
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_ja.txt" enablePositionIncrements="true" />
+        <!-- Lower-case romaji characters -->
+        <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
     </fieldType>
     
