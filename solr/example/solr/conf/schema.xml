@@ -704,7 +704,7 @@
         <!-- Reduces inflected verbs and adjectives to their base/dictionary forms (辞書形) -->	
         <filter class="solr.KuromojiBaseFormFilterFactory"/>
         <!-- Removes tokens with certain part-of-speech tags -->
-        <filter class="solr.KuromojiPartOfSpeechStopFilterFactory" tags="lang/stoptags_ja.txt" enablePositionIncrements="true"/> -->
+        <filter class="solr.KuromojiPartOfSpeechStopFilterFactory" tags="lang/stoptags_ja.txt" enablePositionIncrements="true"/>
         <!-- Normalizes full-width romaji to half-width and half-width kana to full-width (Unicode NFKC subset) -->
         <filter class="solr.CJKWidthFilterFactory"/>
         <!-- Removes common tokens typically not useful for search, but have a negative effect on ranking -->
