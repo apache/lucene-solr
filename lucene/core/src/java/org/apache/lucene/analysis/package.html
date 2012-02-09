@@ -264,7 +264,8 @@ and proximity searches (though sentence identification is not provided by Lucene
   {@link org.apache.lucene.analysis.Analyzer#getPositionIncrementGap(java.lang.String) Analyzer.getPositionIncrementGap(fieldName)}:
 </p>
 <PRE class="prettyprint">
-  Analyzer myAnalyzer = new StandardAnalyzer() {
+  Version matchVersion = Version.LUCENE_XY; // Substitute desired Lucene version for XY
+  Analyzer myAnalyzer = new StandardAnalyzer(matchVersion) {
     public int getPositionIncrementGap(String fieldName) {
       return 10;
     }
