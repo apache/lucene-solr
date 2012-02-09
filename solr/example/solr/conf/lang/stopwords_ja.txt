@@ -1,14 +1,19 @@
 #
 # This file defines a stopword set for Japanese.
 #
-# The set is made up hand-picked frequent terms from taken from segmented Japanese
-# Wikipedia.  Punctuation characters and frequent kanji have mostly been left out.
+# This set is made up of hand-picked frequent terms from segmented Japanese Wikipedia.
+# Punctuation characters and frequent kanji have mostly been left out.  See LUCENE-3745
+# for frequency lists, etc. that can be useful for making your own set (if desired)
 #
-# There is an overlap between these stopwords and the terms removed when used in
-# combination with the KuromojiPartOfSpeechStopFilter.  When editing this file, note
+# Note that there is an overlap between these stopwords and the terms stopped when used
+# in combination with the KuromojiPartOfSpeechStopFilter.  When editing this file, note
 # that comments are not allowed on the same line as stopwords.
 #
-# See LUCENE-3745 for frequency lists, etc. that can be useful for making your own set.
+# Also note that stopping is done in a case-insensitive manner.  Change your StopFilter
+# configuration if you need case-sensitive stopping.  Lastly, note that stopping is done
+# using the same character width as the entries in this file.  Since this StopFilter is
+# normally done after a CJKWidthFilter in your chain, you would usually want your romaji
+# entries to be in half-width and your kana entries to be in full-width.
 #
 の
 に
