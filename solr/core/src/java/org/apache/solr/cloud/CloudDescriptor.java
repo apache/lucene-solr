@@ -24,6 +24,7 @@ public class CloudDescriptor {
   private String collectionName;
   private SolrParams params;
   private String roles = "";
+  private Integer numShards;
   
   public void setShardId(String shardId) {
     this.shardId = shardId;
@@ -57,4 +58,14 @@ public class CloudDescriptor {
   public void setParams(SolrParams params) {
     this.params = params;
   }
+
+  // setting only matters on core creation
+  public Integer getNumShards() {
+    return numShards;
+  }
+  
+  public void setNumShards(int numShards) {
+    this.numShards = numShards;
+  }
+
 }

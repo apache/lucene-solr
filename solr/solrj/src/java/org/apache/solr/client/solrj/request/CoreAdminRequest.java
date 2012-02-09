@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
@@ -49,6 +50,8 @@ public class CoreAdminRequest extends SolrRequest
     protected String configName = null;
     protected String schemaName = null;
     protected String dataDir = null;
+    protected String collection;
+    private Integer numShards;
 
     public Create() {
       action = CoreAdminAction.CREATE;
@@ -58,12 +61,15 @@ public class CoreAdminRequest extends SolrRequest
     public void setSchemaName(String schema) { this.schemaName = schema; }
     public void setConfigName(String config) { this.configName = config; }
     public void setDataDir(String dataDir) { this.dataDir = dataDir; }
+    public void setCollection(String collection) { this.collection = collection; }
+    public void setNumShards(int numShards) {this.numShards = numShards;}
 
     public String getInstanceDir() { return instanceDir; }
     public String getSchemaName()  { return schemaName; }
     public String getConfigName()  { return configName; }
     public String getDataDir() { return dataDir; }
-
+    public String getCollection() { return collection; }
+    
     @Override
     public SolrParams getParams() {
       if( action == null ) {
@@ -86,8 +92,15 @@ public class CoreAdminRequest extends SolrRequest
       if (dataDir != null) {
         params.set( CoreAdminParams.DATA_DIR, dataDir);
       }
+      if (collection != null) {
+        params.set( CoreAdminParams.COLLECTION, collection);
+      }
+      if (numShards != null) {
+        params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
+      }
       return params;
     }
+
   }
   
   public static class PrepRecovery extends CoreAdminRequest {

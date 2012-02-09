@@ -32,11 +32,14 @@ public class CoreState implements JSONWriter.Writable {
     this.properties = Collections.unmodifiableMap(props);
   }
 
-  public CoreState(String coreName, String collectionName, Map<String,String> properties) {
+  public CoreState(String coreName, String collectionName, Map<String,String> properties, Integer numShards) {
     HashMap<String,String> props = new HashMap<String,String>();
     props.putAll(properties);
     props.put(ZkStateReader.COLLECTION_PROP, collectionName);
     props.put(ZkStateReader.CORE_NAME_PROP, coreName);
+    if (numShards != null) {
+      props.put("num_shards", Integer.toString(numShards));
+    }
     this.properties = Collections.unmodifiableMap(props);
   }
 
@@ -91,6 +94,14 @@ public class CoreState implements JSONWriter.Writable {
   @Override
   public String toString() {
     return "coll:" + getCollectionName() + " core:" + getCoreName() + " props:" + properties;
+  }
+
+  public Integer getNumShards() {
+    String numShards = properties.get("num_shards");
+    if (numShards == null) {
+      return null;
+    }
+    return Integer.parseInt(numShards);
   }
 
 }

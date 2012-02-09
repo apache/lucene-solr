@@ -26,8 +26,6 @@ import java.util.Map;
 
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.zookeeper.KeeperException;
 
 public class AssignShard {
 
@@ -38,10 +36,10 @@ public class AssignShard {
    * @param state
    * @return the assigned shard id
    */
-  public static String assignShard(String collection, CloudState state) {
-
-    int shards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP,1);
-
+  public static String assignShard(String collection, CloudState state, Integer numShards) {
+    if (numShards == null) {
+      numShards = 1;
+    }
     String returnShardId = null;
     Map<String, Slice> sliceMap = state.getSlices(collection);
 
@@ -51,7 +49,7 @@ public class AssignShard {
 
     List<String> shardIdNames = new ArrayList<String>(sliceMap.keySet());
 
-    if (shardIdNames.size() < shards) {
+    if (shardIdNames.size() < numShards) {
       return "shard" + (shardIdNames.size() + 1);
     }
 

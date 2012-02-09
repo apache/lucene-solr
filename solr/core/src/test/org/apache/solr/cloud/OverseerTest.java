@@ -86,12 +86,12 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
     }
     
-    public void publishState(String coreName, String stateName) throws KeeperException, InterruptedException{
+    public void publishState(String coreName, String stateName, int numShards) throws KeeperException, InterruptedException{
       HashMap<String,String> coreProps = new HashMap<String,String>();
       coreProps.put(ZkStateReader.STATE_PROP, stateName);
       coreProps.put(ZkStateReader.NODE_NAME_PROP, nodeName);
       coreProps.put(ZkStateReader.CORE_NAME_PROP, coreName);
-      CoreState state = new CoreState(coreName, "collection1", coreProps);
+      CoreState state = new CoreState(coreName, "collection1", coreProps, numShards);
       final String statePath = Overseer.STATES_NODE + "/" + nodeName;
       zkClient.setData(statePath, ZkStateReader.toJSON(new CoreState[] {state}), true);
     }
@@ -397,8 +397,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
       zkClient.makePath("/live_nodes", true);
 
-      System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "2");
-
       //live node
       String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + "node1";
       zkClient.makePath(nodePath,CreateMode.EPHEMERAL, true);
@@ -416,7 +414,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       coreProps.put(ZkStateReader.CORE_NAME_PROP, "core1");
       coreProps.put(ZkStateReader.ROLES_PROP, "");
       coreProps.put(ZkStateReader.STATE_PROP, ZkStateReader.RECOVERING);
-      CoreState state = new CoreState("core1", "collection1", coreProps);
+      CoreState state = new CoreState("core1", "collection1", coreProps, 2);
       
       nodePath = "/node_states/node1";
 
@@ -441,7 +439,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       coreProps.put(ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
       
       coreProps.put(ZkStateReader.SHARD_ID_PROP, "shard1");
-      state = new CoreState("core1", "collection1", coreProps);
+      state = new CoreState("core1", "collection1", coreProps, 2);
 
       zkClient.setData(nodePath, ZkStateReader.toJSON(new CoreState[]{state}), true);
 
@@ -503,7 +501,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      mockController.publishState("core1", ZkStateReader.RECOVERING);
+      mockController.publishState("core1", ZkStateReader.RECOVERING, 1);
       
       // wait overseer assignment
       waitForSliceCount(reader, "collection1", 1);
@@ -512,7 +510,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       int version = getCloudStateVersion(controllerClient);
       
-      mockController.publishState("core1", ZkStateReader.ACTIVE);
+      mockController.publishState("core1", ZkStateReader.ACTIVE, 1);
       
       while(version == getCloudStateVersion(controllerClient));
 
@@ -521,7 +519,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient.close();
       Thread.sleep(1000); //wait for overseer to get killed
 
-      mockController.publishState("core1", ZkStateReader.RECOVERING);
+      mockController.publishState("core1", ZkStateReader.RECOVERING, 1);
       version = getCloudStateVersion(controllerClient);
       
       overseerClient = electNewOverseer(server.getZkAddress());
@@ -582,7 +580,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      mockController.publishState("core1", ZkStateReader.RECOVERING);
+      mockController.publishState("core1", ZkStateReader.RECOVERING, 1);
 
       // wait overseer assignment
       waitForSliceCount(reader, "collection1", 1);
@@ -594,7 +592,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       int version = getCloudStateVersion(controllerClient);
       
       mockController = new MockZKController(server.getZkAddress(), "node1");
-      mockController.publishState("core1", ZkStateReader.RECOVERING);
+      mockController.publishState("core1", ZkStateReader.RECOVERING, 1);
 
       while (version == getCloudStateVersion(controllerClient));
       

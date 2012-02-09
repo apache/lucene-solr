@@ -61,6 +61,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   String invalidField="ignore_exception__invalid_field_not_in_schema";
   
   private Map<String,List<SolrServer>> otherCollectionClients = new HashMap<String,List<SolrServer>>();
+  private Map<String,List<SolrServer>> oneInstanceCollectionClients = new HashMap<String,List<SolrServer>>();
   
   public BasicDistributedZkTest() {
     fixShardCount = true;
@@ -243,10 +244,70 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
     
     testMultipleCollections();
+    testANewCollectionInOneInstance();
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
     }
+  }
+
+  private void testANewCollectionInOneInstance() throws Exception {
+    String collection = "oneInstanceCollection";
+    List<SolrServer> collectionClients = new ArrayList<SolrServer>();
+    SolrServer client = clients.get(0);
+    oneInstanceCollectionClients.put(collection, collectionClients);
+    String baseUrl = ((CommonsHttpSolrServer) client).getBaseURL();
+    createCollection(collection, collectionClients, baseUrl, 1);
+    createCollection(collection, collectionClients, baseUrl, 2);
+    createCollection(collection, collectionClients, baseUrl, 3);
+    createCollection(collection, collectionClients, baseUrl, 4);
+    
+    SolrServer client1 = createNewSolrServer(collection + "1", baseUrl);
+    SolrServer client2 = createNewSolrServer(collection + "2", baseUrl);
+    SolrServer client3 = createNewSolrServer(collection + "3", baseUrl);
+    SolrServer client4 = createNewSolrServer(collection + "4", baseUrl);
+    
+    client2.add(getDoc(id, "1")); 
+    client3.add(getDoc(id, "2")); 
+    client4.add(getDoc(id, "3")); 
+    
+    client1.commit();
+    SolrQuery query = new SolrQuery("*:*");
+    query.set("distrib", false);
+    long oneDocs = client1.query(query).getResults().getNumFound();
+    long twoDocs = client2.query(query).getResults().getNumFound();
+    long threeDocs = client3.query(query).getResults().getNumFound();
+    long fourDocs = client4.query(query).getResults().getNumFound();
+    
+    query.set("collection", collection);
+    query.set("distrib", true);
+    long allDocs = solrj.query(query).getResults().getNumFound();
+    
+//    System.out.println("1:" + oneDocs);
+//    System.out.println("2:" + twoDocs);
+//    System.out.println("3:" + threeDocs);
+//    System.out.println("4:" + fourDocs);
+//    System.out.println("All Docs:" + allDocs);
+    
+    assertEquals(oneDocs, threeDocs);
+    assertEquals(twoDocs, fourDocs);
+    assertNotSame(oneDocs, twoDocs);
+    assertEquals(3, allDocs);
+  }
+
+  private void createCollection(String collection,
+      List<SolrServer> collectionClients, String baseUrl, int num)
+      throws MalformedURLException, SolrServerException, IOException {
+    CommonsHttpSolrServer server = new CommonsHttpSolrServer(
+        baseUrl);
+    Create createCmd = new Create();
+    createCmd.setCoreName(collection + num);
+    createCmd.setCollection(collection);
+    createCmd.setNumShards(2);
+    createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator
+        + collection + num);
+    server.request(createCmd);
+    collectionClients.add(createNewSolrServer(collection, baseUrl));
   }
 
   private void testMultipleCollections() throws MalformedURLException,

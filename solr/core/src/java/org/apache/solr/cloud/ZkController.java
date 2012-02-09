@@ -844,9 +844,12 @@ public final class ZkController {
 
   private void doPublish(String shardZkNodeName, String coreName,
       Map<String,String> props, CloudDescriptor cloudDesc) {
-
+    Integer numShards = cloudDesc.getNumShards();
+    if (numShards == null) {
+      numShards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP);
+    }
     CoreState coreState = new CoreState(coreName,
-        cloudDesc.getCollectionName(), props);
+        cloudDesc.getCollectionName(), props, numShards);
     coreStates.put(shardZkNodeName, coreState);
     final String nodePath = "/node_states/" + getNodeName();
 

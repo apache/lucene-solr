@@ -198,7 +198,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
         }
         if(shardId==null) {
           //request new shardId 
-          shardId = AssignShard.assignShard(collection, state);
+          shardId = AssignShard.assignShard(collection, state, coreState.getNumShards());
         }
           
           Map<String,String> props = new HashMap<String,String>();

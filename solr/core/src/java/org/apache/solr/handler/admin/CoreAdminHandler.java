@@ -26,7 +26,6 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -354,6 +353,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
         opts = params.get(CoreAdminParams.SHARD);
         if (opts != null)
           cd.setShardId(opts);
+        
+        Integer numShards = params.getInt(ZkStateReader.NUM_SHARDS_PROP);
+        if (numShards != null)
+          cd.setNumShards(numShards);
       }
       
       // Process all property.name=value parameters and set them as name=value core properties
