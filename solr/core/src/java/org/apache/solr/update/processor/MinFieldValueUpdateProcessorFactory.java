@@ -53,8 +53,8 @@ public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetU
 
   @Override
   @SuppressWarnings("unchecked")
-  public Collection<Object> pickSubset(Collection<Object> values) {
-    Collection<Object> result = values;
+  public Collection pickSubset(Collection values) {
+    Collection result = values;
     try {
       result = Collections.singletonList
         (Collections.min((Collection)values));
