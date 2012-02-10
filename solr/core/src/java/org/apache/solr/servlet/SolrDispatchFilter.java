@@ -307,6 +307,9 @@ public class SolrDispatchFilter implements Filter
     
     CloudState cloudState = zkStateReader.getCloudState();
     Map<String,Slice> slices = cloudState.getSlices(collection);
+    if (slices == null) {
+      return null;
+    }
     // look for a core on this node
     Set<Entry<String,Slice>> entries = slices.entrySet();
     done:
