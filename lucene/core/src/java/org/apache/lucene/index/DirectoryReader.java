@@ -314,38 +314,6 @@ public abstract class DirectoryReader extends BaseMultiReader<AtomicReader> {
   }
   
   /**
-   * Reads version number from segments files. The version number is
-   * initialized with a timestamp and then increased by one for each change of
-   * the index.
-   * 
-   * @param directory where the index resides.
-   * @return version number.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static long getCurrentVersion(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentVersion(directory);
-  }
-    
-  /**
-   * Reads commitUserData, previously passed to {@link
-   * IndexWriter#commit(Map)}, from current index
-   * segments file.  This will return null if {@link
-   * IndexWriter#commit(Map)} has never been called for
-   * this index.
-   * 
-   * @param directory where the index resides.
-   * @return commit userData.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   *
-   * @see #getCommitUserData()
-   */
-  public static Map<String, String> getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentUserData(directory);
-  }
-
-  /**
    * Returns <code>true</code> if an index exists at the specified directory.
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
@@ -413,14 +381,6 @@ public abstract class DirectoryReader extends BaseMultiReader<AtomicReader> {
    * a change is made with {@link IndexWriter}.</p>
    */
   public abstract long getVersion();
-
-  /**
-   * Retrieve the String userData optionally passed to
-   * IndexWriter#commit.  This will return null if {@link
-   * IndexWriter#commit(Map)} has never been called for
-   * this index.
-   */
-  public abstract Map<String,String> getCommitUserData();
 
   /**
    * Check whether any new changes have occurred to the

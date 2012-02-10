@@ -361,8 +361,8 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     
     // validate that a refresh is valid at this point, i.e. that the taxonomy 
     // was not recreated since this reader was last opened or refresshed.
-    String t1 = indexReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
-    String t2 = r2.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
+    String t1 = indexReader.getIndexCommit().getUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
+    String t2 = r2.getIndexCommit().getUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
     if (t1==null) {
     	if (t2!=null) {
     		r2.close();
@@ -450,9 +450,9 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     }
   }
 
-  public Map<String, String> getCommitUserData() {
+  public Map<String, String> getCommitUserData() throws IOException {
     ensureOpen();
-    return indexReader.getCommitUserData();
+    return indexReader.getIndexCommit().getUserData();
   }
   
   private ChildrenArrays childrenArrays;

@@ -620,11 +620,9 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       TestIndexWriter.addDoc(w);
     w.close();
 
-    assertEquals(0, DirectoryReader.getCommitUserData(dir).size());
-
     DirectoryReader r = IndexReader.open(dir);
     // commit(Map) never called for this index
-    assertEquals(0, r.getCommitUserData().size());
+    assertEquals(0, r.getIndexCommit().getUserData().size());
     r.close();
 
     w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
@@ -635,17 +633,13 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     w.commit(data);
     w.close();
 
-    assertEquals("test1", DirectoryReader.getCommitUserData(dir).get("label"));
-
     r = IndexReader.open(dir);
-    assertEquals("test1", r.getCommitUserData().get("label"));
+    assertEquals("test1", r.getIndexCommit().getUserData().get("label"));
     r.close();
 
     w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     w.forceMerge(1);
     w.close();
-
-    assertEquals("test1", DirectoryReader.getCommitUserData(dir).get("label"));
 
     dir.close();
   }

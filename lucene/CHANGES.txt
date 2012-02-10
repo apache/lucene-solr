@@ -748,6 +748,11 @@ Changes in backwards compatibility policy
 * LUCENE-3672: Deprecate Directory.fileModified and
   IndexCommit.getTimestamp and .getVersion. (Andrzej Bialecki, Robert
   Muir, Mike McCandless)
+
+* LUCENE-3760: In IndexReader/DirectoryReader, deprecate static
+  methods getCurrentVersion and getCommitUserData, and non-static
+  method getCommitUserData (use getIndexCommit().getUserData()
+  instead).  (Ryan McKinley, Robert Muir, Mike McCandless)
   
 Security fixes
 

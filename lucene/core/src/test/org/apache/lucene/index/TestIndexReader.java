@@ -582,7 +582,7 @@ public class TestIndexReader extends LuceneTestCase {
       DirectoryReader r = DirectoryReader.open(d);
       IndexCommit c = r.getIndexCommit();
 
-      assertEquals(sis.getCurrentSegmentFileName(), c.getSegmentsFileName());
+      assertEquals(sis.getSegmentsFileName(), c.getSegmentsFileName());
 
       assertTrue(c.equals(r.getIndexCommit()));
 

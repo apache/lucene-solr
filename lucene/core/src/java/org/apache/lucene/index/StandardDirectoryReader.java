@@ -203,7 +203,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     final StringBuilder buffer = new StringBuilder();
     buffer.append(getClass().getSimpleName());
     buffer.append('(');
-    final String segmentsFile = segmentInfos.getCurrentSegmentFileName();
+    final String segmentsFile = segmentInfos.getSegmentsFileName();
     if (segmentsFile != null) {
       buffer.append(segmentsFile).append(":").append(segmentInfos.getVersion());
     }
@@ -276,7 +276,7 @@ final class StandardDirectoryReader extends DirectoryReader {
       if (directory != commit.getDirectory()) {
         throw new IOException("the specified commit does not match the specified Directory");
       }
-      if (segmentInfos != null && commit.getSegmentsFileName().equals(segmentInfos.getCurrentSegmentFileName())) {
+      if (segmentInfos != null && commit.getSegmentsFileName().equals(segmentInfos.getSegmentsFileName())) {
         return null;
       }
     }
@@ -302,17 +302,19 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   @Override
-  public Map<String,String> getCommitUserData() {
-    ensureOpen();
-    return segmentInfos.getUserData();
-  }
-
-  @Override
   public boolean isCurrent() throws CorruptIndexException, IOException {
     ensureOpen();
     if (writer == null || writer.isClosed()) {
+      // Fully read the segments file: this ensures that it's
+      // completely written so that if
+      // IndexWriter.prepareCommit has been called (but not
+      // yet commit), then the reader will still see itself as
+      // current:
+      SegmentInfos sis = new SegmentInfos();
+      sis.read(directory);
+
       // we loaded SegmentInfos from the directory
-      return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
+      return sis.getVersion() == segmentInfos.getVersion();
     } else {
       return writer.nrtIsCurrent(segmentInfos);
     }
@@ -355,7 +357,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     private final int segmentCount;
 
     ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
-      segmentsFileName = infos.getCurrentSegmentFileName();
+      segmentsFileName = infos.getSegmentsFileName();
       this.dir = dir;
       userData = infos.getUserData();
       files = Collections.unmodifiableCollection(infos.files(dir, true));

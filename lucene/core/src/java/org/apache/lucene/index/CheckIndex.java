@@ -385,7 +385,7 @@ public class CheckIndex {
     }
 
     final int numSegments = sis.size();
-    final String segmentsFileName = sis.getCurrentSegmentFileName();
+    final String segmentsFileName = sis.getSegmentsFileName();
     // note: we only read the format byte (required preamble) here!
     IndexInput input = null;
     try {
@@ -1773,7 +1773,7 @@ public class CheckIndex {
         System.out.println("Writing...");
         checker.fixIndex(result, codec);
         System.out.println("OK");
-        System.out.println("Wrote new segments file \"" + result.newSegments.getCurrentSegmentFileName() + "\"");
+        System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
       }
     }
     System.out.println("");

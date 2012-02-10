@@ -81,7 +81,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     ltw.close();
     DirectoryReader r = IndexReader.open(dir);
     assertEquals("2 categories plus root should have been committed to the underlying directory", 3, r.numDocs());
-    Map <String, String> readUserCommitData = r.getCommitUserData();
+    Map <String, String> readUserCommitData = r.getIndexCommit().getUserData();
     assertTrue("wrong value extracted from commit data", 
         "1 2 3".equals(readUserCommitData.get("testing")));
     r.close();

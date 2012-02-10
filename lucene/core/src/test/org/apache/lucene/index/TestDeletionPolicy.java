@@ -252,7 +252,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     // segments_N's that still exist are in fact within SECONDS
     // seconds of the last one's mod time, and, that I can
     // open a reader on each:
-    long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
+    long gen = SegmentInfos.getLastCommitGeneration(dir);
     
     String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                             "",
@@ -364,7 +364,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       // Simplistic check: just verify all segments_N's still
       // exist, and, I can open a reader on each:
       dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
-      long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
+      long gen = SegmentInfos.getLastCommitGeneration(dir);
       while(gen > 0) {
         IndexReader reader = IndexReader.open(dir);
         reader.close();
@@ -586,7 +586,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       // Simplistic check: just verify only the past N segments_N's still
       // exist, and, I can open a reader on each:
       dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
-      long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
+      long gen = SegmentInfos.getLastCommitGeneration(dir);
       for(int i=0;i<N+1;i++) {
         try {
           IndexReader reader = IndexReader.open(dir);
@@ -684,7 +684,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       // Simplistic check: just verify only the past N segments_N's still
       // exist, and, I can open a reader on each:
-      long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
+      long gen = SegmentInfos.getLastCommitGeneration(dir);
 
       dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       int expectedCount = 0;
