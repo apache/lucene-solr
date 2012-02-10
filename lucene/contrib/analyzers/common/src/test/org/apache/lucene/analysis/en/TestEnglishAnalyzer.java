@@ -40,6 +40,8 @@ public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "the", new String[] {});
     // possessive removal
     checkOneTermReuse(a, "steven's", "steven");
+    checkOneTermReuse(a, "steven\u2019s", "steven");
+    checkOneTermReuse(a, "steven\uFF07s", "steven");
   }
   
   /** test use of exclusion set */
