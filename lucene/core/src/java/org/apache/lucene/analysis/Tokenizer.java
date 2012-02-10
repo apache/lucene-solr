@@ -34,7 +34,10 @@ public abstract class Tokenizer extends TokenStream {
   /** The text source for this Tokenizer. */
   protected Reader input;
 
-  /** Construct a tokenizer with null input. */
+  /** Construct a tokenizer with null input.
+   * @deprecated use {@link #Tokenizer(Reader)} instead. 
+   */
+  @Deprecated
   protected Tokenizer() {}
   
   /** Construct a token stream processing the given input. */
@@ -42,7 +45,10 @@ public abstract class Tokenizer extends TokenStream {
     this.input = CharReader.get(input);
   }
   
-  /** Construct a tokenizer with null input using the given AttributeFactory. */
+  /** Construct a tokenizer with null input using the given AttributeFactory.
+   * @deprecated use {@link #Tokenizer(AttributeSource.AttributeFactory, Reader)} instead. 
+   */
+  @Deprecated
   protected Tokenizer(AttributeFactory factory) {
     super(factory);
   }
@@ -53,7 +59,10 @@ public abstract class Tokenizer extends TokenStream {
     this.input = CharReader.get(input);
   }
 
-  /** Construct a token stream processing the given input using the given AttributeSource. */
+  /** Construct a token stream processing the given input using the given AttributeSource.
+   * @deprecated use {@link #Tokenizer(AttributeSource, Reader)} instead. 
+   */
+  @Deprecated
   protected Tokenizer(AttributeSource source) {
     super(source);
   }

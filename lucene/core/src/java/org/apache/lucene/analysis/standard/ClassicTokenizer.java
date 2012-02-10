@@ -114,35 +114,34 @@ public final class ClassicTokenizer extends Tokenizer {
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
   public ClassicTokenizer(Version matchVersion, Reader input) {
-    super();
-    init(input, matchVersion);
+    super(input);
+    init(matchVersion);
   }
 
   /**
    * Creates a new ClassicTokenizer with a given {@link AttributeSource}. 
    */
   public ClassicTokenizer(Version matchVersion, AttributeSource source, Reader input) {
-    super(source);
-    init(input, matchVersion);
+    super(source, input);
+    init(matchVersion);
   }
 
   /**
    * Creates a new ClassicTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
    */
   public ClassicTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
-    super(factory);
-    init(input, matchVersion);
+    super(factory, input);
+    init(matchVersion);
   }
 
-  private final void init(Reader input, Version matchVersion) {
+  private final void init(Version matchVersion) {
     this.scanner = new ClassicTokenizerImpl(input);
 
     if (matchVersion.onOrAfter(Version.LUCENE_24)) {
       replaceInvalidAcronym = true;
     } else {
       replaceInvalidAcronym = false;
-    }
-    this.input = input;    
+    }  
   }
 
   // this tokenizer generates three attributes:

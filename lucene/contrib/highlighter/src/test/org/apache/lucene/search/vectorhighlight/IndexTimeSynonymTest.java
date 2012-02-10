@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -300,7 +301,7 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {      
-      TokenStream ts = new TokenStream(Token.TOKEN_ATTRIBUTE_FACTORY) {
+      Tokenizer ts = new Tokenizer(Token.TOKEN_ATTRIBUTE_FACTORY, reader) {
         final AttributeImpl reusableToken = (AttributeImpl) addAttribute(CharTermAttribute.class);
         int p = 0;
         

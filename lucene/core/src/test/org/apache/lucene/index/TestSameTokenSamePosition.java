@@ -18,12 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -40,10 +36,9 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
    */
   public void test() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter riw = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new BugReproAnalyzer()));
+    RandomIndexWriter riw = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(new Field("eng", "Six drunken" /*This shouldn't matter. */, 
-                      Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("eng", new BugReproTokenStream()));
     riw.addDocument(doc);
     riw.close();
     dir.close();
@@ -54,11 +49,10 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
    */
   public void testMoreDocs() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter riw = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new BugReproAnalyzer()));
-    Document doc = new Document();
-    doc.add(new Field("eng", "Six drunken" /*This shouldn't matter. */, 
-                      Field.Store.YES, Field.Index.ANALYZED));
+    RandomIndexWriter riw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 100; i++) {
+      Document doc = new Document();
+      doc.add(new Field("eng", new BugReproTokenStream()));
       riw.addDocument(doc);
     }
     riw.close();
@@ -66,14 +60,7 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
   }
 }
 
-final class BugReproAnalyzer extends Analyzer{
-  @Override
-  public TokenStream tokenStream(String arg0, Reader arg1) {
-    return new BugReproAnalyzerTokenizer();
-  }
-}
-
-final class BugReproAnalyzerTokenizer extends Tokenizer {
+final class BugReproTokenStream extends TokenStream {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);

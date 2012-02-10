@@ -353,7 +353,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new CannedTokenizer(tokens);
+      return new CannedTokenizer(reader, tokens);
     }
   }
 
@@ -364,7 +364,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     private final TermAttribute termAtt = addAttribute(TermAttribute.class);
     private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
-    public CannedTokenizer(TokenAndPos[] tokens) {
+    public CannedTokenizer(Reader reader, TokenAndPos[] tokens) {
+      super(reader);
       this.tokens = tokens;
     }
 

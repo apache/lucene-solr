@@ -1221,10 +1221,14 @@ public class TestQPHelper extends LuceneTestCase {
     super.tearDown();
   }
 
-  private class CannedTokenStream extends Tokenizer {
+  private class CannedTokenizer extends Tokenizer {
     private int upto = 0;
     private final PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
     private final CharTermAttribute term = addAttribute(CharTermAttribute.class);
+    
+    CannedTokenizer(Reader reader) {
+      super(reader);
+    }
     
     @Override
     public boolean incrementToken() {
@@ -1259,7 +1263,7 @@ public class TestQPHelper extends LuceneTestCase {
   private class CannedAnalyzer extends Analyzer {
     @Override
     public TokenStream tokenStream(String ignored, Reader alsoIgnored) {
-      return new CannedTokenStream();
+      return new CannedTokenizer(alsoIgnored);
     }
   }
 

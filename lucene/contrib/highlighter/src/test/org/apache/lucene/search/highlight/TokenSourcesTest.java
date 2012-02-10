@@ -18,9 +18,7 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -49,15 +47,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TokenSourcesTest extends LuceneTestCase {
   private static final String FIELD = "text";
 
-  private static final class OverlapAnalyzer extends Analyzer {
-
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new TokenStreamOverlap();
-    }
-  }
-
-  private static final class TokenStreamOverlap extends TokenStream {
+  private static final class OverlappingTokenStream extends TokenStream {
     private Token[] tokens;
 
     private int i = -1;
@@ -65,10 +55,6 @@ public class TokenSourcesTest extends LuceneTestCase {
     private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
     private final PositionIncrementAttribute positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
-
-    public TokenStreamOverlap() {
-      reset();
-    }
 
     @Override
     public boolean incrementToken() throws IOException {
@@ -104,10 +90,10 @@ public class TokenSourcesTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamOverlap(),
+      document.add(new Field(FIELD, new OverlappingTokenStream(),
           TermVector.WITH_OFFSETS));
       indexWriter.addDocument(document);
     } finally {
@@ -150,10 +136,10 @@ public class TokenSourcesTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamOverlap(),
+      document.add(new Field(FIELD, new OverlappingTokenStream(),
           TermVector.WITH_POSITIONS_OFFSETS));
       indexWriter.addDocument(document);
     } finally {
@@ -196,10 +182,10 @@ public class TokenSourcesTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamOverlap(),
+      document.add(new Field(FIELD, new OverlappingTokenStream(),
           TermVector.WITH_OFFSETS));
       indexWriter.addDocument(document);
     } finally {
@@ -243,10 +229,10 @@ public class TokenSourcesTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamOverlap(),
+      document.add(new Field(FIELD, new OverlappingTokenStream(),
           TermVector.WITH_POSITIONS_OFFSETS));
       indexWriter.addDocument(document);
     } finally {

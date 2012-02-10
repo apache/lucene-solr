@@ -67,7 +67,7 @@ final class TrieTokenizer extends Tokenizer {
 
   public TrieTokenizer(Reader input, TrieTypes type, int precisionStep, NumericTokenStream ts) {
     // must share the attribute source with the NumericTokenStream we delegate to
-    super(ts);
+    super(ts, input);
     this.type = type;
     this.precisionStep = precisionStep;
     this.ts = ts;
