@@ -22,10 +22,10 @@ cd example
 java -DzkRun -DnumShards=2 -DSTOP.PORT=7983 -DSTOP.KEY=key -Dbootstrap_confdir=solr/conf -DzkHost=localhost:9983,localhost:14574,localhost:14585 -jar start.jar 1>example.log 2>&1 &
 
 cd ../example2
-java -Djetty.port=13574 -DzkRun -DzkHost=localhost:9983,localhost:14574,localhost:14575 -DnumShards=2 -DSTOP.PORT=6574 -DSTOP.KEY=key -jar start.jar 1>example2.log 2>&1 &
+java -Djetty.port=13574 -DzkRun -DzkHost=localhost:9983,localhost:14574,localhost:14575 -DSTOP.PORT=6574 -DSTOP.KEY=key -jar start.jar 1>example2.log 2>&1 &
 
 cd ../example3
-java -Djetty.port=13585 -DzkRun -DzkHost=localhost:9983,localhost:14574,localhost:14585 -DnumShards=2 -DSTOP.PORT=6575 -DSTOP.KEY=key -jar start.jar 1>example3.log 2>&1 &
+java -Djetty.port=13585 -DzkRun -DzkHost=localhost:9983,localhost:14574,localhost:14585 -DSTOP.PORT=6575 -DSTOP.KEY=key -jar start.jar 1>example3.log 2>&1 &
 
 # wait for config to go up
 sleep 10

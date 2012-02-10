@@ -20,6 +20,6 @@ java -DzkRun -DnumShards=2 -DSTOP.PORT=7983 -DSTOP.KEY=key -Dbootstrap_confdir=s
 sleep 10
 
 cd ../example2
-java -Djetty.port=9574 -DzkRun -DzkHost=localhost:9983 -DnumShards=2 -DSTOP.PORT=6574 -DSTOP.KEY=key -jar start.jar 1>example2.log 2>&1 &
+java -Djetty.port=9574 -DzkRun -DzkHost=localhost:9983 -DSTOP.PORT=6574 -DSTOP.KEY=key -jar start.jar 1>example2.log 2>&1 &
 
 
