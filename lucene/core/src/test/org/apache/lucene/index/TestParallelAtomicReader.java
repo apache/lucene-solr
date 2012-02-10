@@ -28,30 +28,15 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestParallelReader extends LuceneTestCase {
+public class TestParallelAtomicReader extends LuceneTestCase {
 
-  private IndexSearcher parallel;
-  private IndexSearcher single;
+  private IndexSearcher parallel, single;
   private Directory dir, dir1, dir2;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    single = single(random);
-    parallel = parallel(random);
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
-    single.getIndexReader().close();
-    parallel.getIndexReader().close();
-    dir.close();
-    dir1.close();
-    dir2.close();
-    super.tearDown();
-  }
 
   public void testQueries() throws Exception {
+    single = single(random);
+    parallel = parallel(random);
+    
     queryTest(new TermQuery(new Term("f1", "v1")));
     queryTest(new TermQuery(new Term("f1", "v2")));
     queryTest(new TermQuery(new Term("f2", "v1")));
@@ -65,14 +50,19 @@ public class TestParallelReader extends LuceneTestCase {
     bq1.add(new TermQuery(new Term("f1", "v1")), Occur.MUST);
     bq1.add(new TermQuery(new Term("f4", "v1")), Occur.MUST);
     queryTest(bq1);
+    
+    single.getIndexReader().close(); single = null;
+    parallel.getIndexReader().close(); parallel = null;
+    dir.close(); dir = null;
+    dir1.close(); dir1 = null;
+    dir2.close(); dir2 = null;
   }
 
   public void testFieldNames() throws Exception {
     Directory dir1 = getDir1(random);
     Directory dir2 = getDir2(random);
-    ParallelReader pr = new ParallelReader();
-    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)));
-    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
+    ParallelAtomicReader pr = new ParallelAtomicReader(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
+                                                       SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
     FieldInfos fieldInfos = pr.getFieldInfos();
     assertEquals(4, fieldInfos.size());
     assertNotNull(fieldInfos.fieldInfo("f1"));
@@ -82,6 +72,45 @@ public class TestParallelReader extends LuceneTestCase {
     pr.close();
     dir1.close();
     dir2.close();
+  }
+  
+  public void testRefCounts1() throws IOException {
+    Directory dir1 = getDir1(random);
+    Directory dir2 = getDir2(random);
+    AtomicReader ir1, ir2;
+    // close subreaders, ParallelReader will not change refCounts, but close on its own close
+    ParallelAtomicReader pr = new ParallelAtomicReader(ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
+                                                       ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
+                                                       
+    // check RefCounts
+    assertEquals(1, ir1.getRefCount());
+    assertEquals(1, ir2.getRefCount());
+    pr.close();
+    assertEquals(0, ir1.getRefCount());
+    assertEquals(0, ir2.getRefCount());
+    dir1.close();
+    dir2.close();    
+  }
+  
+  public void testRefCounts2() throws IOException {
+    Directory dir1 = getDir1(random);
+    Directory dir2 = getDir2(random);
+    AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
+    AtomicReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
+    // don't close subreaders, so ParallelReader will increment refcounts
+    ParallelAtomicReader pr = new ParallelAtomicReader(false, ir1, ir2);
+    // check RefCounts
+    assertEquals(2, ir1.getRefCount());
+    assertEquals(2, ir2.getRefCount());
+    pr.close();
+    assertEquals(1, ir1.getRefCount());
+    assertEquals(1, ir2.getRefCount());
+    ir1.close();
+    ir2.close();
+    assertEquals(0, ir1.getRefCount());
+    assertEquals(0, ir2.getRefCount());
+    dir1.close();
+    dir2.close();    
   }
   
   public void testIncompatibleIndexes() throws IOException {
@@ -97,17 +126,94 @@ public class TestParallelReader extends LuceneTestCase {
     w2.addDocument(d3);
     w2.close();
     
-    ParallelReader pr = new ParallelReader();
-    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)));
-    DirectoryReader ir = DirectoryReader.open(dir2);
+    AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
+    AtomicReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
+
     try {
-      pr.add(SlowCompositeReaderWrapper.wrap(ir));
+      new ParallelAtomicReader(ir1, ir2);
       fail("didn't get exptected exception: indexes don't have same number of documents");
     } catch (IllegalArgumentException e) {
       // expected exception
     }
+
+    try {
+      new ParallelAtomicReader(random.nextBoolean(),
+                               new AtomicReader[] {ir1, ir2},
+                               new AtomicReader[] {ir1, ir2});
+      fail("didn't get expected exception: indexes don't have same number of documents");
+    } catch (IllegalArgumentException e) {
+      // expected exception
+    }
+    // check RefCounts
+    assertEquals(1, ir1.getRefCount());
+    assertEquals(1, ir2.getRefCount());
+    ir1.close();
+    ir2.close();
+    dir1.close();
+    dir2.close();
+  }
+
+  public void testIgnoreStoredFields() throws IOException {
+    Directory dir1 = getDir1(random);
+    Directory dir2 = getDir2(random);
+    AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
+    AtomicReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
+    
+    // with overlapping
+    ParallelAtomicReader pr = new ParallelAtomicReader(false,
+        new AtomicReader[] {ir1, ir2},
+        new AtomicReader[] {ir1});
+    assertEquals("v1", pr.document(0).get("f1"));
+    assertEquals("v1", pr.document(0).get("f2"));
+    assertNull(pr.document(0).get("f3"));
+    assertNull(pr.document(0).get("f4"));
+    // check that fields are there
+    assertNotNull(pr.terms("f1"));
+    assertNotNull(pr.terms("f2"));
+    assertNotNull(pr.terms("f3"));
+    assertNotNull(pr.terms("f4"));
     pr.close();
-    ir.close();
+    
+    // no stored fields at all
+    pr = new ParallelAtomicReader(false,
+        new AtomicReader[] {ir2},
+        new AtomicReader[0]);
+    assertNull(pr.document(0).get("f1"));
+    assertNull(pr.document(0).get("f2"));
+    assertNull(pr.document(0).get("f3"));
+    assertNull(pr.document(0).get("f4"));
+    // check that fields are there
+    assertNull(pr.terms("f1"));
+    assertNull(pr.terms("f2"));
+    assertNotNull(pr.terms("f3"));
+    assertNotNull(pr.terms("f4"));
+    pr.close();
+    
+    // without overlapping
+    pr = new ParallelAtomicReader(true,
+        new AtomicReader[] {ir2},
+        new AtomicReader[] {ir1});
+    assertEquals("v1", pr.document(0).get("f1"));
+    assertEquals("v1", pr.document(0).get("f2"));
+    assertNull(pr.document(0).get("f3"));
+    assertNull(pr.document(0).get("f4"));
+    // check that fields are there
+    assertNull(pr.terms("f1"));
+    assertNull(pr.terms("f2"));
+    assertNotNull(pr.terms("f3"));
+    assertNotNull(pr.terms("f4"));
+    pr.close();
+    
+    // no main readers
+    try {
+      new ParallelAtomicReader(true,
+        new AtomicReader[0],
+        new AtomicReader[] {ir1});
+      fail("didn't get expected exception: need a non-empty main-reader array");
+    } catch (IllegalArgumentException iae) {
+      // pass
+    }
+    
     dir1.close();
     dir2.close();
   }
@@ -153,9 +259,9 @@ public class TestParallelReader extends LuceneTestCase {
   private IndexSearcher parallel(Random random) throws IOException {
     dir1 = getDir1(random);
     dir2 = getDir2(random);
-    ParallelReader pr = new ParallelReader();
-    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)));
-    pr.add(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
+    ParallelAtomicReader pr = new ParallelAtomicReader(
+        SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
+        SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
     return newSearcher(pr);
   }
 

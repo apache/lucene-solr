@@ -235,6 +235,18 @@ Changes in backwards compatibility policy
   you really want a top-level fieldcache, use SlowMultiReaderWrapper.
   (Robert Muir)
   
+* LUCENE-2858, LUCENE-3733: IndexReader was refactored into abstract
+  AtomicReader, CompositeReader, and DirectoryReader. TODO:add more info
+  (Uwe Schindler, Mike McCandless, Robert Muir)
+
+* LUCENE-3736: ParallelReader was split into ParallelAtomicReader
+  and ParallelCompositeReader. Lucene 3.x's ParallelReader is now
+  ParallelAtomicReader; but the new composite variant has improved performance
+  as it works on the atomic subreaders. It requires that all parallel
+  composite readers have the same subreader structure. If you cannot provide this,
+  you can use SlowCompositeReaderWrapper to make all parallel readers atomic
+  and use ParallelAtomicReader.  (Uwe Schindler, Mike McCandless, Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
