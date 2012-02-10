@@ -71,7 +71,6 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
     }
   }
   
-  public static final String ASSIGNMENTS_NODE = "/node_assignments";
   public static final String STATES_NODE = "/node_states";
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
@@ -189,7 +188,13 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       private CloudState updateState(CloudState state, String nodeName, CoreState coreState) throws KeeperException, InterruptedException {
         String collection = coreState.getCollectionName();
         String zkCoreNodeName = coreState.getCoreNodeName();
-
+        
+        //collection does not yet exist, create placeholders if num shards is specified
+        if (!state.getCollections().contains(coreState.getCollectionName())
+            && coreState.getNumShards() != null) {
+          state = createCollection(state, collection, coreState.getNumShards());
+        }
+        
         // use the provided non null shardId
         String shardId = coreState.getProperties().get(ZkStateReader.SHARD_ID_PROP);
         if(shardId==null) {
@@ -220,6 +225,19 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
           return newCloudState;
       }
 
+      private CloudState createCollection(CloudState state, String collectionName, int numShards) {
+        Map<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String, Slice>>();
+        Map<String, Slice> newSlices = new LinkedHashMap<String,Slice>();
+        newStates.putAll(state.getCollectionStates());
+        for (int i = 0; i < numShards; i++) {
+          final String sliceName = "shard" + (i+1);
+          newSlices.put(sliceName, new Slice(sliceName, Collections.EMPTY_MAP));
+        }
+        newStates.put(collectionName, newSlices);
+        CloudState newCloudState = new CloudState(state.getLiveNodes(), newStates);
+        return newCloudState;
+      }
+      
       /*
        * Return an already assigned id or null if not assigned
        */

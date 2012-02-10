@@ -222,9 +222,14 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   protected void createServers(int numServers) throws Exception {
     
     System.setProperty("collection", "control_collection");
+    String numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
+    System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
     controlJetty = createJetty(testDir, testDir + "/control/data",
         "control_shard");
     System.clearProperty("collection");
+    if(numShards != null) {
+      System.setProperty(ZkStateReader.NUM_SHARDS_PROP, numShards);
+    } 
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
     
     createJettys(numServers, true);
