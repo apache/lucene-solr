@@ -184,9 +184,7 @@ public class SolrDispatchFilter implements Filter
             }
           }
           if (core == null) {
-            if (cores.isZooKeeperAware() && corename.length() == 0) {
-              core = cores.getCore("");
-            } else if (!cores.isZooKeeperAware()) {
+            if (!cores.isZooKeeperAware() ) {
               core = cores.getCore("");
             }
           }
@@ -199,6 +197,9 @@ public class SolrDispatchFilter implements Filter
           if (core != null) {
             // we found a core, update the path
             path = path.substring( idx );
+          } else {
+            // try the default core
+            core = cores.getCore("");
           }
           // TODO: if we couldn't find it locally, look on other nodes
         }
