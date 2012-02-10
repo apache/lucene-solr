@@ -207,7 +207,11 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
         }
           
           Map<String,String> props = new HashMap<String,String>();
-          for (Entry<String,String> entry : coreState.getProperties().entrySet()) {
+          Map<String,String> coreProps = new HashMap<String,String>(coreState.getProperties().size());
+          coreProps.putAll(coreState.getProperties());
+          // we don't put num_shards in the clusterstate
+          coreProps.remove("num_shards");
+          for (Entry<String,String> entry : coreProps.entrySet()) {
             props.put(entry.getKey(), entry.getValue());
           }
           ZkNodeProps zkProps = new ZkNodeProps(props);
