@@ -17,6 +17,8 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
 
@@ -33,7 +35,14 @@ import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
  *
  */
 public class EnglishPossessiveFilterFactory extends BaseTokenFilterFactory {
+  
+  @Override
+  public void init(Map<String,String> args) {
+    super.init(args);
+    assureMatchVersion();
+  }
+  
   public TokenStream create(TokenStream input) {
-    return new EnglishPossessiveFilter(input);
+    return new EnglishPossessiveFilter(luceneMatchVersion, input);
   }
 }

@@ -178,6 +178,9 @@ Changes in runtime behavior
    the Snowball German2 algorithm to ae/oe/ue and case-folds ß. Add 
    GalicianMinimalStemFilter for plural removal only. (Robert Muir)
 
+ * LUCENE-3748: EnglishPossessiveFilter did not work with Unicode right 
+   single quotation mark (U+2019).  (David Croley via Robert Muir)
+
 Optimizations
 
 * SOLR-2888: FSTSuggester refactoring: internal storage is now UTF-8, 

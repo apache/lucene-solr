@@ -105,7 +105,7 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
     TokenStream result = new StandardFilter(matchVersion, source);
     // prior to this we get the classic behavior, standardfilter does it for us.
     if (matchVersion.onOrAfter(Version.LUCENE_31))
-      result = new EnglishPossessiveFilter(result);
+      result = new EnglishPossessiveFilter(matchVersion, result);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
