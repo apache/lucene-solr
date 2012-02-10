@@ -62,6 +62,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   private Map<String,List<SolrServer>> otherCollectionClients = new HashMap<String,List<SolrServer>>();
   private Map<String,List<SolrServer>> oneInstanceCollectionClients = new HashMap<String,List<SolrServer>>();
+  private String oneInstanceCollection = "oneInstanceCollection";;
   
   public BasicDistributedZkTest() {
     fixShardCount = true;
@@ -245,27 +246,39 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     
     testMultipleCollections();
     testANewCollectionInOneInstance();
+    testSearchByCollectionName();
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
     }
   }
 
+  private void testSearchByCollectionName() throws SolrServerException {
+    SolrServer client = clients.get(0);
+    String baseUrl = ((CommonsHttpSolrServer) client).getBaseURL();
+    
+    // the cores each have different names, but if we add the collection name to the url
+    // we should get mapped to the right core
+    SolrServer client1 = createNewSolrServer(oneInstanceCollection, baseUrl);
+    SolrQuery query = new SolrQuery("*:*");
+    long oneDocs = client1.query(query).getResults().getNumFound();
+    assertEquals(3, oneDocs);
+  }
+
   private void testANewCollectionInOneInstance() throws Exception {
-    String collection = "oneInstanceCollection";
     List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     SolrServer client = clients.get(0);
-    oneInstanceCollectionClients.put(collection, collectionClients);
+    oneInstanceCollectionClients.put(oneInstanceCollection , collectionClients);
     String baseUrl = ((CommonsHttpSolrServer) client).getBaseURL();
-    createCollection(collection, collectionClients, baseUrl, 1);
-    createCollection(collection, collectionClients, baseUrl, 2);
-    createCollection(collection, collectionClients, baseUrl, 3);
-    createCollection(collection, collectionClients, baseUrl, 4);
+    createCollection(oneInstanceCollection, collectionClients, baseUrl, 1);
+    createCollection(oneInstanceCollection, collectionClients, baseUrl, 2);
+    createCollection(oneInstanceCollection, collectionClients, baseUrl, 3);
+    createCollection(oneInstanceCollection, collectionClients, baseUrl, 4);
     
-    SolrServer client1 = createNewSolrServer(collection + "1", baseUrl);
-    SolrServer client2 = createNewSolrServer(collection + "2", baseUrl);
-    SolrServer client3 = createNewSolrServer(collection + "3", baseUrl);
-    SolrServer client4 = createNewSolrServer(collection + "4", baseUrl);
+    SolrServer client1 = createNewSolrServer(oneInstanceCollection + "1", baseUrl);
+    SolrServer client2 = createNewSolrServer(oneInstanceCollection + "2", baseUrl);
+    SolrServer client3 = createNewSolrServer(oneInstanceCollection + "3", baseUrl);
+    SolrServer client4 = createNewSolrServer(oneInstanceCollection + "4", baseUrl);
     
     client2.add(getDoc(id, "1")); 
     client3.add(getDoc(id, "2")); 
@@ -279,7 +292,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     long threeDocs = client3.query(query).getResults().getNumFound();
     long fourDocs = client4.query(query).getResults().getNumFound();
     
-    query.set("collection", collection);
+    query.set("collection", oneInstanceCollection);
     query.set("distrib", true);
     long allDocs = solrj.query(query).getResults().getNumFound();
     

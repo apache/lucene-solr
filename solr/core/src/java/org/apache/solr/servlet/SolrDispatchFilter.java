@@ -25,6 +25,8 @@ import java.io.OutputStreamWriter;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.WeakHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +44,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -178,9 +184,23 @@ public class SolrDispatchFilter implements Filter
             }
           }
           if (core == null) {
-            corename = "";
-            core = cores.getCore("");
+            if (cores.isZooKeeperAware() && corename.length() == 0) {
+              core = cores.getCore("");
+            } else if (!cores.isZooKeeperAware()) {
+              core = cores.getCore("");
+            }
           }
+        }
+        
+        if (core == null && cores.isZooKeeperAware()) {
+          // we couldn't find the core - lets make sure a collection was not specified instead
+          core = getCoreByCollection(cores, core, corename, path);
+          
+          if (core != null) {
+            // we found a core, update the path
+            path = path.substring( idx );
+          }
+          // TODO: if we couldn't find it locally, look on other nodes
         }
 
         // With a valid core...
@@ -278,6 +298,48 @@ public class SolrDispatchFilter implements Filter
 
     // Otherwise let the webapp handle the request
     chain.doFilter(request, response);
+  }
+
+  private SolrCore getCoreByCollection(CoreContainer cores, SolrCore core,
+      String corename, String path) {
+    String collection = corename;
+    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+    
+    CloudState cloudState = zkStateReader.getCloudState();
+    Map<String,Slice> slices = cloudState.getSlices(collection);
+    // look for a core on this node
+    Set<Entry<String,Slice>> entries = slices.entrySet();
+    done:
+    for (Entry<String,Slice> entry : entries) {
+      // first see if we have the leader
+      ZkNodeProps leaderProps = cloudState.getLeader(collection, entry.getKey());
+      core = checkProps(cores, core, path, leaderProps);
+      if (core != null) {
+        break done;
+      }
+      
+      // check everyone then
+      Map<String,ZkNodeProps> shards = entry.getValue().getShards();
+      Set<Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
+      for (Entry<String,ZkNodeProps> shardEntry : shardEntries) {
+        ZkNodeProps zkProps = shardEntry.getValue();
+        core = checkProps(cores, core, path, zkProps);
+        if (core != null) {
+          break done;
+        }
+      }
+    }
+    return core;
+  }
+
+  private SolrCore checkProps(CoreContainer cores, SolrCore core, String path,
+      ZkNodeProps zkProps) {
+    String corename;
+    if (cores.getZkController().getNodeName().equals(zkProps.get(ZkStateReader.NODE_NAME_PROP))) {
+      corename = zkProps.get(ZkStateReader.CORE_NAME_PROP);
+      core = cores.getCore(corename);
+    }
+    return core;
   }
 
   private void handleAdminRequest(HttpServletRequest req, ServletResponse response, SolrRequestHandler handler,
