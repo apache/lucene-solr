@@ -242,7 +242,7 @@ public interface TaxonomyReader extends Closeable {
    * Retrieve user committed data.
    * @see TaxonomyWriter#commit(Map)
    */
-  public Map<String, String> getCommitUserData();
+  public Map<String, String> getCommitUserData() throws IOException;
 
   /**
    * Expert: increments the refCount of this TaxonomyReader instance. 

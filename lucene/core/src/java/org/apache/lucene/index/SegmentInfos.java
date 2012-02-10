@@ -145,12 +145,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   }
 
   /**
-   * Get the generation (N) of the current segments_N file
-   * from a list of files.
+   * Get the generation of the most recent commit to the
+   * list of index files (N in the segments_N file).
    *
    * @param files -- array of file names to check
    */
-  public static long getCurrentSegmentGeneration(String[] files) {
+  public static long getLastCommitGeneration(String[] files) {
     if (files == null) {
       return -1;
     }
@@ -168,48 +168,48 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   }
 
   /**
-   * Get the generation (N) of the current segments_N file
-   * in the directory.
+   * Get the generation of the most recent commit to the
+   * index in this directory (N in the segments_N file).
    *
    * @param directory -- directory to search for the latest segments_N file
    */
-  public static long getCurrentSegmentGeneration(Directory directory) throws IOException {
+  public static long getLastCommitGeneration(Directory directory) throws IOException {
     try {
-      return getCurrentSegmentGeneration(directory.listAll());
+      return getLastCommitGeneration(directory.listAll());
     } catch (NoSuchDirectoryException nsde) {
       return -1;
     }
   }
 
   /**
-   * Get the filename of the current segments_N file
-   * from a list of files.
+   * Get the filename of the segments_N file for the most
+   * recent commit in the list of index files.
    *
    * @param files -- array of file names to check
    */
 
-  public static String getCurrentSegmentFileName(String[] files) throws IOException {
+  public static String getLastCommitSegmentsFileName(String[] files) throws IOException {
     return IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                  "",
-                                                 getCurrentSegmentGeneration(files));
+                                                 getLastCommitGeneration(files));
   }
 
   /**
-   * Get the filename of the current segments_N file
-   * in the directory.
+   * Get the filename of the segments_N file for the most
+   * recent commit to the index in this Directory.
    *
    * @param directory -- directory to search for the latest segments_N file
    */
-  public static String getCurrentSegmentFileName(Directory directory) throws IOException {
+  public static String getLastCommitSegmentsFileName(Directory directory) throws IOException {
     return IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                  "",
-                                                 getCurrentSegmentGeneration(directory));
+                                                 getLastCommitGeneration(directory));
   }
 
   /**
    * Get the segments_N filename in use by this segment infos.
    */
-  public String getCurrentSegmentFileName() {
+  public String getSegmentsFileName() {
     return IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                  "",
                                                  lastGeneration);
@@ -467,7 +467,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    * Current version number from segments file.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Load the SegmentInfos and then call {@link
+   * #getVersion}.
    */
+  @Deprecated
   public static long readCurrentVersion(Directory directory)
     throws CorruptIndexException, IOException {
 
@@ -479,18 +482,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     SegmentInfos sis = new SegmentInfos();
     sis.read(directory);
     return sis.version;
-  }
-
-  /**
-   * Returns userData from latest segments file
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static Map<String,String> readCurrentUserData(Directory directory)
-    throws CorruptIndexException, IOException {
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(directory);
-    return sis.getUserData();
   }
 
   /** If non-null, information about retries when loading
@@ -611,7 +602,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           files = directory.listAll();
           
           if (files != null) {
-            genA = getCurrentSegmentGeneration(files);
+            genA = getLastCommitGeneration(files);
           }
           
           if (infoStream != null) {
@@ -844,7 +835,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   public Collection<String> files(Directory dir, boolean includeSegmentsFile) throws IOException {
     HashSet<String> files = new HashSet<String>();
     if (includeSegmentsFile) {
-      files.add(getCurrentSegmentFileName());
+      final String segmentFileName = getSegmentsFileName();
+      if (segmentFileName != null) {
+        /*
+         * TODO: if lastGen == -1 we get might get null here it seems wrong to
+         * add null to the files set
+         */
+        files.add(segmentFileName);
+      }
     }
     final int size = size();
     for(int i=0;i<size;i++) {
@@ -938,7 +936,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
   public String toString(Directory directory) {
     StringBuilder buffer = new StringBuilder();
-    buffer.append(getCurrentSegmentFileName()).append(": ");
+    buffer.append(getSegmentsFileName()).append(": ");
     final int count = size();
     for(int i = 0; i < count; i++) {
       if (i > 0) {

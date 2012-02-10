@@ -139,7 +139,7 @@ final class IndexFileDeleter {
     this.infoStream = infoStream;
     this.writer = writer;
 
-    final String currentSegmentsFile = segmentInfos.getCurrentSegmentFileName();
+    final String currentSegmentsFile = segmentInfos.getSegmentsFileName();
 
     if (infoStream != null) {
       message("init: current segments file is \"" + currentSegmentsFile + "\"; deletionPolicy=" + policy);
@@ -233,7 +233,7 @@ final class IndexFileDeleter {
         throw new CorruptIndexException("failed to locate current segments_N file");
       }
       if (infoStream != null) {
-        message("forced open of current segments file " + segmentInfos.getCurrentSegmentFileName());
+        message("forced open of current segments file " + segmentInfos.getSegmentsFileName());
       }
       currentCommitPoint = new CommitPoint(commitsToDelete, directory, sis);
       commits.add(currentCommitPoint);
@@ -442,7 +442,7 @@ final class IndexFileDeleter {
     assert locked();
 
     if (infoStream != null) {
-      message("now checkpoint \"" + segmentInfos.getCurrentSegmentFileName() + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
+      message("now checkpoint \"" + segmentInfos.getSegmentsFileName() + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
     // Try again now to delete any previously un-deletable
@@ -649,7 +649,7 @@ final class IndexFileDeleter {
       this.directory = directory;
       this.commitsToDelete = commitsToDelete;
       userData = segmentInfos.getUserData();
-      segmentsFileName = segmentInfos.getCurrentSegmentFileName();
+      segmentsFileName = segmentInfos.getSegmentsFileName();
       version = segmentInfos.getVersion();
       generation = segmentInfos.getGeneration();
       files = Collections.unmodifiableCollection(segmentInfos.files(directory, true));

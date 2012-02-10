@@ -933,7 +933,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @return version number.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link SegmentInfos#readCurrentVersion}.
+   * @deprecated Use {@link #getVersion} on an opened IndexReader.
    */
   @Deprecated
   public static long getCurrentVersion(Directory directory) throws CorruptIndexException, IOException {
@@ -952,10 +952,15 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    *
-   * @see #getCommitUserData()
+   * @deprecated Call {@link
+   * #getIndexCommit} on an open IndexReader, and then call
+   * {@link IndexCommit#getUserData}.
    */
+  @Deprecated
   public static Map<String,String> getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentUserData(directory);
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(directory);
+    return sis.getUserData();
   }
 
   /**
@@ -981,8 +986,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * IndexWriter#commit(Map)} has never been called for
    * this index.
    *
-   * @see #getCommitUserData(Directory)
+   * @deprecated Call {@link #getIndexCommit} and then call
+   * {@link IndexCommit#getUserData}.
    */
+  @Deprecated
   public Map<String,String> getCommitUserData() {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
@@ -1472,7 +1479,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param commitUserData Opaque Map (String -> String)
    *  that's recorded into the segments file in the index,
    *  and retrievable by {@link
-   *  IndexReader#getCommitUserData}.
+   *  IndexCommit#getUserData}.
    * @throws IOException
    * @deprecated Write support will be removed in Lucene 4.0.
    */

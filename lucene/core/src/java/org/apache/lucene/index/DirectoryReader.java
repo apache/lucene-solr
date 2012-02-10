@@ -297,7 +297,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
     buffer.append(getClass().getSimpleName());
     buffer.append('(');
-    final String segmentsFile = segmentInfos.getCurrentSegmentFileName();
+    final String segmentsFile = segmentInfos.getSegmentsFileName();
     if (segmentsFile != null) {
       buffer.append(segmentsFile);
     }
@@ -464,7 +464,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       if (directory != commit.getDirectory()) {
         throw new IOException("the specified commit does not match the specified Directory");
       }
-      if (segmentInfos != null && commit.getSegmentsFileName().equals(segmentInfos.getCurrentSegmentFileName())) {
+      if (segmentInfos != null && commit.getSegmentsFileName().equals(segmentInfos.getSegmentsFileName())) {
         if (readOnly != openReadOnly) {
           // Just fallback to clone
           return clone(openReadOnly);
@@ -1005,7 +1005,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     private final int segmentCount;
 
     ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
-      segmentsFileName = infos.getCurrentSegmentFileName();
+      segmentsFileName = infos.getSegmentsFileName();
       this.dir = dir;
       userData = infos.getUserData();
       files = Collections.unmodifiableCollection(infos.files(dir, true));

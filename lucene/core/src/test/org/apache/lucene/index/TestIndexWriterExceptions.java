@@ -974,10 +974,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     // close
     writer.close();
 
-    long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
+    long gen = SegmentInfos.getLastCommitGeneration(dir);
     assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
-    final String segmentsFileName = SegmentInfos.getCurrentSegmentFileName(dir);
+    final String segmentsFileName = SegmentInfos.getLastCommitSegmentsFileName(dir);
     IndexInput in = dir.openInput(segmentsFileName);
     IndexOutput out = dir.createOutput(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", 1+gen));
     out.copyBytes(in, in.length()-1);
@@ -1016,10 +1016,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // close
       writer.close();
 
-      long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
+      long gen = SegmentInfos.getLastCommitGeneration(dir);
       assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
-      String fileNameIn = SegmentInfos.getCurrentSegmentFileName(dir);
+      String fileNameIn = SegmentInfos.getLastCommitSegmentsFileName(dir);
       String fileNameOut = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                  "",
                                                                  1+gen);
@@ -1068,7 +1068,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // close
       writer.close();
 
-      long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
+      long gen = SegmentInfos.getLastCommitGeneration(dir);
       assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
       String[] files = dir.listAll();
@@ -1114,13 +1114,13 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // close
       writer.close();
 
-      long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
+      long gen = SegmentInfos.getLastCommitGeneration(dir);
       assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
       // Make the next segments file, with last byte
       // missing, to simulate a writer that crashed while
       // writing segments file:
-      String fileNameIn = SegmentInfos.getCurrentSegmentFileName(dir);
+      String fileNameIn = SegmentInfos.getLastCommitSegmentsFileName(dir);
       String fileNameOut = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                  "",
                                                                  1+gen);

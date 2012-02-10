@@ -3331,7 +3331,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  @param commitUserData Opaque Map (String->String)
    *  that's recorded into the segments file in the index,
    *  and retrievable by {@link
-   *  IndexReader#getCommitUserData}.  Note that when
+   *  IndexCommit#getUserData}.  Note that when
    *  IndexWriter commits itself during {@link #close}, the
    *  commitUserData is unchanged (just carried over from
    *  the prior commit).  If this is null then the previous
@@ -3484,11 +3484,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     if (pendingCommit != null) {
       try {
-        if (infoStream != null)
+        if (infoStream != null) {
     	  message("commit: pendingCommit != null");
+        }
         pendingCommit.finishCommit(directory);
-        if (infoStream != null)
-          message("commit: wrote segments file \"" + pendingCommit.getCurrentSegmentFileName() + "\"");
+        if (infoStream != null) {
+          message("commit: wrote segments file \"" + pendingCommit.getSegmentsFileName() + "\"");
+        }
         lastCommitChangeCount = pendingCommitChangeCount;
         segmentInfos.updateGeneration(pendingCommit);
         segmentInfos.setUserData(pendingCommit.getUserData());

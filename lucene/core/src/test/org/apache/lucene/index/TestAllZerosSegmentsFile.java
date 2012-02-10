@@ -32,7 +32,7 @@ public class TestAllZerosSegmentsFile extends LuceneTestCase {
 
     String nextSegmentsFile = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                     "",
-                                                                    SegmentInfos.getCurrentSegmentGeneration(dir)+1);
+                                                                    SegmentInfos.getLastCommitGeneration(dir)+1);
     IndexOutput out = dir.createOutput(nextSegmentsFile);
     for(int idx=0;idx<8;idx++) {
       out.writeByte((byte) 0);
