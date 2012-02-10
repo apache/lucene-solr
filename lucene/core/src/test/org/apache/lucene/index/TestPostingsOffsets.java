@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CannedAnalyzer;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.Token;
@@ -72,9 +72,9 @@ public class TestPostingsOffsets extends LuceneTestCase {
       makeToken("a", 1, 9, 17),
       makeToken("c", 1, 19, 50),
     };
-    doc.add(new Field("content", new CannedAnalyzer.CannedTokenizer(tokens), ft));
+    doc.add(new Field("content", new CannedTokenStream(tokens), ft));
 
-    w.addDocument(doc, new CannedAnalyzer(tokens));
+    w.addDocument(doc);
     IndexReader r = w.getReader();
     w.close();
 
@@ -281,7 +281,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
         offset += offIncr + tokenOffset;
         //System.out.println("  " + token + " posIncr=" + token.getPositionIncrement() + " pos=" + pos + " off=" + token.startOffset() + "/" + token.endOffset() + " (freq=" + postingsByDoc.get(docCount).size() + ")");
       }
-      doc.add(new Field("content", new CannedAnalyzer.CannedTokenizer(tokens.toArray(new Token[tokens.size()])), ft));
+      doc.add(new Field("content", new CannedTokenStream(tokens.toArray(new Token[tokens.size()])), ft));
       w.addDocument(doc);
     }
     final DirectoryReader r = w.getReader();

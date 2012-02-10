@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
@@ -285,11 +286,7 @@ public class TestDocument extends LuceneTestCase {
   // LUCENE-3616
   public void testInvalidFields() {
     try {
-      new Field("foo", new Tokenizer() {
-        @Override
-        public boolean incrementToken() {
-          return false;
-        }}, StringField.TYPE_STORED);
+      new Field("foo", new EmptyTokenizer(new StringReader("")), StringField.TYPE_STORED);
       fail("did not hit expected exc");
     } catch (IllegalArgumentException iae) {
       // expected

@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.flexible.standard;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -35,18 +36,19 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorPipeline;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -62,7 +64,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
@@ -1215,11 +1216,15 @@ public class TestQPHelper extends LuceneTestCase {
     super.tearDown();
   }
 
-  private class CannedTokenStream extends Tokenizer {
+  private class CannedTokenizer extends Tokenizer {
     private int upto = 0;
     private final PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
     private final CharTermAttribute term = addAttribute(CharTermAttribute.class);
-    
+
+    public CannedTokenizer(Reader reader) {
+      super(reader);
+    }
+
     @Override
     public boolean incrementToken() {
       clearAttributes();
@@ -1253,7 +1258,7 @@ public class TestQPHelper extends LuceneTestCase {
   private class CannedAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String ignored, Reader alsoIgnored) {
-      return new TokenStreamComponents(new CannedTokenStream());
+      return new TokenStreamComponents(new CannedTokenizer(alsoIgnored));
     }
   }
 

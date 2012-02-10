@@ -32,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-class RepeatingTokenStream extends Tokenizer {
+class RepeatingTokenizer extends Tokenizer {
   
   private final Random random;
   private final float percentDocs;
@@ -41,7 +41,8 @@ class RepeatingTokenStream extends Tokenizer {
   CharTermAttribute termAtt;
   String value;
 
-   public RepeatingTokenStream(String val, Random random, float percentDocs, int maxTF) {
+   public RepeatingTokenizer(Reader reader, String val, Random random, float percentDocs, int maxTF) {
+     super(reader);
      this.value = val;
      this.random = random;
      this.percentDocs = percentDocs;
@@ -75,12 +76,11 @@ class RepeatingTokenStream extends Tokenizer {
 public class TestTermdocPerf extends LuceneTestCase {
 
   void addDocs(final Random random, Directory dir, final int ndocs, String field, final String val, final int maxTF, final float percentDocs) throws IOException {
-    final RepeatingTokenStream ts = new RepeatingTokenStream(val, random, percentDocs, maxTF);
 
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(ts);
+        return new TokenStreamComponents(new RepeatingTokenizer(reader, val, random, percentDocs, maxTF));
       }
     };
 

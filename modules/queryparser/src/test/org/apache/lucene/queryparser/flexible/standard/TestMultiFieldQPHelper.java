@@ -17,7 +17,9 @@ package org.apache.lucene.queryparser.flexible.standard;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,11 +30,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -350,16 +352,9 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       if ("f1".equals(fieldName)) {
-        return new TokenStreamComponents(new EmptyTokenStream());
+        return new TokenStreamComponents(new EmptyTokenizer(reader));
       } else {
         return stdAnalyzer.createComponents(fieldName, reader);
-      }
-    }
-
-    private static class EmptyTokenStream extends Tokenizer {
-      @Override
-      public boolean incrementToken() {
-        return false;
       }
     }
   }

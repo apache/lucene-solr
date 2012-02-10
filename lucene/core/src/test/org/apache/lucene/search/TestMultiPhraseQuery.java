@@ -18,19 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Reader;
-import java.util.Collection;
 import java.util.LinkedList;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CannedAnalyzer;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
@@ -46,7 +38,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TermContext;
 
 /**
  * This class tests the MultiPhraseQuery class.
@@ -336,10 +327,12 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     tokens[2].append("c");
     tokens[2].setPositionIncrement(0);
 
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new CannedAnalyzer(tokens));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(new TextField("field", ""));
+    doc.add(new TextField("field", new CannedTokenStream(tokens)));
     writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new TextField("field", new CannedTokenStream(tokens)));
     writer.addDocument(doc);
     IndexReader r = writer.getReader();
     writer.close();
@@ -434,10 +427,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   private void doTestZeroPosIncrSloppy(Query q, int nExpected) throws IOException {
     Directory dir = newDirectory(); // random dir
-    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new CannedAnalyzer(INCR_0_DOC_TOKENS));
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
-    doc.add(new TextField("field", ""));
+    doc.add(new TextField("field", new CannedTokenStream(INCR_0_DOC_TOKENS)));
     writer.addDocument(doc);
     IndexReader r = IndexReader.open(writer,false);
     writer.close();

@@ -34,34 +34,24 @@ public abstract class Tokenizer extends TokenStream {
   /** The text source for this Tokenizer. */
   protected Reader input;
 
-  /** Construct a tokenizer with null input. */
-  protected Tokenizer() {}
-  
   /** Construct a token stream processing the given input. */
   protected Tokenizer(Reader input) {
-    this.input = CharReader.get(input);
+    assert input != null: "input must not be null";
+    this.input = input;
   }
   
-  /** Construct a tokenizer with null input using the given AttributeFactory. */
-  protected Tokenizer(AttributeFactory factory) {
-    super(factory);
-  }
-
   /** Construct a token stream processing the given input using the given AttributeFactory. */
   protected Tokenizer(AttributeFactory factory, Reader input) {
     super(factory);
-    this.input = CharReader.get(input);
-  }
-
-  /** Construct a token stream processing the given input using the given AttributeSource. */
-  protected Tokenizer(AttributeSource source) {
-    super(source);
+    assert input != null: "input must not be null";
+    this.input = input;
   }
 
   /** Construct a token stream processing the given input using the given AttributeSource. */
   protected Tokenizer(AttributeSource source, Reader input) {
     super(source);
-    this.input = CharReader.get(input);
+    assert input != null: "input must not be null";
+    this.input = input;
   }
   
   /** By default, closes the input Reader. */
@@ -82,6 +72,7 @@ public abstract class Tokenizer extends TokenStream {
    * @see CharStream#correctOffset
    */
   protected final int correctOffset(int currentOff) {
+    assert input != null: "this tokenizer is closed";
     return (input instanceof CharStream) ? ((CharStream) input).correctOffset(currentOff) : currentOff;
   }
 
@@ -89,6 +80,7 @@ public abstract class Tokenizer extends TokenStream {
    *  analyzer (in its tokenStream method) will use
    *  this to re-use a previously created tokenizer. */
   public void reset(Reader input) throws IOException {
+    assert input != null: "input must not be null";
     this.input = input;
   }
 }

@@ -784,6 +784,11 @@ API Changes
   Deprecated StandardAnalyzer and ClassicAnalyzer ctors that take File,
   please use the Reader ctor instead.  (Robert Muir)
 
+* LUCENE-3766: Deprecate no-arg ctors of Tokenizer. Tokenizers are
+  TokenStreams with Readers: tokenizers with null Readers will not be
+  supported in Lucene 4.0, just use a TokenStream.  
+  (Mike McCandless, Robert Muir)
+
 New Features
 
 * LUCENE-3593: Added a FieldValueFilter that accepts all documents that either

@@ -1569,6 +1569,7 @@ public class TestIndexWriter extends LuceneTestCase {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
     public StringSplitTokenizer(Reader r) {
+      super(r);
       try {
         reset(r);
       } catch (IOException e) {

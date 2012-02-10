@@ -125,27 +125,27 @@ public final class StandardTokenizer extends Tokenizer {
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
   public StandardTokenizer(Version matchVersion, Reader input) {
-    super();
-    init(input, matchVersion);
+    super(input);
+    init(matchVersion);
   }
 
   /**
    * Creates a new StandardTokenizer with a given {@link AttributeSource}. 
    */
   public StandardTokenizer(Version matchVersion, AttributeSource source, Reader input) {
-    super(source);
-    init(input, matchVersion);
+    super(source, input);
+    init(matchVersion);
   }
 
   /**
    * Creates a new StandardTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
    */
   public StandardTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
-    super(factory);
-    init(input, matchVersion);
+    super(factory, input);
+    init(matchVersion);
   }
 
-  private final void init(Reader input, Version matchVersion) {
+  private final void init(Version matchVersion) {
     if (matchVersion.onOrAfter(Version.LUCENE_34)) {
       this.scanner = new StandardTokenizerImpl(input);
     } else if (matchVersion.onOrAfter(Version.LUCENE_31)) {
@@ -153,7 +153,6 @@ public final class StandardTokenizer extends Tokenizer {
     } else {
       this.scanner = new ClassicTokenizerImpl(input);
     }
-    this.input = input;
   }
 
   // this tokenizer generates three attributes:

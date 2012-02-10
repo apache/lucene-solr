@@ -137,14 +137,15 @@ public class TestTermVectorsReader extends LuceneTestCase {
     super.tearDown();
   }
 
-  private class MyTokenStream extends Tokenizer {
+  private class MyTokenizer extends Tokenizer {
     private int tokenUpto;
     
     private final CharTermAttribute termAtt;
     private final PositionIncrementAttribute posIncrAtt;
     private final OffsetAttribute offsetAtt;
     
-    public MyTokenStream() {
+    public MyTokenizer(Reader reader) {
+      super(reader);
       termAtt = addAttribute(CharTermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       offsetAtt = addAttribute(OffsetAttribute.class);
@@ -178,7 +179,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private class MyAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new MyTokenStream());
+      return new TokenStreamComponents(new MyTokenizer(reader));
     }
   }
 

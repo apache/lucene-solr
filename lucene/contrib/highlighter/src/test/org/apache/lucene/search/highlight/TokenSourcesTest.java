@@ -18,7 +18,6 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -47,15 +46,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TokenSourcesTest extends LuceneTestCase {
   private static final String FIELD = "text";
 
-  private static final class OverlapAnalyzer extends Analyzer {
-
-    @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new TokenStreamOverlap());
-    }
-  }
-
-  private static final class TokenStreamOverlap extends Tokenizer {
+  private static final class OverlappingTokenStream extends TokenStream {
     private Token[] tokens;
 
     private int i = -1;
@@ -63,10 +54,6 @@ public class TokenSourcesTest extends LuceneTestCase {
     private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
     private final PositionIncrementAttribute positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
-
-    public TokenStreamOverlap() {
-      reset();
-    }
 
     @Override
     public boolean incrementToken() throws IOException {
@@ -102,13 +89,13 @@ public class TokenSourcesTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
+      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -146,14 +133,14 @@ public class TokenSourcesTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
-      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
+      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -191,13 +178,13 @@ public class TokenSourcesTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
+      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -236,13 +223,13 @@ public class TokenSourcesTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
-      document.add(new Field(FIELD, new TokenStreamOverlap(), customType));
+      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();

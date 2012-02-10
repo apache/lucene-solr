@@ -119,7 +119,7 @@ public class AttributeSource {
   private final Map<Class<? extends AttributeImpl>, AttributeImpl> attributeImpls;
   private final State[] currentState;
 
-  private AttributeFactory factory;
+  private final AttributeFactory factory;
   
   /**
    * An AttributeSource using the default attribute factory {@link AttributeSource.AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}.
