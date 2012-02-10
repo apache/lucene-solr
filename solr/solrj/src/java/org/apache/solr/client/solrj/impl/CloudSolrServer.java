@@ -73,6 +73,10 @@ public class CloudSolrServer extends SolrServer {
     this.lbServer = lbServer;
   }
 
+  public ZkStateReader getZkStateReader() {
+    return zkStateReader;
+  }
+  
   /** Sets the default collection for request */
   public void setDefaultCollection(String collection) {
     this.defaultCollection = collection;

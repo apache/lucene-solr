@@ -46,12 +46,12 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * 
@@ -59,7 +59,6 @@ import org.junit.Ignore;
  * what we test now - the default update chain
  * 
  */
-@Ignore
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   private static final String SHARD2 = "shard2";
@@ -703,7 +702,15 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     // kill a shard
     JettySolrRunner deadShard = chaosMonkey.stopShard(SHARD2, 0);
-    
+    cloudClient.connect();
+    int tries = 0;
+    while (cloudClient.getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(new CloudSolrServerClient(shardToClient.get(SHARD2).get(0))).get(ZkStateReader.NODE_NAME_PROP))) {
+      if (tries++ == 60) {
+        fail("Shard still reported as live in zk");
+      }
+      Thread.sleep(1000);
+    }
+	
     // ensure shard is dead
     try {
       // TODO: ignore fail
@@ -722,7 +729,19 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     // System.out.println("clouddocs:" + cloudClientDocs);
     
     // try to index to a living shard at shard2
-    // TODO: this can fail with connection refused !????
+    
+    // we are careful to make sure the downed node is not longer in the state,
+    // because on some systems (especially freebsd w/ blackhole enabled), trying
+    // to talk to a downed node causes grief
+    tries = 0;
+    while (((SolrDispatchFilter) shardToJetty.get(SHARD2).get(1).jetty.getDispatchFilter().getFilter()).getCores().getZkController().getZkStateReader().getCloudState().liveNodesContain(clientToInfo.get(new CloudSolrServerClient(shardToClient.get(SHARD2).get(0))).get(ZkStateReader.NODE_NAME_PROP))) {
+      if (tries++ == 60) {
+        fail("Shard still reported as live in zk");
+      }
+      Thread.sleep(1000);
+    }
+	
+    
     index_specific(shardToClient.get(SHARD2).get(1), id, 1000, i1, 108, t1,
         "specific doc!");
     
@@ -1285,7 +1304,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           + DEFAULT_COLLECTION;
       CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
       s.setConnectionTimeout(100); // 1/10th sec
-      s.setSoTimeout(45000);
+      s.setSoTimeout(30000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
