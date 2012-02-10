@@ -28,6 +28,7 @@ import org.apache.lucene.queries.function.valuesource.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.LevensteinDistance;
@@ -38,10 +39,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.*;
 
 import org.apache.solr.search.function.distance.*;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.omg.PortableInterceptor.RequestInfo;
 
 import java.io.IOException;
 import java.util.*;
@@ -86,6 +89,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   }
 
   static {
+    addParser("testfunc", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        final ValueSource source = fp.parseValueSource();
+        return new TestValueSource(source);
+      }
+    });
     addParser("ord", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
@@ -1203,5 +1213,48 @@ class BoolConstValueSource extends ConstNumberSource {
   @Override
   public boolean getBool() {
     return constant;
+  }
+}
+
+
+class TestValueSource extends ValueSource {
+  ValueSource source;
+  
+  public TestValueSource(ValueSource source) {
+    this.source = source;
+  }
+  
+  @Override
+  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    if (context.get(this) == null) {
+      SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "testfunc: unweighted value source detected.  delegate="+source + " request=" + (requestInfo==null ? "null" : requestInfo.getReq()));
+    }
+    return source.getValues(context, readerContext);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof TestValueSource && source.equals(((TestValueSource)o).source);
+  }
+
+  @Override
+  public int hashCode() {
+    return source.hashCode() + TestValueSource.class.hashCode();
+  }
+
+  @Override
+  public String description() {
+    return "testfunc(" + source.description() + ')';
+  }
+
+  @Override
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+    context.put(this, this);
+  }
+
+  @Override
+  public SortField getSortField(boolean reverse) throws IOException {
+    return super.getSortField(reverse);
   }
 }

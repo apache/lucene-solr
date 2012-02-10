@@ -678,6 +678,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", "2"                              , "foo_ti","10", "foo_tl","11"));
     assertU(commit());
 
+    // test weighting of functions
+    assertJQ(req("q", "id:1", "fl", "a:testfunc(1)")
+          , "/response/docs/[0]=={'a':1}");
+
     // true and false functions and constants
     assertJQ(req("q", "id:1", "fl", "t:true(),f:false(),tt:{!func}true,ff:{!func}false")
         , "/response/docs/[0]=={'t':true,'f':false,'tt':true,'ff':false}");
@@ -687,22 +691,22 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         , "/response/docs/[0]=={'t':true,'f':false}");
 
     // test if()
-    assertJQ(req("q", "id:1", "fl", "a1:if(true,'A','B')", "fl","b1:if(false,'A','B')")
+    assertJQ(req("q", "id:1", "fl", "a1:if(true,'A','B')", "fl","b1:if(false,'A',testfunc('B'))")
         , "/response/docs/[0]=={'a1':'A', 'b1':'B'}");
 
     // test boolean operators
-    assertJQ(req("q", "id:1", "fl", "t1:and(true,true)", "fl","f1:and(true,false)", "fl","f2:and(false,true)", "fl","f3:and(false,false)")
+    assertJQ(req("q", "id:1", "fl", "t1:and(testfunc(true),true)", "fl","f1:and(true,false)", "fl","f2:and(false,true)", "fl","f3:and(false,false)")
         , "/response/docs/[0]=={'t1':true, 'f1':false, 'f2':false, 'f3':false}");
-    assertJQ(req("q", "id:1", "fl", "t1:or(true,true)", "fl","t2:or(true,false)", "fl","t3:or(false,true)", "fl","f1:or(false,false)")
+    assertJQ(req("q", "id:1", "fl", "t1:or(testfunc(true),true)", "fl","t2:or(true,false)", "fl","t3:or(false,true)", "fl","f1:or(false,false)")
         , "/response/docs/[0]=={'t1':true, 't2':true, 't3':true, 'f1':false}");
-    assertJQ(req("q", "id:1", "fl", "f1:xor(true,true)", "fl","t1:xor(true,false)", "fl","t2:xor(false,true)", "fl","f2:xor(false,false)")
+    assertJQ(req("q", "id:1", "fl", "f1:xor(testfunc(true),true)", "fl","t1:xor(true,false)", "fl","t2:xor(false,true)", "fl","f2:xor(false,false)")
         , "/response/docs/[0]=={'t1':true, 't2':true, 'f1':false, 'f2':false}");
-    assertJQ(req("q", "id:1", "fl", "t:not(false),f:not(true)")
+    assertJQ(req("q", "id:1", "fl", "t:not(testfunc(false)),f:not(true)")
         , "/response/docs/[0]=={'t':true, 'f':false}");
 
 
     // def(), the default function that returns the first value that exists
-    assertJQ(req("q", "id:1", "fl", "x:def(id,123.0), y:def(foo_f,234.0)")
+    assertJQ(req("q", "id:1", "fl", "x:def(id,testfunc(123.0)), y:def(foo_f,234.0)")
         , "/response/docs/[0]=={'x':1.0, 'y':234.0}");
     assertJQ(req("q", "id:1", "fl", "x:def(foo_s,'Q'), y:def(missing_s,'W')")
         , "/response/docs/[0]=={'x':'A', 'y':'W'}");
