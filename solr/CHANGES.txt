@@ -222,6 +222,10 @@ New Features
       MaxFieldValueUpdateProcessorFactory
   (hossman, janhoy)
 
+* SOLR-3120: Optional post filtering for spatial queries bbox and geofilt
+  for LatLonType. (yonik)
+
+
 Optimizations
 ----------------------
 

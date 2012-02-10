@@ -149,10 +149,29 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     }
 
     String method = exact ? "geofilt" : "bbox";
+    int postFilterCount = DelegatingCollector.setLastDelegateCount;
 
-    assertQ(req("fl", "id", "q","*:*", "rows", "1000", "fq", "{!"+method+" sfield=" +fieldName +"}",
+    // throw in a random into the main query to prevent most cache hits
+    assertQ(req("fl", "id", "q","*:* OR foo_i:" + random.nextInt(100), "rows", "1000", "fq", "{!"+method+" sfield=" +fieldName +"}",
               "pt", pt, "d", String.valueOf(distance)),
               tests);
+    assertEquals(postFilterCount, DelegatingCollector.setLastDelegateCount);    // post filtering shouldn't be used
+    
+    // try uncached
+    assertQ(req("fl", "id", "q","*:* OR foo_i:" + random.nextInt(100), "rows", "1000", "fq", "{!"+method+" sfield=" +fieldName + " cache=false" + "}",
+        "pt", pt, "d", String.valueOf(distance)),
+        tests);
+    assertEquals(postFilterCount, DelegatingCollector.setLastDelegateCount);      // post filtering shouldn't be used
+
+    // try post filtered for fields that support it
+    if (fieldName.endsWith("ll")) {
+
+    assertQ(req("fl", "id", "q","*:* OR foo_i:" + random.nextInt(100)+100, "rows", "1000", "fq", "{!"+method+" sfield=" +fieldName + " cache=false cost=150" + "}",
+        "pt", pt, "d", String.valueOf(distance)),
+        tests);
+    assertEquals(postFilterCount + 1, DelegatingCollector.setLastDelegateCount);      // post filtering shouldn't be used
+
+    }
   }
 
 

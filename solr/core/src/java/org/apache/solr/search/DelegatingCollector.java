@@ -28,7 +28,9 @@ import java.io.IOException;
 
 /** A simple delegating collector where one can set the delegate after creation */
 public class DelegatingCollector extends Collector {
-  static int setLastDelegateCount; // for testing purposes only to determine the number of times a delegating collector chain was used
+
+  /* for internal testing purposes only to determine the number of times a delegating collector chain was used */
+  public static int setLastDelegateCount;
 
   protected Collector delegate;
   protected Scorer scorer;
@@ -74,3 +76,4 @@ public class DelegatingCollector extends Collector {
     return delegate.acceptsDocsOutOfOrder();
   }
 }
+

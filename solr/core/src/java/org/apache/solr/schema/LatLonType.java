@@ -22,15 +22,16 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.SpatialOptions;
+import org.apache.solr.search.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,7 +61,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     IndexableField[] f = new IndexableField[(field.indexed() ? 2 : 0) + (field.stored() ? 1 : 0)];
     if (field.indexed()) {
       int i = 0;
-      double[] latLon = new double[0];
+      double[] latLon;
       try {
         latLon = DistanceUtils.parseLatitudeLongitude(null, externalVal);
       } catch (InvalidGeoException e) {
@@ -189,13 +190,16 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
       }
     }
 
-
+    
     // Now that we've figured out the ranges, build them!
     SchemaField latField = subField(options.field, LAT);
     SchemaField lonField = subField(options.field, LONG);
 
+    SpatialDistanceQuery spatial = new SpatialDistanceQuery();
+
+
     if (options.bbox) {
-      BooleanQuery result = new BooleanQuery();  // only used if box==true
+      BooleanQuery result = new BooleanQuery();
 
       Query latRange = latField.getType().getRangeQuery(parser, latField,
                 String.valueOf(latMin),
@@ -225,11 +229,10 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
         result.add(lonRange, BooleanClause.Occur.MUST);
       }
 
-      return result;
+      spatial.bboxQuery = result;
     }
 
 
-    SpatialDistanceQuery spatial = new SpatialDistanceQuery();
     spatial.origField = options.field.getName();
     spatial.latSource = latField.getType().getValueSource(latField, parser);
     spatial.lonSource = lonField.getType().getValueSource(lonField, parser);
@@ -307,10 +310,12 @@ class LatLonValueSource extends VectorValueSource {
 }
 
 
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 // TODO: recast as a value source that doesn't have to match all docs
 
-class SpatialDistanceQuery extends Query {
+class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   String origField;
   ValueSource latSource;
   ValueSource lonSource;
@@ -318,6 +323,7 @@ class SpatialDistanceQuery extends Query {
   boolean lon2;
 
   boolean calcDist;  // actually calculate the distance with haversine
+  Query bboxQuery;
 
   double latCenter;
   double lonCenter;
@@ -327,11 +333,12 @@ class SpatialDistanceQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    return this;
+    return bboxQuery != null ? bboxQuery.rewrite(reader) : this;
   }
 
   @Override
   public void extractTerms(Set terms) {}
+
 
   protected class SpatialWeight extends Weight {
     protected IndexSearcher searcher;
@@ -385,7 +392,7 @@ class SpatialDistanceQuery extends Query {
     int doc=-1;
     final FunctionValues latVals;
     final FunctionValues lonVals;
-    final Bits liveDocs;
+    final Bits acceptDocs;
 
 
     final double lonMin, lonMax, lon2Min, lon2Max, latMin, latMax;
@@ -407,7 +414,7 @@ class SpatialDistanceQuery extends Query {
       this.qWeight = qWeight;
       this.reader = readerContext.reader();
       this.maxDoc = reader.maxDoc();
-      this.liveDocs = acceptDocs;
+      this.acceptDocs = acceptDocs;
       latVals = latSource.getValues(weight.latContext, readerContext);
       lonVals = lonSource.getValues(weight.lonContext, readerContext);
 
@@ -485,7 +492,7 @@ class SpatialDistanceQuery extends Query {
         if (doc>=maxDoc) {
           return doc=NO_MORE_DOCS;
         }
-        if (liveDocs != null && !liveDocs.get(doc)) continue;
+        if (acceptDocs != null && !acceptDocs.get(doc)) continue;
         if (!match()) continue;
         return doc;
       }
@@ -524,9 +531,44 @@ class SpatialDistanceQuery extends Query {
     }
   }
 
+  @Override
+  public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
+    try {
+      return new SpatialCollector(new SpatialWeight(searcher));
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+  }
+
+
+  class SpatialCollector extends DelegatingCollector {
+    final SpatialWeight weight;
+    SpatialScorer spatialScorer;
+    int maxdoc;
+    
+    public SpatialCollector(SpatialWeight weight) {
+      this.weight = weight;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      spatialScorer.doc = doc;
+      if (spatialScorer.match()) delegate.collect(doc);
+    }
+
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+      maxdoc = context.reader().maxDoc();
+      spatialScorer = new SpatialScorer(context, null, weight, 1.0f);
+      super.setNextReader(context);
+    }
+  }
+
 
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
+    // if we were supposed to use bboxQuery, then we should have been rewritten using that query
+    assert bboxQuery == null;
     return new SpatialWeight(searcher);
   }
 
@@ -537,7 +579,7 @@ class SpatialDistanceQuery extends Query {
   {
     float boost = getBoost();
     return (boost!=1.0?"(":"") +
-            "geofilt(latlonSource="+origField +"(" + latSource + "," + lonSource + ")"
+            (calcDist ? "geofilt" : "bbox") + "(latlonSource="+origField +"(" + latSource + "," + lonSource + ")"
             +",latCenter="+latCenter+",lonCenter="+lonCenter
             +",dist=" + dist
             +",latMin=" + latMin + ",latMax="+latMax
@@ -545,6 +587,7 @@ class SpatialDistanceQuery extends Query {
             +",lon2Min=" + lon2Min + ",lon2Max" + lon2Max
             +",calcDist="+calcDist
             +",planetRadius="+planetRadius
+            // + (bboxQuery == null ? "" : ",bboxQuery="+bboxQuery)
             +")"
             + (boost==1.0 ? "" : ")^"+boost);
   }
