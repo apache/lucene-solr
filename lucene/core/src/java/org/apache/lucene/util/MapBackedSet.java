@@ -26,7 +26,9 @@ import java.util.Map;
  * A Set implementation that wraps an actual Map based
  * implementation.
  * 
- * @lucene.internal
+ * @lucene.internal This class is only provided with Lucene, as Java 5 does
+ * not yet support {@code <E> Set<E> Collections.newSetFromMap(Map<E,Boolean>)}.
+ * It will be removed in Lucene 4.
  */
 public final class MapBackedSet<E> extends AbstractSet<E> implements Serializable {
 
