@@ -23,9 +23,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-/**
- * emits a canned set of {@link Token}
- */
 public final class CannedTokenStream extends TokenStream {
   private final Token[] tokens;
   private int upto = 0;
