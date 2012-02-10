@@ -17,6 +17,10 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.SolrException.ErrorCode.*;
+
+import org.apache.solr.common.SolrException;
+
 import org.apache.solr.core.SolrCore;
 
 import java.util.Collections;
@@ -25,10 +29,9 @@ import java.util.Iterator;
 
 /**
  * An update processor that keeps only the the minimum value from any selected 
- * fields where multiple values are found.  Correct behavior assumes that all 
+ * fields where multiple values are found.   Correct behavior requires tha all 
  * of the values in the SolrInputFields being mutated are mutually comparable; 
- * If this is not the case, then the full list of all values found will be 
- * used as is.
+ * If this is not the case, then a SolrException will br thrown. 
  * <p>
  * By default, this processor matches no fields.
  * </p>
@@ -59,7 +62,9 @@ public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetU
       result = Collections.singletonList
         (Collections.min((Collection)values));
     } catch (ClassCastException e) {
-      /* NOOP */
+      throw new SolrException
+        (BAD_REQUEST, 
+         "Field values are not mutually comparable: " + e.getMessage(), e);
     }
     return result;
   }

@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import org.apache.solr.SolrTestCaseJ4;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -480,24 +481,24 @@ public class FieldMutatingUpdateProcessorTest extends SolrTestCaseJ4 {
     assertEquals(Arrays.asList("aaa", "bbb"), 
                  d.getFieldValues("yak_t"));
    
-    // uncomparable should not fail
+    // failure when un-comparable
 
-    d = processAdd("min-value", 
-                   doc(f("id", "1111"),
-                       f("foo_s", "zzz", new Integer(42), "bbb"),
-                       f("bar_s", "aaa"),
-                       f("yak_t", "aaa", "bbb")));
-
-    assertNotNull(d);
-
-    assertEquals(Arrays.asList("zzz", new Integer(42), "bbb"),
-                 d.getFieldValues("foo_s"));
-    assertEquals(Arrays.asList("aaa"), 
-                 d.getFieldValues("bar_s"));
-    assertEquals(Arrays.asList("aaa", "bbb"), 
-                 d.getFieldValues("yak_t"));
-
-
+    SolrException error = null;
+    try {
+      ignoreException(".*Unable to mutate field.*");
+      d = processAdd("min-value", 
+                     doc(f("id", "1111"),
+                         f("foo_s", "zzz", new Integer(42), "bbb"),
+                         f("bar_s", "aaa"),
+                         f("yak_t", "aaa", "bbb")));
+    } catch (SolrException e) {
+      error = e;
+    } finally {
+      resetExceptionIgnores();
+    }
+    assertNotNull("no error on un-comparable values", error);
+    assertTrue("error doesn't mention field name",
+               0 <= error.getMessage().indexOf("foo_s"));
   }
 
   public void testMaxValue() throws Exception {
@@ -521,25 +522,26 @@ public class FieldMutatingUpdateProcessorTest extends SolrTestCaseJ4 {
     assertEquals(Arrays.asList("aaa", "bbb"), 
                  d.getFieldValues("yak_t"));
    
-    // uncomparable should not fail
+    // failure when un-comparable
 
-    d = processAdd("max-value", 
-                   doc(f("id", "1111"),
-                       f("foo_s", "zzz", new Integer(42), "bbb"),
-                       f("bar_s", "aaa"),
-                       f("yak_t", "aaa", "bbb")));
-
-    assertNotNull(d);
-
-    assertEquals(Arrays.asList("zzz", new Integer(42), "bbb"),
-                 d.getFieldValues("foo_s"));
-    assertEquals(Arrays.asList("aaa"), 
-                 d.getFieldValues("bar_s"));
-    assertEquals(Arrays.asList("aaa", "bbb"), 
-                 d.getFieldValues("yak_t"));
-
-
+    SolrException error = null;
+    try {
+      ignoreException(".*Unable to mutate field.*");
+      d = processAdd("min-value", 
+                     doc(f("id", "1111"),
+                         f("foo_s", "zzz", new Integer(42), "bbb"),
+                         f("bar_s", "aaa"),
+                         f("yak_t", "aaa", "bbb")));
+    } catch (SolrException e) {
+      error = e;
+    } finally {
+      resetExceptionIgnores();
+    }
+    assertNotNull("no error on un-comparable values", error);
+    assertTrue("error doesn't mention field name",
+               0 <= error.getMessage().indexOf("foo_s"));
   }
+  
 
   public void testHtmlStrip() throws Exception {
     SolrInputDocument d = null;

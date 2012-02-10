@@ -75,6 +75,12 @@ public abstract class FieldMutatingUpdateProcessor
    */
   protected abstract SolrInputField mutate(final SolrInputField src);
   
+  /**
+   * Calls <code>mutate</code> on any fields identified by the selector 
+   * before forwarding the command down the chain.  Any SolrExceptions 
+   * thrown by <code>mutate</code> will be logged with the Field name, 
+   * wrapped and re-thrown.
+   */
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     final SolrInputDocument doc = cmd.getSolrInputDocument();
@@ -88,7 +94,15 @@ public abstract class FieldMutatingUpdateProcessor
       if (! selector.shouldMutate(fname)) continue;
       
       final SolrInputField src = doc.get(fname);
-      final SolrInputField dest = mutate(src);
+
+      SolrInputField dest = null;
+      try { 
+        dest = mutate(src);
+      } catch (SolrException e) {
+        String msg = "Unable to mutate field '"+fname+"': "+e.getMessage();
+        SolrException.log(log, msg, e);
+        throw new SolrException(BAD_REQUEST, msg, e);
+      }
       if (null == dest) {
         doc.remove(fname);
       } else {
