@@ -109,20 +109,27 @@ public class ToChildBlockJoinQuery extends Query {
       parentWeight.normalize(norm, topLevelBoost * joinQuery.getBoost());
     }
 
+    // NOTE: acceptDocs applies (and is checked) only in the
+    // child document space
     @Override
     public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
+
       // Pass scoreDocsInOrder true, topScorer false to our sub:
-      final Scorer parentScorer = parentWeight.scorer(readerContext, true, false, acceptDocs);
+      final Scorer parentScorer = parentWeight.scorer(readerContext, true, false, null);
 
       if (parentScorer == null) {
         // No matches
         return null;
       }
 
-      final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, readerContext.reader().getLiveDocs());
-      // TODO: once we do random-access filters we can
-      // generalize this:
+      // NOTE: we cannot pass acceptDocs here because this
+      // will (most likely, justifiably) cause the filter to
+      // not return a FixedBitSet but rather a
+      // BitsFilteredDocIdSet.  Instead, we filter by
+      // acceptDocs when we score:
+      final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, null);
+
       if (parents == null) {
         // No matches
         return null;
@@ -131,7 +138,7 @@ public class ToChildBlockJoinQuery extends Query {
         throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents);
       }
 
-      return new ToChildBlockJoinScorer(this, parentScorer, (FixedBitSet) parents, doScores);
+      return new ToChildBlockJoinScorer(this, parentScorer, (FixedBitSet) parents, doScores, acceptDocs);
     }
 
     @Override
@@ -151,16 +158,19 @@ public class ToChildBlockJoinQuery extends Query {
     private final Scorer parentScorer;
     private final FixedBitSet parentBits;
     private final boolean doScores;
+    private final Bits acceptDocs;
+
     private float parentScore;
 
     private int childDoc = -1;
     private int parentDoc;
 
-    public ToChildBlockJoinScorer(Weight weight, Scorer parentScorer, FixedBitSet parentBits, boolean doScores) {
+    public ToChildBlockJoinScorer(Weight weight, Scorer parentScorer, FixedBitSet parentBits, boolean doScores, Bits acceptDocs) {
       super(weight);
       this.doScores = doScores;
       this.parentBits = parentBits;
       this.parentScorer = parentScorer;
+      this.acceptDocs = acceptDocs;
     }
 
     @Override
@@ -172,45 +182,56 @@ public class ToChildBlockJoinQuery extends Query {
     public int nextDoc() throws IOException {
       //System.out.println("Q.nextDoc() parentDoc=" + parentDoc + " childDoc=" + childDoc);
 
-      if (childDoc+1 == parentDoc) {
-        // OK, we are done iterating through all children
-        // matching this one parent doc, so we now nextDoc()
-        // the parent.  Use a while loop because we may have
-        // to skip over some number of parents w/ no
-        // children:
-        while (true) {
-          parentDoc = parentScorer.nextDoc();
-          if (parentDoc == 0) {
-            // Degenerate but allowed: parent has no children
-            // TODO: would be nice to pull initial parent
-            // into ctor so we can skip this if... but it's
-            // tricky because scorer must return -1 for
-            // .doc() on init...
+      // Loop until we hit a childDoc that's accepted
+      while (true) {
+        if (childDoc+1 == parentDoc) {
+          // OK, we are done iterating through all children
+          // matching this one parent doc, so we now nextDoc()
+          // the parent.  Use a while loop because we may have
+          // to skip over some number of parents w/ no
+          // children:
+          while (true) {
             parentDoc = parentScorer.nextDoc();
-          }
-
-          if (parentDoc == NO_MORE_DOCS) {
-            childDoc = NO_MORE_DOCS;
-            //System.out.println("  END");
-            return childDoc;
-          }
-
-          childDoc = 1 + parentBits.prevSetBit(parentDoc-1);
-          if (childDoc < parentDoc) {
-            if (doScores) {
-              parentScore = parentScorer.score();
+            if (parentDoc == 0) {
+              // Degenerate but allowed: parent has no children
+              // TODO: would be nice to pull initial parent
+              // into ctor so we can skip this if... but it's
+              // tricky because scorer must return -1 for
+              // .doc() on init...
+              parentDoc = parentScorer.nextDoc();
             }
-            //System.out.println("  " + childDoc);
-            return childDoc;
-          } else {
-            // Degenerate but allowed: parent has no children
+
+            if (parentDoc == NO_MORE_DOCS) {
+              childDoc = NO_MORE_DOCS;
+              //System.out.println("  END");
+              return childDoc;
+            }
+
+            childDoc = 1 + parentBits.prevSetBit(parentDoc-1);
+
+            if (acceptDocs != null && !acceptDocs.get(childDoc)) {
+              continue;
+            }
+
+            if (childDoc < parentDoc) {
+              if (doScores) {
+                parentScore = parentScorer.score();
+              }
+              //System.out.println("  " + childDoc);
+              return childDoc;
+            } else {
+              // Degenerate but allowed: parent has no children
+            }
           }
+        } else {
+          assert childDoc < parentDoc: "childDoc=" + childDoc + " parentDoc=" + parentDoc;
+          childDoc++;
+          if (acceptDocs != null && !acceptDocs.get(childDoc)) {
+            continue;
+          }
+          //System.out.println("  " + childDoc);
+          return childDoc;
         }
-      } else {
-        assert childDoc < parentDoc: "childDoc=" + childDoc + " parentDoc=" + parentDoc;
-        childDoc++;
-        //System.out.println("  " + childDoc);
-        return childDoc;
       }
     }
 

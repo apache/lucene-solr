@@ -169,11 +169,14 @@ public class ToParentBlockJoinQuery extends Query {
       childWeight.normalize(norm, topLevelBoost * joinQuery.getBoost());
     }
 
+    // NOTE: acceptDocs applies (and is checked) only in the
+    // parent document space
     @Override
     public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
+
       // Pass scoreDocsInOrder true, topScorer false to our sub:
-      final Scorer childScorer = childWeight.scorer(readerContext, true, false, acceptDocs);
+      final Scorer childScorer = childWeight.scorer(readerContext, true, false, null);
 
       if (childScorer == null) {
         // No matches
@@ -186,9 +189,13 @@ public class ToParentBlockJoinQuery extends Query {
         return null;
       }
 
-      final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, readerContext.reader().getLiveDocs());
-      // TODO: once we do random-access filters we can
-      // generalize this:
+      // NOTE: we cannot pass acceptDocs here because this
+      // will (most likely, justifiably) cause the filter to
+      // not return a FixedBitSet but rather a
+      // BitsFilteredDocIdSet.  Instead, we filter by
+      // acceptDocs when we score:
+      final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, null);
+
       if (parents == null) {
         // No matches
         return null;
@@ -197,7 +204,7 @@ public class ToParentBlockJoinQuery extends Query {
         throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents);
       }
 
-      return new BlockJoinScorer(this, childScorer, (FixedBitSet) parents, firstChildDoc, scoreMode);
+      return new BlockJoinScorer(this, childScorer, (FixedBitSet) parents, firstChildDoc, scoreMode, acceptDocs);
     }
 
     @Override
@@ -217,6 +224,7 @@ public class ToParentBlockJoinQuery extends Query {
     private final Scorer childScorer;
     private final FixedBitSet parentBits;
     private final ScoreMode scoreMode;
+    private final Bits acceptDocs;
     private int parentDoc = -1;
     private float parentScore;
     private int nextChildDoc;
@@ -225,12 +233,13 @@ public class ToParentBlockJoinQuery extends Query {
     private float[] pendingChildScores;
     private int childDocUpto;
 
-    public BlockJoinScorer(Weight weight, Scorer childScorer, FixedBitSet parentBits, int firstChildDoc, ScoreMode scoreMode) {
+    public BlockJoinScorer(Weight weight, Scorer childScorer, FixedBitSet parentBits, int firstChildDoc, ScoreMode scoreMode, Bits acceptDocs) {
       super(weight);
       //System.out.println("Q.init firstChildDoc=" + firstChildDoc);
       this.parentBits = parentBits;
       this.childScorer = childScorer;
       this.scoreMode = scoreMode;
+      this.acceptDocs = acceptDocs;
       if (scoreMode != ScoreMode.None) {
         pendingChildScores = new float[5];
       }
@@ -273,60 +282,75 @@ public class ToParentBlockJoinQuery extends Query {
     public int nextDoc() throws IOException {
       //System.out.println("Q.nextDoc() nextChildDoc=" + nextChildDoc);
 
-      if (nextChildDoc == NO_MORE_DOCS) {
-        //System.out.println("  end");
-        return parentDoc = NO_MORE_DOCS;
+      // Loop until we hit a parentDoc that's accepted
+      while (true) {
+        if (nextChildDoc == NO_MORE_DOCS) {
+          //System.out.println("  end");
+          return parentDoc = NO_MORE_DOCS;
+        }
+
+        // Gather all children sharing the same parent as
+        // nextChildDoc
+
+        parentDoc = parentBits.nextSetBit(nextChildDoc);
+
+        //System.out.println("  parentDoc=" + parentDoc);
+        assert parentDoc != -1;
+
+        //System.out.println("  nextChildDoc=" + nextChildDoc);
+        if (acceptDocs != null && !acceptDocs.get(parentDoc)) {
+          // Parent doc not accepted; skip child docs until
+          // we hit a new parent doc:
+          do {
+            nextChildDoc = childScorer.nextDoc();
+          } while (nextChildDoc < parentDoc);
+          continue;
+        }
+
+        float totalScore = 0;
+        float maxScore = Float.NEGATIVE_INFINITY;
+
+        childDocUpto = 0;
+        do {
+          //System.out.println("  c=" + nextChildDoc);
+          if (pendingChildDocs.length == childDocUpto) {
+            pendingChildDocs = ArrayUtil.grow(pendingChildDocs);
+          }
+          if (scoreMode != ScoreMode.None && pendingChildScores.length == childDocUpto) {
+            pendingChildScores = ArrayUtil.grow(pendingChildScores);
+          }
+          pendingChildDocs[childDocUpto] = nextChildDoc;
+          if (scoreMode != ScoreMode.None) {
+            // TODO: specialize this into dedicated classes per-scoreMode
+            final float childScore = childScorer.score();
+            pendingChildScores[childDocUpto] = childScore;
+            maxScore = Math.max(childScore, maxScore);
+            totalScore += childScore;
+          }
+          childDocUpto++;
+          nextChildDoc = childScorer.nextDoc();
+        } while (nextChildDoc < parentDoc);
+
+        // Parent & child docs are supposed to be orthogonal:
+        assert nextChildDoc != parentDoc;
+
+        switch(scoreMode) {
+        case Avg:
+          parentScore = totalScore / childDocUpto;
+          break;
+        case Max:
+          parentScore = maxScore;
+          break;
+        case Total:
+          parentScore = totalScore;
+          break;
+        case None:
+          break;
+        }
+
+        //System.out.println("  return parentDoc=" + parentDoc);
+        return parentDoc;
       }
-
-      // Gather all children sharing the same parent as nextChildDoc
-      parentDoc = parentBits.nextSetBit(nextChildDoc);
-      //System.out.println("  parentDoc=" + parentDoc);
-      assert parentDoc != -1;
-
-      float totalScore = 0;
-      float maxScore = Float.NEGATIVE_INFINITY;
-
-      childDocUpto = 0;
-      do {
-        //System.out.println("  c=" + nextChildDoc);
-        if (pendingChildDocs.length == childDocUpto) {
-          pendingChildDocs = ArrayUtil.grow(pendingChildDocs);
-        }
-        if (scoreMode != ScoreMode.None && pendingChildScores.length == childDocUpto) {
-          pendingChildScores = ArrayUtil.grow(pendingChildScores);
-        }
-        pendingChildDocs[childDocUpto] = nextChildDoc;
-        if (scoreMode != ScoreMode.None) {
-          // TODO: specialize this into dedicated classes per-scoreMode
-          final float childScore = childScorer.score();
-          pendingChildScores[childDocUpto] = childScore;
-          maxScore = Math.max(childScore, maxScore);
-          totalScore += childScore;
-        }
-        childDocUpto++;
-        nextChildDoc = childScorer.nextDoc();
-      } while (nextChildDoc < parentDoc);
-      //System.out.println("  nextChildDoc=" + nextChildDoc);
-
-      // Parent & child docs are supposed to be orthogonal:
-      assert nextChildDoc != parentDoc;
-
-      switch(scoreMode) {
-      case Avg:
-        parentScore = totalScore / childDocUpto;
-        break;
-      case Max:
-        parentScore = maxScore;
-        break;
-      case Total:
-        parentScore = totalScore;
-        break;
-      case None:
-        break;
-      }
-
-      //System.out.println("  return parentDoc=" + parentDoc);
-      return parentDoc;
     }
 
     @Override
