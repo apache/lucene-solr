@@ -27,6 +27,7 @@ import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
+import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -35,7 +36,6 @@ import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
 import java.lang.reflect.Method;
 
-import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.Constants;
 
 /** File-based {@link Directory} implementation that uses
@@ -261,7 +261,7 @@ public class MMapDirectory extends FSDirectory {
     private ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
   
     private boolean isClone = false;
-    private final Set<MMapIndexInput> clones = new MapBackedSet<MMapIndexInput>(new WeakHashMap<MMapIndexInput,Boolean>());
+    private final Set<MMapIndexInput> clones = Collections.newSetFromMap(new WeakHashMap<MMapIndexInput,Boolean>());
 
     MMapIndexInput(String resourceDescription, RandomAccessFile raf, long offset, long length, int chunkSizePower) throws IOException {
       super(resourceDescription);

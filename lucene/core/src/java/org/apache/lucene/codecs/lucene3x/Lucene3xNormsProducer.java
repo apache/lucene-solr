@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene3x;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -37,7 +38,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -60,7 +60,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
   final Map<String,NormsDocValues> norms = new HashMap<String,NormsDocValues>();
   // any .nrm or .sNN files we have open at any time.
   // TODO: just a list, and double-close() separate norms files?
-  final Set<IndexInput> openFiles = new MapBackedSet<IndexInput>(new IdentityHashMap<IndexInput,Boolean>());
+  final Set<IndexInput> openFiles = Collections.newSetFromMap(new IdentityHashMap<IndexInput,Boolean>());
   // points to a singleNormFile
   IndexInput singleNormStream;
   final int maxdoc;

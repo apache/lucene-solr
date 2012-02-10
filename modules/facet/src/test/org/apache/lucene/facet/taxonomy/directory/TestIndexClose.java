@@ -1,6 +1,7 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -10,13 +11,11 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -95,7 +94,7 @@ public class TestIndexClose extends LuceneTestCase {
   }
 
   private static class LeakChecker {
-    Set<DirectoryReader> readers = new MapBackedSet<DirectoryReader>(new IdentityHashMap<DirectoryReader,Boolean>());
+    Set<DirectoryReader> readers = Collections.newSetFromMap(new IdentityHashMap<DirectoryReader,Boolean>());
 
     int iwriter=0;
     Set<Integer> openWriters = new HashSet<Integer>();
