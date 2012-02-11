@@ -46,7 +46,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-public class TestIndexReaderReopen extends LuceneTestCase {
+public class TestDirectoryReaderReopen extends LuceneTestCase {
   
   public void testReopen() throws Exception {
     final Directory dir1 = newDirectory();
@@ -56,7 +56,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
       @Override
       protected void modifyIndex(int i) throws IOException {
-        TestIndexReaderReopen.modifyIndex(i, dir1);
+        TestDirectoryReaderReopen.modifyIndex(i, dir1);
       }
 
       @Override
@@ -74,7 +74,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
       @Override
       protected void modifyIndex(int i) throws IOException {
-        TestIndexReaderReopen.modifyIndex(i, dir2);
+        TestDirectoryReaderReopen.modifyIndex(i, dir2);
       }
 
       @Override
@@ -158,7 +158,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     DirectoryReader index1 = test.openReader();
     DirectoryReader index2 = test.openReader();
         
-    TestIndexReader.assertIndexEquals(index1, index2);
+    TestDirectoryReader.assertIndexEquals(index1, index2);
 
     // verify that reopen() does not return a new reader instance
     // in case the index has no changes
@@ -173,7 +173,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     index2.close();
     
     // test if refreshed reader and newly opened reader return equal results
-    TestIndexReader.assertIndexEquals(index1, index2_refreshed);
+    TestDirectoryReader.assertIndexEquals(index1, index2_refreshed);
 
     index2_refreshed.close();
     assertReaderClosed(index2, true, true);
@@ -190,7 +190,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       index2 = couple.refreshedReader;
       index1 = couple.newReader;
-      TestIndexReader.assertIndexEquals(index1, index2);
+      TestDirectoryReader.assertIndexEquals(index1, index2);
     }
     
     index1.close();
@@ -203,7 +203,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     DirectoryReader index1 = test.openReader();
     DirectoryReader index2 = test.openReader();
 
-    TestIndexReader.assertIndexEquals(index1, index2);
+    TestDirectoryReader.assertIndexEquals(index1, index2);
     
     try {
       refreshReader(index1, test, 0, true);
@@ -213,7 +213,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
     
     // index2 should still be usable and unaffected by the failed reopen() call
-    TestIndexReader.assertIndexEquals(index1, index2);
+    TestDirectoryReader.assertIndexEquals(index1, index2);
 
     index1.close();
     index2.close();
@@ -315,7 +315,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
               int numReaders = readers.size();
               if (numReaders > 0) {
                 ReaderCouple c =  readers.get(rnd.nextInt(numReaders));
-                TestIndexReader.assertIndexEquals(c.newReader, c.refreshedReader);
+                TestDirectoryReader.assertIndexEquals(c.newReader, c.refreshedReader);
               }
               
               synchronized(this) {
