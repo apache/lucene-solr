@@ -74,7 +74,6 @@ public class RecoveryStrategy extends Thread {
   // make sure any threads stop retrying
   public void close() {
     close = true;
-    interrupt();
   }
 
   
