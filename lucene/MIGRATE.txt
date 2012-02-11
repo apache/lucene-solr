@@ -278,6 +278,66 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
       // document is deleted...
     }
     
+* LUCENE-2858, LUCENE-3733: The abstract class IndexReader has been 
+  refactored to expose only essential methods to access stored fields 
+  during display of search results. It is no longer possible to retrieve 
+  terms or postings data from the underlying index, not even deletions are 
+  visible anymore. You can still pass IndexReader as constructor parameter 
+  to IndexSearcher and execute your searches; Lucene will automatically 
+  delegate procedures like query rewriting and document collection atomic 
+  subreaders. 
+
+  If you want to dive deeper into the index and want to write own queries, 
+  take a closer look at the new abstract sub-classes AtomicReader and 
+  CompositeReader: 
+
+  AtomicReader instances are now the only source of Terms, Postings, 
+  DocValues and FieldCache. Queries are forced to execute on a Atomic 
+  reader on a per-segment basis and FieldCaches are keyed by 
+  AtomicReaders. 
+
+  Its counterpart CompositeReader exposes a utility method to retrieve 
+  its composites. But watch out, composites are not necessarily atomic. 
+  Next to the added type-safety we also removed the notion of 
+  index-commits and version numbers from the abstract IndexReader, the 
+  associations with IndexWriter were pulled into a specialized 
+  DirectoryReader. To open Directory-based indexes use 
+  DirectoryReader.open(), the corresponding method in IndexReader is now 
+  deprecated for easier migration. Only DirectoryReader supports commits, 
+  versions, and reopening with openIfChanged(). Terms, postings, 
+  docvalues, and norms can from now on only be retrieved using 
+  AtomicReader; DirectoryReader and MultiReader extend CompositeReader, 
+  only offering stored fields and access to the sub-readers (which may be 
+  composite or atomic). 
+
+  If you have more advanced code dealing with custom Filters, you might 
+  have noticed another new class hierarchy in Lucene (see LUCENE-2831): 
+  IndexReaderContext with corresponding Atomic-/CompositeReaderContext. 
+
+  The move towards per-segment search Lucene 2.9 exposed lots of custom 
+  Queries and Filters that couldn't handle it. For example, some Filter 
+  implementations expected the IndexReader passed in is identical to the 
+  IndexReader passed to IndexSearcher with all its advantages like 
+  absolute document IDs etc. Obviously this "paradigm-shift" broke lots of 
+  applications and especially those that utilized cross-segment data 
+  structures (like Apache Solr). 
+
+  In Lucene 4.0, we introduce IndexReaderContexts "searcher-private" 
+  reader hierarchy. During Query or Filter execution Lucene no longer 
+  passes raw readers down Queries, Filters or Collectors; instead 
+  components are provided an AtomicReaderContext (essentially a hierarchy 
+  leaf) holding relative properties like the document-basis in relation to 
+  the top-level reader. This allows Queries & Filter to build up logic 
+  based on document IDs, albeit the per-segment orientation. 
+
+  There are still valid use-cases where top-level readers ie. "atomic 
+  views" on the index are desirable. Let say you want to iterate all terms 
+  of a complete index for auto-completion or facetting, Lucene provides 
+  utility wrappers like SlowCompositeReaderWrapper (LUCENE-2597) emulating 
+  an AtomicReader. Note: using "atomicity emulators" can cause serious 
+  slowdowns due to the need to merge terms, postings, DocValues, and 
+  FieldCache, use them with care! 
+
 * LUCENE-2674: A new idfExplain method was added to Similarity, that
   accepts an incoming docFreq.  If you subclass Similarity, make sure
   you also override this method on upgrade, otherwise your

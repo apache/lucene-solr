@@ -326,8 +326,8 @@ org.apache.lucene.search.IndexSearcher#search(Query,Filter,int)}.
                     Weight#normalize(float)</a> &mdash; Determine the query normalization factor. The query normalization may
                 allow for comparing scores between queries.</li>
             <li>
-                <a href="Weight.html#scorer(org.apache.lucene.index.IndexReader, boolean, boolean)">
-                    Weight#scorer(IndexReader, boolean, boolean)</a> &mdash; Construct a new
+                <a href="Weight.html#scorer(org.apache.lucene.index.AtomicReaderContext, boolean, boolean)">
+                    Weight#scorer(AtomicReaderContext, boolean, boolean)</a> &mdash; Construct a new
                 <a href="Scorer.html">Scorer</a>
                 for this Weight. See
                 <a href="#The Scorer Class">The Scorer Class</a>
@@ -335,8 +335,8 @@ org.apache.lucene.search.IndexSearcher#search(Query,Filter,int)}.
                 Scorer is responsible for doing the actual scoring of documents given the Query.
             </li>
             <li>
-                <a href="Weight.html#explain(org.apache.lucene.search.Searcher, org.apache.lucene.index.IndexReader, int)">
-                    Weight#explain(Searcher, IndexReader, int)</a> &mdash; Provide a means for explaining why a given document was
+                <a href="Weight.html#explain(org.apache.lucene.search.Searcher, org.apache.lucene.index.AtomicReaderContext, int)">
+                    Weight#explain(Searcher, AtomicReaderContext, int)</a> &mdash; Provide a means for explaining why a given document was
                 scored
                 the way it was.</li>
         </ol>
