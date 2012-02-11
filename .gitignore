@@ -73,6 +73,13 @@ lucene-libs
 # /solr/client/ruby/flare/
 /solr/client/ruby/flare/tmp
 
+# More solr.
+/solr/contrib/dataimporthandler/src/test-files/dataimport.properties
+/solr/contrib/dataimporthandler/src/test-files/dih/solr/conf/dataimport.properties
+/solr/contrib/dataimporthandler-extras/src/test-files/dihextras/solr/conf/dataimport.properties
+/solr/example/example-DIH/solr/db/conf/dataimport.properties
+/solr/example/example-DIH/solr/rss/conf/dataimport.properties
+
 # output folders.
 bin.misc/
 bin.tests-framework/
