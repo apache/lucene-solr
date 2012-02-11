@@ -1766,7 +1766,7 @@ var sammy = $.sammy
                     $.ajax
                     (
                         {
-                            url : core_basepath + '/admin/luke?numTerms=50&wt=json',
+                            url : core_basepath + '/admin/luke?numTerms=0&wt=json',
                             dataType : 'json',
                             beforeSend : function( xhr, settings )
                             {
@@ -1860,28 +1860,6 @@ var sammy = $.sammy
 
                                             for( var field in app.schema_browser_data.fields )
                                             {
-                                                if( app.schema_browser_data.fields[field].histogram )
-                                                {
-                                                    var histogram = app.schema_browser_data.fields[field].histogram;
-
-                                                    app.schema_browser_data.fields[field].histogram = 
-                                                        luke_array_to_struct( histogram );
-                                                    
-                                                    app.schema_browser_data.fields[field].histogram_hash = 
-                                                        luke_array_to_hash( histogram );
-                                                }
-
-                                                if( app.schema_browser_data.fields[field].topTerms )
-                                                {
-                                                    var top_terms = app.schema_browser_data.fields[field].topTerms;
-
-                                                    app.schema_browser_data.fields[field].topTerms = 
-                                                        luke_array_to_struct( top_terms );
-
-                                                    app.schema_browser_data.fields[field].topTerms_hash = 
-                                                        luke_array_to_hash( top_terms );
-                                                }
-
                                                 if( app.schema_browser_data.fields[field].copySourcesRaw )
                                                 {
                                                     var copy_sources = app.schema_browser_data.fields[field].copySourcesRaw;
@@ -2375,154 +2353,221 @@ var sammy = $.sammy
                             }
                         }
                     }
+                    
+                    var terminfo_element = $( '.terminfo-holder', data_element );
+                    
+                    if( is_f ) {
+                      // ideally we would have a checkbox to enable loading topterms
+                      // stored as a cookie? so it stays the same 
+                      // TopTerms on a big index is really a DOS attack!
+                      
+                      core_basepath = "/solr"; // TODO?????
+                      var status_holder_element = $( '.status-holder', terminfo_element );
+                      var topterms_holder_element = $( '.topterms-holder', terminfo_element );
+                      var histogram_holder_element = $( '.histogram-holder', terminfo_element );
+                      topterms_holder_element.hide();
+                      histogram_holder_element.hide();
+                    
+                      $.ajax
+                      (
+                          {
+                              url : core_basepath + '/admin/luke?numTerms=50&wt=json&fl=' + field,
+                              dataType : 'json',
+                              context : status_holder_element,
+                              beforeSend : function( xhr, settings )
+                              {
+                                this.show();
+                                this
+                                    .html( '<div value="">Loading Term Info... </div>' )
+                                    .addClass( 'loader' );
+                              },
+                              success : function( response, text_status, xhr )
+                              {
+                                var finfo = response['fields'][field];
+                                if( finfo ) {
+                                  this
+                                    .html( '<div value=""><b>'+field+'</b> in '+finfo['docs']+' docs.  '+finfo['distinct']+' distinct terms.</div><br/>' )
+                                    .removeClass( 'loader' );
+                                    
+                                  console.log(finfo);
+                                  
+                                            // TODO!!! this is duplicate code!!!!
+                                            var luke_array_to_struct = function( array )
+                                            {
+                                                var struct = {
+                                                    keys : [],
+                                                    values : []
+                                                };
+                                                for( var i = 0; i < array.length; i += 2 )
+                                                {
+                                                    struct.keys.push( array[i] );
+                                                    struct.values.push( array[i+1] );
+                                                }
+                                                return struct;
+                                            }
 
-                    var topterms_holder_element = $( '.topterms-holder', data_element );
-                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].topTerms_hash )
-                    {
-                        topterms_holder_element
-                            .show();
+                                            var luke_array_to_hash = function( array )
+                                            {
+                                                var hash = {};
+                                                for( var i = 0; i < array.length; i += 2 )
+                                                {
+                                                    hash[ array[i] ] = array[i+1];
+                                                }
+                                                return hash;
+                                            }
+                                  
+                                  
+                                  if( finfo.histogram )
+                                  {
+                                    var histogram        = luke_array_to_struct( finfo.histogram );
+                                    var histogram_values = luke_array_to_hash  ( finfo.histogram );
+                                    
+                                    histogram_holder_element.show();
+                                        
+                                    var histogram_element = $( '.histogram', histogram_holder_element );
+            
+                                    var histogram_legend = '';
+            
+                                    for( var key in histogram_values )
+                                    {
+                                        histogram_legend += '<dt><span>' + key + '</span></dt>' + "\n" +
+                                                            '<dd title="' + key + '">' +
+                                                            '<span>' + histogram_values[key] + '</span>' +
+                                                            '</dd>' + "\n";
+                                    }
+            
+                                    $( 'dl', histogram_holder_element )
+                                        .html( histogram_legend );
+            
+                                    histogram_element.sparkline
+                                      (
+                                          histogram.values,
+                                          {
+                                              type : 'bar',
+                                              barColor : '#c0c0c0',
+                                              zeroColor : '#ffffff',
+                                              height : histogram_element.height(),
+                                              barWidth : 46,
+                                              barSpacing : 3
+                                          }
+                                      );
+                                  }
 
-                        var topterms_table_element = $( 'table', topterms_holder_element );
-
-                        var topterms_navi_less = $( 'p.navi .less', topterms_holder_element );
-                        var topterms_navi_more = $( 'p.navi .more', topterms_holder_element );
-
-                        var topterms_count = schema_browser_data.fields[field].topTerms.keys.length; 
-                        var topterms_hash = schema_browser_data.fields[field].topTerms_hash;
-                        var topterms_content = '<tbody>';
-
-                        var i = 1;
-                        for( var term in topterms_hash )
-                        {
-                            topterms_content += '<tr>' + "\n" +
-                                                '<td class="position">' + i + '</td>' + "\n" + 
-                                                '<td class="term">' + term + '</td>' + "\n" + 
-                                                '<td class="frequency">' + topterms_hash[term] + '</td>' + "\n" + 
-                                                '</tr>' + "\n";
-
-                            if( i !== topterms_count && 0 === i % 10 )
-                            {
-                                topterms_content += '</tbody><tbody>';
-                            }
-
-                            i++;
-                        }
-
-                        topterms_content += '</tbody>';
-
-                        topterms_table_element
-                            .empty()
-                            .append( topterms_content );
-                        
-                        $( 'tbody', topterms_table_element )
-                            .die( 'change' )
-                            .live
-                            (
-                                'change',
-                                function()
-                                {
-                                    var blocks = $( 'tbody', topterms_table_element );
-                                    var visible_blocks = blocks.filter( ':visible' );
-                                    var hidden_blocks = blocks.filter( ':hidden' );
-
-                                    $( 'p.head .shown', topterms_holder_element )
-                                        .html( $( 'tr', visible_blocks ).size() );
-
-                                    0 < hidden_blocks.size()
-                                        ? topterms_navi_more.show()
-                                        : topterms_navi_more.hide();
-
-                                    1 < visible_blocks.size()
-                                        ? topterms_navi_less.show()
-                                        : topterms_navi_less.hide();
-                                }
-                            );
-
-                        $( 'tbody tr:odd', topterms_table_element )
-                            .addClass( 'odd' );
-
-                        $( 'tbody:first', topterms_table_element )
-                            .show()
-                            .trigger( 'change' );
-
-                        $( 'p.head .max', topterms_holder_element )
-                            .html( schema_browser_data.fields[field].distinct );
-
-                        topterms_navi_less
-                            .die( 'click' )
-                            .live
-                            (
-                                'click',
-                                function( event )
-                                {
-                                    $( 'tbody:visible', topterms_table_element ).last()
-                                        .hide()
-                                        .trigger( 'change' );
-                                }
-                            );
-
-                        topterms_navi_more
-                            .die( 'click' )
-                            .live
-                            (
-                                'click',
-                                function( event )
-                                {
-                                    $( 'tbody:hidden', topterms_table_element ).first()
+                                  if( finfo.topTerms )
+                                  {
+                                    var topterms      = luke_array_to_struct( finfo.topTerms );
+                                    var topterms_hash = luke_array_to_hash  ( finfo.topTerms );
+                                    var topterms_count = topterms.keys.length; 
+                                    
+                                    topterms_holder_element.show();
+                                    
+                                    var topterms_table_element = $( 'table', topterms_holder_element );
+            
+                                    var topterms_navi_less = $( 'p.navi .less', topterms_holder_element );
+                                    var topterms_navi_more = $( 'p.navi .more', topterms_holder_element );
+            
+                                    var topterms_content = '<tbody>';
+            
+                                    var i = 1;
+                                    for( var term in topterms_hash )
+                                    {
+                                        topterms_content += '<tr>' + "\n" +
+                                                            '<td class="position">' + i + '</td>' + "\n" + 
+                                                            '<td class="term">' + term + '</td>' + "\n" + 
+                                                            '<td class="frequency">' + topterms_hash[term] + '</td>' + "\n" + 
+                                                            '</tr>' + "\n";
+            
+                                        if( i !== topterms_count && 0 === i % 10 )
+                                        {
+                                            topterms_content += '</tbody><tbody>';
+                                        }
+            
+                                        i++;
+                                    }
+            
+                                    topterms_content += '</tbody>';
+            
+                                    topterms_table_element
+                                        .empty()
+                                        .append( topterms_content );
+                                    
+                                    $( 'tbody', topterms_table_element )
+                                        .die( 'change' )
+                                        .live
+                                        (
+                                            'change',
+                                            function()
+                                            {
+                                                var blocks = $( 'tbody', topterms_table_element );
+                                                var visible_blocks = blocks.filter( ':visible' );
+                                                var hidden_blocks = blocks.filter( ':hidden' );
+            
+                                                $( 'p.head .shown', topterms_holder_element )
+                                                    .html( $( 'tr', visible_blocks ).size() );
+            
+                                                0 < hidden_blocks.size()
+                                                    ? topterms_navi_more.show()
+                                                    : topterms_navi_more.hide();
+            
+                                                1 < visible_blocks.size()
+                                                    ? topterms_navi_less.show()
+                                                    : topterms_navi_less.hide();
+                                            }
+                                        );
+            
+                                    $( 'tbody tr:odd', topterms_table_element )
+                                        .addClass( 'odd' );
+            
+                                    $( 'tbody:first', topterms_table_element )
                                         .show()
                                         .trigger( 'change' );
+            
+                                    $( 'p.head .max', topterms_holder_element )
+                                        .html( schema_browser_data.fields[field].distinct );
+            
+                                    topterms_navi_less
+                                        .die( 'click' )
+                                        .live
+                                        (
+                                            'click',
+                                            function( event )
+                                            {
+                                                $( 'tbody:visible', topterms_table_element ).last()
+                                                    .hide()
+                                                    .trigger( 'change' );
+                                            }
+                                        );
+            
+                                    topterms_navi_more
+                                        .die( 'click' )
+                                        .live
+                                        (
+                                            'click',
+                                            function( event )
+                                            {
+                                                $( 'tbody:hidden', topterms_table_element ).first()
+                                                    .show()
+                                                    .trigger( 'change' );
+                                            }
+                                        );
+                                  } // end has Top Terms
                                 }
-                            );
-                    }
-                    else
-                    {
-                        topterms_holder_element
-                            .hide();
-                    }
-
-                    var histogram_holder_element = $( '.histogram-holder', data_element );
-                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].histogram_hash )
-                    {
-                        histogram_holder_element
-                            .show();
-                        
-                        var histogram_element = $( '.histogram', histogram_holder_element );
-
-                        var histogram_values = schema_browser_data.fields[field].histogram_hash;
-                        var histogram_legend = '';
-
-                        histogram_holder_element
-                            .show();
-
-                        for( var key in histogram_values )
-                        {
-                            histogram_legend += '<dt><span>' + key + '</span></dt>' + "\n" +
-                                                '<dd title="' + key + '">' +
-                                                '<span>' + histogram_values[key] + '</span>' +
-                                                '</dd>' + "\n";
-                        }
-
-                        $( 'dl', histogram_holder_element )
-                            .html( histogram_legend );
-
-                        histogram_element
-                            .sparkline
-                            (
-                                schema_browser_data.fields[field].histogram.values,
-                                {
-                                    type : 'bar',
-                                    barColor : '#c0c0c0',
-                                    zeroColor : '#ffffff',
-                                    height : histogram_element.height(),
-                                    barWidth : 46,
-                                    barSpacing : 3
+                                else {
+                                  terminfo_element.hide();
                                 }
-                            );
+                              },
+                              error : function( xhr, text_status, error_thrown)
+                              {
+                                terminfo_element.hide();
+                              },
+                              complete : function( xhr, text_status )
+                              {
+                              }
+                          }
+                      );
                     }
-                    else
-                    {
-                        histogram_holder_element
-                            .hide();
+                    else {
+                      terminfo_element.hide();
                     }
                 }
 
@@ -3870,7 +3915,7 @@ var sammy = $.sammy
                         $.ajax
                         (
                             {
-                                url : core_basepath + '/admin/luke?wt=json',
+                                url : core_basepath + '/admin/luke?wt=json&show=index&numTerms=0',
                                 dataType : 'json',
                                 context : $( '#statistics', dashboard_element ),
                                 beforeSend : function( xhr, settings )
@@ -3897,6 +3942,8 @@ var sammy = $.sammy
                                     var data = {
                                         'index_num-docs' : response['index']['numDocs'],
                                         'index_max-doc' : response['index']['maxDoc'],
+                                        'index_version' : response['index']['version'],
+                                        'index_segmentCount' : response['index']['segmentCount'],
                                         'index_last-modified' : response['index']['lastModified']
                                     };
                                     
@@ -3910,7 +3957,7 @@ var sammy = $.sammy
                                     }
 
                                     var optimized_element = $( '.value.index_optimized', this );
-                                    if( response['index']['optimized'] )
+                                    if( !response['index']['hasDeletions'] )
                                     {
                                         optimized_element
                                             .addClass( 'ico-1' );
@@ -3943,20 +3990,6 @@ var sammy = $.sammy
 
                                         $( 'span', current_element )
                                             .html( 'no' );
-                                    }
-
-                                    var deletions_element = $( '.value.index_has-deletions', this );
-                                    if( response['index']['hasDeletions'] )
-                                    {
-                                        deletions_element.prev()
-                                            .show();
-                                        
-                                        deletions_element
-                                            .show()
-                                            .addClass( 'ico-0' );
-
-                                        $( 'span', deletions_element )
-                                            .html( 'yes' );
                                     }
 
                                     $( 'a', optimized_element )
