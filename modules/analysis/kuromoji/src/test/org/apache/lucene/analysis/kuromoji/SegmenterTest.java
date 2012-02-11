@@ -26,6 +26,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+// nocommit cut these over to KT2
+
 public class SegmenterTest extends LuceneTestCase {
   
   private static Segmenter segmenter;

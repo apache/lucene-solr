@@ -840,6 +840,7 @@ public final class FST<T> {
   }
 
   public Arc<T> readFirstRealTargetArc(int node, Arc<T> arc, final BytesReader in) throws IOException {
+    assert in.bytes == bytes;
     final int address = getNodeAddress(node);
     in.pos = address;
     //System.out.println("  readFirstRealTargtArc address="
@@ -936,6 +937,7 @@ public final class FST<T> {
   /** Never returns null, but you should never call this if
    *  arc.isLast() is true. */
   public Arc<T> readNextRealArc(Arc<T> arc, final BytesReader in) throws IOException {
+    assert in.bytes == bytes;
 
     // TODO: can't assert this because we call from readFirstArc
     // assert !flag(arc.flags, BIT_LAST_ARC);
@@ -1019,6 +1021,7 @@ public final class FST<T> {
    *  This returns null if the arc was not found, else the incoming arc. */
   public Arc<T> findTargetArc(int labelToMatch, Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
     assert cachedRootArcs != null;
+    assert in.bytes == bytes;
 
     if (labelToMatch == END_LABEL) {
       if (follow.isFinal()) {
@@ -1225,17 +1228,20 @@ public final class FST<T> {
 
   /** Expert */
   public static abstract class BytesReader extends DataInput {
-    int pos;
+    protected int pos;
+    protected final byte[] bytes;
+    protected BytesReader(byte[] bytes, int pos) {
+      this.bytes = bytes;
+      this.pos = pos;
+    }
     abstract void skip(int byteCount);
     abstract void skip(int base, int byteCount);
   }
 
   final static class ReverseBytesReader extends BytesReader {
-    final byte[] bytes;
 
     public ReverseBytesReader(byte[] bytes, int pos) {
-      this.bytes = bytes;
-      this.pos = pos;
+      super(bytes, pos);
     }
 
     @Override
@@ -1262,11 +1268,9 @@ public final class FST<T> {
   // TODO: can we use just ByteArrayDataInput...?  need to
   // add a .skipBytes to DataInput.. hmm and .setPosition
   final static class ForwardBytesReader extends BytesReader {
-    final byte[] bytes;
 
     public ForwardBytesReader(byte[] bytes, int pos) {
-      this.bytes = bytes;
-      this.pos = pos;
+      super(bytes, pos);
     }
 
     @Override

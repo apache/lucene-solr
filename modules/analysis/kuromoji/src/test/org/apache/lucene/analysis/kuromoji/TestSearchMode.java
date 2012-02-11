@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.Reader;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -36,7 +37,8 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
   private final Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer(segmenter, reader);
+      //Tokenizer tokenizer = new KuromojiTokenizer(segmenter, reader);
+      Tokenizer tokenizer = new KuromojiTokenizer2(reader, null, true, Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -63,7 +65,26 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
         String[] fields = line.split("\t", 2);
         String sourceText = fields[0];
         String[] expectedTokens = fields[1].split("\\s+");
-        assertAnalyzesTo(analyzer, sourceText, expectedTokens);
+        int[] expectedPosIncrs;
+        if (KuromojiTokenizer2.DO_OUTPUT_COMPOUND && expectedTokens.length > 1) {
+          String[] newTokens = new String[expectedTokens.length+1];
+          newTokens[0] = expectedTokens[0];
+          newTokens[1] = fields[0];
+          System.arraycopy(expectedTokens, 1, newTokens, 2, expectedTokens.length-1);
+          expectedTokens = newTokens;
+          expectedPosIncrs = new int[expectedTokens.length];
+          Arrays.fill(expectedPosIncrs, 1);
+          expectedPosIncrs[1] = 0;
+          System.out.println("fixup: " + Arrays.toString(expectedTokens));
+        } else {
+          expectedPosIncrs = new int[expectedTokens.length];
+          Arrays.fill(expectedPosIncrs, 1);
+        }
+        try {
+        assertAnalyzesTo(analyzer, sourceText, expectedTokens, expectedPosIncrs);
+        } catch (Throwable t) {
+        System.out.println("  diffs: " + t);
+        }
       }
     } finally {
       is.close();

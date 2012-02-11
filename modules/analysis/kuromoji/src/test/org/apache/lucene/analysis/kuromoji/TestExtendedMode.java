@@ -36,7 +36,8 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
     
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer(segmenter, reader);
+      //Tokenizer tokenizer = new KuromojiTokenizer(segmenter, reader);
+      Tokenizer tokenizer = new KuromojiTokenizer2(reader, null, true, Mode.EXTENDED);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };

@@ -17,7 +17,10 @@ package org.apache.lucene.analysis.kuromoji;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -25,15 +28,39 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
+import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 
 public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
+
+  private static UserDictionary readDict() {
+    InputStream is = SegmenterTest.class.getResourceAsStream("userdict.txt");
+    if (is == null) {
+      throw new RuntimeException("Cannot find userdict.txt in test classpath!");
+    }
+    try {
+      try {
+        Reader reader = new InputStreamReader(is, IOUtils.CHARSET_UTF_8);
+        return new UserDictionary(reader);
+      } finally {
+        is.close();
+      }
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+  }
+
   private Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer(reader);
+      //Tokenizer tokenizer = new KuromojiTokenizer(new Segmenter(readDict()), reader);
+      //Tokenizer tokenizer = new KuromojiTokenizer(reader);
+      Tokenizer tokenizer = new KuromojiTokenizer2(reader, readDict(), true, Mode.SEARCH);
+      //Tokenizer tokenizer = new KuromojiTokenizer2(reader, null, true, true);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -91,6 +118,18 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
     ts.close();
   }
 
+  /*
+    // NOTE: intentionally fails!  Just trying to debug this
+    // one input...
+  public void testDecomposition6() throws Exception {
+    assertAnalyzesTo(analyzer, "奈良先端科学技術大学院大学",
+      new String[] { "これ", "は", "本", "で", "は", "ない" },
+      new int[] { 0, 2, 3, 4, 5, 6 },
+      new int[] { 2, 3, 4, 5, 6, 8 }
+                     );
+  }
+  */
+
   /** Tests that sentence offset is incorporated into the resulting offsets */
   public void testTwoSentences() throws Exception {
     assertAnalyzesTo(analyzer, "魔女狩大将マシュー・ホプキンス。 魔女狩大将マシュー・ホプキンス。",
@@ -125,6 +164,9 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
   public void testSurrogates2() throws IOException {
     int numIterations = atLeast(10000);
     for (int i = 0; i < numIterations; i++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + i);
+      }
       String s = _TestUtil.randomUnicodeString(random, 100);
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
@@ -152,4 +194,32 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
         new Integer(12)
     );
   }
+
+  public void testUserDict() throws Exception {
+    // Not a great test because w/o userdict.txt the
+    // segmentation is the same:
+    assertTokenStreamContents(analyzer.tokenStream("foo", new StringReader("関西国際空港に行った")),
+                              new String[] { "関西", "国際", "空港", "に", "行っ", "た"  },
+                              new int[] { 0, 2, 4, 6, 7, 9 },
+                              new int[] { 2, 4, 6, 7, 9, 10 },
+                              new Integer(10)
+    );
+  }
+
+  public void testUserDict2() throws Exception {
+    // Better test: w/o userdict the segmentation is different:
+    assertTokenStreamContents(analyzer.tokenStream("foo", new StringReader("朝青龍")),
+                              new String[] { "朝青龍"  },
+                              new int[] { 0 },
+                              new int[] { 3 },
+                              new Integer(3)
+    );
+  }
+
+  // nocommit need a still better test, where an input is
+  // tokenized to multiple tokens that would be different
+  // w/o the user dict...
+
+  // nocommit need test where userdict has multiple matches
+  // from one spot (ie, some entries are prefixes)...
 }

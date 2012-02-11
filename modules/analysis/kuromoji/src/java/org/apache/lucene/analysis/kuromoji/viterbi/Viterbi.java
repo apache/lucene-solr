@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.kuromoji.viterbi;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -117,7 +118,8 @@ public class Viterbi {
       if (startIndexArr[i] == null || endIndexArr[i] == null){	// continue since no array which contains ViterbiNodes exists. Or no previous node exists.
         continue;
       }
-      
+
+      // For each arc leaving...
       for (ViterbiNode node : startIndexArr[i]) {
         if (node == null){	// If array doesn't contain ViterbiNode any more, continue to next index
           break;
@@ -126,6 +128,7 @@ public class Viterbi {
         int backwardConnectionId = node.getLeftId();
         int wordCost = node.getWordCost();
         int leastPathCost = DEFAULT_COST;
+        // For each arc arriving...
         for (ViterbiNode leftNode : endIndexArr[i]) {
           if (leftNode == null){ // If array doesn't contain ViterbiNode any more, continue to next index
             break;
@@ -151,8 +154,10 @@ public class Viterbi {
               
               if (allKanji) {	// Process only Kanji keywords
                 pathCost += (length - SEARCH_MODE_KANJI_LENGTH) * SEARCH_MODE_KANJI_PENALTY;
+                //System.out.println("    + kanji penalty=" + (length - SEARCH_MODE_KANJI_LENGTH) * SEARCH_MODE_KANJI_PENALTY + " cost=" + pathCost);
               } else if (length > SEARCH_MODE_OTHER_LENGTH) {
                 pathCost += (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY;								
+                //System.out.println("    + non-kanji penalty=" + (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY + " cost=" + pathCost);
               }
             }
           }
@@ -241,7 +246,7 @@ public class Viterbi {
       int output = 0;
       for (int endIndex = 1; endIndex < suffixLength + 1; endIndex++) {
         int ch = text[suffixStart + endIndex - 1];
-        
+        //System.out.println("    match " + (char) ch);
         if (fst.findTargetArc(ch, arc, arc, endIndex == 1, fstReader) == null) {
           break; // continue to next position
         }
@@ -253,6 +258,7 @@ public class Viterbi {
           dictionary.lookupWordIds(finalOutput, wordIdRef);
           for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
             final int wordId = wordIdRef.ints[wordIdRef.offset + ofs];
+            //System.out.println("output=" + finalOutput + " wid=" + wordId);
             ViterbiNode node = new ViterbiNode(wordId, text, suffixStart, endIndex, dictionary.getLeftId(wordId), dictionary.getRightId(wordId), dictionary.getWordCost(wordId), startIndex, Type.KNOWN);
             addToArrays(node, startIndex + 1, startIndex + 1 + endIndex, startIndexArr, endIndexArr, startSizeArr, endSizeArr);
           }
@@ -305,6 +311,7 @@ public class Viterbi {
   private void processUserDictionary(char text[], int offset, int len, ViterbiNode[][] startIndexArr, ViterbiNode[][] endIndexArr, int[] startSizeArr, int[] endSizeArr) throws IOException {
     int[][] result = userDictionary.lookup(text, offset, len);
     for(int[] segmentation : result) {
+      System.out.println("SEG=" + Arrays.toString(segmentation));
       int wordId = segmentation[0];
       int index = segmentation[1];
       int length = segmentation[2];
@@ -326,6 +333,8 @@ public class Viterbi {
   private void addToArrays(ViterbiNode node, int startIndex, int endIndex, ViterbiNode[][] startIndexArr, ViterbiNode[][] endIndexArr, int[] startSizeArr, int[] endSizeArr ) {
     int startNodesCount = startSizeArr[startIndex];
     int endNodesCount = endSizeArr[endIndex];
+
+    //System.out.println("  + " + startIndex + " to " + endIndex);
     
     if (startNodesCount == 0) {
       startIndexArr[startIndex] = new ViterbiNode[10];

@@ -18,8 +18,12 @@ package org.apache.lucene.analysis.kuromoji;
  */
 
 import java.io.IOException;
+import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -41,15 +45,107 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 1, 2, 2,  2 }
       );
   }
-  
+
   /**
    * Test that search mode is enabled and working by default
    */
   public void testDecomposition() throws IOException {
-    assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "シニアソフトウェアエンジニア",
-        new String[] { "シニア", "ソフトウェア", "エンジニア" }
-    );
+
+    // nocommit
+    TokenStream ts = new KuromojiAnalyzer(TEST_VERSION_CURRENT)
+        .tokenStream("foo",
+                     new StringReader("マイケルジャクソン	マイケル ジャクソン"));
+    while(ts.incrementToken());
+
+    // Senior software engineer:
+    if (KuromojiTokenizer2.DO_OUTPUT_COMPOUND) {
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "シニアソフトウェアエンジニア",
+                       new String[] { "シニア",
+                                      "シニアソフトウェアエンジニア",
+                                      "ソフトウェア",
+                                      "エンジニア" },
+                       new int[] { 1, 0, 1, 1}
+                       );
+
+      // Kansai International Airport:
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "関西国際空港",
+                       new String[] { "関西",
+                                      "関西国際空港", // zero pos inc
+                                      "国際",
+                                      "空港" },
+                       new int[] {1, 0, 1, 1}
+                       );
+
+      // Konika Minolta Holdings; not quite the right
+      // segmentation (see LUCENE-3726):
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "コニカミノルタホールディングス",
+                       new String[] { "コニカ",
+                                      "コニカミノルタホールディングス", // zero pos inc
+                                      "ミノルタ", 
+                                      "ホールディングス"},
+                       new int[] {1, 0, 1, 1}
+                       );
+
+      // Narita Airport
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "成田空港",
+                       new String[] { "成田",
+                                      "成田空港",
+                                      "空港" },
+                       new int[] {1, 0, 1});
+
+      // Kyoto University Baseball Club
+      // nocommit --segments differently but perhaps OK
+      /*
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "京都大学硬式野球部",
+                       new String[] { "京都",
+                                      "京都大学硬式野球部",
+                                      "大学",
+                                      "硬式",
+                                      "野球",
+                                      "部" },
+                       new int[] {1, 0, 1, 1, 1, 1});
+      */
+    } else {
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "シニアソフトウェアエンジニア",
+                       new String[] { "シニア",
+                                      "ソフトウェア",
+                                      "エンジニア" },
+                       new int[] { 1, 1, 1}
+                       );
+      // Kansai International Airport:
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "関西国際空港",
+                       new String[] { "関西",
+                                      "国際",
+                                      "空港" },
+                       new int[] {1, 1, 1}
+                       );
+
+      // Konika Minolta Holdings; not quite the right
+      // segmentation (see LUCENE-3726):
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "コニカミノルタホールディングス",
+                       new String[] { "コニカ",
+                                      "ミノルタ", 
+                                      "ホールディングス"},
+                       new int[] {1, 1, 1}
+                       );
+
+      // Narita Airport
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "成田空港",
+                       new String[] { "成田",
+                                      "空港" },
+                       new int[] {1, 1});
+
+      // Kyoto University Baseball Club
+      assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "京都大学硬式野球部",
+                       new String[] { "京都",
+                                      "大学",
+                                      "硬式",
+                                      "野球",
+                                      "部" },
+                       new int[] {1, 1, 1, 1, 1});
+    }
   }
+
   
   /**
    * blast random strings against the analyzer

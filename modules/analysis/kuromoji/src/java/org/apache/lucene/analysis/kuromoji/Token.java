@@ -42,6 +42,11 @@ public class Token {
     this.position = position;
     this.dictionary = dictionary;
   }
+
+  @Override
+  public String toString() {
+    return "Token(\"" + new String(surfaceForm, offset, length) + "\" pos=" + position + " type=" + type + " wordId=" + wordId + ")";
+  }
   
   /**
    * @return surfaceForm

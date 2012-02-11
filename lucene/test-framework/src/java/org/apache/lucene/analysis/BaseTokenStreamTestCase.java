@@ -138,14 +138,15 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         assertTrue("endOffset must be >= startOffset", offsetAtt.endOffset() >= offsetAtt.startOffset());
         if (finalOffset != null) {
           assertTrue("startOffset must be <= finalOffset", offsetAtt.startOffset() <= finalOffset.intValue());
-          assertTrue("endOffset must be <= finalOffset", offsetAtt.endOffset() <= finalOffset.intValue());
+          assertTrue("endOffset must be <= finalOffset: got endOffset=" + offsetAtt.endOffset() + " vs finalOffset=" + finalOffset.intValue(),
+                     offsetAtt.endOffset() <= finalOffset.intValue());
         }
       }
       if (posIncrAtt != null) {
         assertTrue("posIncrement must be >= 0", posIncrAtt.getPositionIncrement() >= 0);
       }
     }
-    assertFalse("end of stream", ts.incrementToken());
+    assertFalse("TokenStream has more tokens than expected", ts.incrementToken());
     ts.end();
     if (finalOffset != null)
       assertEquals("finalOffset ", finalOffset.intValue(), offsetAtt.endOffset());
@@ -315,7 +316,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
       }
-
+      
       int remainder = random.nextInt(10);
       Reader reader = new StringReader(text);
       TokenStream ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
@@ -344,7 +345,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       // verify reusing is "reproducable" and also get the normal tokenstream sanity checks
       if (!tokens.isEmpty()) {
         if (VERBOSE) {
-          System.out.println("NOTE: BaseTokenStreamTestCase: re-run analysis");
+          System.out.println("NOTE: BaseTokenStreamTestCase: re-run analysis useCharFilter=" + useCharFilter + " text.length()=" + text.length());
         }
         reader = new StringReader(text);
         ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);

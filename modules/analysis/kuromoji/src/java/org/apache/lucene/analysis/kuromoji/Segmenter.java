@@ -29,8 +29,8 @@ import org.apache.lucene.analysis.kuromoji.dict.UnknownDictionary;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
 import org.apache.lucene.analysis.kuromoji.viterbi.GraphvizFormatter;
 import org.apache.lucene.analysis.kuromoji.viterbi.Viterbi;
-import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode;
 import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
+import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode;
 
 /**
  * Tokenizer main class.
@@ -127,8 +127,9 @@ public class Segmenter {
       } else {
         position = Math.min(indexOfMaru, indexOfTen);				
       }
-      
-      if(position >= 0) {
+
+      // nocommit
+      if(false && position >= 0) {
         splitPositions.add(position);
         currentPosition = position + 1;
       } else {
@@ -152,7 +153,6 @@ public class Segmenter {
    */
   public List<Token> doTokenize(int offset, char[] sentence, int sentenceOffset, int sentenceLength, boolean discardPunctuation) {
     ArrayList<Token> result = new ArrayList<Token>();
-    
     ViterbiNode[][][] lattice;
     try {
       lattice = viterbi.build(sentence, sentenceOffset, sentenceLength);
@@ -170,7 +170,12 @@ public class Segmenter {
       Token token = new Token(wordId, node.getSurfaceForm(), node.getOffset(), node.getLength(), node.getType(), offset + node.getStartIndex(), dictionaryMap.get(node.getType()));	// Pass different dictionary based on the type of node
       result.add(token);
     }
-    
+    /*
+    System.out.println("result:");
+    for(Token token : result) {
+      System.out.println("  " + token);
+    }
+    */
     return result;
   }
   
