@@ -130,7 +130,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       }
       testFinished = true;
     } finally {
-      if (testFinished) {
+      if (!testFinished) {
         zkController.getZkClient().printLayoutToStdOut();
       }
       
