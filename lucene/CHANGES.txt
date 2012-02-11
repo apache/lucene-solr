@@ -228,7 +228,7 @@ Changes in backwards compatibility policy
   Similarity to use an external byte[] or one of the new DocValues
   fields (LUCENE-3108). Alternatively, to dynamically change norms (boost
   *and* length norm) at query time, wrap your AtomicReader using
-  FilterIndexReader, overriding FilterIndexReader.norms(). To persist the
+  FilterAtomicReader, overriding FilterAtomicReader.norms(). To persist the
   changes on disk, copy the FilteredIndexReader to a new index using
   IndexWriter.addIndexes().  (Uwe Schindler, Robert Muir)
 
@@ -240,10 +240,11 @@ Changes in backwards compatibility policy
   FieldInfo.IndexOption: DOCS_AND_POSITIONS_AND_OFFSETS.  (Robert
   Muir, Mike McCandless)
 
-* LUCENE-2858: FilterIndexReader now extends AtomicReader. If you want to
-  filter composite readers like DirectoryReader or MultiReader, filter
-  their atomic leaves and build a new CompositeReader (e.g. MultiReader)
-  around them.  (Uwe Schindler, Robert Muir)
+* LUCENE-2858, LUCENE-3770: FilterIndexReader was renamed to 
+  FilterAtomicReader and now extends AtomicReader. If you want to filter 
+  composite readers like DirectoryReader or MultiReader, filter their 
+  atomic leaves and build a new CompositeReader (e.g. MultiReader) around 
+  them. (Uwe Schindler, Robert Muir) 
 
 * LUCENE-3736: ParallelReader was split into ParallelAtomicReader
   and ParallelCompositeReader. Lucene 3.x's ParallelReader is now

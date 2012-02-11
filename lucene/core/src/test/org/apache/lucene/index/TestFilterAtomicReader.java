@@ -33,9 +33,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ReaderUtil;
 
-public class TestFilterIndexReader extends LuceneTestCase {
+public class TestFilterAtomicReader extends LuceneTestCase {
 
-  private static class TestReader extends FilterIndexReader {
+  private static class TestReader extends FilterAtomicReader {
 
     /** Filter that only permits terms containing 'e'.*/
     private static class TestFields extends FilterFields {
@@ -179,14 +179,14 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
   public void testOverrideMethods() throws Exception {
     boolean fail = false;
-    for (Method m : FilterIndexReader.class.getMethods()) {
+    for (Method m : FilterAtomicReader.class.getMethods()) {
       int mods = m.getModifiers();
       if (Modifier.isStatic(mods) || Modifier.isFinal(mods) || m.isSynthetic()) {
         continue;
       }
       Class<?> declaringClass = m.getDeclaringClass();
       String name = m.getName();
-      if (declaringClass != FilterIndexReader.class && declaringClass != Object.class) {
+      if (declaringClass != FilterAtomicReader.class && declaringClass != Object.class) {
         System.err.println("method is not overridden by FilterIndexReader: " + name);
         fail = true;
       }

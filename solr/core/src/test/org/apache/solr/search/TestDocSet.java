@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FilterIndexReader;
+import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.MultiReader;
@@ -338,7 +338,7 @@ public class TestDocSet extends LuceneTestCase {
 
   public IndexReader dummyIndexReader(final int maxDoc) {
     // TODO FIXME: THIS IS HEAVY BROKEN AND ILLEGAL TO DO (null delegate):
-    IndexReader r = new FilterIndexReader(null) {
+    IndexReader r = new FilterAtomicReader(null) {
       @Override
       public int maxDoc() {
         return maxDoc;

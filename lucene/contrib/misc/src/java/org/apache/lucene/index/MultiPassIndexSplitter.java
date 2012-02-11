@@ -209,7 +209,7 @@ public class MultiPassIndexSplitter {
     // as we pass the subreaders directly to IW.addIndexes().
   }
   
-  private static final class FakeDeleteAtomicIndexReader extends FilterIndexReader {
+  private static final class FakeDeleteAtomicIndexReader extends FilterAtomicReader {
     FixedBitSet liveDocs;
 
     public FakeDeleteAtomicIndexReader(AtomicReader reader) {

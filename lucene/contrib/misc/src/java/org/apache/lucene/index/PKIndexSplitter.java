@@ -117,7 +117,7 @@ public class PKIndexSplitter {
     }
   }
     
-  private static class DocumentFilteredAtomicIndexReader extends FilterIndexReader {
+  private static class DocumentFilteredAtomicIndexReader extends FilterAtomicReader {
     final Bits liveDocs;
     final int numDocs;
     

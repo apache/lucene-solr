@@ -23,16 +23,16 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.Comparator;
 
-/**  A <code>FilterIndexReader</code> contains another IndexReader, which it
+/**  A <code>FilterAtomicReader</code> contains another AtomicReader, which it
  * uses as its basic source of data, possibly transforming the data along the
  * way or providing additional functionality. The class
  * <code>FilterIndexReader</code> itself simply implements all abstract methods
  * of <code>IndexReader</code> with versions that pass all requests to the
- * contained index reader. Subclasses of <code>FilterIndexReader</code> may
+ * contained index reader. Subclasses of <code>FilterAtomicReader</code> may
  * further override some of these methods and may also provide additional
  * methods and fields.
  */
-public class FilterIndexReader extends AtomicReader {
+public class FilterAtomicReader extends AtomicReader {
 
   /** Base class for filtering {@link Fields}
    *  implementations. */
@@ -279,7 +279,7 @@ public class FilterIndexReader extends AtomicReader {
    * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
    * @param in specified base reader.
    */
-  public FilterIndexReader(AtomicReader in) {
+  public FilterAtomicReader(AtomicReader in) {
     super();
     this.in = in;
   }
