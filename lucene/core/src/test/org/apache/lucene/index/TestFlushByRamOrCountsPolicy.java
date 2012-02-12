@@ -281,10 +281,10 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
   }
 
   protected void assertActiveBytesAfter(DocumentsWriterFlushControl flushControl) {
-    Iterator<ThreadState> allActiveThreads = flushControl.allActiveThreads();
+    Iterator<ThreadState> allActiveThreads = flushControl.allActiveThreadStates();
     long bytesUsed = 0;
     while (allActiveThreads.hasNext()) {
-      bytesUsed += allActiveThreads.next().perThread.bytesUsed();
+      bytesUsed += allActiveThreads.next().dwpt.bytesUsed();
     }
     assertEquals(bytesUsed, flushControl.activeBytes());
   }
@@ -343,7 +343,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       if (state.flushPending) {
         toFlush = state;
       } else if (flushOnDeleteTerms()
-          && state.perThread.pendingDeletes.numTermDeletes.get() >= indexWriterConfig
+          && state.dwpt.pendingDeletes.numTermDeletes.get() >= indexWriterConfig
               .getMaxBufferedDeleteTerms()) {
         toFlush = state;
       } else {
@@ -376,7 +376,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       if (state.flushPending) {
         toFlush = state;
       } else if (flushOnDocCount()
-          && state.perThread.getNumDocsInRAM() >= indexWriterConfig
+          && state.dwpt.getNumDocsInRAM() >= indexWriterConfig
               .getMaxBufferedDocs()) {
         toFlush = state;
       } else if (flushOnRAM()
@@ -397,7 +397,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
         hasMarkedPending = true;
       } else {
         peakBytesWithoutFlush = Math.max(activeBytes, peakBytesWithoutFlush);
-        peakDocCountWithoutFlush = Math.max(state.perThread.getNumDocsInRAM(),
+        peakDocCountWithoutFlush = Math.max(state.dwpt.getNumDocsInRAM(),
             peakDocCountWithoutFlush);
       }
 
@@ -409,7 +409,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   static void findPending(DocumentsWriterFlushControl flushControl,
       ArrayList<ThreadState> pending, ArrayList<ThreadState> notPending) {
-    Iterator<ThreadState> allActiveThreads = flushControl.allActiveThreads();
+    Iterator<ThreadState> allActiveThreads = flushControl.allActiveThreadStates();
     while (allActiveThreads.hasNext()) {
       ThreadState next = allActiveThreads.next();
       if (next.flushPending) {

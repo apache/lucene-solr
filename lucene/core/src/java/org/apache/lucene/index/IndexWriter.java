@@ -1144,7 +1144,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       synchronized(this) {
         closed = true;
       }
-      assert oldWriter.assertNoActiveDWPT();
+      assert oldWriter.perThreadPool.numDeactivatedThreadStates() == oldWriter.perThreadPool.getMaxThreadStates();
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "closeInternal");
     } finally {

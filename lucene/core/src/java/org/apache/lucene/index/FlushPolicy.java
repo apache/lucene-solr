@@ -75,9 +75,7 @@ public abstract class FlushPolicy {
    */
   public void onUpdate(DocumentsWriterFlushControl control, ThreadState state) {
     onInsert(control, state);
-    if (!state.flushPending) {
-      onDelete(control, state);
-    }
+    onDelete(control, state);
   }
 
   /**
@@ -107,17 +105,17 @@ public abstract class FlushPolicy {
    */
   protected ThreadState findLargestNonPendingWriter(
       DocumentsWriterFlushControl control, ThreadState perThreadState) {
-    assert perThreadState.perThread.getNumDocsInRAM() > 0;
+    assert perThreadState.dwpt.getNumDocsInRAM() > 0;
     long maxRamSoFar = perThreadState.bytesUsed;
     // the dwpt which needs to be flushed eventually
     ThreadState maxRamUsingThreadState = perThreadState;
     assert !perThreadState.flushPending : "DWPT should have flushed";
-    Iterator<ThreadState> activePerThreadsIterator = control.allActiveThreads();
+    Iterator<ThreadState> activePerThreadsIterator = control.allActiveThreadStates();
     while (activePerThreadsIterator.hasNext()) {
       ThreadState next = activePerThreadsIterator.next();
       if (!next.flushPending) {
         final long nextRam = next.bytesUsed;
-        if (nextRam > maxRamSoFar && next.perThread.getNumDocsInRAM() > 0) {
+        if (nextRam > maxRamSoFar && next.dwpt.getNumDocsInRAM() > 0) {
           maxRamSoFar = nextRam;
           maxRamUsingThreadState = next;
         }

@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -213,18 +212,18 @@ final class DocumentsWriter {
         infoStream.message("DW", "abort");
       }
 
-      final Iterator<ThreadState> threadsIterator = perThreadPool.getActivePerThreadsIterator();
-      while (threadsIterator.hasNext()) {
-        final ThreadState perThread = threadsIterator.next();
+      final int limit = perThreadPool.getActiveThreadState();
+      for (int i = 0; i < limit; i++) {
+        final ThreadState perThread = perThreadPool.getThreadState(i);
         perThread.lock();
         try {
           if (perThread.isActive()) { // we might be closed
             try {
-              perThread.perThread.abort();
+              perThread.dwpt.abort();
             } catch (IOException ex) {
               // continue
             } finally {
-              perThread.perThread.checkAndResetHasAborted();
+              perThread.dwpt.checkAndResetHasAborted();
               flushControl.doOnAbort(perThread);
             }
           } else {
@@ -338,7 +337,7 @@ final class DocumentsWriter {
         assert false: "perThread is not active but we are still open";
       }
        
-      final DocumentsWriterPerThread dwpt = perThread.perThread;
+      final DocumentsWriterPerThread dwpt = perThread.dwpt;
       try {
         final int docCount = dwpt.updateDocuments(docs, analyzer, delTerm);
         numDocsInRAM.addAndGet(docCount);
@@ -372,7 +371,7 @@ final class DocumentsWriter {
         assert false: "perThread is not active but we are still open";
       }
        
-      final DocumentsWriterPerThread dwpt = perThread.perThread;
+      final DocumentsWriterPerThread dwpt = perThread.dwpt;
       try {
         dwpt.updateDocument(doc, analyzer, delTerm); 
         numDocsInRAM.incrementAndGet();
@@ -586,23 +585,5 @@ final class DocumentsWriter {
       pendingChangesInCurrentFullFlush = false;
     }
     
-  }
-
-  
- 
-  
-  // use by IW during close to assert all DWPT are inactive after final flush
-  boolean assertNoActiveDWPT() {
-    Iterator<ThreadState> activePerThreadsIterator = perThreadPool.getAllPerThreadsIterator();
-    while(activePerThreadsIterator.hasNext()) {
-      ThreadState next = activePerThreadsIterator.next();
-      next.lock();
-      try {
-        assert !next.isActive();
-      } finally {
-        next.unlock();
-      }
-    }
-    return true;
   }
 }

@@ -94,6 +94,13 @@ public final class IndexWriterConfig implements Cloneable {
 
   /** Default value is 1945. Change using {@link #setRAMPerThreadHardLimitMB(int)} */
   public static final int DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB = 1945;
+  
+  /** The maximum number of simultaneous threads that may be
+   *  indexing documents at once in IndexWriter; if more
+   *  than this many threads arrive they will wait for
+   *  others to finish. Default value is 8. */
+  public final static int DEFAULT_MAX_THREAD_STATES = 8;
+  
   /**
    * Sets the default (for any instance) maximum time to wait for a write lock
    * (in milliseconds).
@@ -172,7 +179,7 @@ public final class IndexWriterConfig implements Cloneable {
     }
     flushPolicy = new FlushByRamOrCountsPolicy();
     readerPooling = DEFAULT_READER_POOLING;
-    indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool();
+    indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(DEFAULT_MAX_THREAD_STATES);
     readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;
     perThreadHardLimitMB = DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
   }
@@ -554,8 +561,8 @@ public final class IndexWriterConfig implements Cloneable {
    * IndexWriter to assign thread-states to incoming indexing threads. If no
    * {@link DocumentsWriterPerThreadPool} is set {@link IndexWriter} will use
    * {@link ThreadAffinityDocumentsWriterThreadPool} with max number of
-   * thread-states set to {@link DocumentsWriterPerThreadPool#DEFAULT_MAX_THREAD_STATES} (see
-   * {@link DocumentsWriterPerThreadPool#DEFAULT_MAX_THREAD_STATES}).
+   * thread-states set to {@link #DEFAULT_MAX_THREAD_STATES} (see
+   * {@link #DEFAULT_MAX_THREAD_STATES}).
    * </p>
    * <p>
    * NOTE: The given {@link DocumentsWriterPerThreadPool} instance must not be used with

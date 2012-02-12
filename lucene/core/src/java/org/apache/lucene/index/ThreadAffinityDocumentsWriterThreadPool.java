@@ -34,13 +34,8 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerT
   private Map<Thread, ThreadState> threadBindings = new ConcurrentHashMap<Thread, ThreadState>();
   
   /**
-   * Creates a new {@link DocumentsWriterPerThreadPool} with max.
-   * {@link #DEFAULT_MAX_THREAD_STATES} thread states.
+   * Creates a new {@link ThreadAffinityDocumentsWriterThreadPool} with a given maximum of {@link ThreadState}s.
    */
-  public ThreadAffinityDocumentsWriterThreadPool() {
-    this(DEFAULT_MAX_THREAD_STATES);
-  }
-  
   public ThreadAffinityDocumentsWriterThreadPool(int maxNumPerThreads) {
     super(maxNumPerThreads);
     assert getMaxThreadStates() >= 1;

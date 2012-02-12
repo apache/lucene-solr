@@ -72,7 +72,7 @@ public class FlushByRamOrCountsPolicy extends FlushPolicy {
   @Override
   public void onInsert(DocumentsWriterFlushControl control, ThreadState state) {
     if (flushOnDocCount()
-        && state.perThread.getNumDocsInRAM() >= indexWriterConfig
+        && state.dwpt.getNumDocsInRAM() >= indexWriterConfig
             .getMaxBufferedDocs()) {
       // Flush this state by num docs
       control.setFlushPending(state);

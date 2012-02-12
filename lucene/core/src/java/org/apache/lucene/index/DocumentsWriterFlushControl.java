@@ -18,8 +18,8 @@ package org.apache.lucene.index;
  */
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -51,6 +51,8 @@ public final class DocumentsWriterFlushControl {
   private final Queue<DocumentsWriterPerThread> flushQueue = new LinkedList<DocumentsWriterPerThread>();
   // only for safety reasons if a DWPT is close to the RAM limit
   private final Queue<BlockedFlush> blockedFlushes = new LinkedList<BlockedFlush>();
+  private final IdentityHashMap<DocumentsWriterPerThread, Long> flushingWriters = new IdentityHashMap<DocumentsWriterPerThread, Long>();
+
 
   double maxConfiguredRamBuffer = 0;
   long peakActiveBytes = 0;// only with assert
@@ -61,7 +63,6 @@ public final class DocumentsWriterFlushControl {
   private final DocumentsWriterPerThreadPool perThreadPool;
   private final FlushPolicy flushPolicy;
   private boolean closed = false;
-  private final HashMap<DocumentsWriterPerThread, Long> flushingWriters = new HashMap<DocumentsWriterPerThread, Long>();
   private final DocumentsWriter documentsWriter;
   private final IndexWriterConfig config;
 
@@ -122,7 +123,7 @@ public final class DocumentsWriterFlushControl {
   }
 
   private void commitPerThreadBytes(ThreadState perThread) {
-    final long delta = perThread.perThread.bytesUsed()
+    final long delta = perThread.dwpt.bytesUsed()
         - perThread.bytesUsed;
     perThread.bytesUsed += delta;
     /*
@@ -212,7 +213,7 @@ public final class DocumentsWriterFlushControl {
    */
   public synchronized void setFlushPending(ThreadState perThread) {
     assert !perThread.flushPending;
-    if (perThread.perThread.getNumDocsInRAM() > 0) {
+    if (perThread.dwpt.getNumDocsInRAM() > 0) {
       perThread.flushPending = true; // write access synced
       final long bytes = perThread.bytesUsed;
       flushBytes += bytes;
@@ -295,18 +296,21 @@ public final class DocumentsWriterFlushControl {
   }
 
   DocumentsWriterPerThread nextPendingFlush() {
+    int numPending;
+    boolean fullFlush;
     synchronized (this) {
       final DocumentsWriterPerThread poll;
       if ((poll = flushQueue.poll()) != null) {
         stallControl.updateStalled(this);
         return poll;
       }
+      fullFlush = this.fullFlush;
+      numPending = this.numPending;
     }
     if (numPending > 0 && !fullFlush) { // don't check if we are doing a full flush
-      final Iterator<ThreadState> allActiveThreads = perThreadPool
-          .getActivePerThreadsIterator();
-      while (allActiveThreads.hasNext() && numPending > 0) {
-        ThreadState next = allActiveThreads.next();
+      final int limit = perThreadPool.getActiveThreadState();
+      for (int i = 0; i < limit && numPending > 0; i++) {
+        final ThreadState next = perThreadPool.getThreadState(i);
         if (next.flushPending) {
           final DocumentsWriterPerThread dwpt = tryCheckoutForFlush(next);
           if (dwpt != null) {
@@ -327,9 +331,29 @@ public final class DocumentsWriterFlushControl {
   /**
    * Returns an iterator that provides access to all currently active {@link ThreadState}s 
    */
-  public Iterator<ThreadState> allActiveThreads() {
-    return perThreadPool.getActivePerThreadsIterator();
+  public Iterator<ThreadState> allActiveThreadStates() {
+    return getPerThreadsIterator(perThreadPool.getActiveThreadState());
   }
+  
+  private Iterator<ThreadState> getPerThreadsIterator(final int upto) {
+    return new Iterator<ThreadState>() {
+      int i = 0;
+
+      public boolean hasNext() {
+        return i < upto;
+      }
+
+      public ThreadState next() {
+        return perThreadPool.getThreadState(i++);
+      }
+
+      public void remove() {
+        throw new UnsupportedOperationException("remove() not supported.");
+      }
+    };
+  }
+
+  
 
   synchronized void doOnDelete() {
     // pass null this is a global delete no update
@@ -369,7 +393,7 @@ public final class DocumentsWriterFlushControl {
     boolean success = false;
     try {
       if (perThread.isActive()
-          && perThread.perThread.deleteQueue != documentsWriter.deleteQueue) {
+          && perThread.dwpt.deleteQueue != documentsWriter.deleteQueue) {
         // There is a flush-all in process and this DWPT is
         // now stale -- enroll it for flush and try for
         // another DWPT:
@@ -397,23 +421,23 @@ public final class DocumentsWriterFlushControl {
       DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(flushingQueue.generation+1);
       documentsWriter.deleteQueue = newQueue;
     }
-    final Iterator<ThreadState> allActiveThreads = perThreadPool.getActivePerThreadsIterator();
-    while (allActiveThreads.hasNext()) {
-      final ThreadState next = allActiveThreads.next();
+    final int limit = perThreadPool.getActiveThreadState();
+    for (int i = 0; i < limit; i++) {
+      final ThreadState next = perThreadPool.getThreadState(i);
       next.lock();
       try {
         if (!next.isActive()) {
           continue; 
         }
-        assert next.perThread.deleteQueue == flushingQueue
-            || next.perThread.deleteQueue == documentsWriter.deleteQueue : " flushingQueue: "
+        assert next.dwpt.deleteQueue == flushingQueue
+            || next.dwpt.deleteQueue == documentsWriter.deleteQueue : " flushingQueue: "
             + flushingQueue
             + " currentqueue: "
             + documentsWriter.deleteQueue
             + " perThread queue: "
-            + next.perThread.deleteQueue
-            + " numDocsInRam: " + next.perThread.getNumDocsInRAM();
-        if (next.perThread.deleteQueue != flushingQueue) {
+            + next.dwpt.deleteQueue
+            + " numDocsInRam: " + next.dwpt.getNumDocsInRAM();
+        if (next.dwpt.deleteQueue != flushingQueue) {
           // this one is already a new DWPT
           continue;
         }
@@ -437,12 +461,12 @@ public final class DocumentsWriterFlushControl {
   }
   
   private boolean assertActiveDeleteQueue(DocumentsWriterDeleteQueue queue) {
-    final Iterator<ThreadState> allActiveThreads = perThreadPool.getActivePerThreadsIterator();
-    while (allActiveThreads.hasNext()) {
-      final ThreadState next = allActiveThreads.next();
+    final int limit = perThreadPool.getActiveThreadState();
+    for (int i = 0; i < limit; i++) {
+      final ThreadState next = perThreadPool.getThreadState(i);
       next.lock();
       try {
-        assert !next.isActive() || next.perThread.deleteQueue == queue;
+        assert !next.isActive() || next.dwpt.deleteQueue == queue;
       } finally {
         next.unlock();
       }
@@ -454,9 +478,9 @@ public final class DocumentsWriterFlushControl {
 
   void addFlushableState(ThreadState perThread) {
     if (documentsWriter.infoStream.isEnabled("DWFC")) {
-      documentsWriter.infoStream.message("DWFC", Thread.currentThread().getName() + ": addFlushableState " + perThread.perThread);
+      documentsWriter.infoStream.message("DWFC", Thread.currentThread().getName() + ": addFlushableState " + perThread.dwpt);
     }
-    final DocumentsWriterPerThread dwpt = perThread.perThread;
+    final DocumentsWriterPerThread dwpt = perThread.dwpt;
     assert perThread.isHeldByCurrentThread();
     assert perThread.isActive();
     assert fullFlush;
@@ -473,9 +497,9 @@ public final class DocumentsWriterFlushControl {
       }
     } else {
       if (closed) {
-        perThread.resetWriter(null); // make this state inactive
+        perThreadPool.deactivateThreadState(perThread); // make this state inactive
       } else {
-        dwpt.initialize();
+        perThreadPool.reinitThreadState(perThread);
       }
     }
   }
@@ -597,4 +621,6 @@ public final class DocumentsWriterFlushControl {
   boolean anyStalledThreads() {
     return stallControl.anyStalledThreads();
   }
+  
+  
 }

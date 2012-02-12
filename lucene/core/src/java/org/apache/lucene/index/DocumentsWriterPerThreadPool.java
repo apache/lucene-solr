@@ -16,7 +16,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
@@ -38,11 +37,6 @@ import org.apache.lucene.util.SetOnce;
  * </p>
  */
 public abstract class DocumentsWriterPerThreadPool {
-  /** The maximum number of simultaneous threads that may be
-   *  indexing documents at once in IndexWriter; if more
-   *  than this many threads arrive they will wait for
-   *  others to finish. */
-  public final static int DEFAULT_MAX_THREAD_STATES = 8;
   
   /**
    * {@link ThreadState} references and guards a
@@ -57,17 +51,18 @@ public abstract class DocumentsWriterPerThreadPool {
    */
   @SuppressWarnings("serial")
   public final static class ThreadState extends ReentrantLock {
-    // package private for FlushPolicy
-    DocumentsWriterPerThread perThread;
+    DocumentsWriterPerThread dwpt;
+    // TODO this should really be part of DocumentsWriterFlushControl
     // write access guarded by DocumentsWriterFlushControl
     volatile boolean flushPending = false;
+    // TODO this should really be part of DocumentsWriterFlushControl
     // write access guarded by DocumentsWriterFlushControl
     long bytesUsed = 0;
     // guarded by Reentrant lock
     private boolean isActive = true;
 
-    ThreadState(DocumentsWriterPerThread perThread) {
-      this.perThread = perThread;
+    ThreadState(DocumentsWriterPerThread dpwt) {
+      this.dwpt = dpwt;
     }
     
     /**
@@ -76,12 +71,12 @@ public abstract class DocumentsWriterPerThreadPool {
      * for indexing anymore.
      * @see #isActive()  
      */
-    void resetWriter(DocumentsWriterPerThread perThread) {
+    private void resetWriter(DocumentsWriterPerThread dwpt) {
       assert this.isHeldByCurrentThread();
-      if (perThread == null) {
+      if (dwpt == null) {
         isActive = false;
       }
-      this.perThread = perThread;
+      this.dwpt = dwpt;
       this.bytesUsed = 0;
       this.flushPending = false;
     }
@@ -112,7 +107,7 @@ public abstract class DocumentsWriterPerThreadPool {
     public DocumentsWriterPerThread getDocumentsWriterPerThread() {
       assert this.isHeldByCurrentThread();
       // public for FlushPolicy
-      return perThread;
+      return dwpt;
     }
     
     /**
@@ -124,40 +119,37 @@ public abstract class DocumentsWriterPerThreadPool {
     }
   }
 
-  private final ThreadState[] perThreads;
+  private final ThreadState[] threadStates;
   private volatile int numThreadStatesActive;
-  private FieldNumberBiMap globalFieldMap;
+  private final SetOnce<FieldNumberBiMap> globalFieldMap = new SetOnce<FieldNumberBiMap>();
   private final SetOnce<DocumentsWriter> documentsWriter = new SetOnce<DocumentsWriter>();
   
   /**
-   * Creates a new {@link DocumentsWriterPerThreadPool} with max.
-   * {@link #DEFAULT_MAX_THREAD_STATES} thread states.
+   * Creates a new {@link DocumentsWriterPerThreadPool} with a given maximum of {@link ThreadState}s.
    */
-  public DocumentsWriterPerThreadPool() {
-    this(DEFAULT_MAX_THREAD_STATES);
-  }
-
-  public DocumentsWriterPerThreadPool(int maxNumPerThreads) {
-    maxNumPerThreads = (maxNumPerThreads < 1) ? DEFAULT_MAX_THREAD_STATES : maxNumPerThreads;
-    perThreads = new ThreadState[maxNumPerThreads];
+  public DocumentsWriterPerThreadPool(int maxNumThreadStates) {
+    if (maxNumThreadStates < 1) {
+      throw new IllegalArgumentException("maxNumThreadStates must be >= 1 but was: " + maxNumThreadStates);
+    }
+    threadStates = new ThreadState[maxNumThreadStates];
     numThreadStatesActive = 0;
   }
 
   public void initialize(DocumentsWriter documentsWriter, FieldNumberBiMap globalFieldMap, IndexWriterConfig config) {
     this.documentsWriter.set(documentsWriter); // thread pool is bound to DW
-    this.globalFieldMap = globalFieldMap;
-    for (int i = 0; i < perThreads.length; i++) {
+    this.globalFieldMap.set(globalFieldMap);
+    for (int i = 0; i < threadStates.length; i++) {
       final FieldInfos infos = new FieldInfos(globalFieldMap);
-      perThreads[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, infos, documentsWriter.chain));
+      threadStates[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, infos, documentsWriter.chain));
     }
   }
-
+  
   /**
    * Returns the max number of {@link ThreadState} instances available in this
    * {@link DocumentsWriterPerThreadPool}
    */
   public int getMaxThreadStates() {
-    return perThreads.length;
+    return threadStates.length;
   }
   
   /**
@@ -178,16 +170,16 @@ public abstract class DocumentsWriterPerThreadPool {
    *         <code>null</code>
    */
   public synchronized ThreadState newThreadState() {
-    if (numThreadStatesActive < perThreads.length) {
-      final ThreadState threadState = perThreads[numThreadStatesActive];
+    if (numThreadStatesActive < threadStates.length) {
+      final ThreadState threadState = threadStates[numThreadStatesActive];
       threadState.lock(); // lock so nobody else will get this ThreadState
       boolean unlock = true;
       try {
         if (threadState.isActive()) {
           // unreleased thread states are deactivated during DW#close()
           numThreadStatesActive++; // increment will publish the ThreadState
-          assert threadState.perThread != null;
-          threadState.perThread.initialize();
+          assert threadState.dwpt != null;
+          threadState.dwpt.initialize();
           unlock = false;
           return threadState;
         }
@@ -205,12 +197,12 @@ public abstract class DocumentsWriterPerThreadPool {
   }
   
   private synchronized boolean assertUnreleasedThreadStatesInactive() {
-    for (int i = numThreadStatesActive; i < perThreads.length; i++) {
-      assert perThreads[i].tryLock() : "unreleased threadstate should not be locked";
+    for (int i = numThreadStatesActive; i < threadStates.length; i++) {
+      assert threadStates[i].tryLock() : "unreleased threadstate should not be locked";
       try {
-        assert !perThreads[i].isActive() : "expected unreleased thread state to be inactive";
+        assert !threadStates[i].isActive() : "expected unreleased thread state to be inactive";
       } finally {
-        perThreads[i].unlock();
+        threadStates[i].unlock();
       }
     }
     return true;
@@ -220,8 +212,8 @@ public abstract class DocumentsWriterPerThreadPool {
    * Deactivate all unreleased threadstates 
    */
   protected synchronized void deactivateUnreleasedStates() {
-    for (int i = numThreadStatesActive; i < perThreads.length; i++) {
-      final ThreadState threadState = perThreads[i];
+    for (int i = numThreadStatesActive; i < threadStates.length; i++) {
+      final ThreadState threadState = threadStates[i];
       threadState.lock();
       try {
         threadState.resetWriter(null);
@@ -233,9 +225,10 @@ public abstract class DocumentsWriterPerThreadPool {
   
   protected DocumentsWriterPerThread replaceForFlush(ThreadState threadState, boolean closed) {
     assert threadState.isHeldByCurrentThread();
-    final DocumentsWriterPerThread dwpt = threadState.perThread;
+    assert globalFieldMap.get() != null;
+    final DocumentsWriterPerThread dwpt = threadState.dwpt;
     if (!closed) {
-      final FieldInfos infos = new FieldInfos(globalFieldMap);
+      final FieldInfos infos = new FieldInfos(globalFieldMap.get());
       final DocumentsWriterPerThread newDwpt = new DocumentsWriterPerThread(dwpt, infos);
       newDwpt.initialize();
       threadState.resetWriter(newDwpt);
@@ -251,45 +244,19 @@ public abstract class DocumentsWriterPerThreadPool {
   
   public abstract ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter);
 
+  
   /**
-   * Returns an iterator providing access to all {@link ThreadState}
-   * instances. 
-   */
-  // TODO: new Iterator per indexed doc is overkill...?
-  public Iterator<ThreadState> getAllPerThreadsIterator() {
-    return getPerThreadsIterator(this.perThreads.length);
-  }
-
-  /**
-   * Returns an iterator providing access to all active {@link ThreadState}
-   * instances. 
-   * <p>
-   * Note: The returned iterator will only iterator
-   * {@link ThreadState}s that are active at the point in time when this method
-   * has been called.
+   * Returns the <i>i</i>th active {@link ThreadState} where <i>i</i> is the
+   * given ord.
    * 
+   * @param ord
+   *          the ordinal of the {@link ThreadState}
+   * @return the <i>i</i>th active {@link ThreadState} where <i>i</i> is the
+   *         given ord.
    */
-  // TODO: new Iterator per indexed doc is overkill...?
-  public Iterator<ThreadState> getActivePerThreadsIterator() {
-    return getPerThreadsIterator(numThreadStatesActive);
-  }
-
-  private Iterator<ThreadState> getPerThreadsIterator(final int upto) {
-    return new Iterator<ThreadState>() {
-      int i = 0;
-
-      public boolean hasNext() {
-        return i < upto;
-      }
-
-      public ThreadState next() {
-        return perThreads[i++];
-      }
-
-      public void remove() {
-        throw new UnsupportedOperationException("remove() not supported.");
-      }
-    };
+  ThreadState getThreadState(int ord) {
+    assert ord < numThreadStatesActive;
+    return threadStates[ord];
   }
 
   /**
@@ -299,14 +266,59 @@ public abstract class DocumentsWriterPerThreadPool {
    */
   protected ThreadState minContendedThreadState() {
     ThreadState minThreadState = null;
-    // TODO: new Iterator per indexed doc is overkill...?
-    final Iterator<ThreadState> it = getActivePerThreadsIterator();
-    while (it.hasNext()) {
-      final ThreadState state = it.next();
+    final int limit = numThreadStatesActive;
+    for (int i = 0; i < limit; i++) {
+      final ThreadState state = threadStates[i];
       if (minThreadState == null || state.getQueueLength() < minThreadState.getQueueLength()) {
         minThreadState = state;
       }
     }
     return minThreadState;
+  }
+  
+  /**
+   * Returns the number of currently deactivated {@link ThreadState} instances.
+   * A deactivated {@link ThreadState} should not be used for indexing anymore.
+   * 
+   * @return the number of currently deactivated {@link ThreadState} instances.
+   */
+  int numDeactivatedThreadStates() {
+    int count = 0;
+    for (int i = 0; i < threadStates.length; i++) {
+      final ThreadState threadState = threadStates[i];
+      threadState.lock();
+      try {
+       if (!threadState.isActive) {
+         count++;
+       }
+      } finally {
+        threadState.unlock();
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Deactivates an active {@link ThreadState}. Inactive {@link ThreadState} can
+   * not be used for indexing anymore once they are deactivated. This method should only be used
+   * if the parent {@link DocumentsWriter} is closed or aborted.
+   * 
+   * @param threadState the state to deactivate
+   */
+  void deactivateThreadState(ThreadState threadState) {
+    assert threadState.isActive();
+    threadState.resetWriter(null);
+  }
+
+  /**
+   * Reinitialized an active {@link ThreadState}. A {@link ThreadState} should
+   * only be reinitialized if it is active without any pending documents.
+   * 
+   * @param threadState the state to reinitialize
+   */
+  void reinitThreadState(ThreadState threadState) {
+    assert threadState.isActive;
+    assert threadState.dwpt.getNumDocsInRAM() == 0;
+    threadState.dwpt.initialize();
   }
 }
