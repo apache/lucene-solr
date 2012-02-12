@@ -578,8 +578,9 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
 
   @Override
   public void announceLeader(String collection, String shardId, ZkCoreNodeProps props) {
-    log.info("Leader change pooled.");
-    fifo.add(new CloudStateUpdateRequest(Op.LeaderChange, collection, shardId, props.getCoreUrl()));
+    String coreUrl = props.getCoreUrl();
+    log.info("Leader change pooled: " + coreUrl);
+    fifo.add(new CloudStateUpdateRequest(Op.LeaderChange, collection, shardId, coreUrl));
   }
   
 }
