@@ -29,6 +29,7 @@ public enum LicenseType {
   BSD_LIKE("BSD like license", true),//BSD like just means someone has taken the BSD license and put in their name, copyright, or it's a very similar license.
   CDDL("Common Development and Distribution License", false),
   CPL("Common Public License", true),
+  EPL("Eclipse Public License Version 1.0", false),
   MIT("Massachusetts Institute of Tech. License", false),
   MPL("Mozilla Public License", false), //NOT SURE on the required notice
   PD("Public Domain", false),
