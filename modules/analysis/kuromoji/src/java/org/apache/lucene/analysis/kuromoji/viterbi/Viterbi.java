@@ -118,12 +118,15 @@ public class Viterbi {
       if (startIndexArr[i] == null || endIndexArr[i] == null){	// continue since no array which contains ViterbiNodes exists. Or no previous node exists.
         continue;
       }
+      //System.out.println("\npos=" + (i-1));
 
       // For each arc leaving...
       for (ViterbiNode node : startIndexArr[i]) {
         if (node == null){	// If array doesn't contain ViterbiNode any more, continue to next index
           break;
         }
+
+        //System.out.println("  leaving node.wordID=" + node.getWordId() + " leftID=" + node.getLeftId());
         
         int backwardConnectionId = node.getLeftId();
         int wordCost = node.getWordCost();
@@ -134,8 +137,10 @@ public class Viterbi {
             break;
           }
           
+          //System.out.println("    arriving node.wordID=" + leftNode.getWordId() + " rightID=" + leftNode.getRightId());
           int pathCost = leftNode.getPathCost() + costs.get(leftNode.getRightId(), backwardConnectionId) + wordCost;	// cost = [total cost from BOS to previous node] + [connection cost between previous node and current node] + [word cost]
-          
+
+          //System.out.println("      pathCost=" + pathCost);
           // "Search mode". Add extra costs if it is long node.
           if (searchMode) {
             //						System.out.print(""); // If this line exists, kuromoji runs faster for some reason when searchMode == false.
@@ -161,8 +166,10 @@ public class Viterbi {
               }
             }
           }
+          //System.out.println("      after penalty pathCost=" + pathCost);
           
           if (pathCost < leastPathCost){	// If total cost is lower than before, set current previous node as best left node (previous means left).
+            //System.out.println("        **");
             leastPathCost = pathCost;
             node.setPathCost(leastPathCost);
             node.setLeftNode(leftNode);

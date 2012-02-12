@@ -56,6 +56,7 @@ public final class KuromojiTokenizer extends SegmentingTokenizerBase {
   @Override
   protected void setNextSentence(int sentenceStart, int sentenceEnd) {
     this.sentenceStart = sentenceStart;
+    //System.out.println("\nNEXT SENTENCE: " + sentenceStart + " to " + sentenceEnd + ": " + new String(buffer, sentenceStart, sentenceEnd-sentenceStart));
     // TODO: maybe don't pass 0 here, so kuromoji tracks offsets for us?
     tokens = segmenter.doTokenize(0, buffer, sentenceStart, sentenceEnd-sentenceStart, true);
     tokenIndex = 0;

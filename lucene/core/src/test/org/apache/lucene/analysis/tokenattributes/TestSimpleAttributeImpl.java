@@ -27,8 +27,10 @@ public class TestSimpleAttributeImpl extends LuceneTestCase {
 
   // this checks using reflection API if the defaults are correct
   public void testAttributes() {
-    _TestUtil.assertAttributeReflection(new PositionIncrementAttributeImpl(),
-      Collections.singletonMap(PositionIncrementAttribute.class.getName()+"#positionIncrement", 1));
+    _TestUtil.assertAttributeReflection(new PositionIncrementAttributeImpl(), new HashMap<String,Object>() {{
+      put(PositionIncrementAttribute.class.getName()+"#positionIncrement", 1);
+      put(PositionIncrementAttribute.class.getName()+"#positionLength", 1);
+    }});
     _TestUtil.assertAttributeReflection(new FlagsAttributeImpl(),
       Collections.singletonMap(FlagsAttribute.class.getName()+"#flags", 0));
     _TestUtil.assertAttributeReflection(new TypeAttributeImpl(),

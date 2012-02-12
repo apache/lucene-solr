@@ -52,10 +52,14 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
   public void testDecomposition() throws IOException {
 
     // nocommit
+    /*
     TokenStream ts = new KuromojiAnalyzer(TEST_VERSION_CURRENT)
         .tokenStream("foo",
-                     new StringReader("マイケルジャクソン	マイケル ジャクソン"));
+                     //new StringReader("楽器・機材の質は完全にプロ仕様！ですが値段は何処よりも安い！"));
+                     //new StringReader("ですが値段は何処よりも安い！"));
+                     new StringReader("木工芸では、木を、硬木、軟木と、唐木に分類します。"));
     while(ts.incrementToken());
+    */
 
     // Senior software engineer:
     if (KuromojiTokenizer2.DO_OUTPUT_COMPOUND) {
@@ -95,7 +99,6 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
 
       // Kyoto University Baseball Club
       // nocommit --segments differently but perhaps OK
-      /*
       assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "京都大学硬式野球部",
                        new String[] { "京都",
                                       "京都大学硬式野球部",
@@ -104,7 +107,6 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
                                       "野球",
                                       "部" },
                        new int[] {1, 0, 1, 1, 1, 1});
-      */
     } else {
       assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "シニアソフトウェアエンジニア",
                        new String[] { "シニア",

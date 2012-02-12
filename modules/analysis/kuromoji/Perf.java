@@ -9,9 +9,9 @@ import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer;
 import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
 import org.apache.lucene.analysis.util.SegmentingTokenizerBase;
 
-// javac -cp ../build/kuromoji/classes/java:../../../lucene/build/classes/java:../../analysis/build/common/lucene-analyzers-common-4.0-SNAPSHOT.jar Perf.java
+// javac -cp ../build/kuromoji/classes/java:../../../lucene/build/core/classes/java:../../analysis/build/common/lucene-analyzers-common-4.0-SNAPSHOT.jar Perf.java
 
-// java -cp .:../build/kuromoji/classes/java:../../../lucene/build/classes/java:../../analysis/build/common/lucene-analyzers-common-4.0-SNAPSHOT.jar Perf
+// java -cp .:../build/kuromoji/classes/java:../../../lucene/build/core/classes/java:../../analysis/build/common/lucene-analyzers-common-4.0-SNAPSHOT.jar Perf
 public class Perf {
 
   private final static Analyzer analyzer = new Analyzer() {

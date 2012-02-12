@@ -46,6 +46,7 @@ import org.apache.lucene.util.AttributeImpl;
  */
 public class PositionIncrementAttributeImpl extends AttributeImpl implements PositionIncrementAttribute, Cloneable {
   private int positionIncrement = 1;
+  private int positionLength = 1;
   
   /** Set the position increment. The default value is one.
    *
@@ -54,7 +55,7 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
   public void setPositionIncrement(int positionIncrement) {
     if (positionIncrement < 0)
       throw new IllegalArgumentException
-        ("Increment must be zero or greater: " + positionIncrement);
+        ("Increment must be zero or greater: got " + positionIncrement);
     this.positionIncrement = positionIncrement;
   }
 
@@ -65,9 +66,27 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
     return positionIncrement;
   }
 
+  /** @param positionLength how many positions this token
+   *  spans.  NOTE: this is optional, and most analyzers
+   *  don't change the default value (1). */
+  public void setPositionLength(int positionLength) {
+    if (positionLength < 1)
+      throw new IllegalArgumentException
+        ("Position length must be 1 or greater: got " + positionLength);
+    this.positionLength = positionLength;
+  }
+
+  /** Returns the position length of this Token.
+   * @see #setPositionLength    
+   */
+  public int getPositionLength() {
+    return positionLength;
+  }
+
   @Override
   public void clear() {
     this.positionIncrement = 1;
+    this.positionLength = 1;
   }
   
   @Override
@@ -77,7 +96,9 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
     }
     
     if (other instanceof PositionIncrementAttributeImpl) {
-      return positionIncrement == ((PositionIncrementAttributeImpl) other).positionIncrement;
+      PositionIncrementAttributeImpl _other = (PositionIncrementAttributeImpl) other;
+      return positionIncrement ==  _other.positionIncrement &&
+        positionLength ==  _other.positionLength;
     }
  
     return false;
@@ -85,13 +106,14 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
 
   @Override
   public int hashCode() {
-    return positionIncrement;
+    return positionIncrement + positionLength*3947;
   }
   
   @Override
   public void copyTo(AttributeImpl target) {
     PositionIncrementAttribute t = (PositionIncrementAttribute) target;
     t.setPositionIncrement(positionIncrement);
+    t.setPositionLength(positionLength);
   }  
 
 }

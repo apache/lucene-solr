@@ -32,12 +32,77 @@ import java.util.zip.ZipFile;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 // nocommit: we don't need this or its huge files i dont think?
 // just compares segmentation to some sentences pre-tokenized by mecab
 public class TestQuality extends LuceneTestCase {
+
+  public void testSingleText() throws Exception {
+    File datafile = getDataFile("tanakaseg.zip");
+    ZipFile zip = new ZipFile(datafile);
+    InputStream is = zip.getInputStream(zip.getEntry("sentences.txt"));
+    BufferedReader unseg = new BufferedReader(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
+    InputStream is2 = zip.getInputStream(zip.getEntry("segmented.txt"));
+    BufferedReader seg = new BufferedReader(new InputStreamReader(is2, IOUtils.CHARSET_UTF_8));
+    Stats stats = new Stats();
+
+    final boolean ONE_TIME = true;
+
+    /**
+     #words: 1578506
+     #chars: 4519246
+     #edits: 651
+     #sentences: 150122
+     sentence agreement?: 0.998161495317142
+     word agreement?: 0.999587584716181
+     */
+    //final Tokenizer tokenizer = new KuromojiTokenizer(null, null, true, Mode.SEARCH);
+
+    StringBuilder sb = new StringBuilder();
+
+    String line1 = null;
+    String line2 = null;
+    int maxLen = 0;
+    int count = 0;
+    while ((line1 = unseg.readLine()) != null) {
+      seg.readLine();
+      // nocommit also try removing the "easy" period at the
+      // end of each sentence...
+      maxLen = Math.max(line1.length(), maxLen);
+      sb.append(line1);
+      if (ONE_TIME && count++ == 100) {
+        // nocommit;
+        break;
+      }
+    }
+    System.out.println("maxLen=" + maxLen);
+
+    //final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH);
+    final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""));
+    final String all = sb.toString();
+    final int ITERS = 20;
+    CharTermAttribute termAtt = tokenizer.addAttribute(CharTermAttribute.class); 
+    for(int iter=0;iter<ITERS;iter++) {
+      tokenizer.reset(new StringReader(all));
+      count = 0;
+      long t0 = System.currentTimeMillis();
+      while(tokenizer.incrementToken()) {
+        if (false && ONE_TIME) {
+          System.out.println(count + ": " + termAtt.toString());
+        }
+        count++;
+      }
+      long t1 = System.currentTimeMillis();
+      System.out.println(all.length()/(t1-t0) + " bytes/msec; count=" + count);
+
+      if (ONE_TIME) {
+        break;
+      }
+    }
+  }
 
   public void test() throws Exception {
     File datafile = getDataFile("tanakaseg.zip");
@@ -55,20 +120,24 @@ public class TestQuality extends LuceneTestCase {
      sentence agreement?: 0.998161495317142
      word agreement?: 0.999587584716181
      */
-    //final Tokenizer tokenizer = new KuromojiTokenizer(null, null, true, Mode.SEARCH);
+    
+    //final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""));
+    //final Tokenizer tokenizer = new KuromojiTokenizer(new Segmenter(Mode.NORMAL), new StringReader(""));
     final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH);
     
     String line1 = null;
     String line2 = null;
+    int count = 0;
     while ((line1 = unseg.readLine()) != null) {
       line2 = seg.readLine();
-      evaluateLine(line1, line2, tokenizer, stats);
+      evaluateLine(count++, line1, line2, tokenizer, stats);
     }
     
     System.out.println("#words: " + stats.numWords);
     System.out.println("#chars: " + stats.numChars);
     System.out.println("#edits: " + stats.numEdits);
     System.out.println("#sentences: " + stats.numSentences);
+    System.out.println("#tokens: " + stats.numTokens);
     System.out.println("sentence agreement?: " + (stats.numSentencesCorrect/(double)stats.numSentences));
     System.out.println("word agreement?: " + (1D - (stats.numEdits / (double)stats.numWords)));
     unseg.close();
@@ -82,38 +151,126 @@ public class TestQuality extends LuceneTestCase {
     long numChars = 0;
     long numSentences = 0;
     long numSentencesCorrect = 0;
+    long numTokens = 0;
+  }
+
+  static class Path {
+    public final List<String> tokens;
+    public int pos;
+
+    public Path() {
+      tokens = new ArrayList<String>();
+    }
+
+    public void add(String token, int posLen) {
+      tokens.add(token);
+      pos += posLen;
+    }
   }
   
-  public static void evaluateLine(String unseg, String seg, Tokenizer tokenizer, Stats stats) throws Exception {
-    //System.out.println("\nTEST: " + unseg);
-    List<String> tokens = new ArrayList<String>();
+  public static void evaluateLine(int lineCount, String unseg, String seg, Tokenizer tokenizer, Stats stats) throws Exception {
+    if (VERBOSE) {
+      System.out.println("\nTEST " + lineCount + ": input " + unseg);
+    }
     tokenizer.reset(new StringReader(unseg));
     CharTermAttribute termAtt = tokenizer.addAttribute(CharTermAttribute.class);
+    PositionIncrementAttribute posIncAtt = tokenizer.addAttribute(PositionIncrementAttribute.class);
+    List<Path> paths = new ArrayList<Path>();
+    paths.add(new Path());
+    
+    int pos = -1;
+    int numTokens = 0;
     while(tokenizer.incrementToken()) {
-      tokens.add(termAtt.toString());
+      final int posInc = posIncAtt.getPositionIncrement();
+      final int posLength = posIncAtt.getPositionLength();
+      final String token = termAtt.toString();
+
+      //System.out.println("  tok=" + token + " numPaths=" + paths.size() + " posLen=" + posLength);
+
+      pos += posInc;
+      numTokens++;
+
+      if (VERBOSE) {
+        if (posIncAtt.getPositionIncrement() == 0) {
+          System.out.println("  fork @ token=" + token + " posLength=" + posLength);
+        }
+      }
+
+      assert pos >= 0;
+      final int numPaths = paths.size();
+      for(int pathID=0;pathID<numPaths;pathID++) {
+        final Path path = paths.get(pathID);
+        if (pos == path.pos) {
+          path.add(token, posLength);
+        } else if (pos == path.pos-1 && posInc == 0) {
+
+          // NOTE: this is horribly, horribly inefficient in
+          // general!!  Much better to do graph-to-graph
+          // alignment to get min edits:
+
+          // nocommit this isn't fully general, ie, it
+          // assumes the tokenizer ALWAYS outputs the
+          // posLen=1 token first, at a given position
+          // Fork!
+          assert path.tokens.size() > 0;
+          Path newPath = new Path();
+          newPath.tokens.addAll(path.tokens);
+          newPath.tokens.remove(newPath.tokens.size()-1);
+          newPath.pos = pos;
+          newPath.add(token, posLength);
+          paths.add(newPath);
+
+        } else {
+          assert pos < path.pos: "pos=" + pos + " path.pos=" + path.pos + " pathID=" + pathID;
+        }
+      }
     }
-    
+
+    if (VERBOSE) {
+      System.out.println("  " + paths.size() + " paths");
+    }
+
     List<String> expectedTokens = Arrays.asList(seg.split("\\s+"));
-    tokens = normalize(tokens);
     expectedTokens = normalize(expectedTokens);
+
+    int minEdits = Integer.MAX_VALUE;
+    List<String> minPath = null;
+    for(Path path : paths) {
+      List<String> tokens = normalize(path.tokens);
+      if (VERBOSE) {
+        System.out.println("    path: " + path.tokens);
+      }
     
-    HashMap<String,Character> transformation = new HashMap<String,Character>();
-    CharRef charRef = new CharRef();
+      HashMap<String,Character> transformation = new HashMap<String,Character>();
+      CharRef charRef = new CharRef();
+      String s1 = transform(tokens, transformation, charRef);
+      String s2 = transform(expectedTokens, transformation, charRef);
     
-    String s1 = transform(tokens, transformation, charRef);
-    String s2 = transform(expectedTokens, transformation, charRef);
-    
-    int edits = getDistance(s2, s1);
-    if (edits > 0) {
-      System.out.println(edits + " edits; unseg: " + unseg);
-      System.out.println(tokens + " vs " + expectedTokens);
+      int edits = getDistance(s2, s1);
+      if (edits < minEdits) {
+        minEdits = edits;
+        minPath = tokens;
+        if (VERBOSE) {
+          System.out.println("      ** edits=" + edits);
+        }
+      }
+    }
+    assert minPath != null;
+    if (minEdits > 0) {
+      if (!VERBOSE) {
+        System.out.println("\nTEST " + lineCount + ": input " + unseg + "; " + minEdits + " edits");
+      }
+      System.out.println("    expected: " + expectedTokens);
+      System.out.println("      actual: " + minPath);
     }
     stats.numChars += seg.length();
-    stats.numEdits += edits;
+    stats.numEdits += minEdits;
     stats.numWords += expectedTokens.size();
+    stats.numTokens += numTokens;
     stats.numSentences++;
-    if (edits == 0)
+    if (minEdits == 0) {
       stats.numSentencesCorrect++;
+    }
   }
   
   static class CharRef {
