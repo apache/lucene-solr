@@ -42,7 +42,7 @@ public abstract class Tokenizer extends TokenStream {
   
   /** Construct a token stream processing the given input. */
   protected Tokenizer(Reader input) {
-    this.input = CharReader.get(input);
+    this.input = input;
   }
   
   /** Construct a tokenizer with null input using the given AttributeFactory.
@@ -56,7 +56,7 @@ public abstract class Tokenizer extends TokenStream {
   /** Construct a token stream processing the given input using the given AttributeFactory. */
   protected Tokenizer(AttributeFactory factory, Reader input) {
     super(factory);
-    this.input = CharReader.get(input);
+    this.input = input;
   }
 
   /** Construct a token stream processing the given input using the given AttributeSource.
@@ -70,7 +70,7 @@ public abstract class Tokenizer extends TokenStream {
   /** Construct a token stream processing the given input using the given AttributeSource. */
   protected Tokenizer(AttributeSource source, Reader input) {
     super(source);
-    this.input = CharReader.get(input);
+    this.input = input;
   }
   
   /** By default, closes the input Reader. */
