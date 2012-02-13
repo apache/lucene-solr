@@ -641,10 +641,6 @@ New features
 
 Optimizations
 
-* LUCENE-3774: Optimized and streamlined license and notice file validation
-  by refactoring the build task into an ANT task and modifying build scripts
-  to perform top-level checks. (Dawid Weiss, Steve Rowe, Robert Muir)
-
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
   index, saving RAM in IndexReader; change default terms index
   interval from 128 to 32, because the terms index now requires much
@@ -943,6 +939,10 @@ Build
     lucene/build.xml delegates all build tasks (via
     <ant dir="internal-module-dir"> calls) to these modules' build.xml files.
   (Steve Rowe)
+
+* LUCENE-3774: Optimized and streamlined license and notice file validation
+  by refactoring the build task into an ANT task and modifying build scripts
+  to perform top-level checks. (Dawid Weiss, Steve Rowe, Robert Muir)
 
 
 ======================= Lucene 3.5.0 =======================
