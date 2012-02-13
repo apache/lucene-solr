@@ -44,14 +44,22 @@ class SegmentTermDocs implements TermDocs {
   protected boolean currentFieldStoresPayloads;
   protected IndexOptions indexOptions;
   
-  protected SegmentTermDocs(SegmentReader parent) {
+  protected SegmentTermDocs(SegmentReader parent, boolean raw) {
     this.parent = parent;
     this.freqStream = (IndexInput) parent.core.freqStream.clone();
-    synchronized (parent) {
-      this.deletedDocs = parent.deletedDocs;
+    if (!raw) {
+      synchronized (parent) {
+        this.deletedDocs = parent.deletedDocs;
+      }
+    } else {
+      this.deletedDocs = null;
     }
     this.skipInterval = parent.core.getTermsReader().getSkipInterval();
     this.maxSkipLevels = parent.core.getTermsReader().getMaxSkipLevels();
+  }
+
+  protected SegmentTermDocs(SegmentReader parent) {
+    this(parent, false);
   }
 
   public void seek(Term term) throws IOException {

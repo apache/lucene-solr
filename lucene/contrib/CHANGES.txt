@@ -137,6 +137,10 @@ Bug Fixes
    that take stopwords and stem exclusion tables also initialize
    the default stem overrides (e.g. kind/kinder, fiets).  (Robert Muir)
 
+ * SOLR-3076: ToParent/ChildBlockJoinQuery was not handling
+   deleted docs correctly (Mikhail Khludnev via Mike
+   McCandless).
+  
 Documentation
 
  * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly 

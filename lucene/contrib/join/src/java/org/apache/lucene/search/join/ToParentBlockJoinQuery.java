@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;       // javadocs
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.CachingWrapperFilter; // javadocs
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -45,6 +46,21 @@ import org.apache.lucene.util.FixedBitSet;
  * document.  At search time you provide a Filter
  * identifying the parents, however this Filter must provide
  * an {@link FixedBitSet} per sub-reader.
+ *
+ * <p><b>WARNING</b>: to create the parents filter, always use
+ * {@link RawTermFilter} (so that the filter
+ * includes deleted docs), wrapped with {@link
+ * CachingWrapperFilter} (so that the returned bit set per
+ * reader is a {@link FixedBitSet}), specifying
+ * DeletesMode.IGNORE (so that on reopen, the filter still
+ * includes deleted docs).  Failure to do this can result in
+ * completely wrong documents being returned!  For example:
+ *
+ * <pre>
+ *   Filter parents = new CachingWrapperFilter(
+ *                          new RawTermFilter(new Term("parent", "yes")),
+ *                          CachingWrapperFilter.DeletesMode.IGNORE);
+ * </pre>
  *
  * <p>Once the block index is built, use this query to wrap
  * any sub-query matching only child docs and join matches in that

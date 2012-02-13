@@ -502,6 +502,21 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
+  /** Expert: returns an enumeration of the documents that contain
+   *  <code>term</code>, including deleted documents (which
+   *  are normally filtered out).
+   * 
+   * @lucene.experimental
+   */
+  public TermDocs rawTermDocs(Term term) throws IOException {
+    if (term == null) {
+      throw new IllegalArgumentException("term must not be null");
+    }
+    TermDocs td = new SegmentTermDocs(this, true);
+    td.seek(term);
+    return td;
+  }
+
   @Override
   public TermDocs termDocs() throws IOException {
     ensureOpen();
