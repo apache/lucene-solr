@@ -142,7 +142,7 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
     // dodge jre bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7104012
     final UncaughtExceptionHandler savedHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-      @Override
+      // Not in Java 5: @Override
       public void uncaughtException(Thread thread, Throwable throwable) {
         assumeTrue("not failing due to jre bug ", !isJREBug7104012(throwable));
         // otherwise its some other bug, pass to default handler
