@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -137,6 +138,40 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer a = new PatternAnalyzer(TEST_VERSION_CURRENT, Pattern.compile(","), true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    
+    // dodge jre bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7104012
+    final UncaughtExceptionHandler savedHandler = Thread.getDefaultUncaughtExceptionHandler();
+    Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+      @Override
+      public void uncaughtException(Thread thread, Throwable throwable) {
+        assumeTrue("not failing due to jre bug ", !isJREBug7104012(throwable));
+        // otherwise its some other bug, pass to default handler
+        savedHandler.uncaughtException(thread, throwable);
+      }
+    });
+    
+    try {
+      Thread.getDefaultUncaughtExceptionHandler();
+      checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    } catch (ArrayIndexOutOfBoundsException ex) {
+      assumeTrue("not failing due to jre bug ", !isJREBug7104012(ex));
+      throw ex; // otherwise rethrow
+    } finally {
+      Thread.setDefaultUncaughtExceptionHandler(savedHandler);
+    }
+  }
+  
+  static boolean isJREBug7104012(Throwable t) {
+    if (!(t instanceof ArrayIndexOutOfBoundsException)) {
+      return false;
+    }
+    StackTraceElement trace[] = t.getStackTrace();
+    for (StackTraceElement st : trace) {
+      if ("java.text.RuleBasedBreakIterator".equals(st.getClassName()) 
+          && "lookupBackwardState".equals(st.getMethodName())) {
+        return true;
+      }
+    }
+    return false;
   }
 }
