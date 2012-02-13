@@ -23,7 +23,6 @@ package org.apache.lucene.validation;
  *
  **/
 public enum LicenseType {
-
   ASL("Apache Software License 2.0", true),
   BSD("Berkeley Software Distribution", true),
   BSD_LIKE("BSD like license", true),//BSD like just means someone has taken the BSD license and put in their name, copyright, or it's a very similar license.
@@ -35,13 +34,11 @@ public enum LicenseType {
   PD("Public Domain", false),
   //SUNBCLA("Sun Binary Code License Agreement"),
   SUN("Sun Open Source License", false),
-  FAKE("FAKE license - not needed", false)
-          ;
+  COMPOUND("Compound license (see NOTICE).", true),
+  FAKE("FAKE license - not needed", false);
 
   private String display;
-
   private boolean noticeRequired;
-
 
   LicenseType(String display, boolean noticeRequired) {
     this.display = display;
@@ -56,11 +53,24 @@ public enum LicenseType {
     return display;
   }
 
-
   public String toString() {
     return "LicenseType{" +
             "display='" + display + '\'' +
             '}';
+  }
+
+  /**
+   * Expected license file suffix for a given license type.
+   */
+  public String licenseFileSuffix() {
+    return "-LICENSE-" + this.name() + ".txt";
+  }
+
+  /**
+   * Expected notice file suffix for a given license type.
+   */
+  public String noticeFileSuffix() {
+    return "-NOTICE.txt";
   }
 }
 

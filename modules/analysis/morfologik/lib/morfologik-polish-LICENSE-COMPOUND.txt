@@ -7,6 +7,7 @@ licenced on the terms of (inter alia): GPL, LGPL, MPL or CC-SA licenses.
 Part-of-speech tags were added in Morfologik project and are not found 
 in the data from sjp.pl. 
 
+-----
 
 BSD-licensed dictionary of Polish (SGJP)
 http://sgjp.pl/morfeusz/

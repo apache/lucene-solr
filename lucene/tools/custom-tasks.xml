@@ -1,0 +1,59 @@
+
+<project name="custom-tasks">
+  <description>
+    This file is designed for importing into a main build file, and not intended
+    for standalone use.
+  </description>
+
+  <macrodef name="license-check-macro">
+    <attribute name="dir" />
+    <element name="additional-excludes" optional="true" />
+    <element name="additional-filters"  optional="true" />
+    <sequential>
+      <!-- LICENSE and NOTICE verification macro. -->
+      <dirname file="${ant.file.custom-tasks}" property="custom-tasks.dir"/>
+      <taskdef resource="lucene-solr.antlib.xml">
+        <classpath>
+          <pathelement location="${custom-tasks.dir}/../build/tools/classes/java" />
+        </classpath>
+      </taskdef>
+
+      <echo>License check under: @{dir}</echo>
+      <licenses>
+        <fileset dir="@{dir}">
+          <include name="**/*.jar" />
+          <!-- Speed up scanning a bit. -->
+          <exclude name="**/.git/**" />
+          <exclude name="**/.svn/**" />
+          <exclude name="**/bin/**" />
+          <exclude name="**/build/**" />
+          <exclude name="**/dist/**" />
+          <exclude name="**/src/**" />
+          <additional-excludes />
+        </fileset>
+
+        <licenseMapper>
+          <filtermapper id="license-mapper-defaults">
+            <!-- Normalize input paths. -->
+            <replacestring from="\" to="/" />
+            <replaceregex pattern="\.jar$" replace="" flags="gi" />
+    
+            <!-- Some typical snapshot/minimalized JAR suffixes. -->
+            <replaceregex pattern="-min$" replace="" flags="gi" />
+            <replaceregex pattern="SNAPSHOT$" replace="" flags="gi" />
+
+            <!-- Non-typical version patterns. -->
+            <additional-filters />
+            <replaceregex pattern="/xercesImpl([^/]+)$" replace="/xercesImpl" flags="gi" />
+            <replaceregex pattern="/commons-csv-([^/]+)$" replace="/commons-csv" flags="gi" />
+            <replaceregex pattern="/(bcmail|bcprov)-([^/]+)$" replace="/\1" flags="gi" />
+            <replaceregex pattern="/slf4j-([^/]+)$" replace="/slf4j" flags="gi" />
+    
+            <!-- Typical version patterns. -->
+            <replaceregex pattern="\-(r)?([0-9\-\_\.])+(b(eta)?([0-9\-\.])*)?$" replace="" flags="gi" />
+          </filtermapper>
+        </licenseMapper>
+      </licenses>
+    </sequential>
+  </macrodef>
+</project>

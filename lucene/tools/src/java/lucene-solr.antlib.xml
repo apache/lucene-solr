@@ -1,0 +1,5 @@
+<antlib>
+    <taskdef 
+        name="licenses" 
+        classname="org.apache.lucene.validation.LicenseCheckTask" />
+</antlib> 

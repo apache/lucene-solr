@@ -44,6 +44,7 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
+
   <target name="test" depends="test-core, test-contrib, test-backwards"
           description="Runs all unit tests (core, contrib and back-compat)"
   />
@@ -170,6 +171,11 @@
         <testresults refid="clover.test.result.files"/>
       </current>
     </clover-report>
+  </target>
+
+  <!-- Validate once from top-level. -->
+  <target name="validate" depends="compile-tools" description="Validate legal stuff.">
+    <license-check-macro dir="${basedir}" />
   </target>
 
   <!-- ================================================================== -->

@@ -62,10 +62,6 @@
     <fileset dir="${common.dir}/lib" includes="ant-*.jar"/>
   </path>
 
-  <path id="tools.runtime.classpath">
-    <pathelement location="${common.dir}/build/tools/classes/java"/>
-  </path>
-
   <path id="maven-ant-tasks.classpath">
     <fileset dir="${common.dir}/lib">
       <include name="maven-ant-tasks-*.jar"/>
@@ -204,16 +200,17 @@
   <property name="clover.db.dir" location="${common.dir}/build/test/clover/db"/>
   <property name="clover.report.dir" location="${common.dir}/build/test/clover/reports"/>
 
-    <available
+  <available
             property="clover.present"
             classname="com.cenqua.clover.tasks.CloverReportTask"
-            />
-   <condition property="clover.enabled">
-       <and>
-           <isset property="run.clover"/>
-           <isset property="clover.present"/>
-       </and>
-   </condition>
+  />
+   
+  <condition property="clover.enabled">
+    <and>
+     <isset property="run.clover"/>
+     <isset property="clover.present"/>
+    </and>
+  </condition>
 
   <propertyset id="uptodate.and.compiled.properties" dynamic="true">
     <propertyref regex=".*\.uptodate$$"/>
@@ -224,6 +221,9 @@
               includes="src/,index.html,*build*.xml,docs/,*.txt,contrib/,lib/,backwards/"
               excludes="**/pom.xml,**/*.iml,site/build/"
   />
+
+  <!-- Import custom ANT tasks. -->
+  <import file="${common.dir}/tools/custom-tasks.xml" />
 
   <target name="clean"
     description="Removes contents of build and dist directories">
@@ -678,11 +678,11 @@
 	    <fail if="tests.failed">Tests failed!</fail>
   	</sequential>
   </macrodef>
-	
-  <target name="test" depends="compile-test,validate-lucene,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
+
+  <target name="test" depends="compile-test,validate,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
 
   <target name="junit-mkdir">
-  	<mkdir dir="${junit.output.dir}"/>
+    <mkdir dir="${junit.output.dir}"/>
   </target>
 
   <target name="junit-sequential" if="tests.sequential">
@@ -820,12 +820,14 @@
     <attribute name="destdir"/>
     <attribute name="javac.source" default="${javac.source}"/>
     <attribute name="javac.target" default="${javac.target}"/>
+    <attribute name="includeantruntime" default="${javac.includeAntRuntime}" />
+
     <element name="nested" implicit="yes" optional="yes"/>
 
     <sequential>
       <mkdir dir="@{destdir}"/>
       <javac
-        includeAntRuntime="${javac.includeAntRuntime}"
+        includeAntRuntime="@{includeantruntime}"
         encoding="${build.encoding}"
         srcdir="@{srcdir}"
         destdir="@{destdir}"
@@ -955,26 +957,9 @@
 
   <!-- VALIDATION work -->
 
-  <target name="check-legal-lucene" depends="compile-tools">
-    <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
-      <classpath>
-        <path refid="tools.runtime.classpath" />
-      </classpath>
-      <!-- TODO: it might be better to just automatically find all directories that contain jar files, but that could take a
-       long time.  This should be faster, but we could miss a directory
-       -->
-      <!-- Lucene  -->
-      <arg value="-c" />
-      <arg value="${common.dir}/lib" />
-    </java>
-  </target>
-
-  <target name="check-legal" depends="check-legal-lucene"/>
-
-  <target name="validate-lucene" depends="check-legal-lucene" unless="validated-lucene"/>
-
   <!-- Generic placeholder target for if we add other validation tasks -->
-  <target name="validate" depends="validate-lucene"/>
+  <target name="validate" depends="compile-tools">
+  </target>
 
   <property name="svn.export.dir" location="${build.dir}/svn-export"/>
   <macrodef name="svn-export-source"
@@ -1096,5 +1081,4 @@
       </scp>
     </sequential>
   </macrodef>
-
 </project>

@@ -18,111 +18,47 @@
  -->
 
 <project name="modules" default="test" basedir=".">
-  <!-- TODO: at some point we should probably iterate like contrib-crawl -->
-  <target name="test" description="Test all modules">
+  <dirname file="${ant.file.modules}" property="modules.dir"/> 
+  <import file="${modules.dir}/../lucene/tools/custom-tasks.xml" /> 
+
+  <macrodef name="forall-modules">
+    <attribute name="target" />
     <sequential>
-      <subant target="test" inheritall="false" failonerror="true">
-        <fileset dir="analysis" includes="build.xml" />
-        <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="facet" includes="build.xml" />
-        <fileset dir="queries" includes="build.xml" />
-        <fileset dir="grouping" includes="build.xml" />
-        <fileset dir="join" includes="build.xml" />
-        <fileset dir="queryparser" includes="build.xml" />
-        <fileset dir="suggest" includes="build.xml" />
+      <subant target="@{target}" inheritall="false" failonerror="true">
+        <fileset dir="${modules.dir}" includes="*/build.xml" />
       </subant>
     </sequential>
+  </macrodef>
+
+  <target name="test" description="Test all modules">
+    <forall-modules target="test" />
   </target>
 
   <target name="compile" description="Compile all modules" depends="validate">
-    <sequential>
-      <subant target="compile" inheritall="false" failonerror="true">
-        <fileset dir="analysis" includes="build.xml" />
-        <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="facet" includes="build.xml" />
-        <fileset dir="queries" includes="build.xml" />
-        <fileset dir="grouping" includes="build.xml" />
-        <fileset dir="join" includes="build.xml" />
-        <fileset dir="queryparser" includes="build.xml" />
-        <fileset dir="suggest" includes="build.xml" />
-      </subant>
-    </sequential>
+    <forall-modules target="compile" />
   </target>
 
   <target name="compile-test" description="Compile all tests">
-    <sequential>
-      <subant target="compile-test" inheritall="false" failonerror="true">
-        <fileset dir="analysis" includes="build.xml" />
-        <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="facet" includes="build.xml" />
-        <fileset dir="queries" includes="build.xml" />
-        <fileset dir="grouping" includes="build.xml" />
-        <fileset dir="join" includes="build.xml" />
-        <fileset dir="queryparser" includes="build.xml" />
-        <fileset dir="suggest" includes="build.xml" />
-      </subant>
-    </sequential>
+    <forall-modules target="compile-test" />
   </target>
 
   <target name="javadocs" description="Generate javadocs">
-    <sequential>
-      <subant target="javadocs" inheritall="false" failonerror="true">
-        <fileset dir="analysis" includes="build.xml" />
-        <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="facet" includes="build.xml" />
-        <fileset dir="queries" includes="build.xml" />
-        <fileset dir="grouping" includes="build.xml" />
-        <fileset dir="join" includes="build.xml" />
-        <fileset dir="queryparser" includes="build.xml" />
-        <fileset dir="suggest" includes="build.xml" />
-      </subant>
-    </sequential>
+    <forall-modules target="javadocs" />
   </target>
 
   <target name="generate-maven-artifacts" description="Generate Maven Artifacts for Modules">
-    <sequential>
-      <ant target="get-maven-poms" dir=".."/>
-      <subant target="dist-maven" inheritall="false" failonerror="true">
-        <fileset dir="analysis" includes="build.xml" />
-        <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="facet" includes="build.xml" />
-        <fileset dir="queries" includes="build.xml" />
-        <fileset dir="grouping" includes="build.xml" />
-        <fileset dir="join" includes="build.xml" />
-        <fileset dir="queryparser" includes="build.xml" />
-        <fileset dir="suggest" includes="build.xml" />
-      </subant>
-    </sequential>
+    <ant target="get-maven-poms" dir=".."/>
+    <forall-modules target="dist-maven" />
   </target>
-  <target name="validate">
-     <sequential>
-      <subant target="validate" inheritall="false" failonerror="true">
-        <fileset dir="analysis" includes="build.xml" />
-        <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="facet" includes="build.xml" />
-        <fileset dir="queries" includes="build.xml" />
-        <fileset dir="grouping" includes="build.xml" />
-        <fileset dir="join" includes="build.xml" />
-        <fileset dir="queryparser" includes="build.xml" />
-        <fileset dir="suggest" includes="build.xml" />
-      </subant>
-    </sequential>
+
+  <target name="validate" description="Validate legal stuff.">
+    <!-- The order here is important because forall compiles tools. -->
+    <forall-modules target="validate" />
+    <license-check-macro dir="${basedir}" />
   </target>
 
   <target name="clean" description="Clean all modules">
-    <sequential>
-      <delete dir="dist"/>
-      <subant target="clean" inheritall="false" failonerror="true">
-        <fileset dir="analysis" includes="build.xml" />
-        <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="facet" includes="build.xml" />
-        <fileset dir="queries" includes="build.xml" />
-        <fileset dir="grouping" includes="build.xml" />
-        <fileset dir="join" includes="build.xml" />
-        <fileset dir="queryparser" includes="build.xml" />
-        <fileset dir="suggest" includes="build.xml" />
-      </subant>
-    </sequential>
+    <delete dir="dist"/>
+    <forall-modules target="clean" />
   </target>
-
 </project>

@@ -31,9 +31,13 @@
       classpath reference when compiling, and to not attempt to copy
       non-existent resource files to the build output directory.
    -->
-  <target name="compile-core" depends="init" description="Compiles tools classes">
-    <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java"/>
+  <target name="compile-core" depends="init" description="Compiles tools classes.">
+    <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java" 
+      includeantruntime="true" />
+    <copy todir="${build.dir}/classes/java">
+      <fileset dir="${src.dir}" excludes="**/*.java" />
+    </copy>
   </target>
-  
+
   <target name="javadocs"/> <!-- to make common-build.xml happy -->
 </project>
