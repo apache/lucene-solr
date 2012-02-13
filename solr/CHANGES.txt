@@ -594,6 +594,9 @@ Bug Fixes
 * SOLR-3109: Fixed numerous redundant shard requests when using distributed grouping.
   (rblack via Martijn van Groningen)
 
+* SOLR-3052: Fixed typo in distributed grouping parameters.
+  (Martijn van Groningen, Grant Ingersoll)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
