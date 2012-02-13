@@ -34,8 +34,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
-import org.apache.lucene.search.NRTManagerReopenThread;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -58,8 +56,8 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     if (VERBOSE) {
       System.out.println("TEST: finalSearcher maxGen=" + maxGen);
     }
-    final SearcherManager manager = nrt.waitForGeneration(maxGen, true);
-    return manager.acquire();
+    nrtDeletes.waitForGeneration(maxGen);
+    return nrtDeletes.getSearcherManager().acquire();
   }
 
   @Override
@@ -78,22 +76,22 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
   @Override
   protected void updateDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
-    final long gen = nrt.updateDocuments(id, docs);
+    final long gen = genWriter.updateDocuments(id, docs);
 
     // Randomly verify the update "took":
     if (random.nextInt(20) == 2) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
       }
-      SearcherManager manager = nrt.waitForGeneration(gen, true);
-      final IndexSearcher s = manager.acquire();
+      nrtDeletes.waitForGeneration(gen);
+      final IndexSearcher s = nrtDeletes.getSearcherManager().acquire();
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
       }
       try {
         assertEquals(docs.size(), s.search(new TermQuery(id), 10).totalHits);
       } finally {
-        manager.release(s);
+        nrtDeletes.getSearcherManager().release(s);
       }
     }
     
@@ -102,21 +100,21 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
   @Override
   protected void addDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
-    final long gen = nrt.addDocuments(docs);
+    final long gen = genWriter.addDocuments(docs);
     // Randomly verify the add "took":
     if (random.nextInt(20) == 2) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
       }
-      final SearcherManager manager = nrt.waitForGeneration(gen, false);
-      final IndexSearcher s = manager.acquire();
+      nrtNoDeletes.waitForGeneration(gen);
+      final IndexSearcher s = nrtNoDeletes.getSearcherManager().acquire();
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
       }
       try {
         assertEquals(docs.size(), s.search(new TermQuery(id), 10).totalHits);
       } finally {
-        manager.release(s);
+        nrtNoDeletes.getSearcherManager().release(s);
       }
     }
     lastGens.set(gen);
@@ -124,22 +122,22 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
   @Override
   protected void addDocument(Term id, Iterable<? extends IndexableField> doc) throws Exception {
-    final long gen = nrt.addDocument(doc);
+    final long gen = genWriter.addDocument(doc);
 
     // Randomly verify the add "took":
     if (random.nextInt(20) == 2) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
       }
-      final SearcherManager manager = nrt.waitForGeneration(gen, false);
-      final IndexSearcher s = manager.acquire();
+      nrtNoDeletes.waitForGeneration(gen);
+      final IndexSearcher s = nrtNoDeletes.getSearcherManager().acquire();
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
       }
       try {
         assertEquals(1, s.search(new TermQuery(id), 10).totalHits);
       } finally {
-        manager.release(s);
+        nrtNoDeletes.getSearcherManager().release(s);
       }
     }
     lastGens.set(gen);
@@ -147,21 +145,21 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
   @Override
   protected void updateDocument(Term id, Iterable<? extends IndexableField> doc) throws Exception {
-    final long gen = nrt.updateDocument(id, doc);
+    final long gen = genWriter.updateDocument(id, doc);
     // Randomly verify the udpate "took":
     if (random.nextInt(20) == 2) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
       }
-      final SearcherManager manager = nrt.waitForGeneration(gen, true);
-      final IndexSearcher s = manager.acquire();
+      nrtDeletes.waitForGeneration(gen);
+      final IndexSearcher s = nrtDeletes.getSearcherManager().acquire();
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
       }
       try {
         assertEquals(1, s.search(new TermQuery(id), 10).totalHits);
       } finally {
-        manager.release(s);
+        nrtDeletes.getSearcherManager().release(s);
       }
     }
     lastGens.set(gen);
@@ -169,28 +167,37 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
   @Override
   protected void deleteDocuments(Term id) throws Exception {
-    final long gen = nrt.deleteDocuments(id);
+    final long gen = genWriter.deleteDocuments(id);
     // randomly verify the delete "took":
     if (random.nextInt(20) == 7) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify del " + id);
       }
-      final SearcherManager manager = nrt.waitForGeneration(gen, true);
-      final IndexSearcher s = manager.acquire();
+      nrtDeletes.waitForGeneration(gen);
+      final IndexSearcher s = nrtDeletes.getSearcherManager().acquire();
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
       }
       try {
         assertEquals(0, s.search(new TermQuery(id), 10).totalHits);
       } finally {
-        manager.release(s);
+        nrtDeletes.getSearcherManager().release(s);
       }
     }
     lastGens.set(gen);
   }
 
-  private NRTManager nrt;
-  private NRTManagerReopenThread nrtThread;
+  // Not guaranteed to reflect deletes:
+  private NRTManager nrtNoDeletes;
+
+  // Is guaranteed to reflect deletes:
+  private NRTManager nrtDeletes;
+
+  private NRTManager.TrackingIndexWriter genWriter;
+
+  private NRTManagerReopenThread nrtDeletesThread;
+  private NRTManagerReopenThread nrtNoDeletesThread;
+
   @Override
   protected void doAfterWriter(final ExecutorService es) throws Exception {
     final double minReopenSec = 0.01 + 0.05 * random.nextDouble();
@@ -200,22 +207,32 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
       System.out.println("TEST: make NRTManager maxReopenSec=" + maxReopenSec + " minReopenSec=" + minReopenSec);
     }
 
-    nrt = new NRTManager(writer,
-                         new SearcherFactory() {
-                          @Override
-                          public IndexSearcher newSearcher(IndexReader r) throws IOException {
-                            TestNRTManager.this.warmCalled = true;
-                            IndexSearcher s = new IndexSearcher(r, es);
-                            s.search(new TermQuery(new Term("body", "united")), 10);
-                            return s;
-                          }
-                        }, false);
+    genWriter = new NRTManager.TrackingIndexWriter(writer);
+
+    final SearcherFactory sf = new SearcherFactory() {
+        @Override
+        public IndexSearcher newSearcher(IndexReader r) throws IOException {
+          TestNRTManager.this.warmCalled = true;
+          IndexSearcher s = new IndexSearcher(r, es);
+          s.search(new TermQuery(new Term("body", "united")), 10);
+          return s;
+        }
+      };
+
+    nrtNoDeletes = new NRTManager(genWriter, sf, false);
+    nrtDeletes = new NRTManager(genWriter, sf, true);
                          
-    nrtThread = new NRTManagerReopenThread(nrt, maxReopenSec, minReopenSec);
-    nrtThread.setName("NRT Reopen Thread");
-    nrtThread.setPriority(Math.min(Thread.currentThread().getPriority()+2, Thread.MAX_PRIORITY));
-    nrtThread.setDaemon(true);
-    nrtThread.start();
+    nrtDeletesThread = new NRTManagerReopenThread(nrtDeletes, maxReopenSec, minReopenSec);
+    nrtDeletesThread.setName("NRTDeletes Reopen Thread");
+    nrtDeletesThread.setPriority(Math.min(Thread.currentThread().getPriority()+2, Thread.MAX_PRIORITY));
+    nrtDeletesThread.setDaemon(true);
+    nrtDeletesThread.start();
+
+    nrtNoDeletesThread = new NRTManagerReopenThread(nrtNoDeletes, maxReopenSec, minReopenSec);
+    nrtNoDeletesThread.setName("NRTNoDeletes Reopen Thread");
+    nrtNoDeletesThread.setPriority(Math.min(Thread.currentThread().getPriority()+2, Thread.MAX_PRIORITY));
+    nrtNoDeletesThread.setDaemon(true);
+    nrtNoDeletesThread.start();
   }
 
   @Override
@@ -241,14 +258,23 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   protected IndexSearcher getCurrentSearcher() throws Exception {
     // Test doesn't assert deletions until the end, so we
     // can randomize whether dels must be applied
-    return nrt.getSearcherManager(random.nextBoolean()).acquire();
+    final NRTManager nrt;
+    if (random.nextBoolean()) {
+      nrt = nrtDeletes;
+    } else {
+      nrt = nrtNoDeletes;
+    }
+
+    return nrt.getSearcherManager().acquire();
   }
 
   @Override
   protected void releaseSearcher(IndexSearcher s) throws Exception {
-    // Test doesn't assert deletions until the end, so we
-    // can randomize whether dels must be applied
-    nrt.getSearcherManager(random.nextBoolean()).release(s);
+    // NOTE: a bit iffy... technically you should release
+    // against the same NRT mgr you acquired from... but
+    // both impls just decRef the underlying reader so we
+    // can get away w/ cheating:
+    nrtNoDeletes.getSearcherManager().release(s);
   }
 
   @Override
@@ -257,8 +283,10 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now close NRTManager");
     }
-    nrtThread.close();
-    nrt.close();
+    nrtDeletesThread.close();
+    nrtDeletes.close();
+    nrtNoDeletesThread.close();
+    nrtNoDeletes.close();
   }
   
   /*
@@ -270,20 +298,21 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     final CountDownLatch latch = new CountDownLatch(1);
     final CountDownLatch signal = new CountDownLatch(1);
 
-    LatchedIndexWriter writer = new LatchedIndexWriter(d, conf, latch, signal);
+    LatchedIndexWriter _writer = new LatchedIndexWriter(d, conf, latch, signal);
+    final NRTManager.TrackingIndexWriter writer = new NRTManager.TrackingIndexWriter(_writer);
     final NRTManager manager = new NRTManager(writer, null, false);
     Document doc = new Document();
     doc.add(newField("test","test", TextField.TYPE_STORED));
-    long gen = manager.addDocument(doc);
-    assertTrue(manager.maybeReopen(false));
-    assertFalse(gen < manager.getCurrentSearchingGen(false));
+    long gen = writer.addDocument(doc);
+    manager.maybeReopen();
+    assertFalse(gen < manager.getCurrentSearchingGen());
     Thread t = new Thread() {
       public void run() {
         try {
           signal.await();
-          assertTrue(manager.maybeReopen(false));
-          manager.deleteDocuments(new TermQuery(new Term("foo", "barista")));
-          manager.maybeReopen(false); // kick off another reopen so we inc. the internal gen
+          manager.maybeReopen();
+          writer.deleteDocuments(new TermQuery(new Term("foo", "barista")));
+          manager.maybeReopen(); // kick off another reopen so we inc. the internal gen
         } catch (Exception e) {
           e.printStackTrace();
         } finally {
@@ -292,15 +321,16 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
       }
     };
     t.start();
-    writer.waitAfterUpdate = true; // wait in addDocument to let some reopens go through
-    final long lastGen = manager.updateDocument(new Term("foo", "bar"), doc); // once this returns the doc is already reflected in the last reopen
-    assertFalse(manager.getSearcherManager(false).isSearcherCurrent()); // false since there is a delete in the queue
+    _writer.waitAfterUpdate = true; // wait in addDocument to let some reopens go through
+    final long lastGen = writer.updateDocument(new Term("foo", "bar"), doc); // once this returns the doc is already reflected in the last reopen
+
+    assertFalse(manager.getSearcherManager().isSearcherCurrent()); // false since there is a delete in the queue
     
-    IndexSearcher acquire = manager.getSearcherManager(false).acquire();
+    IndexSearcher acquire = manager.getSearcherManager().acquire();
     try {
       assertEquals(2, acquire.getIndexReader().numDocs());
     } finally {
-      acquire.getIndexReader().decRef();
+      manager.getSearcherManager().release(acquire);
     }
     NRTManagerReopenThread thread = new NRTManagerReopenThread(manager, 0.01, 0.01);
     thread.start(); // start reopening
@@ -311,12 +341,12 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     final AtomicBoolean finished = new AtomicBoolean(false);
     Thread waiter = new Thread() {
       public void run() {
-        manager.waitForGeneration(lastGen, false);
+        manager.waitForGeneration(lastGen);
         finished.set(true);
       }
     };
     waiter.start();
-    manager.maybeReopen(false);
+    manager.maybeReopen();
     waiter.join(1000);
     if (!finished.get()) {
       waiter.interrupt();
@@ -324,7 +354,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     }
     thread.close();
     thread.join();
-    IOUtils.close(manager, writer, d);
+    IOUtils.close(manager, _writer, d);
   }
   
   public static class LatchedIndexWriter extends IndexWriter {

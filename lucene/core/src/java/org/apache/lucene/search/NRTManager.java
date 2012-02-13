@@ -33,21 +33,38 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher; // javadocs
-import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherFactory; // javadocs
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * Utility class to manage sharing near-real-time searchers
- * across multiple searching threads.
+ * across multiple searching thread.  The difference vs
+ * SearcherManager is that this class enables individual
+ * requests to wait until specific indexing changes are
+ * visible.
  *
- * <p>NOTE: to use this class, you must call {@link #maybeReopen(boolean)}
+ * <p>You must create an IndexWriter, then create a {@link
+ * NRTManager.TrackingIndexWriter} from it, and pass that to the
+ * NRTManager.  You may want to create two NRTManagers, once
+ * that always applies deletes on refresh and one that does
+ * not.  In this case you should use a single {@link
+ * NRTManager.TrackingIndexWriter} instance for both.
+ *
+ * <p>Then, use {@link #getSearcherManager} to obtain the
+ * {@link SearcherManager} that you then use to
+ * acquire/release searchers.  Don't call maybeReopen on
+ * that SearcherManager!  Only call NRTManager's {@link
+ * #maybeReopen}.
+ *
+ * <p>NOTE: to use this class, you must call {@link #maybeReopen()}
  * periodically.  The {@link NRTManagerReopenThread} is a
- * simple class to do this on a periodic basis.  If you
- * implement your own reopener, be sure to call {@link
+ * simple class to do this on a periodic basis, and reopens
+ * more quickly if a request is waiting.  If you implement
+ * your own reopener, be sure to call {@link
  * #addWaitingListener} so your reopener is notified when a
- * caller is waiting for a specific generation searcher. </p>
+ * caller is waiting for a specific generation
+ * searcher. </p>
  *
  * @see SearcherFactory
  * 
@@ -56,50 +73,57 @@ import org.apache.lucene.util.ThreadInterruptedException;
 
 public class NRTManager implements Closeable {
   private static final long MAX_SEARCHER_GEN = Long.MAX_VALUE;
-  private final IndexWriter writer;
-  private final SearcherManagerRef withoutDeletes;
-  private final SearcherManagerRef withDeletes;
-  private final AtomicLong indexingGen;
+  private final TrackingIndexWriter writer;
   private final List<WaitingListener> waitingListeners = new CopyOnWriteArrayList<WaitingListener>();
   private final ReentrantLock reopenLock = new ReentrantLock();
   private final Condition newGeneration = reopenLock.newCondition();
 
+  private final SearcherManager mgr;
+  private volatile long searchingGen;
+
   /**
    * Create new NRTManager.
    * 
-   * @param writer IndexWriter to open near-real-time
+   * @param writer TrackingIndexWriter to open near-real-time
    *        readers
    * @param searcherFactory An optional {@link SearcherFactory}. Pass
    *        <code>null</code> if you don't require the searcher to be warmed
    *        before going live or other custom behavior.
    */
-  public NRTManager(IndexWriter writer, SearcherFactory searcherFactory) throws IOException {
+  public NRTManager(TrackingIndexWriter writer, SearcherFactory searcherFactory) throws IOException {
     this(writer, searcherFactory, true);
   }
 
   /**
    * Expert: just like {@link
-   * #NRTManager(IndexWriter,SearcherFactory)},
-   * but you can also specify whether every searcher must
+   * #NRTManager(TrackingIndexWriter,SearcherFactory)},
+   * but you can also specify whether each reopened searcher must
    * apply deletes.  This is useful for cases where certain
    * uses can tolerate seeing some deleted docs, since
    * reopen time is faster if deletes need not be applied. */
-  public NRTManager(IndexWriter writer, SearcherFactory searcherFactory, boolean alwaysApplyDeletes) throws IOException {
+  public NRTManager(TrackingIndexWriter writer, SearcherFactory searcherFactory, boolean applyDeletes) throws IOException {
     this.writer = writer;
-    if (alwaysApplyDeletes) {
-      withoutDeletes = withDeletes = new SearcherManagerRef(true, 0,  new SearcherManager(writer, true, searcherFactory));
-    } else {
-      withDeletes = new SearcherManagerRef(true, 0, new SearcherManager(writer, true, searcherFactory));
-      withoutDeletes = new SearcherManagerRef(false, 0, new SearcherManager(writer, false, searcherFactory));
-    }
-    indexingGen = new AtomicLong(1);
+    mgr = new SearcherManager(writer.getIndexWriter(), applyDeletes, searcherFactory);
+  }
+
+  /**
+   * Returns the {@link SearcherManager} you should use to
+   * acquire/release searchers.
+   *
+   * <p><b>NOTE</b>: Never call maybeReopen on the returned
+   * SearcherManager; only call this NRTManager's {@link
+   * #maybeReopen}.  Otherwise threads waiting for a
+   * generation may never return.
+   */
+  public SearcherManager getSearcherManager() {
+    return mgr;
   }
   
   /** NRTManager invokes this interface to notify it when a
    *  caller is waiting for a specific generation searcher
    *  to be visible. */
   public static interface WaitingListener {
-    public void waiting(boolean requiresDeletes, long targetGen);
+    public void waiting(long targetGen);
   }
 
   /** Adds a listener, to be notified when a caller is
@@ -115,161 +139,181 @@ public class NRTManager implements Closeable {
     waitingListeners.remove(l);
   }
 
-  public long updateDocument(Term t, Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
-    writer.updateDocument(t, d, a);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+  /** Class that tracks changes to a delegated
+   * IndexWriter.  Create this class (passing your
+   * IndexWriter), and then pass this class to NRTManager.
+   * Be sure to make all changes via the
+   * TrackingIndexWriter, otherwise NRTManager won't know
+   * about the changes.
+   *
+   * @lucene.experimental */
+  public static class TrackingIndexWriter {
+    private final IndexWriter writer;
+    private final AtomicLong indexingGen = new AtomicLong(1);
 
-  public long updateDocument(Term t, Iterable<? extends IndexableField> d) throws IOException {
-    writer.updateDocument(t, d);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public TrackingIndexWriter(IndexWriter writer) {
+      this.writer = writer;
+    }
 
-  public long updateDocuments(Term t, Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer a) throws IOException {
-    writer.updateDocuments(t, docs, a);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long updateDocument(Term t, Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
+      writer.updateDocument(t, d, a);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long updateDocuments(Term t, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
-    writer.updateDocuments(t, docs);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long updateDocument(Term t, Iterable<? extends IndexableField> d) throws IOException {
+      writer.updateDocument(t, d);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long deleteDocuments(Term t) throws IOException {
-    writer.deleteDocuments(t);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long updateDocuments(Term t, Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer a) throws IOException {
+      writer.updateDocuments(t, docs, a);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long deleteDocuments(Term... terms) throws IOException {
-    writer.deleteDocuments(terms);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long updateDocuments(Term t, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+      writer.updateDocuments(t, docs);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long deleteDocuments(Query q) throws IOException {
-    writer.deleteDocuments(q);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long deleteDocuments(Term t) throws IOException {
+      writer.deleteDocuments(t);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long deleteDocuments(Query... queries) throws IOException {
-    writer.deleteDocuments(queries);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long deleteDocuments(Term... terms) throws IOException {
+      writer.deleteDocuments(terms);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long deleteAll() throws IOException {
-    writer.deleteAll();
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long deleteDocuments(Query q) throws IOException {
+      writer.deleteDocuments(q);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long addDocument(Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
-    writer.addDocument(d, a);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long deleteDocuments(Query... queries) throws IOException {
+      writer.deleteDocuments(queries);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer a) throws IOException {
-    writer.addDocuments(docs, a);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long deleteAll() throws IOException {
+      writer.deleteAll();
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long addDocument(Iterable<? extends IndexableField> d) throws IOException {
-    writer.addDocument(d);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long addDocument(Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
+      writer.addDocument(d, a);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
-    writer.addDocuments(docs);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer a) throws IOException {
+      writer.addDocuments(docs, a);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long addIndexes(Directory... dirs) throws CorruptIndexException, IOException {
-    writer.addIndexes(dirs);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
+    public long addDocument(Iterable<? extends IndexableField> d) throws IOException {
+      writer.addDocument(d);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
 
-  public long addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
-    writer.addIndexes(readers);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
+    public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+      writer.addDocuments(docs);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
+
+    public long addIndexes(Directory... dirs) throws CorruptIndexException, IOException {
+      writer.addIndexes(dirs);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
+
+    public long addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
+      writer.addIndexes(readers);
+      // Return gen as of when indexing finished:
+      return indexingGen.get();
+    }
+
+    public long getGeneration() {
+      return indexingGen.get();
+    }
+
+    public IndexWriter getIndexWriter() {
+      return writer;
+    }
+
+    long getAndIncrementGeneration() {
+      return indexingGen.getAndIncrement();
+    }
   }
 
   /**
-   * Waits for a given {@link SearcherManager} target generation to be available
-   * via {@link #getSearcherManager(boolean)}. If the current generation is less
-   * than the given target generation this method will block until the
-   * correspondent {@link SearcherManager} is reopened by another thread via
-   * {@link #maybeReopen(boolean)} or until the {@link NRTManager} is closed.
+   * Waits for the target generation to become visible in
+   * the searcher.
+   * If the current searcher is older than the
+   * target generation, this method will block
+   * until the searcher is reopened, by another via
+   * {@link #maybeReopen} or until the {@link NRTManager} is closed.
    * 
    * @param targetGen the generation to wait for
-   * @param requireDeletes <code>true</code> iff the generation requires deletes to be applied otherwise <code>false</code>
-   * @return the {@link SearcherManager} with the given target generation
    */
-  public SearcherManager waitForGeneration(long targetGen, boolean requireDeletes) {
-    return waitForGeneration(targetGen, requireDeletes, -1,  TimeUnit.NANOSECONDS);
+  public void waitForGeneration(long targetGen) {
+    waitForGeneration(targetGen, -1, TimeUnit.NANOSECONDS);
   }
 
   /**
-   * Waits for a given {@link SearcherManager} target generation to be available
-   * via {@link #getSearcherManager(boolean)}. If the current generation is less
-   * than the given target generation this method will block until the
-   * correspondent {@link SearcherManager} is reopened by another thread via
-   * {@link #maybeReopen(boolean)}, the given waiting time has elapsed, or until
-   * the {@link NRTManager} is closed.
+   * Waits for the target generation to become visible in
+   * the searcher.  If the current searcher is older than
+   * the target generation, this method will block until the
+   * searcher has been reopened by another thread via
+   * {@link #maybeReopen}, the given waiting time has elapsed, or until
+   * the NRTManager is closed.
    * <p>
    * NOTE: if the waiting time elapses before the requested target generation is
-   * available the latest {@link SearcherManager} is returned instead.
+   * available the current {@link SearcherManager} is returned instead.
    * 
    * @param targetGen
    *          the generation to wait for
-   * @param requireDeletes
-   *          <code>true</code> iff the generation requires deletes to be
-   *          applied otherwise <code>false</code>
    * @param time
    *          the time to wait for the target generation
    * @param unit
    *          the waiting time's time unit
-   * @return the {@link SearcherManager} with the given target generation or the
-   *         latest {@link SearcherManager} if the waiting time elapsed before
-   *         the requested generation is available.
    */
-  public SearcherManager waitForGeneration(long targetGen, boolean requireDeletes, long time, TimeUnit unit) {
+  public void waitForGeneration(long targetGen, long time, TimeUnit unit) {
     try {
-      final long curGen = indexingGen.get();
+      final long curGen = writer.getGeneration();
       if (targetGen > curGen) {
         throw new IllegalArgumentException("targetGen=" + targetGen + " was never returned by this NRTManager instance (current gen=" + curGen + ")");
       }
       reopenLock.lockInterruptibly();
       try {
-        if (targetGen > getCurrentSearchingGen(requireDeletes)) {
+        if (targetGen > searchingGen) {
           for (WaitingListener listener : waitingListeners) {
-            listener.waiting(requireDeletes, targetGen);
+            listener.waiting(targetGen);
           }
-          while (targetGen > getCurrentSearchingGen(requireDeletes)) {
+          while (targetGen > searchingGen) {
             if (!waitOnGenCondition(time, unit)) {
-              return getSearcherManager(requireDeletes);
+              return;
             }
           }
         }
-
       } finally {
         reopenLock.unlock();
       }
     } catch (InterruptedException ie) {
       throw new ThreadInterruptedException(ie);
     }
-    return getSearcherManager(requireDeletes);
   }
   
   private boolean waitOnGenCondition(long time, TimeUnit unit)
@@ -284,38 +328,33 @@ public class NRTManager implements Closeable {
   }
 
   /** Returns generation of current searcher. */
-  public long getCurrentSearchingGen(boolean applyAllDeletes) {
-    if (applyAllDeletes) {
-      return withDeletes.generation;
-    } else {
-      return Math.max(withoutDeletes.generation, withDeletes.generation);
-    }
+  public long getCurrentSearchingGen() {
+    return searchingGen;
   }
 
-  public boolean maybeReopen(boolean applyAllDeletes) throws IOException {
+  public void maybeReopen() throws IOException {
     if (reopenLock.tryLock()) {
       try {
-        final SearcherManagerRef reference = applyAllDeletes ? withDeletes : withoutDeletes;
         // Mark gen as of when reopen started:
-        final long newSearcherGen = indexingGen.getAndIncrement();
-        boolean setSearchGen = false;
-        if (reference.generation == MAX_SEARCHER_GEN) {
+        final long newSearcherGen = writer.getAndIncrementGeneration();
+        if (searchingGen == MAX_SEARCHER_GEN) {
           newGeneration.signalAll(); // wake up threads if we have a new generation
-          return false;
+          return;
         }
-        if (!(setSearchGen = reference.manager.isSearcherCurrent())) {
-          setSearchGen = reference.manager.maybeReopen();
+        boolean setSearchGen;
+        if (!mgr.isSearcherCurrent()) {
+          setSearchGen = mgr.maybeReopen();
+        } else {
+          setSearchGen = true;
         }
         if (setSearchGen) {
-          reference.generation = newSearcherGen;// update searcher gen
+          searchingGen = newSearcherGen;// update searcher gen
           newGeneration.signalAll(); // wake up threads if we have a new generation
         }
-        return setSearchGen;
       } finally {
         reopenLock.unlock();
       }
     }
-    return false;
   }
 
   /**
@@ -330,49 +369,14 @@ public class NRTManager implements Closeable {
     reopenLock.lock();
     try {
       try {
-        IOUtils.close(withDeletes, withoutDeletes);
+        // max it out to make sure nobody can wait on another gen
+        searchingGen = MAX_SEARCHER_GEN; 
+        mgr.close();
       } finally { // make sure we signal even if close throws an exception
         newGeneration.signalAll();
       }
     } finally {
       reopenLock.unlock();
-      assert withDeletes.generation == MAX_SEARCHER_GEN && withoutDeletes.generation == MAX_SEARCHER_GEN;
-    }
-  }
-
-  /**
-   * Returns a {@link SearcherManager}. If <code>applyAllDeletes</code> is
-   * <code>true</code> the returned manager is guaranteed to have all deletes
-   * applied on the last reopen. Otherwise the latest manager with or without deletes
-   * is returned.
-   */
-  public SearcherManager getSearcherManager(boolean applyAllDeletes) {
-    if (applyAllDeletes) {
-      return withDeletes.manager;
-    } else {
-      if (withDeletes.generation > withoutDeletes.generation) {
-        return withDeletes.manager;
-      } else {
-        return withoutDeletes.manager;
-      }
-    }
-  }
-  
-  static final class SearcherManagerRef implements Closeable {
-    final boolean applyDeletes;
-    volatile long generation;
-    final SearcherManager manager;
-
-    SearcherManagerRef(boolean applyDeletes, long generation, SearcherManager manager) {
-      super();
-      this.applyDeletes = applyDeletes;
-      this.generation = generation;
-      this.manager = manager;
-    }
-    
-    public void close() throws IOException {
-      generation = MAX_SEARCHER_GEN; // max it out to make sure nobody can wait on another gen
-      manager.close();
     }
   }
 }

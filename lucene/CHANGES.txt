@@ -809,6 +809,11 @@ API Changes
   supported in Lucene 4.0, just use a TokenStream.  
   (Mike McCandless, Robert Muir)
 
+* LUCENE-3769: Simplified NRTManager by requiring applyDeletes to be
+  passed to ctor only; if an app needs to mix and match it's free to
+  create two NRTManagers (one always applying deletes and the other
+  never applying deletes).  (MJB, Shai Erera, Mike McCandless)
+
 New Features
 
 * LUCENE-3593: Added a FieldValueFilter that accepts all documents that either
