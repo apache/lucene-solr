@@ -1,0 +1,382 @@
+
+
+# .
+/classes
+/build
+/dist
+/*~
+/velocity.log
+/build.properties
+/.idea
+/*.iml
+/*.ipr
+/*.iws
+/.project
+/.classpath
+/.settings
+/prj.el
+/bin
+/pom.xml
+
+
+# ./lucene
+/lucene/build
+/lucene/dist
+/lucene/*~
+/lucene/velocity.log
+/lucene/build.properties
+/lucene/.idea
+/lucene/*.iml
+/lucene/*.ipr
+/lucene/*.iws
+/lucene/.project
+/lucene/.classpath
+/lucene/.settings
+/lucene/prj.el
+/lucene/pom.xml
+
+
+# ./lucene/core/src/java/org/apache/lucene/analysis/standard
+/lucene/core/src/java/org/apache/lucene/analysis/standard/Token.java
+/lucene/core/src/java/org/apache/lucene/analysis/standard/StandardTokenizer.java
+/lucene/core/src/java/org/apache/lucene/analysis/standard/StandardTokenizerTokenManager.java
+/lucene/core/src/java/org/apache/lucene/analysis/standard/TokenMgrError.java
+/lucene/core/src/java/org/apache/lucene/analysis/standard/CharStream.java
+/lucene/core/src/java/org/apache/lucene/analysis/standard/StandardTokenizerConstants.java
+
+
+# ./lucene/core/src/java/org/apache/lucene/queryParser
+/lucene/core/src/java/org/apache/lucene/queryParser/QueryParser.java
+/lucene/core/src/java/org/apache/lucene/queryParser/TokenMgrError.java
+/lucene/core/src/java/org/apache/lucene/queryParser/ParseException.java
+/lucene/core/src/java/org/apache/lucene/queryParser/Token.java
+/lucene/core/src/java/org/apache/lucene/queryParser/TokenManager.java
+/lucene/core/src/java/org/apache/lucene/queryParser/QueryParserConstants.java
+
+
+# ./lucene/backwards/src/test-framework
+/lucene/backwards/src/test-framework/pom.xml
+
+
+# ./lucene/contrib
+/lucene/contrib/build
+/lucene/contrib/dist
+/lucene/contrib/pom.xml
+
+
+# ./lucene/contrib/facet
+/lucene/contrib/facet/*.iml
+/lucene/contrib/facet/pom.xml
+
+
+# ./lucene/contrib/icu
+/lucene/contrib/icu/*.iml
+/lucene/contrib/icu/pom.xml
+
+
+# ./lucene/contrib/remote
+/lucene/contrib/remote/*.iml
+/lucene/contrib/remote/pom.xml
+
+
+# ./lucene/contrib/pruning
+/lucene/contrib/pruning/*.iml
+/lucene/contrib/pruning/pom.xml
+
+
+# ./lucene/contrib/misc
+/lucene/contrib/misc/*.iml
+/lucene/contrib/misc/pom.xml
+
+
+# ./lucene/contrib/benchmark
+/lucene/contrib/benchmark/temp
+/lucene/contrib/benchmark/work
+/lucene/contrib/benchmark/*.iml
+/lucene/contrib/benchmark/*.iws
+/lucene/contrib/benchmark/*.ipr
+/lucene/contrib/benchmark/pom.xml
+
+
+# ./lucene/contrib/grouping
+/lucene/contrib/grouping/*.iml
+/lucene/contrib/grouping/pom.xml
+
+
+# ./lucene/contrib/memory
+/lucene/contrib/memory/*.iml
+/lucene/contrib/memory/pom.xml
+
+
+# ./lucene/contrib/spatial
+/lucene/contrib/spatial/*.iml
+/lucene/contrib/spatial/pom.xml
+
+
+# ./lucene/contrib/instantiated
+/lucene/contrib/instantiated/*.iml
+/lucene/contrib/instantiated/pom.xml
+
+
+# ./lucene/contrib/queries
+/lucene/contrib/queries/*.iml
+/lucene/contrib/queries/pom.xml
+
+
+# ./lucene/contrib/highlighter
+/lucene/contrib/highlighter/*.iml
+/lucene/contrib/highlighter/pom.xml
+
+
+# ./lucene/contrib/join
+/lucene/contrib/join/*.iml
+/lucene/contrib/join/pom.xml
+/lucene/contrib/join/build
+
+
+# ./lucene/contrib/demo
+/lucene/contrib/demo/*.iml
+/lucene/contrib/demo/pom.xml
+
+
+# ./lucene/contrib/queryparser
+/lucene/contrib/queryparser/*.iml
+/lucene/contrib/queryparser/pom.xml
+
+
+# ./lucene/contrib/analyzers
+/lucene/contrib/analyzers/pom.xml
+
+
+# ./lucene/contrib/analyzers/common
+/lucene/contrib/analyzers/common/*.iml
+/lucene/contrib/analyzers/common/pom.xml
+
+
+# ./lucene/contrib/analyzers/stempel
+/lucene/contrib/analyzers/stempel/*.iml
+/lucene/contrib/analyzers/stempel/pom.xml
+
+
+# ./lucene/contrib/analyzers/phonetic
+/lucene/contrib/analyzers/phonetic/*.iml
+/lucene/contrib/analyzers/phonetic/pom.xml
+
+
+# ./lucene/contrib/analyzers/smartcn
+/lucene/contrib/analyzers/smartcn/*.iml
+/lucene/contrib/analyzers/smartcn/pom.xml
+
+
+# ./lucene/contrib/analyzers/kuromoji
+/lucene/contrib/analyzers/kuromoji/*.iml
+/lucene/contrib/analyzers/kuromoji/pom.xml
+
+
+# ./lucene/contrib/xml-query-parser
+/lucene/contrib/xml-query-parser/*.iml
+/lucene/contrib/xml-query-parser/pom.xml
+
+
+# ./lucene/contrib/spellchecker
+/lucene/contrib/spellchecker/*.iml
+/lucene/contrib/spellchecker/pom.xml
+
+
+# ./solr
+/solr/build
+/solr/dist
+/solr/.project
+/solr/.classpath
+/solr/.settings
+/solr/bin
+/solr/target
+/solr/luke
+/solr/lucene-libs
+/solr/build.properties
+/solr/*.iml
+/solr/pom.xml
+/solr/package
+
+
+# ./solr/solrj
+/solr/solrj/pom.xml
+
+
+# ./solr/core
+/solr/core/pom.xml
+
+
+# ./solr/core/src/test-files/solr
+/solr/core/src/test-files/solr/data
+
+
+# ./solr/example/webapps
+/solr/example/webapps/*
+
+
+# ./solr/example/logs
+/solr/example/logs/*.log
+
+
+# ./solr/example/solr
+/solr/example/solr/data
+/solr/example/solr/lib
+/solr/example/solr/logs
+
+
+# ./solr/example/solr/bin
+/solr/example/solr/bin/*
+
+
+# ./solr/example/work
+/solr/example/work/*
+
+
+# ./solr/example/exampledocs
+/solr/example/exampledocs/post.jar
+
+
+# ./solr/example/multicore/core1
+/solr/example/multicore/core1/data
+
+
+# ./solr/example/multicore/core0
+/solr/example/multicore/core0/data
+
+
+# ./solr/example/example-DIH/solr/rss
+/solr/example/example-DIH/solr/rss/data
+
+
+# ./solr/example/example-DIH/solr/rss/conf
+/solr/example/example-DIH/solr/rss/conf/dataimport.properties
+
+
+# ./solr/example/example-DIH/solr/mail
+/solr/example/example-DIH/solr/mail/data
+
+
+# ./solr/example/example-DIH/solr/mail/lib
+/solr/example/example-DIH/solr/mail/lib/*.jar
+
+
+# ./solr/example/example-DIH/solr/db
+/solr/example/example-DIH/solr/db/data
+
+
+# ./solr/example/example-DIH/solr/tika
+/solr/example/example-DIH/solr/tika/data
+
+
+# ./solr/site-src
+/solr/site-src/build
+
+
+# ./solr/webapp
+/solr/webapp/pom.xml
+
+
+# ./solr/client/ruby/solr-ruby
+/solr/client/ruby/solr-ruby/doc
+/solr/client/ruby/solr-ruby/pkg
+/solr/client/ruby/solr-ruby/coverage
+/solr/client/ruby/solr-ruby/coverage.data
+
+
+# ./solr/client/ruby/solr-ruby/test
+/solr/client/ruby/solr-ruby/test/data
+
+
+# ./solr/client/ruby/solr-ruby/examples/delicious_library
+/solr/client/ruby/solr-ruby/examples/delicious_library/data
+
+
+# ./solr/client/ruby/flare
+/solr/client/ruby/flare/tmp
+
+
+# ./solr/client/ruby/flare/vendor
+/solr/client/ruby/flare/vendor/rails
+
+
+# ./solr/client/ruby/flare/log
+/solr/client/ruby/flare/log/*.log
+
+
+# ./solr/test-framework
+/solr/test-framework/pom.xml
+
+
+# ./solr/contrib
+/solr/contrib/pom.xml
+
+
+# ./solr/contrib/clustering
+/solr/contrib/clustering/build
+/solr/contrib/clustering/*.iml
+/solr/contrib/clustering/pom.xml
+
+
+# ./solr/contrib/clustering/lib
+/solr/contrib/clustering/lib/pcj-*
+/solr/contrib/clustering/lib/simple-xml-*
+/solr/contrib/clustering/lib/colt-*
+/solr/contrib/clustering/lib/nni-*
+/solr/contrib/clustering/lib/downloads
+
+
+# ./solr/contrib/uima
+/solr/contrib/uima/build
+/solr/contrib/uima/*.iml
+/solr/contrib/uima/pom.xml
+
+
+# ./solr/contrib/velocity
+/solr/contrib/velocity/*.iml
+/solr/contrib/velocity/pom.xml
+
+
+# ./solr/contrib/extraction
+/solr/contrib/extraction/build
+/solr/contrib/extraction/*.iml
+/solr/contrib/extraction/pom.xml
+
+
+# ./solr/contrib/analysis-extras
+/solr/contrib/analysis-extras/build
+/solr/contrib/analysis-extras/lucene-libs
+/solr/contrib/analysis-extras/*.iml
+/solr/contrib/analysis-extras/pom.xml
+
+
+# ./solr/contrib/langid
+/solr/contrib/langid/pom.xml
+/solr/contrib/langid/*.iml
+
+
+# ./solr/contrib/dataimporthandler-extras
+/solr/contrib/dataimporthandler-extras/pom.xml
+/solr/contrib/dataimporthandler-extras/*.iml
+
+
+# ./solr/contrib/dataimporthandler-extras/src/test-files/dihextras/solr/conf
+/solr/contrib/dataimporthandler-extras/src/test-files/dihextras/solr/conf/dataimport.properties
+
+
+# ./solr/contrib/dataimporthandler
+/solr/contrib/dataimporthandler/target
+/solr/contrib/dataimporthandler/*.iml
+/solr/contrib/dataimporthandler/pom.xml
+
+
+# ./solr/contrib/dataimporthandler/src
+/solr/contrib/dataimporthandler/src/pom.xml
+
+
+# ./solr/contrib/dataimporthandler/src/test-files
+/solr/contrib/dataimporthandler/src/test-files/dataimport.properties
+
+
+# ./solr/contrib/dataimporthandler/src/test-files/dih/solr/conf
+/solr/contrib/dataimporthandler/src/test-files/dih/solr/conf/dataimport.properties
