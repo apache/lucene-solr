@@ -71,7 +71,7 @@ public class SearchGroupsRequestFactory implements ShardRequestFactory {
 
     // in this first phase, request only the unique key field
     // and any fields needed for merging.
-    sreq.params.set("group.distibuted.first","true");
+    sreq.params.set("group.distributed.first","true");
 
     if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");

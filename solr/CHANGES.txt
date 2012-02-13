@@ -1,4 +1,3 @@
-
                       Apache Solr Release Notes
 
 Introduction
@@ -592,6 +591,8 @@ Bug Fixes
 * SOLR-3084: Fixed initialiazation error when using 
   <queryResponseWriter default="true" ... /> (Bernd Fehling and hossman)
 
+* SOLR-3109: Fixed numerous redundant shard requests when using distributed grouping.
+  (rblack via Martijn van Groningen)
 
 Other Changes
 ----------------------

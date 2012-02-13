@@ -19,7 +19,6 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
@@ -42,6 +41,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class is experimental and will be changing in the future.
@@ -168,7 +168,7 @@ public class ResponseBuilder
 
   // Context fields for grouping
   public final Map<String, Collection<SearchGroup<BytesRef>>> mergedSearchGroups = new HashMap<String, Collection<SearchGroup<BytesRef>>>();
-  public final Map<String, Map<SearchGroup<BytesRef>, String>> searchGroupToShard = new HashMap<String, Map<SearchGroup<BytesRef>, String>>();
+  public final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> searchGroupToShards = new HashMap<String, Map<SearchGroup<BytesRef>, Set<String>>>();
   public final Map<String, TopGroups<BytesRef>> mergedTopGroups = new HashMap<String, TopGroups<BytesRef>>();
   public final Map<String, QueryCommandResult> mergedQueryCommandResults = new HashMap<String, QueryCommandResult>();
   public final Map<Object, SolrDocument> retrievedDocuments = new HashMap<Object, SolrDocument>();
