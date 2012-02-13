@@ -64,102 +64,58 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
 
   private ShardRequest[] createRequestForSpecificShards(ResponseBuilder rb) {
     // Determine all unique shards to query for TopGroups
-    Set<String> shards = new HashSet<String>();
-    for (String command : rb.searchGroupToShard.keySet()) {
-      Map<SearchGroup<String>, String> groupsToShard = rb.searchGroupToShard.get(command);
-      shards.addAll(groupsToShard.values());
+    Set<String> uniqueShards = new HashSet<String>();
+    for (String command : rb.searchGroupToShards.keySet()) {
+      Map<SearchGroup<String>, Set<String>> shards = rb.searchGroupToShards.get(command);
+      for(Set<String> shardsForGroup: shards.values()) {
+        uniqueShards.addAll(shardsForGroup);
+      }
     }
 
-    ShardRequest[] sreqs = new ShardRequest[shards.size()];
-    int i = 0;
-    for (String shard : shards) {
-      ShardRequest sreq = new ShardRequest();
-      sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
-      sreq.actualShards = new String[] {shard};
-      sreq.params = new ModifiableSolrParams(rb.req.getParams());
-
-      // If group.format=simple group.offset doesn't make sense
-      Grouping.Format responseFormat = rb.getGroupingSpec().getResponseFormat();
-      if (responseFormat == Grouping.Format.simple || rb.getGroupingSpec().isMain()) {
-        sreq.params.remove(GroupParams.GROUP_OFFSET);
-      }
-
-      sreq.params.remove(ShardParams.SHARDS);
-
-      // set the start (offset) to 0 for each shard request so we can properly merge
-      // results from the start.
-      if(rb.shards_start > -1) {
-        // if the client set shards.start set this explicitly
-        sreq.params.set(CommonParams.START,rb.shards_start);
-      } else {
-        sreq.params.set(CommonParams.START, "0");
-      }
-      if(rb.shards_rows > -1) {
-        // if the client set shards.rows set this explicity
-        sreq.params.set(CommonParams.ROWS,rb.shards_rows);
-      } else {
-        sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
-      }
-
-      sreq.params.set("group.distibuted.second","true");
-      for (Map.Entry<String, Collection<SearchGroup<String>>> entry : rb.mergedSearchGroups.entrySet()) {
-        for (SearchGroup<String> searchGroup : entry.getValue()) {
-          String groupValue;
-          if (searchGroup.groupValue != null) {
-            String rawGroupValue = searchGroup.groupValue;
-            FieldType fieldType = rb.req.getSearcher().getSchema().getField(entry.getKey()).getType();
-            groupValue = fieldType.indexedToReadable(rawGroupValue);
-          } else {
-            groupValue = GROUP_NULL_VALUE;
-          }
-          sreq.params.add("group.topgroups." + entry.getKey(), groupValue);
-        }
-      }
-
-      if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0 || rb.getSortSpec().includesScore()) {
-        sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
-      } else {
-        sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
-      }
-      sreqs[i++] = sreq;
-    }
-
-    return sreqs;
+    return createRequest(rb, uniqueShards.toArray(new String[uniqueShards.size()]));
   }
 
-  private ShardRequest[] createRequestForAllShards(ResponseBuilder rb) {
+   private ShardRequest[] createRequestForAllShards(ResponseBuilder rb) {
+    return createRequest(rb, ShardRequest.ALL_SHARDS);
+  }
+
+  private ShardRequest[] createRequest(ResponseBuilder rb, String[] shards)
+  {
     ShardRequest sreq = new ShardRequest();
+    sreq.shards = shards;
     sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
 
     sreq.params = new ModifiableSolrParams(rb.req.getParams());
+
     // If group.format=simple group.offset doesn't make sense
     Grouping.Format responseFormat = rb.getGroupingSpec().getResponseFormat();
     if (responseFormat == Grouping.Format.simple || rb.getGroupingSpec().isMain()) {
       sreq.params.remove(GroupParams.GROUP_OFFSET);
     }
+
     sreq.params.remove(ShardParams.SHARDS);
 
     // set the start (offset) to 0 for each shard request so we can properly merge
     // results from the start.
-    if(rb.shards_start > -1) {
+    if (rb.shards_start > -1) {
       // if the client set shards.start set this explicitly
-      sreq.params.set(CommonParams.START,rb.shards_start);
+      sreq.params.set(CommonParams.START, rb.shards_start);
     } else {
       sreq.params.set(CommonParams.START, "0");
     }
-    if(rb.shards_rows > -1) {
+    if (rb.shards_rows > -1) {
       // if the client set shards.rows set this explicity
-      sreq.params.set(CommonParams.ROWS,rb.shards_rows);
+      sreq.params.set(CommonParams.ROWS, rb.shards_rows);
     } else {
       sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
     }
 
-    sreq.params.set("group.distibuted.second","true");
+    sreq.params.set("group.distributed.second", "true");
     for (Map.Entry<String, Collection<SearchGroup<String>>> entry : rb.mergedSearchGroups.entrySet()) {
       for (SearchGroup<String> searchGroup : entry.getValue()) {
         String groupValue;
         if (searchGroup.groupValue != null) {
-         String rawGroupValue = searchGroup.groupValue;
+          String rawGroupValue = searchGroup.groupValue;
           FieldType fieldType = rb.req.getSearcher().getSchema().getField(entry.getKey()).getType();
           groupValue = fieldType.indexedToReadable(rawGroupValue);
         } else {
@@ -169,7 +125,7 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       }
     }
 
-    if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
+    if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
     } else {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());

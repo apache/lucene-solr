@@ -45,12 +45,12 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     String[] fields = rb.getGroupingSpec().getFields();
 
     Map<String, List<Collection<SearchGroup<String>>>> commandSearchGroups = new HashMap<String, List<Collection<SearchGroup<String>>>>();
-    Map<String, Map<SearchGroup<String>, String>> tempSearchGroupToShard = new HashMap<String, Map<SearchGroup<String>, String>>();
+    Map<String, Map<SearchGroup<String>, Set<String>>> tempSearchGroupToShards = new HashMap<String, Map<SearchGroup<String>, Set<String>>>();
     for (String field : fields) {
       commandSearchGroups.put(field, new ArrayList<Collection<SearchGroup<String>>>(shardRequest.responses.size()));
-      tempSearchGroupToShard.put(field, new HashMap<SearchGroup<String>, String>());
-      if (!rb.searchGroupToShard.containsKey(field)) {
-        rb.searchGroupToShard.put(field, new HashMap<SearchGroup<String>, String>());
+      tempSearchGroupToShards.put(field, new HashMap<SearchGroup<String>, Set<String>>());
+      if (!rb.searchGroupToShards.containsKey(field)) {
+        rb.searchGroupToShards.put(field, new HashMap<SearchGroup<String>, Set<String>>());
       }
     }
 
@@ -68,7 +68,13 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
 
           commandSearchGroups.get(field).add(searchGroups);
           for (SearchGroup<String> searchGroup : searchGroups) {
-            tempSearchGroupToShard.get(field).put(searchGroup, srsp.getShard());
+            Map<SearchGroup<String>, Set<String>> map = tempSearchGroupToShards.get(field);
+            Set<String> shards = map.get(searchGroup);
+            if (shards == null) {
+              shards = new HashSet<String>();
+              map.put(searchGroup, shards);
+            }
+            shards.add(srsp.getShard());
           }
         }
       }
@@ -81,7 +87,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
 
         rb.mergedSearchGroups.put(groupField, mergedTopGroups);
         for (SearchGroup<String> mergedTopGroup : mergedTopGroups) {
-          rb.searchGroupToShard.get(groupField).put(mergedTopGroup, tempSearchGroupToShard.get(groupField).get(mergedTopGroup));
+          rb.searchGroupToShards.get(groupField).put(mergedTopGroup, tempSearchGroupToShards.get(groupField).get(mergedTopGroup));
         }
       }
     } catch (IOException e) {

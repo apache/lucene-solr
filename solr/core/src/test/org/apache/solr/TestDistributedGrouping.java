@@ -18,13 +18,7 @@ package org.apache.solr;
  */
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * TODO? perhaps use:
@@ -68,11 +62,11 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     indexr(id,3, s1, 2, tlong, 2,t1,"how now brown cow",
            tdate_a, "2010-05-03T11:00:00Z");
     indexr(id,4, s1, -100 ,tlong, 101,
-           t1,"the quick fox jumped over the lazy dog", 
+           t1,"the quick fox jumped over the lazy dog",
            tdate_a, "2010-05-03T11:00:00Z",
            tdate_b, "2010-05-03T11:00:00Z");
     indexr(id,5, s1, 500, tlong, 500 ,
-           t1,"the quick fox jumped way over the lazy dog", 
+           t1,"the quick fox jumped way over the lazy dog",
            tdate_a, "2010-05-05T11:00:00Z");
     indexr(id,6, s1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
     indexr(id,7, s1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
@@ -98,8 +92,39 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     }
     indexr(id, 17, "SubjectTerms_mfacet", vals);
 
-    for (int i=100; i<150; i++) {
-      indexr(id, i);      
+    indexr(
+        id, 18, s1, "232", tlong, 332,
+        t1,"no eggs on wall, lesson learned",
+        oddField, "odd man out"
+    );
+    indexr(
+        id, 19, s1, "232", tlong, 432,
+        t1, "many eggs on wall",
+        oddField, "odd man in"
+    );
+    indexr(
+        id, 20, s1, "232", tlong, 532,
+        t1, "some eggs on wall",
+        oddField, "odd man between"
+    );
+    indexr(
+        id, 21, s1, "232", tlong, 632,
+        t1, "a few eggs on wall",
+        oddField, "odd man under"
+    );
+    indexr(
+        id, 22, s1, "232", tlong, 732,
+        t1, "any eggs on wall",
+        oddField, "odd man above"
+    );
+    indexr(
+        id, 23, s1, "233", tlong, 734,
+        t1, "dirty eggs",
+        oddField, "odd eggs"
+    );
+
+    for (int i = 100; i < 150; i++) {
+      indexr(id, i);
     }
 
     int[] values = new int[]{9999, 99999, 999999, 9999999};
@@ -133,6 +158,10 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     query("q", "*:*", "rows", 100, "fl", "id," + s1, "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", s1 + " asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", s1 + " asc, id asc");
+
+    // SOLR-3109
+    query("q", t1 + ":eggs", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", tlong + " asc, id asc");
+    query("q", s1 + ":232", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", tlong + " asc, id asc");
 
     // In order to validate this we need to make sure that during indexing that all documents of one group only occur on the same shard
     query("q", "*:*", "fq", s2 + ":a", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "group.ngroups", "true");

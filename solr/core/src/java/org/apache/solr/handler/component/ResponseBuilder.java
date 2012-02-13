@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class is experimental and will be changing in the future.
@@ -158,7 +159,7 @@ public class ResponseBuilder
 
   // Context fields for grouping
   public final Map<String, Collection<SearchGroup<String>>> mergedSearchGroups = new HashMap<String, Collection<SearchGroup<String>>>();
-  public final Map<String, Map<SearchGroup<String>, String>> searchGroupToShard = new HashMap<String, Map<SearchGroup<String>, String>>();
+  public final Map<String, Map<SearchGroup<String>, Set<String>>> searchGroupToShards = new HashMap<String, Map<SearchGroup<String>, Set<String>>>();
   public final Map<String, TopGroups<String>> mergedTopGroups = new HashMap<String, TopGroups<String>>();
   public final Map<String, QueryCommandResult> mergedQueryCommandResults = new HashMap<String, QueryCommandResult>();
   public final Map<Object, SolrDocument> retrievedDocuments = new HashMap<Object, SolrDocument>();
