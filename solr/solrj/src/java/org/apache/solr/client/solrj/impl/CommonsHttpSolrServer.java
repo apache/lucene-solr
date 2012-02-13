@@ -680,4 +680,9 @@ public class CommonsHttpSolrServer extends SolrServer
           .getHttpConnectionManager()).shutdown();
     }
   }
+  
+  @Override
+  public String toString() {
+    return this.getClass().getSimpleName() + "{url=" + _baseURL + "}";
+  }
 }
