@@ -43,15 +43,16 @@ public class CoreDescriptor {
     this.coreContainer = coreContainer;
     this.name = name;
     
+    if (name == null) {
+      throw new RuntimeException("Core needs a name");
+    }
+    
     if(coreContainer != null && coreContainer.getZkController() != null) {
       this.cloudDesc = new CloudDescriptor();
       // cloud collection defaults to core name
       cloudDesc.setCollectionName(name.isEmpty() ? coreContainer.getDefaultCoreName() : name);
     }
-    
-    if (name == null) {
-      throw new RuntimeException("Core needs a name");
-    }
+
     if (instanceDir == null) {
       throw new NullPointerException("Missing required \'instanceDir\'");
     }
