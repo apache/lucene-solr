@@ -17,7 +17,6 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,8 +57,6 @@ import org.apache.lucene.util.BytesRef;
  * */
 
 public class DocValuesField extends Field {
-
-  protected Comparator<BytesRef> bytesComparator;
 
   private static final Map<DocValues.Type,FieldType> types = new HashMap<DocValues.Type,FieldType>();
   static {
