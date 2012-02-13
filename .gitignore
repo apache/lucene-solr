@@ -1,49 +1,322 @@
-# /
+
+
+# .
 /classes
-build
-dist
-*~
-velocity.log
-build.properties
-.idea
-*.iml
-*.ipr
-*.iws
+/build
+/dist
+/*~
+/velocity.log
+/build.properties
+/.idea
+/*.iml
+/*.ipr
+/*.iws
 /.project
 /.classpath
 /.settings
-prj.el
-bin
-pom.xml
-target
-lucene-libs
-
-# /lucene/
+/prj.el
+/bin
+/bin.*
+/pom.xml
 
 
-# /lucene/contrib/db/bdb/
-/lucene/contrib/db/bdb/lib
-/lucene/contrib/db/bdb/index
+# ./lucene
+/lucene/build
+/lucene/dist
+/lucene/*~
+/lucene/velocity.log
+/lucene/build.properties
+/lucene/.idea
+/lucene/*.iml
+/lucene/*.ipr
+/lucene/*.iws
+/lucene/.project
+/lucene/.classpath
+/lucene/.settings
+/lucene/prj.el
+/lucene/pom.xml
 
 
-# /lucene/contrib/db/bdb-je/
-/lucene/contrib/db/bdb-je/lib
-/lucene/contrib/db/bdb-je/index
+# ./lucene/core
+/lucene/core/*.iml
+/lucene/core/pom.xml
 
 
-# /lucene/src/java/org/apache/lucene/queryParser/
-/lucene/src/java/org/apache/lucene/queryParser/QueryParser.java
-/lucene/src/java/org/apache/lucene/queryParser/TokenMgrError.java
-/lucene/src/java/org/apache/lucene/queryParser/ParseException.java
-/lucene/src/java/org/apache/lucene/queryParser/Token.java
-/lucene/src/java/org/apache/lucene/queryParser/TokenManager.java
-/lucene/src/java/org/apache/lucene/queryParser/QueryParserConstants.java
-
-# /lucene/src/java/org/apache/lucene/util/automaton/
-/lucene/src/java/org/apache/lucene/util/automaton/moman
+# ./lucene/core/src/java/org/apache/lucene/util/automaton
+/lucene/core/src/java/org/apache/lucene/util/automaton/moman
 
 
-# /modules/analysis/common/src/java/org/apache/lucene/analysis/standard/
+# ./lucene/test-framework
+/lucene/test-framework/*.iml
+/lucene/test-framework/pom.xml
+
+
+# ./lucene/contrib
+/lucene/contrib/build
+/lucene/contrib/dist
+/lucene/contrib/pom.xml
+
+
+# ./lucene/contrib/misc
+/lucene/contrib/misc/*.iml
+/lucene/contrib/misc/pom.xml
+
+
+# ./lucene/contrib/memory
+/lucene/contrib/memory/*.iml
+/lucene/contrib/memory/pom.xml
+
+
+# ./lucene/contrib/spatial
+/lucene/contrib/spatial/*.iml
+/lucene/contrib/spatial/pom.xml
+
+
+# ./lucene/contrib/sandbox
+/lucene/contrib/sandbox/pom.xml
+/lucene/contrib/sandbox/*.iml
+
+
+# ./lucene/contrib/highlighter
+/lucene/contrib/highlighter/*.iml
+/lucene/contrib/highlighter/pom.xml
+
+
+# ./lucene/contrib/demo
+/lucene/contrib/demo/*.iml
+/lucene/contrib/demo/pom.xml
+
+
+# ./solr
+/solr/build
+/solr/dist
+/solr/.project
+/solr/.classpath
+/solr/.settings
+/solr/bin
+/solr/target
+/solr/luke
+/solr/lucene-libs
+/solr/build.properties
+/solr/*.iml
+/solr/pom.xml
+/solr/package
+
+
+# ./solr/solrj
+/solr/solrj/pom.xml
+
+
+# ./solr/solrj/src/java
+/solr/solrj/src/java/pom.xml
+
+
+# ./solr/core
+/solr/core/pom.xml
+
+
+# ./solr/core/src/test-files/solr
+/solr/core/src/test-files/solr/data
+
+
+# ./solr/example/webapps
+/solr/example/webapps/*
+
+
+# ./solr/example/logs
+/solr/example/logs/*.log
+
+
+# ./solr/example/solr
+/solr/example/solr/data
+/solr/example/solr/lib
+/solr/example/solr/logs
+/solr/example/solr/zoo_data
+
+
+# ./solr/example/solr/bin
+/solr/example/solr/bin/*
+
+
+# ./solr/example/work
+/solr/example/work/*
+
+
+# ./solr/example/exampledocs
+/solr/example/exampledocs/post.jar
+
+
+# ./solr/example/multicore/core1
+/solr/example/multicore/core1/data
+
+
+# ./solr/example/multicore/core0
+/solr/example/multicore/core0/data
+
+
+# ./solr/example/example-DIH/solr/rss
+/solr/example/example-DIH/solr/rss/data
+
+
+# ./solr/example/example-DIH/solr/rss/conf
+/solr/example/example-DIH/solr/rss/conf/dataimport.properties
+
+
+# ./solr/example/example-DIH/solr/mail
+/solr/example/example-DIH/solr/mail/data
+
+
+# ./solr/example/example-DIH/solr/mail/lib
+/solr/example/example-DIH/solr/mail/lib/*.jar
+
+
+# ./solr/example/example-DIH/solr/db
+/solr/example/example-DIH/solr/db/data
+
+
+# ./solr/example/example-DIH/solr/db/conf
+/solr/example/example-DIH/solr/db/conf/dataimport.properties
+
+
+# ./solr/example/example-DIH/solr/tika
+/solr/example/example-DIH/solr/tika/data
+
+
+# ./solr/site-src
+/solr/site-src/build
+
+
+# ./solr/webapp
+/solr/webapp/pom.xml
+
+
+# ./solr/test-framework
+/solr/test-framework/pom.xml
+
+
+# ./solr/contrib
+/solr/contrib/pom.xml
+
+
+# ./solr/contrib/clustering
+/solr/contrib/clustering/build
+/solr/contrib/clustering/*.iml
+/solr/contrib/clustering/pom.xml
+
+
+# ./solr/contrib/clustering/lib
+/solr/contrib/clustering/lib/pcj-*
+/solr/contrib/clustering/lib/simple-xml-*
+/solr/contrib/clustering/lib/colt-*
+/solr/contrib/clustering/lib/nni-*
+/solr/contrib/clustering/lib/downloads
+
+
+# ./solr/contrib/uima
+/solr/contrib/uima/build
+/solr/contrib/uima/*.iml
+/solr/contrib/uima/pom.xml
+
+
+# ./solr/contrib/velocity
+/solr/contrib/velocity/*.iml
+/solr/contrib/velocity/pom.xml
+
+
+# ./solr/contrib/extraction
+/solr/contrib/extraction/build
+/solr/contrib/extraction/*.iml
+/solr/contrib/extraction/pom.xml
+
+
+# ./solr/contrib/analysis-extras
+/solr/contrib/analysis-extras/build
+/solr/contrib/analysis-extras/lucene-libs
+/solr/contrib/analysis-extras/*.iml
+/solr/contrib/analysis-extras/pom.xml
+
+
+# ./solr/contrib/langid
+/solr/contrib/langid/*.iml
+/solr/contrib/langid/pom.xml
+
+
+# ./solr/contrib/dataimporthandler-extras
+/solr/contrib/dataimporthandler-extras/*.iml
+/solr/contrib/dataimporthandler-extras/pom.xml
+
+
+# ./solr/contrib/dataimporthandler-extras/src/test-files/dihextras/solr/conf
+/solr/contrib/dataimporthandler-extras/src/test-files/dihextras/solr/conf/dataimport.properties
+
+
+# ./solr/contrib/dataimporthandler
+/solr/contrib/dataimporthandler/target
+/solr/contrib/dataimporthandler/*.iml
+/solr/contrib/dataimporthandler/pom.xml
+
+
+# ./solr/contrib/dataimporthandler/src
+/solr/contrib/dataimporthandler/src/pom.xml
+
+
+# ./solr/contrib/dataimporthandler/src/test-files
+/solr/contrib/dataimporthandler/src/test-files/dataimport.properties
+
+
+# ./solr/contrib/dataimporthandler/src/test-files/dih/solr/conf
+/solr/contrib/dataimporthandler/src/test-files/dih/solr/conf/dataimport.properties
+
+
+# ./modules
+/modules/build
+/modules/dist
+/modules/pom.xml
+
+
+# ./modules/facet
+/modules/facet/build
+/modules/facet/dist
+/modules/facet/*.iml
+/modules/facet/pom.xml
+
+
+# ./modules/benchmark
+/modules/benchmark/temp
+/modules/benchmark/work
+/modules/benchmark/build
+/modules/benchmark/*.iml
+/modules/benchmark/pom.xml
+
+
+# ./modules/grouping
+/modules/grouping/build
+/modules/grouping/dist
+/modules/grouping/*.iml
+/modules/grouping/pom.xml
+
+
+# ./modules/analysis
+/modules/analysis/build
+/modules/analysis/pom.xml
+
+
+# ./modules/analysis/icu
+/modules/analysis/icu/*.iml
+/modules/analysis/icu/pom.xml
+
+
+# ./modules/analysis/morfologik
+/modules/analysis/morfologik/*.iml
+/modules/analysis/morfologik/pom.xml
+
+
+# ./modules/analysis/common
+/modules/analysis/common/*.iml
+/modules/analysis/common/pom.xml
+
+
+# ./modules/analysis/common/src/java/org/apache/lucene/analysis/standard
 /modules/analysis/common/src/java/org/apache/lucene/analysis/standard/Token.java
 /modules/analysis/common/src/java/org/apache/lucene/analysis/standard/StandardTokenizer.java
 /modules/analysis/common/src/java/org/apache/lucene/analysis/standard/StandardTokenizerTokenManager.java
@@ -52,35 +325,47 @@ lucene-libs
 /modules/analysis/common/src/java/org/apache/lucene/analysis/standard/StandardTokenizerConstants.java
 
 
-# /modules/benchmark/
-/modules/benchmark/temp
-/modules/benchmark/work
+# ./modules/analysis/stempel
+/modules/analysis/stempel/*.iml
+/modules/analysis/stempel/pom.xml
 
-# /solr/
-/solr/.project
-/solr/.classpath
-/solr/.settings
-/solr/bin
-/solr/luke
-/solr/package
 
-# /solr/example
-/solr/example/webapps
-/solr/example/work
-/solr/example/solr/data
-/solr/example/exampledocs/post.jar
+# ./modules/analysis/phonetic
+/modules/analysis/phonetic/*.iml
+/modules/analysis/phonetic/pom.xml
 
-# /solr/client/ruby/flare/
-/solr/client/ruby/flare/tmp
 
-# More solr.
-/solr/contrib/dataimporthandler/src/test-files/dataimport.properties
-/solr/contrib/dataimporthandler/src/test-files/dih/solr/conf/dataimport.properties
-/solr/contrib/dataimporthandler-extras/src/test-files/dihextras/solr/conf/dataimport.properties
-/solr/example/example-DIH/solr/db/conf/dataimport.properties
-/solr/example/example-DIH/solr/rss/conf/dataimport.properties
+# ./modules/analysis/smartcn
+/modules/analysis/smartcn/*.iml
+/modules/analysis/smartcn/pom.xml
 
-# output folders.
-bin.misc/
-bin.tests-framework/
 
+# ./modules/analysis/kuromoji
+/modules/analysis/kuromoji/*.iml
+/modules/analysis/kuromoji/pom.xml
+
+
+# ./modules/queries
+/modules/queries/build
+/modules/queries/pom.xml
+/modules/queries/*.iml
+
+
+# ./modules/join
+/modules/join/build
+/modules/join/dist
+/modules/join/*.iml
+/modules/join/pom.xml
+
+
+# ./modules/queryparser
+/modules/queryparser/pom.xml
+/modules/queryparser/*.iml
+/modules/queryparser/build
+
+
+# ./modules/suggest
+/modules/suggest/*.iml
+/modules/suggest/pom.xml
+/modules/suggest/build
+/modules/suggest/dist
