@@ -88,7 +88,6 @@ public class NRTManagerReopenThread extends Thread implements NRTManager.Waiting
   private final long targetMinStaleNS;
   private boolean finish;
   private long waitingGen;
-  private boolean waitingNeedsDeletes;
 
   /**
    * Create NRTManagerReopenThread, to periodically reopen the NRT searcher.
@@ -126,11 +125,10 @@ public class NRTManagerReopenThread extends Thread implements NRTManager.Waiting
     }
   }
 
-  public synchronized void waiting(boolean needsDeletes, long targetGen) {
-    waitingNeedsDeletes |= needsDeletes;
+  public synchronized void waiting(long targetGen) {
     waitingGen = Math.max(waitingGen, targetGen);
     notify();
-    //System.out.println(Thread.currentThread().getName() + ": force wakeup waitingGen=" + waitingGen + " applyDeletes=" + applyDeletes + " waitingNeedsDeletes=" + waitingNeedsDeletes);
+    //System.out.println(Thread.currentThread().getName() + ": force wakeup waitingGen=" + waitingGen + " applyDeletes=" + applyDeletes);
   }
 
   @Override
@@ -153,7 +151,7 @@ public class NRTManagerReopenThread extends Thread implements NRTManager.Waiting
             //System.out.println("reopen: cycle");
 
             // True if we have someone waiting for reopen'd searcher:
-            hasWaiting = waitingGen > manager.getCurrentSearchingGen(waitingNeedsDeletes);
+            hasWaiting = waitingGen > manager.getCurrentSearchingGen();
             final long nextReopenStartNS = lastReopenStartNS + (hasWaiting ? targetMinStaleNS : targetMaxStaleNS);
 
             final long sleepNS = nextReopenStartNS - System.nanoTime();
@@ -183,7 +181,7 @@ public class NRTManagerReopenThread extends Thread implements NRTManager.Waiting
         lastReopenStartNS = System.nanoTime();
         try {
           //final long t0 = System.nanoTime();
-          manager.maybeReopen(waitingNeedsDeletes);
+          manager.maybeReopen();
           //System.out.println("reopen took " + ((System.nanoTime()-t0)/1000000.0) + " msec");
         } catch (IOException ioe) {
           //System.out.println(Thread.currentThread().getName() + ": IOE");
