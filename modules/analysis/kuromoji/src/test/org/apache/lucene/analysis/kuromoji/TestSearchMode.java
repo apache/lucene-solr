@@ -33,12 +33,19 @@ import org.apache.lucene.util.IOUtils;
 
 public class TestSearchMode extends BaseTokenStreamTestCase {
   private final static String SEGMENTATION_FILENAME = "search-segmentation-tests.txt";
-  private final Segmenter segmenter = new Segmenter(Mode.SEARCH);
+  private final static String SEGMENTATION_WITH_COMPOUNDS_FILENAME = "search-segmentation-with-compounds-tests.txt";
   private final Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      //Tokenizer tokenizer = new KuromojiTokenizer(segmenter, reader);
       Tokenizer tokenizer = new KuromojiTokenizer2(reader, null, true, Mode.SEARCH);
+      return new TokenStreamComponents(tokenizer, tokenizer);
+    }
+  };
+
+  private final Analyzer analyzerWithCompounds = new Analyzer() {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new KuromojiTokenizer2(reader, null, true, Mode.SEARCH_WITH_COMPOUNDS);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -65,26 +72,46 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
         String[] fields = line.split("\t", 2);
         String sourceText = fields[0];
         String[] expectedTokens = fields[1].split("\\s+");
-        int[] expectedPosIncrs;
-        if (KuromojiTokenizer2.DO_OUTPUT_COMPOUND && expectedTokens.length > 1) {
-          String[] newTokens = new String[expectedTokens.length+1];
-          newTokens[0] = expectedTokens[0];
-          newTokens[1] = fields[0];
-          System.arraycopy(expectedTokens, 1, newTokens, 2, expectedTokens.length-1);
-          expectedTokens = newTokens;
-          expectedPosIncrs = new int[expectedTokens.length];
-          Arrays.fill(expectedPosIncrs, 1);
-          expectedPosIncrs[1] = 0;
-          System.out.println("fixup: " + Arrays.toString(expectedTokens));
-        } else {
-          expectedPosIncrs = new int[expectedTokens.length];
-          Arrays.fill(expectedPosIncrs, 1);
-        }
-        try {
+        int[] expectedPosIncrs = new int[expectedTokens.length];
+        Arrays.fill(expectedPosIncrs, 1);
         assertAnalyzesTo(analyzer, sourceText, expectedTokens, expectedPosIncrs);
-        } catch (Throwable t) {
-        System.out.println("  diffs: " + t);
+      }
+    } finally {
+      is.close();
+    }
+  }
+
+  /** Test search_with_compounds mode segmentation */
+  public void testSearchSegmentationWithCompounds() throws IOException {
+    InputStream is = TestSearchMode.class.getResourceAsStream(SEGMENTATION_WITH_COMPOUNDS_FILENAME);
+    if (is == null) {
+      throw new FileNotFoundException("Cannot find " + SEGMENTATION_FILENAME + " in test classpath");
+    }
+    try {
+      LineNumberReader reader = new LineNumberReader(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+        // Remove comments
+        line = line.replaceAll("#.*$", "");
+        // Skip empty lines or comment lines
+        if (line.trim().isEmpty()) {
+          continue;
         }
+        if (VERBOSE) {
+          System.out.println("Line no. " + reader.getLineNumber() + ": " + line);
+        }
+        String[] fields = line.split("\t", 2);
+        String sourceText = fields[0];
+        String[] expectedTokens = fields[1].split("\\s+");
+        int[] expectedPosIncrs = new int[expectedTokens.length];
+        for(int tokIDX=0;tokIDX<expectedTokens.length;tokIDX++) {
+          if (expectedTokens[tokIDX].endsWith("/0")) {
+            expectedTokens[tokIDX] = expectedTokens[tokIDX].replace("/0", "");
+          } else {
+            expectedPosIncrs[tokIDX] = 1;
+          }
+        }
+        assertAnalyzesTo(analyzerWithCompounds, sourceText, expectedTokens, expectedPosIncrs);
       }
     } finally {
       is.close();

@@ -57,6 +57,7 @@ public interface PositionIncrementAttribute extends Attribute {
    */
   public int getPositionIncrement();
 
+  // nocommit break into new attr...
   // nocommit better names...?  getLength?  getSpan?
   /** @param positionLength how many positions this token
    *  spans.  NOTE: this is optional, and most analyzers

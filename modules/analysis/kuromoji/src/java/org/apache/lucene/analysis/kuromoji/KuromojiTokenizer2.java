@@ -20,14 +20,10 @@ package org.apache.lucene.analysis.kuromoji;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
 import org.apache.lucene.analysis.kuromoji.dict.CharacterDefinition;
@@ -43,7 +39,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
@@ -53,19 +48,11 @@ import org.apache.lucene.util.fst.FST;
 
 // nocommit add toDot and look at 1st pass intersection
 
-// nocommit need better testing of compound output... need
-// assertAnalyzesTo to accept posLength too
-
-// nocommit add comment explaining this isn't quite a real viterbi
+// nocommit needs assertAnalyzersTo to accept
+// posLength... then fix compound tests to verify it
 
 // nocomit explain how the 2nd best tokenization is
 // "contextual"...
-
-// nocommit -- need a test that doesn't pre-split by
-// sentence... ie, we don't BOS/EOS on each sentence
-// break any more... so this can change the results
-// depending on whether ipadic was "trained" with sentence
-// breaks?
 
 // nocommit -- should we use the sentence breakiterator
 // too..?  we can simply use it to slip an EOS/BOS token
@@ -87,9 +74,6 @@ public final class KuromojiTokenizer2 extends Tokenizer {
 
   private static final int SEARCH_MODE_OTHER_PENALTY = 1700;
 
-  // nocommit
-  public static boolean DO_OUTPUT_COMPOUND = false;
-
   private final EnumMap<Type, Dictionary> dictionaryMap = new EnumMap<Type, Dictionary>(Type.class);
 
   private final TokenInfoFST fst;
@@ -106,29 +90,36 @@ public final class KuromojiTokenizer2 extends Tokenizer {
   private final FST.BytesReader userFSTReader;
   private final TokenInfoFST userFST;
 
-  private Reader reader;
+  private final WrappedCharArray buffer = new WrappedCharArray();
+
+  private final WrappedPositionArray positions = new WrappedPositionArray();
+
+  private final boolean discardPunctuation;
+  private final boolean searchMode;
+  private final boolean extendedMode;
+  private final boolean outputCompounds;
+
+  // index of the last character of unknown word:
+  private int unknownWordEndIndex = -1;
+
+  // True once we've hit the EOF from the input reader:
+  private boolean end;
+
+  // Used to determine if all extensions from a given node
+  // originated from the same backtrace point:
+  private int sameLeastIndex;
+
+  // Last absolute position we backtraced from:
+  private int lastBackTracePos;
+
+  // Position of last token we returned; we use this to
+  // figure out whether to set posIncr to 0 or 1:
+  private int lastTokenPos;
 
   // Next absolute position to process:
   private int pos;
 
-  private WrappedCharArray buffer = new WrappedCharArray();
-
-  // index of the last character of unknown word:
-  // nocommit put back:
-  // int unknownWordEndIndex = -1;
-
-  private WrappedPositionArray positions = new WrappedPositionArray();
-
-  private boolean end;
-  private final boolean discardPunctuation;
-  private final boolean searchMode;
-  private final boolean extendedMode;
-  private int sameLeastIndex;
-
-  private int lastBackTracePos;
-  private int lastTokenPos;
-
-  // Already parsed but not yet passed to caller:
+  // Already parsed, but not yet passed to caller, tokens:
   private final List<Token> pending = new ArrayList<Token>();
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -160,14 +151,22 @@ public final class KuromojiTokenizer2 extends Tokenizer {
       case SEARCH:
         searchMode = true;
         extendedMode = false;
+        outputCompounds = false;
+        break;
+      case SEARCH_WITH_COMPOUNDS:
+        searchMode = true;
+        extendedMode = false;
+        outputCompounds = true;
         break;
       case EXTENDED:
         searchMode = true;
         extendedMode = true;
+        outputCompounds = false;
         break;
       default:
         searchMode = false;
         extendedMode = false;
+        outputCompounds = false;
         break;
     }
     buffer.reset(input);
@@ -187,8 +186,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
 
   private void resetState() {
     positions.reset();
-    // nocommit put back
-    //unknownWordEndIndex = -1;
+    unknownWordEndIndex = -1;
     pos = 0;
     end = false;
     lastBackTracePos = 0;
@@ -200,9 +198,22 @@ public final class KuromojiTokenizer2 extends Tokenizer {
   }
 
   @Override
-  public final void end() {
+  public void end() {
     // set final offset
     offsetAtt.setOffset(correctOffset(pos), correctOffset(pos));
+  }
+
+  // Returns the added cost that a 2nd best segmentation is
+  // allowed to have.  Ie, if we see path with cost X,
+  // ending in a compound word, and this method returns
+  // threshold > 0, then we will also find the 2nd best
+  // segmentation and if its path score is within this
+  // threshold of X, we'll include it in the output:
+  private int computeSecondBestThreshold(int pos, int length) throws IOException {
+    // TODO: maybe we do something else here, instead of just
+    // using the penalty...?  EG we can be more aggressive on
+    // when to also test for 2nd best path
+    return computePenalty(pos, length);
   }
 
   private int computePenalty(int pos, int length) throws IOException {
@@ -216,7 +227,6 @@ public final class KuromojiTokenizer2 extends Tokenizer {
           break;
         }				
       }
-      final int penalty;
       if (allKanji) {	// Process only Kanji keywords
         return (length - SEARCH_MODE_KANJI_LENGTH) * SEARCH_MODE_KANJI_PENALTY;
       } else if (length > SEARCH_MODE_OTHER_LENGTH) {
@@ -279,9 +289,14 @@ public final class KuromojiTokenizer2 extends Tokenizer {
     }
 
     public void add(int cost, int nodeID, int backPos, int backIndex, int backID, Type backType) {
-      // nocommit in theory, we should check if nodeID is
-      // already present here, and update it if
-      // so... instead of just always adding:
+      // NOTE: this isn't quite a true Viterbit search,
+      // becase we should check if nodeID is
+      // already present here, and only update if the new
+      // cost is less than the current cost, instead of
+      // simply appending.  However, that will likely hurt
+      // performance (usually we add a nodeID only once),
+      // and it means we actually create the full graph
+      // intersection instead of a "normal" Viterbi lattice:
       if (count == costs.length) {
         grow();
       }
@@ -310,37 +325,36 @@ public final class KuromojiTokenizer2 extends Tokenizer {
       // forwardCount naturally resets after it runs:
       assert forwardCount == 0: "pos=" + pos + " forwardCount=" + forwardCount;
     }
-
-    // nocommit maybe?
-    // public void update(int cost, int nodeID, int backPos, int backIndex, int backID)
   }
 
-  // nocommit absorb into add...?
-  private void add(Dictionary dict, Position posData, int endPos, int wordID, Type type) throws IOException {
+  private void add(Dictionary dict, Position fromPosData, int endPos, int wordID, Type type, boolean addPenalty) throws IOException {
     final int wordCost = dict.getWordCost(wordID);
     final int leftID = dict.getLeftId(wordID);
     int leastCost = Integer.MAX_VALUE;
     int leastIDX = -1;
-    assert posData.count > 0;
-    for(int idx=0;idx<posData.count;idx++) {
-      // Cost is path cost so far, plus word cost, plus
-      // bigram cost:
-      final int cost = posData.costs[idx] + wordCost + costs.get(posData.nodeID[idx], leftID);
+    assert fromPosData.count > 0;
+    for(int idx=0;idx<fromPosData.count;idx++) {
+      // Cost is path cost so far, plus word cost (added at
+      // end of loop), plus bigram cost:
+      final int cost = fromPosData.costs[idx] + costs.get(fromPosData.nodeID[idx], leftID);
+      if (VERBOSE) {
+        System.out.println("      fromIDX=" + idx + ": cost=" + cost + " (prevCost=" + fromPosData.costs[idx] + " wordCost=" + wordCost + " bgCost=" + costs.get(fromPosData.nodeID[idx], leftID) + " leftID=" + leftID);
+      }
       if (cost < leastCost) {
         leastCost = cost;
         leastIDX = idx;
+        //System.out.println("        **");
       }
     }
 
+    leastCost += wordCost;
+
     if (VERBOSE) {
-      System.out.println("      + cost=" + leastCost + " wordID=" + wordID + " leftID=" + leftID + " tok=" + new String(buffer.get(posData.pos, endPos-posData.pos)) + " leastIDX=" + leastIDX + " toPos.idx=" + positions.get(endPos).count);
+      System.out.println("      + cost=" + leastCost + " wordID=" + wordID + " leftID=" + leftID + " leastIDX=" + leastIDX + " toPos.idx=" + positions.get(endPos).count);
     }
 
-    // nocommit ideally we don't have to do this ... just
-    // putting it here to confirm same results as current
-    // segmenter:
-    if (!DO_OUTPUT_COMPOUND && searchMode && type != Type.USER) {
-      final int penalty = computePenalty(posData.pos, endPos - posData.pos);
+    if ((addPenalty || (!outputCompounds && searchMode)) && type != Type.USER) {
+      final int penalty = computePenalty(fromPosData.pos, endPos - fromPosData.pos);
       if (VERBOSE) {
         if (penalty > 0) {
           System.out.println("        + penalty=" + penalty + " cost=" + (leastCost+penalty));
@@ -349,14 +363,15 @@ public final class KuromojiTokenizer2 extends Tokenizer {
       leastCost += penalty;
     }
 
-    positions.get(endPos).add(leastCost, dict.getRightId(wordID), posData.pos, leastIDX, wordID, type);
-    /*
+    //positions.get(endPos).add(leastCost, dict.getRightId(wordID), fromPosData.pos, leastIDX, wordID, type);
+    assert leftID == dict.getRightId(wordID);
+    positions.get(endPos).add(leastCost, leftID, fromPosData.pos, leastIDX, wordID, type);
+
     if (sameLeastIndex == -1) {
       sameLeastIndex = leastIDX;
     } else if (sameLeastIndex != leastIDX) {
-      sameLeastIndex = Integer.MAX_VALUE;
+      sameLeastIndex = -2;
     }
-    */
   }
 
   @Override
@@ -651,7 +666,8 @@ public final class KuromojiTokenizer2 extends Tokenizer {
 
       // nocommit if I change 40 below it changes number of
       // tokens in TestQuality!
-      if ((pos - lastBackTracePos >= 100) && posData.count == 1 && isFrontier) {
+      //if ((pos - lastBackTracePos >= 100) && posData.count == 1 && isFrontier) {
+      if (pos > lastBackTracePos && posData.count == 1 && isFrontier) {
         // We are at a "frontier", and only one node is
         // alive, so whatever the eventual best path is must
         // come through this node.  So we can safely commit
@@ -664,7 +680,6 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         if (pending.size() != 0) {
           return;
         } else {
-          // nocommit: make punctuation-only testcase
           // This means the backtrace only produced
           // punctuation tokens, so we must keep parsing.
         }
@@ -689,11 +704,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         System.out.println("    " + posData.count + " arcs in");
       }
 
-      // nocommit must also 1) detect a
-      // less-obvious-yet-still-committable backtrace op,
-      // when, even though N > 1 states are/were alive, they
-      // all back through a single state, and also 2) maybe
-      // need to "force" a "when all else fails" backtrace
+      // nocommit may need "force" a "when all else fails" backtrace?
 
       boolean anyMatches = false;
 
@@ -711,22 +722,21 @@ public final class KuromojiTokenizer2 extends Tokenizer {
           }
           output += arc.output.intValue();
           if (arc.isFinal()) {
-            add(userDictionary, posData, posAhead+1, output + arc.nextFinalOutput.intValue(), Type.USER);
+            add(userDictionary, posData, posAhead+1, output + arc.nextFinalOutput.intValue(), Type.USER, false);
             anyMatches = true;
           }
         }
       }
 
-      // nocommit we can be more aggressive about user
+      // TODO: we can be more aggressive about user
       // matches?  if we are "under" a user match then don't
-      // extend these paths?
+      // extend KNOWN/UNKNOWN paths?
 
       if (!anyMatches) {
         // Next, try known dictionary matches
         fst.getFirstArc(arc);
         int output = 0;
 
-        boolean allKanji = true;
         for(int posAhead=posData.pos;;posAhead++) {
           final int ch = buffer.get(posAhead);
           if (ch == -1) {
@@ -740,10 +750,11 @@ public final class KuromojiTokenizer2 extends Tokenizer {
 
           output += arc.output.intValue();
 
-          // NOTE: for known words that are too-long
+          // Optimization: for known words that are too-long
           // (compound), we should pre-compute the 2nd
           // best segmentation and store it in the
-          // dictionary.  This is just a time/space opto...
+          // dictionary instead of recomputing it each time a
+          // match is found.
 
           if (arc.isFinal()) {
             dictionary.lookupWordIds(output + arc.nextFinalOutput.intValue(), wordIdRef);
@@ -751,7 +762,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
               System.out.println("    KNOWN word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1) + " " + wordIdRef.length + " wordIDs");
             }
             for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
-              add(dictionary, posData, posAhead+1, wordIdRef.ints[wordIdRef.offset + ofs], Type.KNOWN);
+              add(dictionary, posData, posAhead+1, wordIdRef.ints[wordIdRef.offset + ofs], Type.KNOWN, false);
               anyMatches = true;
             }
           }
@@ -760,12 +771,10 @@ public final class KuromojiTokenizer2 extends Tokenizer {
 
       // In the case of normal mode, it doesn't process unknown word greedily.
 
-      // nocommit: fix
-      /*
       if (!searchMode && unknownWordEndIndex > posData.pos) {
         continue;
       }
-      */
+
       final char firstCharacter = (char) buffer.get(pos);
       // nocommit -- can't we NOT pursue unk if a known
       // token "covers" us...?
@@ -799,20 +808,18 @@ public final class KuromojiTokenizer2 extends Tokenizer {
           System.out.println("    UNKNOWN word len=" + unknownWordLength + " " + wordIdRef.length + " wordIDs");
         }
         for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
-          add(unkDictionary, posData, posData.pos + unknownWordLength, wordIdRef.ints[wordIdRef.offset + ofs], Type.UNKNOWN);
+          add(unkDictionary, posData, posData.pos + unknownWordLength, wordIdRef.ints[wordIdRef.offset + ofs], Type.UNKNOWN, false);
         }
 
-        // nocommit fixme
-        //unknownWordEndIndex = posData.pos + unknownWordLength;
+        unknownWordEndIndex = posData.pos + unknownWordLength;
       }
 
       // nocommit explainme:
-      if (false && (pos - lastBackTracePos >= 100) && sameLeastIndex != -1 && sameLeastIndex != Integer.MAX_VALUE &&
-          pos != lastBackTracePos && isFrontier) {
+      if ((pos - lastBackTracePos >= 100) && sameLeastIndex >= 0 && isFrontier) {
 
         final int sav = sameLeastIndex;
 
-        //System.out.println("**SAME: " + sameLeastIndex);
+        //System.out.println("**SAME: " + sameLeastIndex + " vs " + posData.count);
         backtrace(posData, sameLeastIndex);
 
         // Re-base cost so we don't risk int overflow:
@@ -822,7 +829,6 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         if (pending.size() != 0) {
           return;
         } else {
-          // nocommit: make punctuation-only testcase
           // This means the backtrace only produced
           // punctuation tokens, so we must keep parsing.
         }
@@ -871,7 +877,6 @@ public final class KuromojiTokenizer2 extends Tokenizer {
 
     int minBackPos = Integer.MAX_VALUE;
 
-    final int compoundLength = endPos - startPos;
     // First pass: walk backwards, building up the forward
     // arcs and pruning inadmissible arcs:
     for(int pos=endPos; pos >= startPos; pos--) {
@@ -881,14 +886,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
       }
       for(int arcIDX=0;arcIDX<posData.count;arcIDX++) {
         final int backPos = posData.backPos[arcIDX];
-        // nocommit: O(N^2) cost here!!  adversary could
-        // exploit this i think...?  how to protect?  hmm
-        // maybe i need to track lastKanjiCount at each
-        // position..
-        // nocommit hacky:
-        // if (backPos >= startPos && computePenalty(backPos, pos-backPos) == 0) {
-        if (backPos >= startPos && (pos-backPos) <= 2*compoundLength/3) {
-          //if (backPos != -1 && (pos-backPos) <= 2*compoundLength/3) {
+        if (backPos >= startPos) {
           // Keep this arc:
           //System.out.println("      keep backPos=" + backPos);
           minBackPos = Math.min(backPos, minBackPos);
@@ -907,7 +905,13 @@ public final class KuromojiTokenizer2 extends Tokenizer {
       }
     }
 
+    // nocommit shouldn't we just "run w/ penalties" in this
+    // pass...?
+
     // nocommit what if minBackPos not set...?
+
+    // nocommit it must be startPos...?
+    assert minBackPos == startPos;
 
     // Second pass: walk forward, re-scoring:
     //for(int pos=startPos; pos < endPos; pos++) {
@@ -924,23 +928,29 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         posData.forwardCount = 0;
         continue;
       }
+
       if (pos == startPos) {
         // On the initial position, only consider the best
         // path so we "force congruence":  the
         // sub-segmentation is "in context" of what the best
         // path (compound token) had matched:
+
+        // nocommit could be -1?:  don't i need to check
+        // startPos==0 too...?
         final Dictionary dict = getDict(posData.backType[bestStartIDX]);
+
         final int rightID = startPos == 0 ? 0 : dict.getRightId(posData.backID[bestStartIDX]);
-        final int pathCost = posData.backID[bestStartIDX];
+        final int pathCost = posData.costs[bestStartIDX];
         for(int forwardArcIDX=0;forwardArcIDX<posData.forwardCount;forwardArcIDX++) {
           final Type forwardType = posData.forwardType[forwardArcIDX];
           final Dictionary dict2 = getDict(forwardType);
           final int wordID = posData.forwardID[forwardArcIDX];
-          final int newCost = pathCost + dict2.getWordCost(wordID) + 
-            costs.get(rightID, dict2.getLeftId(wordID));
           final int toPos = posData.forwardPos[forwardArcIDX];
+          final int newCost = pathCost + dict2.getWordCost(wordID) + 
+            costs.get(rightID, dict2.getLeftId(wordID)) +
+            computePenalty(pos, toPos-pos);
           if (VERBOSE) {
-            System.out.println("      + " + forwardType + " word " + new String(buffer.get(pos, toPos-pos)) + " toPos=" + toPos);
+            System.out.println("      + " + forwardType + " word " + new String(buffer.get(pos, toPos-pos)) + " toPos=" + toPos + " cost=" + newCost + " penalty=" + computePenalty(pos, toPos-pos) + " toPos.idx=" + positions.get(toPos).count);
           }
           positions.get(toPos).add(newCost,
                                    dict2.getRightId(wordID),
@@ -962,7 +972,8 @@ public final class KuromojiTokenizer2 extends Tokenizer {
               posData,
               toPos,
               posData.forwardID[forwardArcIDX],
-              forwardType);
+              forwardType,
+              true);
         }
       }
       posData.forwardCount = 0;
@@ -1003,8 +1014,9 @@ public final class KuromojiTokenizer2 extends Tokenizer {
       int backPos = posData.backPos[bestIDX];
       int length = pos - backPos;
       Type backType = posData.backType[bestIDX];
+      int backID = posData.backID[bestIDX];
 
-      if (DO_OUTPUT_COMPOUND && searchMode && altToken == null && backType != Type.USER) {
+      if (outputCompounds && searchMode && altToken == null && backType != Type.USER) {
         
         // In searchMode, if best path had picked a too-long
         // token, we use the "penalty" to compute the allowed
@@ -1013,10 +1025,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         // threshold, we pursue it instead (but also output
         // the long token).
 
-        // nocommit -- maybe re-tune this "penalty", now
-        // that it means something very different ("output
-        // smaller segmentation"):
-        final int penalty = computePenalty(backPos, pos-backPos);
+        final int penalty = computeSecondBestThreshold(backPos, pos-backPos);
         
         if (penalty > 0) {
           if (VERBOSE) {
@@ -1025,38 +1034,45 @@ public final class KuromojiTokenizer2 extends Tokenizer {
 
           // Use the penalty to set maxCost on the 2nd best
           // segmentation:
-          final int maxCost = posData.costs[bestIDX] + penalty;
-
-          final int backID = posData.backID[bestIDX];
+          int maxCost = posData.costs[bestIDX] + penalty;
+          if (lastLeftWordID != -1) {
+            maxCost += costs.get(getDict(backType).getRightId(backID), lastLeftWordID);
+          }
 
           // Now, prune all too-long tokens from the graph:
           pruneAndRescore(backPos, pos,
                           posData.backIndex[bestIDX]);
-
-          if (VERBOSE) {
-            System.out.println("  afterPrune: " + posData.count + " arcs arriving");
-          }
 
           // Finally, find 2nd best back-trace and resume
           // backtrace there:
           int leastCost = Integer.MAX_VALUE;
           int leastIDX = -1;
           for(int idx=0;idx<posData.count;idx++) {
+            // nocommit needs wordCost added here?
             int cost = posData.costs[idx];
+            //System.out.println("    idx=" + idx + " prevCost=" + cost);
+            
             if (lastLeftWordID != -1) {
               cost += costs.get(getDict(posData.backType[idx]).getRightId(posData.backID[idx]),
                                 lastLeftWordID);
+              //System.out.println("      += bgCost=" + costs.get(getDict(posData.backType[idx]).getRightId(posData.backID[idx]),
+              //lastLeftWordID) + " -> " + cost);
             }
+            //System.out.println("penalty " + posData.backPos[idx] + " to " + pos);
+            //cost += computePenalty(posData.backPos[idx], pos - posData.backPos[idx]);
             if (cost < leastCost) {
+              //System.out.println("      ** ");
               leastCost = cost;
               leastIDX = idx;
             }
           }
           //System.out.println("  leastIDX=" + leastIDX);
 
-          // nocommit -- must also check whether 2nd best score falls w/in threshold?
+          if (VERBOSE) {
+            System.out.println("  afterPrune: " + posData.count + " arcs arriving; leastCost=" + leastCost + " vs threshold=" + maxCost + " lastLeftWordID=" + lastLeftWordID);
+          }
 
-          if (leastIDX != -1 && posData.backPos[leastIDX] <= maxCost) {
+          if (leastIDX != -1 && leastCost <= maxCost && posData.backPos[leastIDX] != backPos) {
             // We should have pruned the altToken from the graph:
             assert posData.backPos[leastIDX] != backPos;
 
@@ -1076,6 +1092,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
             backPos = posData.backPos[bestIDX];
             length = pos - backPos;
             backType = posData.backType[bestIDX];
+            backID = posData.backID[bestIDX];
             backCount = 0;
             
           } else {
@@ -1104,10 +1121,14 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         if (VERBOSE) {
           System.out.println("    add altToken=" + altToken);
         }
-        assert backCount >= 1;
-        backCount++;
-        altToken.setPositionLength(backCount);
-        pending.add(altToken);
+        if (backCount > 0) {
+          backCount++;
+          altToken.setPositionLength(backCount);
+          pending.add(altToken);
+        } else {
+          // This means alt token was all punct tokens:
+          assert discardPunctuation;
+        }
         altToken = null;
       }
 
@@ -1117,7 +1138,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
 
         // Expand the phraseID we recorded into the actual
         // segmentation:
-        final int[] wordIDAndLength = userDictionary.lookupSegmentation(posData.backID[bestIDX]);
+        final int[] wordIDAndLength = userDictionary.lookupSegmentation(backID);
         int wordID = wordIDAndLength[0];
         int current = backPos;
         for(int j=1; j < wordIDAndLength.length; j++) {
@@ -1142,7 +1163,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         backCount += wordIDAndLength.length-1;
       } else {
 
-        if (extendedMode && posData.backType[bestIDX] == Type.UNKNOWN) {
+        if (extendedMode && backType == Type.UNKNOWN) {
           // nocommit what if the altToken is unknonwn?  
           // In EXTENDED mode we convert unknown word into
           // unigrams:
@@ -1153,21 +1174,24 @@ public final class KuromojiTokenizer2 extends Tokenizer {
               i--;
               charLen = 2;
             }
-            //System.out.println("    extended tok offset=" + (offset + i));
-            pending.add(new Token(CharacterDefinition.NGRAM,
-                                  fragment,
-                                  offset + i,
-                                  charLen,
-                                  Type.UNKNOWN,
-                                  backPos + i,
-                                  unkDictionary));
-            unigramTokenCount++;
+            //System.out.println("    extended tok offset="
+            //+ (offset + i));
+            if (!discardPunctuation || !isPunctuation(fragment[offset+i])) {
+              pending.add(new Token(CharacterDefinition.NGRAM,
+                                    fragment,
+                                    offset + i,
+                                    charLen,
+                                    Type.UNKNOWN,
+                                    backPos + i,
+                                    unkDictionary));
+              unigramTokenCount++;
+            }
           }
           backCount += unigramTokenCount;
           
         } else if (!discardPunctuation || length == 0 || !isPunctuation(fragment[offset])) {
           //System.out.println("backPos=" + backPos);
-          pending.add(new Token(posData.backID[bestIDX],
+          pending.add(new Token(backID,
                                 fragment,
                                 offset,
                                 length,
@@ -1185,7 +1209,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         }
       }
 
-      lastLeftWordID = dict.getLeftId(posData.backID[bestIDX]);
+      lastLeftWordID = dict.getLeftId(backID);
       pos = backPos;
       bestIDX = posData.backIndex[bestIDX];
     }
@@ -1209,7 +1233,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
     return dictionaryMap.get(type);
   }
 
-  private static final boolean isPunctuation(char ch) {
+  private static boolean isPunctuation(char ch) {
     // TODO: somehow this is slowish.. takes ~5% off
     // chars/msec from Perf.java; maybe we
     // can spend RAM...

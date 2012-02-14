@@ -59,7 +59,6 @@ public class TestQuality extends LuceneTestCase {
      sentence agreement?: 0.998161495317142
      word agreement?: 0.999587584716181
      */
-    //final Tokenizer tokenizer = new KuromojiTokenizer(null, null, true, Mode.SEARCH);
 
     StringBuilder sb = new StringBuilder();
 
@@ -73,15 +72,17 @@ public class TestQuality extends LuceneTestCase {
       // end of each sentence...
       maxLen = Math.max(line1.length(), maxLen);
       sb.append(line1);
+      /*
       if (ONE_TIME && count++ == 100) {
         // nocommit;
         break;
       }
+      */
     }
-    System.out.println("maxLen=" + maxLen);
+    //System.out.println("maxLen=" + maxLen);
 
-    //final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH);
-    final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""));
+    final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH_WITH_COMPOUNDS);
+    //final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""));
     final String all = sb.toString();
     final int ITERS = 20;
     CharTermAttribute termAtt = tokenizer.addAttribute(CharTermAttribute.class); 
@@ -123,7 +124,7 @@ public class TestQuality extends LuceneTestCase {
     
     //final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""));
     //final Tokenizer tokenizer = new KuromojiTokenizer(new Segmenter(Mode.NORMAL), new StringReader(""));
-    final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH);
+    final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH_WITH_COMPOUNDS);
     
     String line1 = null;
     String line2 = null;
@@ -256,6 +257,7 @@ public class TestQuality extends LuceneTestCase {
       }
     }
     assert minPath != null;
+    /*
     if (minEdits > 0) {
       if (!VERBOSE) {
         System.out.println("\nTEST " + lineCount + ": input " + unseg + "; " + minEdits + " edits");
@@ -263,6 +265,7 @@ public class TestQuality extends LuceneTestCase {
       System.out.println("    expected: " + expectedTokens);
       System.out.println("      actual: " + minPath);
     }
+    */
     stats.numChars += seg.length();
     stats.numEdits += minEdits;
     stats.numWords += expectedTokens.size();

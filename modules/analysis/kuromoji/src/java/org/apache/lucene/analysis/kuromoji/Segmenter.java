@@ -38,7 +38,7 @@ import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode;
  */
 public class Segmenter {
   public static enum Mode {
-    NORMAL, SEARCH, EXTENDED
+    NORMAL, SEARCH, SEARCH_WITH_COMPOUNDS, EXTENDED
   }
   
   public static final Mode DEFAULT_MODE = Mode.SEARCH;
@@ -128,8 +128,7 @@ public class Segmenter {
         position = Math.min(indexOfMaru, indexOfTen);				
       }
 
-      // nocommit
-      if(false && position >= 0) {
+      if(position >= 0) {
         splitPositions.add(position);
         currentPosition = position + 1;
       } else {

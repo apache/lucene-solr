@@ -126,7 +126,7 @@ public class Viterbi {
           break;
         }
 
-        //System.out.println("  leaving node.wordID=" + node.getWordId() + " leftID=" + node.getLeftId());
+        //System.out.println("  leaving node.wordID=" + node.getWordId() + " leftID=" + node.getLeftId() + " toPos=" + (node.getOffset()+node.getLength()));
         
         int backwardConnectionId = node.getLeftId();
         int wordCost = node.getWordCost();
@@ -160,13 +160,14 @@ public class Viterbi {
               if (allKanji) {	// Process only Kanji keywords
                 pathCost += (length - SEARCH_MODE_KANJI_LENGTH) * SEARCH_MODE_KANJI_PENALTY;
                 //System.out.println("    + kanji penalty=" + (length - SEARCH_MODE_KANJI_LENGTH) * SEARCH_MODE_KANJI_PENALTY + " cost=" + pathCost);
+                //System.out.println("        after penalty pathCost=" + pathCost);
               } else if (length > SEARCH_MODE_OTHER_LENGTH) {
                 pathCost += (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY;								
                 //System.out.println("    + non-kanji penalty=" + (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY + " cost=" + pathCost);
+                //System.out.println("        after penalty pathCost=" + pathCost);
               }
             }
           }
-          //System.out.println("      after penalty pathCost=" + pathCost);
           
           if (pathCost < leastPathCost){	// If total cost is lower than before, set current previous node as best left node (previous means left).
             //System.out.println("        **");
@@ -318,7 +319,7 @@ public class Viterbi {
   private void processUserDictionary(char text[], int offset, int len, ViterbiNode[][] startIndexArr, ViterbiNode[][] endIndexArr, int[] startSizeArr, int[] endSizeArr) throws IOException {
     int[][] result = userDictionary.lookup(text, offset, len);
     for(int[] segmentation : result) {
-      System.out.println("SEG=" + Arrays.toString(segmentation));
+      //System.out.println("SEG=" + Arrays.toString(segmentation));
       int wordId = segmentation[0];
       int index = segmentation[1];
       int length = segmentation[2];
