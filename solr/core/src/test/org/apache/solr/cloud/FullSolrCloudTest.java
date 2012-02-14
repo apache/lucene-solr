@@ -52,6 +52,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * 
@@ -59,6 +60,7 @@ import org.junit.BeforeClass;
  * what we test now - the default update chain
  * 
  */
+@Ignore
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   private static final String SHARD2 = "shard2";
@@ -275,7 +277,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       while (numShards != shardCount) {
         numShards = getNumShards(DEFAULT_COLLECTION);
         if (numShards == shardCount) break;
-        if (retries++ == 20) {
+        if (retries++ == 60) {
           printLayoutOnTearDown = true;
           fail("Shards in the state does not match what we set:" + numShards
               + " vs " + shardCount);
