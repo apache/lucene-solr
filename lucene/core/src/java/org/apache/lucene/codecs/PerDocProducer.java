@@ -43,6 +43,4 @@ public abstract class PerDocProducer implements Closeable {
    * @throws IOException
    */
   public abstract DocValues docValues(String field) throws IOException;
-
-  public static final PerDocProducer[] EMPTY_ARRAY = new PerDocProducer[0];
 }
