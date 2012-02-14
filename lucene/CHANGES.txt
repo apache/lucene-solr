@@ -245,6 +245,10 @@ Build
     <ant dir="internal-module-dir"> calls) to these modules' build.xml files.
   (Steve Rowe)
 
+* LUCENE-3774: Optimized and streamlined license and notice file validation
+  by refactoring the build task into an ANT task and modifying build scripts
+  to perform top-level checks. (Dawid Weiss, Steve Rowe, Robert Muir)
+
 
 ======================= Lucene 3.5.0 =======================
 

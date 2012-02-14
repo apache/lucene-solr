@@ -62,10 +62,6 @@
     <fileset dir="${common.dir}/lib" includes="ant-*.jar"/>
   </path>
 
-  <path id="tools.runtime.classpath">
-    <pathelement location="${common.dir}/build/tools/classes/java"/>
-  </path>
-
   <path id="maven-ant-tasks.classpath">
     <fileset dir="${common.dir}/lib">
       <include name="maven-ant-tasks-*.jar"/>
@@ -214,6 +210,9 @@
               excludes="**/pom.xml,**/*.iml,site/build/"
   />
 
+  <!-- Import custom ANT tasks. -->
+  <import file="${common.dir}/tools/custom-tasks.xml" />
+
   <target name="clean"
     description="Removes contents of build and dist directories">
     <delete dir="${build.dir}"/>
@@ -325,7 +324,7 @@
     </copy>
   </target>
 
-  <target name="compile" depends="compile-core, validate-lucene">
+  <target name="compile" depends="compile-core">
     <!-- convenience target to compile core -->
   </target>
 
@@ -756,12 +755,14 @@
     <attribute name="destdir"/>
     <attribute name="javac.source" default="${javac.source}"/>
     <attribute name="javac.target" default="${javac.target}"/>
+    <attribute name="includeantruntime" default="${javac.includeAntRuntime}" />
+
     <element name="nested" implicit="yes" optional="yes"/>
 
     <sequential>
       <mkdir dir="@{destdir}"/>
       <javac
-        includeAntRuntime="${javac.includeAntRuntime}"
+        includeAntRuntime="@{includeantruntime}"
         encoding="${build.encoding}"
         srcdir="@{srcdir}"
         destdir="@{destdir}"
@@ -890,50 +891,10 @@
   </target>
 
   <!-- VALIDATION work -->
-  <!--
-   >find . -name lib
-./lucene/backwards/lib
-./lucene/contrib/ant/lib
-./lucene/contrib/benchmark/lib
-./lucene/contrib/db/bdb/lib
-./lucene/contrib/db/bdb-je/lib
-./lucene/contrib/icu/lib
-./lucene/contrib/lucli/lib
-./lucene/contrib/queries/lib
-./lucene/lib
-
-
-   -->
-  <target name="check-legal-lucene" depends="compile-tools">
-    <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
-      <classpath>
-        <path refid="tools.runtime.classpath" />
-      </classpath>
-      <!-- TODO: it might be better to just automatically find all directories that contain jar files, but that could take a
-       long time.  This should be faster, but we could miss a directory
-       TODO: convert this to just check whichever library is currently being built
-       -->
-      <!-- Lucene  -->
-      <arg value="-c" />
-      <arg value="${common.dir}/lib" />
-      <arg value="-c" />
-      <arg value="${common.dir}/contrib/benchmark/lib" />
-      <arg value="-c" />
-      <arg value="${common.dir}/contrib/icu/lib" />
-
-      <arg value="-c" />
-      <arg value="${common.dir}/contrib/lucli/lib" />
-      <arg value="-c" />
-      <arg value="${common.dir}/contrib/queries/lib" />
-    </java>
-  </target>
-
-  <target name="check-legal" depends="check-legal-lucene"/>
-
-  <target name="validate-lucene" depends="check-legal-lucene" unless="validated-lucene"/>
 
   <!-- Generic placeholder target for if we add other validation tasks -->
-  <target name="validate" depends="validate-lucene"/>
+  <target name="validate" depends="compile-tools">
+  </target>
 
   <property name="svn.export.dir" location="${build.dir}/svn-export"/>
   <macrodef name="svn-export-source"
@@ -1055,5 +1016,4 @@
       </scp>
     </sequential>
   </macrodef>
-
 </project>

@@ -1,0 +1,3 @@
+
+jsonic - simple json encoder/decoder for java
+http://jsonic.sourceforge.jp/

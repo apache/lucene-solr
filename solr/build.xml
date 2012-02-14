@@ -128,7 +128,7 @@
   <target name="compile" description="Compile the source code."
           depends="compile-core, compile-contrib"/>
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
-          depends="validate-solr, test-jsp, test-core, test-contrib"/>
+          depends="validate, test-jsp, test-core, test-contrib"/>
   <target name="test-core" description="Runs the core and solrj unit tests."
           depends="test-solr-core, test-solrj"/>
   <target name="compile-test" description="Compile unit tests."
@@ -175,6 +175,27 @@
     </ant>
   </target>
   
+  <!-- Validation (license/ notice checks). -->
+  <target name="validate" depends="compile-tools" description="Validate legal stuff.">
+    <license-check-macro dir="${basedir}">
+      <additional-excludes>
+        <!-- Exclude start.jar only (it'd be weird to have a license file there?) -->
+        <exclude name="example/start.jar" />
+        <exclude name="example/exampledocs/post.jar" />
+        <exclude name="example/work/**" />
+      </additional-excludes>
+      <additional-filters>
+        <replaceregex pattern="/hppc([^/]+)$" replace="/hppc" flags="gi" />
+        <replaceregex pattern="/langdetect([^/]+)$" replace="/langdetect" flags="gi" />
+        <replaceregex pattern="/geronimo-stax([^/]+)$" replace="/geronimo-stax" flags="gi" />
+        <replaceregex pattern="/jetty-util([^/]+)$" replace="/jetty-util" flags="gi" />
+        <replaceregex pattern="/jetty-6([^/]+)$" replace="/jetty" flags="gi" />
+        <replaceregex pattern="/jsp-2.1-glassfish([^/]+)$" replace="/jsp-2.1-glassfish" flags="gi" />
+        <replaceregex pattern="/jsp-api-2.1-glassfish([^/]+)$" replace="/jsp-api-2.1-glassfish" flags="gi" />
+      </additional-filters>
+    </license-check-macro>
+  </target>
+  
   <!-- Clean targets -->
   <target name="clean" description="Cleans compiled files and other temporary artifacts.">
     <delete dir="build" />
@@ -182,9 +203,12 @@
     <delete dir="package" />
     <delete dir="example/solr/lib" />
     <delete includeemptydirs="true">
-      <fileset dir="example" includes="**/data/**/*" excludes="**/.gitignore" />
-      <fileset dir="example/webapps" includes="**/*" excludes="**/.gitignore" />
-      <fileset dir="example/work" includes="**/*" excludes="**/.gitignore" />
+      <fileset dir="example">
+        <include name="**/data/**/*" />
+        <include name="webapps/**/*" />
+        <include name="work/**/*" />
+        <exclude name="**/.gitignore" />
+      </fileset>
     </delete>
     <echo message="TODO: fix tests to not write files to 'core/src/test-files/solr/data'!" />
     <delete dir="core/src/test-files/solr/data" />
@@ -257,6 +281,7 @@
     </clover-report>
   </target>
 
+  
   <!-- ========================================================================= -->
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
   <!-- ========================================================================= -->
