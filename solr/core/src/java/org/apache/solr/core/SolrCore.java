@@ -1650,8 +1650,13 @@ public final class SolrCore implements SolrInfoMBean {
       }
     }
 
+    NamedList emptyList = new NamedList();
     for (Map.Entry<String, QueryResponseWriter> entry : DEFAULT_RESPONSE_WRITERS.entrySet()) {
-      if(responseWriters.get(entry.getKey()) == null) responseWriters.put(entry.getKey(), entry.getValue());
+      if(responseWriters.get(entry.getKey()) == null) {
+        responseWriters.put(entry.getKey(), entry.getValue());
+        // call init so any logic in the default writers gets invoked
+        entry.getValue().init(emptyList);
+      }
     }
     
     // configure the default response writer; this one should never be null

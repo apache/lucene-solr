@@ -420,6 +420,9 @@ Other Changes
 * SOLR-2105: Remove support for deprecated "update.processor" (since 3.2), in favor of 
   "update.chain" (janhoy)
 
+* SOLR-3005: Default QueryResponseWriters are now initialized via init() with an empty
+  NamedList. (Gasol Wu, Chris Male)
+
 
 Documentation
 ----------------------
