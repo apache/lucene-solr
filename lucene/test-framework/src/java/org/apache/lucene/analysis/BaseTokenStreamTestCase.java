@@ -330,7 +330,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       }
 
       if (VERBOSE) {
-        System.out.println("NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
+        System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
       }
 
       int remainder = random.nextInt(10);
@@ -364,7 +364,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       // verify reusing is "reproducable" and also get the normal tokenstream sanity checks
       if (!tokens.isEmpty()) {
         if (VERBOSE) {
-          System.out.println("NOTE: BaseTokenStreamTestCase: re-run analysis");
+          System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis; " + tokens.size() + " tokens");
         }
         reader = new StringReader(text);
         ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);

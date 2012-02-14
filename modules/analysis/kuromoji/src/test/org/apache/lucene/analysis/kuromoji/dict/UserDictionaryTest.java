@@ -31,8 +31,6 @@ import org.junit.Test;
 
 public class UserDictionaryTest extends LuceneTestCase {
 
-  // nocommit do we test passing userDict to analyzer...?
-
   private UserDictionary readDict() throws IOException {
     InputStream is = SegmenterTest.class.getResourceAsStream("userdict.txt");
     if (is == null)

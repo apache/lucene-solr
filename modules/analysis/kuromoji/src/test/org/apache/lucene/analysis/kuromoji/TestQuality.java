@@ -50,6 +50,7 @@ public class TestQuality extends LuceneTestCase {
     BufferedReader seg = new BufferedReader(new InputStreamReader(is2, IOUtils.CHARSET_UTF_8));
     Stats stats = new Stats();
 
+    // nocommit
     final boolean ONE_TIME = true;
 
     /**
@@ -230,7 +231,7 @@ public class TestQuality extends LuceneTestCase {
     }
 
     if (VERBOSE) {
-      System.out.println("  " + paths.size() + " paths");
+      System.out.println("  " + paths.size() + " paths; " + numTokens + " tokens");
     }
 
     List<String> expectedTokens = Arrays.asList(seg.split("\\s+"));

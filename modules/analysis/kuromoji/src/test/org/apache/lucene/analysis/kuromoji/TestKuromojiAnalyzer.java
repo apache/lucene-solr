@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -98,8 +99,14 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
                                             KuromojiAnalyzer.getDefaultStopTags());
 
     /*
-    TokenStream ts = a.tokenStream("foo", new StringReader("京都大学硬式野球部"));
-    while(ts.incrementToken());
+    //TokenStream ts = a.tokenStream("foo", new StringReader("妹の咲子です。俺と年子で、今受験生です。"));
+    TokenStream ts = a.tokenStream("foo", new StringReader("&#x250cdf66<!--\"<!--#<!--;?><!--#<!--#><!---->?>-->;"));
+    ts.reset();
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+    while(ts.incrementToken()) {
+      System.out.println("  " + termAtt.toString());
+    }
+    System.out.println("DONE PARSE\n\n");
     */
 
     // Senior software engineer:
@@ -159,5 +166,21 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
                                             KuromojiAnalyzer.getDefaultStopSet(),
                                             KuromojiAnalyzer.getDefaultStopTags());
     checkRandomData(random, a, atLeast(10000));
+  }
+
+  // Copied from TestKuromojiTokenizer, to make sure passing
+  // user dict to analyzer works:
+  public void testUserDict3() throws Exception {
+    // Test entry that breaks into multiple tokens:
+    final Analyzer a = new KuromojiAnalyzer(TEST_VERSION_CURRENT, TestKuromojiTokenizer.readDict(),
+                                            Mode.SEARCH_WITH_COMPOUNDS,
+                                            KuromojiAnalyzer.getDefaultStopSet(),
+                                            KuromojiAnalyzer.getDefaultStopTags());
+    assertTokenStreamContents(a.tokenStream("foo", new StringReader("abcd")),
+                              new String[] { "a", "b", "cd"  },
+                              new int[] { 0, 1, 2 },
+                              new int[] { 1, 2, 4 },
+                              new Integer(4)
+    );
   }
 }

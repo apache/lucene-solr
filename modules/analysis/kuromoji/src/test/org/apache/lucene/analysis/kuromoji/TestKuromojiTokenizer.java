@@ -38,8 +38,8 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
 
-  private static UserDictionary readDict() {
-    InputStream is = SegmenterTest.class.getResourceAsStream("userdict.txt");
+  public static UserDictionary readDict() {
+    InputStream is = TestKuromojiTokenizer.class.getResourceAsStream("userdict.txt");
     if (is == null) {
       throw new RuntimeException("Cannot find userdict.txt in test classpath!");
     }
@@ -154,6 +154,17 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
 
   /** Tests that sentence offset is incorporated into the resulting offsets */
   public void testTwoSentences() throws Exception {
+    /*
+    //TokenStream ts = a.tokenStream("foo", new StringReader("妹の咲子です。俺と年子で、今受験生です。"));
+    TokenStream ts = analyzer.tokenStream("foo", new StringReader("&#x250cdf66<!--\"<!--#<!--;?><!--#<!--#><!---->?>-->;"));
+    ts.reset();
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+    while(ts.incrementToken()) {
+      System.out.println("  " + termAtt.toString());
+    }
+    System.out.println("DONE PARSE\n\n");
+    */
+
     assertAnalyzesTo(analyzerNoPunct, "魔女狩大将マシュー・ホプキンス。 魔女狩大将マシュー・ホプキンス。",
       new String[] { "魔女", "狩", "大将", "マシュー", "ホプキンス",  "魔女", "狩", "大将", "マシュー",  "ホプキンス"  },
       new int[] { 0, 2, 3, 5, 10, 17, 19, 20, 22, 27 },
@@ -164,6 +175,7 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, analyzerNoPunct, 10000*RANDOM_MULTIPLIER);
   }
   
   public void testLargeDocReliability() throws Exception {
@@ -222,7 +234,7 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
         new int[] { 2, 3, 4, 5, 6, 8 },
         new Integer(8)
     );
-    
+
     assertTokenStreamContents(analyzerNoPunct.tokenStream("foo", new StringReader("これは本ではない    ")),
         new String[] { "これ", "は", "本", "で", "は", "ない"  },
         new int[] { 0, 2, 3, 4, 5, 6, 8 },
@@ -251,6 +263,33 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
                               new Integer(3)
     );
   }
+
+  public void testUserDict3() throws Exception {
+    // Test entry that breaks into multiple tokens:
+    assertTokenStreamContents(analyzer.tokenStream("foo", new StringReader("abcd")),
+                              new String[] { "a", "b", "cd"  },
+                              new int[] { 0, 1, 2 },
+                              new int[] { 1, 2, 4 },
+                              new Integer(4)
+    );
+  }
+
+  // HMM: fails (segments as a/b/cd/efghij)... because the
+  // two paths have exactly equal paths (1 KNOWN + 1
+  // UNKNOWN) and we don't seem to favor longer KNOWN /
+  // shorter UNKNOWN matches:
+
+  /*
+  public void testUserDict4() throws Exception {
+    // Test entry that has another entry as prefix
+    assertTokenStreamContents(analyzer.tokenStream("foo", new StringReader("abcdefghij")),
+                              new String[] { "ab", "cd", "efg", "hij"  },
+                              new int[] { 0, 2, 4, 7 },
+                              new int[] { 2, 4, 7, 10 },
+                              new Integer(10)
+    );
+  }
+  */
   
   public void testSegmentation() throws Exception {
     // Skip tests for Michelle Kwan -- UniDic segments Kwan as ク ワン
@@ -517,12 +556,4 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
       System.out.println("Total time : " + (System.currentTimeMillis() - totalStart));
     }
   }
-
-
-  // nocommit need a still better test, where an input is
-  // tokenized to multiple tokens that would be different
-  // w/o the user dict...
-
-  // nocommit need test where userdict has multiple matches
-  // from one spot (ie, some entries are prefixes)...
 }
