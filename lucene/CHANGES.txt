@@ -944,6 +944,9 @@ Build
   by refactoring the build task into an ANT task and modifying build scripts
   to perform top-level checks. (Dawid Weiss, Steve Rowe, Robert Muir)
 
+* LUCENE-3762: Upgrade JUnit to 4.10, refactor state-machine of detecting 
+  setUp/tearDown call chaining in LuceneTestCase. (Dawid Weiss, Robert Muir)
+
 
 ======================= Lucene 3.5.0 =======================
 
