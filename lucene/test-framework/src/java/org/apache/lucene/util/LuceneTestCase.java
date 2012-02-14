@@ -390,7 +390,7 @@ public abstract class LuceneTestCase extends Assert {
    * then we would be notified about static block failures).
    */
   private class TestResultInterceptorRule implements TestRule {
-    @Override
+    // @Override
     public Statement apply(final Statement base, final Description description) {
       return new Statement() {
         @Override
@@ -449,7 +449,7 @@ public abstract class LuceneTestCase extends Assert {
    * @see LuceneTestCase#testCaseThread 
    */
   private class RememberThreadRule implements TestRule {
-    @Override
+    // @Override
     public Statement apply(final Statement base, Description description) {
       return new Statement() {
         public void evaluate() throws Throwable {
@@ -480,7 +480,7 @@ public abstract class LuceneTestCase extends Assert {
    * Internal {@link LuceneTestCase} setup before/after each test.
    */
   private class InternalSetupTeardownRule implements TestRule {
-    @Override
+    // @Override
     public Statement apply(final Statement base, Description description) {
       return new Statement() {
         @Override
@@ -596,7 +596,7 @@ public abstract class LuceneTestCase extends Assert {
    * case.
    */
   private class SubclassSetupTeardownRule implements TestRule {
-    @Override
+    // @Override
     public Statement apply(final Statement base, Description description) {
       return new Statement() {
         @Override
