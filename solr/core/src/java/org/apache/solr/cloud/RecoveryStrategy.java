@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.PrepRecovery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SafeStopThread;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -46,7 +47,7 @@ import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RecoveryStrategy extends Thread {
+public class RecoveryStrategy extends Thread implements SafeStopThread {
   private static final int MAX_RETRIES = 500;
   private static final int INTERRUPTED = MAX_RETRIES + 1;
   private static final int START_TIMEOUT = 100;
@@ -191,8 +192,14 @@ public class RecoveryStrategy extends Thread {
         }
         log.info("Sync Recovery was not successful - trying replication");
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-        if (ulog == null) return;
+        if (ulog == null) {
+          SolrException.log(log, "No UpdateLog found - cannot recover");
+          recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+              core.getCoreDescriptor());
+          return;
+        }
         
+        log.info("Begin buffering updates");
         ulog.bufferUpdates();
         replayed = false;
         
@@ -294,6 +301,10 @@ public class RecoveryStrategy extends Thread {
 //    }
     
     return future;
+  }
+
+  public boolean isClosed() {
+    return close;
   }
 
 }

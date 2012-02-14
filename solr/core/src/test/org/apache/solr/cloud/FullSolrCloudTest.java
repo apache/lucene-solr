@@ -65,8 +65,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   private static final String SHARD2 = "shard2";
   
-  protected static final String DEFAULT_COLLECTION = "collection1";
-  
   private boolean printLayoutOnTearDown = false;
   
   String t1 = "a_t";
@@ -151,16 +149,12 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     System
         .setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solrcloud.update.delay", "0");
-    System.setProperty("enable.update.log", "true");
-    System.setProperty("remove.version.field", "true");
   }
   
   @AfterClass
   public static void afterClass() {
     System.clearProperty("solr.directoryFactory");
     System.clearProperty("solrcloud.update.delay");
-    System.clearProperty("enable.update.log");
-    System.clearProperty("remove.version.field");
   }
   
   public FullSolrCloudTest() {
@@ -655,45 +649,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   protected void waitForRecoveriesToFinish(boolean verbose)
       throws KeeperException, InterruptedException {
-    boolean cont = true;
-    int cnt = 0;
-    
-    while (cont) {
-      if (verbose) System.out.println("-");
-      boolean sawLiveRecovering = false;
-      zkStateReader.updateCloudState(true);
-      CloudState cloudState = zkStateReader.getCloudState();
-      Map<String,Slice> slices = cloudState.getSlices(DEFAULT_COLLECTION);
-      for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-        Map<String,ZkNodeProps> shards = entry.getValue().getShards();
-        for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
-          if (verbose) System.out.println("rstate:"
-              + shard.getValue().get(ZkStateReader.STATE_PROP)
-              + " live:"
-              + cloudState.liveNodesContain(shard.getValue().get(
-                  ZkStateReader.NODE_NAME_PROP)));
-          String state = shard.getValue().get(ZkStateReader.STATE_PROP);
-          if ((state.equals(ZkStateReader.RECOVERING)
-              || state.equals(ZkStateReader.SYNC))
-              && cloudState.liveNodesContain(shard.getValue().get(
-                  ZkStateReader.NODE_NAME_PROP))) {
-            sawLiveRecovering = true;
-          }
-        }
-      }
-      if (!sawLiveRecovering || cnt == 10) {
-        if (!sawLiveRecovering) {
-          if (verbose) System.out.println("no one is recoverying");
-        } else {
-          if (verbose) System.out
-              .println("gave up waiting for recovery to finish..");
-        }
-        cont = false;
-      } else {
-        Thread.sleep(2000);
-      }
-      cnt++;
-    }
+    super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose);
   }
   
   private void brindDownShardIndexSomeDocsAndRecover() throws Exception,

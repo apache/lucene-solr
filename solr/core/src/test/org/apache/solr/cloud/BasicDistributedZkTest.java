@@ -62,7 +62,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   private Map<String,List<SolrServer>> otherCollectionClients = new HashMap<String,List<SolrServer>>();
   private Map<String,List<SolrServer>> oneInstanceCollectionClients = new HashMap<String,List<SolrServer>>();
-  private String oneInstanceCollection = "oneInstanceCollection";;
+  private String oneInstanceCollection = "oneInstanceCollection";
+  private String oneInstanceCollection2 = "oneInstanceCollection2";
   
   public BasicDistributedZkTest() {
     fixShardCount = true;
@@ -247,10 +248,61 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     testMultipleCollections();
     testANewCollectionInOneInstance();
     testSearchByCollectionName();
+    testANewCollectionInOneInstanceWithManualShardAssignement();
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
     }
+  }
+
+  private void testANewCollectionInOneInstanceWithManualShardAssignement() throws Exception {
+    List<SolrServer> collectionClients = new ArrayList<SolrServer>();
+    SolrServer client = clients.get(0);
+    oneInstanceCollectionClients.put(oneInstanceCollection , collectionClients);
+    String baseUrl = ((CommonsHttpSolrServer) client).getBaseURL();
+    createCollection(oneInstanceCollection2, collectionClients, baseUrl, 1, "slice1");
+    createCollection(oneInstanceCollection2, collectionClients, baseUrl, 2, "slice2");
+    createCollection(oneInstanceCollection2, collectionClients, baseUrl, 3, "slice2");
+    createCollection(oneInstanceCollection2, collectionClients, baseUrl, 4, "slice1");
+    
+    SolrServer client1 = createNewSolrServer(oneInstanceCollection2 + "1", baseUrl);
+    SolrServer client2 = createNewSolrServer(oneInstanceCollection2 + "2", baseUrl);
+    SolrServer client3 = createNewSolrServer(oneInstanceCollection2 + "3", baseUrl);
+    SolrServer client4 = createNewSolrServer(oneInstanceCollection2 + "4", baseUrl);
+    
+    client2.add(getDoc(id, "1")); 
+    client3.add(getDoc(id, "2")); 
+    client4.add(getDoc(id, "3")); 
+    
+    // no one should be recovering
+    waitForRecoveriesToFinish(oneInstanceCollection2, solrj.getZkStateReader(), false, true);
+    
+    assertAllActive(oneInstanceCollection2, solrj.getZkStateReader());
+    
+    client1.commit();
+    SolrQuery query = new SolrQuery("*:*");
+    query.set("distrib", false);
+    long oneDocs = client1.query(query).getResults().getNumFound();
+    long twoDocs = client2.query(query).getResults().getNumFound();
+    long threeDocs = client3.query(query).getResults().getNumFound();
+    long fourDocs = client4.query(query).getResults().getNumFound();
+    
+    query.set("collection", oneInstanceCollection2);
+    query.set("distrib", true);
+    long allDocs = solrj.query(query).getResults().getNumFound();
+    
+//    System.out.println("1:" + oneDocs);
+//    System.out.println("2:" + twoDocs);
+//    System.out.println("3:" + threeDocs);
+//    System.out.println("4:" + fourDocs);
+//    System.out.println("All Docs:" + allDocs);
+    
+    assertEquals(oneDocs, threeDocs);
+    assertEquals(twoDocs, fourDocs);
+    assertNotSame(oneDocs, twoDocs);
+    assertEquals(3, allDocs);
+    
+
   }
 
   private void testSearchByCollectionName() throws SolrServerException {
@@ -279,6 +331,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     SolrServer client2 = createNewSolrServer(oneInstanceCollection + "2", baseUrl);
     SolrServer client3 = createNewSolrServer(oneInstanceCollection + "3", baseUrl);
     SolrServer client4 = createNewSolrServer(oneInstanceCollection + "4", baseUrl);
+    
+    waitForRecoveriesToFinish(oneInstanceCollection, solrj.getZkStateReader(), false);
+    assertAllActive(oneInstanceCollection, solrj.getZkStateReader());
     
     client2.add(getDoc(id, "1")); 
     client3.add(getDoc(id, "2")); 
@@ -311,6 +366,12 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   private void createCollection(String collection,
       List<SolrServer> collectionClients, String baseUrl, int num)
       throws MalformedURLException, SolrServerException, IOException {
+    createCollection(collection, collectionClients, baseUrl, num, null);
+  }
+  
+  private void createCollection(String collection,
+      List<SolrServer> collectionClients, String baseUrl, int num, String shardId)
+      throws MalformedURLException, SolrServerException, IOException {
     CommonsHttpSolrServer server = new CommonsHttpSolrServer(
         baseUrl);
     Create createCmd = new Create();
@@ -319,6 +380,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     createCmd.setNumShards(2);
     createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator
         + collection + num);
+    createCmd.setShardId(shardId);
     server.request(createCmd);
     collectionClients.add(createNewSolrServer(collection, baseUrl));
   }
@@ -389,12 +451,13 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       throws MalformedURLException, SolrServerException, IOException {
     List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     otherCollectionClients.put(collection, collectionClients);
+    int unique = 0;
     for (SolrServer client : clients) {
       CommonsHttpSolrServer server = new CommonsHttpSolrServer(
           ((CommonsHttpSolrServer) client).getBaseURL());
       Create createCmd = new Create();
       createCmd.setCoreName(collection);
-      createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator + collection);
+      createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator + collection + unique++);
       server.request(createCmd);
       collectionClients.add(createNewSolrServer(collection,
           ((CommonsHttpSolrServer) client).getBaseURL()));
