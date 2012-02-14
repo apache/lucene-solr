@@ -41,13 +41,15 @@ import java.util.*;
  */
 
 public class JSONResponseWriter implements QueryResponseWriter {
-  static String CONTENT_TYPE_JSON_UTF8="application/json; charset=UTF-8";
+  static String CONTENT_TYPE_JSON_UTF8 = "application/json; charset=UTF-8";
 
-  private String contentType;
+  private String contentType = CONTENT_TYPE_JSON_UTF8;
 
   public void init(NamedList namedList) {
     String contentType = (String) namedList.get("content-type");
-    this.contentType = (contentType != null) ? contentType : CONTENT_TYPE_JSON_UTF8;
+    if (contentType != null) {
+      this.contentType = contentType;
+    }
   }
 
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {

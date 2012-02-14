@@ -218,6 +218,9 @@ Other Changes
 * SOLR-3097, SOLR-3105: Add analysis configurations for different languages to 
   the example.  (Christian Moen, Robert Muir)
 
+* SOLR-3005: Default QueryResponseWriters are now initialized via init() with an empty
+  NamedList. (Gasol Wu, Chris Male)
+
 Build
 ----------------------
 * SOLR-2487: Add build target to package war without slf4j jars (janhoy)
