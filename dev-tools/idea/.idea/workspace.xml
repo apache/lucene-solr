@@ -186,17 +186,17 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <configuration default="false" name="uima analysis module" type="JUnit" factoryName="JUnit">
-      <module name="uima" />
-      <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/uima" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-    </configuration>
     <configuration default="false" name="suggest module" type="JUnit" factoryName="JUnit">
       <module name="suggest" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/suggest/build" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="uima analysis module" type="JUnit" factoryName="JUnit">
+      <module name="analysis-uima" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/uima" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -214,7 +214,7 @@
       <option name="VM_PARAMETERS" value="-ea" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <list size="29">
+    <list size="30">
       <item index="0" class="java.lang.String" itemvalue="JUnit.analysis-extras contrib" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.benchmark module" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.clustering contrib" />
@@ -242,8 +242,9 @@
       <item index="24" class="java.lang.String" itemvalue="JUnit.spatial contrib" />
       <item index="25" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
       <item index="26" class="java.lang.String" itemvalue="JUnit.suggest module" />
-      <item index="27" class="java.lang.String" itemvalue="JUnit.uima contrib" />
-      <item index="28" class="java.lang.String" itemvalue="JUnit.velocity contrib" />
+      <item index="27" class="java.lang.String" itemvalue="JUnit.uima analysis module" />
+      <item index="28" class="java.lang.String" itemvalue="JUnit.uima contrib" />
+      <item index="29" class="java.lang.String" itemvalue="JUnit.velocity contrib" />
     </list>
   </component>
 </project>
