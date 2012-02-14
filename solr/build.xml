@@ -184,6 +184,7 @@
         <!-- Exclude start.jar only (it'd be weird to have a license file there?) -->
         <exclude name="example/start.jar" />
         <exclude name="example/exampledocs/post.jar" />
+        <exclude name="example/work/**" />
       </additional-excludes>
       <additional-filters>
         <replaceregex pattern="/jetty-util([^/]+)$" replace="/jetty-util" flags="gi" />
