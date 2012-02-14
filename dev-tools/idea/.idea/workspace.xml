@@ -186,6 +186,13 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
+    <configuration default="false" name="uima analysis module" type="JUnit" factoryName="JUnit">
+      <module name="uima" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/uima" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
     <configuration default="false" name="suggest module" type="JUnit" factoryName="JUnit">
       <module name="suggest" />
       <option name="TEST_OBJECT" value="package" />

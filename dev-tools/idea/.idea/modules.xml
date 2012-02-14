@@ -17,6 +17,7 @@
       <module filepath="$PROJECT_DIR$/modules/analysis/phonetic/phonetic.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/smartcn/smartcn.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/stempel/stempel.iml" />
+      <module filepath="$PROJECT_DIR$/modules/analysis/uima/analysis-uima.iml" />
       <module filepath="$PROJECT_DIR$/modules/benchmark/benchmark.iml" />
       <module filepath="$PROJECT_DIR$/modules/facet/facet.iml" />
       <module filepath="$PROJECT_DIR$/modules/grouping/grouping.iml" />

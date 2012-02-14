@@ -162,6 +162,17 @@
     <property name="analyzers-kuromoji.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-uima.jar" value="${common.dir}/../modules/analysis/build/uima/lucene-analyzers-uima-${version}.jar"/>
+    <target name="check-analyzers-uima-uptodate" unless="analyzers-uima.uptodate">
+      <module-uptodate name="analysis/uima" jarfile="${analyzers-uima.jar}" property="analyzers-uima.uptodate"/>
+    </target>
+    <target name="jar-analyzers-uima" unless="analyzers-uima.uptodate" depends="check-analyzers-uima-uptodate">
+    	<ant dir="${common.dir}/../modules/analysis/uima" target="jar-core" inheritAll="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+    <property name="analyzers-uima.uptodate" value="true"/>
+  </target>
+
   <property name="grouping.jar" value="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"/>
   <target name="check-grouping-uptodate" unless="grouping.uptodate">
     <module-uptodate name="grouping" jarfile="${grouping.jar}" property="grouping.uptodate"/>

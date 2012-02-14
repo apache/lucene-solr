@@ -24,6 +24,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="solr" />
-    <orderEntry type="module" module-name="lucene" scope="TEST" />
+    <orderEntry type="module" module-name="lucene" />
+    <orderEntry type="module" module-name="analysis-uima" />
   </component>
 </module>

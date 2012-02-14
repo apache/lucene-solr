@@ -19,6 +19,7 @@
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/phonetic/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/smartcn/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/stempel/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/modules/analysis/uima/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/benchmark/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/facet/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/grouping/build.xml" />

@@ -27,6 +27,7 @@
       - morfologik:	Morfologik Stemmer
       - smartcn:	Smart Analyzer for Simplified Chinese Text
       - stempel:	Algorithmic Stemmer for Polish
+      - uima: UIMA Analysis module
   </description>
 
   <target name="common">
@@ -57,8 +58,12 @@
     <ant dir="stempel" />
   </target>
 
+  <target name="uima">
+    <ant dir="uima" />
+  </target>
+
   <target name="default" depends="compile"/>
-  <target name="compile" depends="common,icu,kuromoji,morfologik,phonetic,smartcn,stempel" />
+  <target name="compile" depends="common,icu,kuromoji,morfologik,phonetic,smartcn,stempel,uima" />
 
   <target name="clean">
     <ant dir="common" target="clean" />
@@ -68,6 +73,7 @@
     <ant dir="phonetic" target="clean" />
     <ant dir="smartcn" target="clean" />
     <ant dir="stempel" target="clean" />
+    <ant dir="uima" target="clean" />
   </target>
   <target name="validate">
     <ant dir="common" target="validate" />
@@ -77,6 +83,7 @@
     <ant dir="phonetic" target="validate" />
     <ant dir="smartcn" target="validate" />
     <ant dir="stempel" target="validate" />
+    <ant dir="uima" target="validate" />
   </target>
   <target name="compile-core">
     <ant dir="common" target="compile-core" />
@@ -86,6 +93,7 @@
     <ant dir="phonetic" target="compile-core" />
     <ant dir="smartcn" target="compile-core" />
     <ant dir="stempel" target="compile-core" />
+    <ant dir="uima" target="compile-core" />
   </target>
   <target name="compile-test">
     <ant dir="common" target="compile-test" />
@@ -95,6 +103,7 @@
     <ant dir="phonetic" target="compile-test" />
     <ant dir="smartcn" target="compile-test" />
     <ant dir="stempel" target="compile-test" />
+    <ant dir="uima" target="compile-test" />
   </target>
   <target name="test">
     <ant dir="common" target="test" />
@@ -104,6 +113,7 @@
     <ant dir="phonetic" target="test" />
     <ant dir="smartcn" target="test" />
     <ant dir="stempel" target="test" />
+    <ant dir="uima" target="test" />
   </target>
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
@@ -116,6 +126,7 @@
     <ant dir="phonetic" target="dist-maven" />
     <ant dir="smartcn" target="dist-maven" />
     <ant dir="stempel" target="dist-maven" />
+    <ant dir="uima" target="dist-maven" />
   </target>  	
 
   <target name="javadocs">
@@ -126,6 +137,7 @@
     <ant dir="phonetic" target="javadocs" />
     <ant dir="smartcn" target="javadocs" />
     <ant dir="stempel" target="javadocs" />
+    <ant dir="uima" target="javadocs" />
   </target>  	
 
   <target name="javadocs-index.html">
@@ -136,6 +148,7 @@
     <ant dir="phonetic" target="javadocs-index.html" />
     <ant dir="smartcn" target="javadocs-index.html" />
     <ant dir="stempel" target="javadocs-index.html" />
+    <ant dir="uima" target="javadocs-index.html" />
   </target>
 	
 </project>
