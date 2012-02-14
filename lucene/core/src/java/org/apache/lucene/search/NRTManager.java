@@ -360,7 +360,7 @@ public class NRTManager implements Closeable {
   /**
    * Close this NRTManager to future searching. Any searches still in process in
    * other threads won't be affected, and they should still call
-   * {@link SearcherManager#release(IndexSearcher)} after they are done.
+   * {@link SearcherManager#release} after they are done.
    * 
    * <p>
    * <b>NOTE</b>: caller must separately close the writer.
