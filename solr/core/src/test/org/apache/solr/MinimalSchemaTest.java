@@ -82,7 +82,6 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
     assertQ("basic luke request failed",
             req("qt", "/admin/luke")
             ,"//int[@name='numDocs'][.='2']"
-            ,"//int[@name='numTerms'][.='5']"
             );
 
     assertQ("luke show schema failed",

@@ -114,7 +114,7 @@
     //further populates the loaded schema with information gathered
     // from the no argument LukeRequestHandler
     loadFromLukeHandler: function(func) {
-      $.getJSON(solr.pathToLukeHandler+'?wt=json', function(data) {
+      $.getJSON(solr.pathToLukeHandler+'?wt=json&fl=*', function(data) {
         $.each(data.fields, function(i, item) {
           var field = solr.schemaFields[i];
           

@@ -108,35 +108,35 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     final int numFlags = EnumSet.allOf(FieldFlag.class).size();
 
     assertQ("Not all flags ("+numFlags+") mentioned in info->key",
-            req("qt","/admin/luke"),
-            numFlags+"=count(//lst[@name='info']/lst[@name='key']/str)");
+        req("qt","/admin/luke"),
+        numFlags+"=count(//lst[@name='info']/lst[@name='key']/str)");
 
     // code should be the same for all fields, but just in case do several
     for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
-                                  "solr_td","solr_pl","solr_dt","solr_b",
-                                  "solr_sS","solr_sI")) {
+        "solr_td","solr_pl","solr_dt","solr_b",
+        "solr_sS","solr_sI")) {
 
       final String xp = getFieldXPathPrefix(f);
       assertQ("Not as many schema flags as expected ("+numFlags+") for " + f,
-              req("qt","/admin/luke", "fl", f),
-              numFlags+"=string-length("+xp+"[@name='schema'])");
+          req("qt","/admin/luke", "fl", f),
+          numFlags+"=string-length("+xp+"[@name='schema'])");
 
     }
 
     // diff loop for checking 'index' flags,
     // only valid for fields that are indexed & stored
     for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
-                                  "solr_td","solr_pl","solr_dt","solr_b")) {
+        "solr_td","solr_pl","solr_dt","solr_b")) {
 
       final String xp = getFieldXPathPrefix(f);
       assertQ("Not as many index flags as expected ("+numFlags+") for " + f,
-              req("qt","/admin/luke", "fl", f),
-              numFlags+"=string-length("+xp+"[@name='index'])");
+          req("qt","/admin/luke", "fl", f),
+          numFlags+"=string-length("+xp+"[@name='index'])");
 
-    final String hxp = getFieldXPathHistogram(f);
-    assertQ("Historgram field should be present for field "+f,
-        req("qt", "/admin/luke", "fl", f),
-        hxp+"[@name='histogram']");
+      final String hxp = getFieldXPathHistogram(f);
+      assertQ("Historgram field should be present for field "+f,
+          req("qt", "/admin/luke", "fl", f),
+          hxp+"[@name='histogram']");
     }
   }
 
@@ -149,7 +149,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
   @Test
   public void testFlParam() {
-    SolrQueryRequest req = req("qt", "/admin/luke", "fl", "solr_t solr_s");
+    SolrQueryRequest req = req("qt", "/admin/luke", "fl", "solr_t solr_s", "show", "all");
     try {
       // First, determine that the two fields ARE there
       String response = h.query(req);

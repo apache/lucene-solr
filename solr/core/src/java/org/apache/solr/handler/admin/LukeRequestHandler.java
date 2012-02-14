@@ -82,25 +82,25 @@ public class LukeRequestHandler extends RequestHandlerBase
   public static final String DOC_ID = "docId";
   public static final String ID = "id";
   public static final int DEFAULT_COUNT = 10;
-  
+
   static final int HIST_ARRAY_SIZE = 33;
-  
+
   private static enum ShowStyle {
     ALL,
     DOC,
     SCHEMA,
     INDEX;
-    
+
     public static ShowStyle get(String v) {
       if(v==null) return null;
-      if("schema".equals(v)) return SCHEMA;
-      if("index".equals(v))  return INDEX;
-      if("doc".equals(v))    return DOC;
-      if("all".equals(v))    return ALL;
+      if("schema".equalsIgnoreCase(v)) return SCHEMA;
+      if("index".equalsIgnoreCase(v))  return INDEX;
+      if("doc".equalsIgnoreCase(v))    return DOC;
+      if("all".equalsIgnoreCase(v))    return ALL;
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown Show Style: "+v);
     }
   };
-  
+
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
@@ -109,29 +109,17 @@ public class LukeRequestHandler extends RequestHandlerBase
     SolrIndexSearcher searcher = req.getSearcher();
     DirectoryReader reader = searcher.getIndexReader();
     SolrParams params = req.getParams();
-    int numTerms = params.getInt( NUMTERMS, DEFAULT_COUNT );
     ShowStyle style = ShowStyle.get(params.get("show"));
 
-    // Always show the core lucene info
-    Map<String, TopTermQueue> topTerms = new TreeMap<String, TopTermQueue>();
-
     // If no doc is given, show all fields and top terms
-    Set<String> fields = null;
-    String fl = params.get(CommonParams.FL);
-    if (fl != null) {
-      fields = new TreeSet<String>(Arrays.asList(fl.split( "[,\\s]+" )));
-    }
-    if( ShowStyle.SCHEMA == style ) {
-      numTerms = 0; // Abort any statistics gathering.
+
+    rsp.add("index", getIndexInfo(reader));
+
+    if(ShowStyle.INDEX==style) {
+      return; // that's all we need
     }
 
-    rsp.add("index", getIndexInfo(reader, numTerms, topTerms, fields ));
-    
-    if(ShowStyle.INDEX==style) {
-      return; // thats all we need
-    }
-        
-    
+
     Integer docId = params.getInt( DOC_ID );
     if( docId == null && params.get( ID ) != null ) {
       // Look for something with a given solr ID
@@ -170,7 +158,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       rsp.add( "schema", getSchemaInfo( req.getSchema() ) );
     }
     else {
-      rsp.add( "fields", getIndexedFieldsInfo( searcher, fields, numTerms, topTerms) ) ;
+      rsp.add( "fields", getIndexedFieldsInfo(req) ) ;
     }
 
     // Add some generally helpful information
@@ -255,7 +243,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     return key;
   }
 
-  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( Document doc, int docId, IndexReader reader, IndexSchema schema ) throws IOException
+  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( Document doc, int docId, IndexReader reader,
+                                                                 IndexSchema schema ) throws IOException
   {
     final CharsRef spare = new CharsRef();
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
@@ -311,13 +300,22 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
   @SuppressWarnings("unchecked")
-  private static SimpleOrderedMap<Object> getIndexedFieldsInfo(
-      final SolrIndexSearcher searcher, final Set<String> fields, final int numTerms, Map<String,TopTermQueue> ttinfo)
+  private static SimpleOrderedMap<Object> getIndexedFieldsInfo(SolrQueryRequest req)
       throws Exception {
+
+    SolrIndexSearcher searcher = req.getSearcher();
+    SolrParams params = req.getParams();
+
+    Set<String> fields = null;
+    String fl = params.get(CommonParams.FL);
+    if (fl != null) {
+      fields = new TreeSet<String>(Arrays.asList(fl.split( "[,\\s]+" )));
+    }
 
     AtomicReader reader = searcher.getAtomicReader();
     IndexSchema schema = searcher.getSchema();
 
+    // Don't be tempted to put this in the loop below, the whole point here is to alphabetize the fields!
     Set<String> fieldNames = new TreeSet<String>();
     for(FieldInfo fieldInfo : reader.getFieldInfos()) {
       fieldNames.add(fieldInfo.name);
@@ -325,80 +323,88 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     // Walk the term enum and keep a priority queue for each map in our set
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
-    Fields theFields = reader.fields();
 
     for (String fieldName : fieldNames) {
       if (fields != null && ! fields.contains(fieldName) && ! fields.contains("*")) {
-        continue; // we're not interested in this term
+        continue; //we're not interested in this field Still an issue here
       }
 
-      SimpleOrderedMap<Object> f = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> fieldMap = new SimpleOrderedMap<Object>();
 
       SchemaField sfield = schema.getFieldOrNull( fieldName );
       FieldType ftype = (sfield==null)?null:sfield.getType();
 
-      f.add( "type", (ftype==null)?null:ftype.getTypeName() );
-      f.add( "schema", getFieldFlags( sfield ) );
+      fieldMap.add( "type", (ftype==null)?null:ftype.getTypeName() );
+      fieldMap.add("schema", getFieldFlags(sfield));
       if (sfield != null && schema.isDynamicField(sfield.getName()) && schema.getDynamicPattern(sfield.getName()) != null) {
-        f.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
+        fieldMap.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
       }
-
-      Terms terms = theFields.terms(fieldName);
+      Terms terms = reader.fields().terms(fieldName);
       if (terms == null) { // Not indexed, so we need to report what we can (it made it through the fl param if specified)
-        finfo.add( fieldName, f );
+        finfo.add( fieldName, fieldMap );
         continue;
       }
 
-      TopTermQueue topTerms = ttinfo.get( fieldName );
-      // If numTerms==0, the call is just asking for a quick field list
-      if( ttinfo != null && sfield != null && sfield.indexed() ) {
-        if (numTerms > 0) { // Read the actual field from the index and report that too.
-          Document doc = null;
-          if (topTerms != null && topTerms.getTopTermInfo() != null) {
-            Term term = topTerms.getTopTermInfo().term;
-            DocsEnum docsEnum = reader.termDocsEnum(reader.getLiveDocs(),
-                term.field(),
-                new BytesRef(term.text()),
-                false);
-            if (docsEnum != null) {
-              int docId;
-              if ((docId = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
-                doc = reader.document(docId);
-              }
+      if(sfield != null && sfield.indexed() ) {
+        // In the pre-4.0 days, this did a veeeery expensive range query. But we can be much faster now,
+        // so just do this all the time.
+        Document doc = getFirstLiveDoc(reader, fieldName, terms);
+
+
+        if( doc != null ) {
+          // Found a document with this field
+          try {
+            IndexableField fld = doc.getField( fieldName );
+            if( fld != null ) {
+              fieldMap.add("index", getFieldFlags(fld));
+            }
+            else {
+              // it is a non-stored field...
+              fieldMap.add("index", "(unstored field)");
             }
           }
-          if( doc != null ) {
-            // Found a document with this field
-            try {
-              IndexableField fld = doc.getField( fieldName );
-              if( fld != null ) {
-                f.add( "index", getFieldFlags( fld ) );
-              }
-              else {
-                // it is a non-stored field...
-                f.add( "index", "(unstored field)" );
-              }
-            }
-            catch( Exception ex ) {
-              log.warn( "error reading field: "+fieldName );
-            }
+          catch( Exception ex ) {
+            log.warn( "error reading field: "+fieldName );
           }
-          f.add("docs", terms.getDocCount());
         }
-        if( topTerms != null ) {
-          f.add( "distinct", topTerms.distinctTerms );
+        fieldMap.add("docs", terms.getDocCount());
 
-          // Include top terms
-          f.add( "topTerms", topTerms.toNamedList( searcher.getSchema() ) );
-
-          // Add a histogram
-          f.add( "histogram", topTerms.histogram.toNamedList() );
-        }
+      }
+      if (fields != null && (fields.contains(fieldName) || fields.contains("*"))) {
+        getDetailedFieldInfo(req, fieldName, fieldMap);
       }
       // Add the field
-      finfo.add( fieldName, f );
+      finfo.add( fieldName, fieldMap );
     }
     return finfo;
+  }
+
+  // Just get a document with the term in it, the first one will do!
+  // Is there a better way to do this? Shouldn't actually be very costly
+  // to do it this way.
+  private static Document getFirstLiveDoc(AtomicReader reader, String fieldName, Terms terms) throws IOException {
+    DocsEnum docsEnum = null;
+    TermsEnum termsEnum = terms.iterator(null);
+    BytesRef text;
+    // Deal with the chance that the first bunch of terms are in deleted documents. Is there a better way?
+    for (int idx = 0; idx < 1000 && docsEnum == null; ++idx) {
+      text = termsEnum.next();
+      if (text == null) { // Ran off the end of the terms enum without finding any live docs with that field in them.
+        return null;
+      }
+      Term term = new Term(fieldName, text);
+      docsEnum = reader.termDocsEnum(reader.getLiveDocs(),
+          term.field(),
+          new BytesRef(term.text()),
+          false);
+      if (docsEnum != null) {
+        int docId;
+        if ((docId = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+          return reader.document(docId);
+        }
+      }
+    }
+    return null;
   }
 
   /**
@@ -525,67 +531,24 @@ public class LukeRequestHandler extends RequestHandlerBase
     v.add( f.getName() );
     typeusemap.put( ft.getTypeName(), v );
   }
-  public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader, boolean countTerms) throws IOException {
-    return getIndexInfo(reader, countTerms ? 1 : 0, null, null);
+
+  /**
+   * @deprecated use {@link #getIndexInfo(DirectoryReader)} since you now have to explicitly pass the "fl" prameter
+   * and this was always called with "false" anyway from CoreAdminHandler
+   */
+  public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader, boolean detail) throws IOException {
+    return getIndexInfo(reader);
   }
-  public static SimpleOrderedMap<Object> getIndexInfo( DirectoryReader reader, int numTerms,
-                                                       Map<String, TopTermQueue> topTerms,
-                                                       Set<String> fieldList) throws IOException {
+  // This method just gets the top-most level of information. This was conflated with getting detailed info
+  // for *all* the fields, called from CoreAdminHandler etc.
+
+  public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader) throws IOException {
     Directory dir = reader.directory();
     SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<Object>();
 
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
-    final CharsRef spare = new CharsRef();
-    if( numTerms > 0 ) {
-      Fields fields = MultiFields.getFields(reader);
-      long totalTerms = 0;
-      if (fields != null) {
-        FieldsEnum fieldsEnum = fields.iterator();
-        String field;
-        while ((field = fieldsEnum.next()) != null) {
-          Terms terms = fieldsEnum.terms();
-          if (terms == null) {
-            continue;
-          }
-          totalTerms += terms.getUniqueTermCount();
 
-          if (fieldList != null && ! fieldList.contains(field) && ! fieldList.contains("*")) {
-            continue;
-          }
-
-          TermsEnum termsEnum = terms.iterator(null);
-          BytesRef text;
-          int[] buckets = new int[HIST_ARRAY_SIZE];
-          TopTermQueue tiq = topTerms.get(field);
-          if (tiq == null) {
-            tiq = new TopTermQueue(numTerms + 1);   // Allocating slots for the top N terms to collect freqs.
-            topTerms.put(field, tiq);
-          }
-          while ((text = termsEnum.next()) != null) {
-            int freq = termsEnum.docFreq();  // This calculation seems odd, but it gives the same results as it used to.
-            int slot = 32 - Integer.numberOfLeadingZeros(Math.max(0, freq - 1));
-            buckets[slot] = buckets[slot] + 1;
-            if (freq > tiq.minFreq) {
-              UnicodeUtil.UTF8toUTF16(text, spare);
-              String t = spare.toString();
-              tiq.distinctTerms = new Long(fieldsEnum.terms().getUniqueTermCount()).intValue();
-
-              tiq.add(new TopTermQueue.TermInfo(new Term(field, t), termsEnum.docFreq()));
-              if (tiq.size() > numTerms) { // if tiq full
-                tiq.pop(); // remove lowest in tiq
-                tiq.minFreq  = tiq.getTopTermInfo().docFreq;
-              }
-            }
-          }
-          tiq.histogram.add(buckets);
-        }
-      }
-      //Clumsy, but I'm tired.
-      indexInfo.add("numTerms", (new Long(totalTerms)).intValue());
-
-    }
-        
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.getSequentialSubReaders().length);
     indexInfo.add("current", reader.isCurrent() );
@@ -597,6 +560,57 @@ public class LukeRequestHandler extends RequestHandlerBase
       indexInfo.add("lastModified", new Date(Long.parseLong(s)));
     }
     return indexInfo;
+  }
+
+  // Get terribly detailed information about a particular field. This is a very expensive call, use it with caution
+  // especially on large indexes!
+  private static void getDetailedFieldInfo(SolrQueryRequest req, String field, SimpleOrderedMap<Object> fieldMap)
+      throws IOException {
+
+    SolrParams params = req.getParams();
+    int numTerms = params.getInt( NUMTERMS, DEFAULT_COUNT );
+
+    TopTermQueue tiq = new TopTermQueue(numTerms + 1);  // Something to collect the top N terms in.
+
+    final CharsRef spare = new CharsRef();
+
+    Fields fields = MultiFields.getFields(req.getSearcher().getIndexReader());
+
+    if (fields == null) { // No indexed fields
+      return;
+    }
+
+    Terms terms = fields.terms(field);
+    if (terms == null) {  // No terms in the field.
+      return;
+    }
+    TermsEnum termsEnum = terms.iterator(null);
+    BytesRef text;
+    int[] buckets = new int[HIST_ARRAY_SIZE];
+    while ((text = termsEnum.next()) != null) {
+      int freq = termsEnum.docFreq();  // This calculation seems odd, but it gives the same results as it used to.
+      int slot = 32 - Integer.numberOfLeadingZeros(Math.max(0, freq - 1));
+      buckets[slot] = buckets[slot] + 1;
+      if (freq > tiq.minFreq) {
+        UnicodeUtil.UTF8toUTF16(text, spare);
+        String t = spare.toString();
+        tiq.distinctTerms = new Long(terms.getUniqueTermCount()).intValue();
+
+        tiq.add(new TopTermQueue.TermInfo(new Term(field, t), termsEnum.docFreq()));
+        if (tiq.size() > numTerms) { // if tiq full
+          tiq.pop(); // remove lowest in tiq
+          tiq.minFreq = tiq.getTopTermInfo().docFreq;
+        }
+      }
+    }
+    tiq.histogram.add(buckets);
+    fieldMap.add("distinct", tiq.distinctTerms);
+
+    // Include top terms
+    fieldMap.add("topTerms", tiq.toNamedList(req.getSearcher().getSchema()));
+
+    // Add a histogram
+    fieldMap.add("histogram", tiq.histogram.toNamedList());
   }
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
