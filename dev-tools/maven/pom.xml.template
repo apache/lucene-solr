@@ -198,7 +198,7 @@
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.7</version>
+        <version>4.10</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>
