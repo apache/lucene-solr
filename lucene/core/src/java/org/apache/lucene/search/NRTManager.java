@@ -344,7 +344,7 @@ public class NRTManager implements Closeable {
         }
         boolean setSearchGen;
         if (!mgr.isSearcherCurrent()) {
-          setSearchGen = mgr.maybeReopen();
+          setSearchGen = mgr.maybeRefresh();
         } else {
           setSearchGen = true;
         }

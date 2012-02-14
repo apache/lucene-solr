@@ -31,9 +31,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -55,7 +55,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     if (!isNRT) {
       writer.commit();
     }
-    assertTrue(mgr.maybeReopen() || mgr.isSearcherCurrent());
+    assertTrue(mgr.maybeRefresh() || mgr.isSearcherCurrent());
     return mgr.acquire();
   }
 
@@ -101,7 +101,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
             Thread.sleep(_TestUtil.nextInt(random, 1, 100));
             writer.commit();
             Thread.sleep(_TestUtil.nextInt(random, 1, 5));
-            if (mgr.maybeReopen()) {
+            if (mgr.maybeRefresh()) {
               lifetimeMGR.prune(pruner);
             }
           }
@@ -130,7 +130,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       // synchronous to your search threads, but still we
       // test as apps will presumably do this for
       // simplicity:
-      if (mgr.maybeReopen()) {
+      if (mgr.maybeRefresh()) {
         lifetimeMGR.prune(pruner);
       }
     }
@@ -196,6 +196,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     final AtomicBoolean triedReopen = new AtomicBoolean(false);
     final ExecutorService es = random.nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory("testIntermediateClose"));
     final SearcherFactory factory = new SearcherFactory() {
+      @Override
       public IndexSearcher newSearcher(IndexReader r) throws IOException {
         try {
           if (triedReopen.get()) {
@@ -232,7 +233,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
           if (VERBOSE) {
             System.out.println("NOW call maybeReopen");
           }
-          searcherManager.maybeReopen();
+          searcherManager.maybeRefresh();
           success.set(true);
         } catch (AlreadyClosedException e) {
           // expected
@@ -275,4 +276,41 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       es.awaitTermination(1, TimeUnit.SECONDS);
     }
   }
+  
+  public void testCloseTwice() throws Exception {
+    // test that we can close SM twice (per Closeable's contract).
+    Directory dir = newDirectory();
+    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
+    SearcherManager sm = new SearcherManager(dir, null);
+    sm.close();
+    sm.close();
+    dir.close();
+  }
+
+  public void testEnsureOpen() throws Exception {
+    Directory dir = newDirectory();
+    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
+    SearcherManager sm = new SearcherManager(dir, null);
+    IndexSearcher s = sm.acquire();
+    sm.close();
+    
+    // this should succeed;
+    sm.release(s);
+    
+    try {
+      // this should fail
+      sm.acquire();
+    } catch (AlreadyClosedException e) {
+      // ok
+    }
+    
+    try {
+      // this should fail
+      sm.maybeRefresh();
+    } catch (AlreadyClosedException e) {
+      // ok
+    }
+    dir.close();
+  }
+  
 }
