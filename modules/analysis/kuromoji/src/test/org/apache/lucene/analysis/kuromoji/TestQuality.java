@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -176,6 +177,7 @@ public class TestQuality extends LuceneTestCase {
     tokenizer.reset(new StringReader(unseg));
     CharTermAttribute termAtt = tokenizer.addAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncAtt = tokenizer.addAttribute(PositionIncrementAttribute.class);
+    PositionLengthAttribute posLengthAtt = tokenizer.addAttribute(PositionLengthAttribute.class);
     List<Path> paths = new ArrayList<Path>();
     paths.add(new Path());
     
@@ -183,7 +185,7 @@ public class TestQuality extends LuceneTestCase {
     int numTokens = 0;
     while(tokenizer.incrementToken()) {
       final int posInc = posIncAtt.getPositionIncrement();
-      final int posLength = posIncAtt.getPositionLength();
+      final int posLength = posLengthAtt.getPositionLength();
       final String token = termAtt.toString();
 
       //System.out.println("  tok=" + token + " numPaths=" + paths.size() + " posLen=" + posLength);

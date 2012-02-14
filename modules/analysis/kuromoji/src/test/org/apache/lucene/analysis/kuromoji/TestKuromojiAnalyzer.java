@@ -103,40 +103,44 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
     */
 
     // Senior software engineer:
-    assertAnalyzesTo(a, "シニアソフトウェアエンジニア",
-                     new String[] { "シニア",
-                                    "シニアソフトウェアエンジニア",
-                                    "ソフトウェア",
-                                    "エンジニア" },
-                     new int[] { 1, 0, 1, 1}
-                     );
+    assertAnalyzesToPositions(a, "シニアソフトウェアエンジニア",
+                              new String[] { "シニア",
+                                             "シニアソフトウェアエンジニア",
+                                             "ソフトウェア",
+                                             "エンジニア" },
+                              new int[] { 1, 0, 1, 1},
+                              new int[] { 1, 3, 1, 1}
+                              );
 
     // Kansai International Airport:
-    assertAnalyzesTo(a, "関西国際空港",
-                     new String[] { "関西",
-                                    "関西国際空港", // zero pos inc
-                                    "国際",
-                                    "空港" },
-                     new int[] {1, 0, 1, 1}
-                     );
+    assertAnalyzesToPositions(a, "関西国際空港",
+                              new String[] { "関西",
+                                             "関西国際空港", // zero pos inc
+                                             "国際",
+                                             "空港" },
+                              new int[] {1, 0, 1, 1},
+                              new int[] {1, 3, 1, 1}
+                              );
 
     // Konika Minolta Holdings; not quite the right
     // segmentation (see LUCENE-3726):
-    assertAnalyzesTo(a, "コニカミノルタホールディングス",
-                     new String[] { "コニカ",
-                                    "コニカミノルタホールディングス", // zero pos inc
-                                    "ミノルタ", 
-                                    "ホールディングス"},
-                     new int[] {1, 0, 1, 1}
-                     );
+    assertAnalyzesToPositions(a, "コニカミノルタホールディングス",
+                              new String[] { "コニカ",
+                                             "コニカミノルタホールディングス", // zero pos inc
+                                             "ミノルタ", 
+                                             "ホールディングス"},
+                              new int[] {1, 0, 1, 1},
+                              new int[] {1, 3, 1, 1}
+                              );
 
     // Narita Airport
-    assertAnalyzesTo(a, "成田空港",
-                     new String[] { "成田",
-                                    "成田空港",
-                                    "空港" },
-                     new int[] {1, 0, 1});
-
+    assertAnalyzesToPositions(a, "成田空港",
+                              new String[] { "成田",
+                                             "成田空港",
+                                             "空港" },
+                              new int[] {1, 0, 1},
+                              new int[] {1, 2, 1}
+                              );
   }
 
   

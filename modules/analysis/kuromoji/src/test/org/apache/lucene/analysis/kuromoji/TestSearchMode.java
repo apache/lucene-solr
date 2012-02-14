@@ -104,11 +104,14 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
         String sourceText = fields[0];
         String[] expectedTokens = fields[1].split("\\s+");
         int[] expectedPosIncrs = new int[expectedTokens.length];
+        int[] expectedPosLengths = new int[expectedTokens.length];
         for(int tokIDX=0;tokIDX<expectedTokens.length;tokIDX++) {
           if (expectedTokens[tokIDX].endsWith("/0")) {
             expectedTokens[tokIDX] = expectedTokens[tokIDX].replace("/0", "");
+            expectedPosLengths[tokIDX] = expectedTokens.length-1;
           } else {
             expectedPosIncrs[tokIDX] = 1;
+            expectedPosLengths[tokIDX] = 1;
           }
         }
         assertAnalyzesTo(analyzerWithCompounds, sourceText, expectedTokens, expectedPosIncrs);

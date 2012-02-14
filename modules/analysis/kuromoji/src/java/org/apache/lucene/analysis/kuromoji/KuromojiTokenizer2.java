@@ -38,10 +38,12 @@ import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.RollingCharBuffer;
 
 // TODO: somehow factor out a reusable viterbi search here,
 // so other decompounders/tokenizers can reuse...
@@ -90,7 +92,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
   private final FST.BytesReader userFSTReader;
   private final TokenInfoFST userFST;
 
-  private final WrappedCharArray buffer = new WrappedCharArray();
+  private final RollingCharBuffer buffer = new RollingCharBuffer();
 
   private final WrappedPositionArray positions = new WrappedPositionArray();
 
@@ -99,7 +101,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
   private final boolean extendedMode;
   private final boolean outputCompounds;
 
-  // index of the last character of unknown word:
+  // Index of the last character of unknown word:
   private int unknownWordEndIndex = -1;
 
   // True once we've hit the EOF from the input reader:
@@ -125,6 +127,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLengthAtt = addAttribute(PositionLengthAttribute.class);
   private final BaseFormAttribute basicFormAtt = addAttribute(BaseFormAttribute.class);
   private final PartOfSpeechAttribute posAtt = addAttribute(PartOfSpeechAttribute.class);
   private final ReadingAttribute readingAtt = addAttribute(ReadingAttribute.class);
@@ -199,7 +202,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
 
   @Override
   public void end() {
-    // set final offset
+    // Set final offset
     offsetAtt.setOffset(correctOffset(pos), correctOffset(pos));
   }
 
@@ -244,25 +247,24 @@ public final class KuromojiTokenizer2 extends Tokenizer {
     int count;
 
     // maybe single int array * 5?
-    int[] costs = new int[4];
-    // nommit rename to lastRightID or pathRightID or something:
-    int[] nodeID = new int[4];
-    int[] backPos = new int[4];
-    int[] backIndex = new int[4];
-    int[] backID = new int[4];
-    Type[] backType = new Type[4];
+    int[] costs = new int[8];
+    int[] lastRightID = new int[8];
+    int[] backPos = new int[8];
+    int[] backIndex = new int[8];
+    int[] backID = new int[8];
+    Type[] backType = new Type[8];
 
     // Only used when finding 2nd best segmentation under a
     // too-long token:
     int forwardCount;
-    int[] forwardPos = new int[4];
-    int[] forwardID = new int[4];
-    int[] forwardIndex = new int[4];
-    Type[] forwardType = new Type[4];
+    int[] forwardPos = new int[8];
+    int[] forwardID = new int[8];
+    int[] forwardIndex = new int[8];
+    Type[] forwardType = new Type[8];
 
     public void grow() {
       costs = ArrayUtil.grow(costs, 1+count);
-      nodeID = ArrayUtil.grow(nodeID, 1+count);
+      lastRightID = ArrayUtil.grow(lastRightID, 1+count);
       backPos = ArrayUtil.grow(backPos, 1+count);
       backIndex = ArrayUtil.grow(backIndex, 1+count);
       backID = ArrayUtil.grow(backID, 1+count);
@@ -288,20 +290,20 @@ public final class KuromojiTokenizer2 extends Tokenizer {
       forwardType = newForwardType;
     }
 
-    public void add(int cost, int nodeID, int backPos, int backIndex, int backID, Type backType) {
+    public void add(int cost, int lastRightID, int backPos, int backIndex, int backID, Type backType) {
       // NOTE: this isn't quite a true Viterbit search,
-      // becase we should check if nodeID is
+      // becase we should check if lastRightID is
       // already present here, and only update if the new
       // cost is less than the current cost, instead of
       // simply appending.  However, that will likely hurt
-      // performance (usually we add a nodeID only once),
+      // performance (usually we add a lastRightID only once),
       // and it means we actually create the full graph
       // intersection instead of a "normal" Viterbi lattice:
       if (count == costs.length) {
         grow();
       }
       this.costs[count] = cost;
-      this.nodeID[count] = nodeID;
+      this.lastRightID[count] = lastRightID;
       this.backPos[count] = backPos;
       this.backIndex[count] = backIndex;
       this.backID[count] = backID;
@@ -336,9 +338,9 @@ public final class KuromojiTokenizer2 extends Tokenizer {
     for(int idx=0;idx<fromPosData.count;idx++) {
       // Cost is path cost so far, plus word cost (added at
       // end of loop), plus bigram cost:
-      final int cost = fromPosData.costs[idx] + costs.get(fromPosData.nodeID[idx], leftID);
+      final int cost = fromPosData.costs[idx] + costs.get(fromPosData.lastRightID[idx], leftID);
       if (VERBOSE) {
-        System.out.println("      fromIDX=" + idx + ": cost=" + cost + " (prevCost=" + fromPosData.costs[idx] + " wordCost=" + wordCost + " bgCost=" + costs.get(fromPosData.nodeID[idx], leftID) + " leftID=" + leftID);
+        System.out.println("      fromIDX=" + idx + ": cost=" + cost + " (prevCost=" + fromPosData.costs[idx] + " wordCost=" + wordCost + " bgCost=" + costs.get(fromPosData.lastRightID[idx], leftID) + " leftID=" + leftID);
       }
       if (cost < leastCost) {
         leastCost = cost;
@@ -403,140 +405,17 @@ public final class KuromojiTokenizer2 extends Tokenizer {
     inflectionAtt.setToken(token);
     if (token.getPosition() == lastTokenPos) {
       posIncAtt.setPositionIncrement(0);
-      posIncAtt.setPositionLength(token.getPositionLength());
+      posLengthAtt.setPositionLength(token.getPositionLength());
     } else {
       assert token.getPosition() > lastTokenPos;
       posIncAtt.setPositionIncrement(1);
-      posIncAtt.setPositionLength(1);
+      posLengthAtt.setPositionLength(1);
     }
     if (VERBOSE) {
       System.out.println("    incToken: return token=" + token);
     }
     lastTokenPos = token.getPosition();
     return true;
-  }
-
-  // Acts like a forever growing char[] as you read
-  // characters into it from the provided reader, but
-  // internally it uses a circular buffer to only hold the
-  // characters that haven't been freed yet:
-  private static final class WrappedCharArray {
-
-    // TODO: pull out as standalone oal.util class?
-
-    private Reader reader;
-
-    private char[] buffer = new char[32];
-
-    // Next array index to write to in buffer:
-    private int nextWrite;
-
-    // Next absolute position to read from reader:
-    private int nextPos;
-
-    // How many valid chars (wrapped) are in the buffer:
-    private int count;
-
-    // True if we hit EOF
-    private boolean end;
-    
-    /** Clear array and switch to new reader. */
-    public void reset(Reader reader) {
-      this.reader = reader;
-      nextPos = 0;
-      nextWrite = 0;
-      count = 0;
-      end = false;
-    }
-
-    /* Absolute position read.  NOTE: pos must not jump
-     * ahead by more than 1!  Ie, it's OK to read arbitarily
-     * far back (just not prior to the last {@link
-     * #freeBefore}), but NOT ok to read arbitrarily far
-     * ahead.  Returns -1 if you hit EOF. */
-    public int get(int pos) throws IOException {
-      //System.out.println("    get pos=" + pos + " nextPos=" + nextPos + " count=" + count);
-      if (pos == nextPos) {
-        if (end) {
-          return -1;
-        }
-        final int ch = reader.read();
-        if (ch == -1) {
-          end = true;
-          return -1;
-        }
-        if (count == buffer.length) {
-          // Grow
-          final char[] newBuffer = new char[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_CHAR)];
-          System.arraycopy(buffer, nextWrite, newBuffer, 0, buffer.length - nextWrite);
-          System.arraycopy(buffer, 0, newBuffer, buffer.length - nextWrite, nextWrite);
-          nextWrite = buffer.length;
-          //System.out.println("buffer: grow from " + buffer.length + " to " + newBuffer.length);
-          buffer = newBuffer;
-        }
-        if (nextWrite == buffer.length) {
-          nextWrite = 0;
-        }
-        buffer[nextWrite++] = (char) ch;
-        count++;
-        nextPos++;
-        return ch;
-      } else {
-        // Cannot read from future (except by 1):
-        assert pos < nextPos;
-
-        // Cannot read from already freed past:
-        assert nextPos - pos <= count;
-
-        final int index = getIndex(pos);
-        return buffer[index];
-      }
-    }
-
-    // For assert:
-    private boolean inBounds(int pos) {
-      return pos < nextPos && pos >= nextPos - count;
-    }
-
-    private int getIndex(int pos) {
-      int index = nextWrite - (nextPos - pos);
-      if (index < 0) {
-        // Wrap:
-        index += buffer.length;
-        assert index >= 0;
-      }
-      return index;
-    }
-
-    public char[] get(int posStart, int length) {
-      assert length > 0;
-      assert inBounds(posStart): "posStart=" + posStart + " length=" + length;
-      //System.out.println("    buffer.get posStart=" + posStart + " len=" + length);
-      
-      final int startIndex = getIndex(posStart);
-      final int endIndex = getIndex(posStart + length);
-      //System.out.println("      startIndex=" + startIndex + " endIndex=" + endIndex);
-
-      final char[] result = new char[length];
-      // nocommit what if entire buffer is requested...?
-      if (endIndex >= startIndex) {
-        System.arraycopy(buffer, startIndex, result, 0, endIndex-startIndex);
-      } else {
-        // Wrapped:
-        final int part1 = buffer.length-startIndex;
-        System.arraycopy(buffer, startIndex, result, 0, part1);
-        System.arraycopy(buffer, 0, result, buffer.length-startIndex, length-part1);
-      }
-      return result;
-    }
-
-    /** Call this to notify us that no chars before this
-     *  absolute position are needed anymore. */
-    public void freeBefore(int pos) {
-      assert pos <= nextPos;
-      count = nextPos - pos;
-      assert count < buffer.length;
-    }
   }
 
   // TODO: make generic'd version of this "circular array"?
@@ -849,7 +728,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
       }
       for(int idx=0;idx<endPosData.count;idx++) {
         // Add EOS cost:
-        final int cost = endPosData.costs[idx] + costs.get(endPosData.nodeID[idx], 0);
+        final int cost = endPosData.costs[idx] + costs.get(endPosData.lastRightID[idx], 0);
         //System.out.println("    idx=" + idx + " cost=" + cost);
         if (cost < leastCost) {
           leastCost = cost;
@@ -961,7 +840,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         }
       } else {
         // On non-initial positions, we maximize score
-        // across all arriving nodeIDs:
+        // across all arriving lastRightIDs:
         for(int forwardArcIDX=0;forwardArcIDX<posData.forwardCount;forwardArcIDX++) {
           final Type forwardType = posData.forwardType[forwardArcIDX];
           final int toPos = posData.forwardPos[forwardArcIDX];
