@@ -485,7 +485,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       final IndexSearcher before = mgr.acquire();
       mgr.release(before);
 
-      mgr.maybeReopen();
+      mgr.maybeRefresh();
       final IndexSearcher after = mgr.acquire();
       try {
         if (after != before) {
