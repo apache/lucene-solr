@@ -89,7 +89,7 @@
 	<classpathentry kind="src" path="solr/contrib/velocity/src/test-files"/>
 	<classpathentry kind="lib" path="lucene/lib/ant-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/ant-junit-1.7.1.jar"/>
-	<classpathentry kind="lib" path="lucene/lib/junit-4.7.jar"/>
+	<classpathentry kind="lib" path="lucene/lib/junit-4.10.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/analyzers/phonetic/lib/commons-codec-1.6.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-collections-3.1.jar"/>
@@ -109,7 +109,7 @@
 	<classpathentry kind="lib" path="solr/lib/geronimo-stax-api_1.0_spec-1.0.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/guava-r05.jar"/>
 	<classpathentry kind="lib" path="solr/lib/jcl-over-slf4j-1.6.1.jar"/>
-	<classpathentry kind="lib" path="solr/lib/junit-4.7.jar"/>
+	<classpathentry kind="lib" path="solr/lib/junit-4.10.jar"/>
 	<classpathentry kind="lib" path="solr/lib/servlet-api-2.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/slf4j-api-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.6.1.jar"/>

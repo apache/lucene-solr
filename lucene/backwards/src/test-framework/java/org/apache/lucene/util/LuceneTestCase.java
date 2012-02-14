@@ -154,16 +154,6 @@ public abstract class LuceneTestCase extends Assert {
 
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
   
-  /** Used to track if setUp and tearDown are called correctly from subclasses */
-  private static State state = State.INITIAL;
-
-  private static enum State {
-    INITIAL, // no tests ran yet
-    SETUP,   // test has called setUp()
-    RANTEST, // test is running
-    TEARDOWN // test has called tearDown()
-  }
-  
   private static class UncaughtExceptionEntry {
     public final Thread thread;
     public final Throwable exception;
@@ -199,7 +189,6 @@ public abstract class LuceneTestCase extends Assert {
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
     initRandom();
-    state = State.INITIAL;
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     // enable this by default, for IDE consistency with ant tests (as its the default from ant)
@@ -246,19 +235,8 @@ public abstract class LuceneTestCase extends Assert {
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
-    State oldState = state; // capture test execution state
-    state = State.INITIAL; // set the state for subsequent tests
-    
     Throwable problem = null;
-    try {
-      if (!testsFailed) {
-        assertTrue("ensure your setUp() calls super.setUp() and your tearDown() calls super.tearDown()!!!", 
-          oldState == State.INITIAL || oldState == State.TEARDOWN);
-      }
-    } catch (Throwable t) {
-      if (problem == null) problem = t;
-    }
-    
+   
     if (! "false".equals(TEST_CLEAN_THREADS)) {
       int rogueThreads = threadCleanup("test class");
       if (rogueThreads > 0) {
@@ -406,11 +384,6 @@ public abstract class LuceneTestCase extends Assert {
     public void starting(FrameworkMethod method) {
       // set current method name for logging
       LuceneTestCase.this.name = method.getName();
-      State s = state; // capture test execution state
-      state = State.RANTEST; // set the state for subsequent tests
-      if (!testsFailed) {
-        assertTrue("ensure your setUp() calls super.setUp()!!!", s == State.SETUP);
-      }
       super.starting(method);
     }
   };
@@ -442,9 +415,6 @@ public abstract class LuceneTestCase extends Assert {
   public void setUp() throws Exception {
     seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
-    State s = state; // capture test execution state
-    state = State.SETUP; // set the state for subsequent tests
-   
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -456,10 +426,6 @@ public abstract class LuceneTestCase extends Assert {
     });
     
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
-
-    if (!testsFailed) {
-      assertTrue("ensure your tearDown() calls super.tearDown()!!!", (s == State.INITIAL || s == State.TEARDOWN));
-    }
   }
 
   /**
@@ -513,24 +479,11 @@ public abstract class LuceneTestCase extends Assert {
 
   @After
   public void tearDown() throws Exception {
-    State oldState = state; // capture test execution state
-    state = State.TEARDOWN; // set the state for subsequent tests
-    
     // NOTE: with junit 4.7, we don't get a reproduceWith because our Watchman
     // does not know if something fails in tearDown. so we ensure this happens ourselves for now.
     // we can remove this if we upgrade to 4.8
     Throwable problem = null;
     
-    try {
-      if (!testsFailed) {
-        // Note: we allow a test to go straight from SETUP -> TEARDOWN (without ever entering the RANTEST state)
-        // because if you assume() inside setUp(), it skips the test and the TestWatchman has no way to know...
-        assertTrue("ensure your setUp() calls super.setUp()!!!", oldState == State.RANTEST || oldState == State.SETUP);
-      }
-    } catch (Throwable t) {
-      if (problem == null) problem = t;
-    }
-
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
 
     // this won't throw any exceptions or fail the test

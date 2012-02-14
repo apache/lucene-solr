@@ -52,7 +52,7 @@
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
 
-  <property name="junit.jar" value="junit-4.7.jar"/>
+  <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" value="${common.dir}/lib/${junit.jar}"/>
   <path id="junit-path">
     <pathelement location="${junit-location.jar}"/>

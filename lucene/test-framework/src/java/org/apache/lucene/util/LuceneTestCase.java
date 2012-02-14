@@ -24,22 +24,43 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MockRandomMergePolicy;
+import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -55,10 +76,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.rules.MethodRule;
-import org.junit.rules.TestWatchman;
+import org.junit.internal.AssumptionViolatedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.runner.Runner;
+import org.junit.runner.notification.RunListener;
 import org.junit.runners.model.Statement;
 
 /**
@@ -90,7 +114,6 @@ import org.junit.runners.model.Statement;
 
 @RunWith(LuceneTestCaseRunner.class)
 public abstract class LuceneTestCase extends Assert {
-
   /**
    * true iff tests are run in verbose mode. Note: if it is false, tests are not
    * expected to print any messages.
@@ -153,17 +176,16 @@ public abstract class LuceneTestCase extends Assert {
   private int savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
 
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
-  
-  /** Used to track if setUp and tearDown are called correctly from subclasses */
-  private static State state = State.INITIAL;
+  /**
+   * @see SubclassSetupTeardownRule  
+   */
+  private boolean setupCalled;
 
-  private static enum State {
-    INITIAL, // no tests ran yet
-    SETUP,   // test has called setUp()
-    RANTEST, // test is running
-    TEARDOWN // test has called tearDown()
-  }
-  
+  /**
+   * @see SubclassSetupTeardownRule
+   */
+  private boolean teardownCalled;
+
   private static class UncaughtExceptionEntry {
     public final Thread thread;
     public final Throwable exception;
@@ -199,7 +221,6 @@ public abstract class LuceneTestCase extends Assert {
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
     initRandom();
-    state = State.INITIAL;
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     // enable this by default, for IDE consistency with ant tests (as its the default from ant)
@@ -246,18 +267,7 @@ public abstract class LuceneTestCase extends Assert {
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
-    State oldState = state; // capture test execution state
-    state = State.INITIAL; // set the state for subsequent tests
-    
     Throwable problem = null;
-    try {
-      if (!testsFailed) {
-        assertTrue("ensure your setUp() calls super.setUp() and your tearDown() calls super.tearDown()!!!", 
-          oldState == State.INITIAL || oldState == State.TEARDOWN);
-      }
-    } catch (Throwable t) {
-      if (problem == null) problem = t;
-    }
     
     if (! "false".equals(TEST_CLEAN_THREADS)) {
       int rogueThreads = threadCleanup("test class");
@@ -373,78 +383,129 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   protected static boolean testsFailed; /* true if any tests failed */
-  
-  // This is how we get control when errors occur.
-  // Think of this as start/end/success/failed
-  // events.
-  @Rule
-  public final TestWatchman intercept = new TestWatchman() {
 
+  /**
+   * Control the outcome of each test's output status (failure, assumption-failure). This
+   * would ideally be handled by attaching a {@link RunListener} to a {@link Runner} (because
+   * then we would be notified about static block failures).
+   */
+  private class TestResultInterceptorRule implements TestRule {
     @Override
-    public void failed(Throwable e, FrameworkMethod method) {
-      // org.junit.internal.AssumptionViolatedException in older releases
-      // org.junit.Assume.AssumptionViolatedException in recent ones
-      if (e.getClass().getName().endsWith("AssumptionViolatedException")) {
-        if (e.getCause() instanceof _TestIgnoredException)
-          e = e.getCause();
-        System.err.print("NOTE: Assume failed in '" + method.getName() + "' (ignored):");
-        if (VERBOSE) {
-          System.err.println();
-          e.printStackTrace(System.err);
-        } else {
-          System.err.print(" ");
-          System.err.println(e.getMessage());
+    public Statement apply(final Statement base, final Description description) {
+      return new Statement() {
+        @Override
+        public void evaluate() throws Throwable {
+          starting(description);
+          try {
+            base.evaluate();
+          } catch (AssumptionViolatedException e) {
+            assumptionIgnored(e, description);
+            throw e;
+          } catch (Throwable t) {
+            failed(t, description);
+            throw t;
+          } finally {
+            ending(description);
+          }
         }
-      } else {
-        testsFailed = true;
-        reportAdditionalFailureInfo();
-      }
-      super.failed(e, method);
+      };
     }
 
-    @Override
-    public void starting(FrameworkMethod method) {
-      // set current method name for logging
-      LuceneTestCase.this.name = method.getName();
-      State s = state; // capture test execution state
-      state = State.RANTEST; // set the state for subsequent tests
-      if (!testsFailed) {
-        assertTrue("ensure your setUp() calls super.setUp()!!!", s == State.SETUP);
+    private void assumptionIgnored(AssumptionViolatedException e, Description description) {
+      System.err.print("NOTE: Assume failed in '" + description.getDisplayName() + "' (ignored):");
+      if (VERBOSE) {
+        System.err.println();
+        e.printStackTrace(System.err);
+      } else {
+        System.err.print(" ");
+        System.err.println(e.getMessage());
       }
-      super.starting(method);
+    }
+
+    private void failed(Throwable e, Description description) {
+      testsFailed = true;
+      reportAdditionalFailureInfo();
+      assert !(e instanceof AssumptionViolatedException);
+    }
+
+    private void starting(Description description) {
+      // set current method name for logging
+      LuceneTestCase.this.name = description.getDisplayName();
+    }
+
+    private void ending(Description description) {
+      // clear the current method name.
+      LuceneTestCase.this.name = null;
     }
   };
-  
+
   /** 
    * The thread executing the current test case.
    * @see #isTestThread()
    */
   volatile Thread testCaseThread;
 
-  /** @see #testCaseThread */
-  @Rule
-  public final MethodRule setTestThread = new MethodRule() {
-    public Statement apply(final Statement s, FrameworkMethod fm, Object target) {
+  /** 
+   * @see LuceneTestCase#testCaseThread 
+   */
+  private class RememberThreadRule implements TestRule {
+    @Override
+    public Statement apply(final Statement base, Description description) {
       return new Statement() {
         public void evaluate() throws Throwable {
           try {
             LuceneTestCase.this.testCaseThread = Thread.currentThread();
-            s.evaluate();
+            base.evaluate();
           } finally {
             LuceneTestCase.this.testCaseThread = null;
           }
         }
       };
     }
-  };
+  }
 
-  @Before
-  public void setUp() throws Exception {
+  /**
+   * This controls how rules are nested. It is important that _all_ rules declared
+   * in {@link LuceneTestCase} are executed in proper order if they depend on each 
+   * other.
+   */
+  @Rule
+  public final TestRule ruleChain = RuleChain
+    .outerRule(new RememberThreadRule())
+    .around(new TestResultInterceptorRule())
+    .around(new InternalSetupTeardownRule())
+    .around(new SubclassSetupTeardownRule());
+
+  /**
+   * Internal {@link LuceneTestCase} setup before/after each test.
+   */
+  private class InternalSetupTeardownRule implements TestRule {
+    @Override
+    public Statement apply(final Statement base, Description description) {
+      return new Statement() {
+        @Override
+        public void evaluate() throws Throwable {
+          setUpInternal();
+          // We simulate the previous behavior of @Before in that
+          // if any statement below us fails, we just propagate the original
+          // exception and do not call tearDownInternal.
+
+          // TODO: [DW] should this really be this way? We could use
+          // JUnit's MultipleFailureException and propagate both?
+          base.evaluate();
+          tearDownInternal();
+        }
+      };
+    }
+  }
+  
+  /**
+   * Setup before the tests.
+   */
+  private final void setUpInternal() throws Exception {
     seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
-    State s = state; // capture test execution state
-    state = State.SETUP; // set the state for subsequent tests
-   
+    
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -458,8 +519,6 @@ public abstract class LuceneTestCase extends Assert {
               break;
             }
           }
-          if (e.getCause() instanceof _TestIgnoredException)
-            e = e.getCause();
           System.err.print("NOTE: Assume failed at " + where + " (ignored):");
           if (VERBOSE) {
             System.err.println();
@@ -478,10 +537,6 @@ public abstract class LuceneTestCase extends Assert {
     });
     
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
-
-    if (!testsFailed) {
-      assertTrue("ensure your tearDown() calls super.tearDown()!!!", (s == State.INITIAL || s == State.TEARDOWN));
-    }
   }
 
   /**
@@ -533,26 +588,57 @@ public abstract class LuceneTestCase extends Assert {
     return Thread.currentThread() == testCaseThread;
   }
 
+  /**
+   * Make sure {@link #setUp()} and {@link #tearDown()} were invoked even if they
+   * have been overriden. We assume nobody will call these out of non-overriden
+   * methods (they have to be public by contract, unfortunately). The top-level
+   * methods just set a flag that is checked upon successful execution of each test
+   * case.
+   */
+  private class SubclassSetupTeardownRule implements TestRule {
+    @Override
+    public Statement apply(final Statement base, Description description) {
+      return new Statement() {
+        @Override
+        public void evaluate() throws Throwable {
+          setupCalled = false;
+          teardownCalled = false;
+          base.evaluate();
+
+          // I assume we don't want to check teardown chaining if something happens in the
+          // test because this would obscure the original exception?
+          if (!setupCalled) { 
+            Assert.fail("One of the overrides of setUp does not propagate the call.");
+          }
+          if (!teardownCalled) { 
+            Assert.fail("One of the overrides of tearDown does not propagate the call.");
+          }
+        }
+      };
+    }
+  }
+
+  /**
+   * For subclassing only. Overrides must call {@code super.setUp()}.
+   */
+  @Before
+  public void setUp() throws Exception {
+    setupCalled = true;
+  }
+
+  /**
+   * For subclassing only. Overrides must call {@code super.tearDown()}.
+   */
   @After
   public void tearDown() throws Exception {
-    State oldState = state; // capture test execution state
-    state = State.TEARDOWN; // set the state for subsequent tests
-    
-    // NOTE: with junit 4.7, we don't get a reproduceWith because our Watchman
-    // does not know if something fails in tearDown. so we ensure this happens ourselves for now.
-    // we can remove this if we upgrade to 4.8
-    Throwable problem = null;
-    
-    try {
-      if (!testsFailed) {
-        // Note: we allow a test to go straight from SETUP -> TEARDOWN (without ever entering the RANTEST state)
-        // because if you assume() inside setUp(), it skips the test and the TestWatchman has no way to know...
-        assertTrue("ensure your setUp() calls super.setUp()!!!", oldState == State.RANTEST || oldState == State.SETUP);
-      }
-    } catch (Throwable t) {
-      if (problem == null) problem = t;
-    }
+    teardownCalled = true;
+  }
 
+  /**
+   * Clean up after tests.
+   */
+  private final void tearDownInternal() throws Exception {
+    Throwable problem = null;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
 
     // this won't throw any exceptions or fail the test
@@ -588,8 +674,8 @@ public abstract class LuceneTestCase extends Assert {
     purgeFieldCache(FieldCache.DEFAULT);
     
     if (problem != null) {
-      testsFailed = true;
       reportAdditionalFailureInfo();
+      // TODO: simply rethrow problem, without wrapping?
       throw new RuntimeException(problem);
     }
   }
@@ -795,7 +881,7 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   public static void assumeTrue(String msg, boolean b) {
-    Assume.assumeNoException(b ? null : new _TestIgnoredException(msg));
+    Assume.assumeNoException(b ? null : new InternalAssumptionViolatedException(msg));
   }
  
   public static void assumeFalse(String msg, boolean b) {
@@ -803,7 +889,7 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   public static void assumeNoException(String msg, Exception e) {
-    Assume.assumeNoException(e == null ? null : new _TestIgnoredException(msg, e));
+    Assume.assumeNoException(e == null ? null : new InternalAssumptionViolatedException(msg, e));
   }
 
   public static <T> Set<T> asSet(T... args) {
@@ -1337,5 +1423,4 @@ public abstract class LuceneTestCase extends Assert {
       return true;
     }
   }
-  
 }
