@@ -36,7 +36,7 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.experimental
  */
-public final class Ints {
+final class Ints {
   protected static final String CODEC_NAME = "Ints";
   protected static final int VERSION_START = 0;
   protected static final int VERSION_CURRENT = VERSION_START;

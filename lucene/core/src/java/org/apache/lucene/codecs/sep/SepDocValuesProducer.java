@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.lucene.codecs.DocValuesReaderBase;
+import org.apache.lucene.codecs.lucene40.values.DocValuesReaderBase;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.IOUtils;

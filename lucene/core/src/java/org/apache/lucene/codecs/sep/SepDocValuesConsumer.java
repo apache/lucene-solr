@@ -21,8 +21,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.codecs.DocValuesWriterBase;
-import org.apache.lucene.codecs.lucene40.values.Writer;
+import org.apache.lucene.codecs.lucene40.values.DocValuesWriterBase;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -67,10 +66,10 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
           case BYTES_FIXED_SORTED:
           case BYTES_VAR_SORTED:
             files.add(IndexFileNames.segmentFileName(filename, "",
-                Writer.INDEX_EXTENSION));
+                INDEX_EXTENSION));
             try {
             assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
-                Writer.INDEX_EXTENSION));
+                INDEX_EXTENSION));
             } catch (IOException e) {
               // don't throw checked exception - dir is only used in assert 
               throw new RuntimeException(e);
@@ -85,10 +84,10 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
           case FIXED_INTS_64:
           case FIXED_INTS_8:
             files.add(IndexFileNames.segmentFileName(filename, "",
-                Writer.DATA_EXTENSION));
+                DATA_EXTENSION));
           try {
             assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
-                Writer.DATA_EXTENSION));
+                DATA_EXTENSION));
           } catch (IOException e) {
             // don't throw checked exception - dir is only used in assert
             throw new RuntimeException(e);

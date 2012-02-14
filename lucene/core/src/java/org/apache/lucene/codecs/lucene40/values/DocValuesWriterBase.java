@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs;
+package org.apache.lucene.codecs.lucene40.values;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,6 +20,8 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.lucene40.values.Writer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.PerDocWriteState;
@@ -34,12 +36,21 @@ import org.apache.lucene.util.Counter;
  *
  * @lucene.experimental
  */
-//TODO: this needs to go under lucene40 codec (its specific to its impl)
 public abstract class DocValuesWriterBase extends PerDocConsumer {
   protected final String segmentName;
   private final Counter bytesUsed;
   protected final IOContext context;
   private final boolean fasterButMoreRam;
+
+  /**
+   * Filename extension for index files
+   */
+  public static final String INDEX_EXTENSION = "idx";
+  
+  /**
+   * Filename extension for data files.
+   */
+  public static final String DATA_EXTENSION = "dat";
 
   /**
    * @param state The state to initiate a {@link PerDocConsumer} instance

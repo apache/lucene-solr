@@ -20,7 +20,7 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.codecs.DocValuesWriterBase;
+import org.apache.lucene.codecs.lucene40.values.DocValuesWriterBase;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;

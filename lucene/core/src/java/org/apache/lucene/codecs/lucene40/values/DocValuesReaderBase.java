@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs;
+package org.apache.lucene.codecs.lucene40.values;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.lucene40.values.Bytes;
 import org.apache.lucene.codecs.lucene40.values.Floats;
 import org.apache.lucene.codecs.lucene40.values.Ints;
@@ -39,7 +40,6 @@ import org.apache.lucene.util.BytesRef;
  * Abstract base class for PerDocProducer implementations
  * @lucene.experimental
  */
-// TODO: this needs to go under lucene40 codec (its specific to its impl)
 public abstract class DocValuesReaderBase extends PerDocProducer {
 
   protected abstract void closeInternal(Collection<? extends Closeable> closeables) throws IOException;

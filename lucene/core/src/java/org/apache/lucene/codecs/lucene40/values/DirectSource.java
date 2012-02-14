@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene40.values;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.store.IndexInput;
@@ -29,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
  * Base class for disk resident source implementations
  * @lucene.internal
  */
-public abstract class DirectSource extends Source {
+abstract class DirectSource extends Source {
 
   protected final IndexInput data;
   private final ToNumeric toNumeric;

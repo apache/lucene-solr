@@ -23,13 +23,13 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene40.values.BytesRefUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -135,13 +135,17 @@ public class TestTypePromotion extends LuceneTestCase {
           value = bytes.bytes[bytes.offset];
           break;
         case 2:
-          value = BytesRefUtils.asShort(bytes);
+          value = ((bytes.bytes[bytes.offset] & 0xFF) << 8) | (bytes.bytes[bytes.offset+1] & 0xFF);
           break;
         case 4:
-          value = BytesRefUtils.asInt(bytes);
+          value = ((bytes.bytes[bytes.offset] & 0xFF) << 24)  | ((bytes.bytes[bytes.offset+1] & 0xFF) << 16)
+                | ((bytes.bytes[bytes.offset+2] & 0xFF) << 8) | (bytes.bytes[bytes.offset+3] & 0xFF);
           break;
         case 8:
-          value = BytesRefUtils.asLong(bytes);
+          value =  (((long)(bytes.bytes[bytes.offset] & 0xff) << 56) | ((long)(bytes.bytes[bytes.offset+1] & 0xff) << 48) |
+                  ((long)(bytes.bytes[bytes.offset+2] & 0xff) << 40) | ((long)(bytes.bytes[bytes.offset+3] & 0xff) << 32) |
+                  ((long)(bytes.bytes[bytes.offset+4] & 0xff) << 24) | ((long)(bytes.bytes[bytes.offset+5] & 0xff) << 16) |
+                  ((long)(bytes.bytes[bytes.offset+6] & 0xff) <<  8) | ((long)(bytes.bytes[bytes.offset+7] & 0xff)));
           break;
           
         default:
@@ -243,20 +247,27 @@ public class TestTypePromotion extends LuceneTestCase {
       case BYTES_FIXED_SORTED:
       case BYTES_FIXED_STRAIGHT:
         values[i] = random.nextLong();
-        BytesRefUtils.copyLong(ref, values[i]);
-        valField.setValue(ref);
+        byte bytes[] = new byte[8];
+        ByteArrayDataOutput out = new ByteArrayDataOutput(bytes, 0, 8);
+        out.writeLong(values[i]);
+        valField.setValue(new BytesRef(bytes));
         break;
       case BYTES_VAR_DEREF:
       case BYTES_VAR_SORTED:
       case BYTES_VAR_STRAIGHT:
+        byte lbytes[] = new byte[8];
+        ByteArrayDataOutput lout = new ByteArrayDataOutput(lbytes, 0, 8);
+        final int len;
         if (random.nextBoolean()) {
-          BytesRefUtils.copyInt(ref, random.nextInt());
-          values[i] = BytesRefUtils.asInt(ref);
+          values[i] = random.nextInt();
+          lout.writeInt((int)values[i]);
+          len = 4;
         } else {
-          BytesRefUtils.copyLong(ref, random.nextLong());
-          values[i] = BytesRefUtils.asLong(ref);
+          values[i] = random.nextLong();
+          lout.writeLong(values[i]);
+          len = 8;
         }
-        valField.setValue(ref);
+        valField.setValue(new BytesRef(lbytes, 0, len));
         break;
 
       default:

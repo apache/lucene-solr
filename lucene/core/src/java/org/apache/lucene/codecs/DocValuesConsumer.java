@@ -18,7 +18,6 @@ package org.apache.lucene.codecs;
  */
 import java.io.IOException;
 
-import org.apache.lucene.codecs.lucene40.values.Writer;
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.Source;
@@ -155,7 +154,7 @@ public abstract class DocValuesConsumer {
    * <p>
    * All documents IDs between the given ID and the previously given ID or
    * <tt>0</tt> if the method is call the first time are filled with default
-   * values depending on the {@link Writer} implementation. The given document
+   * values depending on the implementation. The given document
    * ID must always be greater than the previous ID or <tt>0</tt> if called the
    * first time.
    */

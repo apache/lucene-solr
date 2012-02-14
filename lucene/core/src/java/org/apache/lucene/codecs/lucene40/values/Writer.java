@@ -38,7 +38,7 @@ import org.apache.lucene.util.Counter;
  * 
  * @lucene.experimental
  */
-public abstract class Writer extends DocValuesConsumer {
+abstract class Writer extends DocValuesConsumer {
   protected final Counter bytesUsed;
 
   /**
@@ -52,16 +52,6 @@ public abstract class Writer extends DocValuesConsumer {
   protected Writer(Counter bytesUsed) {
     this.bytesUsed = bytesUsed;
   }
-
-  /**
-   * Filename extension for index files
-   */
-  public static final String INDEX_EXTENSION = "idx";
-  
-  /**
-   * Filename extension for data files.
-   */
-  public static final String DATA_EXTENSION = "dat";
 
   /**
    * Factory method to create a {@link Writer} instance for a given type. This

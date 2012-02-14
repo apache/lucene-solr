@@ -64,7 +64,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * 
  * @lucene.experimental
  */
-public final class Bytes {
+final class Bytes {
 
   static final String DV_SEGMENT_SUFFIX = "dv";
 
@@ -256,7 +256,7 @@ public final class Bytes {
         boolean success = false;
         try {
           datOut = dir.createOutput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
-              DATA_EXTENSION), context);
+              DocValuesWriterBase.DATA_EXTENSION), context);
           CodecUtil.writeHeader(datOut, codecName, version);
           success = true;
         } finally {
@@ -281,7 +281,7 @@ public final class Bytes {
       try {
         if (idxOut == null) {
           idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
-              INDEX_EXTENSION), context);
+              DocValuesWriterBase.INDEX_EXTENSION), context);
           CodecUtil.writeHeader(idxOut, codecName, version);
         }
         success = true;
@@ -331,11 +331,11 @@ public final class Bytes {
       boolean success = false;
       try {
         dataIn = dir.openInput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
-                                                              Writer.DATA_EXTENSION), context);
+                                                              DocValuesWriterBase.DATA_EXTENSION), context);
         version = CodecUtil.checkHeader(dataIn, codecName, maxVersion, maxVersion);
         if (doIndex) {
           indexIn = dir.openInput(IndexFileNames.segmentFileName(id, DV_SEGMENT_SUFFIX,
-                                                                 Writer.INDEX_EXTENSION), context);
+                                                                 DocValuesWriterBase.INDEX_EXTENSION), context);
           final int version2 = CodecUtil.checkHeader(indexIn, codecName,
                                                      maxVersion, maxVersion);
           assert version == version2;

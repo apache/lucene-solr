@@ -25,7 +25,7 @@ import org.apache.lucene.util.BytesRef;
  * 
  * @lucene.internal
  */
-public final class BytesRefUtils {
+final class BytesRefUtils {
 
   private BytesRefUtils() {
   }

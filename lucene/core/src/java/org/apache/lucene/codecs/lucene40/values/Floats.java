@@ -39,7 +39,7 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.experimental
  */
-public class Floats {
+class Floats {
   
   protected static final String CODEC_NAME = "Floats";
   protected static final int VERSION_START = 0;
