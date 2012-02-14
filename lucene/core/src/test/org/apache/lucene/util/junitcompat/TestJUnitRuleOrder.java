@@ -40,7 +40,7 @@ public class TestJUnitRuleOrder extends WithNestedTests {
 
     @Rule
     public TestRule testRule = new TestRule() {
-      @Override
+      // @Override
       public Statement apply(final Statement base, Description description) {
         return new Statement() {
           public void evaluate() throws Throwable {

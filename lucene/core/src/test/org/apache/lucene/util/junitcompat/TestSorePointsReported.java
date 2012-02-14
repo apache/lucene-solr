@@ -32,7 +32,7 @@ public class TestSorePointsReported extends WithNestedTests {
 
     @Rule
     public TestRule rule = new TestRule() {
-      @Override
+      // @Override
       public Statement apply(final Statement base, Description description) {
         return new Statement() {
           public void evaluate() throws Throwable {
