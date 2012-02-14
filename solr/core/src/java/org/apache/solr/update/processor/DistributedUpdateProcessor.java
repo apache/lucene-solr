@@ -530,7 +530,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       Map<String,Slice> slices = zkController.getCloudState().getSlices(collection);
 
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-      params.set("dbqlevel", 2);
+      params.set(DELETE_BY_QUERY_LEVEL, 2);
 
       List<Node> leaders =  new ArrayList<Node>(slices.size());
       for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
@@ -616,7 +616,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // forward to all replicas
           if (replicas != null) {
             ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-            params.set("dbqlevel", 3);
+            params.set(DELETE_BY_QUERY_LEVEL, 3);
             params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
             params.set(SEEN_LEADER, "true");
             cmdDistrib.distribDelete(cmd, replicas, params);
