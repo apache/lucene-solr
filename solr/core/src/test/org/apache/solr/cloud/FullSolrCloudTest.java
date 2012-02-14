@@ -698,8 +698,14 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   
   private void brindDownShardIndexSomeDocsAndRecover() throws Exception,
       SolrServerException, IOException, InterruptedException {
+    SolrQuery query = new SolrQuery("*:*");
+    query.set("distrib", false);
     
     commit();
+    
+    long deadShardCount = shardToClient.get(SHARD2).get(0).query(query).getResults().getNumFound();
+    System.out.println("dsc:" + deadShardCount);
+    
     query("q", "*:*", "sort", "n_tl1 desc");
     
     // kill a shard
@@ -715,7 +721,6 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
 	
     // ensure shard is dead
     try {
-      // TODO: ignore fail
       index_specific(shardToClient.get(SHARD2).get(0), id, 999, i1, 107, t1,
           "specific doc!");
       fail("This server should be down and this update should have failed");
@@ -743,6 +748,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       Thread.sleep(1000);
     }
 	
+    long numFound1 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     
     index_specific(shardToClient.get(SHARD2).get(1), id, 1000, i1, 108, t1,
         "specific doc!");
@@ -755,8 +761,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     // try adding a doc with CloudSolrServer
     cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
-    SolrQuery query = new SolrQuery("*:*");
-    long numFound1 = cloudClient.query(query).getResults().getNumFound();
+
+    long numFound2 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    
+    assertEquals(numFound1 + 1, numFound2);
     
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", 1001);
@@ -772,10 +780,10 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     
     query("q", "*:*", "sort", "n_tl1 desc");
     
-    long numFound2 = cloudClient.query(query).getResults().getNumFound();
+    long numFound3 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     
     // lets just check that the one doc since last commit made it in...
-    assertEquals(numFound1 + 1, numFound2);
+    assertEquals(numFound2 + 1, numFound3);
     
     // test debugging
     testDebugQueries();
@@ -786,7 +794,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       for (SolrServer client : clients) {
         try {
-          System.out.println(client.query(new SolrQuery("*:*")).getResults()
+          SolrQuery q = new SolrQuery("*:*");
+          q.set("distrib", false);
+          System.out.println(client.query(q).getResults()
               .getNumFound());
         } catch (Exception e) {
           
@@ -798,21 +808,41 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
     
     // this should trigger a recovery phase on deadShard
-    
     deadShard.start(true);
     
-    // make sure we have published we are recoverying
+    // make sure we have published we are recovering
     Thread.sleep(1500);
     
     waitForRecoveriesToFinish(false);
     
-    List<SolrServer> s2c = shardToClient.get(SHARD2);
-    
+    deadShardCount = shardToClient.get(SHARD2).get(0).query(query).getResults().getNumFound();
     // if we properly recovered, we should now have the couple missing docs that
     // came in while shard was down
-    assertEquals(s2c.get(0).query(new SolrQuery("*:*")).getResults()
-        .getNumFound(), s2c.get(1).query(new SolrQuery("*:*")).getResults()
-        .getNumFound());
+    checkShardConsistency(true, false);
+    
+    
+    // recover over 100 docs so we do more than just peer sync (replicate recovery)
+    deadShard = chaosMonkey.stopShard(SHARD2, 0);
+    
+    for (int i = 0; i < 226; i++) {
+      doc = new SolrInputDocument();
+      doc.addField("id", 2000 + i);
+      controlClient.add(doc);
+      ureq = new UpdateRequest();
+      ureq.add(doc);
+      // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
+      ureq.process(cloudClient);
+    }
+    commit();
+    
+    deadShard.start(true);
+    
+    // make sure we have published we are recovering
+    Thread.sleep(1500);
+    
+    waitForRecoveriesToFinish(false);
+    
+    checkShardConsistency(true, false);
   }
   
   private void testDebugQueries() throws Exception {
