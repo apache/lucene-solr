@@ -75,7 +75,7 @@ the Apache CXF project and is Apache License 2.0.
 The Google Code Prettify is Apache License 2.0.
 See http://code.google.com/p/google-code-prettify/
 
-JUnit (under lib/junit-4.7.jar) is licensed under the Common Public License v. 1.0
+JUnit (under lib/junit-4.10.jar) is licensed under the Common Public License v. 1.0
 See http://junit.sourceforge.net/cpl-v10.html
 
 JLine (under contrib/lucli/lib/jline.jar) is licensed under the BSD License.

@@ -34,7 +34,7 @@
 #include <sys/types.h>  // constants for open
 #include <sys/stat.h>  // constants for open
 
-// java -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/java:./build/classes/demo -Dlucene.version=2.9-dev -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.TestDoc
+// java -cp .:lib/junit-4.10.jar:./build/classes/test:./build/classes/java:./build/classes/demo -Dlucene.version=2.9-dev -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.TestDoc
 
 #ifdef LINUX
 /*
