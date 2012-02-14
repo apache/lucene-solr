@@ -69,11 +69,6 @@ Changes in backwards compatibility policy
   IndexCommit.getTimestamp and .getVersion and
   IndexReader.lastModified and getCurrentVersion (Andrzej Bialecki,
   Robert Muir, Mike McCandless)
-
-* LUCENE-3761: Generalize SearcherManager into an abstract ReferenceManager.
-  SearcherManager remains a concrete class, but due to the refactoring, the 
-  method maybeReopen has been deprecated in favor of maybeRefresh().
-  (Shai Erera, Mike McCandless, Simon Willnauer)
   
 Security fixes
 
@@ -119,6 +114,11 @@ API Changes
   passed to ctor only; if an app needs to mix and match it's free to
   create two NRTManagers (one always applying deletes and the other
   never applying deletes).  (MJB, Shai Erera, Mike McCandless)
+
+* LUCENE-3761: Generalize SearcherManager into an abstract ReferenceManager.
+  SearcherManager remains a concrete class, but due to the refactoring, the 
+  method maybeReopen has been deprecated in favor of maybeRefresh().
+  (Shai Erera, Mike McCandless, Simon Willnauer)
 
 New Features
 
