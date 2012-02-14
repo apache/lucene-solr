@@ -29,6 +29,7 @@
           <exclude name="**/build/**" />
           <exclude name="**/dist/**" />
           <exclude name="**/src/**" />
+          <exclude name="**/work/**" />
           <additional-excludes />
         </fileset>
 
