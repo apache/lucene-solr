@@ -781,8 +781,13 @@
   <target name="default" depends="jar-core"/>
 
   <available type="file" file="pom.xml" property="pom.xml.present"/>
+
+  <!-- TODO, this is really unintuitive how we depend on a target that does not exist -->
+  <target name="javadocs">
+  	<fail message="You must redefine the javadocs task to do something!!!!!"/>
+  </target>
   
-  <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src">
+  <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src, javadocs">
     <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
              uri="antlib:org.apache.maven.artifact.ant" 
              classpathref="maven-ant-tasks.classpath"/>
