@@ -372,6 +372,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     // TODO: look into why passing true causes fails
     params.set("distrib", "false");
     final QueryResponse controlRsp = controlClient.query(params);
+    validateControlData(controlRsp);
 
     params.remove("distrib");
     setDistributedParams(params);
@@ -679,6 +680,19 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       o[i * 2 + 1] = randVals[i].uval();
     }
     return o;
+  }
+  
+  /**
+   * Implementations can pre-test the control data for basic correctness before using it
+   * as a check for the shard data.  This is useful, for instance, if a test bug is introduced
+   * causing a spelling index not to get built:  both control & shard data would have no results
+   * but because they match the test would pass.  This method gives us a chance to ensure something
+   * exists in the control data.
+   * 
+   * @throws Exception
+   */
+  public void validateControlData(QueryResponse control) throws Exception {
+    /* no-op */
   }
 
   public static abstract class RandVal {
