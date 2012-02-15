@@ -17,36 +17,37 @@
 -->
 <analysisEngineDescription xmlns="http://uima.apache.org/resourceSpecifier">
   <frameworkImplementation>org.apache.uima.java</frameworkImplementation>
-  <primitive>false</primitive>
-  <delegateAnalysisEngineSpecifiers>
-    <delegateAnalysisEngine key="WhitespaceTokenizer">
-      <import name="WhitespaceTokenizer"/>
-    </delegateAnalysisEngine>
-    <delegateAnalysisEngine key="DummyPoSTagger">
-      <import location="DummyPoSTagger.xml"/>
-    </delegateAnalysisEngine>
-  </delegateAnalysisEngineSpecifiers>
+  <primitive>true</primitive>
+  <annotatorImplementationName>org.apache.lucene.analysis.uima.an.SampleWSTokenizerAnnotator</annotatorImplementationName>
   <analysisEngineMetaData>
-    <name>AggregateSentenceAE</name>
-    <description/>
+    <name>DummyPoSTagger</name>
     <version>1.0</version>
-    <vendor/>
-    <configurationParameterSettings/>
-    <flowConstraints>
-      <fixedFlow>
-        <node>WhitespaceTokenizer</node>
-        <node>DummyPoSTagger</node>
-      </fixedFlow>
-    </flowConstraints>
-    <fsIndexCollection/>
+    <vendor>ASF</vendor>
+    <typeSystemDescription>
+      <types>
+        <typeDescription>
+          <name>org.apache.lucene.uima.ts.TokenAnnotation</name>
+          <supertypeName>uima.tcas.Annotation</supertypeName>
+          <features>
+            <featureDescription>
+              <name>pos</name>
+              <rangeTypeName>uima.cas.String</rangeTypeName>
+            </featureDescription>
+          </features>
+        </typeDescription>
+        <typeDescription>
+          <name>org.apache.lucene.uima.ts.SentenceAnnotation</name>
+          <supertypeName>uima.tcas.Annotation</supertypeName>
+        </typeDescription>
+      </types>
+    </typeSystemDescription>
     <capabilities>
       <capability>
         <inputs/>
         <outputs>
-          <type allAnnotatorFeatures="true">org.apache.uima.SentenceAnnotation</type>
-          <type allAnnotatorFeatures="true">org.apache.uima.TokenAnnotation</type>
+          <type allAnnotatorFeatures="true">org.apache.lucene.uima.ts.TokenAnnotation</type>
+          <type allAnnotatorFeatures="true">org.apache.lucene.uima.ts.SentenceAnnotation</type>
         </outputs>
-        <languagesSupported/>
       </capability>
     </capabilities>
     <operationalProperties>
@@ -55,5 +56,4 @@
       <outputsNewCASes>false</outputsNewCASes>
     </operationalProperties>
   </analysisEngineMetaData>
-  <resourceManagerConfiguration/>
 </analysisEngineDescription>

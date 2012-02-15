@@ -118,7 +118,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
   @Test
   public void testRandomStrings() throws Exception {
-    checkRandomData(random, new UIMABaseAnalyzer("/uima/AggregateSentenceAE.xml", "org.apache.uima.TokenAnnotation"),
+    checkRandomData(random, new UIMABaseAnalyzer("/uima/TestAggregateSentenceAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation"),
         1000 * RANDOM_MULTIPLIER);
   }
 

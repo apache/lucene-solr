@@ -28,8 +28,8 @@ import static org.junit.Assert.assertNotNull;
 public class BasicAEProviderTest {
 
   @Test
-  public void testBasicInititalization() throws Exception {
-    AEProvider basicAEProvider = new BasicAEProvider("/uima/DummyEntityAE.xml");
+  public void testBasicInitialization() throws Exception {
+    AEProvider basicAEProvider = new BasicAEProvider("/uima/TestEntityAnnotatorAE.xml");
     AnalysisEngine analysisEngine = basicAEProvider.getAE();
     assertNotNull(analysisEngine);
   }

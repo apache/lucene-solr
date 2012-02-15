@@ -18,18 +18,16 @@
 <analysisEngineDescription xmlns="http://uima.apache.org/resourceSpecifier">
   <frameworkImplementation>org.apache.uima.java</frameworkImplementation>
   <primitive>true</primitive>
-  <annotatorImplementationName>org.apache.lucene.analysis.uima.an.DummyEntityAnnotator</annotatorImplementationName>
+  <annotatorImplementationName>org.apache.lucene.analysis.uima.an.SampleEntityAnnotator</annotatorImplementationName>
   <analysisEngineMetaData>
     <name>DummyPoSTagger</name>
     <description/>
     <version>1.0</version>
     <vendor>ASF</vendor>
-    <configurationParameters/>
-    <configurationParameterSettings/>
     <typeSystemDescription>
       <types>
         <typeDescription>
-          <name>org.apache.solr.uima.ts.EntityAnnotation</name>
+          <name>org.apache.lucene.uima.ts.EntityAnnotation</name>
           <description/>
           <supertypeName>uima.tcas.Annotation</supertypeName>
           <features>
@@ -47,13 +45,13 @@
         </typeDescription>
       </types>
     </typeSystemDescription>
-    <typePriorities/>
-    <fsIndexCollection/>
     <capabilities>
       <capability>
-        <inputs/>
+        <inputs>
+          <type allAnnotatorFeatures="true">org.apache.lucene.uima.ts.TokenAnnotation</type>
+        </inputs>
         <outputs>
-          <type allAnnotatorFeatures="true">org.apache.solr.uima.ts.EntityAnnotation</type>
+          <type allAnnotatorFeatures="true">org.apache.lucene.uima.ts.EntityAnnotation</type>
         </outputs>
         <languagesSupported/>
       </capability>

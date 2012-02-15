@@ -17,27 +17,33 @@
 -->
 <analysisEngineDescription xmlns="http://uima.apache.org/resourceSpecifier">
   <frameworkImplementation>org.apache.uima.java</frameworkImplementation>
-  <primitive>true</primitive>
-  <annotatorImplementationName>org.apache.lucene.analysis.uima.an.DummyPoSTagger</annotatorImplementationName>
+  <primitive>false</primitive>
+  <delegateAnalysisEngineSpecifiers>
+    <delegateAnalysisEngine key="WhitespaceTokenizer">
+      <import location="TestWSTokenizerAE.xml"/>
+    </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="PoSTagger">
+      <import location="TestPoSTaggerAE.xml"/>
+    </delegateAnalysisEngine>
+  </delegateAnalysisEngineSpecifiers>
   <analysisEngineMetaData>
-    <name>DummyPoSTagger</name>
+    <name>TestAggregateSentenceAE</name>
     <description/>
     <version>1.0</version>
     <vendor>ASF</vendor>
-    <configurationParameters/>
-    <configurationParameterSettings/>
-    <typeSystemDescription/>
-    <typePriorities/>
-    <fsIndexCollection/>
+    <flowConstraints>
+      <fixedFlow>
+        <node>WhitespaceTokenizer</node>
+        <node>PoSTagger</node>
+      </fixedFlow>
+    </flowConstraints>
     <capabilities>
       <capability>
-        <inputs>
-          <type allAnnotatorFeatures="true">org.apache.uima.TokenAnnotation</type>
-        </inputs>
+        <inputs/>
         <outputs>
-          <type allAnnotatorFeatures="true">org.apache.uima.TokenAnnotation</type>
+          <type allAnnotatorFeatures="true">org.apache.lucene.uima.ts.SentenceAnnotation</type>
+          <type allAnnotatorFeatures="true">org.apache.lucene.uima.ts.TokenAnnotation</type>
         </outputs>
-        <languagesSupported/>
       </capability>
     </capabilities>
     <operationalProperties>
@@ -46,5 +52,4 @@
       <outputsNewCASes>false</outputsNewCASes>
     </operationalProperties>
   </analysisEngineMetaData>
-  <resourceManagerConfiguration/>
 </analysisEngineDescription>

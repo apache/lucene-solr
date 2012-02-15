@@ -34,7 +34,7 @@ public class OverridingParamsAEProviderTest {
   @Test
   public void testNullMapInitialization() throws Exception {
     try {
-      AEProvider aeProvider = new OverridingParamsAEProvider("/uima/DummyEntityAE.xml", null);
+      AEProvider aeProvider = new OverridingParamsAEProvider("/uima/TestEntityAnnotatorAE.xml", null);
       aeProvider.getAE();
       fail("should fail due to null Map passed");
     } catch (ResourceInitializationException e) {
@@ -44,7 +44,7 @@ public class OverridingParamsAEProviderTest {
 
   @Test
   public void testEmptyMapInitialization() throws Exception {
-    AEProvider aeProvider = new OverridingParamsAEProvider("/uima/DummyEntityAE.xml", new HashMap<String, Object>());
+    AEProvider aeProvider = new OverridingParamsAEProvider("/uima/TestEntityAnnotatorAE.xml", new HashMap<String, Object>());
     AnalysisEngine analysisEngine = aeProvider.getAE();
     assertNotNull(analysisEngine);
   }
