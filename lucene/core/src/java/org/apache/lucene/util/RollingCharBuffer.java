@@ -74,6 +74,7 @@ public final class RollingCharBuffer {
       if (count == buffer.length) {
         // Grow
         final char[] newBuffer = new char[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_CHAR)];
+        System.out.println(Thread.currentThread().getName() + ": cb grow " + newBuffer.length);
         System.arraycopy(buffer, nextWrite, newBuffer, 0, buffer.length - nextWrite);
         System.arraycopy(buffer, 0, newBuffer, buffer.length - nextWrite, nextWrite);
         nextWrite = buffer.length;
