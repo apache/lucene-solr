@@ -49,8 +49,8 @@ public abstract class WithNestedTests {
   
   protected PrintStream prevSysErr;
   protected PrintStream prevSysOut;
-  protected ByteArrayOutputStream sysout;
-  protected ByteArrayOutputStream syserr;
+  private ByteArrayOutputStream sysout;
+  private ByteArrayOutputStream syserr;
 
   @Before
   public final void before() {

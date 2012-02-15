@@ -534,7 +534,7 @@ public abstract class LuceneTestCase extends Assert {
 
     private void starting(Description description) {
       // set current method name for logging
-      LuceneTestCase.this.name = description.getDisplayName();
+      LuceneTestCase.this.name = description.getMethodName();
     }
 
     private void ending(Description description) {
