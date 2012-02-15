@@ -45,7 +45,7 @@ public class AEProviderFactory {
    *
    * @param keyPrefix
    * @param aePath
-   * @return
+   * @return AEProvider
    */
   public synchronized AEProvider getAEProvider(String keyPrefix, String aePath) {
     String key = new StringBuilder(keyPrefix).append(aePath).append(BasicAEProvider.class).toString();
@@ -60,7 +60,7 @@ public class AEProviderFactory {
    * @param keyPrefix
    * @param aePath
    * @param runtimeParameters
-   * @return
+   * @return AEProvider
    */
   public synchronized AEProvider getAEProvider(String keyPrefix, String aePath,
           Map<String, Object> runtimeParameters) {

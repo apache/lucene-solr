@@ -37,6 +37,8 @@
 	<classpathentry kind="src" path="modules/analysis/stempel/src/test"/>
 	<classpathentry kind="src" path="modules/analysis/morfologik/src/java"/>
 	<classpathentry kind="src" path="modules/analysis/morfologik/src/test"/>
+	<classpathentry kind="src" path="modules/analysis/uima/src/java"/>
+	<classpathentry kind="src" path="modules/analysis/uima/src/test"/>
 	<classpathentry kind="src" path="modules/benchmark/src/java"/>
 	<classpathentry kind="src" path="modules/benchmark/src/test"/>
 	<classpathentry kind="src" path="modules/facet/src/java"/>

@@ -28,7 +28,7 @@ public interface AEProvider {
 
   /**
    *
-   * @return
+   * @return AnalysisEngine
    * @throws ResourceInitializationException
    */
   public AnalysisEngine getAE() throws ResourceInitializationException;
