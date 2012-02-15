@@ -178,7 +178,7 @@
   </condition>
   <property name="junit.parallel.selector" value="org.apache.lucene.util.LuceneJUnitDividingSelector"/>
 
-  <property name="manifest.file" location="${common.dir}/build/MANIFEST.MF"/>
+  <property name="manifest.file" location="${build.dir}/MANIFEST.MF"/>
 
   <!-- 
     we attempt to exec svnversion to get details build information
@@ -386,8 +386,9 @@
   	<attribute name="title"/>
     <attribute name="implementation.title"/>
     <attribute name="spec.version"/>
+    <attribute name="manifest.file" default="${manifest.file}"/>
     <sequential>
-      <manifest file="${manifest.file}">
+      <manifest file="@{manifest.file}">
         <!--
         http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
         http://java.sun.com/j2se/1.5.0/docs/guide/versioning/spec/versioning2.html
@@ -434,6 +435,7 @@
     <attribute name="metainf.source.dir" default="${common.dir}"/>
     <attribute name="implementation.title" default="org.apache.lucene"/>
     <attribute name="spec.version" default="${spec.version}"/>
+    <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="nested" optional="true" implicit="true"/>
     <sequential>
       <!-- If possible, include the svnversion -->
@@ -444,11 +446,12 @@
       
       <build-manifest title="@{title}"
                       implementation.title="@{implementation.title}"
-                      spec.version="@{spec.version}"/>
+                      spec.version="@{spec.version}"
+                      manifest.file="@{manifest.file}"/>
     	
       <jar destfile="@{destfile}"
            basedir="@{basedir}"
-           manifest="${manifest.file}"
+           manifest="@{manifest.file}"
            excludes="@{excludes}">
         <metainf dir="@{metainf.source.dir}" includes="LICENSE.txt,NOTICE.txt"/>
         <nested />

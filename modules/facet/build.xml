@@ -64,8 +64,9 @@
   
   <target name="jar-examples" depends="compile-examples">
     <jarify basedir="${build.dir}/classes/examples" 
-          destfile="${build.dir}/${final.name}-examples.jar" 
-          title="Lucene Search Engine: ${ant.project.name}-examples">
+            destfile="${build.dir}/${final.name}-examples.jar" 
+            title="Lucene Search Engine: ${ant.project.name}-examples"
+            manifest.file="${build.dir}/EXAMPLES-MANIFEST.MF">
       <fileset dir="src/examples" />
     </jarify>
   </target>

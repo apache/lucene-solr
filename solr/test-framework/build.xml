@@ -59,12 +59,7 @@
           <packageset dir="${src.dir}"/>
         </sources>
       </invoke-javadoc>
-      <jarify basedir="${javadoc.dir}"
-              destfile="${build.dir}/${final.name}-javadoc.jar"
-              title="Apache Solr Search Server: ${ant.project.name}"
-              metainf.source.dir="${common-solr.dir}"
-              implementation.title="org.apache.solr"
-              spec.version="${solr.spec.version}"/>
+      <solr-jarify basedir="${javadoc.dir}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
       <mkdir dir="${dest}/docs/api/test-framework"/>
       <copy todir="${dest}/docs/api/test-framework">
         <fileset dir="${javadoc.dir}"/>

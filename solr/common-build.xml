@@ -43,7 +43,6 @@
   <property name="package.dir" location="${common-solr.dir}/package"/>
   <property name="maven.dist.dir" location="${package.dir}/maven"/>
   <property name="lucene-libs" location="${dest}/lucene-libs" />
-  <property name="manifest.file" location="${dest}/META-INF/MANIFEST.MF"/>
   <property name="tests.userdir" value="src/test-files"/>
   <property name="example" value="${common-solr.dir}/example" />
   <property name="javadoc.dir" location="${build.dir}/docs/api"/>
@@ -162,12 +161,31 @@
   </target>
 
   <!-- Shared core/solrj/test-framework/contrib targets -->
+  
+  <macrodef name="solr-jarify" description="Builds a Solr JAR file">
+    <attribute name="basedir" default="${build.dir}/classes/java"/>
+    <attribute name="destfile" default="${build.dir}/${final.name}.jar"/>
+    <attribute name="title" default="Apache Solr Search Server: ${ant.project.name}"/>
+    <attribute name="excludes" default="**/pom.xml,**/*.iml"/>
+    <attribute name="metainf.source.dir" default="${common-solr.dir}"/>
+    <attribute name="implementation.title" default="org.apache.solr"/>
+    <attribute name="spec.version" default="${solr.spec.version}"/>
+    <attribute name="manifest.file" default="${manifest.file}"/>
+    <element name="nested" optional="true" implicit="true"/>
+    <sequential>
+      <jarify basedir="@{basedir}" destfile="@{destfile}"
+              title="@{title}" excludes="@{excludes}"
+              metainf.source.dir="@{metainf.source.dir}"
+              implementation.title="@{implementation.title}"
+              spec.version="@{spec.version}"
+              manifest.file="@{manifest.file}">
+        <nested/>
+      </jarify>
+    </sequential>
+  </macrodef>
+  
   <target name="jar-core" depends="compile-core">
-    <mkdir dir="${dest}/META-INF/"/>
-    <jarify title="Apache Solr Search Server: ${ant.project.name}"
-            metainf.source.dir="${common-solr.dir}"
-            implementation.title="org.apache.solr"
-            spec.version="${solr.spec.version}"/>
+    <solr-jarify/>
   </target>
 
   <target name="compile-core" depends="prep-lucene-jars,common.compile-core"/>
@@ -194,12 +212,7 @@
           <packageset dir="${src.dir}"/>
         </sources>
       </invoke-javadoc>
-      <jarify basedir="${javadoc.dir}"
-              destfile="${build.dir}/${final.name}-javadoc.jar"
-              title="Apache Solr Search Server: ${ant.project.name}"
-              metainf.source.dir="${common-solr.dir}"
-              implementation.title="org.apache.solr"
-              spec.version="${solr.spec.version}"/>
+      <solr-jarify basedir="${javadoc.dir}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
      </sequential>
   </target>
 
@@ -224,11 +237,7 @@
   </target>
 
   <target name="jar-src" depends="init">
-  	<jarify basedir="${src.dir}"
-            destfile="${build.dir}/${final.name}-src.jar"
-            implementation.title="org.apache.solr"
-            metainf.source.dir="${common-solr.dir}"
-            spec.version="${solr.spec.version}"/>
+  	<solr-jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar"/>
   </target>
 
   <!-- Solr core targets -->
