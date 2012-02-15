@@ -52,7 +52,7 @@ ResetSystemErase
 { "Populate"
     CreateIndex
     { "MAddDocs" AddDoc(2000) > : 20000     
-    ForcMerge(1)
+    ForceMerge(1)
     CloseIndex
 }
 

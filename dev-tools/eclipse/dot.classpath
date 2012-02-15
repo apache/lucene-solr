@@ -41,6 +41,7 @@
 	<classpathentry kind="src" path="modules/analysis/uima/src/test"/>
 	<classpathentry kind="src" path="modules/benchmark/src/java"/>
 	<classpathentry kind="src" path="modules/benchmark/src/test"/>
+	<classpathentry excluding="src" including="conf/**" kind="src" path="modules/benchmark"/>
 	<classpathentry kind="src" path="modules/facet/src/java"/>
 	<classpathentry kind="src" path="modules/facet/src/examples"/>
 	<classpathentry kind="src" path="modules/facet/src/test"/>

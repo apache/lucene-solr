@@ -17,13 +17,26 @@
 
 package org.apache.lucene.benchmark.byTask;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 
+import org.apache.lucene.benchmark.byTask.feeds.AbstractQueryMaker;
+import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
+import org.apache.lucene.benchmark.byTask.feeds.DocData;
+import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Algorithm;
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import conf.ConfLoader;
 
 /** Test very simply that perf tasks are parses as expected. */
 public class TestPerfTasksParse extends LuceneTestCase {
@@ -74,6 +87,58 @@ public class TestPerfTasksParse extends LuceneTestCase {
          assertFalse("sequence for "+parsedTasks+" should be sequential!", ((TaskSequence) task).isParallel());
        }
        assertTrue("Task "+taskStr+" was not found in "+alg.toString(),foundAdd);
+    }
+  }
+  
+  public static class MockContentSource extends ContentSource {
+    public DocData getNextDocData(DocData docData)
+        throws NoMoreDataException, IOException {
+      return docData;
+    }
+    public void close() throws IOException { }
+  }
+
+  public static class MockQueryMaker extends AbstractQueryMaker {
+    protected Query[] prepareQueries() throws Exception {
+      return new Query[0];
+    }
+  }
+  
+  /** Test the parsing of example scripts **/
+  public void testParseExamples() throws Exception {
+    // hackedy-hack-hack
+    boolean foundFiles = false;
+    final File examplesDir = new File(ConfLoader.class.getResource(".").toURI());
+    for (File algFile : examplesDir.listFiles(new FileFilter() {
+      public boolean accept(File pathname) { return pathname.isFile() && pathname.getName().endsWith(".alg"); }
+    })) {
+      try {
+        Config config = new Config(new FileReader(algFile));
+        String contentSource = config.get("content.source", null);
+        if (contentSource != null) { Class.forName(contentSource); }
+        config.set("work.dir", new File(TEMP_DIR,"work").getAbsolutePath());
+        config.set("content.source", MockContentSource.class.getName());
+        String dir = config.get("content.source", null);
+        if (dir != null) { Class.forName(dir); }
+        config.set("directory", RAMDirectory.class.getName());
+        if (config.get("line.file.out", null) != null) {
+          config.set("line.file.out", new File(TEMP_DIR,"o.txt").getAbsolutePath());
+        }
+        if (config.get("query.maker", null) != null) {
+          Class.forName(config.get("query.maker", null));
+          config.set("query.maker", MockQueryMaker.class.getName());
+        }
+        PerfRunData data = new PerfRunData(config);
+        new Algorithm(data);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        fail("Could not parse sample file: " + algFile + " reason:"
+            + t.getClass() + ":" + t.getMessage());
+      }
+      foundFiles = true;
+    }
+    if (!foundFiles) {
+      fail("could not find any .alg files!");
     }
   }
 

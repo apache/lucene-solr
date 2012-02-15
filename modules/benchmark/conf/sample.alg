@@ -62,7 +62,7 @@ log.queries=false
     { "PopulateShort"
         CreateIndex
         { AddDoc(4000) > : 20000
-        ForcMerge(1)
+        ForceMerge(1)
         CloseIndex
     >
 
@@ -71,7 +71,7 @@ log.queries=false
     { "PopulateLong"
         CreateIndex
         { AddDoc(8000) > : 10000
-        ForcMerge(1)
+        ForceMerge(1)
         CloseIndex
     >
 
