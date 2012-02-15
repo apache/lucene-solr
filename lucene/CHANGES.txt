@@ -405,6 +405,11 @@ API Changes
   long instead of int (to enable distributed scoring of > 2B docs).
   (Yonik Seeley, Andrzej Bialecki, Robert Muir)
 
+* LUCENE-3761: Generalize SearcherManager into an abstract ReferenceManager.
+  SearcherManager remains a concrete class, but due to the refactoring, the 
+  method maybeReopen has been deprecated in favor of maybeRefresh().
+  (Shai Erera, Mike McCandless, Simon Willnauer)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
