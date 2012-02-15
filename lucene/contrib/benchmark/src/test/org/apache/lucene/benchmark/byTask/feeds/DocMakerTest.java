@@ -17,7 +17,9 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Properties;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -163,5 +165,25 @@ public class DocMakerTest extends BenchmarkTestCase {
     assertTrue(doc.getFieldable(DocMaker.TITLE_FIELD).getOmitNorms());
     assertFalse(doc.getFieldable(DocMaker.BODY_FIELD).getOmitNorms());
   }
-  
+
+  public void testDocMakerLeak() throws Exception {
+    // DocMaker did not close its ContentSource if resetInputs was called twice,
+    // leading to a file handle leak.
+    File f = new File(getWorkDir(), "docMakerLeak.txt");
+    PrintStream ps = new PrintStream(f);
+    ps.println("one title\t" + System.currentTimeMillis() + "\tsome content");
+    ps.close();
+    
+    Properties props = new Properties();
+    props.setProperty("content.source", "org.apache.lucene.benchmark.byTask.feeds.LineDocSource");
+    props.setProperty("docs.file", f.getAbsolutePath());
+    props.setProperty("content.source.forever", "false");
+    Config config = new Config(props);
+    DocMaker dm = new DocMaker();
+    dm.setConfig(config);
+    dm.resetInputs();
+    dm.resetInputs();
+    dm.close();
+  }
+
 }
