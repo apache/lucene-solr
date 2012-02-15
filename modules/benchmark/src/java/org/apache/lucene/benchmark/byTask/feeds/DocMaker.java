@@ -428,6 +428,9 @@ public class DocMaker implements Closeable {
   public void setConfig(Config config) {
     this.config = config;
     try {
+      if (source != null) {
+        source.close();
+      }
       String sourceClass = config.get("content.source", "org.apache.lucene.benchmark.byTask.feeds.SingleDocSource");
       source = Class.forName(sourceClass).asSubclass(ContentSource.class).newInstance();
       source.setConfig(config);

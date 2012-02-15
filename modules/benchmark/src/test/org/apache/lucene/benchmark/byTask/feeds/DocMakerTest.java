@@ -17,7 +17,9 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Properties;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
@@ -26,9 +28,11 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.tasks.AddDocTask;
 import org.apache.lucene.benchmark.byTask.tasks.CloseIndexTask;
 import org.apache.lucene.benchmark.byTask.tasks.CreateIndexTask;
+import org.apache.lucene.benchmark.byTask.tasks.ResetInputsTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -88,7 +92,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     tasks.addTask(new CloseIndexTask(runData));
     tasks.doLogic();
     
-    IndexReader reader = IndexReader.open(runData.getDirectory());
+    IndexReader reader = DirectoryReader.open(runData.getDirectory());
     IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs td = searcher.search(new TermQuery(new Term("key", "value")), 10);
     assertEquals(numExpectedResults, td.totalHits);
@@ -161,5 +165,25 @@ public class DocMakerTest extends BenchmarkTestCase {
     assertTrue(doc.getField(DocMaker.TITLE_FIELD).fieldType().omitNorms());
     assertFalse(doc.getField(DocMaker.BODY_FIELD).fieldType().omitNorms());
   }
-  
+
+  public void testDocMakerLeak() throws Exception {
+    // DocMaker did not close its ContentSource if resetInputs was called twice,
+    // leading to a file handle leak.
+    File f = new File(getWorkDir(), "docMakerLeak.txt");
+    PrintStream ps = new PrintStream(f);
+    ps.println("one title\t" + System.currentTimeMillis() + "\tsome content");
+    ps.close();
+    
+    Properties props = new Properties();
+    props.setProperty("content.source", "org.apache.lucene.benchmark.byTask.feeds.LineDocSource");
+    props.setProperty("docs.file", f.getAbsolutePath());
+    props.setProperty("content.source.forever", "false");
+    Config config = new Config(props);
+    DocMaker dm = new DocMaker();
+    dm.setConfig(config);
+    dm.resetInputs();
+    dm.resetInputs();
+    dm.close();
+  }
+
 }
