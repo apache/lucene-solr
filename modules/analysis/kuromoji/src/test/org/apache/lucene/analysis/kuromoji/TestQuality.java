@@ -48,9 +48,7 @@ public class TestQuality extends LuceneTestCase {
     BufferedReader unseg = new BufferedReader(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
     InputStream is2 = zip.getInputStream(zip.getEntry("segmented.txt"));
     BufferedReader seg = new BufferedReader(new InputStreamReader(is2, IOUtils.CHARSET_UTF_8));
-    Stats stats = new Stats();
 
-    // nocommit
     final boolean ONE_TIME = true;
 
     /**
@@ -65,7 +63,6 @@ public class TestQuality extends LuceneTestCase {
     StringBuilder sb = new StringBuilder();
 
     String line1 = null;
-    String line2 = null;
     int maxLen = 0;
     int count = 0;
     while ((line1 = unseg.readLine()) != null) {
@@ -85,6 +82,7 @@ public class TestQuality extends LuceneTestCase {
 
     final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH_WITH_COMPOUNDS);
     //final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""));
+    tokenizer.reset();
     final String all = sb.toString();
     final int ITERS = 20;
     CharTermAttribute termAtt = tokenizer.addAttribute(CharTermAttribute.class); 
@@ -127,7 +125,6 @@ public class TestQuality extends LuceneTestCase {
     //final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""));
     //final Tokenizer tokenizer = new KuromojiTokenizer(new Segmenter(Mode.NORMAL), new StringReader(""));
     final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH_WITH_COMPOUNDS);
-    
     String line1 = null;
     String line2 = null;
     int count = 0;
@@ -176,6 +173,7 @@ public class TestQuality extends LuceneTestCase {
       System.out.println("\nTEST " + lineCount + ": input " + unseg);
     }
     tokenizer.reset(new StringReader(unseg));
+    tokenizer.reset();
     CharTermAttribute termAtt = tokenizer.addAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncAtt = tokenizer.addAttribute(PositionIncrementAttribute.class);
     PositionLengthAttribute posLengthAtt = tokenizer.addAttribute(PositionLengthAttribute.class);

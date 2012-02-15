@@ -17,13 +17,18 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
- 
+
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -437,6 +442,22 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         }
       }
     }
+  }
+
+  protected String toDot(Analyzer a, String inputText) throws IOException {
+    final StringWriter sw = new StringWriter();
+    final TokenStream ts = a.tokenStream("field", new StringReader(inputText));
+    ts.reset();
+    new TokenStreamToDot(inputText, ts, new PrintWriter(sw)).toDot();
+    return sw.toString();
+  }
+
+  protected void toDotFile(Analyzer a, String inputText, String localFileName) throws IOException {
+    Writer w = new OutputStreamWriter(new FileOutputStream(localFileName), "UTF-8");
+    final TokenStream ts = a.tokenStream("field", new StringReader(inputText));
+    ts.reset();
+    new TokenStreamToDot(inputText, ts, new PrintWriter(w)).toDot();
+    w.close();
   }
   
   static int[] toIntArray(List<Integer> list) {

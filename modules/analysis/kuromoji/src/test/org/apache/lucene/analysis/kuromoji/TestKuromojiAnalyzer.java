@@ -148,6 +148,7 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
                               new int[] {1, 0, 1},
                               new int[] {1, 2, 1}
                               );
+    // toDotFile(a, "成田空港", "/mnt/scratch/out.dot");
   }
 
   

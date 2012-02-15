@@ -74,7 +74,7 @@ public final class RollingCharBuffer {
       if (count == buffer.length) {
         // Grow
         final char[] newBuffer = new char[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_CHAR)];
-        System.out.println(Thread.currentThread().getName() + ": cb grow " + newBuffer.length);
+        //System.out.println(Thread.currentThread().getName() + ": cb grow " + newBuffer.length);
         System.arraycopy(buffer, nextWrite, newBuffer, 0, buffer.length - nextWrite);
         System.arraycopy(buffer, 0, newBuffer, buffer.length - nextWrite, nextWrite);
         nextWrite = buffer.length;
@@ -124,8 +124,7 @@ public final class RollingCharBuffer {
     //System.out.println("      startIndex=" + startIndex + " endIndex=" + endIndex);
 
     final char[] result = new char[length];
-    // nocommit what if entire buffer is requested...?
-    if (endIndex >= startIndex) {
+    if (endIndex >= startIndex && length < buffer.length) {
       System.arraycopy(buffer, startIndex, result, 0, endIndex-startIndex);
     } else {
       // Wrapped:

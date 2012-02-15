@@ -117,7 +117,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "我是中国人。 １２３４ Ｔｅｓｔｓ ",
         new String[] { "我", "是", "中", "国", "人", "１２３４", "Ｔｅｓｔｓ"});
   }
-  
+
   public void testEmpty() throws Exception {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "", new String[] {});
     BaseTokenStreamTestCase.assertAnalyzesTo(a, ".", new String[] {});

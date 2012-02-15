@@ -167,6 +167,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
         break;
     }
     buffer.reset(input);
+
     resetState();
 
     dictionaryMap.put(Type.KNOWN, dictionary);
@@ -390,6 +391,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
     int position = token.getPosition();
     int length = token.getLength();
     clearAttributes();
+    assert length > 0;
     //System.out.println("off=" + token.getOffset() + " len=" + length + " vs " + token.getSurfaceForm().length);
     termAtt.copyBuffer(token.getSurfaceForm(), token.getOffset(), length);
     offsetAtt.setOffset(correctOffset(position), correctOffset(position+length));
@@ -405,7 +407,7 @@ public final class KuromojiTokenizer2 extends Tokenizer {
       posIncAtt.setPositionIncrement(1);
       posLengthAtt.setPositionLength(1);
     }
-    if (true || VERBOSE) {
+    if (VERBOSE) {
       System.out.println(Thread.currentThread().getName() + ":    incToken: return token=" + token);
     }
     lastTokenPos = token.getPosition();

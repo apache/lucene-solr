@@ -27,7 +27,13 @@ public class TestRollingCharBuffer extends LuceneTestCase {
     RollingCharBuffer buffer = new RollingCharBuffer();
 
     for(int iter=0;iter<ITERS;iter++) {
-      String s = _TestUtil.randomUnicodeString(random, 10000);
+      final int stringLen = random.nextBoolean() ? random.nextInt(50) : random.nextInt(20000);
+      final String s;
+      if (stringLen == 0) {
+        s = "";
+      } else {
+        s = _TestUtil.randomUnicodeString(random, stringLen);
+      }
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " s.length()=" + s.length());
       }
@@ -39,18 +45,39 @@ public class TestRollingCharBuffer extends LuceneTestCase {
           System.out.println("  cycle nextRead=" + nextRead + " avail=" + availCount);
         }
         if (availCount == 0 || random.nextBoolean()) {
+          // Read next char
           if (VERBOSE) {
             System.out.println("    new char");
           }
           assertEquals(s.charAt(nextRead), buffer.get(nextRead));
           nextRead++;
           availCount++;
-        } else {
+        } else if (random.nextBoolean()) {
+          // Read previous char
           int pos = _TestUtil.nextInt(random, nextRead-availCount, nextRead-1);
           if (VERBOSE) {
             System.out.println("    old char pos=" + pos);
           }
           assertEquals(s.charAt(pos), buffer.get(pos));
+        } else {
+          // Read slice
+          int length;
+          if (availCount == 1) {
+            length = 1;
+          } else {
+            length = _TestUtil.nextInt(random, 1, availCount);
+          }
+          int start;
+          if (length == availCount) {
+            start = nextRead - availCount;
+          } else {
+            start = nextRead - availCount + random.nextInt(availCount-length);
+          }
+          if (VERBOSE) {
+            System.out.println("    slice start=" + start + " length=" + length);
+          }
+          assertEquals(s.substring(start, start+length),
+                       new String(buffer.get(start, length)));
         }
 
         if (availCount > 0 && random.nextInt(20) == 17) {
