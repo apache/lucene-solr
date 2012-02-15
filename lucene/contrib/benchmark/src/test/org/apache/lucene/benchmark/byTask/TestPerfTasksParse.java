@@ -106,7 +106,6 @@ public class TestPerfTasksParse extends LuceneTestCase {
   }
   
   /** Test the parsing of example scripts **/
-  @Ignore("something is wrong with highlight-vs-vector-highlight.alg, but only on 3.x?!")
   public void testParseExamples() throws Exception {
     // hackedy-hack-hack
     boolean foundFiles = false;

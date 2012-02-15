@@ -121,7 +121,8 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
 
   @Override
   public void setParams(String params) {
-    super.setParams(params);
+    // can't call super because super doesn't understand our
+    // params syntax
     String [] splits = params.split(",");
     for (int i = 0; i < splits.length; i++) {
       if (splits[i].startsWith("size[") == true){
