@@ -76,8 +76,7 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
 
   @Override
   public void end() throws IOException {
-    if (offsetAttr.endOffset() < finalOffset)
-      offsetAttr.setOffset(finalOffset, finalOffset);
+    offsetAttr.setOffset(finalOffset, finalOffset);
     super.end();
   }
 }
