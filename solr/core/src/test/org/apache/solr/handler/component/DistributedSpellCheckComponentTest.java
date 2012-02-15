@@ -17,9 +17,13 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import junit.framework.TestCase;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Test for SpellCheckComponent's distributed querying
@@ -71,6 +75,17 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   }
   
   @Override
+  public void validateControlData(QueryResponse control) throws Exception
+  {    
+    NamedList nl = control.getResponse();
+    NamedList sc = (NamedList) nl.get("spellcheck");
+    NamedList sug = (NamedList) sc.get("suggestions");
+    if(sug.size()==0) {
+      TestCase.fail("Control data did not return any suggestions.");
+    }
+  }
+  
+  @Override
   public void doTest() throws Exception {
   	del("*:*");
     index(id, "1", "lowerfilt", "toyota");
@@ -104,7 +119,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     handle.put("maxScore", SKIPVAL);
     // we care only about the spellcheck results
     handle.put("response", SKIP);
-    q("q", "*:*", SpellCheckComponent.SPELLCHECK_BUILD, "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH");
+    q("q", "*:*", "spellcheck", "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH");
     
     query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","toyata", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH");
     query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","toyata", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");
