@@ -178,8 +178,6 @@ public final class KuromojiTokenizer2 extends Tokenizer {
   public void reset(Reader input) throws IOException {
     super.reset(input);
     buffer.reset(input);
-    // nocommit can we leave this out
-    //resetState();
   }
 
   @Override
