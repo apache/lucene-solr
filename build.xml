@@ -87,11 +87,12 @@
     <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false"/>
     <copy file="dev-tools/eclipse/dot.classpath" tofile=".classpath" overwrite="true"/>
     <mkdir dir=".settings"/>
-    <copy file="dev-tools/eclipse/resources.prefs" 
-          tofile=".settings/org.eclipse.core.resources.prefs" overwrite="true"/>
+    <copy todir=".settings/" overwrite="true">
+      <fileset dir="dev-tools/eclipse/dot.settings" includes="*.prefs" />
+    </copy>
     <echo>
-      SUCCESS: You must right-click your project and choose Refresh
-      Please note, your project must use a Java 6 JRE
+      SUCCESS: You must right-click your project and choose Refresh.
+               Your project must use a Java 6 JRE.
     </echo>
   </target>
 
