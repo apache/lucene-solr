@@ -54,7 +54,7 @@ log.queries=true
     { "Populate"
         CreateIndex
         [{ "MAddDocs" AddDoc } : 5000] : 4
-        ForcMerge(1)
+        ForceMerge(1)
         CommitIndex(commit1)
         CloseIndex
     }

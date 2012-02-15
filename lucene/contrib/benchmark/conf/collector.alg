@@ -52,7 +52,7 @@ log.queries=true
     { "Populate"
         CreateIndex
         { "MAddDocs" AddDoc } : 2000000
-        ForcMerge(1)
+        ForceMerge(1)
         CloseIndex
     }
 

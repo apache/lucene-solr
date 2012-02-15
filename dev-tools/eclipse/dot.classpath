@@ -18,6 +18,7 @@
 	<classpathentry kind="src" path="lucene/contrib/analyzers/stempel/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/benchmark/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/benchmark/src/test"/>
+        <classpathentry excluding="src" including="conf/**" kind="src" path="lucene/contrib/benchmark"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/facet/src/java"/>

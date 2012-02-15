@@ -52,7 +52,7 @@ task.max.depth.log=2
       -CreateIndex
       -CreateTaxonomyIndex
       { "MAddDocs" AddFacetedDoc > : *
-      -ForcMerge(1)
+      -ForceMerge(1)
       -CloseIndex
       -CloseTaxonomyIndex
   }
