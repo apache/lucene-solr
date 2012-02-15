@@ -17,11 +17,7 @@ package org.apache.lucene.analysis.uima.ae;
  * limitations under the License.
  */
 
-import org.apache.uima.UIMAFramework;
-import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.analysis_engine.AnalysisEngineDescription;
-import org.apache.uima.resource.ResourceInitializationException;
-import org.apache.uima.util.XMLInputSource;
 
 import java.util.Map;
 
@@ -30,51 +26,22 @@ import java.util.Map;
  * injecting runtime parameters defined in the solrconfig.xml Solr configuration file and assigning
  * them as overriding parameters in the aggregate AE
  */
-public class OverridingParamsAEProvider implements AEProvider {
-
-  private final String aePath;
-
-  private AnalysisEngine cachedAE;
+public class OverridingParamsAEProvider extends BasicAEProvider {
 
   private final Map<String, Object> runtimeParameters;
 
   public OverridingParamsAEProvider(String aePath, Map<String, Object> runtimeParameters) {
-    this.aePath = aePath;
+    super(aePath);
     this.runtimeParameters = runtimeParameters;
   }
-
+  
   @Override
-  public synchronized AnalysisEngine getAE() throws ResourceInitializationException {
-    try {
-      if (cachedAE == null) {
-        // get Resource Specifier from XML file
-        XMLInputSource in;
-        try {
-          in = new XMLInputSource(aePath);
-        } catch (Exception e) {
-          in = new XMLInputSource(getClass().getResource(aePath));
-        }
-
-        // get AE description
-        AnalysisEngineDescription desc = UIMAFramework.getXMLParser()
-            .parseAnalysisEngineDescription(in);
-
-        /* iterate over each AE (to set runtime parameters) */
-        for (String attributeName : runtimeParameters.keySet()) {
-          Object val = getRuntimeValue(desc, attributeName);
-          desc.getAnalysisEngineMetaData().getConfigurationParameterSettings().setParameterValue(
-              attributeName, val);
-        }
-        // create AE here
-        cachedAE = UIMAFramework.produceAnalysisEngine(desc);
-      } else {
-        cachedAE.reconfigure();
-      }
-    } catch (Exception e) {
-      cachedAE = null;
-      throw new ResourceInitializationException(e);
+  protected void configureDescription(AnalysisEngineDescription description) {
+    for (String attributeName : runtimeParameters.keySet()) {
+      Object val = getRuntimeValue(description, attributeName);
+      description.getAnalysisEngineMetaData().getConfigurationParameterSettings().setParameterValue(
+          attributeName, val);
     }
-    return cachedAE;
   }
 
   /* create the value to inject in the runtime parameter depending on its declared type */

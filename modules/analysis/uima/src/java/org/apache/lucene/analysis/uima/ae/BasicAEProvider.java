@@ -17,6 +17,9 @@ package org.apache.lucene.analysis.uima.ae;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.util.IOUtils;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.analysis_engine.AnalysisEngineDescription;
@@ -30,38 +33,55 @@ import org.apache.uima.util.XMLInputSource;
 public class BasicAEProvider implements AEProvider {
 
   private final String aePath;
-  private AnalysisEngine cachedAE;
+  private AnalysisEngineDescription cachedDescription;
 
   public BasicAEProvider(String aePath) {
     this.aePath = aePath;
   }
 
   @Override
-  public synchronized AnalysisEngine getAE() throws ResourceInitializationException {
-    try {
-      if (cachedAE == null) {
-        // get Resource Specifier from XML file
-
-        XMLInputSource in;
+  public AnalysisEngine getAE() throws ResourceInitializationException {
+    synchronized(this) {
+      if (cachedDescription == null) {
+        XMLInputSource in = null;
+        boolean success = false;
         try {
-          in = new XMLInputSource(aePath);
+          // get Resource Specifier from XML file
+          in = getInputSource();
+
+          // get AE description
+          cachedDescription = UIMAFramework.getXMLParser()
+              .parseAnalysisEngineDescription(in);
+          configureDescription(cachedDescription);
+          success = true;
         } catch (Exception e) {
-          in = new XMLInputSource(getClass().getResource(aePath));
+            throw new ResourceInitializationException(e);
+        } finally {
+          if (success) {
+            try {
+              IOUtils.close(in.getInputStream());
+            } catch (IOException e) {
+              throw new ResourceInitializationException(e);
+            }
+          } else if (in != null) {
+            IOUtils.closeWhileHandlingException(in.getInputStream());
+          }
         }
-
-        // get AE description
-        AnalysisEngineDescription desc = UIMAFramework.getXMLParser()
-            .parseAnalysisEngineDescription(in);
-
-        // create AE here
-        cachedAE = UIMAFramework.produceAnalysisEngine(desc);
-      } else {
-        cachedAE.reconfigure();
-      }
-    } catch (Exception e) {
-      cachedAE = null;
-      throw new ResourceInitializationException(e);
+      } 
     }
-    return cachedAE;
+
+    return UIMAFramework.produceAnalysisEngine(cachedDescription);
+  }
+  
+  protected void configureDescription(AnalysisEngineDescription description) {
+    // no configuration
+  }
+  
+  private XMLInputSource getInputSource() throws IOException {
+    try {
+      return new XMLInputSource(aePath);
+    } catch (IOException e) {
+      return new XMLInputSource(getClass().getResource(aePath));
+    }
   }
 }

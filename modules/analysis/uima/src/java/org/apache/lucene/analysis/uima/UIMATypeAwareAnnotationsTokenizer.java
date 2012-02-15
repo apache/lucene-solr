@@ -21,16 +21,11 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.analysis.uima.ae.AEProviderFactory;
-import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
-import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.CASException;
 import org.apache.uima.cas.FeaturePath;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
-import org.apache.uima.resource.ResourceInitializationException;
-import org.apache.uima.util.InvalidXMLException;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -49,28 +44,23 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
 
   private final String tokenTypeString;
 
-  private final String descriptorPath;
-
   private final String typeAttributeFeaturePath;
 
   private FeaturePath featurePath;
-
+  
   private int finalOffset = 0;
 
   public UIMATypeAwareAnnotationsTokenizer(String descriptorPath, String tokenType, String typeAttributeFeaturePath, Reader input) {
-    super(input);
+    super(input, descriptorPath);
     this.tokenTypeString = tokenType;
     this.termAttr = addAttribute(CharTermAttribute.class);
     this.typeAttr = addAttribute(TypeAttribute.class);
     this.offsetAttr = addAttribute(OffsetAttribute.class);
     this.typeAttributeFeaturePath = typeAttributeFeaturePath;
-    this.descriptorPath = descriptorPath;
   }
 
-  private void analyzeText() throws IOException, ResourceInitializationException, AnalysisEngineProcessException,
-      CASException {
-    AnalysisEngine ae = AEProviderFactory.getInstance().getAEProvider("", descriptorPath).getAE();
-    CAS cas = analyzeInput(ae);
+  private void analyzeText() throws IOException, AnalysisEngineProcessException, CASException {
+    analyzeInput();
     finalOffset = correctOffset(cas.getDocumentText().length());
     Type tokenType = cas.getTypeSystem().getType(tokenTypeString);
     iterator = cas.getAnnotationIndex(tokenType).iterator();

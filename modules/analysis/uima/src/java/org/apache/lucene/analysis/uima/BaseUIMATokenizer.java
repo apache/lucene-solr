@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.uima;
  */
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.uima.ae.AEProviderFactory;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.CAS;
@@ -35,28 +36,31 @@ import java.io.Reader;
 public abstract class BaseUIMATokenizer extends Tokenizer {
 
   protected FSIterator<AnnotationFS> iterator;
+  protected final AnalysisEngine ae;
+  protected final CAS cas;
 
-  protected BaseUIMATokenizer(Reader reader) {
+  protected BaseUIMATokenizer(Reader reader, String descriptorPath) {
     super(reader);
+    try {
+      ae = AEProviderFactory.getInstance().getAEProvider("", descriptorPath).getAE();
+      cas = ae.newCAS();
+    } catch (ResourceInitializationException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
    * analyzes the tokenizer input using the given analysis engine
-   *
-   * @param analysisEngine the AE to use for analyzing the tokenizer input
-   * @return CAS with extracted metadata (UIMA annotations, feature structures)
-   * @throws ResourceInitializationException
+   * 
+   * {@link #cas} will be filled with  extracted metadata (UIMA annotations, feature structures)
    *
    * @throws AnalysisEngineProcessException
    * @throws IOException
    */
-  protected CAS analyzeInput(AnalysisEngine analysisEngine) throws ResourceInitializationException,
-      AnalysisEngineProcessException, IOException {
-    CAS cas = analysisEngine.newCAS();
+  protected void analyzeInput() throws AnalysisEngineProcessException,IOException {
+    cas.reset();
     cas.setDocumentText(toString(input));
-    analysisEngine.process(cas);
-    analysisEngine.destroy();
-    return cas;
+    ae.process(cas);
   }
 
   private String toString(Reader reader) throws IOException {
@@ -78,4 +82,6 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   public void end() throws IOException {
     iterator = null;
   }
+  
+  
 }
