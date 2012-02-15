@@ -52,7 +52,7 @@
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
     <war destfile="${dist}/apache-solr-${version}${solr.war.suffix}.war"
          webxml="web/WEB-INF/web.xml"
-         manifest="${dest}/META-INF/MANIFEST.MF">
+         manifest="${manifest.file}">
       <lib dir="${common-solr.dir}/lib" excludes="${exclude.from.war}">
         <exclude name="servlet-api*.jar" />
         <exclude name="easymock-*.jar" />
