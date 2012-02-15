@@ -1,5 +1,7 @@
 package org.apache.lucene.util.junitcompat;
 
+import java.util.Arrays;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -15,10 +17,9 @@ import org.junit.runner.JUnitCore;
 import org.junit.runners.model.Statement;
 
 /**
- * Ensures proper functions of {@link LuceneTestCase#setUp()}
- * and {@link LuceneTestCase#tearDown()}.
+ * Test reproduce message is right.
  */
-public class TestSorePointsReported extends WithNestedTests {
+public class TestReproduceMessage extends WithNestedTests {
   public static SorePoint where;
   public static SoreType  type;
   
@@ -97,7 +98,7 @@ public class TestSorePointsReported extends WithNestedTests {
    * ASSUMPTIONS.
    */
   
-  public TestSorePointsReported() {
+  public TestReproduceMessage() {
     super(true);
   }
 
@@ -173,6 +174,7 @@ public class TestSorePointsReported extends WithNestedTests {
     type = SoreType.FAILURE; 
     where = SorePoint.RULE;
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
+    Assert.assertTrue(Arrays.asList(runAndReturnSyserr().split("\\s")).contains("-Dtestmethod=test"));
   }
 
   @Test
@@ -180,6 +182,7 @@ public class TestSorePointsReported extends WithNestedTests {
     type = SoreType.FAILURE; 
     where = SorePoint.BEFORE;
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
+    Assert.assertTrue(Arrays.asList(runAndReturnSyserr().split("\\s")).contains("-Dtestmethod=test"));
   }
 
   @Test
@@ -187,6 +190,7 @@ public class TestSorePointsReported extends WithNestedTests {
     type = SoreType.FAILURE; 
     where = SorePoint.TEST;
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
+    Assert.assertTrue(Arrays.asList(runAndReturnSyserr().split("\\s")).contains("-Dtestmethod=test"));
   }
 
   @Test
@@ -194,6 +198,7 @@ public class TestSorePointsReported extends WithNestedTests {
     type = SoreType.FAILURE; 
     where = SorePoint.AFTER;
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
+    Assert.assertTrue(Arrays.asList(runAndReturnSyserr().split("\\s")).contains("-Dtestmethod=test"));
   }
 
   @Test @Ignore
@@ -226,6 +231,7 @@ public class TestSorePointsReported extends WithNestedTests {
     type = SoreType.ERROR; 
     where = SorePoint.RULE;
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
+    Assert.assertTrue(Arrays.asList(runAndReturnSyserr().split("\\s")).contains("-Dtestmethod=test"));
   }
 
   @Test
@@ -233,6 +239,7 @@ public class TestSorePointsReported extends WithNestedTests {
     type = SoreType.ERROR; 
     where = SorePoint.BEFORE;
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
+    Assert.assertTrue(Arrays.asList(runAndReturnSyserr().split("\\s")).contains("-Dtestmethod=test"));
   }
 
   @Test
@@ -240,6 +247,7 @@ public class TestSorePointsReported extends WithNestedTests {
     type = SoreType.ERROR; 
     where = SorePoint.TEST;
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
+    Assert.assertTrue(Arrays.asList(runAndReturnSyserr().split("\\s")).contains("-Dtestmethod=test"));
   }
 
   @Test
@@ -247,6 +255,7 @@ public class TestSorePointsReported extends WithNestedTests {
     type = SoreType.ERROR; 
     where = SorePoint.AFTER;
     Assert.assertTrue(runAndReturnSyserr().contains("NOTE: reproduce with:"));
+    Assert.assertTrue(Arrays.asList(runAndReturnSyserr().split("\\s")).contains("-Dtestmethod=test"));
   }
 
   @Test @Ignore
@@ -260,7 +269,8 @@ public class TestSorePointsReported extends WithNestedTests {
     JUnitCore.runClasses(Nested.class);
 
     String err = getSysErr();
-    // syserr.println("Type: " + type + ", point: " + where + " resulted in:\n" + err);
+    //super.prevSysErr.println("Type: " + type + ", point: " + where + " resulted in:\n" + err);
+    //super.prevSysErr.println("---");
     return err;
   }
 }
