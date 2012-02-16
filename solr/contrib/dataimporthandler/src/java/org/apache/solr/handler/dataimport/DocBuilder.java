@@ -297,20 +297,32 @@ public class DocBuilder {
     addStatusMessage("Rolledback");
   }
 
-  @SuppressWarnings("unchecked")
   private void doFullDump() {
     addStatusMessage("Full Dump Started");
-    if(dataImporter.getConfig().isMultiThreaded && !verboseDebug){
+    if (dataImporter.getConfig().isMultiThreaded && !verboseDebug) {
+      EntityRunner entityRunner = null;
       try {
         LOG.info("running multithreaded full-import");
-        new EntityRunner(root,null).run(null,Context.FULL_DUMP,null);
+        entityRunner =  new EntityRunner(root, null);
+        entityRunner.run(null, Context.FULL_DUMP, null);
       } catch (Exception e) {
         throw new RuntimeException("Error in multi-threaded import", e);
+      } finally {
+        if (entityRunner != null) {
+          List<EntityRunner> closure = new ArrayList<EntityRunner>();
+          closure.add(entityRunner);
+          for (int i = 0; i < closure.size(); i++) {
+            assert(!closure.get(i).entityProcessorWrapper.isEmpty());
+            closure.addAll(closure.get(i).entityProcessorWrapper.iterator().next().children.values());
+          }
+          for (EntityRunner er : closure) {
+            er.entityProcessor.destroy();
+          }
+        }
       }
     } else {
       buildDocument(getVariableResolver(), null, null, root, true, null);
-    }
-
+    }    
   }
 
   @SuppressWarnings("unchecked")
@@ -470,7 +482,6 @@ public class DocBuilder {
           }
         }
       } finally {
-        entityProcessor.destroy();
       }
 
 
@@ -572,7 +583,7 @@ public class DocBuilder {
           }
         }
       }
-    }
+    }    
   }
 
   /**A reverse linked list .
