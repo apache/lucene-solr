@@ -71,7 +71,12 @@ public class Config {
   {
     this( loader, name, null, null );
   }
-    
+
+  
+  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException 
+  {
+    this(loader, name, is, prefix, true);
+  }
   /**
    * Builds a config:
    * <p>
@@ -91,7 +96,7 @@ public class Config {
    * @throws java.io.IOException
    * @throws org.xml.sax.SAXException
    */
-  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException 
+  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean subProps) throws ParserConfigurationException, IOException, SAXException 
   {
     if( loader == null ) {
       loader = new SolrResourceLoader( null );
@@ -126,8 +131,9 @@ public class Config {
         // some XML parsers are broken and don't close the byte stream (but they should according to spec)
         IOUtils.closeQuietly(is.getByteStream());
       }
-
-      DOMUtil.substituteProperties(doc, loader.getCoreProperties());
+      if (subProps) {
+        DOMUtil.substituteProperties(doc, loader.getCoreProperties());
+      }
     } catch (ParserConfigurationException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw e;
@@ -138,6 +144,13 @@ public class Config {
     	SolrException.log(log,"Error in "+name,e);
     	throw e;
     }
+  }
+  
+  public Config(SolrResourceLoader loader, String name, Document doc) {
+    this.prefix = null;
+    this.doc = doc;
+    this.name = name;
+    this.loader = loader;
   }
 
   /**
@@ -169,6 +182,10 @@ public class Config {
 
   private String normalize(String path) {
     return (prefix==null || path.startsWith("/")) ? path : prefix+path;
+  }
+  
+  public void substituteProperties() {
+    DOMUtil.substituteProperties(doc, loader.getCoreProperties());
   }
 
 

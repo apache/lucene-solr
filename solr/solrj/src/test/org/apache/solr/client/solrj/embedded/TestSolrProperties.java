@@ -210,12 +210,13 @@ public class TestSolrProperties extends LuceneTestCase {
       fis.close();
       fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
       String solrPersistXml = IOUtils.toString(fis);
+      //System.out.println("xml:" + solrPersistXml);
       assertTrue("\"/solr/cores[@defaultCoreName='core0']\" doesn't match in:\n" + solrPersistXml,
                  exists("/solr/cores[@defaultCoreName='core0']", document));
       assertTrue("\"/solr/cores[@host='127.0.0.1']\" doesn't match in:\n" + solrPersistXml,
                  exists("/solr/cores[@host='127.0.0.1']", document));
-      assertTrue("\"/solr/cores[@hostPort='8983']\" doesn't match in:\n" + solrPersistXml,
-                 exists("/solr/cores[@hostPort='8983']", document));
+      assertTrue("\"/solr/cores[@hostPort='${hostPort:8983}']\" doesn't match in:\n" + solrPersistXml,
+                 exists("/solr/cores[@hostPort='${hostPort:8983}']", document));
       assertTrue("\"/solr/cores[@zkClientTimeout='8000']\" doesn't match in:\n" + solrPersistXml,
                  exists("/solr/cores[@zkClientTimeout='8000']", document));
       assertTrue("\"/solr/cores[@hostContext='solr']\" doesn't match in:\n" + solrPersistXml,
@@ -228,10 +229,18 @@ public class TestSolrProperties extends LuceneTestCase {
     CoreAdminRequest.renameCore(name, "renamed_core", coreadmin);
     mcr = CoreAdminRequest.persist("solr-persist.xml", getRenamedSolrAdmin());
     
+//    fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
+//    String solrPersistXml = IOUtils.toString(fis);
+//    System.out.println("xml:" + solrPersistXml);
+//    fis.close();
+    
     fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
     try {
       Document document = builder.parse(fis);
       assertTrue(exists("/solr/cores/core[@name='renamed_core']", document));
+      assertTrue(exists("/solr/cores/core[@instanceDir='${theInstanceDir:./}']", document));
+      assertTrue(exists("/solr/cores/core[@collection='${collection:acollection}']", document));
+      
     } finally {
       fis.close();
     }

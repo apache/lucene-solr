@@ -17,28 +17,43 @@
 
 package org.apache.solr.core;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
-import java.text.SimpleDateFormat;
-
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
-import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -48,13 +63,17 @@ import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
 import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.zookeeper.KeeperException;
-import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 
 /**
@@ -63,8 +82,12 @@ import org.xml.sax.InputSource;
  */
 public class CoreContainer 
 {
+  private static final String DEFAULT_HOST_CONTEXT = "solr";
+  private static final String DEFAULT_HOST_PORT = "8983";
+  private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 10000;
   private static final String DEFAULT_DEFAULT_CORE_NAME = "collection1";
-
+  private static final boolean DEFAULT_SHARE_SCHEMA = false;
+  
   protected static Logger log = LoggerFactory.getLogger(CoreContainer.class);
   
   protected final Map<String, SolrCore> cores = new LinkedHashMap<String, SolrCore>();
@@ -92,6 +115,8 @@ public class CoreContainer
   private ShardHandlerFactory shardHandlerFactory;
 
   private String zkHost;
+  private Map<SolrCore,String> coreToOrigName = new ConcurrentHashMap<SolrCore,String>();
+
 
   {
     log.info("New CoreContainer " + System.identityHashCode(this));
@@ -301,7 +326,18 @@ public class CoreContainer
       throws ParserConfigurationException, IOException, SAXException {
     this.loader = new SolrResourceLoader(dir);
     solrHome = loader.getInstanceDir();
-    Config cfg = new Config(loader, null, cfgis, null);
+    
+    Config cfg = new Config(loader, null, cfgis, null, false);
+    
+    // keep orig config for persist to consult
+    try {
+      this.cfg = new Config(loader, null, copyDoc(cfg.getDocument()));
+    } catch (TransformerException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "", e);
+    }
+    
+    cfg.substituteProperties();
+    
     String dcoreName = cfg.get("solr/cores/@defaultCoreName", null);
     if(dcoreName != null) {
       defaultCoreName = dcoreName;
@@ -310,12 +346,12 @@ public class CoreContainer
     libDir = cfg.get("solr/@sharedLib", null);
     zkHost = cfg.get("solr/@zkHost" , null);
     adminPath = cfg.get("solr/cores/@adminPath", null);
-    shareSchema = cfg.getBool("solr/cores/@shareSchema", false);
-    zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", 10000);
+    shareSchema = cfg.getBool("solr/cores/@shareSchema", DEFAULT_SHARE_SCHEMA);
+    zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);
 
-    hostPort = cfg.get("solr/cores/@hostPort", "8983");
+    hostPort = cfg.get("solr/cores/@hostPort", DEFAULT_HOST_PORT);
 
-    hostContext = cfg.get("solr/cores/@hostContext", "solr");
+    hostContext = cfg.get("solr/cores/@hostContext", DEFAULT_HOST_CONTEXT);
     host = cfg.get("solr/cores/@host", null);
 
     if(shareSchema){
@@ -342,7 +378,7 @@ public class CoreContainer
     }
 
     try {
-      containerProperties = readProperties(cfg, ((NodeList) cfg.evaluate("solr", XPathConstants.NODESET)).item(0));
+      containerProperties = readProperties(cfg, ((NodeList) cfg.evaluate(DEFAULT_HOST_CONTEXT, XPathConstants.NODESET)).item(0));
     } catch (Throwable e) {
       SolrException.log(log,null,e);
     }
@@ -352,16 +388,19 @@ public class CoreContainer
     for (int i=0; i<nodes.getLength(); i++) {
       Node node = nodes.item(i);
       try {
-        String name = DOMUtil.getAttr(node, "name", null);
-        if (null == name) {
+        String rawName = DOMUtil.getAttr(node, "name", null);
+        if (null == rawName) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                                   "Each core in solr.xml must have a 'name'");
         }
-        if (name.equals(defaultCoreName)){
+        String name;
+        if (rawName.equals(defaultCoreName)){
           // for the default core we use a blank name,
           // later on attempts to access it by it's full name will 
           // be mapped to this.
           name="";
+        } else {
+          name = rawName;
         }
         CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
 
@@ -402,11 +441,23 @@ public class CoreContainer
 
         SolrCore core = create(p);
         register(name, core, false);
+        
+        // track original names
+        coreToOrigName.put(core, rawName);
       }
       catch (Throwable ex) {
         SolrException.log(log,null,ex);
       }
     }
+  }
+
+  private Document copyDoc(Document document) throws TransformerException {
+    TransformerFactory tfactory = TransformerFactory.newInstance();
+    Transformer tx   = tfactory.newTransformer();
+    DOMSource source = new DOMSource(document);
+    DOMResult result = new DOMResult();
+    tx.transform(source,result);
+    return (Document)result.getNode();
   }
 
   private Properties readProperties(Config cfg, Node node) throws XPathExpressionException {
@@ -421,6 +472,8 @@ public class CoreContainer
   }
   
   private volatile boolean isShutDown = false;
+
+  private Config cfg;
   
   public boolean isShutDown() {
     return isShutDown;
@@ -753,6 +806,9 @@ public class CoreContainer
     }
     
     SolrCore newCore = core.reload(solrLoader);
+    // keep core to orig name link
+    String origName = coreToOrigName.remove(core);
+    coreToOrigName.put(newCore, origName);
     register(name, newCore, false);
   }
 
@@ -794,11 +850,28 @@ public class CoreContainer
   /** Removes and returns registered core w/o decrementing it's reference count */
   public SolrCore remove( String name ) {
     name = checkDefault(name);    
+
     synchronized(cores) {
-      return cores.remove( name );
+      SolrCore core = cores.remove( name );
+      coreToOrigName.remove(core);
+      return core;
     }
+
   }
 
+  public void rename(String name, String toName) {
+    SolrCore core = getCore(name);
+    if (core != null) {
+      register(toName, core, false);
+      name = checkDefault(name);    
+
+      synchronized(cores) {
+        cores.remove(name);
+      }
+
+      core.close();
+    }
+  }
   
   /** Gets a core by name and increase its refcount.
    * @see SolrCore#open() 
@@ -888,6 +961,8 @@ public class CoreContainer
   /** Persists the cores config file in a user provided file. */
   public void persistFile(File file) {
     log.info("Persisting cores config to " + (file == null ? configFile : file));
+
+    
     // <solr attrib="value">
     Map<String,String> rootSolrAttribs = new HashMap<String,String>();
     if (libDir != null) rootSolrAttribs.put("sharedLib", libDir);
@@ -895,15 +970,21 @@ public class CoreContainer
     
     // <solr attrib="value"> <cores attrib="value">
     Map<String,String> coresAttribs = new HashMap<String,String>();
-    coresAttribs.put("adminPath", adminPath);
-    if (adminHandler != null) coresAttribs.put("adminHandler", adminHandler);
-    if (shareSchema) coresAttribs.put("shareSchema", "true");
+    addCoresAttrib(coresAttribs, "adminPath", this.adminPath, null);
+    addCoresAttrib(coresAttribs, "adminHandler", this.adminHandler, null);
+    addCoresAttrib(coresAttribs, "shareSchema",
+        Boolean.toString(this.shareSchema),
+        Boolean.toString(DEFAULT_SHARE_SCHEMA));
+    addCoresAttrib(coresAttribs, "host", this.host, null);
+
     if (!defaultCoreName.equals("")) coresAttribs.put("defaultCoreName",
         defaultCoreName);
-    if (host != null) coresAttribs.put("host", host);
-    if (hostPort != null) coresAttribs.put("hostPort", hostPort);
-    if (zkClientTimeout != null) coresAttribs.put("zkClientTimeout", Integer.toString(zkClientTimeout));
-    if (hostContext != null) coresAttribs.put("hostContext", hostContext);
+    
+    addCoresAttrib(coresAttribs, "hostPort", this.hostPort, DEFAULT_HOST_PORT);
+    addCoresAttrib(coresAttribs, "zkClientTimeout",
+        intToString(this.zkClientTimeout),
+        Integer.toString(DEFAULT_ZK_CLIENT_TIMEOUT));
+    addCoresAttrib(coresAttribs, "hostContext", this.hostContext, DEFAULT_HOST_CONTEXT);
     
     List<SolrCoreXMLDef> solrCoreXMLDefs = new ArrayList<SolrCoreXMLDef>();
     
@@ -911,37 +992,92 @@ public class CoreContainer
       for (SolrCore solrCore : cores.values()) {
         Map<String,String> coreAttribs = new HashMap<String,String>();
         CoreDescriptor dcore = solrCore.getCoreDescriptor();
+
+        String coreName = dcore.name.equals("") ? defaultCoreName
+            : dcore.name;
         
-        coreAttribs.put("name", dcore.name.equals("") ? defaultCoreName
-            : dcore.name);
-        coreAttribs.put("instanceDir", dcore.getInstanceDir());
-        // write config (if not default)
-        String opt = dcore.getConfigName();
-        if (opt != null && !opt.equals(dcore.getDefaultConfigName())) {
-          coreAttribs.put("config", opt);
+        Node coreNode = null;
+        
+        if (cfg != null) {
+          NodeList nodes = (NodeList) cfg.evaluate("solr/cores/core",
+              XPathConstants.NODESET);
+          
+          String origCoreName = coreToOrigName.get(solrCore);
+
+          if (origCoreName == null) {
+            origCoreName = coreName;
+          }
+          
+          // look for an existing node
+          
+          // first look for an exact match
+          for (int i = 0; i < nodes.getLength(); i++) {
+            Node node = nodes.item(i);
+            
+            String name = DOMUtil.getAttr(node, "name", null);
+            if (origCoreName.equals(name)) {
+              coreNode = node;
+              if (coreName.equals(origCoreName)) {
+                coreName = name;
+              }
+              break;
+            }
+          }
+          
+          if (coreNode == null) {
+            // see if we match with substitution
+            for (int i = 0; i < nodes.getLength(); i++) {
+              Node node = nodes.item(i);
+              String name = DOMUtil.getAttr(node, "name", null);
+              if (origCoreName.equals(DOMUtil.substituteProperty(name,
+                  loader.getCoreProperties()))) {
+                coreNode = node;
+                if (coreName.equals(origCoreName)) {
+                  coreName = name;
+                }
+                break;
+              }
+            }
+          }
         }
-        // write schema (if not default)
-        opt = dcore.getSchemaName();
-        if (opt != null && !opt.equals(dcore.getDefaultSchemaName())) {
-          coreAttribs.put("schema", opt);
-        }
-        opt = dcore.getPropertiesName();
-        if (opt != null) {
-          coreAttribs.put("properties", opt);
-        }
-        opt = dcore.dataDir;
-        if (opt != null) coreAttribs.put("dataDir", opt);
+
+        coreAttribs.put("name", coreName);
+        
+        String instanceDir = dcore.getInstanceDir();
+        addCoreProperty(coreAttribs, coreNode, "instanceDir", instanceDir, null);
+        
+        // write config 
+        String configName = dcore.getConfigName();
+        addCoreProperty(coreAttribs, coreNode, "conf", configName, dcore.getDefaultConfigName());
+        
+        // write schema
+        String schema = dcore.getSchemaName();
+        addCoreProperty(coreAttribs, coreNode, "schema", schema, dcore.getDefaultSchemaName());
+        
+        String dataDir = dcore.dataDir;
+        addCoreProperty(coreAttribs, coreNode, "dataDir", dataDir, null);
         
         CloudDescriptor cd = dcore.getCloudDescriptor();
+        String shard = null;
         if (cd != null) {
-          opt = cd.getShardId();
-          if (opt != null) coreAttribs.put("shard", opt);
-          // only write out the collection name if it's not the default (the
-          // core
-          // name)
-          opt = cd.getCollectionName();
-          if (opt != null && !opt.equals(dcore.name)) coreAttribs.put(
-              "collection", opt);
+          shard = cd.getShardId();
+        }
+        addCoreProperty(coreAttribs, coreNode, "shard", shard, null);
+        
+        String collection = null;
+        // only write out the collection name if it's not the default (the
+        // core
+        // name)
+        if (cd != null) {
+          collection = cd.getCollectionName();
+        }
+        
+        addCoreProperty(coreAttribs, coreNode, "collection", collection, dcore.name);
+        
+        // we don't try and preserve sys prop defs in these
+        String opt = dcore.getPropertiesName();
+        if (opt != null) {
+          coreAttribs.put("properties", opt);
         }
         
         SolrCoreXMLDef solrCoreXMLDef = new SolrCoreXMLDef();
@@ -957,6 +1093,52 @@ public class CoreContainer
       solrXMLDef.coresAttribs = coresAttribs;
       solrXMLSerializer.persistFile(file == null ? configFile : file,
           solrXMLDef);
+    }
+  }
+
+  private String intToString(Integer integer) {
+    if (integer == null) return null;
+    return Integer.toString(integer);
+  }
+
+  private void addCoresAttrib(Map<String,String> coresAttribs, String attribName, String attribValue, String defaultValue) {
+    if (cfg == null) {
+      coresAttribs.put(attribName, attribValue);
+      return;
+    }
+    
+    if (attribValue != null) {
+      String rawValue = cfg.get("solr/cores/@" + attribName, null);
+      if (rawValue == null && defaultValue != null && attribValue.equals(defaultValue)) return;
+      if (attribValue.equals(DOMUtil.substituteProperty(rawValue, loader.getCoreProperties()))) {
+        coresAttribs.put(attribName, rawValue);
+      } else {
+        coresAttribs.put(attribName, attribValue);
+      }
+    }
+  }
+
+  private void addCoreProperty(Map<String,String> coreAttribs, Node node, String name,
+      String value, String defaultValue) {
+    if (node == null) {
+      coreAttribs.put(name, value);
+      return;
+    }
+    
+    String attribValue = null;
+    if (node != null) {
+      String rawAttribValue = DOMUtil.getAttr(node, name, null);
+      if (value == null) {
+        coreAttribs.put(name, rawAttribValue);
+        return;
+      }
+      if (rawAttribValue == null && defaultValue != null && value.equals(defaultValue)) return;
+      if (rawAttribValue != null && value.equals(DOMUtil.substituteProperty(rawAttribValue, loader.getCoreProperties()))){
+        attribValue = rawAttribValue;
+      }
+    }
+    if (attribValue != null) {
+      coreAttribs.put(name, attribValue);
     }
   }
 
