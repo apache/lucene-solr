@@ -140,7 +140,12 @@ Bug Fixes
  * SOLR-3076: ToParent/ChildBlockJoinQuery was not handling
    deleted docs correctly (Mikhail Khludnev via Mike
    McCandless).
-  
+
+ * LUCENE-3794: DirectoryTaxonomyWriter could lose the INDEX_CREATE_TIME 
+   property if multiple commits with userData were done. It now always records 
+   the creation time in the taxonomy index commitData, and reads it from the 
+   index in the constructor. (Shai Erera)
+   
 Documentation
 
  * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly 

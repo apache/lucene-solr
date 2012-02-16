@@ -151,7 +151,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
       tw.close();
       
       tr = new DirectoryTaxonomyReader(dir);
-      int baseNumcategories = tr.getSize();
+      int baseNumCategories = tr.getSize();
       
       for (int i=0; i<n; i++) {
         int k = random.nextInt(n);
@@ -172,7 +172,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
             tr = new DirectoryTaxonomyReader(dir);
           }
         }
-        assertEquals("Wrong #categories in taxonomy (i="+i+", k="+k+")", baseNumcategories + 1 + k, tr.getSize());
+        assertEquals("Wrong #categories in taxonomy (i="+i+", k="+k+")", baseNumCategories + 1 + k, tr.getSize());
       }
     } finally {
       IOUtils.close(tr, tw, dir);
