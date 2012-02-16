@@ -184,7 +184,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
   }
 
   @Test
-  public void withWhereClause() {
+  public void withKeyAndLookup() {
     List fields = new ArrayList();
     fields.add(createMap("column", "id"));
     fields.add(createMap("column", "desc"));
@@ -200,7 +200,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
   }
 
   @Test
-  public void withKeyAndLookup() {
+  public void withWhereClause() {
     List fields = new ArrayList();
     fields.add(createMap("column", "id"));
     fields.add(createMap("column", "desc"));
@@ -216,7 +216,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
 
   private void doWhereTest(String q, Context context, MockDataSource ds, Map xNamespace) {
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
-    rows.add(createMap("id", 1, "desc", "one"));
+    rows.add(createMap("desc", "one", "id", 1));
     rows.add(createMap("id", 2, "desc", "two"));
     rows.add(createMap("id", 2, "desc", "another two"));
     rows.add(createMap("id", 3, "desc", "three"));

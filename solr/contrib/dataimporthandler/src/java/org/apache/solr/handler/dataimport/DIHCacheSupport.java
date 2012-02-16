@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 public class DIHCacheSupport {
   private static final Logger log = LoggerFactory
       .getLogger(DIHCacheSupport.class);
-  private String cacheVariableName;
+  private String cacheForeignKey;
   private String cacheImplName;
   private Map<String,DIHCache> queryVsCache = new HashMap<String,DIHCache>();
   private Map<String,Iterator<Map<String,Object>>> queryVsCacheIterator;
@@ -27,10 +27,8 @@ public class DIHCacheSupport {
     this.cacheImplName = cacheImplName;
     
     String where = context.getEntityAttribute("where");
-    String cacheKey = context
-        .getEntityAttribute(DIHCacheSupport.CACHE_PRIMARY_KEY);
-    String lookupKey = context
-        .getEntityAttribute(DIHCacheSupport.CACHE_FOREIGN_KEY);
+    String cacheKey = context.getEntityAttribute(DIHCacheSupport.CACHE_PRIMARY_KEY);
+    String lookupKey = context.getEntityAttribute(DIHCacheSupport.CACHE_FOREIGN_KEY);
     if (cacheKey != null && lookupKey == null) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
           "'cacheKey' is specified for the entity "
@@ -43,15 +41,16 @@ public class DIHCacheSupport {
     } else {
       if (where != null) {
         String[] splits = where.split("=");
-        cacheVariableName = splits[1].trim();
+        cacheKey = splits[0];
+        cacheForeignKey = splits[1].trim();
       } else {
-        cacheVariableName = lookupKey;
+        cacheForeignKey = lookupKey;
       }
       cacheDoKeyLookup = true;
     }
     context.setSessionAttribute(DIHCacheSupport.CACHE_PRIMARY_KEY, cacheKey,
         Context.SCOPE_ENTITY);
-    context.setSessionAttribute(DIHCacheSupport.CACHE_FOREIGN_KEY, lookupKey,
+    context.setSessionAttribute(DIHCacheSupport.CACHE_FOREIGN_KEY, cacheForeignKey,
         Context.SCOPE_ENTITY);
     context.setSessionAttribute(DIHCacheSupport.CACHE_DELETE_PRIOR_DATA,
         "true", Context.SCOPE_ENTITY);
@@ -90,7 +89,7 @@ public class DIHCacheSupport {
     }
     queryVsCache = null;
     dataSourceRowCache = null;
-    cacheVariableName = null;
+    cacheForeignKey = null;
   }
   
   /**
@@ -142,10 +141,10 @@ public class DIHCacheSupport {
    */
   protected Map<String,Object> getIdCacheData(Context context, String query,
       Iterator<Map<String,Object>> rowIterator) {
-    Object key = context.resolve(cacheVariableName);
+    Object key = context.resolve(cacheForeignKey);
     if (key == null) {
       throw new DataImportHandlerException(DataImportHandlerException.WARN,
-          "The cache lookup value : " + cacheVariableName
+          "The cache lookup value : " + cacheForeignKey
               + " is resolved to be null in the entity :"
               + context.getEntityAttribute("name"));
       
