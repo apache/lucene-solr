@@ -110,15 +110,21 @@ public final class ZkController {
     // start up a tmp zk server first
     String zkServerAddress = args[0];
     
-    String solrHome = args[1];
-    String solrPort = args[2];
+    String solrPort = args[1];
     
-    String confDir = args[3];
-    String confName = args[4];
+    String confDir = args[2];
+    String confName = args[3];
     
-    SolrZkServer zkServer = new SolrZkServer("true", null, solrHome, solrPort);
-    zkServer.parseConfig();
-    zkServer.start();
+    String solrHome = null;
+    if (args.length == 5) {
+      solrHome = args[4];
+    }
+    SolrZkServer zkServer = null;
+    if (solrHome != null) {
+      zkServer = new SolrZkServer("true", null, solrHome, solrPort);
+      zkServer.parseConfig();
+      zkServer.start();
+    }
     
     SolrZkClient zkClient = new SolrZkClient(zkServerAddress, 15000, 5000,
         new OnReconnect() {
@@ -127,8 +133,9 @@ public final class ZkController {
           }});
     
     uploadConfigDir(zkClient, new File(confDir), confName);
-    
-    zkServer.stop();
+    if (solrHome != null) {
+      zkServer.stop();
+    }
   }
 
   /**
@@ -861,6 +868,9 @@ public final class ZkController {
   private void publishState(CoreDescriptor cd, String shardZkNodeName, String coreName,
       Map<String,String> props) {
     CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+    if (cloudDesc.getRoles() != null) {
+      props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
+    }
     
     if (cloudDesc.getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getCloudState(), shardZkNodeName)) {
       // publish with no shard id so we are assigned one, and then look for it

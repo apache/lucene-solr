@@ -53,6 +53,7 @@ public class CoreAdminRequest extends SolrRequest
     protected String collection;
     private Integer numShards;
     private String shardId;
+    private String roles;
 
     public Create() {
       action = CoreAdminAction.CREATE;
@@ -65,6 +66,7 @@ public class CoreAdminRequest extends SolrRequest
     public void setCollection(String collection) { this.collection = collection; }
     public void setNumShards(int numShards) {this.numShards = numShards;}
     public void setShardId(String shardId) {this.shardId = shardId;}
+    public void setRoles(String roles) {this.roles = roles;}
     
     public String getInstanceDir() { return instanceDir; }
     public String getSchemaName()  { return schemaName; }
@@ -72,6 +74,7 @@ public class CoreAdminRequest extends SolrRequest
     public String getDataDir() { return dataDir; }
     public String getCollection() { return collection; }
     public String getShardId() { return shardId; }
+    public String getRoles() { return roles; }
     
     @Override
     public SolrParams getParams() {
@@ -103,6 +106,9 @@ public class CoreAdminRequest extends SolrRequest
       }
       if (shardId != null) {
         params.set( ZkStateReader.SHARD_ID_PROP, shardId);
+      }
+      if (roles != null) {
+        params.set( CoreAdminParams.ROLES, roles);
       }
       return params;
     }

@@ -33,6 +33,8 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
@@ -302,7 +304,13 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     assertNotSame(oneDocs, twoDocs);
     assertEquals(3, allDocs);
     
-
+    // we added a role of none on these creates - check for it
+    ZkStateReader zkStateReader = solrj.getZkStateReader();
+    zkStateReader.updateCloudState(true);
+    Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(oneInstanceCollection2);
+    assertNotNull(slices);
+    String roles = slices.get("shard1").getShards().values().iterator().next().get(ZkStateReader.ROLES_PROP);
+    assertEquals("none", roles);
   }
 
   private void testSearchByCollectionName() throws SolrServerException {
@@ -375,6 +383,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     CommonsHttpSolrServer server = new CommonsHttpSolrServer(
         baseUrl);
     Create createCmd = new Create();
+    createCmd.setRoles("none");
     createCmd.setCoreName(collection + num);
     createCmd.setCollection(collection);
     createCmd.setNumShards(2);
