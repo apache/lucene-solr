@@ -354,6 +354,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
         if (opts != null)
           cd.setShardId(opts);
         
+        opts = params.get(CoreAdminParams.ROLES);
+        if (opts != null)
+          cd.setRoles(opts);
+        
         Integer numShards = params.getInt(ZkStateReader.NUM_SHARDS_PROP);
         if (numShards != null)
           cd.setNumShards(numShards);
@@ -401,14 +405,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
     boolean doPersist = false;
 
     if (cname.equals(name)) return doPersist;
-
-    SolrCore core = coreContainer.getCore(cname);
-    if (core != null) {
-      doPersist = coreContainer.isPersistent();
-      coreContainer.register(name, core, false);
-      coreContainer.remove(cname);
-      core.close();
-    }
+    
+    doPersist = coreContainer.isPersistent();
+    coreContainer.rename(cname, name);
+    
     return doPersist;
   }
 
@@ -601,7 +601,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
     SolrCore core = null;
     try {
       core = coreContainer.getCore(cname);
-      core.getUpdateHandler().getSolrCoreState().doRecovery(core);
+      if (core != null) {
+        core.getUpdateHandler().getSolrCoreState().doRecovery(core);
+      } else {
+        SolrException.log(log, "Cound not find core to call recovery:" + cname);
+      }
     } finally {
       // no recoveryStrat close for now
       if (core != null) {
@@ -630,7 +634,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (core == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "core not found:" + cname);
       }
-      String state;
+      String state = null;
       int retry = 0;
       while (true) {
         // wait until we are sure the recovering node is ready
@@ -640,14 +644,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
         CloudState cloudState = coreContainer
             .getZkController()
             .getCloudState();
+        String collection = cloudDescriptor.getCollectionName();
         ZkNodeProps nodeProps = 
-            cloudState.getSlice(cloudDescriptor.getCollectionName(),
+            cloudState.getSlice(collection,
                 cloudDescriptor.getShardId()).getShards().get(coreNodeName);
-        state = nodeProps.get(ZkStateReader.STATE_PROP);
-        boolean live = cloudState.liveNodesContain(nodeName);
-        if (nodeProps != null && state.equals(ZkStateReader.RECOVERING)
-            && live) {
-          break;
+        boolean live = false;
+        if (nodeProps != null) {
+          
+          state = nodeProps.get(ZkStateReader.STATE_PROP);
+          live = cloudState.liveNodesContain(nodeName);
+          if (nodeProps != null && state.equals(ZkStateReader.RECOVERING)
+              && live) {
+            break;
+          }
         }
         
         if (retry++ == 30) {
