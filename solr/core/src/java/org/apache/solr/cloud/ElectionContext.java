@@ -109,8 +109,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   void runLeaderProcess(String leaderSeqPath, boolean weAreReplacement)
       throws KeeperException, InterruptedException, IOException {
     if (cc != null) {
-      SolrCore core = null;
       String coreName = leaderProps.get(ZkStateReader.CORE_NAME_PROP);
+      SolrCore core = null;
       try {
         core = cc.getCore(coreName);
         if (core == null) {
