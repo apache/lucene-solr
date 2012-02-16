@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
@@ -162,6 +163,22 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   public void run() {
     boolean replayed = false;
     boolean succesfulRecovery = false;
+
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    if (ulog == null) {
+      SolrException.log(log, "No UpdateLog found - cannot recover");
+      recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+          core.getCoreDescriptor());
+      return;
+    }
+
+    List<Long> startingRecentVersions;
+    UpdateLog.RecentUpdates startingRecentUpdates = ulog.getRecentUpdates();
+    try {
+      startingRecentVersions = startingRecentUpdates.getVersions(100);
+    } finally {
+      startingRecentUpdates.close();
+    }
     
     while (!succesfulRecovery && !close && !isInterrupted()) {
       try {
@@ -175,10 +192,12 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
         
         String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderprops.get(ZkStateReader.BASE_URL_PROP), leaderprops.get(ZkStateReader.CORE_NAME_PROP));
-        
+
+        // TODO: we should only try this the first time through the loop?
         log.info("Attempting to PeerSync from " + leaderUrl);
         PeerSync peerSync = new PeerSync(core,
             Collections.singletonList(leaderUrl), 100);
+        peerSync.setStartingVersions(startingRecentVersions);
         boolean syncSuccess = peerSync.sync();
         if (syncSuccess) {
           SolrQueryRequest req = new LocalSolrQueryRequest(core,
@@ -191,13 +210,6 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           return;
         }
         log.info("Sync Recovery was not successful - trying replication");
-        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-        if (ulog == null) {
-          SolrException.log(log, "No UpdateLog found - cannot recover");
-          recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
-              core.getCoreDescriptor());
-          return;
-        }
         
         log.info("Begin buffering updates");
         ulog.bufferUpdates();
