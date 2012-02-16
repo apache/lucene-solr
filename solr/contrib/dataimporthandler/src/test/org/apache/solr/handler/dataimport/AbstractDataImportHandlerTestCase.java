@@ -36,6 +36,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.File;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -148,7 +149,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
    */
   @SuppressWarnings("unchecked")
   public static Map createMap(Object... args) {
-    Map result = new HashMap();
+    Map result = new LinkedHashMap();
 
     if (args == null || args.length == 0)
       return result;
