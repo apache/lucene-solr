@@ -296,7 +296,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } catch (Exception e) {
       SolrException.log(LOG, "SnapPull failed ", e);
     } finally {
-      tempSnapPuller = snapPuller;
+      if (snapPuller != null) {
+        tempSnapPuller = snapPuller;
+      }
       snapPullLock.unlock();
     }
     return false;
@@ -444,6 +446,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   boolean isPollingDisabled() {
+    if (snapPuller == null) return true;
     return snapPuller.isPollingDisabled();
   }
 

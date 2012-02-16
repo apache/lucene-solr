@@ -27,7 +27,7 @@ import java.io.Writer;
 import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
- 
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -35,7 +35,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.TestDistributedSearch;
 import org.apache.solr.client.solrj.SolrServer;
@@ -522,7 +521,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     } catch (IOException e) {
       //e.printStackTrace();
     }
-
+    
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
@@ -531,6 +530,29 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
 
+    System.out.println("replicate slave to master");
+    // snappull from the slave to the master
+    
+    for (int i = 0; i < 3; i++)
+      index(slaveClient, "id", i, "name", "name = " + i);
+
+    slaveClient.commit();
+    
+    masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
+    masterUrl += "http://localhost:" + slaveJetty.getLocalPort() + "/solr/replication";
+    url = new URL(masterUrl);
+    stream = url.openStream();
+    try {
+      stream.close();
+    } catch (IOException e) {
+      //e.printStackTrace();
+    }
+
+    // get the details
+    // just ensures we don't get an exception
+    NamedList<Object> details = getDetails(masterClient);
+    //System.out.println("details:" + details);
+    
     // NOTE: at this point, the slave is not polling any more
     // restore it.
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave.xml", "solrconfig.xml");
