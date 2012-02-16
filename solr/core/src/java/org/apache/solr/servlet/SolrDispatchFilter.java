@@ -192,7 +192,7 @@ public class SolrDispatchFilter implements Filter
         
         if (core == null && cores.isZooKeeperAware()) {
           // we couldn't find the core - lets make sure a collection was not specified instead
-          core = getCoreByCollection(cores, core, corename, path);
+          core = getCoreByCollection(cores, corename, path);
           
           if (core != null) {
             // we found a core, update the path
@@ -301,8 +301,7 @@ public class SolrDispatchFilter implements Filter
     chain.doFilter(request, response);
   }
 
-  private SolrCore getCoreByCollection(CoreContainer cores, SolrCore core,
-      String corename, String path) {
+  private SolrCore getCoreByCollection(CoreContainer cores, String corename, String path) {
     String collection = corename;
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     
@@ -313,11 +312,12 @@ public class SolrDispatchFilter implements Filter
     }
     // look for a core on this node
     Set<Entry<String,Slice>> entries = slices.entrySet();
+    SolrCore core = null;
     done:
     for (Entry<String,Slice> entry : entries) {
       // first see if we have the leader
       ZkNodeProps leaderProps = cloudState.getLeader(collection, entry.getKey());
-      core = checkProps(cores, core, path, leaderProps);
+      core = checkProps(cores, path, leaderProps);
       if (core != null) {
         break done;
       }
@@ -327,7 +327,7 @@ public class SolrDispatchFilter implements Filter
       Set<Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
       for (Entry<String,ZkNodeProps> shardEntry : shardEntries) {
         ZkNodeProps zkProps = shardEntry.getValue();
-        core = checkProps(cores, core, path, zkProps);
+        core = checkProps(cores, path, zkProps);
         if (core != null) {
           break done;
         }
@@ -336,9 +336,10 @@ public class SolrDispatchFilter implements Filter
     return core;
   }
 
-  private SolrCore checkProps(CoreContainer cores, SolrCore core, String path,
+  private SolrCore checkProps(CoreContainer cores, String path,
       ZkNodeProps zkProps) {
     String corename;
+    SolrCore core = null;
     if (cores.getZkController().getNodeName().equals(zkProps.get(ZkStateReader.NODE_NAME_PROP))) {
       corename = zkProps.get(ZkStateReader.CORE_NAME_PROP);
       core = cores.getCore(corename);
