@@ -21,11 +21,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.util.AttributeSource;
-
-
 /** This is a DocFieldConsumer that inverts each field,
  *  separately, from a Document, and accepts a
  *  InvertedTermsConsumer to process those terms. */
@@ -36,23 +31,6 @@ final class DocInverter extends DocFieldConsumer {
   final InvertedDocEndConsumer endConsumer;
 
   final DocumentsWriterPerThread.DocState docState;
-
-  final SingleTokenAttributeSource singleToken = new SingleTokenAttributeSource();
-
-  static class SingleTokenAttributeSource extends AttributeSource {
-    final CharTermAttribute termAttribute;
-    final OffsetAttribute offsetAttribute;
-
-    private SingleTokenAttributeSource() {
-      termAttribute = addAttribute(CharTermAttribute.class);
-      offsetAttribute = addAttribute(OffsetAttribute.class);
-    }
-
-    public void reinit(String stringValue, int startOffset,  int endOffset) {
-      termAttribute.setEmpty().append(stringValue);
-      offsetAttribute.setOffset(startOffset, endOffset);
-    }
-  }
 
   public DocInverter(DocumentsWriterPerThread.DocState docState, InvertedDocConsumer consumer, InvertedDocEndConsumer endConsumer) {
     this.docState = docState;
