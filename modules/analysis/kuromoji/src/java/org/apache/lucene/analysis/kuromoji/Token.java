@@ -17,8 +17,8 @@ package org.apache.lucene.analysis.kuromoji;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Type;
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
-import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
 
 public class Token {
   private final Dictionary dictionary;

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.zip.ZipFile;
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Mode;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -80,14 +80,15 @@ public class TestQuality extends LuceneTestCase {
     }
     //System.out.println("maxLen=" + maxLen);
 
-    final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH_WITH_COMPOUNDS);
-    //final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""));
+    final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""), null, true, Mode.SEARCH_WITH_COMPOUNDS);
     tokenizer.reset();
     final String all = sb.toString();
+    System.out.println("all.len=" + all.length());
     final int ITERS = 20;
     CharTermAttribute termAtt = tokenizer.addAttribute(CharTermAttribute.class); 
     for(int iter=0;iter<ITERS;iter++) {
       tokenizer.reset(new StringReader(all));
+      tokenizer.reset();
       count = 0;
       long t0 = System.currentTimeMillis();
       while(tokenizer.incrementToken()) {
@@ -122,9 +123,7 @@ public class TestQuality extends LuceneTestCase {
      word agreement?: 0.999587584716181
      */
     
-    //final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""));
-    //final Tokenizer tokenizer = new KuromojiTokenizer(new Segmenter(Mode.NORMAL), new StringReader(""));
-    final Tokenizer tokenizer = new KuromojiTokenizer2(new StringReader(""), null, true, Mode.SEARCH_WITH_COMPOUNDS);
+    final Tokenizer tokenizer = new KuromojiTokenizer(new StringReader(""), null, true, Mode.SEARCH_WITH_COMPOUNDS);
     String line1 = null;
     String line2 = null;
     int count = 0;

@@ -28,8 +28,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer;
-import org.apache.lucene.analysis.kuromoji.Segmenter;
-import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Mode;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.analysis.BaseTokenizerFactory;
@@ -88,7 +87,7 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements Re
   
   @Override
   public Tokenizer create(Reader input) {
-    return new KuromojiTokenizer(new Segmenter(userDictionary, mode), input);
+    return new KuromojiTokenizer(input, userDictionary, true, mode);
   }
   
   private Mode getMode(Map<String, String> args) {
@@ -96,7 +95,7 @@ public class KuromojiTokenizerFactory extends BaseTokenizerFactory implements Re
     if (mode != null) {
       return Mode.valueOf(mode.toUpperCase(Locale.ENGLISH));
     } else {
-      return Segmenter.DEFAULT_MODE;
+      return KuromojiTokenizer.DEFAULT_MODE;
     }
   }
 }

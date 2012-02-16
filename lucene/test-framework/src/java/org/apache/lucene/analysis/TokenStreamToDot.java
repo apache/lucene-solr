@@ -67,7 +67,7 @@ public class TokenStreamToDot {
       final boolean isFirst = pos == -1;
       int posInc = posIncAtt.getPositionIncrement();
       if (isFirst && posInc == 0) {
-        // nocommit hmm are TS's still allowed to do this...?
+        // TODO: hmm are TS's still allowed to do this...?
         System.err.println("WARNING: first posInc was 0; correcting to 1");
         posInc = 1;
       }

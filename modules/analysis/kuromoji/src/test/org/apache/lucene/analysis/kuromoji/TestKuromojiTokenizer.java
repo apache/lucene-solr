@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -28,7 +29,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Mode;
+import org.apache.lucene.analysis.kuromoji.dict.ConnectionCosts;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
 import org.apache.lucene.analysis.kuromoji.tokenattributes.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -58,7 +60,15 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer2(reader, readDict(), false, Mode.SEARCH);
+      Tokenizer tokenizer = new KuromojiTokenizer(reader, readDict(), false, Mode.SEARCH);
+      return new TokenStreamComponents(tokenizer, tokenizer);
+    }
+  };
+
+  private Analyzer analyzerNormal = new Analyzer() {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new KuromojiTokenizer(reader, readDict(), false, Mode.NORMAL);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -66,7 +76,7 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
   private Analyzer analyzerNoPunct = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer2(reader, readDict(), true, Mode.SEARCH);
+      Tokenizer tokenizer = new KuromojiTokenizer(reader, readDict(), true, Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -74,7 +84,7 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
   private Analyzer analyzerWithCompounds = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer2(reader, readDict(), false, Mode.SEARCH_WITH_COMPOUNDS);
+      Tokenizer tokenizer = new KuromojiTokenizer(reader, readDict(), false, Mode.SEARCH_WITH_COMPOUNDS);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -82,11 +92,17 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
   private Analyzer extendedModeAnalyzerNoPunct = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer2(reader, readDict(), true, Mode.EXTENDED);
+      Tokenizer tokenizer = new KuromojiTokenizer(reader, readDict(), true, Mode.EXTENDED);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
-  
+
+  public void testNormalMode() throws Exception {
+    assertAnalyzesTo(analyzerNormal,
+                     "シニアソフトウェアエンジニア",
+                     new String[] {"シニアソフトウェアエンジニア"});
+  }
+
   public void testDecomposition1() throws Exception {
     assertAnalyzesTo(analyzerNoPunct, "本来は、貧困層の女性や子供に医療保護を提供するために創設された制度である、" +
                          "アメリカ低所得者医療援助制度が、今日では、その予算の約３分の１を老人に費やしている。",
@@ -310,6 +326,29 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(analyzerWithCompounds,
                      input,
                      surfaceForms);
+  }
+
+  public void testLatticeToDot() throws Exception {
+    final GraphvizFormatter gv2 = new GraphvizFormatter(ConnectionCosts.getInstance());
+    final Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        KuromojiTokenizer tokenizer = new KuromojiTokenizer(reader, readDict(), false, Mode.SEARCH);
+        tokenizer.setGraphvizFormatter(gv2);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+
+    String input = "スペースステーションに行きます。うたがわしい。";
+    String[] surfaceForms = {
+        "スペース", "ステーション", "に", "行き", "ます", "。",
+        "うたがわしい", "。"
+    };
+    assertAnalyzesTo(analyzer,
+                     input,
+                     surfaceForms);
+    
+    assertTrue(gv2.finish().indexOf("22.0") != -1);
   }
 
   private void assertReadings(String input, String... readings) throws IOException {

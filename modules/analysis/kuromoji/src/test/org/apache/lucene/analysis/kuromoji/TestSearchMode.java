@@ -28,7 +28,7 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Mode;
 import org.apache.lucene.util.IOUtils;
 
 public class TestSearchMode extends BaseTokenStreamTestCase {
@@ -37,7 +37,7 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
   private final Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer2(reader, null, true, Mode.SEARCH);
+      Tokenizer tokenizer = new KuromojiTokenizer(reader, null, true, Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -45,7 +45,7 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
   private final Analyzer analyzerWithCompounds = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer2(reader, null, true, Mode.SEARCH_WITH_COMPOUNDS);
+      Tokenizer tokenizer = new KuromojiTokenizer(reader, null, true, Mode.SEARCH_WITH_COMPOUNDS);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
