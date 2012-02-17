@@ -32,7 +32,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -548,8 +549,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", customType2));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", customType2));
     // add numeric fields, to test if flex preserves encoding
-    doc.add(new NumericField("trieInt", id));
-    doc.add(new NumericField("trieLong", (long) id));
+    doc.add(new IntField("trieInt", id));
+    doc.add(new LongField("trieLong", (long) id));
     writer.addDocument(doc);
   }
 

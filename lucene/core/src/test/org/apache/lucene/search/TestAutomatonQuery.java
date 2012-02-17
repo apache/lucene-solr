@@ -55,9 +55,9 @@ public class TestAutomatonQuery extends LuceneTestCase {
     doc.add(field);
     doc.add(footerField);
     writer.addDocument(doc);
-    field.setValue("some text from doc two a short piece 5678.91");
+    field.setStringValue("some text from doc two a short piece 5678.91");
     writer.addDocument(doc);
-    field.setValue("doc three has some different stuff"
+    field.setStringValue("doc three has some different stuff"
         + " with numbers 1234 5678.9 and letter b");
     writer.addDocument(doc);
     reader = writer.getReader();

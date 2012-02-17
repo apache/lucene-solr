@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
@@ -35,7 +36,8 @@ import org.apache.lucene.util.BytesRef;
 /**
  * Expert: directly creata a field for a document.  Most
  * users should use one of the sugar subclasses: {@link
- * NumericField}, {@link DocValuesField}, {@link
+ * IntField}, {@link LongField}, {@link FloatField}, {@link
+ * DoubleField}, {@link DocValuesField}, {@link
  * StringField}, {@link TextField}, {@link StoredField}.
  *
  * <p/> A field is a section of a Document. Each field has three
@@ -159,6 +161,8 @@ public class Field implements IndexableField {
     this.name = name;
   }
 
+  // TODO: allow direct construction of int, long, float, double value too..?
+
   /**
    * Create field with String value.
    */
@@ -181,54 +185,6 @@ public class Field implements IndexableField {
     this.type = type;
     this.name = name;
     this.fieldsData = value;
-  }
-
-  /**
-   * Create field with an int value.
-   */
-  public Field(String name, int value, FieldType type) {
-    if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
-    }
-    this.type = type;
-    this.name = name;
-    this.fieldsData = Integer.valueOf(value);
-  }
-
-  /**
-   * Create field with an long value.
-   */
-  public Field(String name, long value, FieldType type) {
-    if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
-    }
-    this.type = type;
-    this.name = name;
-    this.fieldsData = Long.valueOf(value);
-  }
-
-  /**
-   * Create field with a float value.
-   */
-  public Field(String name, float value, FieldType type) {
-    if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
-    }
-    this.type = type;
-    this.name = name;
-    this.fieldsData = Float.valueOf(value);
-  }
-
-  /**
-   * Create field with a double value.
-   */
-  public Field(String name, double value, FieldType type) {
-    if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
-    }
-    this.type = type;
-    this.name = name;
-    this.fieldsData = Double.valueOf(value);
   }
 
   /**
@@ -273,7 +229,7 @@ public class Field implements IndexableField {
    * >ImproveIndexingSpeed</a> for details.
    * </p>
    */
-  public void setValue(String value) {
+  public void setStringValue(String value) {
     if (!(fieldsData instanceof String)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to String");
     }
@@ -284,7 +240,7 @@ public class Field implements IndexableField {
    * Expert: change the value of this field. See <a
    * href="#setValue(java.lang.String)">setValue(String)</a>.
    */
-  public void setValue(Reader value) {
+  public void setReaderValue(Reader value) {
     if (!(fieldsData instanceof Reader)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Reader");
     }
@@ -295,8 +251,8 @@ public class Field implements IndexableField {
    * Expert: change the value of this field. See <a
    * href="#setValue(java.lang.String)">setValue(String)</a>.
    */
-  public void setValue(byte[] value) {
-    setValue(new BytesRef(value));
+  public void setBytesValue(byte[] value) {
+    setBytesValue(new BytesRef(value));
   }
 
   /**
@@ -306,7 +262,7 @@ public class Field implements IndexableField {
    * <p>NOTE: the provided BytesRef is not copied so be sure
    * not to change it until you're done with this field.
    */
-  public void setValue(BytesRef value) {
+  public void setBytesValue(BytesRef value) {
     if (!(fieldsData instanceof BytesRef)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to BytesRef");
     }
@@ -316,7 +272,7 @@ public class Field implements IndexableField {
     fieldsData = value;
   }
 
-  public void setValue(int value) {
+  public void setIntValue(int value) {
     if (!(fieldsData instanceof Integer)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Integer");
     }
@@ -326,7 +282,7 @@ public class Field implements IndexableField {
     fieldsData = Integer.valueOf(value);
   }
 
-  public void setValue(long value) {
+  public void setLongValue(long value) {
     if (!(fieldsData instanceof Long)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Long");
     }
@@ -336,7 +292,7 @@ public class Field implements IndexableField {
     fieldsData = Long.valueOf(value);
   }
 
-  public void setValue(float value) {
+  public void setFloatValue(float value) {
     if (!(fieldsData instanceof Float)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Float");
     }
@@ -346,7 +302,7 @@ public class Field implements IndexableField {
     fieldsData = Float.valueOf(value);
   }
 
-  public void setValue(double value) {
+  public void setDoubleValue(double value) {
     if (!(fieldsData instanceof Double)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to Double");
     }
@@ -443,7 +399,7 @@ public class Field implements IndexableField {
       return null;
     }
 
-    final NumericField.DataType numericType = fieldType().numericType();
+    final NumericType numericType = fieldType().numericType();
     if (numericType != null) {
       if (numericTokenStream == null) {
         // lazy init the TokenStream as it is heavy to instantiate

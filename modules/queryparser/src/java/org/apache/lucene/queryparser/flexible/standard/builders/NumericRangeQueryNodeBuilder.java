@@ -17,12 +17,12 @@ package org.apache.lucene.queryparser.flexible.standard.builders;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.NumericField;
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
@@ -54,7 +54,7 @@ public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
     Number upperNumber = upperNumericNode.getValue();
     
     NumericConfig numericConfig = numericRangeNode.getNumericConfig();
-    NumericField.DataType numberType = numericConfig.getType();
+    NumericType numberType = numericConfig.getType();
     String field = StringUtils.toString(numericRangeNode.getField());
     boolean minInclusive = numericRangeNode.isLowerInclusive();
     boolean maxInclusive = numericRangeNode.isUpperInclusive();

@@ -135,7 +135,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
       int maxCount = 0;
 
       for (int d = minId; d <= maxId; d++) {
-        idField.setValue(pad(d));
+        idField.setStringValue(pad(d));
         int r = index.allowNegativeRandomInts ? random.nextInt() : random
           .nextInt(Integer.MAX_VALUE);
         if (index.maxR < r) {
@@ -151,8 +151,8 @@ public class BaseTestRangeFilter extends LuceneTestCase {
         } else if (r == index.minR) {
           minCount++;
         }
-        randField.setValue(pad(r));
-        bodyField.setValue("body");
+        randField.setStringValue(pad(r));
+        bodyField.setStringValue("body");
         writer.addDocument(doc);
       }
 

@@ -23,12 +23,15 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LazyDocument;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -451,30 +454,34 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void intField(FieldInfo fieldInfo, int value) {
-      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.INT, true));
+      FieldType ft = new FieldType(IntField.TYPE);
+      ft.setStored(true);
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, value, ft));
+      doc.add(new IntField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void longField(FieldInfo fieldInfo, long value) {
-      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.LONG, true));
+      FieldType ft = new FieldType(LongField.TYPE);
+      ft.setStored(true);
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, value, ft));
+      doc.add(new LongField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void floatField(FieldInfo fieldInfo, float value) {
-      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.FLOAT, true));
+      FieldType ft = new FieldType(FloatField.TYPE);
+      ft.setStored(true);
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, value, ft));
+      doc.add(new FloatField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void doubleField(FieldInfo fieldInfo, double value) {
-      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.DOUBLE, true));
+      FieldType ft = new FieldType(DoubleField.TYPE);
+      ft.setStored(true);
       ft.setIndexed(fieldInfo.isIndexed);
-      doc.add(new NumericField(fieldInfo.name, value, ft));
+      doc.add(new DoubleField(fieldInfo.name, value, ft));
     }
   }
 

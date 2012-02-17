@@ -72,7 +72,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random);
-      field.setValue(s);
+      field.setStringValue(s);
       terms.add(s);
       writer.addDocument(doc);
     }

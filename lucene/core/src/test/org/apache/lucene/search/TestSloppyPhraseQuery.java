@@ -239,13 +239,13 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     Field f = new Field("lyrics", "", customType);
     Document doc = new Document();
     doc.add(f);
-    f.setValue("drug drug");
+    f.setStringValue("drug drug");
     iw.addDocument(doc);
-    f.setValue("drug druggy drug");
+    f.setStringValue("drug druggy drug");
     iw.addDocument(doc);
-    f.setValue("drug druggy druggy drug");
+    f.setStringValue("drug druggy druggy drug");
     iw.addDocument(doc);
-    f.setValue("drug druggy drug druggy drug");
+    f.setStringValue("drug druggy drug druggy drug");
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();

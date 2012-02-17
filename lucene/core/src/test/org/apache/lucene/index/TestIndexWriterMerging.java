@@ -144,7 +144,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Field termVectorField = newField("termVector", "termVector", customType1);
     document.add(termVectorField);
     for(int i=0;i<10;i++) {
-      idField.setValue("" + i);
+      idField.setStringValue("" + i);
       writer.addDocument(document);
     }
     writer.close();
@@ -207,7 +207,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Field idField = newField("id", "", StringField.TYPE_UNSTORED);
     document.add(idField);
     for(int i=0;i<98;i++) {
-      idField.setValue("" + i);
+      idField.setStringValue("" + i);
       writer.addDocument(document);
     }
     writer.close();
@@ -273,7 +273,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Field idField = newField("id", "", StringField.TYPE_UNSTORED);
     document.add(idField);
     for(int i=0;i<98;i++) {
-      idField.setValue("" + i);
+      idField.setStringValue("" + i);
       writer.addDocument(document);
     }
     writer.close();
@@ -385,7 +385,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
           System.out.println("TEST: iter=" + iter);
         }
         for(int j=0;j<199;j++) {
-          idField.setValue(Integer.toString(iter*201+j));
+          idField.setStringValue(Integer.toString(iter*201+j));
           writer.addDocument(doc);
         }
 

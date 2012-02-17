@@ -150,7 +150,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
         doFail.set(this);
         final String id = ""+r.nextInt(50);
-        idField.setValue(id);
+        idField.setStringValue(id);
         Term idTerm = new Term("id", id);
         try {
           if (r.nextBoolean()) {

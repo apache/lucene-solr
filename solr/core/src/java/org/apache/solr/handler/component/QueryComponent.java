@@ -504,7 +504,7 @@ public class QueryComponent extends SearchComponent
           // indexedToReadable() should be a no-op and should
           // thus be harmless anyway (for all current ways anyway)
           if (val instanceof String) {
-            field.setValue((String)val);
+            field.setStringValue((String)val);
             val = ft.toObject(field);
           }
 
@@ -513,7 +513,7 @@ public class QueryComponent extends SearchComponent
           // data as BytesRef:
           if (val instanceof BytesRef) {
             UnicodeUtil.UTF8toUTF16((BytesRef)val, spare);
-            field.setValue(spare.toString());
+            field.setStringValue(spare.toString());
             val = ft.toObject(field);
           }
 

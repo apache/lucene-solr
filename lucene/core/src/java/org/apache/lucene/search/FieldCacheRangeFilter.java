@@ -20,10 +20,13 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader; // for javadocs
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.document.IntField; // for javadocs
+import org.apache.lucene.document.FloatField; // for javadocs
+import org.apache.lucene.document.LongField; // for javadocs
+import org.apache.lucene.document.DoubleField; // for javadocs
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.document.NumericField; // for javadocs
 
 /**
  * A range filter built on top of a cached single term field (in {@link FieldCache}).
@@ -38,7 +41,9 @@ import org.apache.lucene.document.NumericField; // for javadocs
  * a CachingWrapperFilter on top of a single {@link TermRangeFilter}.
  *
  * For numeric data types, this filter may be significantly faster than {@link NumericRangeFilter}.
- * Furthermore, it does not need the numeric values encoded by {@link NumericField}. But
+ * Furthermore, it does not need the numeric values encoded
+ * by {@link IntField}, {@link FloatField}, {@link
+ * LongField} or {@link DoubleField}. But
  * it has the problem that it only works with exact one value/document (see below).
  *
  * <p>As with all {@link FieldCache} based functionality, {@code FieldCacheRangeFilter} is only valid for 

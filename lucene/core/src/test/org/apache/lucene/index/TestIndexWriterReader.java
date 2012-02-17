@@ -879,9 +879,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     doc.add(newField("field", "a b c", TextField.TYPE_UNSTORED));
     Field id = newField("id", "", StringField.TYPE_UNSTORED);
     doc.add(id);
-    id.setValue("0");
+    id.setStringValue("0");
     w.addDocument(doc);
-    id.setValue("1");
+    id.setStringValue("1");
     w.addDocument(doc);
     w.deleteDocuments(new Term("id", "0"));
 
@@ -903,9 +903,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     doc.add(newField("field", "a b c", TextField.TYPE_UNSTORED));
     Field id = newField("id", "", StringField.TYPE_UNSTORED);
     doc.add(id);
-    id.setValue("0");
+    id.setStringValue("0");
     w.addDocument(doc);
-    id.setValue("1");
+    id.setStringValue("1");
     w.addDocument(doc);
     IndexReader r = w.getReader();
     assertEquals(2, r.numDocs());

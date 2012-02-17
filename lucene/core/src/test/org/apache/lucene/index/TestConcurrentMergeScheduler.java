@@ -85,7 +85,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       }
 
       for(int j=0;j<20;j++) {
-        idField.setValue(Integer.toString(i*20+j));
+        idField.setStringValue(Integer.toString(i*20+j));
         writer.addDocument(doc);
       }
 
@@ -141,7 +141,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         System.out.println("\nTEST: cycle");
       }
       for(int j=0;j<100;j++) {
-        idField.setValue(Integer.toString(i*100+j));
+        idField.setStringValue(Integer.toString(i*100+j));
         writer.addDocument(doc);
       }
 
@@ -212,7 +212,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     for(int iter=0;iter<10;iter++) {
 
       for(int j=0;j<201;j++) {
-        idField.setValue(Integer.toString(iter*201+j));
+        idField.setStringValue(Integer.toString(iter*201+j));
         writer.addDocument(doc);
       }
 

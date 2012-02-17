@@ -255,9 +255,9 @@ public class TestDocument extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(doc);
-    field.setValue("id2");
+    field.setStringValue("id2");
     writer.addDocument(doc);
-    field.setValue("id3");
+    field.setStringValue("id3");
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();

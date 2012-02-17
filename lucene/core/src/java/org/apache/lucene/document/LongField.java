@@ -17,9 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-
 import org.apache.lucene.analysis.NumericTokenStream; // javadocs
-import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.NumericRangeFilter; // javadocs
@@ -28,35 +26,34 @@ import org.apache.lucene.util.NumericUtils;
 
 /**
  * <p>
- * This class provides a {@link Field} that enables indexing of numeric values
- * for efficient range filtering and sorting. Here's an example usage, adding an
- * int value:
+ * This class provides a {@link Field} that enables indexing of long values
+ * for efficient range filtering and sorting. Here's an example usage:
  * 
  * <pre>
- * document.add(new NumericField(name, value));
+ * document.add(new LongField(name, 6L));
  * </pre>
  * 
- * For optimal performance, re-use the <code>NumericField</code> and
+ * For optimal performance, re-use the <code>LongField</code> and
  * {@link Document} instance for more than one document:
  * 
  * <pre>
- *  NumericField field = new NumericField(name, NumericField.DataType.INT);
+ *  LongField field = new LongField(name, 0L);
  *  Document document = new Document();
  *  document.add(field);
  * 
  *  for(all documents) {
  *    ...
- *    field.setValue(value)
+ *    field.setLongValue(value)
  *    writer.addDocument(document);
  *    ...
  *  }
  * </pre>
  *
- * <p>The java native types <code>int</code>, <code>long</code>,
- * <code>float</code> and <code>double</code> are
- * directly supported.  However, any value that can be
- * converted into these native types can also be indexed.
- * For example, date/time values represented by a
+ * See also {@link IntField}, {@link FloatField}, {@link
+ * DoubleField}.
+ *
+ * Any type that can be converted to long can also be
+ * indexed.  For example, date/time values represented by a
  * {@link java.util.Date} can be translated into a long
  * value using the {@link java.util.Date#getTime} method.  If you
  * don't need millisecond precision, you can quantize the
@@ -66,25 +63,24 @@ import org.apache.lucene.util.NumericUtils;
  * <code>long</code> value.</p>
  *
  * <p>To perform range querying or filtering against a
- * <code>NumericField</code>, use {@link NumericRangeQuery} or {@link
+ * <code>LongField</code>, use {@link NumericRangeQuery} or {@link
  * NumericRangeFilter}.  To sort according to a
- * <code>NumericField</code>, use the normal numeric sort types, eg
- * {@link org.apache.lucene.search.SortField.Type#INT}. <code>NumericField</code> 
+ * <code>LongField</code>, use the normal numeric sort types, eg
+ * {@link org.apache.lucene.search.SortField.Type#LONG}. <code>LongField</code> 
  * values can also be loaded directly from {@link FieldCache}.</p>
  *
- * <p>By default, a <code>NumericField</code>'s value is not stored but
+ * <p>By default, a <code>LongField</code>'s value is not stored but
  * is indexed for range filtering and sorting.  You can use
- * {@link Field#Field(String,int,FieldType)}, etc.,
- * if you need to change these defaults.</p>
+ * {@link StoredField} to also store the value.
  *
- * <p>You may add the same field name as a <code>NumericField</code> to
+ * <p>You may add the same field name as an <code>LongField</code> to
  * the same document more than once.  Range querying and
  * filtering will be the logical OR of all values; so a range query
  * will hit all documents that have at least one value in
  * the range. However sort behavior is not defined.  If you need to sort,
- * you should separately index a single-valued <code>NumericField</code>.</p>
+ * you should separately index a single-valued <code>LongField</code>.</p>
  *
- * <p>A <code>NumericField</code> will consume somewhat more disk space
+ * <p>A <code>LongField</code> will consume somewhat more disk space
  * in the index than an ordinary single-valued field.
  * However, for a typical index that includes substantial
  * textual content per document, this increase will likely
@@ -129,95 +125,34 @@ import org.apache.lucene.util.NumericUtils;
  *
  * @since 2.9
  */
-public final class NumericField extends Field {
+
+public final class LongField extends Field {
   
-  /** Data type of the value in {@link NumericField}.
-   * @since 3.2
-   */
-  public static enum DataType {INT, LONG, FLOAT, DOUBLE}
-
-  /** @lucene.experimental */
-  public static FieldType getFieldType(DataType type, boolean stored) {
-    final FieldType ft = new FieldType();
-    ft.setIndexed(true);
-    ft.setStored(stored);
-    ft.setTokenized(true);
-    ft.setOmitNorms(true);
-    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
-    ft.setNumericType(type);
-    ft.freeze();
-    return ft;
+  public static final FieldType TYPE = new FieldType();
+  static {
+    TYPE.setIndexed(true);
+    TYPE.setTokenized(true);
+    TYPE.setOmitNorms(true);
+    TYPE.setIndexOptions(IndexOptions.DOCS_ONLY);
+    TYPE.setNumericType(FieldType.NumericType.LONG);
+    TYPE.freeze();
   }
 
-  private static final FieldType INT_TYPE = getFieldType(DataType.INT, false);
-  private static final FieldType LONG_TYPE = getFieldType(DataType.LONG, false);
-  private static final FieldType FLOAT_TYPE = getFieldType(DataType.FLOAT, false);
-  private static final FieldType DOUBLE_TYPE = getFieldType(DataType.DOUBLE, false);
-
-  /** Creates an int NumericField with the provided value
+  /** Creates an LongField with the provided value
    *  and default <code>precisionStep</code> {@link
    *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
-  public NumericField(String name, int value) {
-    super(name, INT_TYPE);
-    fieldsData = Integer.valueOf(value);
-  }
-
-  /** Creates a long NumericField with the provided value.
-   *  and default <code>precisionStep</code> {@link
-   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
-  public NumericField(String name, long value) {
-    super(name, LONG_TYPE);
+  public LongField(String name, long value) {
+    super(name, TYPE);
     fieldsData = Long.valueOf(value);
   }
-
-  /** Creates a float NumericField with the provided value.
-   *  and default <code>precisionStep</code> {@link
-   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
-  public NumericField(String name, float value) {
-    super(name, FLOAT_TYPE);
-    fieldsData = Float.valueOf(value);
-  }
-
-  /** Creates a double NumericField with the provided value.
-   *  and default <code>precisionStep</code> {@link
-   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
-  public NumericField(String name, double value) {
-    super(name, DOUBLE_TYPE);
-    fieldsData = Double.valueOf(value);
-  }
   
-  public NumericField(String name, Number value, FieldType type) {
+  /** Expert: allows you to customize the {@link
+   *  FieldType}. */
+  public LongField(String name, long value, FieldType type) {
     super(name, type);
-    final NumericField.DataType numericType = type.numericType();
-    if (numericType == null) {
-      throw new IllegalArgumentException("FieldType.numericType() cannot be null");
+    if (type.numericType() != FieldType.NumericType.LONG) {
+      throw new IllegalArgumentException("type.numericType() must be LONG but got " + type.numericType());
     }
-
-    switch(numericType) {
-    case INT:
-      if (!(value instanceof Integer)) {
-        throw new IllegalArgumentException("value must be an Integer but got " + value);
-      }
-      break;
-    case LONG:
-      if (!(value instanceof Long)) {
-        throw new IllegalArgumentException("value must be a Long but got " + value);
-      }
-      break;
-    case FLOAT:
-      if (!(value instanceof Float)) {
-        throw new IllegalArgumentException("value must be a Float but got " + value);
-      }
-      break;
-    case DOUBLE:
-      if (!(value instanceof Double)) {
-        throw new IllegalArgumentException("value must be a Double but got " + value);
-      }
-      break;
-    default:
-      assert false : "Should never get here";
-    }
-
-    fieldsData = value;
+    fieldsData = Long.valueOf(value);
   }
 }

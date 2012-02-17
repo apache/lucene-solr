@@ -17,32 +17,33 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.document.DoubleField; // for javadocs
+import org.apache.lucene.document.FloatField; // for javadocs
+import org.apache.lucene.document.IntField; // for javadocs
+import org.apache.lucene.document.LongField; // for javadocs
+import org.apache.lucene.search.NumericRangeFilter; // for javadocs
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.document.NumericField; // for javadocs
-import org.apache.lucene.search.NumericRangeQuery; // for javadocs
-import org.apache.lucene.search.NumericRangeFilter; // for javadocs
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
  * <b>Expert:</b> This class provides a {@link TokenStream}
  * for indexing numeric values that can be used by {@link
  * NumericRangeQuery} or {@link NumericRangeFilter}.
  *
- * <p>Note that for simple usage, {@link NumericField} is
- * recommended.  {@link NumericField} disables norms and
+ * <p>Note that for simple usage, {@link IntField}, {@link
+ * LongField}, {@link FloatField} or {@link DoubleField} is
+ * recommended.  These fields disable norms and
  * term freqs, as they are not usually needed during
  * searching.  If you need to change these settings, you
  * should use this class.
- *
- * <p>See {@link NumericField} for capabilities of fields
- * indexed numerically.</p>
  *
  * <p>Here's an example usage, for an <code>int</code> field:
  *

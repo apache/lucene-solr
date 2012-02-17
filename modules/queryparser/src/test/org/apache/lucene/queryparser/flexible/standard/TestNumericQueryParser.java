@@ -33,8 +33,13 @@ import java.util.TimeZone;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
@@ -171,10 +176,10 @@ public class TestNumericQueryParser extends LuceneTestCase {
     while ((randomInt = normalizeNumber(Math.abs(random.nextInt())).intValue()) == 0)
       ;
     
-    randomNumberMap.put(NumericField.DataType.LONG.name(), randomLong);
-    randomNumberMap.put(NumericField.DataType.INT.name(), randomInt);
-    randomNumberMap.put(NumericField.DataType.FLOAT.name(), randomFloat);
-    randomNumberMap.put(NumericField.DataType.DOUBLE.name(), randomDouble);
+    randomNumberMap.put(NumericType.LONG.name(), randomLong);
+    randomNumberMap.put(NumericType.INT.name(), randomInt);
+    randomNumberMap.put(NumericType.FLOAT.name(), randomFloat);
+    randomNumberMap.put(NumericType.DOUBLE.name(), randomDouble);
     randomNumberMap.put(DATE_FIELD_NAME, randomDate);
     
     RANDOM_NUMBER_MAP = Collections.unmodifiableMap(randomNumberMap);
@@ -187,29 +192,32 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     Document doc = new Document();
     HashMap<String,NumericConfig> numericConfigMap = new HashMap<String,NumericConfig>();
-    HashMap<String,NumericField> numericFieldMap = new HashMap<String,NumericField>();
+    HashMap<String,Field> numericFieldMap = new HashMap<String,Field>();
     qp.setNumericConfigMap(numericConfigMap);
     
-    for (NumericField.DataType type : NumericField.DataType.values()) {
+    for (NumericType type : NumericType.values()) {
       numericConfigMap.put(type.name(), new NumericConfig(PRECISION_STEP,
           NUMBER_FORMAT, type));
 
-      FieldType ft = new FieldType(NumericField.getFieldType(type, true));
+      FieldType ft = new FieldType(IntField.TYPE);
+      ft.setNumericType(type);
+      ft.setStored(true);
       ft.setNumericPrecisionStep(PRECISION_STEP);
-      final NumericField field;
+      ft.freeze();
+      final Field field;
 
       switch(type) {
       case INT:
-        field = new NumericField(type.name(), 0, ft);
+        field = new IntField(type.name(), 0, ft);
         break;
       case FLOAT:
-        field = new NumericField(type.name(), 0.0f, ft);
+        field = new FloatField(type.name(), 0.0f, ft);
         break;
       case LONG:
-        field = new NumericField(type.name(), 0l, ft);
+        field = new LongField(type.name(), 0l, ft);
         break;
       case DOUBLE:
-        field = new NumericField(type.name(), 0.0, ft);
+        field = new DoubleField(type.name(), 0.0, ft);
         break;
       default:
         assert false;
@@ -220,10 +228,11 @@ public class TestNumericQueryParser extends LuceneTestCase {
     }
     
     numericConfigMap.put(DATE_FIELD_NAME, new NumericConfig(PRECISION_STEP,
-        DATE_FORMAT, NumericField.DataType.LONG));
-    FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.LONG, true));
+        DATE_FORMAT, NumericType.LONG));
+    FieldType ft = new FieldType(LongField.TYPE);
+    ft.setStored(true);
     ft.setNumericPrecisionStep(PRECISION_STEP);
-    NumericField dateField = new NumericField(DATE_FIELD_NAME, 0l, ft);
+    LongField dateField = new LongField(DATE_FIELD_NAME, 0l, ft);
     numericFieldMap.put(DATE_FIELD_NAME, dateField);
     doc.add(dateField);
     
@@ -253,17 +262,17 @@ public class TestNumericQueryParser extends LuceneTestCase {
       case NEGATIVE:
         Number number = RANDOM_NUMBER_MAP.get(fieldName);
         
-        if (NumericField.DataType.LONG.name().equals(fieldName)
+        if (NumericType.LONG.name().equals(fieldName)
             || DATE_FIELD_NAME.equals(fieldName)) {
           number = -number.longValue();
           
-        } else if (NumericField.DataType.DOUBLE.name().equals(fieldName)) {
+        } else if (NumericType.DOUBLE.name().equals(fieldName)) {
           number = -number.doubleValue();
           
-        } else if (NumericField.DataType.FLOAT.name().equals(fieldName)) {
+        } else if (NumericType.FLOAT.name().equals(fieldName)) {
           number = -number.floatValue();
           
-        } else if (NumericField.DataType.INT.name().equals(fieldName)) {
+        } else if (NumericType.INT.name().equals(fieldName)) {
           number = -number.intValue();
           
         } else {
@@ -281,27 +290,27 @@ public class TestNumericQueryParser extends LuceneTestCase {
   }
   
   private static void setFieldValues(NumberType numberType,
-      HashMap<String,NumericField> numericFieldMap) {
+      HashMap<String,Field> numericFieldMap) {
     
-    Number number = getNumberType(numberType, NumericField.DataType.DOUBLE
+    Number number = getNumberType(numberType, NumericType.DOUBLE
         .name());
-    numericFieldMap.get(NumericField.DataType.DOUBLE.name()).setValue(
+    numericFieldMap.get(NumericType.DOUBLE.name()).setDoubleValue(
         number.doubleValue());
     
-    number = getNumberType(numberType, NumericField.DataType.INT.name());
-    numericFieldMap.get(NumericField.DataType.INT.name()).setValue(
+    number = getNumberType(numberType, NumericType.INT.name());
+    numericFieldMap.get(NumericType.INT.name()).setIntValue(
         number.intValue());
     
-    number = getNumberType(numberType, NumericField.DataType.LONG.name());
-    numericFieldMap.get(NumericField.DataType.LONG.name()).setValue(
+    number = getNumberType(numberType, NumericType.LONG.name());
+    numericFieldMap.get(NumericType.LONG.name()).setLongValue(
         number.longValue());
     
-    number = getNumberType(numberType, NumericField.DataType.FLOAT.name());
-    numericFieldMap.get(NumericField.DataType.FLOAT.name()).setValue(
+    number = getNumberType(numberType, NumericType.FLOAT.name());
+    numericFieldMap.get(NumericType.FLOAT.name()).setFloatValue(
         number.floatValue());
     
     number = getNumberType(numberType, DATE_FIELD_NAME);
-    numericFieldMap.get(DATE_FIELD_NAME).setValue(number.longValue());
+    numericFieldMap.get(DATE_FIELD_NAME).setLongValue(number.longValue());
   }
   
   private static int randomDateStyle(Random random) {
@@ -399,7 +408,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     String lowerInclusiveStr = (lowerInclusive ? "[" : "{");
     String upperInclusiveStr = (upperInclusive ? "]" : "}");
     
-    for (NumericField.DataType type : NumericField.DataType.values()) {
+    for (NumericType type : NumericType.values()) {
       String lowerStr = numberToString(getNumberType(lowerType, type.name()));
       String upperStr = numberToString(getNumberType(upperType, type.name()));
       
@@ -445,7 +454,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
 
     StringBuilder sb = new StringBuilder();
     
-    for (NumericField.DataType type : NumericField.DataType.values()) {
+    for (NumericType type : NumericType.values()) {
       String boundStr = numberToString(getNumberType(boundType, type.name()));
       
       sb.append("+").append(type.name()).append(operator).append('"').append(boundStr).append('"').append(' ');
@@ -464,7 +473,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
       throws QueryNodeException, IOException {
     StringBuilder sb = new StringBuilder();
     
-    for (NumericField.DataType type : NumericField.DataType.values()) {
+    for (NumericType type : NumericType.values()) {
       String numberStr = numberToString(getNumberType(numberType, type.name()));
       sb.append('+').append(type.name()).append(":\"").append(numberStr)
           .append("\" ");

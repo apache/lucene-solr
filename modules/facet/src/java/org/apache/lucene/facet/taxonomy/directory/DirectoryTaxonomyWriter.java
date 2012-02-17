@@ -549,7 +549,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     Document d = new Document();
     d.add(parentStreamField);
 
-    fullPathField.setValue(categoryPath.toString(delimiter, length));
+    fullPathField.setStringValue(categoryPath.toString(delimiter, length));
     d.add(fullPathField);
 
     // Note that we do no pass an Analyzer here because the fields that are

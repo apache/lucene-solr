@@ -20,7 +20,8 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -60,7 +61,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
     
-    final FieldType storedInt = NumericField.getFieldType(NumericField.DataType.INT, true);
+    final FieldType storedInt = new FieldType(IntField.TYPE);
+    storedInt.setStored(true);
+    storedInt.freeze();
 
     final FieldType storedInt8 = new FieldType(storedInt);
     storedInt8.setNumericPrecisionStep(8);
@@ -74,7 +77,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     final FieldType storedIntNone = new FieldType(storedInt);
     storedIntNone.setNumericPrecisionStep(Integer.MAX_VALUE);
 
-    final FieldType unstoredInt = NumericField.getFieldType(NumericField.DataType.INT, false);
+    final FieldType unstoredInt = IntField.TYPE;
 
     final FieldType unstoredInt8 = new FieldType(unstoredInt);
     unstoredInt8.setNumericPrecisionStep(8);
@@ -85,14 +88,14 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     final FieldType unstoredInt2 = new FieldType(unstoredInt);
     unstoredInt2.setNumericPrecisionStep(2);
 
-    NumericField
-      field8 = new NumericField("field8", 0, storedInt8),
-      field4 = new NumericField("field4", 0, storedInt4),
-      field2 = new NumericField("field2", 0, storedInt2),
-      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, 0, storedIntNone),
-      ascfield8 = new NumericField("ascfield8", 0, unstoredInt8),
-      ascfield4 = new NumericField("ascfield4", 0, unstoredInt4),
-      ascfield2 = new NumericField("ascfield2", 0, unstoredInt2);
+    IntField
+      field8 = new IntField("field8", 0, storedInt8),
+      field4 = new IntField("field4", 0, storedInt4),
+      field2 = new IntField("field2", 0, storedInt2),
+      fieldNoTrie = new IntField("field"+Integer.MAX_VALUE, 0, storedIntNone),
+      ascfield8 = new IntField("ascfield8", 0, unstoredInt8),
+      ascfield4 = new IntField("ascfield4", 0, unstoredInt4),
+      ascfield2 = new IntField("ascfield2", 0, unstoredInt2);
     
     Document doc = new Document();
     // add fields, that have a distance to test general functionality
@@ -103,15 +106,15 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     // Add a series of noDocs docs with increasing int values
     for (int l=0; l<noDocs; l++) {
       int val=distance*l+startOffset;
-      field8.setValue(val);
-      field4.setValue(val);
-      field2.setValue(val);
-      fieldNoTrie.setValue(val);
+      field8.setIntValue(val);
+      field4.setIntValue(val);
+      field2.setIntValue(val);
+      fieldNoTrie.setIntValue(val);
 
       val=l-(noDocs/2);
-      ascfield8.setValue(val);
-      ascfield4.setValue(val);
-      ascfield2.setValue(val);
+      ascfield8.setIntValue(val);
+      ascfield4.setIntValue(val);
+      ascfield2.setIntValue(val);
       writer.addDocument(doc);
     }
   
@@ -299,23 +302,23 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
       newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
-    doc.add(new NumericField("float", Float.NEGATIVE_INFINITY));
-    doc.add(new NumericField("int", Integer.MIN_VALUE));
+    doc.add(new FloatField("float", Float.NEGATIVE_INFINITY));
+    doc.add(new IntField("int", Integer.MIN_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("float", Float.POSITIVE_INFINITY));
-    doc.add(new NumericField("int", Integer.MAX_VALUE));
+    doc.add(new FloatField("float", Float.POSITIVE_INFINITY));
+    doc.add(new IntField("int", Integer.MAX_VALUE));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new NumericField("float", 0.0f));
-    doc.add(new NumericField("int", 0));
+    doc.add(new FloatField("float", 0.0f));
+    doc.add(new IntField("int", 0));
     writer.addDocument(doc);
     
     for (float f : TestNumericUtils.FLOAT_NANs) {
       doc = new Document();
-      doc.add(new NumericField("float", f));
+      doc.add(new FloatField("float", f));
       writer.addDocument(doc);
     }
     

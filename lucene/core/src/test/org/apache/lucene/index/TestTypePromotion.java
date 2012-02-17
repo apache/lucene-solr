@@ -215,33 +215,33 @@ public class TestTypePromotion extends LuceneTestCase {
       switch (valueType) {
       case VAR_INTS:
         values[i] = random.nextInt();
-        valField.setValue(values[i]);
+        valField.setLongValue(values[i]);
         break;
       case FIXED_INTS_16:
         values[i] = random.nextInt(Short.MAX_VALUE);
-        valField.setValue((short) values[i]);
+        valField.setIntValue((short) values[i]);
         break;
       case FIXED_INTS_32:
         values[i] = random.nextInt();
-        valField.setValue((int) values[i]);
+        valField.setIntValue((int) values[i]);
         break;
       case FIXED_INTS_64:
         values[i] = random.nextLong();
-        valField.setValue(values[i]);
+        valField.setLongValue(values[i]);
         break;
       case FLOAT_64:
         double nextDouble = random.nextDouble();
         values[i] = Double.doubleToRawLongBits(nextDouble);
-        valField.setValue(nextDouble);
+        valField.setDoubleValue(nextDouble);
         break;
       case FLOAT_32:
         final float nextFloat = random.nextFloat();
         values[i] = Double.doubleToRawLongBits(nextFloat);
-        valField.setValue(nextFloat);
+        valField.setFloatValue(nextFloat);
         break;
       case FIXED_INTS_8:
         values[i] = (byte) i;
-        valField.setValue((byte)values[i]);
+        valField.setIntValue((byte)values[i]);
         break;
       case BYTES_FIXED_DEREF:
       case BYTES_FIXED_SORTED:
@@ -250,7 +250,7 @@ public class TestTypePromotion extends LuceneTestCase {
         byte bytes[] = new byte[8];
         ByteArrayDataOutput out = new ByteArrayDataOutput(bytes, 0, 8);
         out.writeLong(values[i]);
-        valField.setValue(new BytesRef(bytes));
+        valField.setBytesValue(new BytesRef(bytes));
         break;
       case BYTES_VAR_DEREF:
       case BYTES_VAR_SORTED:
@@ -267,7 +267,7 @@ public class TestTypePromotion extends LuceneTestCase {
           lout.writeLong(values[i]);
           len = 8;
         }
-        valField.setValue(new BytesRef(lbytes, 0, len));
+        valField.setBytesValue(new BytesRef(lbytes, 0, len));
         break;
 
       default:

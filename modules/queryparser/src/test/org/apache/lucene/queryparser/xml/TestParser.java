@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -69,7 +69,7 @@ public class TestParser extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newField("date", date, TextField.TYPE_STORED));
       doc.add(newField("contents", content, TextField.TYPE_STORED));
-      doc.add(new NumericField("date2", Integer.valueOf(date)));
+      doc.add(new IntField("date2", Integer.valueOf(date)));
       writer.addDocument(doc);
       line = d.readLine();
     }

@@ -94,7 +94,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     doc.add(field);
     
     for (int i = 0; i < terms; i++) {
-      field.setValue(mapInt(codePointTable, i));
+      field.setStringValue(mapInt(codePointTable, i));
       writer.addDocument(doc);
     }   
     

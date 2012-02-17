@@ -595,7 +595,7 @@ public class TestGrouping extends LuceneTestCase {
         }
         doc.add(newField("sort1", groupValue.sort1.utf8ToString(), StringField.TYPE_UNSTORED));
         doc.add(newField("sort2", groupValue.sort2.utf8ToString(), StringField.TYPE_UNSTORED));
-        doc.add(new NumericField("id", groupValue.id));
+        doc.add(new IntField("id", groupValue.id));
         doc.add(newField("content", groupValue.content, TextField.TYPE_UNSTORED));
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
       }
@@ -721,7 +721,7 @@ public class TestGrouping extends LuceneTestCase {
       Field content = newField("content", "", TextField.TYPE_UNSTORED);
       doc.add(content);
       docNoGroup.add(content);
-      NumericField id = new NumericField("id", 0);
+      IntField id = new IntField("id", 0);
       doc.add(id);
       docNoGroup.add(id);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
@@ -745,15 +745,15 @@ public class TestGrouping extends LuceneTestCase {
 
         groupDocs[i] = groupDoc;
         if (groupDoc.group != null) {
-          group.setValue(groupDoc.group.utf8ToString());
+          group.setStringValue(groupDoc.group.utf8ToString());
           if (canUseIDV) {
-            idvGroupField.setValue(BytesRef.deepCopyOf(groupDoc.group));
+            idvGroupField.setBytesValue(BytesRef.deepCopyOf(groupDoc.group));
           }
         }
-        sort1.setValue(groupDoc.sort1.utf8ToString());
-        sort2.setValue(groupDoc.sort2.utf8ToString());
-        content.setValue(groupDoc.content);
-        id.setValue(groupDoc.id);
+        sort1.setStringValue(groupDoc.sort1.utf8ToString());
+        sort2.setStringValue(groupDoc.sort2.utf8ToString());
+        content.setStringValue(groupDoc.content);
+        id.setIntValue(groupDoc.id);
         if (groupDoc.group == null) {
           w.addDocument(docNoGroup);
         } else {

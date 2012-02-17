@@ -161,8 +161,8 @@ public class TestMultiMMap extends LuceneTestCase {
     
     int numDocs = 100;
     for (int i = 0; i < numDocs; i++) {
-      docid.setValue("" + i);
-      junk.setValue(_TestUtil.randomUnicodeString(random));
+      docid.setStringValue("" + i);
+      junk.setStringValue(_TestUtil.randomUnicodeString(random));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();

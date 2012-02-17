@@ -32,7 +32,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -239,7 +239,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     for(int docCount=0;docCount<numDocs;docCount++) {
       Document doc = new Document();
-      doc.add(new NumericField("id", docCount));
+      doc.add(new IntField("id", docCount));
       List<Token> tokens = new ArrayList<Token>();
       final int numTokens = atLeast(100);
       //final int numTokens = atLeast(20);

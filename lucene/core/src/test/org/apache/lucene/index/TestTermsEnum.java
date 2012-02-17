@@ -32,7 +32,7 @@ import java.util.TreeSet;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.FieldCache;
@@ -164,7 +164,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
     Document doc = new Document();
-    doc.add(new NumericField("id", id));
+    doc.add(new IntField("id", id));
     if (VERBOSE) {
       System.out.println("TEST: addDoc id:" + id + " terms=" + terms);
     }

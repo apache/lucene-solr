@@ -22,7 +22,10 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
-import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.document.IntField; // for javadocs
+import org.apache.lucene.document.FloatField; // for javadocs
+import org.apache.lucene.document.LongField; // for javadocs
+import org.apache.lucene.document.DoubleField; // for javadocs
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.TermsEnum;
@@ -118,7 +121,7 @@ public interface FieldCache {
     public byte parseByte(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
-      // NumericField, instead, which already decodes
+      // IntField, instead, which already decodes
       // directly from byte[]
       return Byte.parseByte(term.utf8ToString());
     }
@@ -136,7 +139,7 @@ public interface FieldCache {
     public short parseShort(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
-      // NumericField, instead, which already decodes
+      // IntField, instead, which already decodes
       // directly from byte[]
       return Short.parseShort(term.utf8ToString());
     }
@@ -154,7 +157,7 @@ public interface FieldCache {
     public int parseInt(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
-      // NumericField, instead, which already decodes
+      // IntField, instead, which already decodes
       // directly from byte[]
       return Integer.parseInt(term.utf8ToString());
     }
@@ -172,7 +175,7 @@ public interface FieldCache {
     public float parseFloat(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
-      // NumericField, instead, which already decodes
+      // FloatField, instead, which already decodes
       // directly from byte[]
       return Float.parseFloat(term.utf8ToString());
     }
@@ -190,7 +193,7 @@ public interface FieldCache {
     public long parseLong(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
-      // NumericField, instead, which already decodes
+      // LongField, instead, which already decodes
       // directly from byte[]
       return Long.parseLong(term.utf8ToString());
     }
@@ -208,7 +211,7 @@ public interface FieldCache {
     public double parseDouble(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
-      // NumericField, instead, which already decodes
+      // DoubleField, instead, which already decodes
       // directly from byte[]
       return Double.parseDouble(term.utf8ToString());
     }
@@ -223,7 +226,7 @@ public interface FieldCache {
 
   /**
    * A parser instance for int values encoded by {@link NumericUtils}, e.g. when indexed
-   * via {@link NumericField}/{@link NumericTokenStream}.
+   * via {@link IntField}/{@link NumericTokenStream}.
    */
   public static final IntParser NUMERIC_UTILS_INT_PARSER=new IntParser(){
     public int parseInt(BytesRef term) {
@@ -242,7 +245,7 @@ public interface FieldCache {
 
   /**
    * A parser instance for float values encoded with {@link NumericUtils}, e.g. when indexed
-   * via {@link NumericField}/{@link NumericTokenStream}.
+   * via {@link FloatField}/{@link NumericTokenStream}.
    */
   public static final FloatParser NUMERIC_UTILS_FLOAT_PARSER=new FloatParser(){
     public float parseFloat(BytesRef term) {
@@ -261,7 +264,7 @@ public interface FieldCache {
 
   /**
    * A parser instance for long values encoded by {@link NumericUtils}, e.g. when indexed
-   * via {@link NumericField}/{@link NumericTokenStream}.
+   * via {@link LongField}/{@link NumericTokenStream}.
    */
   public static final LongParser NUMERIC_UTILS_LONG_PARSER = new LongParser(){
     public long parseLong(BytesRef term) {
@@ -280,7 +283,7 @@ public interface FieldCache {
 
   /**
    * A parser instance for double values encoded with {@link NumericUtils}, e.g. when indexed
-   * via {@link NumericField}/{@link NumericTokenStream}.
+   * via {@link DoubleField}/{@link NumericTokenStream}.
    */
   public static final DoubleParser NUMERIC_UTILS_DOUBLE_PARSER = new DoubleParser(){
     public double parseDouble(BytesRef term) {

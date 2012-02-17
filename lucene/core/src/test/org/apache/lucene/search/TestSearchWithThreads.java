@@ -55,7 +55,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
         sb.append(random.nextBoolean() ? "aaa" : "bbb");
         sb.append(' ');
       }
-      body.setValue(sb.toString());
+      body.setStringValue(sb.toString());
       w.addDocument(doc);
       sb.delete(0, sb.length());
     }

@@ -22,7 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -30,7 +31,6 @@ import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -97,7 +97,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         final Document doc = new Document();
         doc.add(newField("string", _TestUtil.randomRealisticUnicodeString(random), StringField.TYPE_UNSTORED));
         doc.add(newField("text", content[random.nextInt(content.length)], TextField.TYPE_UNSTORED));
-        doc.add(new NumericField("float", random.nextFloat()));
+        doc.add(new FloatField("float", random.nextFloat()));
         final int intValue;
         if (random.nextInt(100) == 17) {
           intValue = Integer.MIN_VALUE;
@@ -106,7 +106,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         } else {
           intValue = random.nextInt();
         }
-        doc.add(new NumericField("int", intValue));
+        doc.add(new IntField("int", intValue));
         if (VERBOSE) {
           System.out.println("  doc=" + doc);
         }

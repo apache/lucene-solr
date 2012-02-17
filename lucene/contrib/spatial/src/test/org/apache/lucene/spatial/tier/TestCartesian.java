@@ -24,7 +24,8 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -100,7 +101,7 @@ public class TestCartesian extends LuceneTestCase {
     latLongType.setTokenized(true);
     latLongType.setOmitNorms(true);
     latLongType.setIndexOptions(IndexOptions.DOCS_ONLY);
-    latLongType.setNumericType(NumericField.DataType.DOUBLE);
+    latLongType.setNumericType(NumericType.DOUBLE);
     latLongType.setNumericPrecisionStep(Integer.MAX_VALUE);
     latLongType.freeze();
   }
@@ -112,8 +113,8 @@ public class TestCartesian extends LuceneTestCase {
     doc.add(newField("name", name, TextField.TYPE_STORED));
     
     // convert the lat / long to lucene fields
-    doc.add(new NumericField(latField, lat, latLongType));
-    doc.add(new NumericField(lngField, lng, latLongType));
+    doc.add(new DoubleField(latField, lat, latLongType));
+    doc.add(new DoubleField(lngField, lng, latLongType));
     
     // add a default meta field to make searching all documents easy 
     doc.add(newField("metafile", "doc", TextField.TYPE_STORED));
@@ -121,7 +122,7 @@ public class TestCartesian extends LuceneTestCase {
     int ctpsize = ctps.size();
     for (int i =0; i < ctpsize; i++){
       CartesianTierPlotter ctp = ctps.get(i);
-      doc.add(new NumericField(ctp.getTierFieldName(), ctp.getTierBoxId(lat, lng), latLongType));
+      doc.add(new DoubleField(ctp.getTierFieldName(), ctp.getTierBoxId(lat, lng), latLongType));
       
       doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), StringField.TYPE_STORED));
     }

@@ -54,11 +54,11 @@ public class TestSimilarityProvider extends LuceneTestCase {
     Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
     doc.add(field2);
     
-    field.setValue("quick brown fox");
-    field2.setValue("quick brown fox");
+    field.setStringValue("quick brown fox");
+    field2.setStringValue("quick brown fox");
     iw.addDocument(doc);
-    field.setValue("jumps over lazy brown dog");
-    field2.setValue("jumps over lazy brown dog");
+    field.setStringValue("jumps over lazy brown dog");
+    field2.setStringValue("jumps over lazy brown dog");
     iw.addDocument(doc);
     reader = iw.getReader();
     iw.close();

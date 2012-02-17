@@ -166,8 +166,9 @@ org.apache.lucene.search.IndexSearcher#search(Query,Filter,int)}.
     <a href="NumericRangeQuery.html">NumericRangeQuery</a>
     matches all documents that occur in a numeric range.
     For NumericRangeQuery to work, you must index the values
-    using a special <a href="../document/NumericField.html">
-    NumericField</a>.
+    using a one of the numeric fields (<a href="../document/IntField.html">IntField</a>,
+    <a href="../document/LongField.html">LongField</a>, <a href="../document/FloatField.html">FloatField</a>,
+    or <a href="../document/DoubleField.html">DoubleField</a>).
 </p>
 
 <h4>

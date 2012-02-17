@@ -64,7 +64,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     final String codec = Codec.getDefault().getName();
     int num = codec.equals("Lucene3x") ? 200 * RANDOM_MULTIPLIER : atLeast(1000);
     for (int i = 0; i < num; i++) {
-      field.setValue(_TestUtil.randomUnicodeString(random, 10));
+      field.setStringValue(_TestUtil.randomUnicodeString(random, 10));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

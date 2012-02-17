@@ -654,7 +654,7 @@ public class TestPhraseQuery extends LuceneTestCase {
         }
       }
       docs.add(doc);
-      f.setValue(sb.toString());
+      f.setStringValue(sb.toString());
       w.addDocument(d);
     }
 

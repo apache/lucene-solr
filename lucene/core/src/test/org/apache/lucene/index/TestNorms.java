@@ -70,7 +70,7 @@ public class TestNorms extends LuceneTestCase {
     doc.add(bar);
     
     for (int i = 0; i < 100; i++) {
-      bar.setValue("singleton");
+      bar.setStringValue("singleton");
       writer.addDocument(doc);
     }
     

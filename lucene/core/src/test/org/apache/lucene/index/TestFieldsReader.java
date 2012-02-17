@@ -24,9 +24,13 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -231,45 +235,51 @@ public class TestFieldsReader extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random, dir);
     final int numDocs = atLeast(500);
     final Number[] answers = new Number[numDocs];
-    final NumericField.DataType[] typeAnswers = new NumericField.DataType[numDocs];
+    final NumericType[] typeAnswers = new NumericType[numDocs];
     for(int id=0;id<numDocs;id++) {
       Document doc = new Document();
-      final NumericField nf;
+      final Field nf;
+      final Field sf;
       final Number answer;
-      final NumericField.DataType typeAnswer;
+      final NumericType typeAnswer;
       if (random.nextBoolean()) {
         // float/double
         if (random.nextBoolean()) {
           final float f = random.nextFloat();
           answer = Float.valueOf(f);
-          nf = new NumericField("nf", answer, NumericField.getFieldType(NumericField.DataType.FLOAT, true));
-          typeAnswer = NumericField.DataType.FLOAT;
+          nf = new FloatField("nf", f);
+          sf = new StoredField("nf", f);
+          typeAnswer = NumericType.FLOAT;
         } else {
           final double d = random.nextDouble();
           answer = Double.valueOf(d);
-          nf = new NumericField("nf", answer, NumericField.getFieldType(NumericField.DataType.DOUBLE, true));
-          typeAnswer = NumericField.DataType.DOUBLE;
+          nf = new DoubleField("nf", d);
+          sf = new StoredField("nf", d);
+          typeAnswer = NumericType.DOUBLE;
         }
       } else {
         // int/long
         if (random.nextBoolean()) {
           final int i = random.nextInt();
           answer = Integer.valueOf(i);
-          nf = new NumericField("nf", answer, NumericField.getFieldType(NumericField.DataType.INT, true));
-          typeAnswer = NumericField.DataType.INT;
+          nf = new IntField("nf", i);
+          sf = new StoredField("nf", i);
+          typeAnswer = NumericType.INT;
         } else {
           final long l = random.nextLong();
           answer = Long.valueOf(l);
-          nf = new NumericField("nf", answer, NumericField.getFieldType(NumericField.DataType.LONG, true));
-          typeAnswer = NumericField.DataType.LONG;
+          nf = new LongField("nf", l);
+          sf = new StoredField("nf", l);
+          typeAnswer = NumericType.LONG;
         }
       }
       doc.add(nf);
+      doc.add(sf);
       answers[id] = answer;
       typeAnswers[id] = typeAnswer;
-      FieldType ft = new FieldType(NumericField.getFieldType(NumericField.DataType.INT, false));
+      FieldType ft = new FieldType(IntField.TYPE);
       ft.setNumericPrecisionStep(Integer.MAX_VALUE);
-      doc.add(new NumericField("id", id, ft));
+      doc.add(new IntField("id", id, ft));
       w.addDocument(doc);
     }
     final DirectoryReader r = w.getReader();

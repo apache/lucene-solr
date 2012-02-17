@@ -60,7 +60,7 @@ public class TestMultiFields extends LuceneTestCase {
           // re-use existing term
           BytesRef term = terms.get(random.nextInt(terms.size()));
           docs.get(term).add(i);
-          f.setValue(term.utf8ToString());
+          f.setStringValue(term.utf8ToString());
         } else {
           String s = _TestUtil.randomUnicodeString(random, 10);
           BytesRef term = new BytesRef(s);
@@ -70,9 +70,9 @@ public class TestMultiFields extends LuceneTestCase {
           docs.get(term).add(i);
           terms.add(term);
           uniqueTerms.add(term);
-          f.setValue(s);
+          f.setStringValue(s);
         }
-        id.setValue(""+i);
+        id.setStringValue(""+i);
         w.addDocument(doc);
         if (random.nextInt(4) == 1) {
           w.commit();

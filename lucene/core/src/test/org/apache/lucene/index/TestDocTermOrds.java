@@ -28,7 +28,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
@@ -54,13 +54,13 @@ public class TestDocTermOrds extends LuceneTestCase {
     Document doc = new Document();
     Field field = newField("field", "", TextField.TYPE_UNSTORED);
     doc.add(field);
-    field.setValue("a b c");
+    field.setStringValue("a b c");
     w.addDocument(doc);
 
-    field.setValue("d e f");
+    field.setStringValue("d e f");
     w.addDocument(doc);
 
-    field.setValue("a f");
+    field.setStringValue("a f");
     w.addDocument(doc);
     
     final IndexReader r = w.getReader();
@@ -124,7 +124,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      doc.add(new NumericField("id", id));
+      doc.add(new IntField("id", id));
       
       final int termCount = _TestUtil.nextInt(random, 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -221,7 +221,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      doc.add(new NumericField("id", id));
+      doc.add(new IntField("id", id));
       
       final int termCount = _TestUtil.nextInt(random, 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {

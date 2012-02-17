@@ -18,7 +18,10 @@ package org.apache.lucene.util;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.DoubleField; // javadocs
+import org.apache.lucene.document.FloatField; // javadocs
+import org.apache.lucene.document.IntField; // javadocs
+import org.apache.lucene.document.LongField; // javadocs
 import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 
@@ -63,8 +66,10 @@ public final class NumericUtils {
   private NumericUtils() {} // no instance!
   
   /**
-   * The default precision step used by {@link NumericField}, {@link NumericTokenStream},
-   * {@link NumericRangeQuery}, and {@link NumericRangeFilter} as default
+   * The default precision step used by {@link IntField},
+   * {@link FloatField}, {@link LongField}, {@link
+   * DoubleField}, {@link NumericTokenStream}, {@link
+   * NumericRangeQuery}, and {@link NumericRangeFilter}.
    */
   public static final int PRECISION_STEP_DEFAULT = 4;
   

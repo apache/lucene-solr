@@ -58,15 +58,15 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    field.setValue("tangfulin");
+    field.setStringValue("tangfulin");
     writer.addDocument(doc);
 
-    field.setValue("meaninglessnames");
+    field.setStringValue("meaninglessnames");
     for (int i = 5138; i < 11377; ++i) {
       writer.addDocument(doc);
     }
     
-    field.setValue("tangfulin");
+    field.setStringValue("tangfulin");
     writer.addDocument(doc);
     
     reader = writer.getReader();

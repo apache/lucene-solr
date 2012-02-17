@@ -16,16 +16,24 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.*;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
 
+import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
@@ -37,13 +45,10 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.*;
 
-import java.io.IOException;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Date;
-
 /**
- * Provides field types to support for Lucene's {@link NumericField}.
+ * Provides field types to support for Lucene's {@link
+ * IntField}, {@link LongField}, {@link FloatField} and
+ * {@link DoubleField}.
  * See {@link org.apache.lucene.search.NumericRangeQuery} for more details.
  * It supports integer, float, long, double and date types.
  * <p/>
@@ -481,57 +486,57 @@ public class TrieField extends org.apache.solr.schema.FieldType {
 
     switch (type) {
       case INTEGER:
-        ft.setNumericType(NumericField.DataType.INT);
+        ft.setNumericType(NumericType.INT);
         break;
       case FLOAT:
-        ft.setNumericType(NumericField.DataType.FLOAT);
+        ft.setNumericType(NumericType.FLOAT);
         break;
       case LONG:
-        ft.setNumericType(NumericField.DataType.LONG);
+        ft.setNumericType(NumericType.LONG);
         break;
       case DOUBLE:
-        ft.setNumericType(NumericField.DataType.DOUBLE);
+        ft.setNumericType(NumericType.DOUBLE);
         break;
       case DATE:
-        ft.setNumericType(NumericField.DataType.LONG);
+        ft.setNumericType(NumericType.LONG);
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
     ft.setNumericPrecisionStep(precisionStep);
 
-    final org.apache.lucene.document.NumericField f;
+    final org.apache.lucene.document.Field f;
 
     switch (type) {
       case INTEGER:
         int i = (value instanceof Number)
           ? ((Number)value).intValue()
           : Integer.parseInt(value.toString());
-        f = new org.apache.lucene.document.NumericField(field.getName(), i, ft);
+        f = new org.apache.lucene.document.IntField(field.getName(), i, ft);
         break;
       case FLOAT:
         float fl = (value instanceof Number)
           ? ((Number)value).floatValue()
           : Float.parseFloat(value.toString());
-        f = new org.apache.lucene.document.NumericField(field.getName(), fl, ft);
+        f = new org.apache.lucene.document.FloatField(field.getName(), fl, ft);
         break;
       case LONG:
         long l = (value instanceof Number)
           ? ((Number)value).longValue()
           : Long.parseLong(value.toString());
-        f = new org.apache.lucene.document.NumericField(field.getName(), l, ft);
+        f = new org.apache.lucene.document.LongField(field.getName(), l, ft);
         break;
       case DOUBLE:
         double d = (value instanceof Number)
           ? ((Number)value).doubleValue()
           : Double.parseDouble(value.toString());
-        f = new org.apache.lucene.document.NumericField(field.getName(), d, ft);
+        f = new org.apache.lucene.document.DoubleField(field.getName(), d, ft);
         break;
       case DATE:
         Date date = (value instanceof Date)
           ? ((Date)value)
           : dateField.parseMath(null, value.toString());
-        f = new org.apache.lucene.document.NumericField(field.getName(), date.getTime(), ft);
+        f = new org.apache.lucene.document.LongField(field.getName(), date.getTime(), ft);
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);

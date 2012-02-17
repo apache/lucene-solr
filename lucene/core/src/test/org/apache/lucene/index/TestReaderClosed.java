@@ -50,7 +50,7 @@ public class TestReaderClosed extends LuceneTestCase {
     // but for preflex codec, the test can be very slow, so use less iterations.
     int num = atLeast(10);
     for (int i = 0; i < num; i++) {
-      field.setValue(_TestUtil.randomUnicodeString(random, 10));
+      field.setStringValue(_TestUtil.randomUnicodeString(random, 10));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

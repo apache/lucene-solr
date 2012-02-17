@@ -69,7 +69,7 @@ public class TestRandomStoredFields extends LuceneTestCase {
       Document doc = new Document();
       doc.add(idField);
       final String id = ""+i;
-      idField.setValue(id);
+      idField.setStringValue(id);
       docs.put(id, doc);
       if (VERBOSE) {
         System.out.println("TEST: add doc id=" + id);

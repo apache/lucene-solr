@@ -45,13 +45,13 @@ public class TestSumDocFreq extends LuceneTestCase {
     doc.add(field1);
     doc.add(field2);
     for (int i = 0; i < numDocs; i++) {
-      id.setValue("" + i);
+      id.setStringValue("" + i);
       char ch1 = (char) _TestUtil.nextInt(random, 'a', 'z');
       char ch2 = (char) _TestUtil.nextInt(random, 'a', 'z');
-      field1.setValue("" + ch1 + " " + ch2);
+      field1.setStringValue("" + ch1 + " " + ch2);
       ch1 = (char) _TestUtil.nextInt(random, 'a', 'z');
       ch2 = (char) _TestUtil.nextInt(random, 'a', 'z');
-      field2.setValue("" + ch1 + " " + ch2);
+      field2.setStringValue("" + ch1 + " " + ch2);
       writer.addDocument(doc);
     }
     

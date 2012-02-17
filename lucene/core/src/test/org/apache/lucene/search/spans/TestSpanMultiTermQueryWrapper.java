@@ -46,11 +46,11 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
     Field field = newField("field", "", TextField.TYPE_UNSTORED);
     doc.add(field);
     
-    field.setValue("quick brown fox");
+    field.setStringValue("quick brown fox");
     iw.addDocument(doc);
-    field.setValue("jumps over lazy broun dog");
+    field.setStringValue("jumps over lazy broun dog");
     iw.addDocument(doc);
-    field.setValue("jumps over extremely very lazy broxn dog");
+    field.setStringValue("jumps over extremely very lazy broxn dog");
     iw.addDocument(doc);
     reader = iw.getReader();
     iw.close();

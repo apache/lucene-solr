@@ -20,22 +20,26 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Locale;
 import java.util.Random;
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.text.SimpleDateFormat;
-import java.text.ParsePosition;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 
@@ -89,7 +93,7 @@ public class DocMaker implements Closeable {
   static class DocState {
     
     private final Map<String,Field> fields;
-    private final Map<String,NumericField> numericFields;
+    private final Map<String,Field> numericFields;
     private final boolean reuseFields;
     final Document doc;
     DocData docData = new DocData();
@@ -100,7 +104,7 @@ public class DocMaker implements Closeable {
       
       if (reuseFields) {
         fields =  new HashMap<String,Field>();
-        numericFields = new HashMap<String,NumericField>();
+        numericFields = new HashMap<String,Field>();
         
         // Initialize the map with the default fields.
         fields.put(BODY_FIELD, new Field(BODY_FIELD, "", bodyFt));
@@ -109,8 +113,8 @@ public class DocMaker implements Closeable {
         fields.put(ID_FIELD, new Field(ID_FIELD, "", StringField.TYPE_STORED));
         fields.put(NAME_FIELD, new Field(NAME_FIELD, "", ft));
 
-        numericFields.put(DATE_MSEC_FIELD, new NumericField(DATE_MSEC_FIELD, 0L));
-        numericFields.put(TIME_SEC_FIELD, new NumericField(TIME_SEC_FIELD, 0));
+        numericFields.put(DATE_MSEC_FIELD, new LongField(DATE_MSEC_FIELD, 0L));
+        numericFields.put(TIME_SEC_FIELD, new IntField(TIME_SEC_FIELD, 0));
         
         doc = new Document();
       } else {
@@ -138,8 +142,8 @@ public class DocMaker implements Closeable {
       return f;
     }
 
-    NumericField getNumericField(String name, NumericField.DataType type) {
-      NumericField f;
+    Field getNumericField(String name, NumericType type) {
+      Field f;
       if (reuseFields) {
         f = numericFields.get(name);
       } else {
@@ -149,16 +153,16 @@ public class DocMaker implements Closeable {
       if (f == null) {
         switch(type) {
         case INT:
-          f = new NumericField(name, 0);
+          f = new IntField(name, 0);
           break;
         case LONG:
-          f = new NumericField(name, 0L);
+          f = new LongField(name, 0L);
           break;
         case FLOAT:
-          f = new NumericField(name, 0.0f);
+          f = new FloatField(name, 0.0F);
           break;
         case DOUBLE:
-          f = new NumericField(name, 0.0);
+          f = new DoubleField(name, 0.0);
           break;
         default:
           assert false;
@@ -233,7 +237,7 @@ public class DocMaker implements Closeable {
         id = numDocsCreated.getAndIncrement();
       }
     }
-    idField.setValue(Integer.toString(id));
+    idField.setStringValue(Integer.toString(id));
     doc.add(idField);
     
     // Set NAME_FIELD
@@ -241,7 +245,7 @@ public class DocMaker implements Closeable {
     if (name == null) name = "";
     name = cnt < 0 ? name : name + "_" + cnt;
     Field nameField = ds.getField(NAME_FIELD, valType);
-    nameField.setValue(name);
+    nameField.setStringValue(name);
     doc.add(nameField);
     
     // Set DATE_FIELD
@@ -260,7 +264,7 @@ public class DocMaker implements Closeable {
       dateString = "";
     }
     Field dateStringField = ds.getField(DATE_FIELD, valType);
-    dateStringField.setValue(dateString);
+    dateStringField.setStringValue(dateString);
     doc.add(dateStringField);
 
     if (date == null) {
@@ -268,21 +272,21 @@ public class DocMaker implements Closeable {
       date = new Date();
     }
 
-    NumericField dateField = ds.getNumericField(DATE_MSEC_FIELD, NumericField.DataType.LONG);
-    dateField.setValue(date.getTime());
+    Field dateField = ds.getNumericField(DATE_MSEC_FIELD, NumericType.LONG);
+    dateField.setLongValue(date.getTime());
     doc.add(dateField);
 
     util.cal.setTime(date);
     final int sec = util.cal.get(Calendar.HOUR_OF_DAY)*3600 + util.cal.get(Calendar.MINUTE)*60 + util.cal.get(Calendar.SECOND);
 
-    NumericField timeSecField = ds.getNumericField(TIME_SEC_FIELD, NumericField.DataType.INT);
-    timeSecField.setValue(sec);
+    Field timeSecField = ds.getNumericField(TIME_SEC_FIELD, NumericType.INT);
+    timeSecField.setIntValue(sec);
     doc.add(timeSecField);
     
     // Set TITLE_FIELD
     String title = docData.getTitle();
     Field titleField = ds.getField(TITLE_FIELD, valType);
-    titleField.setValue(title == null ? "" : title);
+    titleField.setStringValue(title == null ? "" : title);
     doc.add(titleField);
     
     String body = docData.getBody();
@@ -303,12 +307,12 @@ public class DocMaker implements Closeable {
         docData.setBody(body.substring(size)); // some left
       }
       Field bodyField = ds.getField(BODY_FIELD, bodyValType);
-      bodyField.setValue(bdy);
+      bodyField.setStringValue(bdy);
       doc.add(bodyField);
       
       if (storeBytes) {
         Field bytesField = ds.getField(BYTES_FIELD, StringField.TYPE_STORED);
-        bytesField.setValue(bdy.getBytes("UTF-8"));
+        bytesField.setBytesValue(bdy.getBytes("UTF-8"));
         doc.add(bytesField);
       }
     }
@@ -318,7 +322,7 @@ public class DocMaker implements Closeable {
       if (props != null) {
         for (final Map.Entry<Object,Object> entry : props.entrySet()) {
           Field f = ds.getField((String) entry.getKey(), valType);
-          f.setValue((String) entry.getValue());
+          f.setStringValue((String) entry.getValue());
           doc.add(f);
         }
         docData.setProps(null);

@@ -98,10 +98,10 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       doc.add(newField("test", "", customType));
-      idField.setValue("1");
+      idField.setStringValue("1");
       iw.addDocument(doc);
       doc.add(newField("test", "", TextField.TYPE_UNSTORED));
-      idField.setValue("2");
+      idField.setStringValue("2");
       iw.addDocument(doc);
       iw.close();
 

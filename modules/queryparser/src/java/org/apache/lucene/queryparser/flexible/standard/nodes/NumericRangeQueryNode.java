@@ -1,12 +1,5 @@
 package org.apache.lucene.queryparser.flexible.standard.nodes;
 
-import org.apache.lucene.document.NumericField;
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
-import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
-import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
-import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -23,6 +16,13 @@ import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
+import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
+import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
+import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
 
 /**
  * This query node represents a range query composed by {@link NumericQueryNode}
@@ -53,16 +53,16 @@ public class NumericRangeQueryNode extends
     setBounds(lower, upper, lowerInclusive, upperInclusive, numericConfig);
   }
   
-  private static NumericField.DataType getNumericDataType(Number number) throws QueryNodeException {
+  private static NumericType getNumericDataType(Number number) throws QueryNodeException {
     
     if (number instanceof Long) {
-      return NumericField.DataType.LONG;
+      return NumericType.LONG;
     } else if (number instanceof Integer) {
-      return NumericField.DataType.INT;
+      return NumericType.INT;
     } else if (number instanceof Double) {
-      return NumericField.DataType.DOUBLE;
+      return NumericType.DOUBLE;
     } else if (number instanceof Float) {
-      return NumericField.DataType.FLOAT;
+      return NumericType.FLOAT;
     } else {
       throw new QueryNodeException(
           new MessageImpl(
@@ -90,7 +90,7 @@ public class NumericRangeQueryNode extends
       throw new IllegalArgumentException("numericConfig cannot be null!");
     }
     
-    NumericField.DataType lowerNumberType, upperNumberType;
+    NumericType lowerNumberType, upperNumberType;
     
     if (lower != null && lower.getValue() != null) {
       lowerNumberType = getNumericDataType(lower.getValue());

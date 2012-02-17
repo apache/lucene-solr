@@ -347,7 +347,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
                 if (failed.get()) break;
                 for(int j=0;j<10;j++) {
                   final String s = finalI + "_" + String.valueOf(count++);
-                  f.setValue(s);
+                  f.setStringValue(s);
                   w.addDocument(doc);
                   w.commit();
                   DirectoryReader r2 = DirectoryReader.openIfChanged(r);

@@ -1660,16 +1660,16 @@ public class TestIndexWriter extends LuceneTestCase {
 
     w = new RandomIndexWriter(random, dir);
 
-    contentField.setValue("other");
+    contentField.setStringValue("other");
     w.addDocument(doc);
 
-    contentField.setValue("term");
+    contentField.setStringValue("term");
     w.addDocument(doc);
 
-    contentField.setValue(bigTerm);
+    contentField.setStringValue(bigTerm);
     w.addDocument(doc);
 
-    contentField.setValue("zzz");
+    contentField.setStringValue("zzz");
     w.addDocument(doc);
 
     reader = w.getReader();

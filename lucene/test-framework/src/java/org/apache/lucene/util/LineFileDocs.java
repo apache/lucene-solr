@@ -175,12 +175,12 @@ public class LineFileDocs implements Closeable {
       throw new RuntimeException("line: [" + line + "] is in an invalid format !");
     }
 
-    docState.body.setValue(line.substring(1+spot2, line.length()));
+    docState.body.setStringValue(line.substring(1+spot2, line.length()));
     final String title = line.substring(0, spot);
-    docState.title.setValue(title);
-    docState.titleTokenized.setValue(title);
-    docState.date.setValue(line.substring(1+spot, spot2));
-    docState.id.setValue(Integer.toString(id.getAndIncrement()));
+    docState.title.setStringValue(title);
+    docState.titleTokenized.setStringValue(title);
+    docState.date.setStringValue(line.substring(1+spot, spot2));
+    docState.id.setStringValue(Integer.toString(id.getAndIncrement()));
     return docState.doc;
   }
 }

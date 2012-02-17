@@ -43,12 +43,12 @@ public class TestStressAdvance extends LuceneTestCase {
       int num = atLeast(4097);
       for(int id=0;id<num;id++) {
         if (random.nextInt(4) == 3) {
-          f.setValue("a");
+          f.setStringValue("a");
           aDocs.add(id);
         } else {
-          f.setValue("b");
+          f.setStringValue("b");
         }
-        idField.setValue(""+id);
+        idField.setStringValue(""+id);
         w.addDocument(doc);
       }
 

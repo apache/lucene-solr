@@ -1627,7 +1627,7 @@ public class TestFSTs extends LuceneTestCase {
           }
         }
         allIDs.add(idString);
-        idField.setValue(idString);
+        idField.setStringValue(idString);
         w.addDocument(doc);
       }
 
@@ -1752,7 +1752,7 @@ public class TestFSTs extends LuceneTestCase {
     }
 
     for(String term : allTerms) {
-      f.setValue(term);
+      f.setStringValue(term);
       w.addDocument(doc);
     }
 

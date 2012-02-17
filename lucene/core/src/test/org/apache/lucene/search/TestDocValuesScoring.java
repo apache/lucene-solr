@@ -61,13 +61,13 @@ public class TestDocValuesScoring extends LuceneTestCase {
     Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
     doc.add(field2);
     
-    field.setValue("quick brown fox");
-    field2.setValue("quick brown fox");
-    dvField.setValue(2f); // boost x2
+    field.setStringValue("quick brown fox");
+    field2.setStringValue("quick brown fox");
+    dvField.setFloatValue(2f); // boost x2
     iw.addDocument(doc);
-    field.setValue("jumps over lazy brown dog");
-    field2.setValue("jumps over lazy brown dog");
-    dvField.setValue(4f); // boost x4
+    field.setStringValue("jumps over lazy brown dog");
+    field2.setStringValue("jumps over lazy brown dog");
+    dvField.setFloatValue(4f); // boost x4
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();

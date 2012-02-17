@@ -53,7 +53,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
     doc.add(foo);
     for (int i = 0; i < 100; i++) {
-      foo.setValue(addValue());
+      foo.setStringValue(addValue());
       writer.addDocument(doc);
     }
     reader = writer.getReader();

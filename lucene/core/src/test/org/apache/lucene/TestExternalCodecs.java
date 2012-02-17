@@ -81,7 +81,7 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     doc.add(idField);
     for(int i=0;i<NUM_DOCS;i++) {
-      idField.setValue(""+i);
+      idField.setStringValue(""+i);
       w.addDocument(doc);
       if ((i+1)%10 == 0) {
         w.commit();

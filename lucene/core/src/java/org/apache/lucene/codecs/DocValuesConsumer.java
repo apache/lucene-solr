@@ -167,18 +167,18 @@ public abstract class DocValuesConsumer {
     case BYTES_VAR_DEREF:
     case BYTES_VAR_SORTED:
     case BYTES_VAR_STRAIGHT:
-      scratchField.setValue(source.getBytes(sourceDoc, spare));
+      scratchField.setBytesValue(source.getBytes(sourceDoc, spare));
       break;
     case FIXED_INTS_16:
     case FIXED_INTS_32:
     case FIXED_INTS_64:
     case FIXED_INTS_8:
     case VAR_INTS:
-      scratchField.setValue(source.getInt(sourceDoc));
+      scratchField.setLongValue(source.getInt(sourceDoc));
       break;
     case FLOAT_32:
     case FLOAT_64:
-      scratchField.setValue(source.getFloat(sourceDoc));
+      scratchField.setDoubleValue(source.getFloat(sourceDoc));
       break;
     }
     add(docID, scratchField);

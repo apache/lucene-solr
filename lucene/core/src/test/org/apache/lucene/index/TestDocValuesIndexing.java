@@ -614,25 +614,25 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       if (isNumeric) {
         switch (valueType) {
         case VAR_INTS:
-          valField.setValue((long)i);
+          valField.setLongValue((long)i);
           break;
         case FIXED_INTS_16:
-          valField.setValue((short)i);
+          valField.setIntValue((short)i);
           break;
         case FIXED_INTS_32:
-          valField.setValue(i);
+          valField.setIntValue(i);
           break;
         case FIXED_INTS_64:
-          valField.setValue((long)i);
+          valField.setLongValue((long)i);
           break;
         case FIXED_INTS_8:
-          valField.setValue((byte)(0xFF & (i % 128)));
+          valField.setIntValue((byte)(0xFF & (i % 128)));
           break;
         case FLOAT_32:
-          valField.setValue(2.0f * i);
+          valField.setFloatValue(2.0f * i);
           break;
         case FLOAT_64:
-          valField.setValue(2.0d * i);
+          valField.setDoubleValue(2.0d * i);
           break;
         default:
           fail("unexpected value " + valueType);
@@ -642,7 +642,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           b[j] = upto++;
         }
         if (bytesRef != null) {
-          valField.setValue(bytesRef);
+          valField.setBytesValue(bytesRef);
         }
       }
       doc.removeFields("id");

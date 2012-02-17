@@ -43,7 +43,7 @@ import java.util.TimeZone;
  * date/time are.
  * For indexing a {@link Date} or {@link Calendar}, just get the unix timestamp as
  * <code>long</code> using {@link Date#getTime} or {@link Calendar#getTimeInMillis} and
- * index this as a numeric value with {@link NumericField}
+ * index this as a numeric value with {@link LongField}
  * and use {@link NumericRangeQuery} to query it.
  */
 public class DateTools {

@@ -20,7 +20,6 @@ package org.apache.solr.response.transform;
 import java.util.Set;
 
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;

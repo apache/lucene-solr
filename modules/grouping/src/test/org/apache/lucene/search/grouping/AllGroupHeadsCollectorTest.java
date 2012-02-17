@@ -227,7 +227,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       Field content = newField("content", "", TextField.TYPE_UNSTORED);
       doc.add(content);
       docNoGroup.add(content);
-      NumericField id = new NumericField("id", 0);
+      IntField id = new IntField("id", 0);
       doc.add(id);
       docNoGroup.add(id);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
@@ -256,16 +256,16 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
         groupDocs[i] = groupDoc;
         if (groupDoc.group != null) {
-          group.setValue(groupDoc.group.utf8ToString());
+          group.setStringValue(groupDoc.group.utf8ToString());
           if (canUseIDV) {
-            valuesField.setValue(new BytesRef(groupDoc.group.utf8ToString()));
+            valuesField.setBytesValue(new BytesRef(groupDoc.group.utf8ToString()));
           }
         }
-        sort1.setValue(groupDoc.sort1.utf8ToString());
-        sort2.setValue(groupDoc.sort2.utf8ToString());
-        sort3.setValue(groupDoc.sort3.utf8ToString());
-        content.setValue(groupDoc.content);
-        id.setValue(groupDoc.id);
+        sort1.setStringValue(groupDoc.sort1.utf8ToString());
+        sort2.setStringValue(groupDoc.sort2.utf8ToString());
+        sort3.setStringValue(groupDoc.sort3.utf8ToString());
+        content.setStringValue(groupDoc.content);
+        id.setIntValue(groupDoc.id);
         if (groupDoc.group == null) {
           w.addDocument(docNoGroup);
         } else {

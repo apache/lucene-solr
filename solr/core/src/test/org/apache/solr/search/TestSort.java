@@ -175,12 +175,12 @@ public class TestSort extends SolrTestCaseJ4 {
         Document document = new Document();
         if (r.nextInt(100) < v1EmptyPercent) {
           mydoc.val = Integer.toString(r.nextInt(maxval));
-          f.setValue(mydoc.val);
+          f.setStringValue(mydoc.val);
           document.add(f);
         }
         if (r.nextInt(100) < v2EmptyPercent) {
           mydoc.val2 = Integer.toString(r.nextInt(maxval));
-          f2.setValue(mydoc.val2);
+          f2.setStringValue(mydoc.val2);
           document.add(f2);
         }
 

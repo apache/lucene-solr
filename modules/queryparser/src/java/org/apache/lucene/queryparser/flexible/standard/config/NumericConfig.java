@@ -19,7 +19,7 @@ package org.apache.lucene.queryparser.flexible.standard.config;
 
 import java.text.NumberFormat;
 
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.search.NumericRangeQuery;
 
 /**
@@ -35,7 +35,7 @@ public class NumericConfig {
   
   private NumberFormat format;
   
-  private NumericField.DataType type;
+  private NumericType type;
   
   /**
    * Constructs a {@link NumericConfig} object.
@@ -50,10 +50,10 @@ public class NumericConfig {
    * 
    * @see NumericConfig#setPrecisionStep(int)
    * @see NumericConfig#setNumberFormat(NumberFormat)
-   * @see #setType(org.apache.lucene.document.NumericField.DataType)
+   * @see #setType(org.apache.lucene.document.FieldType.NumericType)
    */
   public NumericConfig(int precisionStep, NumberFormat format,
-      NumericField.DataType type) {
+      NumericType type) {
     setPrecisionStep(precisionStep);
     setNumberFormat(format);
     setType(type);
@@ -99,7 +99,7 @@ public class NumericConfig {
    * 
    * @return the numeric type used to index the numeric values
    */
-  public NumericField.DataType getType() {
+  public NumericType getType() {
     return type;
   }
   
@@ -108,7 +108,7 @@ public class NumericConfig {
    * 
    * @param type the numeric type used to index the numeric values
    */
-  public void setType(NumericField.DataType type) {
+  public void setType(NumericType type) {
     
     if (type == null) {
       throw new IllegalArgumentException("type cannot be null!");

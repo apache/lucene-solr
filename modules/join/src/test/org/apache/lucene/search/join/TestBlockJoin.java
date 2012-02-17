@@ -25,7 +25,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -59,7 +59,7 @@ public class TestBlockJoin extends LuceneTestCase {
   private Document makeJob(String skill, int year) {
     Document job = new Document();
     job.add(newField("skill", skill, StringField.TYPE_STORED));
-    job.add(new NumericField("year", year));
+    job.add(new IntField("year", year));
     job.add(new StoredField("year", year));
     return job;
   }
@@ -68,7 +68,7 @@ public class TestBlockJoin extends LuceneTestCase {
   private Document makeQualification(String qualification, int year) {
     Document job = new Document();
     job.add(newField("qualification", qualification, StringField.TYPE_STORED));
-    job.add(new NumericField("year", year));
+    job.add(new IntField("year", year));
     return job;
   }
 

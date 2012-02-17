@@ -27,23 +27,23 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
@@ -1738,19 +1738,23 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       addDoc(writer, text);
     }
     Document doc = new Document();
-    doc.add(new NumericField(NUMERIC_FIELD_NAME, 1, NumericField.getFieldType(NumericField.DataType.INT, true)));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 1));
+    doc.add(new StoredField(NUMERIC_FIELD_NAME, 1));
     writer.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new NumericField(NUMERIC_FIELD_NAME, 3, NumericField.getFieldType(NumericField.DataType.INT, true)));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 3));
+    doc.add(new StoredField(NUMERIC_FIELD_NAME, 3));
     writer.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new NumericField(NUMERIC_FIELD_NAME, 5, NumericField.getFieldType(NumericField.DataType.INT, true)));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 5));
+    doc.add(new StoredField(NUMERIC_FIELD_NAME, 5));
     writer.addDocument(doc, analyzer);
 
     doc = new Document();
-    doc.add(new NumericField(NUMERIC_FIELD_NAME, 7, NumericField.getFieldType(NumericField.DataType.INT, true)));
+    doc.add(new IntField(NUMERIC_FIELD_NAME, 7));
+    doc.add(new StoredField(NUMERIC_FIELD_NAME, 7));
     writer.addDocument(doc, analyzer);
 
     writer.forceMerge(1);

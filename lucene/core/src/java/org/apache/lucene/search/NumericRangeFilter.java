@@ -18,13 +18,17 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
-import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.document.DoubleField; // for javadocs
+import org.apache.lucene.document.FloatField; // for javadocs
+import org.apache.lucene.document.IntField; // for javadocs
+import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.util.NumericUtils; // for javadocs
 
 /**
  * A {@link Filter} that only accepts numeric values within
  * a specified range. To use this, you must first index the
- * numeric values using {@link NumericField} (expert: {@link
+ * numeric values using {@link IntField}, {@link
+ * FloatField}, {@link LongField} or {@link DoubleField} (expert: {@link
  * NumericTokenStream}).
  *
  * <p>You create a new NumericRangeFilter with the static

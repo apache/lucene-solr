@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
@@ -78,7 +78,7 @@ public class TestFieldCache extends LuceneTestCase {
       }
 
       if (i%2 == 0) {
-        doc.add(new NumericField("numInt", i));
+        doc.add(new IntField("numInt", i));
       }
 
       // sometimes skip the field:

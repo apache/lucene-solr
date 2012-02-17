@@ -23,7 +23,7 @@ import java.text.DecimalFormatSymbols;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -52,7 +52,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       for (int m=0, c=random.nextInt(10); m<=c; m++) {
         int value = random.nextInt(Integer.MAX_VALUE);
         doc.add(newField("asc", format.format(value), StringField.TYPE_UNSTORED));
-        doc.add(new NumericField("trie", value));
+        doc.add(new IntField("trie", value));
       }
       writer.addDocument(doc);
     }

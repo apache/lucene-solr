@@ -65,7 +65,7 @@ public final class Norm  {
    */
   public void setFloat(float norm) {
     setType(Type.FLOAT_32);
-    this.field.setValue(norm);
+    this.field.setFloatValue(norm);
   }
 
   /**
@@ -73,7 +73,7 @@ public final class Norm  {
    */
   public void setDouble(double norm) {
     setType(Type.FLOAT_64);
-    this.field.setValue(norm);
+    this.field.setDoubleValue(norm);
   }
 
   /**
@@ -81,7 +81,7 @@ public final class Norm  {
    */
   public void setShort(short norm) {
     setType(Type.FIXED_INTS_16);
-    this.field.setValue(norm);
+    this.field.setIntValue(norm);
     
   }
 
@@ -90,7 +90,7 @@ public final class Norm  {
    */
   public void setInt(int norm) {
     setType(Type.FIXED_INTS_32);
-    this.field.setValue(norm);
+    this.field.setIntValue(norm);
   }
 
   /**
@@ -98,7 +98,7 @@ public final class Norm  {
    */
   public void setLong(long norm) {
     setType(Type.FIXED_INTS_64);
-    this.field.setValue(norm);
+    this.field.setLongValue(norm);
   }
 
   /**
@@ -106,7 +106,7 @@ public final class Norm  {
    */
   public void setByte(byte norm) {
     setType(Type.FIXED_INTS_8);
-    this.field.setValue(norm);
+    this.field.setIntValue(norm);
   }
 
   /**
@@ -114,7 +114,7 @@ public final class Norm  {
    */
   public void setBytes(BytesRef norm) {
     setType(Type.BYTES_FIXED_STRAIGHT);
-    this.field.setValue(norm);
+    this.field.setBytesValue(norm);
   }
 
   

@@ -74,7 +74,7 @@ public class Test10KPulsings extends LuceneTestCase {
     NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ENGLISH));
 
     for (int i = 0; i < 10050; i++) {
-      field.setValue(df.format(i));
+      field.setStringValue(df.format(i));
       iw.addDocument(document);
     }
     
@@ -132,7 +132,7 @@ public class Test10KPulsings extends LuceneTestCase {
         sb.append(df.format(i));
         sb.append(' '); // whitespace
       }
-      field.setValue(sb.toString());
+      field.setStringValue(sb.toString());
       iw.addDocument(document);
     }
     
