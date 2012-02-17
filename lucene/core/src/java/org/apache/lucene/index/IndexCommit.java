@@ -84,8 +84,9 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
     if (other instanceof IndexCommit) {
       IndexCommit otherCommit = (IndexCommit) other;
       return otherCommit.getDirectory().equals(getDirectory()) && otherCommit.getVersion() == getVersion();
-    } else
+    } else {
       return false;
+    }
   }
 
   @Override
@@ -137,5 +138,4 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
       return 0;
     }
   }
-
 }
