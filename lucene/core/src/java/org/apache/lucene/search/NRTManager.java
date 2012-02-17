@@ -51,13 +51,11 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * not.  In this case you should use a single {@link
  * NRTManager.TrackingIndexWriter} instance for both.
  *
- * <p>Then, use {@link #getSearcherManager} to obtain the
- * {@link SearcherManager} that you then use to
- * acquire/release searchers.  Don't call maybeReopen on
- * that SearcherManager!  Only call NRTManager's {@link
- * #maybeReopen}.
+ * <p>Then, use {@link #acquire} to obtain the
+ * {@link IndexSearcher}, and {@link #release} (ideally,
+ * from within a <code>finally</code> clause) to release it.
  *
- * <p>NOTE: to use this class, you must call {@link #maybeReopen()}
+ * <p>NOTE: to use this class, you must call {@link #maybeRefresh()}
  * periodically.  The {@link NRTManagerReopenThread} is a
  * simple class to do this on a periodic basis, and reopens
  * more quickly if a request is waiting.  If you implement
@@ -265,7 +263,7 @@ public class NRTManager extends ReferenceManager<IndexSearcher> {
    * If the current searcher is older than the
    * target generation, this method will block
    * until the searcher is reopened, by another via
-   * {@link #maybeReopen} or until the {@link NRTManager} is closed.
+   * {@link #maybeRefresh} or until the {@link NRTManager} is closed.
    * 
    * @param targetGen the generation to wait for
    */
@@ -278,7 +276,7 @@ public class NRTManager extends ReferenceManager<IndexSearcher> {
    * the searcher.  If the current searcher is older than
    * the target generation, this method will block until the
    * searcher has been reopened by another thread via
-   * {@link #maybeReopen}, the given waiting time has elapsed, or until
+   * {@link #maybeRefresh}, the given waiting time has elapsed, or until
    * the NRTManager is closed.
    * <p>
    * NOTE: if the waiting time elapses before the requested target generation is
