@@ -83,7 +83,7 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
   public boolean equals(Object other) {
     if (other instanceof IndexCommit) {
       IndexCommit otherCommit = (IndexCommit) other;
-      return otherCommit.getDirectory().equals(getDirectory()) && otherCommit.getGeneration() == getGeneration();
+      return otherCommit.getDirectory() == getDirectory() && otherCommit.getGeneration() == getGeneration();
     } else {
       return false;
     }
