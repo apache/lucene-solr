@@ -1367,7 +1367,7 @@ public abstract class LuceneTestCase extends Assert {
           r = (r instanceof AtomicReader) ?
             new ParallelAtomicReader((AtomicReader) r) :
             new ParallelCompositeReader((CompositeReader) r);
-        } else {
+        } else if (r instanceof CompositeReader) { // only wrap if not already atomic (some tests may fail)
           r = new MultiReader(r);
         }
       }
