@@ -815,6 +815,10 @@ API Changes
   create two NRTManagers (one always applying deletes and the other
   never applying deletes).  (MJB, Shai Erera, Mike McCandless)
 
+* LUCENE-3776: You now acquire/release the IndexSearcher directly from
+  NRTManager.  (Mike McCandless)
+  
+
 New Features
 
 * LUCENE-3593: Added a FieldValueFilter that accepts all documents that either

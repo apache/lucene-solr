@@ -86,31 +86,9 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
       searcherFactory = new SearcherFactory();
     }
     this.searcherFactory = searcherFactory;
-    current = searcherFactory.newSearcher(DirectoryReader.open(writer, applyAllDeletes));
+    current = getSearcher(searcherFactory, DirectoryReader.open(writer, applyAllDeletes));
   }
   
-  @Override
-  protected void decRef(IndexSearcher reference) throws IOException {
-    reference.getIndexReader().decRef();
-  }
-  
-  @Override
-  protected IndexSearcher refreshIfNeeded(IndexSearcher referenceToRefresh) throws IOException {
-    final IndexReader r = referenceToRefresh.getIndexReader();
-    final IndexReader newReader = (r instanceof DirectoryReader) ?
-      DirectoryReader.openIfChanged((DirectoryReader) r) : null;
-    if (newReader == null) {
-      return null;
-    } else {
-      return searcherFactory.newSearcher(newReader);
-    }
-  }
-  
-  @Override
-  protected boolean tryIncRef(IndexSearcher reference) {
-    return reference.getIndexReader().tryIncRef();
-  }
-
   /**
    * Creates and returns a new SearcherManager from the given {@link Directory}. 
    * @param dir the directory to open the DirectoryReader on.
@@ -125,7 +103,29 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
       searcherFactory = new SearcherFactory();
     }
     this.searcherFactory = searcherFactory;
-    current = searcherFactory.newSearcher(DirectoryReader.open(dir));
+    current = getSearcher(searcherFactory, DirectoryReader.open(dir));
+  }
+
+  @Override
+  protected void decRef(IndexSearcher reference) throws IOException {
+    reference.getIndexReader().decRef();
+  }
+  
+  @Override
+  protected IndexSearcher refreshIfNeeded(IndexSearcher referenceToRefresh) throws IOException {
+    final IndexReader r = referenceToRefresh.getIndexReader();
+    assert r instanceof DirectoryReader: "searcher's IndexReader should be a DirectoryReader, but got " + r;
+    final IndexReader newReader = DirectoryReader.openIfChanged((DirectoryReader) r);
+    if (newReader == null) {
+      return null;
+    } else {
+      return getSearcher(searcherFactory, newReader);
+    }
+  }
+  
+  @Override
+  protected boolean tryIncRef(IndexSearcher reference) {
+    return reference.getIndexReader().tryIncRef();
   }
 
   /**
@@ -137,12 +137,28 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
     final IndexSearcher searcher = acquire();
     try {
       final IndexReader r = searcher.getIndexReader();
-      return r instanceof DirectoryReader ?
-        ((DirectoryReader ) r).isCurrent() :
-        true;
+      assert r instanceof DirectoryReader: "searcher's IndexReader should be a DirectoryReader, but got " + r;
+      return ((DirectoryReader) r).isCurrent();
     } finally {
       release(searcher);
     }
   }
-  
+
+  // NOTE: decRefs incoming reader on throwing an exception
+  static IndexSearcher getSearcher(SearcherFactory searcherFactory, IndexReader reader) throws IOException {
+    boolean success = false;
+    final IndexSearcher searcher;
+    try {
+      searcher = searcherFactory.newSearcher(reader);
+      if (searcher.getIndexReader() != reader) {
+        throw new IllegalStateException("SearcherFactory must wrap exactly the provided reader (got " + searcher.getIndexReader() + " but expected " + reader + ")");
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        reader.decRef();
+      }
+    }
+    return searcher;
+  }
 }

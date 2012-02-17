@@ -29,9 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -316,5 +318,33 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     }
     dir.close();
   }
-  
+
+  public void testEvilSearcherFactory() throws Exception {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    w.commit();
+
+    final IndexReader other = DirectoryReader.open(dir);
+
+    final SearcherFactory theEvilOne = new SearcherFactory() {
+      @Override
+      public IndexSearcher newSearcher(IndexReader ignored) throws IOException {
+        return new IndexSearcher(other);
+      }
+      };
+
+    try {
+      new SearcherManager(dir, theEvilOne);
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+    try {
+      new SearcherManager(w.w, random.nextBoolean(), theEvilOne);
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+    w.close();
+    other.close();
+    dir.close();
+  }
 }
