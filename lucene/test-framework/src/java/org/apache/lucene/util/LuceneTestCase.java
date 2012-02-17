@@ -53,6 +53,9 @@ import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
@@ -65,6 +68,8 @@ import org.apache.lucene.index.RandomCodec;
 import org.apache.lucene.index.RandomDocumentsWriterPerThreadPool;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.ParallelAtomicReader;
+import org.apache.lucene.index.ParallelCompositeReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.ThreadAffinityDocumentsWriterThreadPool;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -1355,6 +1360,16 @@ public abstract class LuceneTestCase extends Assert {
     if (usually()) {
       if (maybeWrap && rarely()) {
         r = SlowCompositeReaderWrapper.wrap(r);
+      }
+      if (maybeWrap && rarely()) {
+        // just wrap as MultiReader/ParallelXReader with one subreader
+        if (random.nextBoolean()) {
+          r = (r instanceof AtomicReader) ?
+            new ParallelAtomicReader((AtomicReader) r) :
+            new ParallelCompositeReader((CompositeReader) r);
+        } else {
+          r = new MultiReader(r);
+        }
       }
       IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getTopReaderContext());
       ret.setSimilarity(similarity);
