@@ -85,7 +85,7 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
   </target>
 
   <property name="uax29.supp.macros.output.file" 
-            location="../../src/java/org/apache/lucene/analysis/standard/SUPPLEMENTARY.jflex-macro"/>
+            location="${common.dir}/core/src/java/org/apache/lucene/analysis/standard/SUPPLEMENTARY.jflex-macro"/>
 
   <target name="gen-uax29-supp-macros" depends="compile-tools">
     <java
