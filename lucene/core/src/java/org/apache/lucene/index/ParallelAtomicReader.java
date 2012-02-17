@@ -191,6 +191,11 @@ public final class ParallelAtomicReader extends AtomicReader {
   @Override
   public Fields fields() {
     ensureOpen();
+    // we cache the inner field instances, so we must check
+    // that the delegate readers are really still open:
+    for (final AtomicReader reader : parallelReaders) {
+      reader.ensureOpen();
+    }
     return fields;
   }
   
