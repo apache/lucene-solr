@@ -79,32 +79,12 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
       searcherFactory = new SearcherFactory();
     }
     this.searcherFactory = searcherFactory;
-    current = searcherFactory.newSearcher(IndexReader.open(writer, applyAllDeletes));
+    current = getSearcher(searcherFactory, IndexReader.open(writer, applyAllDeletes));
   }
   
-  @Override
-  protected void decRef(IndexSearcher reference) throws IOException {
-    reference.getIndexReader().decRef();
-  }
-  
-  @Override
-  protected IndexSearcher refreshIfNeeded(IndexSearcher referenceToRefresh) throws IOException {
-    final IndexReader newReader = IndexReader.openIfChanged(referenceToRefresh.getIndexReader());
-    if (newReader == null) {
-      return null;
-    } else {
-      return searcherFactory.newSearcher(newReader);
-    }
-  }
-  
-  @Override
-  protected boolean tryIncRef(IndexSearcher reference) {
-    return reference.getIndexReader().tryIncRef();
-  }
-
   /**
    * Creates and returns a new SearcherManager from the given {@link Directory}. 
-   * @param dir the directory to open the IndexReader on.
+   * @param dir the directory to open the DirectoryReader on.
    * @param searcherFactory An optional {@link SearcherFactory}. Pass
    *        <code>null</code> if you don't require the searcher to be warmed
    *        before going live or other custom behavior.
@@ -116,11 +96,32 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
       searcherFactory = new SearcherFactory();
     }
     this.searcherFactory = searcherFactory;
-    current = searcherFactory.newSearcher(IndexReader.open(dir));
+    current = getSearcher(searcherFactory, IndexReader.open(dir));
+  }
+
+  @Override
+  protected void decRef(IndexSearcher reference) throws IOException {
+    reference.getIndexReader().decRef();
+  }
+  
+  @Override
+  protected IndexSearcher refreshIfNeeded(IndexSearcher referenceToRefresh) throws IOException {
+    final IndexReader newReader = IndexReader.openIfChanged(referenceToRefresh.getIndexReader());
+    if (newReader == null) {
+      return null;
+    } else {
+      return getSearcher(searcherFactory, newReader);
+    }
+  }
+  
+  @Override
+  protected boolean tryIncRef(IndexSearcher reference) {
+    return reference.getIndexReader().tryIncRef();
   }
 
   /** @deprecated see {@link #maybeRefresh()}. */
-  public final boolean maybeReopen() throws IOException {
+  @Deprecated
+  public boolean maybeReopen() throws IOException {
     return maybeRefresh();
   }
   
@@ -137,5 +138,22 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
       release(searcher);
     }
   }
-  
+
+  // NOTE: decRefs incoming reader on throwing an exception
+  static IndexSearcher getSearcher(SearcherFactory searcherFactory, IndexReader reader) throws IOException {
+    boolean success = false;
+    final IndexSearcher searcher;
+    try {
+      searcher = searcherFactory.newSearcher(reader);
+      if (searcher.getIndexReader() != reader) {
+        throw new IllegalStateException("SearcherFactory must wrap exactly the provided reader (got " + searcher.getIndexReader() + " but expected " + reader + ")");
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        reader.decRef();
+      }
+    }
+    return searcher;
+  }
 }

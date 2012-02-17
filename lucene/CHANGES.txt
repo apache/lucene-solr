@@ -120,6 +120,9 @@ API Changes
   method maybeReopen has been deprecated in favor of maybeRefresh().
   (Shai Erera, Mike McCandless, Simon Willnauer)
 
+* LUCENE-3776: You now acquire/release the IndexSearcher directly from
+  NRTManager.  (Mike McCandless)
+  
 New Features
 
 * LUCENE-3593: Added a FieldValueFilter that accepts all documents that either

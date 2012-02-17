@@ -56,7 +56,7 @@ public abstract class ReferenceManager<G> implements Closeable {
     current = newReference;
     release(oldReference);
   }
-  
+
   /** Decrement reference counting on the given reference. */
   protected abstract void decRef(G reference) throws IOException;
   
@@ -100,7 +100,12 @@ public abstract class ReferenceManager<G> implements Closeable {
       // closeable javadoc says:
       // if this is already closed then invoking this method has no effect.
       swapReference(null);
+      afterClose();
     }
+  }
+
+  /** Called after close(), so subclass can free any resources. */
+  protected void afterClose() throws IOException {
   }
 
   /**
@@ -116,13 +121,16 @@ public abstract class ReferenceManager<G> implements Closeable {
    * refresh to complete.
    * 
    * <p>
-   * This method returns true if the reference was in fact refreshed, or if the
-   * current reference has no pending changes.
+   * If this method returns true it means the calling thread either refreshed
+   * or that there were no changes to refresh.  If it returns false it means another
+   * thread is currently refreshing.
    */
   public final boolean maybeRefresh() throws IOException {
     ensureOpen();
+
     // Ensure only 1 thread does reopen at once; other threads just return immediately:
-    if (reopenLock.tryAcquire()) {
+    final boolean doTryRefresh = reopenLock.tryAcquire();
+    if (doTryRefresh) {
       try {
         final G reference = acquire();
         try {
@@ -142,15 +150,20 @@ public abstract class ReferenceManager<G> implements Closeable {
         } finally {
           release(reference);
         }
-        return true;
+        afterRefresh();
       } finally {
         reopenLock.release();
       }
-    } else {
-      return false;
     }
+
+    return doTryRefresh;
   }
 
+  /** Called after swapReference has installed a new
+   *  instance. */
+  protected void afterRefresh() throws IOException {
+  }
+  
   /**
    * Release the refernce previously obtained via {@link #acquire()}.
    * <p>
@@ -160,5 +173,4 @@ public abstract class ReferenceManager<G> implements Closeable {
     assert reference != null;
     decRef(reference);
   }
-  
 }

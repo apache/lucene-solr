@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -52,13 +51,11 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * not.  In this case you should use a single {@link
  * NRTManager.TrackingIndexWriter} instance for both.
  *
- * <p>Then, use {@link #getSearcherManager} to obtain the
- * {@link SearcherManager} that you then use to
- * acquire/release searchers.  Don't call maybeReopen on
- * that SearcherManager!  Only call NRTManager's {@link
- * #maybeReopen}.
+ * <p>Then, use {@link #acquire} to obtain the
+ * {@link IndexSearcher}, and {@link #release} (ideally,
+ * from within a <code>finally</code> clause) to release it.
  *
- * <p>NOTE: to use this class, you must call {@link #maybeReopen()}
+ * <p>NOTE: to use this class, you must call {@link #maybeRefresh()}
  * periodically.  The {@link NRTManagerReopenThread} is a
  * simple class to do this on a periodic basis, and reopens
  * more quickly if a request is waiting.  If you implement
@@ -72,14 +69,14 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * @lucene.experimental
  */
 
-public class NRTManager implements Closeable {
+public class NRTManager extends ReferenceManager<IndexSearcher> {
   private static final long MAX_SEARCHER_GEN = Long.MAX_VALUE;
   private final TrackingIndexWriter writer;
   private final List<WaitingListener> waitingListeners = new CopyOnWriteArrayList<WaitingListener>();
-  private final ReentrantLock reopenLock = new ReentrantLock();
-  private final Condition newGeneration = reopenLock.newCondition();
+  private final ReentrantLock genLock = new ReentrantLock();;
+  private final Condition newGeneration = genLock.newCondition();
+  private final SearcherFactory searcherFactory;
 
-  private final SearcherManager mgr;
   private volatile long searchingGen;
 
   /**
@@ -102,24 +99,25 @@ public class NRTManager implements Closeable {
    * apply deletes.  This is useful for cases where certain
    * uses can tolerate seeing some deleted docs, since
    * reopen time is faster if deletes need not be applied. */
-  public NRTManager(TrackingIndexWriter writer, SearcherFactory searcherFactory, boolean applyDeletes) throws IOException {
+  public NRTManager(TrackingIndexWriter writer, SearcherFactory searcherFactory, boolean applyAllDeletes) throws IOException {
     this.writer = writer;
-    mgr = new SearcherManager(writer.getIndexWriter(), applyDeletes, searcherFactory);
+    if (searcherFactory == null) {
+      searcherFactory = new SearcherFactory();
+    }
+    this.searcherFactory = searcherFactory;
+    current = SearcherManager.getSearcher(searcherFactory, IndexReader.open(writer.getIndexWriter(), applyAllDeletes));
   }
 
-  /**
-   * Returns the {@link SearcherManager} you should use to
-   * acquire/release searchers.
-   *
-   * <p><b>NOTE</b>: Never call maybeReopen on the returned
-   * SearcherManager; only call this NRTManager's {@link
-   * #maybeReopen}.  Otherwise threads waiting for a
-   * generation may never return.
-   */
-  public SearcherManager getSearcherManager() {
-    return mgr;
+  @Override
+  protected void decRef(IndexSearcher reference) throws IOException {
+    reference.getIndexReader().decRef();
   }
   
+  @Override
+  protected boolean tryIncRef(IndexSearcher reference) {
+    return reference.getIndexReader().tryIncRef();
+  }
+
   /** NRTManager invokes this interface to notify it when a
    *  caller is waiting for a specific generation searcher
    *  to be visible. */
@@ -265,7 +263,7 @@ public class NRTManager implements Closeable {
    * If the current searcher is older than the
    * target generation, this method will block
    * until the searcher is reopened, by another via
-   * {@link #maybeReopen} or until the {@link NRTManager} is closed.
+   * {@link #maybeRefresh} or until the {@link NRTManager} is closed.
    * 
    * @param targetGen the generation to wait for
    */
@@ -278,7 +276,7 @@ public class NRTManager implements Closeable {
    * the searcher.  If the current searcher is older than
    * the target generation, this method will block until the
    * searcher has been reopened by another thread via
-   * {@link #maybeReopen}, the given waiting time has elapsed, or until
+   * {@link #maybeRefresh}, the given waiting time has elapsed, or until
    * the NRTManager is closed.
    * <p>
    * NOTE: if the waiting time elapses before the requested target generation is
@@ -297,7 +295,7 @@ public class NRTManager implements Closeable {
       if (targetGen > curGen) {
         throw new IllegalArgumentException("targetGen=" + targetGen + " was never returned by this NRTManager instance (current gen=" + curGen + ")");
       }
-      reopenLock.lockInterruptibly();
+      genLock.lockInterruptibly();
       try {
         if (targetGen > searchingGen) {
           for (WaitingListener listener : waitingListeners) {
@@ -310,7 +308,7 @@ public class NRTManager implements Closeable {
           }
         }
       } finally {
-        reopenLock.unlock();
+        genLock.unlock();
       }
     } catch (InterruptedException ie) {
       throw new ThreadInterruptedException(ie);
@@ -319,7 +317,7 @@ public class NRTManager implements Closeable {
   
   private boolean waitOnGenCondition(long time, TimeUnit unit)
       throws InterruptedException {
-    assert reopenLock.isHeldByCurrentThread();
+    assert genLock.isHeldByCurrentThread();
     if (time < 0) {
       newGeneration.await();
       return true;
@@ -333,51 +331,63 @@ public class NRTManager implements Closeable {
     return searchingGen;
   }
 
-  public void maybeReopen() throws IOException {
-    if (reopenLock.tryLock()) {
-      try {
-        // Mark gen as of when reopen started:
-        final long newSearcherGen = writer.getAndIncrementGeneration();
-        if (searchingGen == MAX_SEARCHER_GEN) {
-          newGeneration.signalAll(); // wake up threads if we have a new generation
-          return;
-        }
-        boolean setSearchGen;
-        if (!mgr.isSearcherCurrent()) {
-          setSearchGen = mgr.maybeRefresh();
-        } else {
-          setSearchGen = true;
-        }
-        if (setSearchGen) {
-          searchingGen = newSearcherGen;// update searcher gen
-          newGeneration.signalAll(); // wake up threads if we have a new generation
-        }
-      } finally {
-        reopenLock.unlock();
+  private long lastRefreshGen;
+
+  @Override
+  protected IndexSearcher refreshIfNeeded(IndexSearcher referenceToRefresh) throws IOException {
+    // Record gen as of when reopen started:
+    lastRefreshGen = writer.getAndIncrementGeneration();
+    final IndexReader r = referenceToRefresh.getIndexReader();
+    IndexSearcher newSearcher = null;
+    if (!r.isCurrent()) {
+      final IndexReader newReader = IndexReader.openIfChanged(r);
+      if (newReader != null) {
+        newSearcher = SearcherManager.getSearcher(searcherFactory, newReader);
       }
+    }
+
+    return newSearcher;
+  }
+
+  @Override
+  protected void afterRefresh() {
+    genLock.lock();
+    try {
+      if (searchingGen != MAX_SEARCHER_GEN) {
+        // update searchingGen:
+        assert lastRefreshGen >= searchingGen;
+        searchingGen = lastRefreshGen;
+      }
+      // wake up threads if we have a new generation:
+      newGeneration.signalAll();
+    } finally {
+      genLock.unlock();
+    }
+  }
+
+  @Override
+  protected synchronized void afterClose() throws IOException {
+    genLock.lock();
+    try {
+      // max it out to make sure nobody can wait on another gen
+      searchingGen = MAX_SEARCHER_GEN; 
+      newGeneration.signalAll();
+    } finally {
+      genLock.unlock();
     }
   }
 
   /**
-   * Close this NRTManager to future searching. Any searches still in process in
-   * other threads won't be affected, and they should still call
-   * {@link SearcherManager#release} after they are done.
-   * 
-   * <p>
-   * <b>NOTE</b>: caller must separately close the writer.
+   * Returns <code>true</code> if no changes have occured since this searcher
+   * ie. reader was opened, otherwise <code>false</code>.
+   * @see IndexReader#isCurrent() 
    */
-  public void close() throws IOException {
-    reopenLock.lock();
+  public boolean isSearcherCurrent() throws IOException {
+    final IndexSearcher searcher = acquire();
     try {
-      try {
-        // max it out to make sure nobody can wait on another gen
-        searchingGen = MAX_SEARCHER_GEN; 
-        mgr.close();
-      } finally { // make sure we signal even if close throws an exception
-        newGeneration.signalAll();
-      }
+      return searcher.getIndexReader().isCurrent();
     } finally {
-      reopenLock.unlock();
+      release(searcher);
     }
   }
 }
