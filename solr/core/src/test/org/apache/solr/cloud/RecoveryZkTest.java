@@ -29,7 +29,6 @@ import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore("Fixme! I am so tired of failing all the time. This is cruelty to animals! :(")
 public class RecoveryZkTest extends FullSolrCloudTest {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
@@ -91,8 +90,6 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     
     indexThread.join();
     indexThread2.join();
-    
-    Thread.sleep(5000);
     
     commit();
 
