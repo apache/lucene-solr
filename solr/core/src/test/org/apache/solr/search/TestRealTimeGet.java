@@ -1002,6 +1002,12 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
   }
 
+
+
+
+
+
+
   // This points to the live model when state is ACTIVE, but a snapshot of the
   // past when recovering.
   volatile ConcurrentHashMap<Integer,DocInfo> visibleModel;
@@ -1024,6 +1030,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
         // query variables
     final int percentRealtimeQuery = 75;
+    final int percentGetLatestVersions = random.nextInt(4);
     final AtomicLong operations = new AtomicLong(atLeast(75));  // number of recovery loops to perform
     int nReadThreads = 2 + random.nextInt(10);  // fewer read threads to give writers more of a chance
 
@@ -1249,6 +1256,13 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 }
               }
             }
+            
+            
+            if (rand.nextInt(100) < percentGetLatestVersions) {
+              getLatestVersions();
+              // TODO: some sort of validation that the latest version is >= to the latest version we added?
+            }
+            
           }
           catch (Throwable e) {
             operations.set(-1L);
@@ -1335,6 +1349,16 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   }
 
 
+  List<Long> getLatestVersions() {
+    List<Long> recentVersions;
+    UpdateLog.RecentUpdates startingRecentUpdates = h.getCore().getUpdateHandler().getUpdateLog().getRecentUpdates();
+    try {
+      recentVersions = startingRecentUpdates.getVersions(100);
+    } finally {
+      startingRecentUpdates.close();
+    }
+    return recentVersions;
+  }
 
 
 
