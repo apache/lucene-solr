@@ -175,7 +175,9 @@ public class TestSort extends LuceneTestCase {
         if (data[i][11] != null) doc.add (new StringField ("parser",     data[i][11]));
 
         for(IndexableField f : doc.getFields()) {
-          ((Field) f).setBoost(2.0f);
+          if (!f.fieldType().omitNorms()) {
+            ((Field) f).setBoost(2.0f);
+          }
         }
 
         writer.addDocument (doc);
@@ -221,7 +223,9 @@ public class TestSort extends LuceneTestCase {
       }
       doc.add (new Field ("tracer2", num2, onlyStored));
       for(IndexableField f2 : doc.getFields()) {
-        ((Field) f2).setBoost(2.0f);
+        if (!f2.fieldType().omitNorms()) {
+          ((Field) f2).setBoost(2.0f);
+        }
       }
 
       String numFixed = getRandomCharString(fixedLen, 48, 52);
@@ -239,7 +243,9 @@ public class TestSort extends LuceneTestCase {
       doc.add (new Field ("tracer2_fixed", num2Fixed, onlyStored));
 
       for(IndexableField f2 : doc.getFields()) {
-        ((Field) f2).setBoost(2.0f);
+        if (!f2.fieldType().omitNorms()) {
+          ((Field) f2).setBoost(2.0f);
+        }
       }
 
       writer.addDocument (doc);

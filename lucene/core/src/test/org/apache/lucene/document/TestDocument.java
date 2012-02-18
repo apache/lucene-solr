@@ -20,10 +20,14 @@ package org.apache.lucene.document;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.EmptyTokenizer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -355,6 +359,35 @@ public class TestDocument extends LuceneTestCase {
     }
 
     r.close();
+    dir.close();
+  }
+  
+  public void testBoost() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new Field("field1", "sometext", StringField.TYPE_STORED));
+    doc.add(new TextField("field2", "sometext"));
+    doc.add(new StringField("foo", "bar"));
+    iw.addDocument(doc); // add an 'ok' document
+    try {
+      doc = new Document();
+      // try to boost with norms omitted
+      StringField field = new StringField("foo", "baz");
+      field.setBoost(5.0f);
+      doc.add(field);
+      iw.addDocument(doc);
+      fail("didn't get any exception, boost silently discarded");
+    } catch (UnsupportedOperationException expected) {
+      // expected
+    }
+    DirectoryReader ir = DirectoryReader.open(iw, false);
+    assertEquals(1, ir.numDocs());
+    assertEquals("sometext", ir.document(0).get("field1"));
+    ir.close();
+    iw.close();
     dir.close();
   }
 }

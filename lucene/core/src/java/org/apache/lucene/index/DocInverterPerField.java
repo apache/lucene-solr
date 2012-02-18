@@ -67,11 +67,17 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
     for(int i=0;i<count;i++) {
 
       final IndexableField field = fields[i];
+      final IndexableFieldType fieldType = field.fieldType();
 
       // TODO FI: this should be "genericized" to querying
       // consumer if it wants to see this particular field
       // tokenized.
-      if (field.fieldType().indexed() && doInvert) {
+      if (fieldType.indexed() && doInvert) {
+        
+        // if the field omits norms, the boost cannot be indexed.
+        if (fieldType.omitNorms() && field.boost() != 1.0f) {
+          throw new UnsupportedOperationException("You cannot set an index-time boost: norms are omitted for field '" + field.name() + "'");
+        }
 
         if (i > 0) {
           fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);

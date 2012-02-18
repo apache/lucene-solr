@@ -57,7 +57,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     String xml = 
       "<random>" +
       " <document>" +
-      "  <node name=\"id\" enhance=\"2.2\" value=\"12345\"/>" +
+      "  <node name=\"id\" value=\"12345\"/>" +
       "  <node name=\"name\" value=\"kitten\"/>" +
       "  <node name=\"text\" enhance=\"3\" value=\"some other day\"/>" +
       "  <node name=\"title\" enhance=\"4\" value=\"A story\"/>" +

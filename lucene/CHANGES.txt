@@ -770,6 +770,13 @@ Changes in backwards compatibility policy
   method getCommitUserData (use getIndexCommit().getUserData()
   instead).  (Ryan McKinley, Robert Muir, Mike McCandless)
   
+Changes in Runtime Behavior
+
+* LUCENE-3796: Throw an exception if you try to set an index-time
+  boost on a field that omits norms. Because the index-time boost
+  is multiplied into the norm, previously your boost would be 
+  silently discarded.  (Robert Muir)
+  
 Security fixes
 
 * LUCENE-3588: Try harder to prevent SIGSEGV on cloned MMapIndexInputs:
