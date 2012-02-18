@@ -80,9 +80,15 @@ public final class ParallelAtomicReader extends AtomicReader {
       throw new IllegalArgumentException("There must be at least one main reader if storedFieldsReaders are used.");
     this.parallelReaders = readers.clone();
     this.storedFieldsReaders = storedFieldsReaders.clone();
-    this.numDocs = (readers.length > 0) ? readers[0].numDocs() : 0;
-    this.maxDoc = (readers.length > 0) ? readers[0].maxDoc() : 0;
-    this.hasDeletions = (readers.length > 0) ? readers[0].hasDeletions() : false;
+    if (parallelReaders.length > 0) {
+      final AtomicReader first = parallelReaders[0];
+      this.maxDoc = first.maxDoc();
+      this.numDocs = first.numDocs();
+      this.hasDeletions = first.hasDeletions();
+    } else {
+      this.maxDoc = this.numDocs = 0;
+      this.hasDeletions = false;
+    }
     Collections.addAll(completeReaderSet, this.parallelReaders);
     Collections.addAll(completeReaderSet, this.storedFieldsReaders);
     
@@ -97,7 +103,7 @@ public final class ParallelAtomicReader extends AtomicReader {
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
       for(FieldInfo fieldInfo : readerFieldInfos) { // update fieldToReader map
         // NOTE: first reader having a given field "wins":
-        if (fieldToReader.get(fieldInfo.name) == null) {
+        if (!fieldToReader.containsKey(fieldInfo.name)) {
           fieldInfos.add(fieldInfo);
           fieldToReader.put(fieldInfo.name, reader);
           this.fields.addField(fieldInfo.name, reader.terms(fieldInfo.name));
