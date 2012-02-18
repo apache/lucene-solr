@@ -110,7 +110,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         
         try {
           elector.setup(context);
-          seq = elector.joinElection(context);
+          seq = elector.joinElection(context, null);
           electionDone = true;
           seqToThread.put(seq, this);
         } catch (InterruptedException e) {
@@ -153,7 +153,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ElectionContext context = new ShardLeaderElectionContextBase(elector,
         "shard2", "collection1", "dummynode1", props, zkStateReader);
     elector.setup(context);
-    elector.joinElection(context);
+    elector.joinElection(context, null);
     assertEquals("http://127.0.0.1/solr/",
         getLeaderUrl("collection1", "shard2"));
   }

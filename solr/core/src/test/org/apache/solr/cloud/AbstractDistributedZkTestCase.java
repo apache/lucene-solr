@@ -44,7 +44,6 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     super.setUp();
     log.info("####SETUP_START " + getName());
     createTempDir();
-    ignoreException("java.nio.channels.ClosedChannelException");
     
     String zkDir = testDir.getAbsolutePath() + File.separator
     + "zookeeper/server1/data";
@@ -84,13 +83,13 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
   }
   
   protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose)
-      throws KeeperException, InterruptedException {
-    waitForRecoveriesToFinish(collection, zkStateReader, verbose, false);
+      throws Exception {
+    waitForRecoveriesToFinish(collection, zkStateReader, verbose, true);
   }
   
   protected void waitForRecoveriesToFinish(String collection,
       ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout)
-      throws KeeperException, InterruptedException {
+      throws Exception {
     boolean cont = true;
     int cnt = 0;
     
@@ -117,12 +116,13 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
           }
         }
       }
-      if (!sawLiveRecovering || cnt == 15) {
+      if (!sawLiveRecovering || cnt == 120) {
         if (!sawLiveRecovering) {
           if (verbose) System.out.println("no one is recoverying");
         } else {
           if (failOnTimeout) {
             fail("There are still nodes recoverying");
+            printLayout();
             return;
           }
           if (verbose) System.out
@@ -130,7 +130,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
         }
         cont = false;
       } else {
-        Thread.sleep(2000);
+        Thread.sleep(1000);
       }
       cnt++;
     }

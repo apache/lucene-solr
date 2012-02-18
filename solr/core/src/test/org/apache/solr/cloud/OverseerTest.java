@@ -41,6 +41,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.data.Stat;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -100,6 +101,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solrcloud.skip.autorecovery", "true");
+    initCore();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("solrcloud.skip.autorecovery");
     initCore();
   }
 
@@ -143,9 +151,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         collection1Desc.setCollectionName("collection1");
         CoreDescriptor desc1 = new CoreDescriptor(null, "core" + (i + 1), "");
         desc1.setCloudDescriptor(collection1Desc);
-        zkController.publishAsDown(zkController.getBaseUrl(), desc1,
-            zkController.getNodeName() + "_" + "core" + (i + 1), "core"
-                + (i + 1));
+        zkController.preRegisterSetup(null, desc1);
         ids[i] = zkController.register("core" + (i + 1), desc1);
       }
       
@@ -242,10 +248,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             final CoreDescriptor desc = new CoreDescriptor(null, coreName, "");
             desc.setCloudDescriptor(collection1Desc);
             try {
-              controllers[slot % nodeCount].publishAsDown(controllers[slot
-                  % nodeCount].getBaseUrl(), desc, controllers[slot
-                  % nodeCount].getNodeName()
-                  + "_" + coreName, coreName);
+              controllers[slot % nodeCount].preRegisterSetup(null, desc);
               ids[slot] = controllers[slot % nodeCount]
                   .register(coreName, desc);
             } catch (Throwable e) {
@@ -673,7 +676,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     LeaderElector overseerElector = new LeaderElector(zkClient);
     ElectionContext ec = new OverseerElectionContext(address.replaceAll("/", "_"), zkClient, reader);
     overseerElector.setup(ec);
-    overseerElector.joinElection(ec);
+    overseerElector.joinElection(ec, null);
     return zkClient;
   }
 }

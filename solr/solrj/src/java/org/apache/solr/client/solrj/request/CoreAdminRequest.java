@@ -115,11 +115,14 @@ public class CoreAdminRequest extends SolrRequest
 
   }
   
-  public static class PrepRecovery extends CoreAdminRequest {
+  public static class WaitForState extends CoreAdminRequest {
     protected String nodeName;
     protected String coreNodeName;
-
-    public PrepRecovery() {
+    protected String state;
+    protected Boolean checkLive;
+    protected Integer pauseFor;
+    
+    public WaitForState() {
       action = CoreAdminAction.PREPRECOVERY;
     }
     
@@ -139,6 +142,30 @@ public class CoreAdminRequest extends SolrRequest
       this.coreNodeName = coreNodeName;
     }
     
+    public String getState() {
+      return state;
+    }
+
+    public void setState(String state) {
+      this.state = state;
+    }
+
+    public Boolean getCheckLive() {
+      return checkLive;
+    }
+
+    public void setCheckLive(Boolean checkLive) {
+      this.checkLive = checkLive;
+    }
+    
+    public Integer getPauseFor() {
+      return pauseFor;
+    }
+
+    public void setPauseFor(Integer pauseFor) {
+      this.pauseFor = pauseFor;
+    }
+    
     @Override
     public SolrParams getParams() {
       if( action == null ) {
@@ -155,6 +182,18 @@ public class CoreAdminRequest extends SolrRequest
       
       if (coreNodeName != null) {
         params.set( "coreNodeName", coreNodeName);
+      }
+      
+      if (state != null) {
+        params.set( "state", state);
+      }
+      
+      if (checkLive != null) {
+        params.set( "checkLive", checkLive);
+      }
+      
+      if (pauseFor != null) {
+        params.set( "pauseFor", pauseFor);
       }
 
       return params;

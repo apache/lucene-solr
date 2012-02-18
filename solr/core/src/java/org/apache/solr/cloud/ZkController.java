@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -32,6 +33,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
@@ -177,22 +180,24 @@ public final class ZkController {
               //Overseer.createClientNodes(zkClient, getNodeName());
 
               ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
-              overseerElector.joinElection(context);
+              overseerElector.joinElection(context, null);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
               List<CoreDescriptor> descriptors = registerOnReconnect
                   .getCurrentDescriptors();
               if (descriptors != null) {
                 // before registering as live, make sure everyone is in a
-                // recovery state
+                // down state
                 for (CoreDescriptor descriptor : descriptors) {
-                  final String shardZkNodeName = getNodeName() + "_"
+                  final String coreZkNodeName = getNodeName() + "_"
                       + descriptor.getName();
-                  publishAsDown(getBaseUrl(), descriptor, shardZkNodeName,
+                  publishAsDown(getBaseUrl(), descriptor, coreZkNodeName,
                       descriptor.getName());
+                  waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
                 }
               }
               
+
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
               
@@ -218,6 +223,8 @@ public final class ZkController {
             }
 
           }
+
+ 
         });
     cmdExecutor = new ZkCmdExecutor();
     leaderElector = new LeaderElector(zkClient);
@@ -337,7 +344,7 @@ public final class ZkController {
       overseerElector = new LeaderElector(zkClient);
       ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
       overseerElector.setup(context);
-      overseerElector.joinElection(context);
+      overseerElector.joinElection(context, null);
       zkStateReader.createClusterStateWatchersAndUpdate();
       
     } catch (IOException e) {
@@ -478,30 +485,23 @@ public final class ZkController {
     String shardId = cloudDesc.getShardId();
 
     Map<String,String> props = new HashMap<String,String>();
+ // we only put a subset of props into the leader node
     props.put(ZkStateReader.BASE_URL_PROP, baseUrl);
     props.put(ZkStateReader.CORE_NAME_PROP, coreName);
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    props.put(ZkStateReader.ROLES_PROP, cloudDesc.getRoles());
-    props.put(ZkStateReader.STATE_PROP, ZkStateReader.DOWN);
+
 
     if (log.isInfoEnabled()) {
         log.info("Register shard - core:" + coreName + " address:"
             + baseUrl + " shardId:" + shardId);
     }
 
-    // we only put a subset of props into the leader node
-    ZkNodeProps leaderProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        props.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_NAME_PROP,
-        props.get(ZkStateReader.CORE_NAME_PROP), ZkStateReader.NODE_NAME_PROP,
-        props.get(ZkStateReader.NODE_NAME_PROP));
-    
-
-    joinElection(collection, coreZkNodeName, shardId, leaderProps);
+    ZkNodeProps leaderProps = new ZkNodeProps(props);
     
     // rather than look in the cluster state file, we go straight to the zknodes
     // here, because on cluster restart there could be stale leader info in the
     // cluster state node that won't be updated for a moment
-    String leaderUrl = getLeaderUrl(collection, cloudDesc.getShardId());
+    String leaderUrl = getLeaderProps(collection, cloudDesc.getShardId()).getCoreUrl();
     
     // now wait until our currently cloud state contains the latest leader
     String cloudStateLeader = zkStateReader.getLeaderUrl(collection, cloudDesc.getShardId(), 30000);
@@ -573,7 +573,7 @@ public final class ZkController {
   }
   
   /**
-   * Get leader URL directly from zk nodes.
+   * Get leader props directly from zk nodes.
    * 
    * @param collection
    * @param slice
@@ -581,7 +581,7 @@ public final class ZkController {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  private String getLeaderUrl(final String collection, final String slice)
+  private ZkCoreNodeProps getLeaderProps(final String collection, final String slice)
       throws KeeperException, InterruptedException {
     int iterCount = 60;
     while (iterCount-- > 0)
@@ -591,7 +591,7 @@ public final class ZkController {
             true);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(
             ZkNodeProps.load(data));
-        return leaderProps.getCoreUrl();
+        return leaderProps;
       } catch (NoNodeException e) {
         Thread.sleep(500);
       }
@@ -600,12 +600,12 @@ public final class ZkController {
 
 
   private void joinElection(final String collection,
-      final String shardZkNodeName, String shardId, ZkNodeProps leaderProps) throws InterruptedException, KeeperException, IOException {
+      final String shardZkNodeName, String shardId, ZkNodeProps leaderProps, SolrCore core) throws InterruptedException, KeeperException, IOException {
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
         collection, shardZkNodeName, leaderProps, this, cc);
     
     leaderElector.setup(context);
-    leaderElector.joinElection(context);
+    leaderElector.joinElection(context, core);
   }
 
 
@@ -671,15 +671,14 @@ public final class ZkController {
     publishState(cd, shardZkNodeName, coreName, finalProps);
   }
 
-  public void publish(SolrCore core, String state) {
-    CoreDescriptor cd = core.getCoreDescriptor();
+  public void publish(CoreDescriptor cd, String state) {
     Map<String,String> finalProps = new HashMap<String,String>();
     finalProps.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
-    finalProps.put(ZkStateReader.CORE_NAME_PROP, core.getName());
+    finalProps.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
     finalProps.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     finalProps.put(ZkStateReader.STATE_PROP, state);
-    publishState(cd, getNodeName() + "_" + core.getName(),
-        core.getName(), finalProps);
+    publishState(cd, getNodeName() + "_" + cd.getName(),
+        cd.getName(), finalProps);
   }
   
   void publishAsDown(String baseUrl,
@@ -957,6 +956,95 @@ public final class ZkController {
   
   public static void uploadConfigDir(SolrZkClient zkClient, File dir, String configName) throws IOException, KeeperException, InterruptedException {
     uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
+  }
+
+  public void preRegisterSetup(SolrCore core, CoreDescriptor cd) {
+    // before becoming available, make sure we are not live and active
+    // this also gets us our assigned shard id if it was not specified
+    publish(cd, ZkStateReader.DOWN);
+    
+    String shardId = cd.getCloudDescriptor().getShardId();
+    
+    Map<String,String> props = new HashMap<String,String>();
+    // we only put a subset of props into the leader node
+    props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
+    props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
+    props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    
+    final String coreZkNodeName = getNodeName() + "_" + cd.getName();
+    ZkNodeProps ourProps = new ZkNodeProps(props);
+    String collection = cd.getCloudDescriptor()
+        .getCollectionName();
+    
+    try {
+      joinElection(collection, coreZkNodeName, shardId, ourProps, core);
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (KeeperException e) {
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (IOException e) {
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    }
+
+      
+      waitForLeaderToSeeDownState(cd, coreZkNodeName);
+    
+  }
+
+  private ZkCoreNodeProps waitForLeaderToSeeDownState(
+      CoreDescriptor descriptor, final String shardZkNodeName) {
+    CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
+    String collection = cloudDesc.getCollectionName();
+    String shard = cloudDesc.getShardId();
+    ZkCoreNodeProps leaderProps;
+    try {
+      // go straight to zk, not the cloud state - we must have current info
+      leaderProps = getLeaderProps(collection, shard);
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (KeeperException e) {
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    }
+    
+    String leaderBaseUrl = leaderProps.getBaseUrl();
+    String leaderCoreName = leaderProps.getCoreName();
+    
+    String ourUrl = ZkCoreNodeProps.getCoreUrl(getBaseUrl(),
+        descriptor.getName());
+    
+    boolean isLeader = leaderProps.getCoreUrl().equals(ourUrl);
+    if (!isLeader && !SKIP_AUTO_RECOVERY) {
+      // wait until the leader sees us as down before we are willing to accept
+      // updates.
+      CommonsHttpSolrServer server = null;
+      try {
+        server = new CommonsHttpSolrServer(leaderBaseUrl);
+      } catch (MalformedURLException e) {
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
+            e);
+      }
+      server.setConnectionTimeout(45000);
+      server.setSoTimeout(45000);
+      WaitForState prepCmd = new WaitForState();
+      prepCmd.setCoreName(leaderCoreName);
+      prepCmd.setNodeName(getNodeName());
+      prepCmd.setCoreNodeName(shardZkNodeName);
+      prepCmd.setState(ZkStateReader.DOWN);
+      prepCmd.setCheckLive(false);
+      
+      try {
+        server.request(prepCmd);
+      } catch (Exception e) {
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "Could not talk to the leader", e);
+      }
+      server.shutdown();
+    }
+    return leaderProps;
   }
 
 }

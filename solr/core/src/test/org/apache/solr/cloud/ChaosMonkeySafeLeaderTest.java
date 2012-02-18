@@ -48,7 +48,7 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
   public void setUp() throws Exception {
     super.setUp();
     // we expect this time of exception as shards go up and down...
-    ignoreException(".*");
+    //ignoreException(".*");
     
     // sometimes we cannot get the same port
     ignoreException("java\\.net\\.BindException: Address already in use");

@@ -539,9 +539,8 @@ public class CoreContainer
     }
 
     if (zkController != null) {
-      // before becoming available, make sure we are not live and active
-      // this also gets us our assigned shard id if it was not specified
-      zkController.publish(core, ZkStateReader.DOWN);
+      // this happens before we can receive requests
+      zkController.preRegisterSetup(core, core.getCoreDescriptor());
     }
     
     SolrCore old = null;
@@ -587,7 +586,7 @@ public class CoreContainer
       } catch (Exception e) {
         // if register fails, this is really bad - close the zkController to
         // minimize any damage we can cause
-        zkController.publish(core, ZkStateReader.DOWN);
+        zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
         log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);

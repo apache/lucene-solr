@@ -648,7 +648,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   protected void waitForRecoveriesToFinish(boolean verbose)
-      throws KeeperException, InterruptedException {
+      throws Exception {
     super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose);
   }
   

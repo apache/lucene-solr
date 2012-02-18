@@ -28,7 +28,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest.PrepRecovery;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -173,10 +173,13 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderBaseUrl);
     server.setConnectionTimeout(45000);
     server.setSoTimeout(45000);
-    PrepRecovery prepCmd = new PrepRecovery();
+    WaitForState prepCmd = new WaitForState();
     prepCmd.setCoreName(leaderCoreName);
     prepCmd.setNodeName(zkController.getNodeName());
     prepCmd.setCoreNodeName(coreZkNodeName);
+    prepCmd.setState(ZkStateReader.RECOVERING);
+    prepCmd.setCheckLive(true);
+    prepCmd.setPauseFor(4000);
     
     server.request(prepCmd);
     server.shutdown();
@@ -206,7 +209,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     while (!succesfulRecovery && !close && !isInterrupted()) { // don't use interruption or it will close channels though
       try {
         // first thing we just try to sync
-        zkController.publish(core, ZkStateReader.RECOVERING);
+        zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
  
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
             .getCloudDescriptor();

@@ -420,7 +420,12 @@ public class ZkStateReader {
   }
   
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
-      String shardId, String thisNodeName, String coreName, String stateFilter) {
+      String shardId, String thisNodeName, String coreName, String mustMatchStateFilter) {
+    return getReplicaProps(collection, shardId, thisNodeName, coreName, mustMatchStateFilter, null);
+  }
+  
+  public List<ZkCoreNodeProps> getReplicaProps(String collection,
+      String shardId, String thisNodeName, String coreName, String mustMatchStateFilter, String mustNotMatchStateFilter) {
     CloudState cloudState = this.cloudState;
     if (cloudState == null) {
       return null;
@@ -444,8 +449,10 @@ public class ZkStateReader {
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
       String coreNodeName = nodeProps.getNodeName() + "_" + nodeProps.getCoreName();
       if (cloudState.liveNodesContain(nodeProps.getNodeName()) && !coreNodeName.equals(filterNodeName)) {
-        if (stateFilter == null || stateFilter.equals(nodeProps.getState())) {
-          nodes.add(nodeProps);
+        if (mustMatchStateFilter == null || mustMatchStateFilter.equals(nodeProps.getState())) {
+          if (mustNotMatchStateFilter == null || !mustNotMatchStateFilter.equals(nodeProps.getState())) {
+            nodes.add(nodeProps);
+          }
         }
       }
     }

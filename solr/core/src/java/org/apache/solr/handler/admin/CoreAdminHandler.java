@@ -178,7 +178,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
 
         case PREPRECOVERY: {
-          this.handlePrepRecoveryAction(req, rsp);
+          this.handleWaitForStateAction(req, rsp);
           break;
         }
         
@@ -614,7 +614,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
   }
   
-  protected void handlePrepRecoveryAction(SolrQueryRequest req,
+  protected void handleWaitForStateAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws IOException, InterruptedException {
     final SolrParams params = req.getParams();
     
@@ -625,8 +625,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
     
     String nodeName = params.get("nodeName");
     String coreNodeName = params.get("coreNodeName");
-    
- 
+    String waitForState = params.get("state");
+    boolean checkLive = params.getBool("checkLive", true);
+    int pauseFor = params.getInt("pauseFor", 0);
     SolrCore core =  null;
 
     try {
@@ -653,16 +654,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
           
           state = nodeProps.get(ZkStateReader.STATE_PROP);
           live = cloudState.liveNodesContain(nodeName);
-          if (nodeProps != null && state.equals(ZkStateReader.RECOVERING)
-              && live) {
-            break;
+          if (nodeProps != null && state.equals(waitForState)) {
+            if (checkLive && live) {
+              break;
+            } else {
+              break;
+            }
           }
         }
         
         if (retry++ == 30) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
-              "I was asked to prep for recovery for " + nodeName
-                  + " but she is not live or not in a recovery state - state: " + state + " live:" + live);
+              "I was asked to wait on state " + waitForState + " for " + nodeName
+                  + " but I still do not see the request state. I see state: " + state + " live:" + live);
         }
         
         Thread.sleep(1000);
@@ -672,21 +676,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       // kept it from sending the update to be buffered -
       // pause for a while to let any outstanding updates finish
       
-      Thread.sleep(4000);
-      
-      UpdateRequestProcessorChain processorChain = core
-          .getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
-      
-      ModifiableSolrParams reqParams = new ModifiableSolrParams(req.getParams());
-      reqParams.set(DistributedUpdateProcessor.COMMIT_END_POINT, "true");
-      
-      SolrQueryRequest sqr = new LocalSolrQueryRequest(core, reqParams);
-      UpdateRequestProcessor processor = processorChain.createProcessor(sqr,
-          new SolrQueryResponse());
-      CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
-      
-      processor.processCommit(cuc);
-      processor.finish();
+      Thread.sleep(pauseFor);
       
       // solrcloud_debug
 //      try {
