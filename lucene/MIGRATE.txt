@@ -242,10 +242,10 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   You can then .next() through the TermsEnum, or seek.  If you want a
   DocsEnum, do this:
 
-    Bits skipDocs = MultiFields.getDeletedDocs(reader);
+    Bits liveDocs = reader.getLiveDocs();
     DocsEnum docsEnum = null;
 
-    docsEnum = termsEnum.docs(skipDocs, docsEnum);
+    docsEnum = termsEnum.docs(liveDocs, docsEnum);
 
   You can pass in a prior DocsEnum and it will be reused if possible.
 
@@ -262,7 +262,7 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
 
     String field;
     BytesRef text;
-    DocsEnum docsEnum = reader.termDocsEnum(reader.getDeletedDocs(), field, text);
+    DocsEnum docsEnum = reader.termDocsEnum(reader.getLiveDocs(), field, text);
 
   Likewise for DocsAndPositionsEnum.
 
@@ -273,8 +273,8 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
     import org.apache.lucene.util.Bits;
     import org.apache.lucene.index.MultiFields;
 
-    Bits delDocs = MultiFields.getDeletedDocs(indexReader);
-    if (delDocs.get(docID)) {
+    Bits liveDocs = MultiFields.getLiveDocs(indexReader);
+    if (!liveDocs.get(docID)) {
       // document is deleted...
     }
     
