@@ -248,6 +248,11 @@ public class DocumentBuilder {
               sfield.getName() + ": " +field.getValue() );
       }
       
+      if (sfield != null && sfield.omitNorms() && boost != 1.0F) {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+            "ERROR: "+getID(doc, schema)+"cannot set an index-time boost, norms are omitted for field " + 
+            sfield.getName() + ": " +field.getValue() );
+      }
 
       // load each field value
       boolean hasField = false;

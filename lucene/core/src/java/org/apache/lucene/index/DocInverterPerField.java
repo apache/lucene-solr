@@ -79,6 +79,12 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       // tokenized.
       if (field.isIndexed() && doInvert) {
         
+        final float boost = field.getBoost();
+        // if the field omits norms, the boost cannot be indexed.
+        if (field.getOmitNorms() && boost != 1.0f) {
+          throw new UnsupportedOperationException("You cannot set an index-time boost: norms are omitted for field '" + field.name() + "'");
+        }
+        
         if (i > 0)
           fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);
 
@@ -194,7 +200,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         }
 
         fieldState.offset += docState.analyzer == null ? 0 : docState.analyzer.getOffsetGap(field);
-        fieldState.boost *= field.getBoost();
+        fieldState.boost *= boost;
       }
 
       // LUCENE-2387: don't hang onto the field, so GC can

@@ -1,6 +1,9 @@
 package org.apache.lucene.document;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -278,5 +281,34 @@ public class TestDocument extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
+  }
+  
+  public void testBoost() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new Field("field1", "sometext", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(new Field("field2", "sometext", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new Field("foo", "bar", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
+    iw.addDocument(doc); // add an 'ok' document
+    try {
+      doc = new Document();
+      // try to boost with norms omitted
+      Field field = new Field("foo", "baz", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
+      field.setBoost(5.0f);
+      doc.add(field);
+      iw.addDocument(doc);
+      fail("didn't get any exception, boost silently discarded");
+    } catch (UnsupportedOperationException expected) {
+      // expected
+    }
+    IndexReader ir = IndexReader.open(iw, false);
+    assertEquals(1, ir.numDocs());
+    assertEquals("sometext", ir.document(0).get("field1"));
+    ir.close();
+    iw.close();
+    dir.close();
   }
 }
