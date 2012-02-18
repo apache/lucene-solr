@@ -81,7 +81,7 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     // make sure replication can start
     Thread.sleep(1500);
     
-    waitForRecoveriesToFinish(false);
+    waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, false, true);
     
     // stop indexing threads
     indexThread.safeStop();
@@ -97,9 +97,10 @@ public class RecoveryZkTest extends FullSolrCloudTest {
     // test that leader and replica have same doc count
     
     checkShardConsistency("shard1", false); 
-    
-    long client1Docs = shardToClient.get("shard1").get(0).query(new SolrQuery("*:*")).getResults().getNumFound();
-    long client2Docs = shardToClient.get("shard1").get(1).query(new SolrQuery("*:*")).getResults().getNumFound();
+    SolrQuery query = new SolrQuery("*:*");
+    query.setParam("distrib", "false");
+    long client1Docs = shardToClient.get("shard1").get(0).query(query).getResults().getNumFound();
+    long client2Docs = shardToClient.get("shard1").get(1).query(query).getResults().getNumFound();
     
     assertTrue(client1Docs > 0);
     assertEquals(client1Docs, client2Docs);
