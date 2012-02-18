@@ -116,6 +116,12 @@
           <exclude>**/*.java</exclude>
         </excludes>
       </testResource>
+      <testResource>
+        <directory>.</directory>
+        <includes>
+          <include>conf/**/*</include>
+        </includes>
+      </testResource>
     </testResources>
     <plugins>
       <plugin>
