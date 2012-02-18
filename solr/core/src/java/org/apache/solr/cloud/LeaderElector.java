@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * Leader Election process. This class contains the logic by which a
  * leader is chosen. First call * {@link #setup(ElectionContext)} to ensure
  * the election process is init'd. Next call
- * {@link #joinElection} to start the leader election.
+ * {@link #joinElection(ElectionContext, SolrCore)} to start the leader election.
  * 
  * The implementation follows the classic ZooKeeper recipe of creating an
  * ephemeral, sequential node for each candidate and then looking at the set
