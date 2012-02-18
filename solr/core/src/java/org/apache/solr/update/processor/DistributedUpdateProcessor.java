@@ -528,6 +528,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
 
       Map<String,Slice> slices = zkController.getCloudState().getSlices(collection);
+      if (slices == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Cannot find collection:" + collection + " in "
+                + zkController.getCloudState().getCollections());
+      }
 
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set(DELETE_BY_QUERY_LEVEL, 2);
