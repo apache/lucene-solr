@@ -807,7 +807,9 @@ public class CoreContainer
     SolrCore newCore = core.reload(solrLoader);
     // keep core to orig name link
     String origName = coreToOrigName.remove(core);
-    coreToOrigName.put(newCore, origName);
+    if (origName != null) {
+      coreToOrigName.put(newCore, origName);
+    }
     register(name, newCore, false);
   }
 
