@@ -137,6 +137,20 @@
       <bool name="exactMatchFirst">true</bool>
     </lst>
   </searchComponent>
+  
+  <!-- WFSTLookup suggest component -->
+  <searchComponent class="solr.SpellCheckComponent" name="suggest_wfst">
+    <lst name="spellchecker">
+      <str name="name">suggest_wfst</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.WFSTLookupFactory</str>
+      <str name="field">suggest</str>
+      <str name="storeDir">suggest_wfst</str>
+      <str name="buildOnCommit">true</str>
+      <!-- Suggester properties -->
+ 	  <bool name="exactMatchFirst">true</bool>
+    </lst>
+  </searchComponent>
 
   <!-- Suggest component -->
   <searchComponent class="solr.SpellCheckComponent" name="suggest">
@@ -192,6 +206,17 @@
     </arr>
   </requestHandler>
   
+  <!--  wfst (finite state automaton based) -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/suggest_wfst">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">suggest_wfst</str>
+      <str name="spellcheck.collate">false</str>
+    </lst>
+    <arr name="components">
+      <str>suggest_wfst</str>
+    </arr>
+  </requestHandler>
 
   <queryResponseWriter name="standard" class="solr.XMLResponseWriter"/>
   <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter"/>

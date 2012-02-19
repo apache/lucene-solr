@@ -33,7 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
-import org.apache.lucene.search.suggest.fst.FSTLookup;
+import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 
@@ -49,7 +49,8 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   private final List<Class<? extends Lookup>> benchmarkClasses = Arrays.asList(
       JaspellLookup.class, 
       TSTLookup.class,
-      FSTCompletionLookup.class);
+      FSTCompletionLookup.class,
+      WFSTCompletionLookup.class);
 
   private final static int rounds = 15;
   private final static int warmup = 5;
@@ -74,6 +75,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
    */
   @BeforeClass
   public static void setup() throws Exception {
+    assert false : "disable assertions before running benchmarks!";
     List<TermFreq> input = readTop50KWiki();
     Collections.shuffle(input, random);
     LookupBenchmarkTest.dictionaryInput = input.toArray(new TermFreq [input.size()]);
