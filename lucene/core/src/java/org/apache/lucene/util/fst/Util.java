@@ -234,7 +234,302 @@ public final class Util {
       }
     }    
   }
-  
+
+  private static class FSTPath implements Comparable<FSTPath> {
+    public FST.Arc<Long> arc;
+    public long cost;
+    public final IntsRef input = new IntsRef();
+
+    public FSTPath(long cost, FST.Arc<Long> arc) {
+      this.arc = new FST.Arc<Long>().copyFrom(arc);
+      this.cost = cost;
+    }
+
+    @Override
+    public String toString() {
+      return "input=" + input + " cost=" + cost;
+    }
+
+    @Override
+    public int compareTo(FSTPath other) {
+      if (cost < other.cost) {
+        return -1;
+      } else if (cost > other.cost) {
+        return 1;
+      } else  {
+        return input.compareTo(other.input);
+      }
+    }
+  }
+
+  private static class TopNSearcher {
+
+    private final FST<Long> fst;
+    private final FST.Arc<Long> fromNode;
+    private final int topN;
+
+    // Set once the queue has filled:
+    FSTPath bottom = null;
+
+    TreeSet<FSTPath> queue = null;
+
+    public TopNSearcher(FST<Long> fst, FST.Arc<Long> fromNode, int topN) {
+      this.fst = fst;
+      this.topN = topN;
+      this.fromNode = fromNode;
+    }
+
+    // If back plus this arc is competitive then add to queue:
+    private void addIfCompetitive(FSTPath path) {
+
+      assert queue != null;
+
+      long cost = path.cost + path.arc.output;
+      //System.out.println("  addIfCompetitive bottom=" + bottom + " queue.size()=" + queue.size());
+
+      if (bottom != null) {
+
+        if (cost > bottom.cost) {
+          // Doesn't compete
+          return;
+        } else if (cost == bottom.cost) {
+          // Tie break by alpha sort on the input:
+          path.input.grow(path.input.length+1);
+          path.input.ints[path.input.length++] = path.arc.label;
+          final int cmp = bottom.input.compareTo(path.input);
+          path.input.length--;
+          assert cmp != 0;
+          if (cmp < 0) {
+            // Doesn't compete
+            return;
+          }
+        }
+        // Competes
+      } else {
+        // Queue isn't full yet, so any path we hit competes:
+      }
+
+      final FSTPath newPath = new FSTPath(cost, path.arc);
+
+      newPath.input.grow(path.input.length+1);
+      System.arraycopy(path.input.ints, 0, newPath.input.ints, 0, path.input.length);
+      newPath.input.ints[path.input.length] = path.arc.label;
+      newPath.input.length = path.input.length+1;
+
+      //System.out.println("    add path=" + newPath);
+      queue.add(newPath);
+      if (bottom != null) {
+        final FSTPath removed = queue.pollLast();
+        assert removed == bottom;
+        bottom = queue.last();
+        //System.out.println("    now re-set bottom: " + bottom + " queue=" + queue);
+      } else if (queue.size() == topN) {
+        // Queue just filled up:
+        bottom = queue.last();
+        //System.out.println("    now set bottom: " + bottom);
+      }
+    }
+
+    public MinResult[] search() throws IOException {
+      //System.out.println("  search topN=" + topN);
+      final FST.Arc<Long> scratchArc = new FST.Arc<Long>();
+
+      final List<MinResult> results = new ArrayList<MinResult>();
+
+      final Long NO_OUTPUT = fst.outputs.getNoOutput();
+
+      // TODO: we could enable FST to sorting arcs by weight
+      // as it freezes... can easily do this on first pass
+      // (w/o requiring rewrite)
+
+      // TODO: maybe we should make an FST.INPUT_TYPE.BYTE0.5!?
+      // (nibbles)
+
+      // For each top N path:
+      while (results.size() < topN) {
+        //System.out.println("\nfind next path");
+
+        FSTPath path;
+
+        if (queue == null) {
+
+          if (results.size() != 0) {
+            // Ran out of paths
+            break;
+          }
+
+          // First pass (top path): start from original fromNode
+          if (topN > 1) {
+            queue = new TreeSet<FSTPath>();
+          }
+
+          long minArcCost = Long.MAX_VALUE;
+          FST.Arc<Long> minArc = null;
+
+          path = new FSTPath(0, fromNode);
+          fst.readFirstTargetArc(fromNode, path.arc);
+
+          // Bootstrap: find the min starting arc
+          while (true) {
+            long arcScore = path.arc.output;
+            //System.out.println("  arc=" + (char) path.arc.label + " cost=" + arcScore);
+            if (arcScore < minArcCost) {
+              minArcCost = arcScore;
+              minArc = scratchArc.copyFrom(path.arc);
+              //System.out.println("    **");
+            }
+            if (queue != null) {
+              addIfCompetitive(path);
+            }
+            if (path.arc.isLast()) {
+              break;
+            }
+            fst.readNextArc(path.arc);
+          }
+
+          assert minArc != null;
+
+          if (queue != null) {
+            // Remove top path since we are now going to
+            // pursue it:
+            path = queue.pollFirst();
+            //System.out.println("  remove init path=" + path);
+            assert path.arc.label == minArc.label;
+            if (bottom != null && queue.size() == topN-1) {
+              bottom = queue.last();
+              //System.out.println("    set init bottom: " + bottom);
+            }
+          } else {
+            path.arc.copyFrom(minArc);
+            path.input.grow(1);
+            path.input.ints[0] = minArc.label;
+            path.input.length = 1;
+            path.cost = minArc.output;
+          }
+
+        } else {
+          path = queue.pollFirst();
+          if (path == null) {
+            // There were less than topN paths available:
+            break;
+          }
+        }
+
+        if (path.arc.label == FST.END_LABEL) {
+          //System.out.println("    empty string!  cost=" + path.cost);
+          // Empty string!
+          path.input.length--;
+          results.add(new MinResult(path.input, path.cost));
+          continue;
+        }
+
+        if (results.size() == topN-1) {
+          // Last path -- don't bother w/ queue anymore:
+          queue = null;
+        }
+
+        //System.out.println("  path: " + path);
+        
+        // We take path and find its "0 output completion",
+        // ie, just keep traversing the first arc with
+        // NO_OUTPUT that we can find, since this must lead
+        // to the minimum path that completes from
+        // path.arc.
+
+        // For each input letter:
+        while (true) {
+
+          //System.out.println("\n    cycle path: " + path);
+
+          fst.readFirstTargetArc(path.arc, path.arc);
+
+          // For each arc leaving this node:
+          boolean foundZero = false;
+          while(true) {
+            //System.out.println("      arc=" + (char) path.arc.label + " cost=" + path.arc.output);
+            if (path.arc.output == NO_OUTPUT) {
+              if (queue == null) {
+                foundZero = true;
+                break;
+              } else if (!foundZero) {
+                scratchArc.copyFrom(path.arc);
+                foundZero = true;
+              } else {
+                addIfCompetitive(path);
+              }
+            } else if (queue != null) {
+              addIfCompetitive(path);
+            }
+            if (path.arc.isLast()) {
+              break;
+            }
+            fst.readNextArc(path.arc);
+          }
+
+          assert foundZero;
+
+          if (queue != null) {
+            // TODO: maybe we can save this copyFrom if we
+            // are more clever above... eg on finding the
+            // first NO_OUTPUT arc we'd switch to using
+            // scratchArc
+            path.arc.copyFrom(scratchArc);
+          }
+
+          if (path.arc.label == FST.END_LABEL) {
+            // Add final output:
+            //System.out.println("    done!: " + path);
+            results.add(new MinResult(path.input, path.cost + path.arc.output));
+            break;
+          } else {
+            path.input.grow(1+path.input.length);
+            path.input.ints[path.input.length] = path.arc.label;
+            path.input.length++;
+            path.cost += path.arc.output;
+          }
+        }
+      }
+    
+      return results.toArray(new MinResult[results.size()]);
+    }
+  }
+
+  // TODO: parameterize the FST type <T> and allow passing in a
+  // comparator; eg maybe your output is a PairOutput and
+  // one of the outputs in the pair is monotonic so you
+  // compare by that
+
+  public final static class MinResult implements Comparable<MinResult> {
+    public final IntsRef input;
+    public final long output;
+    public MinResult(IntsRef input, long output) {
+      this.input = input;
+      this.output = output;
+    }
+
+    @Override
+    public int compareTo(MinResult other) {
+      if (output < other.output) {
+        return -1;
+      } else if (output > other.output) {
+        return 1;
+      } else {
+        return input.compareTo(other.input);
+      }
+    }
+  }
+
+  /** Starting from node, find the top N min cost (Long
+   *  output) completions to a final node.
+   *
+   *  <p>NOTE: you must share the outputs when you build the
+   *  FST (pass doShare=true to {@link
+   *  PositiveIntOutputs#getSingleton}). */
+
+  public static MinResult[] shortestPaths(FST<Long> fst, FST.Arc<Long> fromNode, int topN) throws IOException {
+    return new TopNSearcher(fst, fromNode, topN).search();
+  } 
+
   /**
    * Dumps an {@link FST} to a GraphViz's <code>dot</code> language description
    * for visualization. Example of use:

@@ -58,6 +58,7 @@ import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.fst.FST.Arc;
+import org.apache.lucene.util.fst.FST.BytesReader;
 
 @UseNoMemoryExpensiveCodec
 public class TestFSTs extends LuceneTestCase {
@@ -1973,6 +1974,119 @@ public class TestFSTs extends LuceneTestCase {
     assertEquals('b', arc.label);
     assertFalse(arc.isFinal());
     assertEquals(42, arc.output.longValue());
+  }
+
+  public void testShortestPaths() throws Exception {
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    final IntsRef scratch = new IntsRef();
+    builder.add(Util.toIntsRef(new BytesRef("aab"), scratch), 22L);
+    builder.add(Util.toIntsRef(new BytesRef("aac"), scratch), 7L);
+    builder.add(Util.toIntsRef(new BytesRef("ax"), scratch), 17L);
+    final FST<Long> fst = builder.finish();
+    //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
+    //Util.toDot(fst, w, false, false);
+    //w.close();
+
+    Util.MinResult[] r = Util.shortestPaths(fst,
+                                           fst.getFirstArc(new FST.Arc<Long>()),
+                                           3);
+    assertEquals(3, r.length);
+
+    assertEquals(Util.toIntsRef(new BytesRef("aac"), scratch), r[0].input);
+    assertEquals(7, r[0].output);
+
+    assertEquals(Util.toIntsRef(new BytesRef("ax"), scratch), r[1].input);
+    assertEquals(17, r[1].output);
+
+    assertEquals(Util.toIntsRef(new BytesRef("aab"), scratch), r[2].input);
+    assertEquals(22, r[2].output);
+  }
+  
+  public void testShortestPathsRandom() throws Exception {
+    int numWords = atLeast(1000);
+    
+    final TreeMap<String,Long> slowCompletor = new TreeMap<String,Long>();
+    final TreeSet<String> allPrefixes = new TreeSet<String>();
+    
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+    final IntsRef scratch = new IntsRef();
+    
+    for (int i = 0; i < numWords; i++) {
+      String s;
+      while (true) {
+        s = _TestUtil.randomSimpleString(random);
+        if (!slowCompletor.containsKey(s)) {
+          break;
+        }
+      }
+      
+      for (int j = 1; j < s.length(); j++) {
+        allPrefixes.add(s.substring(0, j));
+      }
+      int weight = _TestUtil.nextInt(random, 1, 100); // weights 1..100
+      slowCompletor.put(s, (long)weight);
+    }
+    
+    for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
+      //System.out.println("add: " + e);
+      builder.add(Util.toIntsRef(new BytesRef(e.getKey()), scratch), e.getValue());
+    }
+    
+    final FST<Long> fst = builder.finish();
+    //System.out.println("SAVE out.dot");
+    //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
+    //Util.toDot(fst, w, false, false);
+    //w.close();
+    
+    BytesReader reader = fst.getBytesReader(0);
+    
+    //System.out.println("testing: " + allPrefixes.size() + " prefixes");
+    for (String prefix : allPrefixes) {
+      // 1. run prefix against fst, then complete by value
+      //System.out.println("TEST: " + prefix);
+    
+      long prefixOutput = 0;
+      FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<Long>());
+      for(int idx=0;idx<prefix.length();idx++) {
+        if (fst.findTargetArc((int) prefix.charAt(idx), arc, arc, reader) == null) {
+          fail();
+        }
+        prefixOutput += arc.output;
+      }
+
+      final int topN = _TestUtil.nextInt(random, 1, 10);
+
+      Util.MinResult[] r = Util.shortestPaths(fst, arc, topN);
+
+      // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
+      final List<Util.MinResult> matches = new ArrayList<Util.MinResult>();
+
+      // TODO: could be faster... but its slowCompletor for a reason
+      for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
+        if (e.getKey().startsWith(prefix)) {
+          //System.out.println("  consider " + e.getKey());
+          matches.add(new Util.MinResult(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
+                                         e.getValue() - prefixOutput));
+        }
+      }
+
+      assertTrue(matches.size() > 0);
+      Collections.sort(matches);
+      if (matches.size() > topN) {
+        matches.subList(topN, matches.size()).clear();
+      }
+
+      assertEquals(matches.size(), r.length);
+
+      for(int hit=0;hit<r.length;hit++) {
+        //System.out.println("  check hit " + hit);
+        assertEquals(matches.get(hit).input, r[hit].input);
+        assertEquals(matches.get(hit).output, r[hit].output);
+      }
+    }
   }
 
   public void testLargeOutputsOnArrayArcs() throws Exception {

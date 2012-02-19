@@ -150,6 +150,9 @@ New Features
 
  * LUCENE-3602: Added query time joining under the join module. (Martijn van Groningen, Michael McCandless)
 
+ * LUCENE-3714: Add WFSTCompletionLookup suggester that supports more fine-grained
+   ranking for suggestions.  (Mike McCandless, Dawid Weiss, Robert Muir)
+
 API Changes
 
  * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an

@@ -501,6 +501,9 @@ New Features
 * SOLR-3105: ElisionFilterFactory optionally allows the parameter 
   ignoreCase (default=false).  (Robert Muir)
 
+* LUCENE-3714: Add WFSTLookupFactory, a suggester that uses a weighted FST
+  for more fine-grained suggestions.  (Mike McCandless, Dawid Weiss, Robert Muir)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter

@@ -17,8 +17,8 @@ package org.apache.solr.spelling.suggest;
  * limitations under the License.
  */
 
-public class SuggesterTSTTest extends SuggesterTest {
-  public SuggesterTSTTest() {
-    super.requestUri = "/suggest_tst";
+public class SuggesterWFSTTest extends SuggesterTest {
+  public SuggesterWFSTTest() {
+    super.requestUri = "/suggest_wfst";
   }
 }
