@@ -317,7 +317,7 @@ public class PeerSync  {
       return true;
     }
     
-    if (toRequest.size() > maxRequests) {
+    if (toRequest.size() > maxUpdates) {
       return false;
     }
 
