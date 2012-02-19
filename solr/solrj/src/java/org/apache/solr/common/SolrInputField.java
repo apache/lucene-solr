@@ -197,6 +197,6 @@ public class SolrInputField implements Iterable<Object>, Serializable
   @Override
   public String toString()
   {
-    return name + "("+boost+")={" + value + "}";
+    return name + ((boost == 1.0) ? "=" : ("("+boost+")=")) + value;
   }
 }
