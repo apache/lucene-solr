@@ -56,6 +56,7 @@ public class PeerSync  {
 
   private List<String> replicas;
   private int nUpdates;
+  private int maxUpdates;  // maximum number of updates to request before failing
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
@@ -119,6 +120,7 @@ public class PeerSync  {
   public PeerSync(SolrCore core, List<String> replicas, int nUpdates) {
     this.replicas = replicas;
     this.nUpdates = nUpdates;
+    this.maxUpdates = nUpdates;
 
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
@@ -271,6 +273,8 @@ public class PeerSync  {
     if (otherVersions.size() == 0) {
       return true;
     }
+    
+    boolean completeList = otherVersions.size() < nUpdates;  // do we have their complete list of updates?
 
     Collections.sort(otherVersions, absComparator);
 
@@ -295,7 +299,7 @@ public class PeerSync  {
     List<Long> toRequest = new ArrayList<Long>();
     for (Long otherVersion : otherVersions) {
       // stop when the entries get old enough that reorders may lead us to see updates we don't need
-      if (Math.abs(otherVersion) < ourLowThreshold) break;
+      if (!completeList && Math.abs(otherVersion) < ourLowThreshold) break;
 
       if (ourUpdateSet.contains(otherVersion) || requestedUpdateSet.contains(otherVersion)) {
         // we either have this update, or already requested it
@@ -307,10 +311,14 @@ public class PeerSync  {
     }
 
     sreq.requestedUpdates = toRequest;
-
+    
     if (toRequest.isEmpty()) {
       // we had (or already requested) all the updates referenced by the replica
       return true;
+    }
+    
+    if (toRequest.size() > maxRequests) {
+      return false;
     }
 
     return requestUpdates(srsp, toRequest);

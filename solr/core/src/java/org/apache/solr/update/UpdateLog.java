@@ -111,6 +111,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   private volatile UpdateHandler uhandler;    // a core reload can change this reference!
   private volatile boolean cancelApplyBufferUpdate;
+  List<Long> startingVersions;
 
 
   public static class LogPtr {
@@ -174,10 +175,27 @@ public class UpdateLog implements PluginInfoInitialized {
     newestLogOnStartup = oldLog;
 
     versionInfo = new VersionInfo(uhandler, 256);
+
+    UpdateLog.RecentUpdates startingRecentUpdates = getRecentUpdates();
+    try {
+      startingVersions = startingRecentUpdates.getVersions(numRecordsToKeep);
+      // populate recent deletes list (since we can't get that info from the index)
+      for (int i=startingRecentUpdates.deleteList.size()-1; i>=0; i--) {
+        DeleteUpdate du = startingRecentUpdates.deleteList.get(i);
+        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1,du.version));
+      }
+    } finally {
+      startingRecentUpdates.close();
+    }
+
   }
   
   public File getLogDir() {
     return tlogDir;
+  }
+  
+  public List<Long> getStartingVersions() {
+    return startingVersions;
   }
 
   /* Takes over ownership of the log, keeping it until no longer needed
@@ -623,13 +641,24 @@ public class UpdateLog implements PluginInfoInitialized {
     TransactionLog log;
     long version;
     long pointer;
-  } 
+  }
+
+  static class DeleteUpdate {
+    long version;
+    byte[] id;
+
+    public DeleteUpdate(long version, byte[] id) {
+      this.version = version;
+      this.id = id;
+    }
+  }
   
   public class RecentUpdates {
     Deque<TransactionLog> logList;    // newest first
     List<List<Update>> updateList;
     HashMap<Long, Update> updates;
     List<Update> deleteByQueryList;
+    List<DeleteUpdate> deleteList;
 
 
     public List<Long> getVersions(int n) {
@@ -664,10 +693,12 @@ public class UpdateLog implements PluginInfoInitialized {
       return result;
     }
 
+
     private void update() {
       int numUpdates = 0;
       updateList = new ArrayList<List<Update>>(logList.size());
       deleteByQueryList = new ArrayList<Update>();
+      deleteList = new ArrayList<DeleteUpdate>();
       updates = new HashMap<Long,Update>(numRecordsToKeep);
 
       for (TransactionLog oldLog : logList) {
@@ -703,6 +734,8 @@ public class UpdateLog implements PluginInfoInitialized {
                   
                   if (oper == UpdateLog.DELETE_BY_QUERY) {
                     deleteByQueryList.add(update);
+                  } else if (oper == UpdateLog.DELETE) {
+                    deleteList.add(new DeleteUpdate(version, (byte[])entry.get(2)));
                   }
                   
                   break;
