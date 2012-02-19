@@ -54,7 +54,8 @@ public class TestReaderClosed extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(reader, /* TODO: change that back to true and add better test,
+      so wrapped readers are explicitely checked, see LUCENE-3800: */ false);
     writer.close();
   }
   
