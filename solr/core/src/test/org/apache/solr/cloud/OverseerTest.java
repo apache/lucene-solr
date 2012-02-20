@@ -151,7 +151,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         collection1Desc.setCollectionName("collection1");
         CoreDescriptor desc1 = new CoreDescriptor(null, "core" + (i + 1), "");
         desc1.setCloudDescriptor(collection1Desc);
-        zkController.preRegisterSetup(null, desc1);
+        zkController.preRegisterSetup(null, desc1, false);
         ids[i] = zkController.register("core" + (i + 1), desc1);
       }
       
@@ -248,7 +248,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             final CoreDescriptor desc = new CoreDescriptor(null, coreName, "");
             desc.setCloudDescriptor(collection1Desc);
             try {
-              controllers[slot % nodeCount].preRegisterSetup(null, desc);
+              controllers[slot % nodeCount].preRegisterSetup(null, desc, false);
               ids[slot] = controllers[slot % nodeCount]
                   .register(coreName, desc);
             } catch (Throwable e) {

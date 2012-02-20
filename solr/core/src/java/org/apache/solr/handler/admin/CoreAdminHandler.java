@@ -56,9 +56,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.NumberUtils;
@@ -626,7 +624,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String nodeName = params.get("nodeName");
     String coreNodeName = params.get("coreNodeName");
     String waitForState = params.get("state");
-    boolean checkLive = params.getBool("checkLive", true);
+    Boolean checkLive = params.getBool("checkLive");
     int pauseFor = params.getInt("pauseFor", 0);
     SolrCore core =  null;
 
@@ -636,6 +634,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         throw new SolrException(ErrorCode.BAD_REQUEST, "core not found:" + cname);
       }
       String state = null;
+      boolean live = false;
       int retry = 0;
       while (true) {
         // wait until we are sure the recovering node is ready
@@ -649,15 +648,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
         ZkNodeProps nodeProps = 
             cloudState.getSlice(collection,
                 cloudDescriptor.getShardId()).getShards().get(coreNodeName);
-        boolean live = false;
+        
         if (nodeProps != null) {
-          
           state = nodeProps.get(ZkStateReader.STATE_PROP);
           live = cloudState.liveNodesContain(nodeName);
           if (nodeProps != null && state.equals(waitForState)) {
-            if (checkLive && live) {
+            if (checkLive == null) {
               break;
-            } else {
+            } else if (checkLive && live) {
+              break;
+            } else if (!checkLive && !live) {
               break;
             }
           }
@@ -675,11 +675,15 @@ public class CoreAdminHandler extends RequestHandlerBase {
       // small safety net for any updates that started with state that
       // kept it from sending the update to be buffered -
       // pause for a while to let any outstanding updates finish
-      
+      //System.out.println("I saw state:" + state + " sleep for " + pauseFor + " live:" + live);
       Thread.sleep(pauseFor);
       
       // solrcloud_debug
-//      try {
+//      try {;
+//        LocalSolrQueryRequest r = new LocalSolrQueryRequest(core,  new ModifiableSolrParams());
+//        CommitUpdateCommand commitCmd = new CommitUpdateCommand(r, false);
+//        commitCmd.softCommit = true;
+//        core.getUpdateHandler().commit(commitCmd);
 //        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
 //        SolrIndexSearcher searcher = searchHolder.get();
 //        try {

@@ -193,7 +193,7 @@ public final class ZkController {
                       + descriptor.getName();
                   publishAsDown(getBaseUrl(), descriptor, coreZkNodeName,
                       descriptor.getName());
-                  waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
+                  waitForLeaderToSeeDownState(descriptor, coreZkNodeName, true);
                 }
               }
               
@@ -958,7 +958,7 @@ public final class ZkController {
     uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
   }
 
-  public void preRegisterSetup(SolrCore core, CoreDescriptor cd) {
+  public void preRegisterSetup(SolrCore core, CoreDescriptor cd, boolean waitForNotLive) {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     publish(cd, ZkStateReader.DOWN);
@@ -989,12 +989,12 @@ public final class ZkController {
     }
 
       
-      waitForLeaderToSeeDownState(cd, coreZkNodeName);
+    waitForLeaderToSeeDownState(cd, coreZkNodeName, waitForNotLive);
     
   }
 
   private ZkCoreNodeProps waitForLeaderToSeeDownState(
-      CoreDescriptor descriptor, final String shardZkNodeName) {
+      CoreDescriptor descriptor, final String shardZkNodeName, boolean waitForNotLive) {
     CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
     String collection = cloudDesc.getCollectionName();
     String shard = cloudDesc.getShardId();
@@ -1034,7 +1034,11 @@ public final class ZkController {
       prepCmd.setNodeName(getNodeName());
       prepCmd.setCoreNodeName(shardZkNodeName);
       prepCmd.setState(ZkStateReader.DOWN);
-      prepCmd.setCheckLive(false);
+      prepCmd.setPauseFor(6000);
+      if (waitForNotLive){
+        prepCmd.setCheckLive(false);
+      }
+                          
       
       try {
         server.request(prepCmd);

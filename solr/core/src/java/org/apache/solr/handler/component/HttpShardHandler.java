@@ -16,6 +16,7 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import org.apache.commons.httpclient.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
@@ -50,10 +51,12 @@ public class HttpShardHandler extends ShardHandler {
   private CompletionService<ShardResponse> completionService;
   private     Set<Future<ShardResponse>> pending;
   private Map<String,List<String>> shardToURLs;
+  private HttpClient httpClient;
 
 
 
-  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, HttpClient httpClient) {
+    this.httpClient = httpClient;
     this.httpShardHandlerFactory = httpShardHandlerFactory;
     completionService = new ExecutorCompletionService<ShardResponse>(httpShardHandlerFactory.commExecutor);
     pending = new HashSet<Future<ShardResponse>>();
@@ -148,7 +151,7 @@ public class HttpShardHandler extends ShardHandler {
           if (urls.size() <= 1) {
             String url = urls.get(0);
             srsp.setShardAddress(url);
-            SolrServer server = new CommonsHttpSolrServer(url, httpShardHandlerFactory.client);
+            SolrServer server = new CommonsHttpSolrServer(url, httpClient == null ? httpShardHandlerFactory.client : httpClient);
             ssr.nl = server.request(req);
           } else {
             LBHttpSolrServer.Rsp rsp = httpShardHandlerFactory.loadbalancer.request(new LBHttpSolrServer.Req(req, urls));

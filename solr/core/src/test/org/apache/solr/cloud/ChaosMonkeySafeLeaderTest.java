@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
-@Ignore("Fixme! I am so tired of failing all the time. This is cruelty to animals! :(")
+@Ignore("SOLR-3126")
 public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
   
   @BeforeClass
@@ -113,7 +113,7 @@ public class ChaosMonkeySafeLeaderTest extends FullSolrCloudTest {
     
     waitForThingsToLevelOut();
 
-    checkShardConsistency(true, false);
+    checkShardConsistency(true, true);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
   }

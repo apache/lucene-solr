@@ -103,9 +103,6 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   
   private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops, String baseUrl)
       throws SolrServerException, IOException {
-    // start buffer updates to tran log
-    // and do recovery - either replay via realtime get (eventually)
-    // or full index replication
    
     String leaderBaseUrl = leaderprops.get(ZkStateReader.BASE_URL_PROP);
     ZkCoreNodeProps leaderCNodeProps = new ZkCoreNodeProps(leaderprops);
@@ -183,7 +180,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     prepCmd.setCoreNodeName(coreZkNodeName);
     prepCmd.setState(ZkStateReader.RECOVERING);
     prepCmd.setCheckLive(true);
-    prepCmd.setPauseFor(4000);
+    prepCmd.setPauseFor(6000);
     
     server.request(prepCmd);
     server.shutdown();
@@ -239,26 +236,28 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
     while (!succesfulRecovery && !close && !isInterrupted()) { // don't use interruption or it will close channels though
       try {
-
+        // first thing we just try to sync
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
-
+ 
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
             .getCloudDescriptor();
         ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
-
+        
         String leaderBaseUrl = leaderprops.get(ZkStateReader.BASE_URL_PROP);
         String leaderCoreName = leaderprops.get(ZkStateReader.CORE_NAME_PROP);
-
-        String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName);
-
+        
+        String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName); 
+        
         sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
-
-
+        
+        
         // first thing we just try to sync
         if (firstTime) {
-          firstTime = false;    // only try sync the first time through the loop
-          log.info("Attempting to PeerSync from " + leaderUrl + " recoveringAfterStartup="+recoveringAfterStartup);
+          firstTime = false; // only try sync the first time through the loop
+          log.info("Attempting to PeerSync from " + leaderUrl);
+          // System.out.println("Attempting to PeerSync from " + leaderUrl
+          // + " i am:" + zkController.getNodeName());
           PeerSync peerSync = new PeerSync(core,
               Collections.singletonList(leaderUrl), ulog.numRecordsToKeep);
           peerSync.setStartingVersions(startingRecentVersions);
@@ -268,6 +267,26 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
                 new ModifiableSolrParams());
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
             log.info("Sync Recovery was succesful - registering as Active");
+            // System.out
+            // .println("Sync Recovery was succesful - registering as Active "
+            // + zkController.getNodeName());
+            
+            // solrcloud_debug
+            // try {
+            // RefCounted<SolrIndexSearcher> searchHolder =
+            // core.getNewestSearcher(false);
+            // SolrIndexSearcher searcher = searchHolder.get();
+            // try {
+            // System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName()
+            // + " synched "
+            // + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+            // } finally {
+            // searchHolder.decref();
+            // }
+            // } catch (Exception e) {
+            //
+            // }
+            
             // sync success - register as active and return
             zkController.publishAsActive(baseUrl, core.getCoreDescriptor(),
                 coreZkNodeName, coreName);
@@ -275,10 +294,11 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             close = true;
             return;
           }
-
+          
           log.info("Sync Recovery was not successful - trying replication");
         }
-
+        //System.out.println("Sync Recovery was not successful - trying replication");
+        
         log.info("Begin buffering updates");
         ulog.bufferUpdates();
         replayed = false;
