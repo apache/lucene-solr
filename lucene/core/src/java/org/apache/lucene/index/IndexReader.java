@@ -116,7 +116,7 @@ public abstract class IndexReader implements Closeable {
     }
   }
 
-  private volatile boolean closed;
+  private boolean closed = false;
   
   private final AtomicInteger refCount = new AtomicInteger();
 
