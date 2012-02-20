@@ -304,7 +304,7 @@ public final class ByteBlockPool {
         pos = 0;
         bytes.length -= bytesToCopy;
         bytes.offset += bytesToCopy;
-        buffer = buffers[bufferIndex];
+        buffer = buffers[++bufferIndex];
         overflow = overflow - BYTE_BLOCK_SIZE;
       }
     } while (true);
