@@ -19,6 +19,12 @@ New Features
 * SOLR-1499: Added SolrEntityProcessor that imports data from another Solr core or instance based on a specified query.
              (Lance Norskog, Erik Hatcher, Pulkit Singhal, Ahmet Arslan, Luca Cavanna, Martijn van Groningen)
 
+Changes in Runtime Behavior
+----------------------
+* SOLR-3142: Imports no longer default optimize to true, instead false. If you want to force all segments to be merged
+             into one, you can specify this parameter yourself. NOTE: this can be very expensive operation and usually
+             does not make sense for delta-imports.  (Robert MUir)
+
 ==================  3.5.0 ==================
 
 Bug Fixes
