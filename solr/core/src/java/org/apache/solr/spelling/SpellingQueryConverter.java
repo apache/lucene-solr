@@ -18,6 +18,7 @@
 package org.apache.solr.spelling;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -100,39 +101,42 @@ public class SpellingQueryConverter extends QueryConverter  {
     Collection<Token> result = new ArrayList<Token>();
     //TODO: Extract the words using a simple regex, but not query stuff, and then analyze them to produce the token stream
     Matcher matcher = QUERY_REGEX.matcher(original);
-    TokenStream stream;
     while (matcher.find()) {
       String word = matcher.group(0);
       if (word.equals("AND") == false && word.equals("OR") == false) {
         try {
-          stream = analyzer.tokenStream("", new StringReader(word));
-          // TODO: support custom attributes
-          CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-          FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
-          TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
-          PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
-          PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
-          OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
-          stream.reset();
-          while (stream.incrementToken()) {
-            Token token = new Token();
-            token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-            token.setStartOffset(matcher.start() + offsetAtt.startOffset());
-            token.setEndOffset(matcher.start() + offsetAtt.endOffset());
-            token.setFlags(flagsAtt.getFlags());
-            token.setType(typeAtt.type());
-            token.setPayload(payloadAtt.getPayload());
-            token.setPositionIncrement(posIncAtt.getPositionIncrement());
-            result.add(token);
-          }
-          stream.end();
-          stream.close();
+          analyze(result, new StringReader(word), matcher.start());
         } catch (IOException e) {
+          // TODO: shouldn't we log something?
         }
       }
     }
     return result;
   }
-
+  
+  protected void analyze(Collection<Token> result, Reader text, int offset) throws IOException {
+    TokenStream stream = analyzer.tokenStream("", text);
+    // TODO: support custom attributes
+    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+    FlagsAttribute flagsAtt = stream.addAttribute(FlagsAttribute.class);
+    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
+    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
+    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
+    stream.reset();
+    while (stream.incrementToken()) {
+      Token token = new Token();
+      token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
+      token.setStartOffset(offset + offsetAtt.startOffset());
+      token.setEndOffset(offset + offsetAtt.endOffset());
+      token.setFlags(flagsAtt.getFlags());
+      token.setType(typeAtt.type());
+      token.setPayload(payloadAtt.getPayload());
+      token.setPositionIncrement(posIncAtt.getPositionIncrement());
+      result.add(token);
+    }
+    stream.end();
+    stream.close();
+  }
 }
 

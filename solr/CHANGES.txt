@@ -506,6 +506,9 @@ New Features
 * LUCENE-3714: Add WFSTLookupFactory, a suggester that uses a weighted FST
   for more fine-grained suggestions.  (Mike McCandless, Dawid Weiss, Robert Muir)
 
+* SOLR-3143: Add SuggestQueryConverter, a QueryConverter intended for
+  auto-suggesters. (Robert Muir)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
