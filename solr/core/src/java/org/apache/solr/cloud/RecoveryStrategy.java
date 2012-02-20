@@ -70,6 +70,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   private volatile String coreName;
   private int retries;
   private SolrCore core;
+  private boolean recoveringAfterStartup;
   
   public RecoveryStrategy(SolrCore core) {
     this.core = core;
@@ -79,9 +80,12 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
     coreZkNodeName = zkController.getNodeName() + "_" + coreName;
-    
   }
-  
+
+  public void setRecoveringAfterStartup(boolean recoveringAfterStartup) {
+    this.recoveringAfterStartup = recoveringAfterStartup;
+  }
+
   // make sure any threads stop retrying
   public void close() {
     close = true;
@@ -201,48 +205,80 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     List<Long> startingRecentVersions;
     UpdateLog.RecentUpdates startingRecentUpdates = ulog.getRecentUpdates();
     try {
-      startingRecentVersions = startingRecentUpdates.getVersions(100);
+      startingRecentVersions = startingRecentUpdates.getVersions(ulog.numRecordsToKeep);
     } finally {
       startingRecentUpdates.close();
     }
+
+    List<Long> reallyStartingVersions = ulog.getStartingVersions();
+
+
+    if (reallyStartingVersions != null && recoveringAfterStartup) {
+      int oldIdx = 0;  // index of the start of the old list in the current list
+      long firstStartingVersion = reallyStartingVersions.size() > 0 ? reallyStartingVersions.get(0) : 0;
+
+      for (; oldIdx<startingRecentVersions.size(); oldIdx++) {
+        if (startingRecentVersions.get(oldIdx) == firstStartingVersion) break;
+      }
+
+      if (oldIdx < startingRecentVersions.size()) {
+        log.info("####### Found new versions added after startup: num=" + (startingRecentVersions.size()-oldIdx));
+      }
+      
+      log.info("###### startupVersions=" + reallyStartingVersions);
+      log.info("###### currentVersions=" + startingRecentVersions);
+    }
     
+    if (recoveringAfterStartup) {
+      // if we're recovering after startup (i.e. we have been down), then we need to know what the last versions were
+      // when we went down.
+      startingRecentVersions = reallyStartingVersions;
+    }
+
+    boolean firstTime = true;
+
     while (!succesfulRecovery && !close && !isInterrupted()) { // don't use interruption or it will close channels though
       try {
-        // first thing we just try to sync
+
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
- 
+
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
             .getCloudDescriptor();
         ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        
+
         String leaderBaseUrl = leaderprops.get(ZkStateReader.BASE_URL_PROP);
         String leaderCoreName = leaderprops.get(ZkStateReader.CORE_NAME_PROP);
-        
-        String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName); 
-        
+
+        String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName);
+
         sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
-        
-        log.info("Attempting to PeerSync from " + leaderUrl);
-        PeerSync peerSync = new PeerSync(core,
-            Collections.singletonList(leaderUrl), 100);
-        peerSync.setStartingVersions(startingRecentVersions);
-        boolean syncSuccess = peerSync.sync();
-        if (syncSuccess) {
-          SolrQueryRequest req = new LocalSolrQueryRequest(core,
-              new ModifiableSolrParams());
-          core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-          log.info("Sync Recovery was succesful - registering as Active");
-          // sync success - register as active and return
-          zkController.publishAsActive(baseUrl, core.getCoreDescriptor(),
-              coreZkNodeName, coreName);
-          succesfulRecovery = true;
-          close = true;
-          return;
+
+
+        // first thing we just try to sync
+        if (firstTime) {
+          firstTime = false;    // only try sync the first time through the loop
+          log.info("Attempting to PeerSync from " + leaderUrl + " recoveringAfterStartup="+recoveringAfterStartup);
+          PeerSync peerSync = new PeerSync(core,
+              Collections.singletonList(leaderUrl), ulog.numRecordsToKeep);
+          peerSync.setStartingVersions(startingRecentVersions);
+          boolean syncSuccess = peerSync.sync();
+          if (syncSuccess) {
+            SolrQueryRequest req = new LocalSolrQueryRequest(core,
+                new ModifiableSolrParams());
+            core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+            log.info("Sync Recovery was succesful - registering as Active");
+            // sync success - register as active and return
+            zkController.publishAsActive(baseUrl, core.getCoreDescriptor(),
+                coreZkNodeName, coreName);
+            succesfulRecovery = true;
+            close = true;
+            return;
+          }
+
+          log.info("Sync Recovery was not successful - trying replication");
         }
 
-        log.info("Sync Recovery was not successful - trying replication");
-        
         log.info("Begin buffering updates");
         ulog.bufferUpdates();
         replayed = false;

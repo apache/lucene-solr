@@ -122,8 +122,12 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         }
         if (closed) return;
       }
-      
+
+      // if true, we are recovering after startup and shouldn't have (or be receiving) additional updates (except for local tlog recovery)
+      boolean recoveringAfterStartup = recoveryStrat == null;
+
       recoveryStrat = new RecoveryStrategy(core);
+      recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
       recoveryStrat.start();
       recoveryRunning = true;
     }

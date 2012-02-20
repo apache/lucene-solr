@@ -90,7 +90,7 @@ public class UpdateLog implements PluginInfoInitialized {
   private TransactionLog prevMapLog2;  // the transaction log used to look up entries found in prevMap
 
   private final int numDeletesToKeep = 1000;
-  private final int numRecordsToKeep = 100;
+  public final int numRecordsToKeep = 100;
   // keep track of deletes only... this is not updated on an add
   private LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
     protected boolean removeEldestEntry(Map.Entry eldest) {
