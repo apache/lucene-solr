@@ -62,7 +62,9 @@ public class ThreadDumpHandler extends RequestHandlerBase
       tinfos = tmbean.getThreadInfo(tids, Integer.MAX_VALUE);
       NamedList<SimpleOrderedMap<Object>> lst = new NamedList<SimpleOrderedMap<Object>>();
       for (ThreadInfo ti : tinfos) {
-        lst.add( "thread", getThreadInfo( ti, tmbean ) );
+        if (ti != null) {
+          lst.add( "thread", getThreadInfo( ti, tmbean ) );
+        }
       }
       system.add( "deadlocks", lst );
     }
@@ -72,7 +74,9 @@ public class ThreadDumpHandler extends RequestHandlerBase
     tinfos = tmbean.getThreadInfo(tids, Integer.MAX_VALUE);
     NamedList<SimpleOrderedMap<Object>> lst = new NamedList<SimpleOrderedMap<Object>>();
     for (ThreadInfo ti : tinfos) {
-      lst.add( "thread", getThreadInfo( ti, tmbean ) );
+      if (ti != null) {
+        lst.add( "thread", getThreadInfo( ti, tmbean ) );
+      }
     }
     system.add( "threadDump", lst );
     rsp.setHttpCaching(false);
