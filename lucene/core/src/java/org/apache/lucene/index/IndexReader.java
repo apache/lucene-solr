@@ -116,7 +116,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
   }
 
-  private volatile boolean closed;
+  private boolean closed = false;
   protected boolean hasChanges;
   
   private final AtomicInteger refCount = new AtomicInteger();
