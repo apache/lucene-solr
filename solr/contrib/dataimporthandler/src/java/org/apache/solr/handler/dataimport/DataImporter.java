@@ -511,7 +511,7 @@ public class DataImporter {
 
     public boolean commit = true;
 
-    public boolean optimize = true;
+    public boolean optimize = false;
 
     public int start = 0;
 
@@ -555,7 +555,7 @@ public class DataImporter {
       if (requestParams.containsKey("clean"))
         clean = StrUtils.parseBool((String) requestParams.get("clean"),true);
       if (requestParams.containsKey("optimize")) {
-        optimize = StrUtils.parseBool((String) requestParams.get("optimize"),true);
+        optimize = StrUtils.parseBool((String) requestParams.get("optimize"),false);
         if (optimize)
           commit = true;
       }
