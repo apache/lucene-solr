@@ -21,6 +21,10 @@ package org.apache.lucene.search.spell;
 import java.util.Iterator;
 import java.io.*;
 
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.IOUtils;
+
 
 /**
  * Dictionary represented by a text file.
@@ -33,8 +37,6 @@ import java.io.*;
 public class PlainTextDictionary implements Dictionary {
 
   private BufferedReader in;
-  private String line;
-  private boolean hasNextCalled;
 
   public PlainTextDictionary(File file) throws FileNotFoundException {
     in = new BufferedReader(new FileReader(file));
@@ -51,31 +53,37 @@ public class PlainTextDictionary implements Dictionary {
     in = new BufferedReader(reader);
   }
 
-  public Iterator<String> getWordsIterator() {
-    return new fileIterator();
+  public BytesRefIterator getWordsIterator() {
+    return new FileIterator();
   }
 
-  final class fileIterator implements Iterator<String> {
-    public String next() {
-      if (!hasNextCalled) {
-        hasNext();
+  final class FileIterator implements BytesRefIterator {
+    private boolean done = false;
+    private final BytesRef spare = new BytesRef();
+    @Override
+    public BytesRef next() throws IOException {
+      if (done) {
+        return null;
       }
-      hasNextCalled = false;
-      return line;
-    }
-
-    public boolean hasNext() {
-      hasNextCalled = true;
+      boolean success = false;
+      BytesRef result;
       try {
-        line = in.readLine();
-      } catch (IOException ex) {
-        throw new RuntimeException(ex);
+        String line;
+        if ((line = in.readLine()) != null) {
+          spare.copyChars(line);
+          result = spare;
+        } else {
+          done = true;
+          IOUtils.close(in);
+          result = null;
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeWhileHandlingException(in);
+        }
       }
-      return (line != null) ? true : false;
-    }
-
-    public void remove() {
-      throw new UnsupportedOperationException();
+      return result;
     }
   }
 

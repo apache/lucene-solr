@@ -17,65 +17,46 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * This wrapper buffers incoming elements.
  */
 public class BufferingTermFreqIteratorWrapper implements TermFreqIterator {
 
-  /** Entry in the buffer. */
-  public static final class Entry implements Comparable<Entry> {
-    String word;
-    float freq;
-    
-    public Entry(String word, float freq) {
-      this.word = word;
-      this.freq = freq;
+  protected BytesRefList entries = new BytesRefList();
+  protected int curPos = -1;
+  protected float[] freqs = new float[1];
+  private final BytesRef spare = new BytesRef();
+  public BufferingTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
+    BytesRef spare;
+    int freqIndex = 0;
+    while((spare = source.next()) != null) {
+      entries.append(spare);
+      if (freqIndex >= freqs.length) {
+        freqs = ArrayUtil.grow(freqs, freqs.length+1);
+      }
+      freqs[freqIndex++] = source.freq();
     }
-    
-    public int compareTo(Entry o) {
-      return word.compareTo(o.word);
-    }    
-  }
-
-  protected ArrayList<Entry> entries = new ArrayList<Entry>();
-  
-  protected int curPos;
-  protected Entry curEntry;
-  
-  public BufferingTermFreqIteratorWrapper(TermFreqIterator source) {
-    // read all source data into buffer
-    while (source.hasNext()) {
-      String w = source.next();
-      Entry e = new Entry(w, source.freq());
-      entries.add(e);
-    }
-    curPos = 0;
+   
   }
 
   public float freq() {
-    return curEntry.freq;
+    return freqs[curPos];
   }
 
-  public boolean hasNext() {
-    return curPos < entries.size();
+  @Override
+  public BytesRef next() throws IOException {
+    if (++curPos < entries.size()) {
+      entries.get(spare, curPos);
+      return spare;
+    }
+    return null;
   }
 
-  public String next() {
-    curEntry = entries.get(curPos);
-    curPos++;
-    return curEntry.word;
-  }
-
-  public void remove() {
-    throw new UnsupportedOperationException("remove is not supported");
-  }
-  
-  public List<Entry> entries() {
-    return entries;
-  }
+ 
 }

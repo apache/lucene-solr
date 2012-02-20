@@ -281,6 +281,37 @@ public final class ByteBlockPool {
   }
   
   /**
+   *
+   */
+  public final BytesRef copyFrom(final BytesRef bytes) {
+    final int length = bytes.length;
+    final int offset = bytes.offset;
+    bytes.offset = 0;
+    bytes.grow(length);
+    int bufferIndex = offset >> BYTE_BLOCK_SHIFT;
+    byte[] buffer = buffers[bufferIndex];
+    int pos = offset & BYTE_BLOCK_MASK;
+    int overflow = (pos + length) - BYTE_BLOCK_SIZE;
+    do {
+      if (overflow <= 0) {
+        System.arraycopy(buffer, pos, bytes.bytes, bytes.offset, bytes.length);
+        bytes.length = length;
+        bytes.offset = 0;
+        break;
+      } else {
+        final int bytesToCopy = length - overflow;
+        System.arraycopy(buffer, pos, bytes.bytes, bytes.offset, bytesToCopy);
+        pos = 0;
+        bytes.length -= bytesToCopy;
+        bytes.offset += bytesToCopy;
+        buffer = buffers[bufferIndex];
+        overflow = overflow - BYTE_BLOCK_SIZE;
+      }
+    } while (true);
+    return bytes;
+  }
+  
+  /**
    * Writes the pools content to the given {@link DataOutput}
    */
   public final void writePool(final DataOutput out) throws IOException {

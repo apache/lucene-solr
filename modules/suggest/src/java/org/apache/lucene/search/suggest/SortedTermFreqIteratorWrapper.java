@@ -17,10 +17,12 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
-import java.util.Collections;
+import java.io.IOException;
+import java.util.Comparator;
 
 import org.apache.lucene.search.spell.SortedIterator;
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * This wrapper buffers incoming elements and makes sure they are sorted in
@@ -28,8 +30,35 @@ import org.apache.lucene.search.spell.TermFreqIterator;
  */
 public class SortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper implements SortedIterator {
 
-  public SortedTermFreqIteratorWrapper(TermFreqIterator source) {
+  private final int[] sortedOrds;
+  private int currentOrd = -1;
+  private final BytesRef spare = new BytesRef();
+  private final Comparator<BytesRef> comp;
+  
+
+  public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comp) throws IOException {
     super(source);
-    Collections.sort(entries);
+    this.sortedOrds = entries.sort(comp);
+    this.comp = comp;
   }
+
+  @Override
+  public float freq() {
+    return freqs[currentOrd];
+  }
+
+  @Override
+  public BytesRef next() throws IOException {
+    if (++curPos < entries.size()) {
+      return entries.get(spare, (currentOrd = sortedOrds[curPos]));  
+    }
+    return null;
+  }
+
+  @Override
+  public Comparator<BytesRef> comparator() {
+    return comp;
+  }
+  
+  
 }

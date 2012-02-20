@@ -17,9 +17,11 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
-import java.util.Collections;
+import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * This wrapper buffers the incoming elements and makes sure they are in
@@ -27,8 +29,34 @@ import org.apache.lucene.search.spell.TermFreqIterator;
  */
 public class UnsortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper {
 
-  public UnsortedTermFreqIteratorWrapper(TermFreqIterator source) {
+  private final int[] ords;
+  private int currentOrd = -1;
+  private final BytesRef spare = new BytesRef();
+  public UnsortedTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
     super(source);
-    Collections.shuffle(entries);
+    ords = new int[entries.size()];
+    Random random = new Random();
+    for (int i = 0; i < ords.length; i++) {
+      ords[i] = i;
+    }
+    for (int i = 0; i < ords.length; i++) {
+      int randomPosition = random.nextInt(ords.length);
+      int temp = ords[i];
+      ords[i] = ords[randomPosition];
+      ords[randomPosition] = temp;
+    }
+  }
+  
+  @Override
+  public float freq() {
+    return freqs[currentOrd];
+  }
+
+  @Override
+  public BytesRef next() throws IOException {
+    if (++curPos < entries.size()) {
+      return entries.get(spare, (currentOrd = ords[curPos]));  
+    }
+    return null;
   }
 }

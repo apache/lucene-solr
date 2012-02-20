@@ -40,7 +40,7 @@ public class FSTCompletionTest extends LuceneTestCase {
 
     FSTCompletionBuilder builder = new FSTCompletionBuilder();
     for (TermFreq tf : evalKeys()) {
-      builder.add(new BytesRef(tf.term), (int) tf.v);
+      builder.add(tf.term, (int) tf.v);
     }
     completion = builder.build();
     completionAlphabetical = new FSTCompletion(completion.getFST(), false, true);
@@ -167,7 +167,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     // are.
     Float previous = null; 
     for (TermFreq tf : keys) {
-      Float current = lookup.get(tf.term);
+      Float current = lookup.get(tf.term.utf8ToString());
       if (previous != null) {
         assertEquals(previous, current);
       }
@@ -183,8 +183,8 @@ public class FSTCompletionTest extends LuceneTestCase {
     lookup.build(new TermFreqArrayIterator(input));
 
     for (TermFreq tf : input) {
-      assertTrue("Not found: " + tf.term, lookup.get(tf.term) != null);
-      assertEquals(tf.term, lookup.lookup(tf.term, true, 1).get(0).key);
+      assertTrue("Not found: " + tf.term, lookup.get(tf.term.utf8ToString()) != null);
+      assertEquals(tf.term, lookup.lookup(tf.term.utf8ToString(), true, 1).get(0).key);
     }
 
     List<LookupResult> result = lookup.lookup("wit", true, 5);
@@ -211,7 +211,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     lookup.build(new TermFreqArrayIterator(freqs.toArray(new TermFreq[freqs.size()])));
 
     for (TermFreq tf : freqs) {
-      final String term = tf.term;
+      final String term = tf.term.utf8ToString();
       for (int i = 1; i < term.length(); i++) {
         String prefix = term.substring(0, i);
         for (LookupResult lr : lookup.lookup(prefix, true, 10)) {

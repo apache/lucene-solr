@@ -17,12 +17,17 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
+import java.util.Comparator;
 import java.util.Iterator;
+
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Marker interface to signal that elements coming from {@link Iterator}
  * come in ascending lexicographic order.
  */
 public interface SortedIterator {
+  
+  public Comparator<BytesRef> comparator();
 
 }

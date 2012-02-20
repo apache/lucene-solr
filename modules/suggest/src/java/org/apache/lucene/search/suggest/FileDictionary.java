@@ -22,6 +22,8 @@ import java.io.*;
 
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 
 /**
@@ -36,7 +38,7 @@ public class FileDictionary implements Dictionary {
 
   private BufferedReader in;
   private String line;
-  private boolean hasNextCalled;
+  private boolean done = false;
 
   public FileDictionary(InputStream dictFile) {
     in = new BufferedReader(new InputStreamReader(dictFile));
@@ -50,45 +52,39 @@ public class FileDictionary implements Dictionary {
   }
 
   public TermFreqIterator getWordsIterator() {
-    return new fileIterator();
+    return new FileIterator();
   }
 
-  final class fileIterator implements TermFreqIterator {
+  final class FileIterator implements TermFreqIterator {
     private float curFreq;
+    private final BytesRef spare = new BytesRef();
     
-    public String next() {
-      if (!hasNextCalled) {
-        hasNext();
-      }
-      hasNextCalled = false;
-      return line;
-    }
-    
+   
     public float freq() {
       return curFreq;
     }
 
-    public boolean hasNext() {
-      hasNextCalled = true;
-      try {
-        line = in.readLine();
-        if (line != null) {
-          String[] fields = line.split("\t");
-          if (fields.length > 1) {
-            curFreq = Float.parseFloat(fields[1]);
-            line = fields[0];
-          } else {
-            curFreq = 1;
-          }
-        }
-      } catch (IOException ex) {
-        throw new RuntimeException(ex);
+    @Override
+    public BytesRef next() throws IOException {
+      if (done) {
+        return null;
       }
-      return (line != null) ? true : false;
-    }
-
-    public void remove() {
-      throw new UnsupportedOperationException();
+      line = in.readLine();
+      if (line != null) {
+        String[] fields = line.split("\t");
+        if (fields.length > 1) {
+          curFreq = Float.parseFloat(fields[1]);
+          spare.copyChars(fields[0]);
+        } else {
+          spare.copyChars(line);
+          curFreq = 1;
+        }
+        return spare;
+      } else {
+        done = true;
+        IOUtils.close(in);
+        return null;
+      }
     }
   }
 

@@ -18,13 +18,7 @@ package org.apache.lucene.search.spell;
  */
 
 import org.apache.lucene.index.IndexReader;
-
-import java.util.Iterator;
-
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 
@@ -49,50 +43,18 @@ public class LuceneDictionary implements Dictionary {
     this.field = field;
   }
 
-  public final Iterator<String> getWordsIterator() {
-    return new LuceneIterator();
-  }
-
-
-  final class LuceneIterator implements Iterator<String> {
-    private TermsEnum termsEnum;
-    private BytesRef pendingTerm;
-    private final CharsRef spare = new CharsRef();
-
-    LuceneIterator() {
-      try {
-        final Terms terms = MultiFields.getTerms(reader, field);
-        if (terms != null) {
-          termsEnum = terms.iterator(null);
-          pendingTerm = termsEnum.next();
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+  public final BytesRefIterator getWordsIterator() {
+    
+    try {
+      final Terms terms = MultiFields.getTerms(reader, field);
+      if (terms != null) {
+        return terms.iterator(null);
+      } else {
+        return BytesRefIterator.EMPTY_ITERATOR;
       }
-    }
-
-    public String next() {
-      if (pendingTerm == null) {
-        return null;
-      }
-
-      UnicodeUtil.UTF8toUTF16(pendingTerm, spare);
-
-      try {
-        pendingTerm = termsEnum.next();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-
-      return spare.toString();
-    }
-
-    public boolean hasNext() {
-      return pendingTerm != null;
-    }
-
-    public void remove() {
-      throw new UnsupportedOperationException();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
+  
 }

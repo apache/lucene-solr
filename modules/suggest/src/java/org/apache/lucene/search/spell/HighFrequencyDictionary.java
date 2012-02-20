@@ -18,12 +18,14 @@
 package org.apache.lucene.search.spell;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -50,14 +52,13 @@ public class HighFrequencyDictionary implements Dictionary {
     this.thresh = thresh;
   }
 
-  public final Iterator<String> getWordsIterator() {
+  public final BytesRefIterator getWordsIterator() {
     return new HighFrequencyIterator();
   }
 
   final class HighFrequencyIterator implements TermFreqIterator, SortedIterator {
-    private TermsEnum termsEnum;
-    private BytesRef actualTerm;
-    private boolean hasNextCalled;
+    private final BytesRef spare = new BytesRef();
+    private final TermsEnum termsEnum;
     private int minNumDocs;
 
     HighFrequencyIterator() {
@@ -65,6 +66,8 @@ public class HighFrequencyDictionary implements Dictionary {
         Terms terms = MultiFields.getTerms(reader, field);
         if (terms != null) {
           termsEnum = terms.iterator(null);
+        } else {
+          termsEnum = null;
         }
         minNumDocs = (int)(thresh * (float)reader.numDocs());
       } catch (IOException e) {
@@ -83,57 +86,27 @@ public class HighFrequencyDictionary implements Dictionary {
         throw new RuntimeException(ioe);
       }
     }
-    
-    public String next() {
-      if (!hasNextCalled && !hasNext()) {
-        return null;
-      }
-      hasNextCalled = false;
 
-      if (actualTerm == null) {
-        return null;
-      } else {
-        UnicodeUtil.UTF8toUTF16(actualTerm, spare);
-        return spare.toString();
+
+    @Override
+    public BytesRef next() throws IOException {
+      if (termsEnum != null) {
+        BytesRef next = termsEnum.next();
+        if (next != null && isFrequent(termsEnum.docFreq())) {
+          spare.copyBytes(next);
+          return spare;
+        }
       }
+      return  null;
     }
 
-    public boolean hasNext() {
-      if (hasNextCalled) {
-        return actualTerm != null;
+    @Override
+    public Comparator<BytesRef> comparator() {
+      try {
+        return termsEnum.getComparator();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
-      hasNextCalled = true;
-
-      if (termsEnum == null) {
-        return false;
-      }
-
-      while(true) {
-
-        try {
-          actualTerm = termsEnum.next();
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-
-        // if there are no words return false
-        if (actualTerm == null) {
-          return false;
-        }
-
-        // got a valid term, does it pass the threshold?
-        try {
-          if (isFrequent(termsEnum.docFreq())) {
-            return true;
-          }
-        } catch (IOException ioe) {
-          throw new RuntimeException(ioe);
-        }
-      }
-    }
-
-    public void remove() {
-      throw new UnsupportedOperationException();
     }
   }
 }

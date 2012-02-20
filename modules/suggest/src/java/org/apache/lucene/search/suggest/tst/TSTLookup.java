@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +32,10 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
 import org.apache.lucene.search.spell.SortedIterator;
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.UnicodeUtil;
 
 public class TSTLookup extends Lookup {
   TernaryTreeNode root = new TernaryTreeNode();
@@ -39,15 +45,19 @@ public class TSTLookup extends Lookup {
   public void build(TermFreqIterator tfit) throws IOException {
     root = new TernaryTreeNode();
     // buffer first
-    if (!(tfit instanceof SortedIterator)) {
-      // make sure it's sorted
-      tfit = new SortedTermFreqIteratorWrapper(tfit);
+    if ((!(tfit instanceof SortedIterator)) || ((SortedIterator)tfit).comparator() != BytesRef.getUTF8SortedAsUTF16Comparator()) {
+      // make sure it's sorted and the comparator uses UTF16 sort order
+      tfit = new SortedTermFreqIteratorWrapper(tfit, BytesRef.getUTF8SortedAsUTF16Comparator());
     }
 
     ArrayList<String> tokens = new ArrayList<String>();
     ArrayList<Float> vals = new ArrayList<Float>();
-    while (tfit.hasNext()) {
-      tokens.add(tfit.next());
+    BytesRef spare;
+    CharsRef charsSpare = new CharsRef();
+    while ((spare = tfit.next()) != null) {
+      charsSpare.grow(spare.length);
+      UnicodeUtil.UTF8toUTF16(spare.bytes, spare.offset, spare.length, charsSpare);
+      tokens.add(charsSpare.toString());
       vals.add(new Float(tfit.freq()));
     }
     autocomplete.balancedTree(tokens.toArray(), vals.toArray(), 0, tokens.size() - 1, root);
@@ -113,14 +123,7 @@ public class TSTLookup extends Lookup {
     if (!data.exists() || !data.canRead()) {
       return false;
     }
-    DataInputStream in = new DataInputStream(new FileInputStream(data));
-    root = new TernaryTreeNode();
-    try {
-      readRecursively(in, root);
-    } finally {
-      in.close();
-    }
-    return true;
+    return load(new FileInputStream(data));
   }
   
   // pre-order traversal
@@ -153,14 +156,7 @@ public class TSTLookup extends Lookup {
       return false;
     }
     File data = new File(storeDir, FILENAME);
-    DataOutputStream out = new DataOutputStream(new FileOutputStream(data));
-    try {
-      writeRecursively(out, root);
-      out.flush();
-    } finally {
-      out.close();
-    }
-    return true;
+    return store(new FileOutputStream(data));
   }
   
   // pre-order traversal
@@ -187,5 +183,29 @@ public class TSTLookup extends Lookup {
     if (node.hiKid != null) {
       writeRecursively(out, node.hiKid);
     }
+  }
+
+  @Override
+  public synchronized boolean store(OutputStream output) throws IOException {
+    DataOutputStream out = new DataOutputStream(output);
+    try {
+      writeRecursively(out, root);
+      out.flush();
+    } finally {
+      IOUtils.close(output);
+    }
+    return true;
+  }
+
+  @Override
+  public synchronized boolean load(InputStream input) throws IOException {
+    DataInputStream in = new DataInputStream(input);
+    root = new TernaryTreeNode();
+    try {
+      readRecursively(in, root);
+    } finally {
+      IOUtils.close(in);
+    }
+    return true;
   }
 }

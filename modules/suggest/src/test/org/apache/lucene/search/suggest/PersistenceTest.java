@@ -75,11 +75,11 @@ public class PersistenceTest extends LuceneTestCase {
     // Assert validity.
     float previous = Float.NEGATIVE_INFINITY;
     for (TermFreq k : keys) {
-      Float val = (Float) lookup.get(k.term);
-      assertNotNull(k.term, val);
+      Float val = (Float) lookup.get(k.term.utf8ToString());
+      assertNotNull(k.term.utf8ToString(), val);
 
       if (supportsExactWeights) { 
-        assertEquals(k.term, Float.valueOf(k.v), val);
+        assertEquals(k.term.utf8ToString(), Float.valueOf(k.v), val);
       } else {
         assertTrue(val + ">=" + previous, val >= previous);
         previous = val.floatValue();

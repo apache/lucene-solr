@@ -19,6 +19,8 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +31,8 @@ import org.apache.lucene.search.suggest.fst.Sort.SortInfo;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.*;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
@@ -158,20 +162,17 @@ public class FSTCompletionLookup extends Lookup {
     // If negative floats are allowed some trickery needs to be done to find their byte order.
     boolean success = false;
     try {
-      BytesRef tmp1 = new BytesRef();
       byte [] buffer = new byte [0];
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
-      while (tfit.hasNext()) {
-        String key = tfit.next();
-        UnicodeUtil.UTF16toUTF8(key, 0, key.length(), tmp1);
-
-        if (tmp1.length + 4 >= buffer.length) {
-          buffer = ArrayUtil.grow(buffer, tmp1.length + 4);
+      BytesRef spare;
+      while ((spare = tfit.next()) != null) {
+        if (spare.length + 4 >= buffer.length) {
+          buffer = ArrayUtil.grow(buffer, spare.length + 4);
         }
 
         output.reset(buffer);
         output.writeInt(FloatMagic.toSortable(tfit.freq()));
-        output.writeBytes(tmp1.bytes, tmp1.offset, tmp1.length);
+        output.writeBytes(spare.bytes, spare.offset, spare.length);
         writer.write(buffer, 0, output.getPosition());
       }
       writer.close();
@@ -189,6 +190,7 @@ public class FSTCompletionLookup extends Lookup {
       int previousBucket = 0;
       float previousScore = 0;
       ByteArrayDataInput input = new ByteArrayDataInput();
+      BytesRef tmp1 = new BytesRef();
       BytesRef tmp2 = new BytesRef();
       while (reader.read(tmp1)) {
         input.reset(tmp1.bytes);
@@ -291,6 +293,32 @@ public class FSTCompletionLookup extends Lookup {
       return false;
 
     normalCompletion.getFST().save(new File(storeDir, FILENAME));
+    return true;
+  }
+
+  @Override
+  public synchronized boolean store(OutputStream output) throws IOException {
+
+    if (this.normalCompletion == null) 
+      return false;
+    try {
+      normalCompletion.getFST().save(new OutputStreamDataOutput(output));
+    } finally {
+      IOUtils.close(output);
+    }
+    return true;
+  }
+
+  @Override
+  public synchronized boolean load(InputStream input) throws IOException {
+    try {
+      this.higherWeightsCompletion = new FSTCompletion(new FST<Object>(
+          new InputStreamDataInput(input), NoOutputs.getSingleton()));
+      this.normalCompletion = new FSTCompletion(
+          higherWeightsCompletion.getFST(), false, exactMatchFirst);
+    } finally {
+      IOUtils.close(input);
+    }
     return true;
   }
 }

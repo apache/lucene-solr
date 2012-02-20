@@ -19,6 +19,8 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,11 +29,12 @@ import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
@@ -109,16 +112,14 @@ public class WFSTCompletionLookup extends Lookup {
     try {
       byte [] buffer = new byte [0];
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
-      while (iterator.hasNext()) {
-        String key = iterator.next();
-        UnicodeUtil.UTF16toUTF8(key, 0, key.length(), scratch);
-
-        if (scratch.length + 5 >= buffer.length) {
-          buffer = ArrayUtil.grow(buffer, scratch.length + 5);
+      BytesRef spare;
+      while ((spare = iterator.next()) != null) {
+        if (spare.length + 5 >= buffer.length) {
+          buffer = ArrayUtil.grow(buffer, spare.length + 5);
         }
 
         output.reset(buffer);
-        output.writeBytes(scratch.bytes, scratch.offset, scratch.length);
+        output.writeBytes(spare.bytes, spare.offset, spare.length);
         output.writeByte((byte)0); // separator: not used, just for sort order
         output.writeInt((int)encodeWeight(iterator.freq()));
         writer.write(buffer, 0, output.getPosition());
@@ -175,6 +176,26 @@ public class WFSTCompletionLookup extends Lookup {
   @Override
   public boolean load(File storeDir) throws IOException {
     this.fst = FST.read(new File(storeDir, FILENAME), PositiveIntOutputs.getSingleton(true));
+    return true;
+  }
+  
+  @Override
+  public boolean store(OutputStream output) throws IOException {
+    try {
+      fst.save(new OutputStreamDataOutput(output));
+    } finally {
+      IOUtils.close(output);
+    }
+    return true;
+  }
+
+  @Override
+  public boolean load(InputStream input) throws IOException {
+    try {
+      this.fst = new FST<Long>(new InputStreamDataInput(input), PositiveIntOutputs.getSingleton(true));
+    } finally {
+      IOUtils.close(input);
+    }
     return true;
   }
 
