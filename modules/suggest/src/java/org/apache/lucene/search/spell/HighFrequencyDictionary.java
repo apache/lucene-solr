@@ -91,11 +91,13 @@ public class HighFrequencyDictionary implements Dictionary {
     @Override
     public BytesRef next() throws IOException {
       if (termsEnum != null) {
-        BytesRef next = termsEnum.next();
-        if (next != null && isFrequent(termsEnum.docFreq())) {
-          spare.copyBytes(next);
-          return spare;
-        }
+        BytesRef next;
+	while ((next = termsEnum.next()) != null) {
+          if (isFrequent(termsEnum.docFreq())) {
+            spare.copyBytes(next);
+            return spare;
+          }
+	}
       }
       return  null;
     }
