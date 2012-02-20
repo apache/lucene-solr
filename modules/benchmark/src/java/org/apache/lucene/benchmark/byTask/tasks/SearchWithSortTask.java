@@ -16,6 +16,8 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import java.util.Locale;
+
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.search.Sort;
@@ -75,7 +77,7 @@ public class SearchWithSortTask extends ReadTask {
         } else {
           throw new RuntimeException("You must specify the sort type ie page:int,subject:string");
         }
-        sortField0 = new SortField(fieldName, SortField.Type.valueOf(typeString.toUpperCase()));
+        sortField0 = new SortField(fieldName, SortField.Type.valueOf(typeString.toUpperCase(Locale.ENGLISH)));
       }
       sortFields[upto++] = sortField0;
     }
