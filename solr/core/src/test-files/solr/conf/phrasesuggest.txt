@@ -1,0 +1,8 @@
+# simple auto-suggest phrase dictionary for testing
+# note this uses tabs as separator!
+the first phrase	1.0
+the second phrase	2.0
+testing 1234	3.0
+foo	5.0
+the fifth phrase	2.0
+the final phrase	4.0
