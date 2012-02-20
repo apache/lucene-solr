@@ -473,7 +473,7 @@ public class CoreContainer
   
   private volatile boolean isShutDown = false;
 
-  private Config cfg;
+  private volatile Config cfg;
   
   public boolean isShutDown() {
     return isShutDown;
