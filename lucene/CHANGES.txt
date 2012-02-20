@@ -861,7 +861,7 @@ New Features
 
 * LUCENE-3714: Add top N shortest cost paths search for FST<Long>.
   (Robert Muir, Dawid Weiss, Mike McCandless)
-  
+
 Bug fixes
 
 * LUCENE-3595: Fixed FieldCacheRangeFilter and FieldCacheTermsFilter
@@ -1108,6 +1108,9 @@ New Features
   
 * LUCENE-3558: Moved SearcherManager, NRTManager & SearcherLifetimeManager into
   core. All classes are contained in o.a.l.search. (Simon Willnauer)
+
+* LUCENE-3789: Expose MTQ TermsEnum via RewriteMethod for non package private
+  access (Simon Willnauer)
 
 Optimizations
 

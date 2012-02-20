@@ -68,6 +68,13 @@ public abstract class MultiTermQuery extends Query {
   /** Abstract class that defines how the query is rewritten. */
   public static abstract class RewriteMethod {
     public abstract Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException;
+    /**
+     * Returns the {@link MultiTermQuery}s {@link TermsEnum}
+     * @see MultiTermQuery#getTermsEnum(Terms, AttributeSource);
+     */
+    protected TermsEnum getTermsEnum(MultiTermQuery query, Terms terms, AttributeSource atts) throws IOException {
+      return query.getTermsEnum(terms, atts); // allow RewriteMethod subclasses to pull a TermsEnum from the MTQ 
+    }
   }
 
   /** A rewrite method that first creates a private Filter,
