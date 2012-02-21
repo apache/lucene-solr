@@ -237,11 +237,14 @@ public final class ParallelAtomicReader extends AtomicReader {
   @Override
   public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
-    ParallelFields fields = new ParallelFields();
+    ParallelFields fields = null;
     for (Map.Entry<String,AtomicReader> ent : fieldToReader.entrySet()) {
       String fieldName = ent.getKey();
       Terms vector = ent.getValue().getTermVector(docID, fieldName);
       if (vector != null) {
+        if (fields == null) {
+          fields = new ParallelFields();
+        }
         fields.addField(fieldName, vector);
       }
     }
