@@ -151,7 +151,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
 
           String state = shard.getValue().get(ZkStateReader.STATE_PROP);
           if (!state.equals(ZkStateReader.ACTIVE)) {
-            fail("Not all shards are ACTIVE");
+            fail("Not all shards are ACTIVE - found a shard that is: " + state);
           }
         }
       }
