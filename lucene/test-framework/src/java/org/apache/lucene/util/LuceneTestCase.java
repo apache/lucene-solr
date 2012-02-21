@@ -55,6 +55,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.FilterAtomicReader;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -1344,6 +1346,41 @@ public abstract class LuceneTestCase extends Assert {
       throw new RuntimeException(e);
     }
   }
+  
+  /** Sometimes wrap the IndexReader as slow, parallel or filter reader (or combinations of that) */
+  public static IndexReader maybeWrapReader(IndexReader r) throws IOException {
+    if (rarely()) {
+      for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
+        switch(random.nextInt(4)) {
+          case 0:
+            r = SlowCompositeReaderWrapper.wrap(r);
+            break;
+          case 1:
+            r = (r instanceof AtomicReader) ?
+              new ParallelAtomicReader((AtomicReader) r) :
+              new ParallelCompositeReader((CompositeReader) r);
+            break;
+          case 2:
+            r = new MultiReader(r);
+            break;
+          case 3:
+            if (r instanceof AtomicReader) {
+              r = new FilterAtomicReader((AtomicReader) r) {
+                @Override
+                public Fields fields() throws IOException {
+                  return new FilterFields(super.fields());
+                }
+              };
+            }
+            break;
+          default:
+            fail("should not get here");
+        }
+      }
+    }
+    //System.out.println(r);
+    return r;
+  }
 
   /** create a new searcher over the reader.
    * This searcher might randomly use threads. */
@@ -1358,18 +1395,8 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
     if (usually()) {
-      if (maybeWrap && rarely()) {
-        r = SlowCompositeReaderWrapper.wrap(r);
-      }
-      if (maybeWrap && rarely()) {
-        // just wrap as MultiReader/ParallelXReader with one subreader
-        if (random.nextBoolean()) {
-          r = (r instanceof AtomicReader) ?
-            new ParallelAtomicReader((AtomicReader) r) :
-            new ParallelCompositeReader((CompositeReader) r);
-        } else if (r instanceof CompositeReader) { // only wrap if not already atomic (some tests may fail)
-          r = new MultiReader(r);
-        }
+      if (maybeWrap) {
+        r = maybeWrapReader(r);
       }
       IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getTopReaderContext());
       ret.setSimilarity(similarity);
