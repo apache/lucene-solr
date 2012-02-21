@@ -122,8 +122,6 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, true, shardsArr[0]);
     client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
 
-
-
     // test delete and deleteByQuery
     v=1000;
     add(client0, seenLeader, sdoc("id","1000","_version_",++v));
@@ -153,7 +151,31 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     add(client, seenLeader, sdoc("id","2002","_version_",++v));
     del(client, params("leader","true","_version_",Long.toString(-++v)), "2000");
 
-    // assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr[0]);
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
+
+
+    //
+    // Test that handling reorders work when applying docs retrieved from peer
+    //
+
+    // this should cause us to retrieve the delete (but not the following add)
+    // the reorder in application shouldn't affect anything
+    add(client0, seenLeader, sdoc("id","3000","_version_",3001));
+    add(client1, seenLeader, sdoc("id","3000","_version_",3001));
+    del(client0, params("leader","true","_version_","3000"),  "3000");
+
+    // this should cause us to retrieve an add tha was previously deleted
+    add(client0, seenLeader, sdoc("id","3001","_version_",3003));
+    del(client0, params("leader","true","_version_","3001"),  "3004");
+    del(client1, params("leader","true","_version_","3001"),  "3004");
+
+    // this should cause us to retrieve an older add that was overwritten
+    add(client0, seenLeader, sdoc("id","3002","_version_",3004));
+    add(client0, seenLeader, sdoc("id","3002","_version_",3005));
+    add(client1, seenLeader, sdoc("id","3002","_version_",3005));
+
+    assertSync(client1, numVersions, true, shardsArr[0]);
     client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
   }
 
