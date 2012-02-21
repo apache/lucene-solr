@@ -1351,13 +1351,6 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexReader maybeWrapReader(IndexReader r) throws IOException {
     // TODO: remove this, and fix those tests to wrap before putting slow around:
     final boolean wasOriginallyAtomic = r instanceof AtomicReader;
-    
-    if (wasOriginallyAtomic) {
-      // TODO: investigate purging etc of tests making top-level fieldcaches,
-      // something is up if they get a crazy hierarchy
-      return r;
-    }
-
     if (rarely()) {
       for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
         switch(random.nextInt(4)) {
