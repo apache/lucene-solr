@@ -25,6 +25,7 @@ import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.SortedIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestHighFrequencyDictionary extends LuceneTestCase {
@@ -35,8 +36,10 @@ public class TestHighFrequencyDictionary extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new HighFrequencyDictionary(ir, "bogus", 0.1f);
-    SortedIterator tf = (SortedIterator)dictionary.getWordsIterator();
-    tf.comparator();
+    BytesRefIterator tf = dictionary.getWordsIterator();
+    assertTrue(tf instanceof SortedIterator);
+    ((SortedIterator)tf).comparator();
+    assertNull(tf.next());
     dir.close();
   }
 }
