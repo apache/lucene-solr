@@ -1034,7 +1034,7 @@ public final class ZkController {
       prepCmd.setNodeName(getNodeName());
       prepCmd.setCoreNodeName(shardZkNodeName);
       prepCmd.setState(ZkStateReader.DOWN);
-      prepCmd.setPauseFor(6000);
+      prepCmd.setPauseFor(10000);
       if (waitForNotLive){
         prepCmd.setCheckLive(false);
       }
