@@ -24,10 +24,8 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
 
-/** Abstract API that consumes terms, doc, freq, prox and
- *  payloads postings.  Concrete implementations of this
- *  actually do "something" with the postings (write it into
- *  the index in a specific format).
+/** Abstract API that produces terms, doc, freq, prox and
+ *  payloads postings.  
  *
  * @lucene.experimental
  */
