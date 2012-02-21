@@ -608,7 +608,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    printLayout();
     super.tearDown();
     if (solrj != null) {
       solrj.close();
