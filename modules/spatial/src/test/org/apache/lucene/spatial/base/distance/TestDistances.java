@@ -17,26 +17,20 @@
 
 package org.apache.lucene.spatial.base.distance;
 
-import org.apache.lucene.spatial.RandomSeed;
 import org.apache.lucene.spatial.base.context.SpatialContext;
 import org.apache.lucene.spatial.base.context.simple.SimpleSpatialContext;
-import org.apache.lucene.spatial.base.shape.SpatialRelation;
 import org.apache.lucene.spatial.base.shape.Point;
 import org.apache.lucene.spatial.base.shape.Rectangle;
+import org.apache.lucene.spatial.base.shape.SpatialRelation;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Random;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author David Smiley - dsmiley@mitre.org
  */
-public class TestDistances {
+public class TestDistances extends LuceneTestCase {
 
-  private final Random random = new Random(RandomSeed.seed());
   //NOTE!  These are sometimes modified by tests.
   private SpatialContext ctx;
   private double EPS;
@@ -225,7 +219,6 @@ public class TestDistances {
     for (double[] pair : lats) {
       assertEquals("input "+pair[0],pair[1],ctx.normY(pair[0]),0);
     }
-    Random random = new Random(RandomSeed.seed());
     for(int i = -1000; i < 1000; i += random.nextInt(10)*10) {
       double d = ctx.normY(i);
       assertTrue(i + " " + d, d >= -90 && d <= 90);
@@ -241,7 +234,6 @@ public class TestDistances {
     for (double[] pair : lons) {
       assertEquals("input "+pair[0],pair[1],ctx.normX(pair[0]),0);
     }
-    Random random = new Random(RandomSeed.seed());
     for(int i = -1000; i < 1000; i += random.nextInt(10)*10) {
       double d = ctx.normX(i);
       assertTrue(i + " " + d, d >= -180 && d < 180);

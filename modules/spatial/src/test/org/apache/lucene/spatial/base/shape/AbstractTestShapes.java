@@ -17,32 +17,25 @@
 
 package org.apache.lucene.spatial.base.shape;
 
-import org.apache.lucene.spatial.RandomSeed;
 import org.apache.lucene.spatial.base.context.SpatialContext;
 import org.apache.lucene.spatial.base.distance.DistanceCalculator;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Before;
 
 import java.util.Random;
 
-import static org.apache.lucene.spatial.base.shape.SpatialRelation.CONTAINS;
-import static org.apache.lucene.spatial.base.shape.SpatialRelation.DISJOINT;
-import static org.apache.lucene.spatial.base.shape.SpatialRelation.WITHIN;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.lucene.spatial.base.shape.SpatialRelation.*;
 
 /**
  * @author David Smiley - dsmiley@mitre.org
  */
-public abstract class AbstractTestShapes {
-  protected Random random;
+public abstract class AbstractTestShapes extends LuceneTestCase {
 
   protected SpatialContext ctx;
   private static final double EPS = 10e-9;
 
   @Before
   public void beforeClass() {
-    random = new Random(RandomSeed.seed());
     ctx = getContext();
   }
 
