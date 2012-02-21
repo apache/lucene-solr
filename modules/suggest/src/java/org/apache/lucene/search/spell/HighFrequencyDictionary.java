@@ -105,7 +105,11 @@ public class HighFrequencyDictionary implements Dictionary {
     @Override
     public Comparator<BytesRef> comparator() {
       try {
-        return termsEnum.getComparator();
+        if (termsEnum == null) {
+          return null;
+        } else {
+          return termsEnum.getComparator();
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
