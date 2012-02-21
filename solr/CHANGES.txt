@@ -608,6 +608,9 @@ Bug Fixes
 * SOLR-3052: Fixed typo in distributed grouping parameters.
   (Martijn van Groningen, Grant Ingersoll)
 
+* SOLR-2909: Add support for ResourceLoaderAware tokenizerFactories in synonym
+  filter factories. (Tom Klonikowski, Jun Ohtani via Koji Sekiguchi)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
