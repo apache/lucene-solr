@@ -17,11 +17,11 @@
 
 <project name="spatial-base" default="default">
   <description>
-    Base Spatial API
+    Spatial API without lucene dependencies
   </description>
 
-  <property name="build.dir" location="build/"/>
-  <property name="dist.dir" location="dist/"/>
+  <property name="build.dir" location="../build/base" />
+  <property name="dist.dir" location="../dist/base" />
   <property name="maven.dist.dir" location="../../dist/maven"/>
 
   <path id="additional.dependencies">
@@ -29,9 +29,10 @@
   </path>
   <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
 
-  <import file="../../lucene/contrib/contrib-build.xml"/>
+  <import file="../../../lucene/contrib/contrib-build.xml"/>
 
   <path id="classpath">
+    <pathelement path="${spatial-base.jar}"/>
     <path refid="base.classpath"/>
   </path>
 

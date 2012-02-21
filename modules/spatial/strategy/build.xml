@@ -15,21 +15,26 @@
   limitations under the License.
   -->
 
-<project name="spatial" default="default">
+<project name="spatial-strategy" default="default">
   <description>
-    Lucene [Geo]Spatial
+    Lucene [Geo]Spatial Strageties
   </description>
 
-  <property name="build.dir" location="build/"/>
-  <property name="dist.dir" location="dist/"/>
-  <property name="maven.dist.dir" location="../dist/maven"/>
+  <property name="build.dir" location="../build/strategy" />
+  <property name="dist.dir" location="../dist/strategy" />
+  <property name="maven.dist.dir" location="../../dist/maven"/>
+
 
   <path id="additional.dependencies">
+    <!--
     <fileset dir="lib" includes="*.jar"/>
+    -->
+    <fileset dir="../build/base" includes="*.jar"/>
+    <fileset dir="../base/lib" includes="*.jar"/>
   </path>
   <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
 
-  <import file="../../lucene/contrib/contrib-build.xml"/>
+  <import file="../../../lucene/contrib/contrib-build.xml"/>
 
   <path id="classpath">
     <path refid="base.classpath"/>
