@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -96,9 +97,10 @@ public class TestDuelingCodecs extends LuceneTestCase {
     createRandomIndex(numdocs, leftWriter, seed);
     createRandomIndex(numdocs, rightWriter, seed);
 
-    leftReader = leftWriter.getReader();
+    // TODO: maybe we should do this wrapping in another test?
+    leftReader = maybeWrap(leftWriter.getReader());
     leftWriter.close();
-    rightReader = rightWriter.getReader();
+    rightReader = maybeWrap(rightWriter.getReader());
     rightWriter.close();
     
     info = "left: " + leftCodec.toString() + " / right: " + rightCodec.toString();
@@ -112,6 +114,12 @@ public class TestDuelingCodecs extends LuceneTestCase {
     rightDir.close();
     
     super.tearDown();
+  }
+  
+  static IndexReader maybeWrap(IndexReader other) throws IOException {
+    // TODO: bogus how we do this
+    IndexSearcher is = newSearcher(other);
+    return is.getIndexReader();
   }
   
   /**
