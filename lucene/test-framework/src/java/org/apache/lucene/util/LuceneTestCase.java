@@ -1349,6 +1349,8 @@ public abstract class LuceneTestCase extends Assert {
   
   /** Sometimes wrap the IndexReader as slow, parallel or filter reader (or combinations of that) */
   public static IndexReader maybeWrapReader(IndexReader r) throws IOException {
+    // TODO: remove this, and fix those tests to wrap before putting slow around:
+    final boolean wasOriginallyAtomic = r instanceof AtomicReader;
     if (rarely()) {
       for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
         switch(random.nextInt(4)) {
@@ -1361,7 +1363,9 @@ public abstract class LuceneTestCase extends Assert {
               new ParallelCompositeReader((CompositeReader) r);
             break;
           case 2:
-            r = new MultiReader(r);
+            if (!wasOriginallyAtomic) { // dont wrap originally atomic readers to be composite (some tests don't like)
+              r = new MultiReader(r);
+            }
             break;
           case 3:
             if (r instanceof AtomicReader) {
