@@ -26,7 +26,7 @@ import java.util.Comparator;
 /**  A <code>FilterAtomicReader</code> contains another AtomicReader, which it
  * uses as its basic source of data, possibly transforming the data along the
  * way or providing additional functionality. The class
- * <code>FilterIndexReader</code> itself simply implements all abstract methods
+ * <code>FilterAtomicReader</code> itself simply implements all abstract methods
  * of <code>IndexReader</code> with versions that pass all requests to the
  * contained index reader. Subclasses of <code>FilterAtomicReader</code> may
  * further override some of these methods and may also provide additional
@@ -275,8 +275,8 @@ public class FilterAtomicReader extends AtomicReader {
   protected AtomicReader in;
 
   /**
-   * <p>Construct a FilterIndexReader based on the specified base reader.
-   * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
+   * <p>Construct a FilterAtomicReader based on the specified base reader.
+   * <p>Note that base reader is closed if this FilterAtomicReader is closed.</p>
    * @param in specified base reader.
    */
   public FilterAtomicReader(AtomicReader in) {
@@ -363,7 +363,7 @@ public class FilterAtomicReader extends AtomicReader {
 
   @Override
   public String toString() {
-    final StringBuilder buffer = new StringBuilder("FilterIndexReader(");
+    final StringBuilder buffer = new StringBuilder("FilterAtomicReader(");
     buffer.append(in);
     buffer.append(')');
     return buffer.toString();
