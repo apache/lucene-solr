@@ -24,178 +24,87 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestParallelTermEnum extends LuceneTestCase {
-    private AtomicReader ir1;
-    private AtomicReader ir2;
-    private Directory rd1;
-    private Directory rd2;
+  private AtomicReader ir1;
+  private AtomicReader ir2;
+  private Directory rd1;
+  private Directory rd2;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    Document doc;
+    rd1 = newDirectory();
+    IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+
+    doc = new Document();
+    doc.add(newField("field1", "the quick brown fox jumps", TextField.TYPE_STORED));
+    doc.add(newField("field2", "the quick brown fox jumps", TextField.TYPE_STORED));
+    iw1.addDocument(doc);
+
+    iw1.close();
+    rd2 = newDirectory();
+    IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+
+    doc = new Document();
+    doc.add(newField("field1", "the fox jumps over the lazy dog", TextField.TYPE_STORED));
+    doc.add(newField("field3", "the fox jumps over the lazy dog", TextField.TYPE_STORED));
+    iw2.addDocument(doc);
+
+    iw2.close();
+
+    this.ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1));
+    this.ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd2));
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    ir1.close();
+    ir2.close();
+    rd1.close();
+    rd2.close();
+    super.tearDown();
+  }
+  
+  private void checkTerms(Terms terms, Bits liveDocs, String... termsList) throws IOException {
+    assertNotNull(terms);
+    final TermsEnum te = terms.iterator(null);
     
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        Document doc;
-        rd1 = newDirectory();
-        IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-
-        doc = new Document();
-        doc.add(newField("field1", "the quick brown fox jumps", TextField.TYPE_STORED));
-        doc.add(newField("field2", "the quick brown fox jumps", TextField.TYPE_STORED));
-        doc.add(newField("field4", "", TextField.TYPE_UNSTORED));
-        iw1.addDocument(doc);
-
-        iw1.close();
-        rd2 = newDirectory();
-        IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-
-        doc = new Document();
-        doc.add(newField("field0", "", TextField.TYPE_UNSTORED));
-        doc.add(newField("field1", "the fox jumps over the lazy dog", TextField.TYPE_STORED));
-        doc.add(newField("field3", "the fox jumps over the lazy dog", TextField.TYPE_STORED));
-        iw2.addDocument(doc);
-
-        iw2.close();
-
-        this.ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1));
-        this.ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd2));
+    for (String t : termsList) {
+      BytesRef b = te.next();
+      assertNotNull(b);
+      assertEquals(t, b.utf8ToString());
+      DocsEnum td = _TestUtil.docs(random, te, liveDocs, null, false);
+      assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+      assertEquals(0, td.docID());
+      assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
     }
+    assertNull(te.next());
+  }
 
-    @Override
-    public void tearDown() throws Exception {
-        ir1.close();
-        ir2.close();
-        rd1.close();
-        rd2.close();
-        super.tearDown();
-    }
+  public void test1() throws IOException {
+    ParallelAtomicReader pr = new ParallelAtomicReader(ir1, ir2);
 
-    public void test1() throws IOException {
-        ParallelAtomicReader pr = new ParallelAtomicReader(ir1, ir2);
+    Bits liveDocs = pr.getLiveDocs();
 
-        Bits liveDocs = pr.getLiveDocs();
+    FieldsEnum fe = pr.fields().iterator();
 
-        FieldsEnum fe = pr.fields().iterator();
+    String f = fe.next();
+    assertEquals("field1", f);
+    checkTerms(fe.terms(), liveDocs, "brown", "fox", "jumps", "quick", "the");
 
-        String f = fe.next();
-        assertEquals("field0", f);
-        f = fe.next();
-        assertEquals("field1", f);
+    f = fe.next();
+    assertEquals("field2", f);
+    checkTerms(fe.terms(), liveDocs, "brown", "fox", "jumps", "quick", "the");
 
-        Terms terms = fe.terms();
-        TermsEnum te = terms.iterator(null);
+    f = fe.next();
+    assertEquals("field3", f);
+    checkTerms(fe.terms(), liveDocs, "dog", "fox", "jumps", "lazy", "over", "the");
 
-        assertEquals("brown", te.next().utf8ToString());
-        DocsEnum td = _TestUtil.docs(random, te, liveDocs, null, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("fox", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("jumps", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("quick", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("the", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertNull(te.next());
-        f = fe.next();
-        assertEquals("field2", f);
-        terms = fe.terms();
-        assertNotNull(terms);
-        te = terms.iterator(null);
-
-        assertEquals("brown", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("fox", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("jumps", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("quick", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("the", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertNull(te.next());
-        f = fe.next();
-        assertEquals("field3", f);
-        terms = fe.terms();
-        assertNotNull(terms);
-        te = terms.iterator(null);
-
-        assertEquals("dog", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("fox", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("jumps", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("lazy", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("over", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertEquals("the", te.next().utf8ToString());
-        td = _TestUtil.docs(random, te, liveDocs, td, false);
-        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
-        assertEquals(0, td.docID());
-        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
-
-        assertNull(te.next());
-    }
+    assertNull(fe.next());
+  }
 }
