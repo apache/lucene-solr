@@ -85,7 +85,7 @@ public final class ZkController {
   public final static String COLLECTION_PARAM_PREFIX="collection.";
   public final static String CONFIGNAME_PROP="configName";
 
-  private final Map<String, CoreState> coreStates = Collections.synchronizedMap(new HashMap<String, CoreState>());
+  private final Map<String, CoreState> coreStates = new HashMap<String, CoreState>();
   
   private SolrZkClient zkClient;
   private ZkCmdExecutor cmdExecutor;
@@ -900,22 +900,25 @@ public final class ZkController {
     }
     CoreState coreState = new CoreState(coreName,
         cloudDesc.getCollectionName(), props, numShards);
-    coreStates.put(shardZkNodeName, coreState);
     final String nodePath = "/node_states/" + getNodeName();
-
-    try {
-      zkClient.setData(nodePath, ZkStateReader.toJSON(coreStates.values()),
-          true);
-      
-    } catch (KeeperException e) {
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "could not publish node state", e);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "could not publish node state", e);
+    
+    synchronized (coreStates) {
+      coreStates.put(shardZkNodeName, coreState);
+      try {
+        zkClient.setData(nodePath, ZkStateReader.toJSON(coreStates.values()),
+            true);
+        
+      } catch (KeeperException e) {
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "could not publish node state", e);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "could not publish node state", e);
+      }
     }
+
   }
 
   private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor)
