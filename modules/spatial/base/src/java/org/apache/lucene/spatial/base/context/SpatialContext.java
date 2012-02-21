@@ -112,7 +112,6 @@ public abstract class SpatialContext {
 
   /**
    * Is this a geospatial context (true) or simply 2d spatial (false)
-   * @return
    */
   public boolean isGeo() {
     return getUnits().isGeo();
@@ -156,7 +155,6 @@ public abstract class SpatialContext {
    *
    * @param ctr
    * @param distance The units of "distance" should be the same as {@link #getUnits()}.
-   * @return
    */
   public abstract Circle makeCircle(Point ctr, double distance);
 

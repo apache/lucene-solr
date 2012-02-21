@@ -88,7 +88,6 @@ public class SpatialArgs {
 
   /**
    * Considers {@link SpatialOperation#BBoxWithin} in returning the shape.
-   * @return
    */
   public Shape getShape() {
     if (shape != null && (operation == SpatialOperation.BBoxWithin || operation == SpatialOperation.BBoxIntersects))

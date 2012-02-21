@@ -55,6 +55,10 @@
 	<classpathentry kind="src" path="modules/queryparser/src/test"/>
 	<classpathentry kind="src" path="modules/suggest/src/java"/>
 	<classpathentry kind="src" path="modules/suggest/src/test"/>
+	<classpathentry kind="src" path="modules/spatial/base/src/java"/>
+	<classpathentry kind="src" path="modules/spatial/base/src/test"/>
+	<classpathentry kind="src" path="modules/spatial/strategy/src/java"/>
+	<classpathentry kind="src" path="modules/spatial/strategy/src/test"/>
 	<classpathentry kind="src" path="solr/core/src/java"/>
 	<classpathentry kind="src" path="solr/core/src/test"/>
 	<classpathentry kind="src" path="solr/core/src/test-files"/>

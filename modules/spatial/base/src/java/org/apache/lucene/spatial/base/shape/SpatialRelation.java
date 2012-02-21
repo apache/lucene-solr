@@ -43,7 +43,6 @@ public enum SpatialRelation {
    * If you were to call aShape.relate(bShape) and aShape.relate(cShape), you could call
    * this to merge the intersect results as if bShape & cShape were combined into {@link MultiShape}.
    * @param other
-   * @return
    */
   public SpatialRelation combine(SpatialRelation other) {
     if (this == other)

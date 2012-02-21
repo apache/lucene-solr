@@ -69,7 +69,6 @@ public class CircleImpl implements Circle {
 
   /**
    * Note that the bounding box might contain a minX that is > maxX, due to WGS84 dateline.
-   * @return
    */
   @Override
   public Rectangle getBoundingBox() {

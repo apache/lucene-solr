@@ -68,8 +68,8 @@ public class GeoCircleImpl extends CircleImpl {
 
   /**
    * Called after bounding box is intersected.
-   * @bboxSect INTERSECTS or CONTAINS from enclosingBox's intersection
-   * @result DISJOINT, CONTAINS, or INTERSECTS (not WITHIN)
+   * @param bboxSect INTERSECTS or CONTAINS from enclosingBox's intersection
+   * @return DISJOINT, CONTAINS, or INTERSECTS (not WITHIN)
    */
   @Override
   protected SpatialRelation relateRectanglePhase2(Rectangle r, SpatialRelation bboxSect, SpatialContext ctx) {

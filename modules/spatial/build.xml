@@ -60,18 +60,18 @@
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
 
   <target name="dist-maven" depends="default,javadocs">
-    <ant dir="base" target="clean" />
-    <ant dir="strategy" target="clean" />
+    <ant dir="base" target="dist-maven" />
+    <ant dir="strategy" target="dist-maven" />
   </target>  	
 
   <target name="javadocs">
-    <ant dir="base" target="clean" />
-    <ant dir="strategy" target="clean" />
+    <ant dir="base" target="javadocs" />
+    <ant dir="strategy" target="javadocs" />
   </target>  	
 
   <target name="javadocs-index.html">
-    <ant dir="base" target="clean" />
-    <ant dir="strategy" target="clean" />
+    <ant dir="base" target="javadocs-index.html" />
+    <ant dir="strategy" target="javadocs-index.html" />
   </target>
 	
 </project>

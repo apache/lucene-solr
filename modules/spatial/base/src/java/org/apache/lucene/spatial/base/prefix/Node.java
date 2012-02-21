@@ -165,9 +165,6 @@ public abstract class Node implements Comparable<Node> {
    * cell's boundary.
    * Precondition: Never called when getLevel() == maxLevel.
    * Precondition: this.getShape().relate(p) != DISJOINT.
-   *
-   * @param p
-   * @return
    */
   public abstract Node getSubCell(Point p);
 

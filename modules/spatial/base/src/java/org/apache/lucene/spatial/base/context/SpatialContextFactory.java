@@ -41,7 +41,6 @@ public abstract class SpatialContextFactory {
    * then {@link SimpleSpatialContextFactory} is chosen.
    * @param args
    * @param classLoader
-   * @return
    */
   public static SpatialContext makeSpatialContext(Map<String,String> args, ClassLoader classLoader) {
     SpatialContextFactory instance;
