@@ -576,7 +576,7 @@ public class CheckIndex {
         segInfoStat.fieldNormStatus = testFieldNorms(fieldInfos, reader);
 
         // Test the Term Index
-        segInfoStat.termIndexStatus = testPostings(reader);
+        segInfoStat.termIndexStatus = testPostings(fieldInfos, reader);
 
         // Test Stored Fields
         segInfoStat.storedFieldStatus = testStoredFields(info, reader, nf);
@@ -691,7 +691,7 @@ public class CheckIndex {
   /**
    * Test the term index.
    */
-  private Status.TermIndexStatus testPostings(SegmentReader reader) {
+  private Status.TermIndexStatus testPostings(FieldInfos fieldInfos, SegmentReader reader) {
 
     // TODO: we should go and verify term vectors match, if
     // crossCheckTermVectors is on...
@@ -720,15 +720,31 @@ public class CheckIndex {
       DocsEnum docsAndFreqs = null;
       DocsAndPositionsEnum postings = null;
 
+      String lastField = null;
       final FieldsEnum fieldsEnum = fields.iterator();
       while(true) {
         final String field = fieldsEnum.next();
         if (field == null) {
           break;
         }
+        // MultiFieldsEnum relies upon this order...
+        if (lastField != null && field.compareTo(lastField) <= 0) {
+          throw new RuntimeException("fields out of order: lastField=" + lastField + " field=" + field);
+        }
+        lastField = field;
+        
+        // check that the field is in fieldinfos, and is indexed.
+        // TODO: add a separate test to check this for different reader impls
+        FieldInfo fi = fieldInfos.fieldInfo(field);
+        if (fi == null) {
+          throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, no fieldInfos for: " + field);
+        }
+        if (!fi.isIndexed) {
+          throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, isIndexed == false for: " + field);
+        }
 
         // TODO: really the codec should not return a field
-        // from FieldsEnum if it has to Terms... but we do
+        // from FieldsEnum if it has no Terms... but we do
         // this today:
         // assert fields.terms(field) != null;
         computedFieldCount++;
