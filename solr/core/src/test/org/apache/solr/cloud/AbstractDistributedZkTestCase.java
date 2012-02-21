@@ -109,7 +109,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
                   ZkStateReader.NODE_NAME_PROP)));
           String state = shard.getValue().get(ZkStateReader.STATE_PROP);
           if ((state.equals(ZkStateReader.RECOVERING) || state
-              .equals(ZkStateReader.SYNC))
+              .equals(ZkStateReader.SYNC) || state.equals(ZkStateReader.DOWN))
               && cloudState.liveNodesContain(shard.getValue().get(
                   ZkStateReader.NODE_NAME_PROP))) {
             sawLiveRecovering = true;
