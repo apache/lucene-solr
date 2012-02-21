@@ -24,7 +24,7 @@
       - base:	Spatial API w/o lucene dependencies
       - strategy: Lucene based indexing strategies
   </description>
-
+  
   <target name="base">
     <ant dir="base" />
   </target>
@@ -37,9 +37,14 @@
   <target name="compile" depends="base,strategy" />
 
   <target name="clean">
+    <!-- Not sure why this does not work
     <ant dir="base" target="clean" />
     <ant dir="strategy" target="clean" />
+    -->
+    <delete dir="build"/>
+    <delete dir="dist"/>
   </target>
+  
   <target name="validate">
     <ant dir="base" target="validate" />
     <ant dir="strategy" target="validate" />
