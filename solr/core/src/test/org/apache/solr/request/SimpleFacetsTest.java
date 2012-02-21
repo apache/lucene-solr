@@ -17,12 +17,17 @@
 
 package org.apache.solr.request;
 
+import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 
 public class SimpleFacetsTest extends SolrTestCaseJ4 {
@@ -53,7 +58,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
 
-  static void createIndex() {
+  static void createIndex() throws Exception {
+    doEmptyFacetCounts();   // try on empty index
+
     indexSimpleFacetCounts();
     indexDateFacets();
     indexFacetSingleValued();
@@ -94,6 +101,67 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!",
             "zerolen_s","");   
   }
+
+  @Test
+  public void testEmptyFacetCounts() throws Exception {
+    doEmptyFacetCounts();
+  }
+
+  // static so we can try both with and without an empty index
+  static void doEmptyFacetCounts() throws Exception {
+    doEmptyFacetCounts("empty_t", new String[]{null, "myprefix",""});
+    doEmptyFacetCounts("empty_i", new String[]{null});
+    doEmptyFacetCounts("empty_f", new String[]{null});
+    doEmptyFacetCounts("empty_s", new String[]{null, "myprefix",""});
+    doEmptyFacetCounts("empty_d", new String[]{null});
+  }
+  
+  static void doEmptyFacetCounts(String field, String[] prefixes) throws Exception {
+    SchemaField sf = h.getCore().getSchema().getField(field);
+
+    String response = JQ(req("q", "*:*"));
+    Map rsp = (Map) ObjectBuilder.fromJSON(response);
+    Long numFound  = (Long)(((Map)rsp.get("response")).get("numFound"));
+
+    ModifiableSolrParams params = params("q","*:*", "rows","0", "facet","true", "facet.field","{!key=myalias}"+field);
+    
+    String[] methods = {null, "fc","enum","fcs"};
+    if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
+      methods = new String[]{null, "fc","enum"};
+    }
+
+    prefixes = prefixes==null ? new String[]{null} : prefixes;
+
+
+    for (String method : methods) {
+      if (method == null) {
+        params.remove("facet.method");
+      } else {
+        params.set("facet.method", method);
+      }
+      for (String prefix : prefixes) {
+        if (prefix == null) {
+          params.remove("facet.prefix");
+        } else {
+          params.set("facet.prefix", prefix);
+        }
+
+        for (String missing : new String[] {null, "true"}) {
+          if (missing == null) {
+            params.remove("facet.missing");
+          } else {
+            params.set("facet.missing", missing);
+          }
+          
+          String expected = missing==null ? "[]" : "[null," + numFound + "]";
+          
+          assertJQ(req(params),
+              "/facet_counts/facet_fields/myalias==" + expected);
+        }
+      }
+    }
+  }
+
 
   @Test
   public void testSimpleFacetCounts() {

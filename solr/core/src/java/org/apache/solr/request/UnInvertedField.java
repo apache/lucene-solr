@@ -227,7 +227,7 @@ public class UnInvertedField extends DocTermOrds {
       int endTerm = numTermsInField;  // one past the end
 
       TermsEnum te = getOrdTermsEnum(searcher.getAtomicReader());
-      if (prefix != null && prefix.length() > 0) {
+      if (te != null && prefix != null && prefix.length() > 0) {
         final BytesRef prefixBr = new BytesRef(prefix);
         if (te.seekCeil(prefixBr, true) == TermsEnum.SeekStatus.END) {
           startTerm = numTermsInField;
