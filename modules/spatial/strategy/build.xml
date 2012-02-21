@@ -43,6 +43,7 @@
 
   <path id="test.classpath">
     <path refid="test.base.classpath" />
+    <path refid="base.classpath"/>
     <pathelement path="${analyzers-common.jar}" />
     <pathelement path="src/test-files" />
   </path>

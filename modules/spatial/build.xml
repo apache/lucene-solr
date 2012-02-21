@@ -41,20 +41,20 @@
     <ant dir="strategy" target="clean" />
   </target>
   <target name="validate">
-    <ant dir="base" target="clean" />
-    <ant dir="strategy" target="clean" />
+    <ant dir="base" target="validate" />
+    <ant dir="strategy" target="validate" />
   </target>
   <target name="compile-core">
-    <ant dir="base" target="clean" />
-    <ant dir="strategy" target="clean" />
+    <ant dir="base" target="compile-core" />
+    <ant dir="strategy" target="compile-core" />
   </target>
   <target name="compile-test">
-    <ant dir="base" target="clean" />
-    <ant dir="strategy" target="clean" />
+    <ant dir="base" target="compile-test" />
+    <ant dir="strategy" target="compile-test" />
   </target>
   <target name="test">
-    <ant dir="base" target="clean" />
-    <ant dir="strategy" target="clean" />
+    <ant dir="base" target="test" />
+    <ant dir="strategy" target="test" />
   </target>
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
