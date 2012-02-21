@@ -106,7 +106,9 @@ public final class ParallelAtomicReader extends AtomicReader {
         if (!fieldToReader.containsKey(fieldInfo.name)) {
           fieldInfos.add(fieldInfo);
           fieldToReader.put(fieldInfo.name, reader);
-          this.fields.addField(fieldInfo.name, reader.terms(fieldInfo.name));
+          if (fieldInfo.isIndexed) {
+            this.fields.addField(fieldInfo.name, reader.terms(fieldInfo.name));
+          }
         }
       }
     } 

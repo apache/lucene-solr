@@ -256,7 +256,7 @@ public class TestTermVectors extends LuceneTestCase {
     DocsEnum docs = null;
     while(fields.next() != null) {
       Terms terms = fields.terms();
-      assertNotNull(terms);
+      assertNotNull(terms); // NOTE: kinda sketchy assumptions, but ideally we would fix fieldsenum api... 
       TermsEnum termsEnum = terms.iterator(null);
 
       while (termsEnum.next() != null) {
