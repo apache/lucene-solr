@@ -166,7 +166,11 @@ public class QueryUtils {
           emptyReaders[0],
           0 < edge ? r : emptyReaders[0])
     };
-    IndexSearcher out = LuceneTestCase.newSearcher(new MultiReader(readers));
+
+    // TODO: fix me,
+    //   wrapping causes insanity when we have an already-atomic reader?!
+    // IndexSearcher out = LuceneTestCase.newSearcher(new MultiReader(readers));
+    IndexSearcher out = LuceneTestCase.newSearcher(new MultiReader(readers), false);
     out.setSimilarity(s.getSimilarity());
     return out;
   }
