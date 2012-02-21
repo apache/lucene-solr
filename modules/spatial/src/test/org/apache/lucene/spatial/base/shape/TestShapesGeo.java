@@ -19,17 +19,17 @@ package org.apache.lucene.spatial.base.shape;
 
 import org.apache.lucene.spatial.base.context.SpatialContext;
 import org.apache.lucene.spatial.base.context.simple.SimpleSpatialContext;
-import org.apache.lucene.spatial.base.distance.*;
-import org.junit.Ignore;
+import org.apache.lucene.spatial.base.distance.DistanceCalculator;
+import org.apache.lucene.spatial.base.distance.DistanceUnits;
+import org.apache.lucene.spatial.base.distance.GeodesicSphereDistCalc;
 import org.junit.Test;
 
 import static org.apache.lucene.spatial.base.shape.SpatialRelation.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author David Smiley - dsmiley@mitre.org
  */
-public abstract class TestShapesGeo extends AbstractTestShapes {
+public class TestShapesGeo extends AbstractTestShapes {
 
   @Test
   public void testGeoRectangle() {
@@ -129,37 +129,22 @@ public abstract class TestShapesGeo extends AbstractTestShapes {
     return ctx.getDistCalc().degreesToDistance(deg);
   }
 
-  @Ignore
-  public static class TestLawOfCosines extends TestShapesGeo {
-
-    @Override
-    protected SpatialContext getContext() {
-      DistanceUnits units = DistanceUnits.KILOMETERS;
-      return new SimpleSpatialContext(units,
-          new GeodesicSphereDistCalc.LawOfCosines(units.earthRadius()),
-          SpatialContext.GEO_WORLDBOUNDS);
+  @Override
+  protected SpatialContext getContext() {
+    DistanceUnits units = DistanceUnits.KILOMETERS;
+    DistanceCalculator distCalc = new GeodesicSphereDistCalc.Haversine(units.earthRadius());//default
+    switch(random.nextInt(3)) {
+      case 2:
+        //TODO ENABLE WHEN WORKING
+        //distCalc = new GeodesicSphereDistCalc.LawOfCosines(units.earthRadius());
+        break;
+      case 1:
+        distCalc = new GeodesicSphereDistCalc.Vincenty(units.earthRadius());
+        break;
     }
+    return new SimpleSpatialContext(units,
+        distCalc,
+        SpatialContext.GEO_WORLDBOUNDS);
   }
 
-  public static class TestHaversine extends TestShapesGeo {
-
-    @Override
-    protected SpatialContext getContext() {
-      DistanceUnits units = DistanceUnits.KILOMETERS;
-      return new SimpleSpatialContext(units,
-          new GeodesicSphereDistCalc.Haversine(units.earthRadius()),
-          SpatialContext.GEO_WORLDBOUNDS);
-    }
-  }
-
-  public static class TestVincentySphere extends TestShapesGeo {
-
-    @Override
-    protected SpatialContext getContext() {
-      DistanceUnits units = DistanceUnits.KILOMETERS;
-      return new SimpleSpatialContext(units,
-          new GeodesicSphereDistCalc.Vincenty(units.earthRadius()),
-          SpatialContext.GEO_WORLDBOUNDS);
-    }
-  }
 }

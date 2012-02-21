@@ -218,7 +218,7 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
         default: fail(""+ic);
       }
     }
-    System.out.println("Laps: "+laps);
+    //System.out.println("Laps: "+laps);
 
     //TODO deliberately test INTERSECTS based on known intersection point
   }
