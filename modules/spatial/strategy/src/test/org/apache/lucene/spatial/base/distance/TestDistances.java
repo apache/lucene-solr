@@ -26,9 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- * @author David Smiley - dsmiley@mitre.org
- */
+
 public class TestDistances extends LuceneTestCase {
 
   //NOTE!  These are sometimes modified by tests.

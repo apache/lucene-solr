@@ -25,9 +25,7 @@ import org.apache.lucene.spatial.base.prefix.quad.QuadPrefixTree;
 
 import java.util.Map;
 
-/**
- * @author dsmiley
- */
+
 public abstract class SpatialPrefixTreeFactory {
 
   private static final double DEFAULT_GEO_MAX_DETAIL_KM = 0.001;//1m

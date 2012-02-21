@@ -27,9 +27,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author David Smiley - dsmiley@mitre.org
- */
+
 public class SpatialPrefixTreeTest {
 
   //TODO plug in others and test them

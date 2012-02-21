@@ -22,9 +22,7 @@ import org.apache.lucene.spatial.base.shape.SpatialRelation;
 import org.apache.lucene.spatial.base.shape.Point;
 import org.apache.lucene.spatial.base.shape.Rectangle;
 
-/**
- * @author David Smiley - dsmiley@mitre.org
- */
+
 public class GeoCircleImpl extends CircleImpl {
   private final double distDEG;// [0 TO 180]
   private final GeoCircleImpl inverseCircle;//when distance reaches > 1/2 way around the world, cache the inverse.

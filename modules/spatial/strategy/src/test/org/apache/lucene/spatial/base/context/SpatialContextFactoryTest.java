@@ -28,9 +28,7 @@ import java.util.Map;
 
 import static junit.framework.Assert.assertEquals;
 
-/**
- * @author dsmiley
- */
+
 public class SpatialContextFactoryTest {
   public static final String PROP = "SpatialContextFactory";
 

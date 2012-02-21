@@ -26,8 +26,6 @@ import java.util.Map;
 
 /**
  * Factory for a SpatialContext.
- * is 
- * @author dsmiley
  */
 public abstract class SpatialContextFactory {
   protected Map<String, String> args;

@@ -26,9 +26,7 @@ import java.util.Random;
 
 import static org.apache.lucene.spatial.base.shape.SpatialRelation.*;
 
-/**
- * @author David Smiley - dsmiley@mitre.org
- */
+
 public abstract class AbstractTestShapes extends LuceneTestCase {
 
   protected SpatialContext ctx;

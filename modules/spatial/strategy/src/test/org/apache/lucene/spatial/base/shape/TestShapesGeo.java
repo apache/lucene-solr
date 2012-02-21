@@ -26,9 +26,7 @@ import org.junit.Test;
 
 import static org.apache.lucene.spatial.base.shape.SpatialRelation.*;
 
-/**
- * @author David Smiley - dsmiley@mitre.org
- */
+
 public class TestShapesGeo extends AbstractTestShapes {
 
   @Test

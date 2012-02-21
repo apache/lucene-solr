@@ -25,7 +25,6 @@ import static java.lang.Math.toRadians;
 
 /**
  * A base class for a Distance Calculator that assumes a spherical earth model.
- * @author dsmiley
  */
 public abstract class GeodesicSphereDistCalc extends AbstractDistanceCalculator {
   protected final double radius;

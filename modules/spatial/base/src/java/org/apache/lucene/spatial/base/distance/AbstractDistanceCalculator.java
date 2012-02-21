@@ -19,9 +19,7 @@ package org.apache.lucene.spatial.base.distance;
 
 import org.apache.lucene.spatial.base.shape.Point;
 
-/**
- * @author David Smiley - dsmiley@mitre.org
- */
+
 public abstract class AbstractDistanceCalculator implements DistanceCalculator {
 
   @Override

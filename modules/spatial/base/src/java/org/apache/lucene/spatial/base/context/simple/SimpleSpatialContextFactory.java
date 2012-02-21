@@ -20,9 +20,7 @@ package org.apache.lucene.spatial.base.context.simple;
 import org.apache.lucene.spatial.base.context.SpatialContext;
 import org.apache.lucene.spatial.base.context.SpatialContextFactory;
 
-/**
-* @author dsmiley
-*/
+
 public class SimpleSpatialContextFactory extends SpatialContextFactory {
   @Override
   protected SpatialContext newSpatialContext() {

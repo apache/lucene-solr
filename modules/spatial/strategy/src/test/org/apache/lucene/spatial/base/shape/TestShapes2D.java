@@ -26,9 +26,7 @@ import static org.apache.lucene.spatial.base.shape.SpatialRelation.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author dsmiley
- */
+
 public class TestShapes2D extends AbstractTestShapes {
 
   @Override
