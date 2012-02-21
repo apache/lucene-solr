@@ -559,7 +559,7 @@ public class CheckIndex {
         segInfoStat.fieldNormStatus = testFieldNorms(fieldInfos, reader);
 
         // Test the Term Index
-        segInfoStat.termIndexStatus = testTermIndex(info, reader);
+        segInfoStat.termIndexStatus = testTermIndex(info, fieldInfos, reader);
 
         // Test Stored Fields
         segInfoStat.storedFieldStatus = testStoredFields(info, reader, nf);
@@ -653,7 +653,7 @@ public class CheckIndex {
   /**
    * Test the term index.
    */
-  private Status.TermIndexStatus testTermIndex(SegmentInfo info, SegmentReader reader) {
+  private Status.TermIndexStatus testTermIndex(SegmentInfo info, FieldInfos fieldInfos, SegmentReader reader) {
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
 
     final IndexSearcher is = new IndexSearcher(reader);
@@ -671,11 +671,27 @@ public class CheckIndex {
 
       final int maxDoc = reader.maxDoc();
       Term lastTerm = null;
+      String lastField = null;
       while (termEnum.next()) {
         status.termCount++;
         final Term term = termEnum.term();
-        lastTerm = term;
 
+        if (lastTerm != null && term.compareTo(lastTerm) <= 0) {
+          throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
+        }
+        lastTerm = term;
+        
+        if (term.field != lastField) {
+          // field change: verify its in fieldinfos, and that its indexed.
+          FieldInfo fi = fieldInfos.fieldInfo(term.field);
+          if (fi == null) {
+            throw new RuntimeException("terms inconsistent with fieldInfos, no fieldInfos for: " + term.field);
+          }
+          if (!fi.isIndexed) {
+            throw new RuntimeException("terms inconsistent with fieldInfos, isIndexed == false for: " + term.field);
+          }
+          lastField = term.field;
+        }
         final int docFreq = termEnum.docFreq();
         if (docFreq <= 0) {
           throw new RuntimeException("docfreq: " + docFreq + " is out of bounds");
