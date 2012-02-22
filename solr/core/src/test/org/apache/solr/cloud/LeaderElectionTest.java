@@ -161,7 +161,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   private String getLeaderUrl(final String collection, final String slice)
       throws KeeperException, InterruptedException {
     int iterCount = 60;
-    while (iterCount-- > 0)
+    while (iterCount-- > 0) {
       try {
         byte[] data = zkClient.getData(
             ZkStateReader.getShardLeadersPath(collection, slice), null, null,
@@ -172,6 +172,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       } catch (NoNodeException e) {
         Thread.sleep(500);
       }
+    }
+    zkClient.printLayoutToStdOut();
     throw new RuntimeException("Could not get leader props");
   }
 
