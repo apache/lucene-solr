@@ -577,6 +577,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     public synchronized void initWritableLiveDocs() throws IOException {
       assert Thread.holdsLock(IndexWriter.this);
+      assert info.docCount > 0;
       //System.out.println("initWritableLivedocs seg=" + info + " liveDocs=" + liveDocs + " shared=" + shared);
       if (shared) {
         // Copy on write: this means we've cloned a
