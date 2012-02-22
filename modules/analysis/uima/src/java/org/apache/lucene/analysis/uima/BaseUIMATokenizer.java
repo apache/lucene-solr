@@ -42,7 +42,7 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   protected BaseUIMATokenizer(Reader reader, String descriptorPath) {
     super(reader);
     try {
-      ae = AEProviderFactory.getInstance().getAEProvider("", descriptorPath).getAE();
+      ae = AEProviderFactory.getInstance().getAEProvider(descriptorPath).getAE();
       cas = ae.newCAS();
     } catch (ResourceInitializationException e) {
       throw new RuntimeException(e);
