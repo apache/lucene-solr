@@ -22,7 +22,10 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FilterAtomicReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.MultiReader;
@@ -31,6 +34,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetIterator;
 
@@ -336,9 +340,8 @@ public class TestDocSet extends LuceneTestCase {
   }
   ***/
 
-  public IndexReader dummyIndexReader(final int maxDoc) {
-    // TODO FIXME: THIS IS HEAVY BROKEN AND ILLEGAL TO DO (null delegate):
-    IndexReader r = new FilterAtomicReader(null) {
+  public AtomicReader dummyIndexReader(final int maxDoc) {
+    return new AtomicReader() {
       @Override
       public int maxDoc() {
         return maxDoc;
@@ -358,8 +361,40 @@ public class TestDocSet extends LuceneTestCase {
       public FieldInfos getFieldInfos() {
         return new FieldInfos();
       }
+
+      @Override
+      public Bits getLiveDocs() {
+        return null;
+      }
+
+      @Override
+      public Fields fields() {
+        return null;
+      }
+
+      @Override
+      public Fields getTermVectors(int doc) {
+        return null;
+      }
+
+      @Override
+      public DocValues normValues(String field) {
+        return null;
+      }
+
+      @Override
+      public DocValues docValues(String field) {
+        return null;
+      }
+
+      @Override
+      protected void doClose() {
+      }
+
+      @Override
+      public void document(int doc, StoredFieldVisitor visitor) {
+      }
     };
-    return r;
   }
 
   public IndexReader dummyMultiReader(int nSeg, int maxDoc) throws IOException {

@@ -30,7 +30,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestReaderClosed extends LuceneTestCase {
-  private IndexSearcher searcher;
   private IndexReader reader;
   private Directory dir;
 
@@ -54,12 +53,12 @@ public class TestReaderClosed extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    searcher = newSearcher(reader, /* TODO: change that back to true and add better test,
-      so wrapped readers are explicitely checked, see LUCENE-3800: */ false);
     writer.close();
   }
   
   public void test() throws Exception {
+    assertTrue(reader.getRefCount() > 0);
+    IndexSearcher searcher = newSearcher(reader);
     TermRangeQuery query = TermRangeQuery.newStringRange("field", "a", "z", true, true);
     searcher.search(query, 5);
     reader.close();
@@ -67,6 +66,25 @@ public class TestReaderClosed extends LuceneTestCase {
       searcher.search(query, 5);
     } catch (AlreadyClosedException ace) {
       // expected
+    }
+  }
+  
+  // LUCENE-3800
+  public void testReaderChaining() throws Exception {
+    assertTrue(reader.getRefCount() > 0);
+    IndexReader wrappedReader = SlowCompositeReaderWrapper.wrap(reader);
+    wrappedReader = new ParallelAtomicReader((AtomicReader) wrappedReader);
+    IndexSearcher searcher = newSearcher(wrappedReader);
+    TermRangeQuery query = TermRangeQuery.newStringRange("field", "a", "z", true, true);
+    searcher.search(query, 5);
+    reader.close(); // close original child reader
+    try {
+      searcher.search(query, 5);
+    } catch (AlreadyClosedException ace) {
+      assertEquals(
+        "this IndexReader cannot be used anymore as one of its child readers was closed",
+        ace.getMessage()
+      );
     }
   }
   

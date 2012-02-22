@@ -282,6 +282,7 @@ public class FilterAtomicReader extends AtomicReader {
   public FilterAtomicReader(AtomicReader in) {
     super();
     this.in = in;
+    in.registerParentReader(this);
   }
 
   @Override

@@ -36,11 +36,13 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
     boolean hasDeletions = false;
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
-      maxDoc += subReaders[i].maxDoc();      // compute maxDocs
-      numDocs += subReaders[i].numDocs();    // compute numDocs
-      if (subReaders[i].hasDeletions()) {
+      final IndexReader r = subReaders[i];
+      maxDoc += r.maxDoc();      // compute maxDocs
+      numDocs += r.numDocs();    // compute numDocs
+      if (r.hasDeletions()) {
         hasDeletions = true;
       }
+      r.registerParentReader(this);
     }
     starts[subReaders.length] = maxDoc;
     this.maxDoc = maxDoc;

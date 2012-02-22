@@ -131,10 +131,11 @@ public final class ParallelAtomicReader extends AtomicReader {
     }
 
     // do this finally so any Exceptions occurred before don't affect refcounts:
-    if (!closeSubReaders) {
-      for (AtomicReader reader : completeReaderSet) {
+    for (AtomicReader reader : completeReaderSet) {
+      if (!closeSubReaders) {
         reader.incRef();
       }
+      reader.registerParentReader(this);
     }
   }
 
@@ -216,11 +217,6 @@ public final class ParallelAtomicReader extends AtomicReader {
   @Override
   public Fields fields() {
     ensureOpen();
-    // we cache the inner field instances, so we must check
-    // that the delegate readers are really still open:
-    for (final AtomicReader reader : parallelReaders) {
-      reader.ensureOpen();
-    }
     return fields;
   }
   
