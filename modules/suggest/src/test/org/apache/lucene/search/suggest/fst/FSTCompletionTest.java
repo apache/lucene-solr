@@ -175,7 +175,6 @@ public class FSTCompletionTest extends LuceneTestCase {
     }
   }  
 
-  @Nightly
   public void testMultilingualInput() throws Exception {
     List<TermFreq> input = LookupBenchmarkTest.readTop50KWiki();
 
@@ -198,7 +197,6 @@ public class FSTCompletionTest extends LuceneTestCase {
     assertMatchEquals(completion.lookup("", 10));
   }
 
-  @Nightly
   public void testRandom() throws Exception {
     List<TermFreq> freqs = new ArrayList<TermFreq>();
     Random rnd = random;
