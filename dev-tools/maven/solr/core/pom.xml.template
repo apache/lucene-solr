@@ -108,7 +108,12 @@
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-spatial</artifactId>
+      <artifactId>lucene-spatial-base</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-spatial-strategy</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

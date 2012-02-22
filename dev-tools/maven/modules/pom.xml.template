@@ -38,6 +38,7 @@
     <module>join</module>
     <module>queries</module>
     <module>queryparser</module>
+    <module>spatial</module>
     <module>suggest</module>
   </modules>
   <build>

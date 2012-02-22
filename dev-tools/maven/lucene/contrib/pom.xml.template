@@ -36,7 +36,6 @@
     <module>memory</module>
     <module>misc</module>
     <module>sandbox</module>
-    <module>spatial</module>
   </modules>
   <build>
     <directory>build/lucene-contrib-aggregator</directory>
