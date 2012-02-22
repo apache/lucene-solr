@@ -29,6 +29,7 @@
     <!--
     <fileset dir="lib" includes="*.jar"/>
     -->
+    <!-- TODO why is this necessary if we put <pathelement path="${spatial-base.jar}" /> in classpath? -->
     <pathelement path="../base/build/classes/java" />
     <fileset dir="../base/lib" includes="*.jar"/>
   </path>
@@ -38,6 +39,7 @@
 
   <path id="classpath">
     <path refid="base.classpath"/>
+    <pathelement path="${spatial-base.jar}" />
     <pathelement path="${queries.jar}" />
   </path>
 
@@ -49,7 +51,7 @@
   </path>
 
   <target name="dist-maven" depends="jar-core,javadocs,common.dist-maven"/>
-  <target name="compile" depends="jar-queries,common.compile-core" />
+  <target name="compile" depends="jar-spatial-base,jar-queries,common.compile-core" />
   <target name="test" depends="jar-analyzers-common,compile-test,validate,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
 
 </project>

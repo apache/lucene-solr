@@ -86,7 +86,8 @@
   	<pathelement path="${highlighter.jar}"/>
   	<pathelement path="${memory.jar}"/>
   	<pathelement path="${misc.jar}"/>
-  	<pathelement path="${spatial.jar}"/>
+  	<pathelement path="${spatial-base.jar}"/>
+  	<pathelement path="${spatial-strategy.jar}"/>
   	<pathelement path="${suggest.jar}"/>
     <pathelement path="${grouping.jar}"/>
     <pathelement path="${queries.jar}"/>
@@ -133,7 +134,7 @@
 
   <target name="prep-lucene-jars" 
   	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-suggest, jar-highlighter, jar-memory,
-  	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser">
+  	               jar-misc, jar-spatial-base, jar-spatial-strategy, jar-grouping, jar-queries, jar-queryparser">
   	  <property name="solr.deps.compiled" value="true"/>
   </target>
 	
@@ -155,7 +156,8 @@
       <fileset file="${highlighter.jar}" />
       <fileset file="${memory.jar}" />
       <fileset file="${misc.jar}" />
-      <fileset file="${spatial.jar}" />
+      <fileset file="${spatial-base.jar}" />
+      <fileset file="${spatial-strategy.jar}" />
     </copy>
     </sequential>
   </target>
