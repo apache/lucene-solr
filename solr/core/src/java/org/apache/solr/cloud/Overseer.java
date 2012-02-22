@@ -494,9 +494,9 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
                 try {
                     List<String> liveNodes = zkClient.getChildren(
                         ZkStateReader.LIVE_NODES_ZKNODE, this, true);
-                    Set<String> liveNodesSet = new HashSet<String>();
-                    liveNodesSet.addAll(liveNodes);
-                    processLiveNodesChanged(nodeStateWatches.keySet(), liveNodes);
+                    synchronized (nodeStateWatches) {
+                      processLiveNodesChanged(nodeStateWatches.keySet(), liveNodes);
+                    }
                 } catch (KeeperException e) {
                   if (e.code() == KeeperException.Code.SESSIONEXPIRED
                       || e.code() == KeeperException.Code.CONNECTIONLOSS) {
@@ -528,7 +528,9 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
     
     Set<String> downNodes = complement(oldLiveNodes, liveNodes);
     for(String node: downNodes) {
-      NodeStateWatcher watcher = nodeStateWatches.remove(node);
+      synchronized (nodeStateWatches) {
+        NodeStateWatcher watcher = nodeStateWatches.remove(node);
+      }
       log.debug("Removed NodeStateWatcher for node:" + node);
     }
   }
