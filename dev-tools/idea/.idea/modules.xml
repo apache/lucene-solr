@@ -9,7 +9,6 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/memory/memory.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/misc/misc.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/sandbox/sandbox.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/spatial/spatial.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/common/analysis-common.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/icu/icu.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/kuromoji/kuromoji.iml" />
@@ -24,6 +23,8 @@
       <module filepath="$PROJECT_DIR$/modules/join/join.iml" />
       <module filepath="$PROJECT_DIR$/modules/queries/queries.iml" />
       <module filepath="$PROJECT_DIR$/modules/queryparser/queryparser.iml" />
+      <module filepath="$PROJECT_DIR$/modules/spatial/base/spatial-base.iml" />
+      <module filepath="$PROJECT_DIR$/modules/spatial/strategy/spatial-strategy.iml" />
       <module filepath="$PROJECT_DIR$/modules/suggest/suggest.iml" />
       <module filepath="$PROJECT_DIR$/solr/solr.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/analysis-extras/analysis-extras.iml" />

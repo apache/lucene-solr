@@ -21,7 +21,8 @@
     <orderEntry type="library" name="Solr library" level="project" />
     <orderEntry type="library" name="Solr example library" level="project" />
     <orderEntry type="module" module-name="kuromoji" />
-    <orderEntry type="module" module-name="spatial" />
+    <orderEntry type="module" module-name="spatial-base" />
+    <orderEntry type="module" module-name="spatial-strategy" />
     <orderEntry type="module" module-name="grouping" />
     <orderEntry type="module" module-name="highlighter" />
     <orderEntry type="module" module-name="icu" />
