@@ -532,7 +532,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     public synchronized boolean delete(int docID) {
       assert liveDocs != null;
-      assert docID >= 0 && docID < liveDocs.length();
+      assert docID >= 0 && docID < liveDocs.length() : "out of bounds: docid=" + docID + ",liveDocsLength=" + liveDocs.length();
       assert !shared;
       final boolean didDelete = liveDocs.get(docID);
       if (didDelete) {
