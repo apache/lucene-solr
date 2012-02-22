@@ -69,7 +69,11 @@ public abstract class FilteredDocIdSet extends DocIdSet {
    */
   @Override
   public DocIdSetIterator iterator() throws IOException {
-    return new FilteredDocIdSetIterator(_innerSet.iterator()) {
+    final DocIdSetIterator iterator = _innerSet.iterator();
+    if (iterator == null) {
+      return null;
+    }
+    return new FilteredDocIdSetIterator(iterator) {
       @Override
       protected boolean match(int docid) throws IOException {
         return FilteredDocIdSet.this.match(docid);
