@@ -37,12 +37,8 @@
   <target name="compile" depends="base,strategy" />
 
   <target name="clean">
-    <!-- Not sure why this does not work
     <ant dir="base" target="clean" />
     <ant dir="strategy" target="clean" />
-    -->
-    <delete dir="build"/>
-    <delete dir="dist"/>
   </target>
   
   <target name="validate">

@@ -32,7 +32,6 @@
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 
   <path id="classpath">
-    <pathelement path="${spatial-base.jar}"/>
     <path refid="base.classpath"/>
   </path>
 

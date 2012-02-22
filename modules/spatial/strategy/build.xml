@@ -17,7 +17,7 @@
 
 <project name="spatial-strategy" default="default">
   <description>
-    Lucene [Geo]Spatial Strageties
+    Lucene [Geo]Spatial Strategies
   </description>
 
   <property name="build.dir" location="../build/strategy" />
@@ -29,7 +29,7 @@
     <!--
     <fileset dir="lib" includes="*.jar"/>
     -->
-    <fileset dir="../build/base" includes="*.jar"/>
+    <pathelement path="../base/build/classes/java" />
     <fileset dir="../base/lib" includes="*.jar"/>
   </path>
   <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
