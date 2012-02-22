@@ -1372,7 +1372,12 @@ public abstract class LuceneTestCase extends Assert {
               r = new FilterAtomicReader((AtomicReader) r) {
                 @Override
                 public Fields fields() throws IOException {
-                  return new FilterFields(super.fields());
+                  Fields f = super.fields();
+                  if (f == null) {
+                    return null;
+                  } else {
+                    return new FilterFields(f);
+                  }
                 }
               };
             }
