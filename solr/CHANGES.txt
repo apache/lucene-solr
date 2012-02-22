@@ -425,6 +425,7 @@ Other Changes
 * SOLR-3005: Default QueryResponseWriters are now initialized via init() with an empty
   NamedList. (Gasol Wu, Chris Male)
 
+* SOLR-2607: Removed obsolete client/ folder (ehatcher, Eric Pugh, janhoy)
 
 Documentation
 ----------------------

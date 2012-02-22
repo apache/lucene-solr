@@ -32,7 +32,8 @@ See the "example" directory for an example Solr setup.  A tutorial
 using the example setup can be found at
 http://lucene.apache.org/solr/tutorial.html
 or in in "docs/tutorial.html" in a binary distribution.
-
+Also, there are Solr clients for many programming languages, see 
+http://wiki.apache.org/solr/IntegratingSolr
 
 
 Files included in an Apache Solr binary distribution
