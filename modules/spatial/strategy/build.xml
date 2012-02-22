@@ -29,8 +29,6 @@
     <!--
     <fileset dir="lib" includes="*.jar"/>
     -->
-    <!-- TODO why is this necessary if we put <pathelement path="${spatial-base.jar}" /> in classpath? -->
-    <pathelement path="../base/build/classes/java" />
     <fileset dir="../base/lib" includes="*.jar"/>
   </path>
   <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />

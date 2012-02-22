@@ -228,7 +228,7 @@
     <property name="sandbox.uptodate" value="true"/>
   </target>
 
-  <property name="spatial-base.jar" value="${common.dir}/../modules/spatial/base/build/lucene-spatial-base-${version}.jar"/>
+  <property name="spatial-base.jar" value="${common.dir}/../modules/spatial/build/base/lucene-spatial-base-${version}.jar"/>
   <target name="check-spatial-base-uptodate" unless="spatial-base.uptodate">
     <module-uptodate name="spatial/base" jarfile="${spatial-base.jar}" property="spatial-base.uptodate"/>
   </target>
@@ -239,7 +239,7 @@
     <property name="spatial-base.uptodate" value="true"/>
   </target>
 
-  <property name="spatial-strategy.jar" value="${common.dir}/../modules/spatial/strategy/build/lucene-spatial-strategy-${version}.jar"/>
+  <property name="spatial-strategy.jar" value="${common.dir}/../modules/spatial/build/strategy/lucene-spatial-strategy-${version}.jar"/>
   <target name="check-spatial-strategy-uptodate" unless="spatial-strategy.uptodate">
     <module-uptodate name="spatial/strategy" jarfile="${spatial-strategy.jar}" property="spatial-strategy.uptodate"/>
   </target>
