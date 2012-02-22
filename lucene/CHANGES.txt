@@ -911,6 +911,11 @@ Bug fixes
   These checks now use getFilePointer instead to avoid this.
   (Jamir Shaikh, Mike McCandless, Robert Muir)
 
+* LUCENE-3816: Fixed problem in FilteredDocIdSet, if null was returned
+  from the delegate DocIdSet.iterator(), which is allowed to return
+  null by DocIdSet specification when no documents match.
+  (Shay Banon via Uwe Schindler)
+
 Optimizations
 
 * LUCENE-3653: Improve concurrency in VirtualMethod and AttributeSource by
