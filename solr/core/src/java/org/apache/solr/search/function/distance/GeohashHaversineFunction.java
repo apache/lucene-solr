@@ -20,10 +20,15 @@ package org.apache.solr.search.function.distance;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
-import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.spatial.geohash.GeoHashUtils;
+import org.apache.lucene.spatial.base.context.SpatialContext;
+import org.apache.lucene.spatial.base.context.simple.SimpleSpatialContext;
+import org.apache.lucene.spatial.base.distance.DistanceCalculator;
+import org.apache.lucene.spatial.base.distance.DistanceUnits;
+import org.apache.lucene.spatial.base.distance.GeodesicSphereDistCalc;
+import org.apache.lucene.spatial.base.prefix.geohash.GeohashUtils;
+import org.apache.lucene.spatial.base.shape.Point;
 
 import java.util.Map;
 import java.io.IOException;
@@ -43,11 +48,14 @@ public class GeohashHaversineFunction extends ValueSource {
 
   private ValueSource geoHash1, geoHash2;
   private double radius;
+  private final SpatialContext ctx;
 
   public GeohashHaversineFunction(ValueSource geoHash1, ValueSource geoHash2, double radius) {
     this.geoHash1 = geoHash1;
     this.geoHash2 = geoHash2;
     this.radius = radius;
+    DistanceCalculator distCalc = new GeodesicSphereDistCalc.Haversine(radius);
+    this.ctx = new SimpleSpatialContext(DistanceUnits.KILOMETERS,distCalc,null);
   }
 
   protected String name() {
@@ -82,10 +90,9 @@ public class GeohashHaversineFunction extends ValueSource {
     if (h1 != null && h2 != null && h1.equals(h2) == false){
       //TODO: If one of the hashes is a literal value source, seems like we could cache it
       //and avoid decoding every time
-      double[] h1Pair = GeoHashUtils.decode(h1);
-      double[] h2Pair = GeoHashUtils.decode(h2);
-      result = DistanceUtils.haversine(Math.toRadians(h1Pair[0]), Math.toRadians(h1Pair[1]),
-              Math.toRadians(h2Pair[0]), Math.toRadians(h2Pair[1]), radius);
+      Point p1 = GeohashUtils.decode(h1,ctx);
+      Point p2 = GeohashUtils.decode(h2,ctx);
+      result = ctx.getDistCalc().distance(p1, p2);
     } else if (h1 == null || h2 == null){
       result = Double.MAX_VALUE;
     }
