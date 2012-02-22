@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -77,6 +76,7 @@ public final class ZkController {
   private final static Pattern URL_POST = Pattern.compile("https?://(.*)");
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
+  private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
   // package private for tests
 
@@ -104,7 +104,6 @@ public final class ZkController {
 
   private LeaderElector overseerElector;
   
-  private boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 
   // this can be null in which case recovery will be inactive
   private CoreContainer cc;
@@ -633,7 +632,10 @@ public final class ZkController {
       final String shardZkNodeName, String shardId, ZkNodeProps leaderProps,
       SolrCore core, CoreContainer cc) throws InterruptedException,
       KeeperException, IOException, ExecutionException {
-
+    if (SKIP_AUTO_RECOVERY) {
+      log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
+      return false;
+    }
     boolean doRecovery = true;
     if (!isLeader) {
       
@@ -641,7 +643,7 @@ public final class ZkController {
         doRecovery = false;
       }
       
-      if (doRecovery && !SKIP_AUTO_RECOVERY) {
+      if (doRecovery) {
         log.info("Core needs to recover:" + core.getName());
         core.getUpdateHandler().getSolrCoreState().doRecovery(core);
         return true;

@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 public final class DefaultSolrCoreState extends SolrCoreState {
   public static Logger log = LoggerFactory.getLogger(DefaultSolrCoreState.class);
   
+  private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
+  
   private final Object recoveryLock = new Object();
   private int refCnt = 1;
   private SolrIndexWriter indexWriter = null;
@@ -112,6 +114,11 @@ public final class DefaultSolrCoreState extends SolrCoreState {
 
   @Override
   public void doRecovery(SolrCore core) {
+    if (SKIP_AUTO_RECOVERY) {
+      log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
+      return;
+    }
+    
     cancelRecovery();
     synchronized (recoveryLock) {
       while (recoveryRunning) {
