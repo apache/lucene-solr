@@ -310,7 +310,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
    // TODO: enable when we don't falsly get slice1... 
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice1", 30000);
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice2", 30000);
-    
     client2.add(getDoc(id, "1")); 
     client3.add(getDoc(id, "2")); 
     client4.add(getDoc(id, "3")); 
@@ -343,7 +342,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     zkStateReader.updateCloudState(true);
     Map<String,Slice> slices = zkStateReader.getCloudState().getSlices(oneInstanceCollection2);
     assertNotNull(slices);
-    String roles = slices.get("shard1").getShards().values().iterator().next().get(ZkStateReader.ROLES_PROP);
+    String roles = slices.get("slice1").getShards().values().iterator().next().get(ZkStateReader.ROLES_PROP);
     assertEquals("none", roles);
   }
 
