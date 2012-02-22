@@ -123,7 +123,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           core = startupCore;
         }
         if (core == null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Core not found:" + coreName);
+          zkClient.delete(leaderSeqPath, -1, true);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Fatal Error, SolrCore not found:" + coreName + " in " + cc.getCoreNames());
         }
         // should I be leader?
         if (weAreReplacement && !shouldIBeLeader(leaderProps)) {
@@ -131,7 +132,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           rejoinLeaderElection(leaderSeqPath, core);
           return;
         }
-        
+
         if (weAreReplacement) {
           if (zkClient.exists(leaderPath, true)) {
             zkClient.delete(leaderPath, -1, true);
@@ -139,19 +140,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 //          System.out.println("I may be the new Leader:" + leaderPath
 //              + " - I need to try and sync");
           boolean success = syncStrategy.sync(zkController, core, leaderProps);
-          if (!success) {
-            // TODO: what if no one can be the leader in a loop?
-            // perhaps we look down the list and if no one is active, we
-            // accept leader role anyhow
-            core.getUpdateHandler().getSolrCoreState().doRecovery(core);
-            
+          if (!success && anyoneElseActive()) {
             rejoinLeaderElection(leaderSeqPath, core);
             return;
           } 
         }
         
         // If I am going to be the leader I have to be active
-        
+        // System.out.println("I am leader go active");
         core.getUpdateHandler().getSolrCoreState().cancelRecovery();
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
         
@@ -169,14 +165,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private void rejoinLeaderElection(String leaderSeqPath, SolrCore core)
       throws InterruptedException, KeeperException, IOException {
     // remove our ephemeral and re join the election
-   // System.out.println("sync failed, delete our election node:"
-   //     + leaderSeqPath);
+    // System.out.println("sync failed, delete our election node:"
+    // + leaderSeqPath);
+
     zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+    
     zkClient.delete(leaderSeqPath, -1, true);
     
     core.getUpdateHandler().getSolrCoreState().doRecovery(core);
     
-    leaderElector.joinElection(this, null);
+    leaderElector.joinElection(this, null); // don't pass core, pass null
   }
   
   private boolean shouldIBeLeader(ZkNodeProps leaderProps) {
@@ -208,6 +206,26 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     }
     
     return !foundSomeoneElseActive;
+  }
+  
+  private boolean anyoneElseActive() {
+    CloudState cloudState = zkController.getZkStateReader().getCloudState();
+    Map<String,Slice> slices = cloudState.getSlices(this.collection);
+    Slice slice = slices.get(shardId);
+    Map<String,ZkNodeProps> shards = slice.getShards();
+
+    for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
+      String state = shard.getValue().get(ZkStateReader.STATE_PROP);
+
+      
+      if ((state.equals(ZkStateReader.ACTIVE))
+          && cloudState.liveNodesContain(shard.getValue().get(
+              ZkStateReader.NODE_NAME_PROP))) {
+        return true;
+      }
+    }
+    
+    return false;
   }
   
 }
