@@ -108,7 +108,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
         }
     }
     mgr = new MultiThreadedHttpConnectionManager();
-    mgr.getParams().setDefaultMaxConnectionsPerHost(20);
+    mgr.getParams().setDefaultMaxConnectionsPerHost(256);
     mgr.getParams().setMaxTotalConnections(10000);
     mgr.getParams().setConnectionTimeout(connectionTimeout);
     mgr.getParams().setSoTimeout(soTimeout);
