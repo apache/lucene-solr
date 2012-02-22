@@ -184,7 +184,7 @@ public class FSTCompletionTest extends LuceneTestCase {
 
     for (TermFreq tf : input) {
       assertTrue("Not found: " + tf.term, lookup.get(tf.term.utf8ToString()) != null);
-      assertEquals(tf.term, lookup.lookup(tf.term.utf8ToString(), true, 1).get(0).key);
+      assertEquals(tf.term.utf8ToString(), lookup.lookup(tf.term.utf8ToString(), true, 1).get(0).key);
     }
 
     List<LookupResult> result = lookup.lookup("wit", true, 5);
