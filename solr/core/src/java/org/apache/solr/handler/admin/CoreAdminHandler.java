@@ -36,6 +36,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -645,20 +646,21 @@ public class CoreAdminHandler extends RequestHandlerBase {
             .getZkController()
             .getCloudState();
         String collection = cloudDescriptor.getCollectionName();
-        ZkNodeProps nodeProps = 
-            cloudState.getSlice(collection,
-                cloudDescriptor.getShardId()).getShards().get(coreNodeName);
-        
-        if (nodeProps != null) {
-          state = nodeProps.get(ZkStateReader.STATE_PROP);
-          live = cloudState.liveNodesContain(nodeName);
-          if (nodeProps != null && state.equals(waitForState)) {
-            if (checkLive == null) {
-              break;
-            } else if (checkLive && live) {
-              break;
-            } else if (!checkLive && !live) {
-              break;
+        Slice slice = cloudState.getSlice(collection,
+            cloudDescriptor.getShardId());
+        if (slice != null) {
+          ZkNodeProps nodeProps = slice.getShards().get(coreNodeName);
+          if (nodeProps != null) {
+            state = nodeProps.get(ZkStateReader.STATE_PROP);
+            live = cloudState.liveNodesContain(nodeName);
+            if (nodeProps != null && state.equals(waitForState)) {
+              if (checkLive == null) {
+                break;
+              } else if (checkLive && live) {
+                break;
+              } else if (!checkLive && !live) {
+                break;
+              }
             }
           }
         }
