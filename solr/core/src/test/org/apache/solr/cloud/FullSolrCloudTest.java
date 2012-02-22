@@ -1265,6 +1265,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     super.tearDown();
     
     System.clearProperty("zkHost");
+    System.clearProperty("numShards");
   }
   
   protected void commit() throws Exception {
