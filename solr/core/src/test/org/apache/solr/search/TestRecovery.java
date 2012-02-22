@@ -409,6 +409,35 @@ public class TestRecovery extends SolrTestCaseJ4 {
           ,"=={'versions':[206,205,201,200,105,104]}"
       );
 
+      ulog.bufferUpdates();
+      assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+      updateJ(jsonAdd(sdoc("id","C301", "_version_","998")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","C302", "_version_","999")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      assertTrue(ulog.dropBufferedUpdates());
+
+      // make sure we can overwrite with a lower version
+      // TODO: is this functionality needed?
+      updateJ(jsonAdd(sdoc("id","C301", "_version_","301")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+      updateJ(jsonAdd(sdoc("id","C302", "_version_","302")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+      assertU(commit());
+
+      assertJQ(req("qt","/get", "getVersions","2")
+          ,"=={'versions':[302,301]}"
+      );
+
+      assertJQ(req("q", "*:*", "sort","_version_ desc", "fl","id,_version_", "rows","2")
+          , "/response/docs==["
+          + "{'id':'C302','_version_':302}"
+          + ",{'id':'C301','_version_':301}"
+          +"]"
+      );
+
+
+      updateJ(jsonAdd(sdoc("id","C2", "_version_","302")), params(SEEN_LEADER,SEEN_LEADER_VAL));
+
+
+
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {
