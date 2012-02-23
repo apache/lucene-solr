@@ -157,7 +157,34 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     assertEquals("http://127.0.0.1/solr/",
         getLeaderUrl("collection1", "shard2"));
   }
-  
+
+  @Test
+  public void testCancelElection() throws Exception {
+    LeaderElector first = new LeaderElector(zkClient);
+    ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
+        "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "1");
+    ElectionContext firstContext = new ShardLeaderElectionContextBase(first,
+        "slice1", "collection2", "dummynode1", props, zkStateReader);
+    first.setup(firstContext);
+    first.joinElection(firstContext, null);
+
+    Thread.sleep(1000);
+    assertEquals("original leader was not registered", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
+
+    LeaderElector second = new LeaderElector(zkClient);
+    props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
+        "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "2");
+    ElectionContext context = new ShardLeaderElectionContextBase(second,
+        "slice1", "collection2", "dummynode1", props, zkStateReader);
+    second.setup(context);
+    second.joinElection(context, null);
+    Thread.sleep(1000);
+    assertEquals("original leader should have stayed leader", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
+    firstContext.cancelElection();
+    Thread.sleep(1000);
+    assertEquals("new leader was not registered", "http://127.0.0.1/solr/2/", getLeaderUrl("collection2", "slice1"));
+  }
+
   private String getLeaderUrl(final String collection, final String slice)
       throws KeeperException, InterruptedException {
     int iterCount = 60;

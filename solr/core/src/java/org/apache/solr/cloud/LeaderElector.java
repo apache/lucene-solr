@@ -86,7 +86,7 @@ public  class LeaderElector {
    * @throws IOException 
    * @throws UnsupportedEncodingException
    */
-  private void checkIfIamLeader(final String leaderSeqPath, final int seq, final ElectionContext context, boolean replacement, SolrCore core) throws KeeperException,
+  private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement, SolrCore core) throws KeeperException,
       InterruptedException, IOException {
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
@@ -95,7 +95,7 @@ public  class LeaderElector {
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
     if (seq <= intSeqs.get(0)) {
-      runIamLeaderProcess(leaderSeqPath, context, replacement, core);
+      runIamLeaderProcess(context, replacement, core);
     } else {
       // I am not the leader - watch the node below me
       int i = 1;
@@ -119,7 +119,7 @@ public  class LeaderElector {
               public void process(WatchedEvent event) {
                 // am I the next leader?
                 try {
-                  checkIfIamLeader(leaderSeqPath, seq, context, true, null);
+                  checkIfIamLeader(seq, context, true, null);
                 } catch (InterruptedException e) {
                   // Restore the interrupted status
                   Thread.currentThread().interrupt();
@@ -137,16 +137,15 @@ public  class LeaderElector {
       } catch (KeeperException e) {
         // we couldn't set our watch - the node before us may already be down?
         // we need to check if we are the leader again
-        checkIfIamLeader(leaderSeqPath, seq, context, true, null);
+        checkIfIamLeader(seq, context, true, null);
       }
     }
   }
 
   // TODO: get this core param out of here
-  protected void runIamLeaderProcess(String leaderSeqPath, final ElectionContext context, boolean weAreReplacement, SolrCore core) throws KeeperException,
+  protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement, SolrCore core) throws KeeperException,
       InterruptedException, IOException {
-
-    context.runLeaderProcess(leaderSeqPath, weAreReplacement, core);
+    context.runLeaderProcess(weAreReplacement, core);
   }
   
   /**
@@ -219,6 +218,7 @@ public  class LeaderElector {
       try {
         leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
             CreateMode.EPHEMERAL_SEQUENTIAL, false);
+        context.leaderSeqPath = leaderSeqPath;
         cont = false;
       } catch (ConnectionLossException e) {
         // we don't know if we made our node or not...
@@ -249,7 +249,7 @@ public  class LeaderElector {
       }
     }
     int seq = getSeq(leaderSeqPath);
-    checkIfIamLeader(leaderSeqPath, seq, context, false, core);
+    checkIfIamLeader(seq, context, false, core);
     
     return seq;
   }
