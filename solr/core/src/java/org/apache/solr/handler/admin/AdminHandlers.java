@@ -86,6 +86,7 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
       new StandardHandler( "plugins", new PluginInfoHandler() ),
       new StandardHandler( "threads", new ThreadDumpHandler() ),
       new StandardHandler( "properties", new PropertiesRequestHandler() ),
+      new StandardHandler( "loglevel", new LogLevelHandler() ),
       new StandardHandler( "file", new ShowFileRequestHandler() )
     };
     
@@ -113,7 +114,7 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
   }
 
   public String getVersion() {
-      return "$Revision$";
+    return "$Revision$";
   }
 
   public String getSourceId() {

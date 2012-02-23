@@ -224,6 +224,9 @@ New Features
 * SOLR-3120: Optional post filtering for spatial queries bbox and geofilt
   for LatLonType. (yonik)
 
+* SOLR-2459: Expose LogLevel selection with a RequestHandler rather then servlet
+  (Stefan Matheis, Upayavira, ryan)
+
 
 Optimizations
 ----------------------
