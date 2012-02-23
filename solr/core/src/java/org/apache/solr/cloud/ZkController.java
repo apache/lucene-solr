@@ -645,7 +645,7 @@ public final class ZkController {
       
       if (doRecovery) {
         log.info("Core needs to recover:" + core.getName());
-        core.getUpdateHandler().getSolrCoreState().doRecovery(core);
+        core.getUpdateHandler().getSolrCoreState().doRecovery(cc, coreName);
         return true;
       }
     } else {

@@ -50,10 +50,13 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.xml.xpath.XPathExpressionException;
+
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4.
@@ -148,7 +151,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      if (endNumOpens-numOpens != endNumCloses-numCloses) {
        String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);
        log.error(msg);
-        testsFailed = true;
+       testsFailed = true;
+
+       // For debugging
+//       Set<Entry<SolrCore,Exception>> coreEntries = SolrCore.openHandles.entrySet(); 
+//       for (Entry<SolrCore,Exception> entry : coreEntries) {
+//         entry.getValue().printStackTrace();
+//       }
+        
         fail(msg);
      }
   }

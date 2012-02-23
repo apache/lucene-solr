@@ -74,6 +74,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     createTempDir();
+    ignoreException("No UpdateLog found - cannot sync");
     System.setProperty("zkClientTimeout", "3000");
     
     zkDir = dataDir.getAbsolutePath() + File.separator
@@ -268,6 +269,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() throws InterruptedException {
     System.clearProperty("solrcloud.skip.autorecovery");
+    resetExceptionIgnores();
     // wait just a bit for any zk client threads to outlast timeout
     Thread.sleep(2000);
   }

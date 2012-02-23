@@ -56,6 +56,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.URL;
@@ -69,6 +71,12 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class SolrCore implements SolrInfoMBean {
   public static final String version="1.0";  
 
+  // These should *only* be used for debugging or monitoring purposes
+  public static final AtomicLong numOpens = new AtomicLong();
+  public static final AtomicLong numCloses = new AtomicLong();
+  public static Map<SolrCore,Exception> openHandles = Collections.synchronizedMap(new IdentityHashMap<SolrCore,Exception>());
+
+  
   public static Logger log = LoggerFactory.getLogger(SolrCore.class);
 
   private String name;
@@ -618,6 +626,10 @@ public final class SolrCore implements SolrInfoMBean {
     // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
     // from the core.
     resourceLoader.inform(infoRegistry);
+    
+    // For debugging   
+//    numOpens.incrementAndGet();
+//    openHandles.put(this, new RuntimeException("unclosed core - name:" + getName() + " refs: " + refCount.get()));
   }
 
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {
@@ -772,6 +784,10 @@ public final class SolrCore implements SolrInfoMBean {
          }
       }
     }
+    
+    // For debugging 
+//    numCloses.incrementAndGet();
+//    openHandles.remove(this);
   }
 
   /** Current core usage count. */

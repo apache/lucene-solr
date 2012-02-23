@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
 import org.apache.solr.core.SolrCore;
@@ -69,14 +70,14 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   private ZkStateReader zkStateReader;
   private volatile String coreName;
   private int retries;
-  private SolrCore core;
   private boolean recoveringAfterStartup;
+  private CoreContainer cc;
   
-  public RecoveryStrategy(SolrCore core) {
-    this.core = core;
-    this.coreName = core.getName();
+  public RecoveryStrategy(CoreContainer cc, String name) {
+    this.cc = cc;
+    this.coreName = name;
     setName("RecoveryThread");
-    zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
+    zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
     coreZkNodeName = zkController.getNodeName() + "_" + coreName;
@@ -190,13 +191,23 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   public void run() {
     boolean replayed = false;
     boolean succesfulRecovery = false;
-
-    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-    if (ulog == null) {
-      SolrException.log(log, "No UpdateLog found - cannot recover");
-      recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
-          core.getCoreDescriptor());
+    
+    SolrCore core = cc.getCore(coreName);
+    if (core == null) {
+      SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
       return;
+    }
+    UpdateLog ulog;
+    try {
+      ulog = core.getUpdateHandler().getUpdateLog();
+      if (ulog == null) {
+        SolrException.log(log, "No UpdateLog found - cannot recover");
+        recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+            core.getCoreDescriptor());
+        return;
+      }
+    } finally {
+      core.close();
     }
 
     List<Long> startingRecentVersions;
@@ -235,6 +246,11 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     boolean firstTime = true;
 
     while (!succesfulRecovery && !close && !isInterrupted()) { // don't use interruption or it will close channels though
+      core = cc.getCore(coreName);
+      if (core == null) {
+        SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
+        return;
+      }
       try {
         // first thing we just try to sync
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
@@ -331,11 +347,15 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
               SolrException.log(log, "", t);
             }
           }
-          
+
         }
         
       } catch (Throwable t) {
         SolrException.log(log, "Error while trying to recover", t);
+      } finally {
+        if (core != null) {
+          core.close();
+        }
       }
       
       if (!succesfulRecovery) {
@@ -351,8 +371,15 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
               
             } else {
               // TODO: for now, give up after X tries - should we do more?
-              recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
-                  core.getCoreDescriptor());
+              core = cc.getCore(coreName);
+              try {
+                recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+                    core.getCoreDescriptor());
+              } finally {
+                if (core != null) {
+                  core.close();
+                }
+              }
             }
             break;
           }
@@ -369,6 +396,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           retries = INTERRUPTED;
         }
       }
+    
       
       log.info("Finished recovery process");
       

@@ -172,7 +172,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     
     zkClient.delete(leaderSeqPath, -1, true);
     
-    core.getUpdateHandler().getSolrCoreState().doRecovery(core);
+    core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getName());
     
     leaderElector.joinElection(this, null); // don't pass core, pass null
   }

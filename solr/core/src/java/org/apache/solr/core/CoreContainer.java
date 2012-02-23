@@ -546,6 +546,7 @@ public class CoreContainer
     SolrCore old = null;
     synchronized (cores) {
       if (isShutDown) {
+        core.close();
         throw new IllegalStateException("This CoreContainer has been shutdown");
       }
       old = cores.put(name, core);
@@ -580,14 +581,14 @@ public class CoreContainer
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
-        log.error("", e);
+        SolrException.log(log, "", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
       } catch (Exception e) {
         // if register fails, this is really bad - close the zkController to
         // minimize any damage we can cause
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
-        log.error("", e);
+        SolrException.log(log, "", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
       }
@@ -862,15 +863,19 @@ public class CoreContainer
 
   public void rename(String name, String toName) {
     SolrCore core = getCore(name);
-    if (core != null) {
-      register(toName, core, false);
-      name = checkDefault(name);    
-
-      synchronized(cores) {
-        cores.remove(name);
+    try {
+      if (core != null) {
+        register(toName, core, false);
+        name = checkDefault(name);
+        
+        synchronized (cores) {
+          cores.remove(name);
+        }
       }
-
-      core.close();
+    } finally {
+      if (core != null) {
+        core.close();
+      }
     }
   }
   

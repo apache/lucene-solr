@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 
@@ -80,7 +81,7 @@ public abstract class SolrCoreState {
     public void closeWriter(IndexWriter writer) throws IOException;
   }
 
-  public abstract void doRecovery(SolrCore core);
+  public abstract void doRecovery(CoreContainer cc, String name);
   
   public abstract void cancelRecovery();
 
