@@ -21,6 +21,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.solr.handler.admin.LogLevelHandler;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
@@ -32,8 +35,8 @@ import java.util.logging.Logger;
 /**
  * Admin JDK Logger level report and selection servlet.
  *
- *
  * @since solr 1.3
+ * @deprecated  {@link LogLevelHandler} this servlet will be removed before solr 4.0
  */
 public final class LogLevelSelection extends HttpServlet {
   @Override
