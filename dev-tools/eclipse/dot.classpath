@@ -14,10 +14,8 @@
 	<classpathentry kind="src" path="lucene/contrib/misc/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/sandbox/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/sandbox/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/spatial/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/spatial/src/test"/>
 	<classpathentry kind="src" path="lucene/test-framework/src/java"/>
-        <classpathentry kind="src" output="bin.tests-framework" path="lucene/test-framework/src/resources"/>
+  <classpathentry kind="src" output="bin.tests-framework" path="lucene/test-framework/src/resources"/>
 	<classpathentry kind="src" path="modules/analysis/common/src/java"/>
 	<classpathentry kind="src" path="modules/analysis/common/src/resources"/>
 	<classpathentry kind="src" path="modules/analysis/common/src/test"/>
