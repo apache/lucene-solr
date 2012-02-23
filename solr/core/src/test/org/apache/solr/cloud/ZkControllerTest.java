@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import junit.framework.Assert;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -197,6 +199,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       
       assertNotNull(reader.getLeaderUrl("collection1", "shard1", 15000));
       
+      assertEquals("Shard(s) missing from cloudstate", 2, zkController.getZkStateReader().getCloudState().getSlice("collection1", "shard1").getShards().size());
+      
       // unregister current leader
       final ZkNodeProps shard1LeaderProps = reader.getLeaderProps(
           "collection1", "shard1");
@@ -215,6 +219,9 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           leaderUrl, reader.getLeaderUrl("collection1", "shard1", 15000));
       assertNotNull("New leader was null.",
           reader.getLeaderUrl("collection1", "shard1", 15000));
+
+      Thread.sleep(1000);
+      assertEquals("shard was not unregistered", 1, zkController.getZkStateReader().getCloudState().getSlice("collection1", "shard1").getShards().size());
     } finally {
       if (DEBUG) {
         if (zkController != null) {
