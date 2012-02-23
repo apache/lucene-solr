@@ -17,9 +17,7 @@
 
 package org.apache.lucene.spatial.strategy.util;
 
-import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexableField;
 
@@ -46,6 +44,5 @@ public class NumericFieldInfo {
     fieldType.setIndexed(index);
     fieldType.setNumericPrecisionStep(precisionStep);
     return new DoubleField(name,v,fieldType);
-
   }
 }
