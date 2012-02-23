@@ -10,7 +10,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="JUnit" level="project" />
+    <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
@@ -21,6 +21,7 @@
         <jarDirectory url="file://$MODULE_DIR$/lib" recursive="false" />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="lucene" scope="TEST" />
   </component>
 </module>
 
