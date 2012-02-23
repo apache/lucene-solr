@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
@@ -768,11 +769,28 @@ public class QueryComponent extends SearchComponent
       ShardFieldSortedHitQueue queue;
       queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount());
 
+      NamedList<Object> shardInfo = null;
+      if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
+        shardInfo = (NamedList<Object>) rb.rsp.getValues().get(ShardParams.SHARDS_INFO);
+        if(shardInfo==null) {
+          shardInfo = new SimpleOrderedMap<Object>();
+          rb.rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);
+        }
+      }
+      
       long numFound = 0;
       Float maxScore=null;
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
 
+        if(shardInfo!=null) {
+          SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
+          nl.add("numFound", docs.getNumFound());
+          nl.add("maxScore", docs.getMaxScore());
+          nl.add("time", srsp.getSolrResponse().getElapsedTime());
+          shardInfo.add(srsp.getShard(), nl);
+        }
+        
         // calculate global maxScore and numDocsFound
         if (docs.getMaxScore() != null) {
           maxScore = maxScore==null ? docs.getMaxScore() : Math.max(maxScore, docs.getMaxScore());

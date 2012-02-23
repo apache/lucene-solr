@@ -42,6 +42,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 
+import java.net.ConnectException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -158,6 +159,9 @@ public class HttpShardHandler extends ShardHandler {
             ssr.nl = rsp.getResponse();
             srsp.setShardAddress(rsp.getServer());
           }
+        }
+        catch( ConnectException cex ) {
+          srsp.setException(cex); //????
         } catch (Throwable th) {
           srsp.setException(th);
           if (th instanceof SolrException) {
@@ -248,7 +252,7 @@ public class HttpShardHandler extends ShardHandler {
     // search is distributed.
     boolean hasShardURL = shards != null && shards.indexOf('/') > 0;
     rb.isDistrib = hasShardURL | rb.isDistrib;
-
+    
     if (rb.isDistrib) {
       // since the cost of grabbing cloud state is still up in the air, we grab it only
       // if we need it.

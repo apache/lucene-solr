@@ -18,11 +18,14 @@
 package org.apache.solr.handler.component;
 
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -35,6 +38,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 
 /**
@@ -283,14 +288,40 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
             ShardResponse srsp = shardHandler1.takeCompletedOrError();
             if (srsp == null) break;  // no more requests to wait for
 
-            // Was there an exception?  If so, abort everything and
-            // rethrow
+            // Was there an exception?  
             if (srsp.getException() != null) {
-              shardHandler1.cancelAll();
-              if (srsp.getException() instanceof SolrException) {
-                throw (SolrException)srsp.getException();
-              } else {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
+              // If things are tolerant, just continue
+              if(rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+                if( rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false) ) {
+                  NamedList<Object> sinfo = (NamedList<Object>) rb.rsp.getValues().get(ShardParams.SHARDS_INFO);
+                  if(sinfo==null) {
+                    sinfo = new SimpleOrderedMap<Object>();
+                    rb.rsp.getValues().add(ShardParams.SHARDS_INFO,sinfo);
+                  }
+  
+                  SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
+                  Throwable t = srsp.getException();
+                  if(t instanceof SolrServerException) {
+                    t = ((SolrServerException)t).getCause();
+                  }
+                  nl.add("error", t.toString() );
+                  
+                  StringWriter trace = new StringWriter();
+                  t.printStackTrace(new PrintWriter(trace));
+                  nl.add("trace", trace.toString() );
+                  if(srsp.getSolrResponse()!=null){
+                    nl.add("time", srsp.getSolrResponse().getElapsedTime());
+                  }
+                  sinfo.add(srsp.getShard(), nl);
+                }
+              }
+              else { // If so, abort everything and rethrow
+                shardHandler1.cancelAll();
+                if (srsp.getException() instanceof SolrException) {
+                  throw (SolrException)srsp.getException();
+                } else {
+                  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
+                }
               }
             }
 

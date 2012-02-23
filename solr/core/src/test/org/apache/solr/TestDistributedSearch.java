@@ -17,7 +17,12 @@
 
 package org.apache.solr;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * TODO? perhaps use:
@@ -274,6 +279,22 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
     query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
 
+    // Check Info is added to for each shard
+    ModifiableSolrParams q = new ModifiableSolrParams();
+    q.set("q", "*:*");
+    q.set(ShardParams.SHARDS_INFO, true);
+    setDistributedParams(q);
+    QueryResponse rsp = queryServer(q);
+    NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
+    String shards = getShardsString();
+    int cnt = StringUtils.countMatches(shards, ",")+1;
+    
+    assertNotNull("missing shard info", sinfo);
+    assertEquals("should have an entry for each shard ["+sinfo+"] "+shards, cnt, sinfo.size());
+    
+    
+    // This index has the same number for every field
+    
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
