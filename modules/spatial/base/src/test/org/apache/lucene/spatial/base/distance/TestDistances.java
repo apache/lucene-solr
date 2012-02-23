@@ -23,6 +23,7 @@ import org.apache.lucene.spatial.base.shape.Point;
 import org.apache.lucene.spatial.base.shape.Rectangle;
 import org.apache.lucene.spatial.base.shape.SpatialRelation;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,10 +48,10 @@ public class TestDistances extends LuceneTestCase {
   public void testSomeDistances() {
     //See to verify: from http://www.movable-type.co.uk/scripts/latlong.html
     Point ctr = pLL(0,100);
-    assertEquals(11100, dc().distance(ctr, pLL(10, 0)),3);
-    assertEquals(11100, dc().distance(ctr, pLL(10, -160)),3);
+    Assert.assertEquals(11100, dc().distance(ctr, pLL(10, 0)), 3);
+    Assert.assertEquals(11100, dc().distance(ctr, pLL(10, -160)), 3);
 
-    assertEquals(314.40338, dc().distance(pLL(1, 2), pLL(3, 4)),EPS);
+    Assert.assertEquals(314.40338, dc().distance(pLL(1, 2), pLL(3, 4)), EPS);
   }
 
   @Test
@@ -60,15 +61,15 @@ public class TestDistances extends LuceneTestCase {
       double d = 6894.1;
       Point pCtr = pLL(-20, 84);
       Point pTgt = pLL(-42, 15);
-      assertTrue(dc().distance(pCtr, pTgt) < d);
+      Assert.assertTrue(dc().distance(pCtr, pTgt) < d);
       //since the pairwise distance is less than d, a bounding box from ctr with d should contain pTgt.
       Rectangle r = dc().calcBoxByDistFromPt(pCtr, d, ctx);
-      assertEquals(SpatialRelation.CONTAINS,r.relate(pTgt, ctx));
+      Assert.assertEquals(SpatialRelation.CONTAINS, r.relate(pTgt, ctx));
       checkBBox(pCtr,d);
     }
 
-    assertEquals("0 dist, horiz line",
-        -45,dc().calcBoxByDistFromPtHorizAxis(ctx.makePoint(-180,-45),0,ctx),0);
+    Assert.assertEquals("0 dist, horiz line",
+        -45, dc().calcBoxByDistFromPtHorizAxis(ctx.makePoint(-180, -45), 0, ctx), 0);
 
     double MAXDIST = ctx.getUnits().earthCircumference() / 2;
     checkBBox(ctx.makePoint(0,0), MAXDIST);
@@ -84,10 +85,10 @@ public class TestDistances extends LuceneTestCase {
     }
 
     for (int T = 0; T < 100; T++) {
-      double lat = -90 + random.nextDouble()*180;
-      double lon = -180 + random.nextDouble()*360;
+      double lat = -90 + LuceneTestCase.random.nextDouble()*180;
+      double lon = -180 + LuceneTestCase.random.nextDouble()*360;
       Point ctr = ctx.makePoint(lon, lat);
-      double dist = MAXDIST*random.nextDouble();
+      double dist = MAXDIST* LuceneTestCase.random.nextDouble();
       checkBBox(ctr, dist);
     }
 
@@ -99,31 +100,31 @@ public class TestDistances extends LuceneTestCase {
     Rectangle r = dc().calcBoxByDistFromPt(ctr, dist, ctx);
     double horizAxisLat = dc().calcBoxByDistFromPtHorizAxis(ctr,dist, ctx);
     if (!Double.isNaN(horizAxisLat))
-      assertTrue(r.relate_yRange(horizAxisLat, horizAxisLat, ctx).intersects());
+      Assert.assertTrue(r.relate_yRange(horizAxisLat, horizAxisLat, ctx).intersects());
 
     //horizontal
     if (r.getWidth() >= 180) {
       double calcDist = dc().distance(ctr,r.getMinX(), r.getMaxY() == 90 ? 90 : -90 );
-      assertTrue(msg,calcDist <= dist+EPS);
+      Assert.assertTrue(msg, calcDist <= dist + EPS);
       //horizAxisLat is meaningless in this context
     } else {
       Point tPt = findClosestPointOnVertToPoint(r.getMinX(), r.getMinY(), r.getMaxY(), ctr);
       double calcDist = dc().distance(ctr,tPt);
-      assertEquals(msg,dist,calcDist,EPS);
-      assertEquals(msg,tPt.getY(),horizAxisLat,EPS);
+      Assert.assertEquals(msg, dist, calcDist, EPS);
+      Assert.assertEquals(msg, tPt.getY(), horizAxisLat, EPS);
     }
     
     //vertical
     double topDist = dc().distance(ctr,ctr.getX(),r.getMaxY());
     if (r.getMaxY() == 90)
-      assertTrue(msg,topDist <= dist+EPS);
+      Assert.assertTrue(msg, topDist <= dist + EPS);
     else
-      assertEquals(msg,dist,topDist,EPS);
+      Assert.assertEquals(msg, dist, topDist, EPS);
     double botDist = dc().distance(ctr,ctr.getX(),r.getMinY());
     if (r.getMinY() == -90)
-      assertTrue(msg,botDist <= dist+EPS);
+      Assert.assertTrue(msg, botDist <= dist + EPS);
     else
-      assertEquals(msg,dist,botDist,EPS);
+      Assert.assertEquals(msg, dist, botDist, EPS);
   }
 
   private Point findClosestPointOnVertToPoint(double lon, double lowLat, double highLat, Point ctr) {
@@ -159,7 +160,7 @@ public class TestDistances extends LuceneTestCase {
     ctx = new SimpleSpatialContext(DistanceUnits.CARTESIAN);
     EPS = 10e-6;//tighter epsilon (aka delta)
     for(int i = 0; i < 1000; i++) {
-      testDistCalcPointOnBearing(random.nextInt(100));
+      testDistCalcPointOnBearing(LuceneTestCase.random.nextInt(100));
     }
   }
 
@@ -180,19 +181,19 @@ public class TestDistances extends LuceneTestCase {
 //    }
     double maxDist = ctx.getUnits().earthCircumference() / 2;
     for(int i = 0; i < 1000; i++) {
-      int dist = random.nextInt((int) maxDist);
+      int dist = LuceneTestCase.random.nextInt((int) maxDist);
       EPS = (dist < maxDist*0.75 ? 10e-6 : 10e-3);
       testDistCalcPointOnBearing(dist);
     }
   }
 
   private void testDistCalcPointOnBearing(double dist) {
-    for(int angDEG = 0; angDEG < 360; angDEG += random.nextInt(20)+1) {
-      Point c = ctx.makePoint(random.nextInt(360),-90+random.nextInt(181));
+    for(int angDEG = 0; angDEG < 360; angDEG += LuceneTestCase.random.nextInt(20)+1) {
+      Point c = ctx.makePoint(LuceneTestCase.random.nextInt(360),-90+ LuceneTestCase.random.nextInt(181));
 
       //0 distance means same point
       Point p2 = dc().pointOnBearing(c, 0, angDEG, ctx);
-      assertEquals(c,p2);
+      Assert.assertEquals(c, p2);
 
       p2 = dc().pointOnBearing(c, dist, angDEG, ctx);
       double calcDist = dc().distance(c, p2);
@@ -204,7 +205,7 @@ public class TestDistances extends LuceneTestCase {
     double delta = Math.abs(actual - expected);
     double base = Math.min(actual, expected);
     double deltaRatio = base==0 ? delta : Math.min(delta,delta / base);
-    assertEquals(0,deltaRatio, EPS);
+    Assert.assertEquals(0, deltaRatio, EPS);
   }
 
   @Test
@@ -215,11 +216,11 @@ public class TestDistances extends LuceneTestCase {
         {-90-180,90},{-90-360,-90},{90+180,-90},{90+360,90},
         {-12+180,12}};
     for (double[] pair : lats) {
-      assertEquals("input "+pair[0],pair[1],ctx.normY(pair[0]),0);
+      Assert.assertEquals("input " + pair[0], pair[1], ctx.normY(pair[0]), 0);
     }
-    for(int i = -1000; i < 1000; i += random.nextInt(10)*10) {
+    for(int i = -1000; i < 1000; i += LuceneTestCase.random.nextInt(10)*10) {
       double d = ctx.normY(i);
-      assertTrue(i + " " + d, d >= -90 && d <= 90);
+      Assert.assertTrue(i + " " + d, d >= -90 && d <= 90);
     }
   }
 
@@ -230,11 +231,11 @@ public class TestDistances extends LuceneTestCase {
         {-180,-180},{180,-180},{0,0}, {-190,170},
         {-180-360,-180},{-180-720,-180},{180+360,-180},{180+720,-180}};
     for (double[] pair : lons) {
-      assertEquals("input "+pair[0],pair[1],ctx.normX(pair[0]),0);
+      Assert.assertEquals("input " + pair[0], pair[1], ctx.normX(pair[0]), 0);
     }
-    for(int i = -1000; i < 1000; i += random.nextInt(10)*10) {
+    for(int i = -1000; i < 1000; i += LuceneTestCase.random.nextInt(10)*10) {
       double d = ctx.normX(i);
-      assertTrue(i + " " + d, d >= -180 && d < 180);
+      Assert.assertTrue(i + " " + d, d >= -180 && d < 180);
     }
   }
 
@@ -247,9 +248,9 @@ public class TestDistances extends LuceneTestCase {
 
   private void assertDistToRadians(double dist) {
     double radius = ctx.getUnits().earthRadius();
-    assertEquals(
+    Assert.assertEquals(
         DistanceUtils.pointOnBearingRAD(0, 0, DistanceUtils.dist2Radians(dist, radius), DistanceUtils.DEG_90_AS_RADS, null)[1],
-        DistanceUtils.dist2Radians(dist, radius),10e-5);
+        DistanceUtils.dist2Radians(dist, radius), 10e-5);
   }
 
   private Point pLL(double lat, double lon) {

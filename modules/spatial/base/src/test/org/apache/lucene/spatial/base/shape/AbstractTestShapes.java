@@ -20,6 +20,7 @@ package org.apache.lucene.spatial.base.shape;
 import org.apache.lucene.spatial.base.context.SpatialContext;
 import org.apache.lucene.spatial.base.distance.DistanceCalculator;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Assert;
 import org.junit.Before;
 
 import java.util.Random;
@@ -50,11 +51,11 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
       return;
     if (expected == WITHIN || expected == CONTAINS) {
       if (a.getClass().equals(b.getClass())) // they are the same shape type
-        assertEquals(msg,a,b);
+        Assert.assertEquals(msg, a, b);
       else {
         //they are effectively points or lines that are the same location
-        assertTrue(msg,!a.hasArea());
-        assertTrue(msg,!b.hasArea());
+        Assert.assertTrue(msg, !a.hasArea());
+        Assert.assertTrue(msg, !b.hasArea());
 
         Rectangle aBBox = a.getBoundingBox();
         Rectangle bBBox = b.getBoundingBox();
@@ -63,10 +64,10 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
           || aBBox.getMinY() == -90 && bBBox.getMinY() == -90))
           ;//== a point at the pole
         else
-          assertEquals(msg, aBBox, bBBox);
+          Assert.assertEquals(msg, aBBox, bBBox);
       }
     } else {
-      assertEquals(msg,expected,sect);
+      Assert.assertEquals(msg, expected, sect);
     }
   }
 
@@ -74,20 +75,20 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
     double delta = Math.abs(actual - expected);
     double base = Math.min(actual, expected);
     double deltaRatio = base==0 ? delta : Math.min(delta,delta / base);
-    assertEquals(msg,0,deltaRatio, EPS);
+    Assert.assertEquals(msg, 0, deltaRatio, EPS);
   }
 
   protected void testRectangle(double minX, double width, double minY, double height) {
     Rectangle r = ctx.makeRect(minX, minX + width, minY, minY+height);
     //test equals & hashcode of duplicate
     Rectangle r2 = ctx.makeRect(minX, minX + width, minY, minY+height);
-    assertEquals(r,r2);
-    assertEquals(r.hashCode(),r2.hashCode());
+    Assert.assertEquals(r, r2);
+    Assert.assertEquals(r.hashCode(), r2.hashCode());
 
     String msg = r.toString();
 
-    assertEquals(msg, width != 0 && height != 0, r.hasArea());
-    assertEquals(msg, width != 0 && height != 0, r.getArea() > 0);
+    Assert.assertEquals(msg, width != 0 && height != 0, r.hasArea());
+    Assert.assertEquals(msg, width != 0 && height != 0, r.getArea() > 0);
 
     assertEqualsRatio(msg, height, r.getHeight());
     assertEqualsRatio(msg, width, r.getWidth());
@@ -102,9 +103,9 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
     double dUL = dc.distance(center, r.getMinX(), r.getMaxY());
     double dLL = dc.distance(center, r.getMinX(), r.getMinY());
 
-    assertEquals(msg,width != 0 || height != 0, dUR != 0);
+    Assert.assertEquals(msg, width != 0 || height != 0, dUR != 0);
     if (dUR != 0)
-      assertTrue(dUR > 0 && dLL > 0);
+      Assert.assertTrue(dUR > 0 && dLL > 0);
     assertEqualsRatio(msg, dUR, dUL);
     assertEqualsRatio(msg, dLR, dLL);
     if (!ctx.isGeo() || center.getY() == 0)
@@ -154,12 +155,12 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
     Circle c = ctx.makeCircle(x, y, dist);
     String msg = c.toString();
     final Circle c2 = ctx.makeCircle(ctx.makePoint(x, y), dist);
-    assertEquals(c, c2);
-    assertEquals(c.hashCode(),c2.hashCode());
+    Assert.assertEquals(c, c2);
+    Assert.assertEquals(c.hashCode(), c2.hashCode());
 
-    assertEquals(msg,dist > 0, c.hasArea());
+    Assert.assertEquals(msg, dist > 0, c.hasArea());
     final Rectangle bbox = c.getBoundingBox();
-    assertEquals(msg,dist > 0, bbox.getArea() > 0);
+    Assert.assertEquals(msg, dist > 0, bbox.getArea() > 0);
     if (!ctx.isGeo()) {
       //if not geo then units of dist == units of x,y
       assertEqualsRatio(msg, bbox.getHeight(), dist * 2);
@@ -196,8 +197,8 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
       switch (ic) {
         case CONTAINS:
           i_C++;
-          p = randomPointWithin(random,r,ctx);
-          assertEquals(CONTAINS,c.relate(p, ctx));
+          p = randomPointWithin(LuceneTestCase.random,r,ctx);
+          Assert.assertEquals(CONTAINS, c.relate(p, ctx));
           break;
         case INTERSECTS:
           i_I++;
@@ -205,15 +206,15 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
           break;
         case WITHIN:
           i_W++;
-          p = randomPointWithin(random,c,ctx);
-          assertEquals(CONTAINS,r.relate(p, ctx));
+          p = randomPointWithin(LuceneTestCase.random,c,ctx);
+          Assert.assertEquals(CONTAINS, r.relate(p, ctx));
           break;
         case DISJOINT:
           i_O++;
-          p = randomPointWithin(random,r,ctx);
-          assertEquals(DISJOINT,c.relate(p, ctx));
+          p = randomPointWithin(LuceneTestCase.random,r,ctx);
+          Assert.assertEquals(DISJOINT, c.relate(p, ctx));
           break;
-        default: fail(""+ic);
+        default: Assert.fail("" + ic);
       }
     }
     //System.out.println("Laps: "+laps);
@@ -224,7 +225,7 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
   /** Returns a random integer between [start, end] with a limited number of possibilities instead of end-start+1. */
   private int randRange(int start, int end) {
     //I tested this.
-    double r = random.nextDouble();
+    double r = LuceneTestCase.random.nextDouble();
     final int BUCKETS = 91;
     int ir = (int) Math.round(r*(BUCKETS-1));//put into buckets
     int result = (int)((double)((end - start) * ir) / (double)(BUCKETS-1) + (double)start);
@@ -236,7 +237,7 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
     double d = c.getDistance() * random.nextDouble();
     double angleDEG = 360*random.nextDouble();
     Point p = ctx.getDistCalc().pointOnBearing(c.getCenter(), d, angleDEG, ctx);
-    assertEquals(CONTAINS,c.relate(p, ctx));
+    Assert.assertEquals(CONTAINS, c.relate(p, ctx));
     return p;
   }
 
@@ -244,7 +245,7 @@ public abstract class AbstractTestShapes extends LuceneTestCase {
     double x = r.getMinX() + random.nextDouble()*r.getWidth();
     double y = r.getMinY() + random.nextDouble()*r.getHeight();
     Point p = ctx.makePoint(x,y);
-    assertEquals(CONTAINS,r.relate(p, ctx));
+    Assert.assertEquals(CONTAINS, r.relate(p, ctx));
     return p;
   }
 
