@@ -106,7 +106,10 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     }
 
     if (adds.size() < maxNumToLog) {
-      adds.add(cmd.getPrintableId());
+      long version = cmd.getVersion();
+      String msg = cmd.getPrintableId();
+      if (version != 0) msg = msg + " (" + version + ')';
+      adds.add(msg);
     }
     if (logDebug) { log.debug("add {}", cmd.getPrintableId()); }
 
@@ -123,11 +126,17 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
         toLog.add("delete",deletes);
       }
       if (deletes.size() < maxNumToLog) {
-        deletes.add(cmd.getId());
+        long version = cmd.getVersion();
+        String msg = cmd.getId();
+        if (version != 0) msg = msg + " (" + version + ')';
+        deletes.add(msg);
       }
       if (logDebug) { log.debug("delete {}", cmd.getId()); }
     } else {
       if (toLog.size() < maxNumToLog) {
+        long version = cmd.getVersion();
+        String msg = cmd.query;
+        if (version != 0) msg = msg + " (" + version + ')';
         toLog.add("deleteByQuery", cmd.query);
       }
       if (logDebug) { log.debug("deleteByQuery {}", cmd.getQuery()); }
