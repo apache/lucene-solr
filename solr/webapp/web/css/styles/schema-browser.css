@@ -1,0 +1,345 @@
+#content #schema-browser .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;   
+}
+
+#content #schema-browser.loaded
+{
+    background-image: url( ../../img/div.gif );
+    background-position: 21% 0;
+    background-repeat: repeat-y;
+}
+
+#content #schema-browser #data
+{
+    float: right;
+    width: 78%;
+}
+
+#content #schema-browser #related
+{
+    float: left;
+    width: 20%;
+}
+
+#content #schema-browser #related select
+{
+    width: 100%;
+}
+
+#content #schema-browser #related select optgroup
+{
+    font-style: normal;
+    padding: 5px;
+}
+
+#content #schema-browser #related select option
+{
+    padding-left: 10px;
+}
+
+#content #schema-browser #related #f-df-t
+{
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 15px;
+}
+
+#content #schema-browser #related dl
+{
+    margin-top: 15px;
+}
+
+#content #schema-browser #related dl dt,
+#content #schema-browser #related dl dd a
+{
+    color: #c0c0c0;
+}
+
+#content #schema-browser #related dl dt
+{
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+#content #schema-browser #related dl dd a
+{
+    display: block;
+    padding-left: 10px;
+}
+
+#content #schema-browser #related dl dd a:hover
+{
+    background-color: #f8f8f8;
+}
+
+#content #schema-browser #related .field .field,
+#content #schema-browser #related .field .field a,
+#content #schema-browser #related .dynamic-field .dynamic-field,
+#content #schema-browser #related .dynamic-field .dynamic-field a,
+#content #schema-browser #related .type .type,
+#content #schema-browser #related .type .type a,
+#content #schema-browser #related .active,
+#content #schema-browser #related .active a
+{
+    color: #333;
+}
+
+#content #schema-browser #related .copyfield,
+#content #schema-browser #related .copyfield a
+{
+    color: #666;
+}
+
+#content #schema-browser #data
+{
+    display: none;
+}
+
+#content #schema-browser #data #index dt
+{
+    display: none;
+    float: left;
+    margin-right: 5px;
+    width: 150px;
+}
+
+#content #schema-browser #data #field .field-options
+{
+    margin-bottom: 20px;
+}
+
+#content #schema-browser #data #field .field-options .options dt,
+#content #schema-browser #data #field .field-options .options dd
+{
+    float: left;
+}
+
+#content #schema-browser #data #field .field-options .options dt
+{
+    clear: left;
+    display: none;
+    margin-right: 5px;
+    width: 100px;
+}
+
+#content #schema-browser #data #field .field-options .options dd
+{
+    margin-right: 5px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer,
+#content #schema-browser #data #field .field-options .analyzer li,
+#content #schema-browser #data #field .field-options .analyzer ul,
+#content #schema-browser #data #field .field-options .analyzer ul li
+{
+    display: none;
+}
+
+#content #schema-browser #data #field .field-options .analyzer p,
+#content #schema-browser #data #field .field-options .analyzer dl
+{
+    float: left;
+}
+
+#content #schema-browser #data #field .field-options .analyzer p
+{
+    margin-right: 5px;
+    text-align: right;
+    width: 100px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer li
+{
+    border-top: 1px solid #f0f0f0;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul
+{
+    clear: left;
+    display: block;
+    margin-left: 30px;
+    padding-top: 5px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul li
+{
+    border-top: 1px solid #f8f8f8;
+    margin-top: 5px;
+    padding-top: 5px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul p
+{
+    color: #999;
+    margin-right: 5px;
+    text-align: right;
+    width: 70px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd
+{
+    margin-left: 20px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd
+{
+    background-image: url( ../../img/ico/document-list.png );
+    background-position: 0 50%;
+    color: #c0c0c0;
+    padding-left: 21px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd.ico-0
+{
+    background-image: url( ../../img/ico/slash.png );
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd.ico-1
+{
+    background-image: url( ../../img/ico/tick.png );
+}
+
+#content #schema-browser #data #field .head
+{
+    margin-bottom: 5px;
+}
+
+#content #schema-browser #data #field .topterms-holder
+{
+    display: none;
+    float: left;
+}
+
+#content #schema-browser #data #field .topterms-holder .head .max-holder
+{
+    color: #c0c0c0;
+}
+
+#content #schema-browser #data #field .topterms-holder table
+{
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#content #schema-browser #data #field .topterms-holder th,
+#content #schema-browser #data #field .topterms-holder td
+{
+    border: 1px solid #f0f0f0;
+    padding: 1px 4px;
+}
+
+#content #schema-browser #data #field .topterms-holder thead tr
+{
+    background-color: #c0c0c0;
+}
+
+#content #schema-browser #data #field .topterms-holder thead th
+{
+    text-align: left;
+}
+
+#content #schema-browser #data #field .topterms-holder tbody
+{
+    display: none;
+}
+
+#content #schema-browser #data #field .topterms-holder tbody .odd
+{
+    background-color: #f0f0f0;
+}
+
+#content #schema-browser #data #field .topterms-holder tbody .position
+{
+    color: #c0c0c0;
+    text-align: right;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi
+{
+    margin-top: 5px;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi a
+{
+    color: #c0c0c0;
+    display: block;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    width: 49%;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi a:hover
+{
+    background-color: #f8f8f8;
+    color: #333;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi .less
+{
+    float: left;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi .less span
+{
+    background-image: url( ../../img/ico/chevron-small.png );
+    background-position: 0 50%;
+    padding-left: 18px;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi .more
+{
+    float: right;
+    text-align: right;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi .more span
+{
+    background-image: url( ../../img/ico/chevron-small-expand.png );
+    background-position: 100% 50%;
+    padding-right: 18px;
+}
+
+#content #schema-browser #data #field .histogram-holder
+{
+    display: none;
+    float: left;
+    margin-left: 50px;
+}
+
+#content #schema-browser #data #field .histogram-holder .histogram
+{
+    height: 150px;
+}
+
+#content #schema-browser #data #field .histogram-holder dt,
+#content #schema-browser #data #field .histogram-holder dd
+{
+    float: left;
+    font-size: 10px;
+    text-align: center;
+}
+
+#content #schema-browser #data #field .histogram-holder span
+{
+    background-color: #f0f0f0;
+    display: block;
+    width: 20px;
+}
+
+#content #schema-browser #data #field .histogram-holder dt
+{
+    padding-right: 1px;
+}
+
+#content #schema-browser #data #field .histogram-holder dd
+{
+    padding-right: 3px;
+}
+
+#content #schema-browser #data #field .histogram-holder dd span
+{
+    width: 25px;
+}

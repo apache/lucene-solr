@@ -1,0 +1,132 @@
+#content #query
+{
+    background-image: url( ../../img/div.gif );
+    background-position: 22% 0;
+    background-repeat: repeat-y;
+}
+
+#content #query #form
+{
+    float: left;
+    width: 21%;
+}
+
+#content #query #form label
+{
+    cursor: pointer;
+    display: block;
+    margin-top: 5px;
+}
+
+#content #query #form input,
+#content #query #form select,
+#content #query #form textarea
+{
+    margin-bottom: 2px;
+    width: 100%;
+}
+
+#content #query #form #start
+{
+    float: left;
+    margin-right: 2%;
+    width: 49%;
+}
+
+#content #query #form #rows
+{
+    width: 49%;
+}
+
+#content #query #form .checkbox input
+{
+    margin-bottom: 0;
+    width: auto;
+}
+
+#content #query #form fieldset,
+#content #query #form .optional.expanded
+{
+    border: 1px solid #fff;
+    border-top: 1px solid #c0c0c0;
+    margin-bottom: 10px;
+}
+
+#content #query #form fieldset legend,
+#content #query #form .optional.expanded legend
+{
+    display: block;
+    margin-left: 10px;
+    padding: 0px 5px;
+}
+
+#content #query #form fieldset legend label
+{
+    margin-top: 0;
+}
+
+#content #query #form fieldset .fieldset
+{
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+}
+
+#content #query #form .optional
+{
+    border: 0;
+}
+
+#content #query #form .optional .fieldset
+{
+    display: none;
+}
+
+#content #query #form .optional legend
+{
+    margin-left: 0;
+    padding-left: 0;
+}
+
+#content #query #form .optional.expanded .fieldset
+{
+    display: block;
+}
+
+#content #query #result
+{
+    display: none;
+    float: right;
+    width: 77%;
+}
+
+#content #query #result #url
+{
+    margin-bottom: 10px;
+    background-image: url( ../../img/ico/ui-address-bar.png );
+    background-position: 5px 50%;
+    border: 1px solid #f0f0f0;
+    box-shadow: 1px 1px 0 #f0f0f0;
+    -moz-box-shadow: 1px 1px 0 #f0f0f0;
+    -webkit-box-shadow: 1px 1px 0 #f0f0f0;
+    color: #c0c0c0;
+    display: block;
+    overflow: hidden;
+    padding: 5px;
+    padding-left: 26px;
+    white-space: nowrap;
+}
+
+#content #query #result #url:focus,
+#content #query #result #url:hover
+{
+    border-color: #c0c0c0;
+    box-shadow: 1px 1px 0 #d8d8d8;
+    -moz-box-shadow: 1px 1px 0 #d8d8d8;
+    -webkit-box-shadow: 1px 1px 0 #d8d8d8;
+    color: #333;
+}
+
+#content #query #result #response
+{
+}

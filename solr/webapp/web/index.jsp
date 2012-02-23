@@ -11,7 +11,7 @@
     
     <title>solr-admin</title>
     
-    <link rel="stylesheet" type="text/css" href="css/screen.css">
+    <link rel="stylesheet" type="text/css" href="css/main.css">
     <link rel="icon" type="image/ico" href="img/favicon.ico">
     
     <script type="text/javascript">
@@ -107,15 +107,7 @@
     
     </div>
     
-    <script type="text/javascript" src="js/0_console.js"></script>
-    <script type="text/javascript" src="js/1_jquery.js"></script>
-    <script type="text/javascript" src="js/jquery.timeago.js"></script>
-    <script type="text/javascript" src="js/jquery.form.js"></script>
-    <script type="text/javascript" src="js/jquery.sammy.js"></script>
-    <script type="text/javascript" src="js/jquery.sparkline.js"></script>
-    <script type="text/javascript" src="js/jquery.jstree.js"></script>
-    <script type="text/javascript" src="js/highlight.js"></script>
-    <script type="text/javascript" src="js/script.js"></script>
-    
+    <script src="js/require.js" data-main="js/main"></script>
+
 </body>
 </html>
