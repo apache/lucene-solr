@@ -18,6 +18,8 @@
 package org.apache.solr.handler.admin;
 
 
+import java.util.logging.Logger;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
@@ -32,9 +34,12 @@ public class LogLevelHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testLogLevelHandlerOutput() throws Exception {
+    Logger log = Logger.getLogger("org.apache.solr.SolrTestCaseJ4");
+    LogLevelHandler.LoggerWrapperJUL wrap = new LogLevelHandler.LoggerWrapperJUL(log.getName(), log);
+    
     assertQ("Show Log Levels OK",
             req(CommonParams.QT,"/admin/loglevel")
-            ,"//arr[@name='loggers']/lst/str[.='global']/../str[@name='level'][.='INFO']"
+            ,"//arr[@name='loggers']/lst/str[.='"+wrap.getName()+"']/../str[@name='level'][.='"+wrap.getLevel()+"']"
             ,"//arr[@name='loggers']/lst/str[.='org.apache']/../null[@name='level']"
             );
 
