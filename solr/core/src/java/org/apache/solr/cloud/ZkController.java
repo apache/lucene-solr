@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -85,7 +87,8 @@ public final class ZkController {
   public final static String COLLECTION_PARAM_PREFIX="collection.";
   public final static String CONFIGNAME_PROP="configName";
 
-  private final Map<String, CoreState> coreStates = new HashMap<String, CoreState>();
+  private Map<String, CoreState> coreStates = null;
+  private final Map<String, ElectionContext> electionContexts = Collections.synchronizedMap(new HashMap<String, ElectionContext>());
   
   private SolrZkClient zkClient;
   private ZkCmdExecutor cmdExecutor;
@@ -340,6 +343,8 @@ public final class ZkController {
       createEphemeralLiveNode();
       cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
 
+      syncNodeState();
+
       overseerElector = new LeaderElector(zkClient);
       ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, zkStateReader);
       overseerElector.setup(context);
@@ -364,6 +369,27 @@ public final class ZkController {
 
   }
   
+  /*
+   * sync internal state with zk on startup
+   */
+  private void syncNodeState() throws KeeperException, InterruptedException {
+    log.debug("Syncing internal state with zk. Current: " + coreStates);
+    final String path = Overseer.STATES_NODE + "/" + getNodeName();
+
+    final byte[] data = zkClient.getData(path, null, null, true);
+
+    coreStates = new HashMap<String,CoreState>();
+
+    if (data != null) {
+        CoreState[] states = CoreState.load(data);
+        List<CoreState> stateList = Arrays.asList(states);
+        for(CoreState coreState: stateList) {
+          coreStates.put(coreState.getCoreName(), coreState);
+        }
+    }
+    log.debug("after sync: " + coreStates);
+  }
+
   public boolean isConnected() {
     return zkClient.isConnected();
   }
@@ -604,6 +630,7 @@ public final class ZkController {
         collection, shardZkNodeName, leaderProps, this, cc);
     
     leaderElector.setup(context);
+    electionContexts.put(shardZkNodeName, context);
     leaderElector.joinElection(context, core);
   }
 
@@ -722,9 +749,20 @@ public final class ZkController {
   /**
    * @param coreName
    * @param cloudDesc
+   * @throws KeeperException
+   * @throws InterruptedException
    */
-  public void unregister(String coreName, CloudDescriptor cloudDesc) {
-    // TODO : perhaps mark the core down in zk?
+  public void unregister(String coreName, CloudDescriptor cloudDesc)
+      throws InterruptedException, KeeperException {
+    final String zkNodeName = getNodeName() + "_" + coreName;
+    synchronized (coreStates) {
+      coreStates.remove(zkNodeName);
+    }
+    publishState();
+    ElectionContext context = electionContexts.remove(zkNodeName);
+    if (context != null) {
+      context.cancelElection();
+    }
   }
 
   /**
@@ -902,10 +940,18 @@ public final class ZkController {
     }
     CoreState coreState = new CoreState(coreName,
         cloudDesc.getCollectionName(), props, numShards);
-    final String nodePath = "/node_states/" + getNodeName();
     
     synchronized (coreStates) {
       coreStates.put(shardZkNodeName, coreState);
+    }
+    
+    publishState();
+  }
+  
+  private void publishState() {
+    final String nodePath = "/node_states/" + getNodeName();
+
+    synchronized (coreStates) {
       try {
         zkClient.setData(nodePath, ZkStateReader.toJSON(coreStates.values()),
             true);
@@ -920,7 +966,6 @@ public final class ZkController {
             "could not publish node state", e);
       }
     }
-
   }
 
   private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor)

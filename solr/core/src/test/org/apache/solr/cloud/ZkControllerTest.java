@@ -27,7 +27,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -55,6 +54,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
@@ -142,6 +142,96 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   }
   
+  @Test
+  public void testCoreUnload() throws Exception {
+    
+    String zkDir = dataDir.getAbsolutePath() + File.separator
+        + "zookeeper/server1/data";
+    
+    ZkTestServer server = new ZkTestServer(zkDir);
+    
+    ZkController zkController = null;
+    SolrZkClient zkClient = null;
+    try {
+      server.run();
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+      
+      zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+      zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE, true);
+      
+      ZkStateReader reader = new ZkStateReader(zkClient);
+      reader.createClusterStateWatchersAndUpdate();
+      
+      System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "1");
+      System.setProperty("solrcloud.skip.autorecovery", "true");
+      
+      zkController = new ZkController(null, server.getZkAddress(), TIMEOUT,
+          10000, "localhost", "8983", "solr",
+          new CurrentCoreDescriptorProvider() {
+            
+            @Override
+            public List<CoreDescriptor> getCurrentDescriptors() {
+              // do nothing
+              return null;
+            }
+          });
+      
+      System.setProperty("bootstrap_confdir", getFile("solr/conf")
+          .getAbsolutePath());
+      
+      final int numShards = 2;
+      final String[] ids = new String[numShards];
+      
+      for (int i = 0; i < numShards; i++) {
+        CloudDescriptor collection1Desc = new CloudDescriptor();
+        collection1Desc.setCollectionName("collection1");
+        CoreDescriptor desc1 = new CoreDescriptor(null, "core" + (i + 1), "");
+        desc1.setCloudDescriptor(collection1Desc);
+        zkController.preRegisterSetup(null, desc1, false);
+        ids[i] = zkController.register("core" + (i + 1), desc1);
+      }
+      
+      assertEquals("shard1", ids[0]);
+      assertEquals("shard1", ids[1]);
+      
+      assertNotNull(reader.getLeaderUrl("collection1", "shard1", 15000));
+      
+      // unregister current leader
+      final ZkNodeProps shard1LeaderProps = reader.getLeaderProps(
+          "collection1", "shard1");
+      final String leaderUrl = reader.getLeaderUrl("collection1", "shard1",
+          15000);
+      
+      final CloudDescriptor collection1Desc = new CloudDescriptor();
+      collection1Desc.setCollectionName("collection1");
+      final CoreDescriptor desc1 = new CoreDescriptor(null,
+          shard1LeaderProps.get(ZkStateReader.CORE_NAME_PROP), "");
+      desc1.setCloudDescriptor(collection1Desc);
+      zkController.unregister(
+          shard1LeaderProps.get(ZkStateReader.CORE_NAME_PROP), collection1Desc);
+      assertNotSame(
+          "New leader was not promoted after unregistering the current leader.",
+          leaderUrl, reader.getLeaderUrl("collection1", "shard1", 15000));
+      assertNotNull("New leader was null.",
+          reader.getLeaderUrl("collection1", "shard1", 15000));
+    } finally {
+      if (DEBUG) {
+        if (zkController != null) {
+          zkClient.printLayoutToStdOut();
+        }
+      }
+      if (zkClient != null) {
+        zkClient.close();
+      }
+      if (zkController != null) {
+        zkController.close();
+      }
+      server.shutdown();
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+    }
+  }
+
   @Override
   public void tearDown() throws Exception {
     super.tearDown();

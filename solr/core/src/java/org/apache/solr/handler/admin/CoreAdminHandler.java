@@ -62,6 +62,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.RefCounted;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -319,6 +320,17 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       SolrParams params = req.getParams();
       String name = params.get(CoreAdminParams.NAME);
+      
+      //for now, do not allow creating new core with same name when in cloud mode
+      //XXX perhaps it should just be unregistered from cloud before readding it?, 
+      //XXX perhaps we should also check that cores are of same type before adding new core to collection?
+      if (coreContainer.getZkController() != null) {
+        if (coreContainer.getCore(name) != null) {
+          log.info("Re-creating a core with existing name is not allowed in cloud mode");
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Core with name '" + name + "' already exists.");
+        }
+      }
 
       String instanceDir = params.get(CoreAdminParams.INSTANCE_DIR);
       if (instanceDir == null) {
@@ -454,7 +466,23 @@ public class CoreAdminHandler extends RequestHandlerBase {
     SolrCore core = coreContainer.remove(cname);
     if(core == null){
        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "No such core exists '"+cname+"'");
+          "No such core exists '" + cname + "'");
+    } else {
+      if (coreContainer.getZkController() != null) {
+        log.info("Unregistering core " + cname + " from cloudstate.");
+        try {
+          coreContainer.getZkController().unregister(cname, core.getCoreDescriptor().getCloudDescriptor());
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Could not unregister core " + cname + " from cloudstate: "
+                  + e.getMessage(), e);
+        } catch (KeeperException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Could not unregister core " + cname + " from cloudstate: "
+                  + e.getMessage(), e);
+        }
+      }
     }
     if (params.getBool(CoreAdminParams.DELETE_INDEX, false)) {
       core.addCloseHook(new CloseHook() {

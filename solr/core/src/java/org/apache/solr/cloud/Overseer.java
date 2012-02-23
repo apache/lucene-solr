@@ -57,7 +57,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
   private static final int STATE_UPDATE_DELAY = 500;  // delay between cloud state updates
 
   static enum Op {
-    LeaderChange, StateChange; 
+    LeaderChange, StateChange, CoreDeleted; 
   }
 
   private final class CloudStateUpdateRequest {
@@ -135,6 +135,9 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
                         (String) request.args[0], (CoreState) request.args[1]);
                     break;
 
+                  case CoreDeleted:
+                    cloudState = removeCore(cloudState, (String) request.args[0], (String) request.args[1]);
+                    break;
                   }
                 }
 
@@ -294,7 +297,6 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       
       private CloudState setShardLeader(CloudState state, String collection, String sliceName, String leaderUrl) {
         
-        boolean updated = false;
         final Map<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String,Slice>>();
         newStates.putAll(state.getCollectionStates());
         
@@ -314,32 +316,49 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
             Map<String, String> newShardProps = new LinkedHashMap<String,String>();
             newShardProps.putAll(shard.getValue().getProperties());
             
-            String wasLeader = newShardProps.remove(ZkStateReader.LEADER_PROP);  //clean any previously existed flag
-
+            newShardProps.remove(ZkStateReader.LEADER_PROP);  //clean any previously existed flag
+            
             ZkCoreNodeProps zkCoreNodeProps = new ZkCoreNodeProps(new ZkNodeProps(newShardProps));
             if(leaderUrl!=null && leaderUrl.equals(zkCoreNodeProps.getCoreUrl())) {
               newShardProps.put(ZkStateReader.LEADER_PROP,"true");
-              if (wasLeader == null) {
-                updated = true;
-              }
-            } else {
-              if (wasLeader != null) {
-                updated = true;
-              }
             }
             newShards.put(shard.getKey(), new ZkNodeProps(newShardProps));
           }
           Slice slice = new Slice(sliceName, newShards);
           slices.put(sliceName, slice);
         }
-        if (updated) {
-          return new CloudState(state.getLiveNodes(), newStates);
-        } else {
-          return state;
-        }
+        return new CloudState(state.getLiveNodes(), newStates);
       }
-
-    }
+      
+      /*
+       * Remove core from cloudstate
+       */
+      private CloudState removeCore(final CloudState cloudState, final String collection, final String coreNodeName) {
+        final LinkedHashMap<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String,Slice>>();
+        for(String collectionName: cloudState.getCollections()) {
+          if(collection.equals(collectionName)) {
+            Map<String, Slice> slices = cloudState.getSlices(collection);
+            LinkedHashMap<String, Slice> newSlices = new LinkedHashMap<String, Slice>();
+            for(Slice slice: slices.values()) {
+              if(slice.getShards().containsKey(coreNodeName)) {
+                LinkedHashMap<String, ZkNodeProps> newShards = new LinkedHashMap<String, ZkNodeProps>();
+                newShards.putAll(slice.getShards());
+                newShards.remove(coreNodeName);
+                Slice newSlice = new Slice(slice.getName(), newShards);
+                newSlices.put(slice.getName(), newSlice);
+              } else {
+                newSlices.put(slice.getName(), slice);
+              }
+            }
+            newStates.put(collectionName, newSlices);
+          } else {
+            newStates.put(collectionName, cloudState.getSlices(collectionName));
+          }
+        }
+        CloudState newState = new CloudState(cloudState.getLiveNodes(), newStates);
+        return newState;
+     }
+  }
   
   public Overseer(final SolrZkClient zkClient, final ZkStateReader reader, String id) throws KeeperException, InterruptedException {
     log.info("Constructing new Overseer id=" + id);
@@ -462,7 +481,6 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       ShardLeaderWatcher watcher = watches.remove(shardId);
       if (watcher != null) {
         watcher.close();
-        announceLeader(collection, shardId, new ZkCoreNodeProps(new ZkNodeProps()));  //removes loeader for shard
       }
     }
     
@@ -567,7 +585,15 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       fifo.add(new CloudStateUpdateRequest(Op.StateChange, nodeName, state));
     }
   }
-  
+
+  @Override
+  public void coreDeleted(String nodeName, Collection<CoreState> states)
+      throws KeeperException, InterruptedException {
+    for (CoreState state : states) {
+      fifo.add(new CloudStateUpdateRequest(Op.CoreDeleted, state.getCollectionName(), state.getCoreNodeName()));
+    }
+  }
+
   public static void createClientNodes(SolrZkClient zkClient, String nodeName) throws KeeperException, InterruptedException {
     final String node = STATES_NODE + "/" + nodeName;
     if (log.isInfoEnabled()) {
