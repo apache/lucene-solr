@@ -321,7 +321,7 @@ Bug Fixes
 * SOLR-1520: QueryElevationComponent now supports non-string ids (gsingers)
 
 * SOLR-3037: When using binary format in solrj the codec screws up parameters
-  (Sami Siren via yonik)
+  (Sami Siren, Jörg Maier  via yonik)
 
 * SOLR-3062: A join in the main query was not respecting any filters pushed
   down to it via acceptDocs since LUCENE-1536. (Mike Hugo, yonik)
