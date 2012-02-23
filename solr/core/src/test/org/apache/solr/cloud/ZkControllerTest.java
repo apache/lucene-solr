@@ -228,6 +228,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController.close();
       }
       server.shutdown();
+      System.clearProperty("solrcloud.skip.autorecovery");
       System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
     }
   }
