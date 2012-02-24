@@ -495,10 +495,24 @@ public class SnapPuller {
   private void doCommit() throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
+    // reboot the writer on the new index and get a new searcher
+    solrCore.getUpdateHandler().newIndexWriter();
+    
     try {
-      
-      // reboot the writer on the new index and get a new searcher
-      solrCore.getUpdateHandler().newIndexWriter();
+      // first try to open an NRT searcher so that the new 
+      // IndexWriter is registered with the reader
+      Future[] waitSearcher = new Future[1];
+      solrCore.getSearcher(true, false, waitSearcher, true);
+      if (waitSearcher[0] != null) {
+        try {
+         waitSearcher[0].get();
+       } catch (InterruptedException e) {
+         SolrException.log(LOG,e);
+       } catch (ExecutionException e) {
+         SolrException.log(LOG,e);
+       }
+     }
+
       // update our commit point to the right dir
       solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
 
