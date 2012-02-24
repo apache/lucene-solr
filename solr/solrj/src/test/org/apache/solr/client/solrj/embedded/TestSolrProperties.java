@@ -244,6 +244,43 @@ public class TestSolrProperties extends LuceneTestCase {
     } finally {
       fis.close();
     }
+    
+    coreadmin = getRenamedSolrAdmin();
+    CoreAdminRequest.createCore("newCore", home.getAbsolutePath(), coreadmin);
+    
+//    fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
+//    solrPersistXml = IOUtils.toString(fis);
+//    System.out.println("xml:" + solrPersistXml);
+//    fis.close();
+    
+    mcr = CoreAdminRequest.persist("solr-persist.xml", getRenamedSolrAdmin());
+    
+//    fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
+//    solrPersistXml = IOUtils.toString(fis);
+//    System.out.println("xml:" + solrPersistXml);
+//    fis.close();
+    
+    fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
+    try {
+      Document document = builder.parse(fis);
+      assertTrue(exists("/solr/cores/core[@name='collection1' and @instanceDir='./']", document));
+    } finally {
+      fis.close();
+    }
+    
+    // test reload and parse
+    cores.shutdown();
+    
+    cores = new CoreContainer(home.getAbsolutePath(), new File(solrXml.getParent(), "solr-persist.xml")); 
+ 
+    
+    mcr = CoreAdminRequest.persist("solr-persist.xml", getRenamedSolrAdmin());
+    
+//     fis = new FileInputStream(new File(solrXml.getParent(),
+//     "solr-persist.xml"));
+//     solrPersistXml = IOUtils.toString(fis);
+//     System.out.println("xml:" + solrPersistXml);
+//     fis.close();
   }
   
   public static boolean exists(String xpathStr, Node node)

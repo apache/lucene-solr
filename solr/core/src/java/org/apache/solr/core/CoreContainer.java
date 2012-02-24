@@ -1131,21 +1131,22 @@ public class CoreContainer
       return;
     }
     
-    String attribValue = null;
     if (node != null) {
       String rawAttribValue = DOMUtil.getAttr(node, name, null);
       if (value == null) {
         coreAttribs.put(name, rawAttribValue);
         return;
       }
-      if (rawAttribValue == null && defaultValue != null && value.equals(defaultValue)) return;
+      if (rawAttribValue == null && defaultValue != null && value.equals(defaultValue)) {
+        return;
+      }
       if (rawAttribValue != null && value.equals(DOMUtil.substituteProperty(rawAttribValue, loader.getCoreProperties()))){
-        attribValue = rawAttribValue;
+        coreAttribs.put(name, rawAttribValue);
+      } else {
+        coreAttribs.put(name, value);
       }
     }
-    if (attribValue != null) {
-      coreAttribs.put(name, attribValue);
-    }
+
   }
 
 

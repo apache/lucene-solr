@@ -82,7 +82,7 @@ public class TestEmbeddedSolrServer extends LuceneTestCase {
     
     EmbeddedSolrServer solrServer = getSolrCore0();
     
-    Assert.assertEquals(2, cores.getCores().size());
+    Assert.assertEquals(3, cores.getCores().size());
     List<SolrCore> solrCores = new ArrayList<SolrCore>();
     for (SolrCore solrCore : cores.getCores()) {
       Assert.assertEquals(false, solrCore.isClosed());
