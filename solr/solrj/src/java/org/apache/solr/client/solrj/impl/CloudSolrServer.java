@@ -52,7 +52,7 @@ public class CloudSolrServer extends SolrServer {
   private String zkHost; // the zk server address
   private int zkConnectTimeout = 10000;
   private int zkClientTimeout = 10000;
-  private String defaultCollection;
+  private volatile String defaultCollection;
   private LBHttpSolrServer lbServer;
   Random rand = new Random();
   private MultiThreadedHttpConnectionManager connManager;
