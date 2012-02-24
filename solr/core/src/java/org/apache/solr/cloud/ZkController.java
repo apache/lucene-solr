@@ -1088,14 +1088,23 @@ public final class ZkController {
       if (waitForNotLive){
         prepCmd.setCheckLive(false);
       }
-                          
       
-      try {
-        server.request(prepCmd);
-      } catch (Exception e) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not talk to the leader", e);
+      // let's retry a couple times - perhaps the leader just went down,
+      // or perhaps he is just not quite ready for us yet
+      for (int i = 0; i < 3; i++) {
+        try {
+          server.request(prepCmd);
+          break;
+        } catch (Exception e) {
+          SolrException.log(log, "There was a problem making a request to the leader", e);
+          try {
+            Thread.sleep(2000);
+          } catch (InterruptedException e1) {
+            Thread.currentThread().interrupt();
+          }
+        }
       }
+      
       server.shutdown();
     }
     return leaderProps;
