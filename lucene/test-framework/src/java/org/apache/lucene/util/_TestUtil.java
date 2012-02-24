@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
+import java.nio.CharBuffer;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -707,4 +708,23 @@ public class _TestUtil {
     }
     return termsEnum.docs(liveDocs, null, needsFreqs);
   }
+  
+  public static CharSequence stringToCharSequence(String string, Random random) {
+    return bytesToCharSequence(new BytesRef(string), random);
+  }
+  
+  public static CharSequence bytesToCharSequence(BytesRef ref, Random random) {
+    switch(random.nextInt(5)) {
+    case 4:
+      CharsRef chars = new CharsRef(ref.length);
+      UnicodeUtil.UTF8toUTF16(ref.bytes, ref.offset, ref.length, chars);
+      return chars;
+    case 3:
+      return CharBuffer.wrap(ref.utf8ToString());
+    default:
+      return ref.utf8ToString();
+    }
+    
+  }
+ 
 }

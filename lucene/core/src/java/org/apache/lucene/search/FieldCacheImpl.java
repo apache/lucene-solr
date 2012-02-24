@@ -1052,7 +1052,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       @Override
-      public Comparator<BytesRef> getComparator() throws IOException {
+      public Comparator<BytesRef> getComparator() {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 

@@ -20,7 +20,6 @@ package org.apache.lucene.search.suggest;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.search.spell.SortedIterator;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -28,13 +27,12 @@ import org.apache.lucene.util.BytesRef;
  * This wrapper buffers incoming elements and makes sure they are sorted in
  * ascending lexicographic order.
  */
-public class SortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper implements SortedIterator {
-
+public class SortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper {
+  // TODO keep this for now - but the consumer should really sort this stuff on disk with sorter...
   private final int[] sortedOrds;
   private int currentOrd = -1;
   private final BytesRef spare = new BytesRef();
   private final Comparator<BytesRef> comp;
-  
 
   public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comp) throws IOException {
     super(source);
@@ -43,7 +41,7 @@ public class SortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrap
   }
 
   @Override
-  public float freq() {
+  public long weight() {
     return freqs[currentOrd];
   }
 
@@ -56,9 +54,8 @@ public class SortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrap
   }
 
   @Override
-  public Comparator<BytesRef> comparator() {
+  public Comparator<BytesRef> getComparator() {
     return comp;
   }
-  
   
 }

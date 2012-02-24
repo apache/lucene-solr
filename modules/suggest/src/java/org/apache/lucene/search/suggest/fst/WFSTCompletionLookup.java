@@ -33,8 +33,10 @@ import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
@@ -121,7 +123,7 @@ public class WFSTCompletionLookup extends Lookup {
         output.reset(buffer);
         output.writeBytes(spare.bytes, spare.offset, spare.length);
         output.writeByte((byte)0); // separator: not used, just for sort order
-        output.writeInt((int)encodeWeight(iterator.freq()));
+        output.writeInt((int)encodeWeight(iterator.weight()));
         writer.write(buffer, 0, output.getPosition());
       }
       writer.close();
@@ -200,7 +202,7 @@ public class WFSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public List<LookupResult> lookup(String key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
     assert num > 0;
     BytesRef scratch = new BytesRef(key);
     int prefixLength = scratch.length;
@@ -217,8 +219,11 @@ public class WFSTCompletionLookup extends Lookup {
     }
     
     List<LookupResult> results = new ArrayList<LookupResult>(num);
+    CharsRef spare = new CharsRef();
     if (exactFirst && arc.isFinal()) {
-      results.add(new LookupResult(scratch.utf8ToString(), decodeWeight(prefixOutput + arc.nextFinalOutput)));
+      spare.grow(scratch.length);
+      UnicodeUtil.UTF8toUTF16(scratch, spare);
+      results.add(new LookupResult(spare.toString(), decodeWeight(prefixOutput + arc.nextFinalOutput)));
       if (--num == 0) {
         return results; // that was quick
       }
@@ -236,8 +241,9 @@ public class WFSTCompletionLookup extends Lookup {
       // append suffix
       Util.toBytesRef(completion.input, suffix);
       scratch.append(suffix);
-
-      results.add(new LookupResult(scratch.utf8ToString(), decodeWeight(prefixOutput + completion.output)));
+      spare.grow(scratch.length);
+      UnicodeUtil.UTF8toUTF16(scratch, spare);
+      results.add(new LookupResult(spare.toString(), decodeWeight(prefixOutput + completion.output)));
     }
     return results;
   }
@@ -264,7 +270,7 @@ public class WFSTCompletionLookup extends Lookup {
   }
   
   @Override
-  public boolean add(String key, Object value) {
+  public boolean add(CharSequence key, Object value) {
     return false; // Not supported.
   }
 
@@ -273,7 +279,7 @@ public class WFSTCompletionLookup extends Lookup {
    * or null if it does not exist.
    */
   @Override
-  public Float get(String key) {
+  public Object get(CharSequence key) {
     Arc<Long> arc = new Arc<Long>();
     Long result = null;
     try {

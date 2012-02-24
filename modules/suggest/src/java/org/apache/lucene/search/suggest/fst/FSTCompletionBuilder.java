@@ -46,7 +46,7 @@ import org.apache.lucene.util.fst.*;
  * </ul>
  * 
  * <p>
- * At runtime, in {@link FSTCompletion#lookup(String, int)}, 
+ * At runtime, in {@link FSTCompletion#lookup(CharSequence, int)}, 
  * the automaton is utilized as follows:
  * <ul>
  * <li>For each possible term weight encoded in the automaton (cached arcs from

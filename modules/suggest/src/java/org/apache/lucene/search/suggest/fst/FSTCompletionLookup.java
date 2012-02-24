@@ -41,7 +41,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * An adapter from {@link Lookup} API to {@link FSTCompletion}.
  * 
  * <p>This adapter differs from {@link FSTCompletion} in that it attempts
- * to discretize any "weights" as passed from in {@link TermFreqIterator#freq()}
+ * to discretize any "weights" as passed from in {@link TermFreqIterator#weight()}
  * to match the number of buckets. For the rationale for bucketing, see
  * {@link FSTCompletion}.
  * 
@@ -171,7 +171,7 @@ public class FSTCompletionLookup extends Lookup {
         }
 
         output.reset(buffer);
-        output.writeInt(FloatMagic.toSortable(tfit.freq()));
+        output.writeInt(FloatMagic.toSortable(tfit.weight()));
         output.writeBytes(spare.bytes, spare.offset, spare.length);
         writer.write(buffer, 0, output.getPosition());
       }
@@ -232,7 +232,7 @@ public class FSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public List<LookupResult> lookup(String key, boolean higherWeightsFirst, int num) {
+  public List<LookupResult> lookup(CharSequence key, boolean higherWeightsFirst, int num) {
     final List<Completion> completions;
     if (higherWeightsFirst) {
       completions = higherWeightsCompletion.lookup(key, num);
@@ -241,20 +241,23 @@ public class FSTCompletionLookup extends Lookup {
     }
     
     final ArrayList<LookupResult> results = new ArrayList<LookupResult>(completions.size());
+    CharsRef spare = new CharsRef();
     for (Completion c : completions) {
-      results.add(new LookupResult(c.utf8.utf8ToString(), c.bucket));
+      spare.grow(c.utf8.length);
+      UnicodeUtil.UTF8toUTF16(c.utf8, spare);
+      results.add(new LookupResult(spare.toString(), c.bucket));
     }
     return results;
   }
 
   @Override
-  public boolean add(String key, Object value) {
+  public boolean add(CharSequence key, Object value) {
     // Not supported.
     return false;
   }
 
   @Override
-  public Float get(String key) {
+  public Object get(CharSequence key) {
     Integer bucket = normalCompletion.getBucket(key);
     if (bucket == null)
       return null;

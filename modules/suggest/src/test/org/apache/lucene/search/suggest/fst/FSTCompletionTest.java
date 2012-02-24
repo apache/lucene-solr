@@ -28,7 +28,7 @@ import org.apache.lucene.util.*;
  * Unit tests for {@link FSTCompletion}.
  */
 public class FSTCompletionTest extends LuceneTestCase {
-  public static TermFreq tf(String t, float v) {
+  public static TermFreq tf(String t, int v) {
     return new TermFreq(t, v);
   }
 
@@ -62,28 +62,28 @@ public class FSTCompletionTest extends LuceneTestCase {
         tf("foundation", 1),
         tf("fourblah", 1),
         tf("fourteen", 1),
-        tf("four", 0f),
-        tf("fourier", 0f),
-        tf("fourty", 0f),
+        tf("four", 0),
+        tf("fourier", 0),
+        tf("fourty", 0),
         tf("xo", 1),
       };
     return keys;
   }
 
   public void testExactMatchHighPriority() throws Exception {
-    assertMatchEquals(completion.lookup("two", 1),
+    assertMatchEquals(completion.lookup(_TestUtil.stringToCharSequence("two", random), 1),
         "two/1.0");
   }
 
   public void testExactMatchLowPriority() throws Exception {
-    assertMatchEquals(completion.lookup("one", 2), 
+    assertMatchEquals(completion.lookup(_TestUtil.stringToCharSequence("one", random), 2), 
         "one/0.0",
         "oneness/1.0");
   }
   
   public void testExactMatchReordering() throws Exception {
     // Check reordering of exact matches. 
-    assertMatchEquals(completion.lookup("four", 4), 
+    assertMatchEquals(completion.lookup(_TestUtil.stringToCharSequence("four", random), 4), 
         "four/0.0",
         "fourblah/1.0",
         "fourteen/1.0",
@@ -92,49 +92,49 @@ public class FSTCompletionTest extends LuceneTestCase {
 
   public void testRequestedCount() throws Exception {
     // 'one' is promoted after collecting two higher ranking results.
-    assertMatchEquals(completion.lookup("one", 2), 
+    assertMatchEquals(completion.lookup(_TestUtil.stringToCharSequence("one", random), 2), 
         "one/0.0", 
         "oneness/1.0");
 
     // 'four' is collected in a bucket and then again as an exact match. 
-    assertMatchEquals(completion.lookup("four", 2), 
+    assertMatchEquals(completion.lookup(_TestUtil.stringToCharSequence("four", random), 2), 
         "four/0.0", 
         "fourblah/1.0");
 
     // Check reordering of exact matches. 
-    assertMatchEquals(completion.lookup("four", 4), 
+    assertMatchEquals(completion.lookup(_TestUtil.stringToCharSequence("four", random), 4), 
         "four/0.0",
         "fourblah/1.0",
         "fourteen/1.0",
         "fourier/0.0");
 
     // 'one' is at the top after collecting all alphabetical results.
-    assertMatchEquals(completionAlphabetical.lookup("one", 2), 
+    assertMatchEquals(completionAlphabetical.lookup(_TestUtil.stringToCharSequence("one", random), 2), 
         "one/0.0", 
         "oneness/1.0");
     
     // 'one' is not promoted after collecting two higher ranking results.
     FSTCompletion noPromotion = new FSTCompletion(completion.getFST(), true, false);
-    assertMatchEquals(noPromotion.lookup("one", 2),  
+    assertMatchEquals(noPromotion.lookup(_TestUtil.stringToCharSequence("one", random), 2),  
         "oneness/1.0",
         "onerous/1.0");
 
     // 'one' is at the top after collecting all alphabetical results. 
-    assertMatchEquals(completionAlphabetical.lookup("one", 2), 
+    assertMatchEquals(completionAlphabetical.lookup(_TestUtil.stringToCharSequence("one", random), 2), 
         "one/0.0", 
         "oneness/1.0");
   }
 
   public void testMiss() throws Exception {
-    assertMatchEquals(completion.lookup("xyz", 1));
+    assertMatchEquals(completion.lookup(_TestUtil.stringToCharSequence("xyz", random), 1));
   }
 
   public void testAlphabeticWithWeights() throws Exception {
-    assertEquals(0, completionAlphabetical.lookup("xyz", 1).size());
+    assertEquals(0, completionAlphabetical.lookup(_TestUtil.stringToCharSequence("xyz", random), 1).size());
   }
 
   public void testFullMatchList() throws Exception {
-    assertMatchEquals(completion.lookup("one", Integer.MAX_VALUE),
+    assertMatchEquals(completion.lookup(_TestUtil.stringToCharSequence("one", random), Integer.MAX_VALUE),
         "oneness/1.0", 
         "onerous/1.0",
         "onesimus/1.0", 
@@ -148,7 +148,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     builder.add(new BytesRef(key), 0);
 
     FSTCompletion lookup = builder.build();
-    List<Completion> result = lookup.lookup(key, 1);
+    List<Completion> result = lookup.lookup(_TestUtil.stringToCharSequence(key, random), 1);
     assertEquals(1, result.size());
   }
 
@@ -158,7 +158,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     Random r = random;
     List<TermFreq> keys = new ArrayList<TermFreq>();
     for (int i = 0; i < 5000; i++) {
-      keys.add(new TermFreq(_TestUtil.randomSimpleString(r), -1.0f));
+      keys.add(new TermFreq(_TestUtil.randomSimpleString(r), -1));
     }
 
     lookup.build(new TermFreqArrayIterator(keys));
@@ -167,7 +167,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     // are.
     Float previous = null; 
     for (TermFreq tf : keys) {
-      Float current = lookup.get(tf.term.utf8ToString());
+      Float current = (Float)lookup.get(_TestUtil.bytesToCharSequence(tf.term, random));
       if (previous != null) {
         assertEquals(previous, current);
       }
@@ -180,28 +180,27 @@ public class FSTCompletionTest extends LuceneTestCase {
 
     FSTCompletionLookup lookup = new FSTCompletionLookup();
     lookup.build(new TermFreqArrayIterator(input));
-
     for (TermFreq tf : input) {
-      assertTrue("Not found: " + tf.term, lookup.get(tf.term.utf8ToString()) != null);
-      assertEquals(tf.term.utf8ToString(), lookup.lookup(tf.term.utf8ToString(), true, 1).get(0).key);
+      assertTrue("Not found: " + tf.term.toString(), lookup.get(_TestUtil.bytesToCharSequence(tf.term, random)) != null);
+      assertEquals(tf.term.utf8ToString(), lookup.lookup(_TestUtil.bytesToCharSequence(tf.term, random), true, 1).get(0).key.toString());
     }
 
-    List<LookupResult> result = lookup.lookup("wit", true, 5);
+    List<LookupResult> result = lookup.lookup(_TestUtil.stringToCharSequence("wit", random), true, 5);
     assertEquals(5, result.size());
-    assertTrue(result.get(0).key.equals("wit"));  // exact match.
-    assertTrue(result.get(1).key.equals("with")); // highest count.
+    assertTrue(result.get(0).key.toString().equals("wit"));  // exact match.
+    assertTrue(result.get(1).key.toString().equals("with")); // highest count.
   }
 
   public void testEmptyInput() throws Exception {
     completion = new FSTCompletionBuilder().build();
-    assertMatchEquals(completion.lookup("", 10));
+    assertMatchEquals(completion.lookup(_TestUtil.stringToCharSequence("", random), 10));
   }
 
   public void testRandom() throws Exception {
     List<TermFreq> freqs = new ArrayList<TermFreq>();
     Random rnd = random;
     for (int i = 0; i < 2500 + rnd.nextInt(2500); i++) {
-      float weight = rnd.nextFloat() * 100; 
+      int weight = random.nextInt(100); 
       freqs.add(new TermFreq("" + rnd.nextLong(), weight));
     }
 
@@ -212,8 +211,8 @@ public class FSTCompletionTest extends LuceneTestCase {
       final String term = tf.term.utf8ToString();
       for (int i = 1; i < term.length(); i++) {
         String prefix = term.substring(0, i);
-        for (LookupResult lr : lookup.lookup(prefix, true, 10)) {
-          assertTrue(lr.key.startsWith(prefix));
+        for (LookupResult lr : lookup.lookup(_TestUtil.stringToCharSequence(prefix, random), true, 10)) {
+          assertTrue(lr.key.toString().startsWith(prefix));
         }
       }
     }

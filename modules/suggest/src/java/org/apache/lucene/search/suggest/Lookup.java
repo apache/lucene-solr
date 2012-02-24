@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.search.spell.Dictionary;
@@ -33,10 +34,10 @@ public abstract class Lookup {
    * Result of a lookup.
    */
   public static final class LookupResult implements Comparable<LookupResult> {
-    public final String key;
+    public final CharSequence key;
     public final float value;
     
-    public LookupResult(String key, float value) {
+    public LookupResult(CharSequence key, float value) {
       this.key = key;
       this.value = value;
     }
@@ -48,8 +49,30 @@ public abstract class Lookup {
 
     /** Compare alphabetically. */
     public int compareTo(LookupResult o) {
-      return this.key.compareTo(o.key);
+      return CHARSEQUENCE_COMPARATOR.compare(key, o.key);
     }
+  }
+  
+  public static final Comparator<CharSequence> CHARSEQUENCE_COMPARATOR = new CharSequenceComparator();
+  
+  private static class CharSequenceComparator implements Comparator<CharSequence> {
+
+    @Override
+    public int compare(CharSequence o1, CharSequence o2) {
+      final int l1 = o1.length();
+      final int l2 = o2.length();
+      
+      final int aStop = Math.min(l1, l2);
+      for (int i = 0; i < aStop; i++) {
+        int diff = o1.charAt(i) - o2.charAt(i);
+        if (diff != 0) {
+          return diff;
+        }
+      }
+      // One is a prefix of the other, or, they are equal:
+      return l1 - l2;
+    }
+    
   }
   
   public static final class LookupPriorityQueue extends PriorityQueue<LookupResult> {
@@ -99,8 +122,7 @@ public abstract class Lookup {
    * @param num maximum number of results to return
    * @return a list of possible completions, with their relative weight (e.g. popularity)
    */
-  // TODO: this should be a BytesRef API?
-  public abstract List<LookupResult> lookup(String key, boolean onlyMorePopular, int num);
+  public abstract List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num);
 
   /**
    * Modify the lookup data by recording additional data. Optional operation.
@@ -109,16 +131,14 @@ public abstract class Lookup {
    * @return true if new key is added, false if it already exists or operation
    * is not supported.
    */
-  // TODO: this should be a BytesRef API?
-  public abstract boolean add(String key, Object value);
+  public abstract boolean add(CharSequence key, Object value);
   
   /**
    * Get value associated with a specific key.
    * @param key lookup key
    * @return associated value
    */
-  // TODO: this should be a BytesRef API?
-  public abstract Object get(String key);
+  public abstract Object get(CharSequence key);
 
   /**
    * Persist the constructed lookup data to a directory. Optional operation.

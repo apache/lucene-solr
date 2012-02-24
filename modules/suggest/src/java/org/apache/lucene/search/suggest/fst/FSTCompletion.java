@@ -199,7 +199,7 @@ public class FSTCompletion {
    * @return Returns the suggestions, sorted by their approximated weight first
    *         (decreasing) and then alphabetically (UTF-8 codepoint order).
    */
-  public List<Completion> lookup(String key, int num) {
+  public List<Completion> lookup(CharSequence key, int num) {
     if (key.length() == 0 || automaton == null) {
       return EMPTY_RESULT;
     }
@@ -388,7 +388,7 @@ public class FSTCompletion {
    * Returns the bucket assigned to a given key (if found) or <code>null</code> if
    * no exact match exists.
    */
-  public Integer getBucket(String key) {
+  public Integer getBucket(CharSequence key) {
     return getExactMatchStartingFromRootArc(0, new BytesRef(key));
   }
 

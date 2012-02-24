@@ -287,7 +287,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
-  public Comparator<BytesRef> getComparator() throws IOException {
+  public Comparator<BytesRef> getComparator() {
     return actualEnum.getComparator();
   }
   

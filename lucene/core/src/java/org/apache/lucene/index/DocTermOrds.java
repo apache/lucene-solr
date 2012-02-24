@@ -654,7 +654,7 @@ public class DocTermOrds {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() throws IOException {
+    public Comparator<BytesRef> getComparator() {
       return termsEnum.getComparator();
     }
 

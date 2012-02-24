@@ -18,7 +18,7 @@ package org.apache.lucene.search.spell;
  */
 
 
-import java.util.Iterator;
+import java.util.Comparator;
 import java.io.*;
 
 import org.apache.lucene.util.BytesRef;
@@ -53,7 +53,7 @@ public class PlainTextDictionary implements Dictionary {
     in = new BufferedReader(reader);
   }
 
-  public BytesRefIterator getWordsIterator() {
+  public BytesRefIterator getWordsIterator() throws IOException {
     return new FileIterator();
   }
 
@@ -84,6 +84,11 @@ public class PlainTextDictionary implements Dictionary {
         }
       }
       return result;
+    }
+    
+    @Override
+    public Comparator<BytesRef> getComparator() {
+      return null;
     }
   }
 

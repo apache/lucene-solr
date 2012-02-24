@@ -179,13 +179,6 @@ public abstract class TermsEnum implements BytesRefIterator {
       }
     };
   }
-  
-  /** Return the {@link BytesRef} Comparator used to sort
-   *  terms provided by the iterator.  This may return
-   *  null if there are no terms.  Callers may invoke this
-   *  method many times, so it's best to cache a single
-   *  instance & reuse it. */
-  public abstract Comparator<BytesRef> getComparator() throws IOException;
 
   /** An empty TermsEnum for quickly returning an empty instance e.g.
    * in {@link org.apache.lucene.search.MultiTermQuery}

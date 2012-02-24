@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 
 /**
  * A simple iterator interface for {@link BytesRef} iteration
@@ -40,10 +41,22 @@ public interface BytesRefIterator {
    */
   public BytesRef next() throws IOException;
   
+  /**
+   * Return the {@link BytesRef} Comparator used to sort terms provided by the
+   * iterator. This may return null if there are no items or the iterator is not
+   * sorted. Callers may invoke this method many times, so it's best to cache a
+   * single instance & reuse it.
+   */
+  public Comparator<BytesRef> getComparator();
+  
   public final static class EmptyBytesRefIterator implements BytesRefIterator {
 
     @Override
     public BytesRef next() throws IOException {
+      return null;
+    }
+    
+    public Comparator<BytesRef> getComparator() {
       return null;
     }
     

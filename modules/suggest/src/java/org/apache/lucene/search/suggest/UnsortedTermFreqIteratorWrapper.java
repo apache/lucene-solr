@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
  * random order.
  */
 public class UnsortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper {
-
+  // TODO keep this for now
   private final int[] ords;
   private int currentOrd = -1;
   private final BytesRef spare = new BytesRef();
@@ -48,7 +48,7 @@ public class UnsortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWr
   }
   
   @Override
-  public float freq() {
+  public long weight() {
     return freqs[currentOrd];
   }
 

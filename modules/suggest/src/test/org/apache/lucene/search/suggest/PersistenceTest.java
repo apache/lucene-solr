@@ -23,6 +23,7 @@ import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class PersistenceTest extends LuceneTestCase {
   public final String[] keys = new String[] {
@@ -61,7 +62,7 @@ public class PersistenceTest extends LuceneTestCase {
     Lookup lookup = lookupClass.newInstance();
     TermFreq[] keys = new TermFreq[this.keys.length];
     for (int i = 0; i < keys.length; i++)
-      keys[i] = new TermFreq(this.keys[i], (float) i);
+      keys[i] = new TermFreq(this.keys[i], i);
     lookup.build(new TermFreqArrayIterator(keys));
 
     // Store the suggester.
@@ -75,7 +76,7 @@ public class PersistenceTest extends LuceneTestCase {
     // Assert validity.
     float previous = Float.NEGATIVE_INFINITY;
     for (TermFreq k : keys) {
-      Float val = (Float) lookup.get(k.term.utf8ToString());
+      Float val = (Float) lookup.get(_TestUtil.bytesToCharSequence(k.term, random));
       assertNotNull(k.term.utf8ToString(), val);
 
       if (supportsExactWeights) { 

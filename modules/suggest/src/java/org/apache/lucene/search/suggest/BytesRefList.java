@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest;
 
 import java.io.IOException;
 import java.util.Comparator;
+
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
@@ -81,6 +82,11 @@ final class BytesRefList {
           get(spare, pos++);
           return spare;
         }
+        return null;
+      }
+
+      @Override
+      public Comparator<BytesRef> getComparator() {
         return null;
       }
     };

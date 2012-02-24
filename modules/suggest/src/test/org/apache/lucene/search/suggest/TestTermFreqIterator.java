@@ -38,7 +38,7 @@ public class TestTermFreqIterator extends LuceneTestCase {
   public void testTerms() throws Exception {
     int num = atLeast(10000);
     
-    TreeMap<BytesRef,Float> sorted = new TreeMap<BytesRef,Float>();
+    TreeMap<BytesRef,Long> sorted = new TreeMap<BytesRef,Long>();
     TermFreq[] unsorted = new TermFreq[num];
 
     for (int i = 0; i < num; i++) {
@@ -46,28 +46,28 @@ public class TestTermFreqIterator extends LuceneTestCase {
       do {
         key = new BytesRef(_TestUtil.randomUnicodeString(random));
       } while (sorted.containsKey(key));
-      float value = random.nextFloat();
+      long value = random.nextLong();
       sorted.put(key, value);
       unsorted[i] = new TermFreq(key, value);
     }
     
     // test the sorted iterator wrapper
     TermFreqIterator wrapper = new SortedTermFreqIteratorWrapper(new TermFreqArrayIterator(unsorted), BytesRef.getUTF8SortedAsUnicodeComparator());
-    Iterator<Map.Entry<BytesRef,Float>> expected = sorted.entrySet().iterator();
+    Iterator<Map.Entry<BytesRef,Long>> expected = sorted.entrySet().iterator();
     while (expected.hasNext()) {
-      Map.Entry<BytesRef,Float> entry = expected.next();
+      Map.Entry<BytesRef,Long> entry = expected.next();
       
       assertEquals(entry.getKey(), wrapper.next());
-      assertEquals(entry.getValue().floatValue(), wrapper.freq(), 0F);
+      assertEquals(entry.getValue().longValue(), wrapper.weight(), 0F);
     }
     assertNull(wrapper.next());
     
     // test the unsorted iterator wrapper
     wrapper = new UnsortedTermFreqIteratorWrapper(new TermFreqArrayIterator(unsorted));
-    TreeMap<BytesRef,Float> actual = new TreeMap<BytesRef,Float>();
+    TreeMap<BytesRef,Long> actual = new TreeMap<BytesRef,Long>();
     BytesRef key;
     while ((key = wrapper.next()) != null) {
-      float value = wrapper.freq();
+      long value = wrapper.weight();
       actual.put(BytesRef.deepCopyOf(key), value);
     }
     assertEquals(sorted, actual);

@@ -18,12 +18,14 @@ package org.apache.lucene.search.spell;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
+
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
 public interface TermFreqIterator extends BytesRefIterator {
 
-  public float freq();
+  public long weight();
   
   public static class TermFreqIteratorWrapper implements TermFreqIterator {
     private BytesRefIterator wrapped;
@@ -32,12 +34,17 @@ public interface TermFreqIterator extends BytesRefIterator {
       this.wrapped = wrapped;
     }
 
-    public float freq() {
-      return 1.0f;
+    public long weight() {
+      return 1;
     }
 
     public BytesRef next() throws IOException {
       return wrapped.next();
+    }
+
+    @Override
+    public Comparator<BytesRef> getComparator() {
+      return wrapped.getComparator();
     }
   }
 }
