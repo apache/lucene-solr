@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   
-  int maxNumToLog = 8;
+  int maxNumToLog = 10;
   
   @Override
   public void init( final NamedList args ) {
@@ -99,6 +99,11 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
+    if (logDebug) { log.debug(cmd.toString()); }
+
+    // call delegate first so we can log things like the version that get set later
+    if (next != null) next.processAdd(cmd);
+
     // Add a list of added id's to the response
     if (adds == null) {
       adds = new ArrayList<String>();
@@ -111,15 +116,15 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
       if (version != 0) msg = msg + " (" + version + ')';
       adds.add(msg);
     }
-    if (logDebug) { log.debug("add {}", cmd.getPrintableId()); }
 
     numAdds++;
-
-    if (next != null) next.processAdd(cmd);
   }
 
   @Override
   public void processDelete( DeleteUpdateCommand cmd ) throws IOException {
+    if (logDebug) { log.debug(cmd.toString()); }
+    if (next != null) next.processDelete(cmd);
+
     if (cmd.isDeleteById()) {
       if (deletes == null) {
         deletes = new ArrayList<String>();
@@ -131,36 +136,34 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
         if (version != 0) msg = msg + " (" + version + ')';
         deletes.add(msg);
       }
-      if (logDebug) { log.debug("delete {}", cmd.getId()); }
     } else {
       if (toLog.size() < maxNumToLog) {
         long version = cmd.getVersion();
         String msg = cmd.query;
         if (version != 0) msg = msg + " (" + version + ')';
-        toLog.add("deleteByQuery", cmd.query);
+        toLog.add("deleteByQuery", msg);
       }
-      if (logDebug) { log.debug("deleteByQuery {}", cmd.getQuery()); }
     }
     numDeletes++;
 
-    if (next != null) next.processDelete(cmd);
   }
 
   @Override
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    toLog.add("mergeIndexes", cmd.toString());
-    if (logDebug) { log.debug("mergeIndexes {}",cmd.toString()); }
-
+    if (logDebug) { log.debug(cmd.toString()); }
     if (next != null) next.processMergeIndexes(cmd);
+
+    toLog.add("mergeIndexes", cmd.toString());
   }
 
   @Override
   public void processCommit( CommitUpdateCommand cmd ) throws IOException {
+    if (logDebug) { log.debug(cmd.toString()); }
+    if (next != null) next.processCommit(cmd);
+
+
     final String msg = cmd.optimize ? "optimize" : "commit";
     toLog.add(msg, "");
-    if (logDebug) { log.debug(msg); }
-
-    if (next != null) next.processCommit(cmd);
   }
 
   /**
@@ -168,16 +171,17 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
    */
   @Override
   public void processRollback( RollbackUpdateCommand cmd ) throws IOException {
-    toLog.add("rollback", "");
-    if (logDebug) { log.debug("rollback"); }
-
+    if (logDebug) { log.debug(cmd.toString()); }
     if (next != null) next.processRollback(cmd);
+
+    toLog.add("rollback", "");
   }
 
 
   @Override
   public void finish() throws IOException {
     if (next != null) next.finish();
+    if (logDebug) { log.debug("finish"); }
 
     // LOG A SUMMARY WHEN ALL DONE (INFO LEVEL)
     
