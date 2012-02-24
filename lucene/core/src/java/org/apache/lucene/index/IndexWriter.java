@@ -3789,8 +3789,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return false;
     }
 
-    commitMergedDeletes(merge, mergedReader);
-      
+    if (merge.info.docCount > 0) {
+      commitMergedDeletes(merge, mergedReader);
+    }
+
     // If the doc store we are using has been closed and
     // is in now compound format (but wasn't when we
     // started), then we will switch to the compound
