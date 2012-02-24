@@ -25,20 +25,18 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.net.ConnectException;
 import java.net.URL;
 import java.net.URLConnection;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
  */
-public class ContentStreamTest extends LuceneTestCase 
-{  
-  public void testStringStream() throws IOException 
+public class ContentStreamTest extends LuceneTestCase
+{
+  public void testStringStream() throws IOException
   {
     String input = "aads ghaskdgasgldj asl sadg ajdsg &jag # @ hjsakg hsakdg hjkas s";
     ContentStreamBase stream = new ContentStreamBase.StringStream( input );
@@ -47,7 +45,7 @@ public class ContentStreamTest extends LuceneTestCase
     assertEquals( input, IOUtils.toString( stream.getReader() ) );
   }
 
-  public void testFileStream() throws IOException 
+  public void testFileStream() throws IOException
   {
     InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
@@ -55,15 +53,15 @@ public class ContentStreamTest extends LuceneTestCase
     FileOutputStream os = new FileOutputStream(file);
     IOUtils.copy(is, os);
     os.close();
-    
+
     ContentStreamBase stream = new ContentStreamBase.FileStream( file );
     assertEquals( file.length(), stream.getSize().intValue() );
     assertTrue( IOUtils.contentEquals( new FileInputStream( file ), stream.getStream() ) );
     assertTrue( IOUtils.contentEquals( new FileReader(      file ), stream.getReader() ) );
   }
-  
 
-  public void testURLStream() throws IOException 
+
+  public void testURLStream() throws IOException
   {
     byte[] content = null;
     String contentType = null;
@@ -76,7 +74,7 @@ public class ContentStreamTest extends LuceneTestCase
       content = IOUtils.toByteArray(in);
 
       assumeTrue("not enough content for test to be useful",
-                 content.length > 10 ); 
+                 content.length > 10 );
 
     } catch (IOException ex) {
       assumeNoException("Unable to connect to " + url + " to run the test.", ex);
@@ -86,16 +84,15 @@ public class ContentStreamTest extends LuceneTestCase
       }
     }
 
-    
+
     ContentStreamBase stream = new ContentStreamBase.URLStream( url );
+    in = stream.getStream();  // getStream is needed before getSize is valid
     assertEquals( content.length, stream.getSize().intValue() );
-    
-    // Test the stream
-    in = stream.getStream();
+
     try {
-      assertTrue( IOUtils.contentEquals( 
+      assertTrue( IOUtils.contentEquals(
           new ByteArrayInputStream(content), in ) );
-    } 
+    }
     finally {
       IOUtils.closeQuietly(in);
     }

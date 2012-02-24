@@ -616,6 +616,7 @@
 
          enableRemoteStreaming - enables use of the stream.file
          and stream.url parameters for specifying remote streams.
+         SearchRequestHandler won't fetch it, but some others do.
 
          multipartUploadLimitInKB - specifies the max size of
          Multipart File Uploads that Solr will allow in a Request.

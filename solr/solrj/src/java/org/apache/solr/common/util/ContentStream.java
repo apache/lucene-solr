@@ -50,6 +50,10 @@ public interface ContentStream {
    *  
    * Only the first call to <code>getStream()</code> or <code>getReader()</code>
    * is guaranteed to work.  The runtime behavior for additional calls is undefined.
+   *
+   * Note: you must call <code>getStream()</code> or <code>getReader()</code> before
+   * the attributes (name, contentType, etc) are guaranteed to be set.  Streams may be
+   * lazy loaded only when this method is called.
    */
   InputStream getStream() throws IOException;
 
@@ -68,6 +72,10 @@ public interface ContentStream {
    *  
    * Only the first call to <code>getStream()</code> or <code>getReader()</code>
    * is guaranteed to work.  The runtime behavior for additional calls is undefined.
+   *
+   * Note: you must call <code>getStream()</code> or <code>getReader()</code> before
+   * the attributes (name, contentType, etc) are guaranteed to be set.  Streams may be
+   * lazy loaded only when this method is called.
    */
   Reader getReader() throws IOException;
 }

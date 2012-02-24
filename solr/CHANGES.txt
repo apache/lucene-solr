@@ -40,6 +40,10 @@ Upgrading from Solr 3.5
 
 New Features
 ----------------------
+* SOLR-2854: Now load URL content stream data (via stream.url) when called for during request handling,
+  rather than loading URL content streams automatically regardless of use.
+  (David Smiley and Ryan McKinley via ehatcher)
+
 * SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
   a stream (shalin)
 
