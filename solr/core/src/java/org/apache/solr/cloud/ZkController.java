@@ -88,6 +88,10 @@ public final class ZkController {
   public final static String CONFIGNAME_PROP="configName";
 
   private Map<String, CoreState> coreStates = null;
+  private long coreStatesVersion; // bumped by 1 each time we serialize coreStates... sync on  coreStates
+  private long coreStatesPublishedVersion; // last version published to ZK... sync on coreStatesPublishLock
+  private Object coreStatesPublishLock = new Object(); // only publish one at a time
+
   private final Map<String, ElectionContext> electionContexts = Collections.synchronizedMap(new HashMap<String, ElectionContext>());
   
   private SolrZkClient zkClient;
@@ -951,11 +955,23 @@ public final class ZkController {
   private void publishState() {
     final String nodePath = "/node_states/" + getNodeName();
 
+    long version;
+    byte[] coreStatesData;
     synchronized (coreStates) {
+      version = ++coreStatesVersion;
+      coreStatesData = ZkStateReader.toJSON(coreStates.values());
+    }
+
+    // if multiple threads are trying to publish state, make sure that we never write
+    // an older version after a newer version.
+    synchronized (coreStatesPublishLock) {
       try {
-        zkClient.setData(nodePath, ZkStateReader.toJSON(coreStates.values()),
-            true);
-        
+        if (version < coreStatesPublishedVersion) {
+          log.info("Another thread already published a newer coreStates: ours="+version + " lastPublished=" + coreStatesPublishedVersion);
+        } else {
+          zkClient.setData(nodePath, coreStatesData, true);
+          coreStatesPublishedVersion = version;  // put it after so it won't be set if there's an exception
+        }
       } catch (KeeperException e) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
             "could not publish node state", e);
