@@ -220,7 +220,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       assertNotNull("New leader was null.",
           reader.getLeaderUrl("collection1", "shard1", 15000));
 
-      Thread.sleep(1000);
+      Thread.sleep(2000);
       assertEquals("shard was not unregistered", 1, zkController.getZkStateReader().getCloudState().getSlice("collection1", "shard1").getShards().size());
     } finally {
       if (DEBUG) {
