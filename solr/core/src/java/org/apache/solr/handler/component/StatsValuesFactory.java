@@ -17,15 +17,15 @@
 
 package org.apache.solr.handler.component;
 
-import java.text.ParseException;
-import java.util.Date;
-import java.util.Map;
-import java.util.HashMap;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.*;
+
+import java.text.ParseException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Factory class for creating instance of {@link org.apache.solr.handler.component.StatsValues}
@@ -64,7 +64,7 @@ public class StatsValuesFactory {
 /**
  * Abstract implementation of {@link org.apache.solr.handler.component.StatsValues} that provides the default behavior
  * for most StatsValues implementations.
- *
+ * <p/>
  * There are very few requirements placed on what statistics concrete implementations should collect, with the only required
  * statistics being the minimum and maximum values.
  */
@@ -171,7 +171,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     res.add("missing", missing);
     addTypeSpecificStats(res);
 
-     // add the facet stats
+    // add the facet stats
     NamedList<NamedList<?>> nl = new SimpleOrderedMap<NamedList<?>>();
     for (Map.Entry<String, Map<String, StatsValues>> entry : facets.entrySet()) {
       NamedList<NamedList<?>> nl2 = new SimpleOrderedMap<NamedList<?>>();
@@ -230,7 +230,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   protected abstract void addTypeSpecificStats(NamedList<Object> res);
 }
 
- /**
+/**
  * Implementation of StatsValues that supports Double values
  */
 class NumericStatsValues extends AbstractStatsValues<Number> {
@@ -248,8 +248,8 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
    * {@inheritDoc}
    */
   public void updateTypeSpecificStats(NamedList stv) {
-    sum += ((Number)stv.get("sum")).doubleValue();
-    sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
+    sum += ((Number) stv.get("sum")).doubleValue();
+    sumOfSquares += ((Number) stv.get("sumOfSquares")).doubleValue();
   }
 
   /**
@@ -270,7 +270,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     sum += value * count;
   }
 
-   /**
+  /**
    * {@inheritDoc}
    */
   protected void updateMinMax(Number min, Number max) {
@@ -347,14 +347,14 @@ class DateStatsValues extends AbstractStatsValues<Date> {
     sum += value.getTime() * count;
   }
 
-   /**
+  /**
    * {@inheritDoc}
    */
   protected void updateMinMax(Date min, Date max) {
-    if(this.min==null || this.min.after(min)) {
+    if (this.min == null || this.min.after(min)) {
       this.min = min;
     }
-    if(this.max==null || this.max.before(min)) {
+    if (this.max == null || this.max.before(min)) {
       this.max = max;
     }
   }
@@ -381,7 +381,9 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    */
   protected void addTypeSpecificStats(NamedList<Object> res) {
     res.add("sum", new Date(sum));
-    res.add("mean", new Date(sum / count));
+    if (count > 0) {
+      res.add("mean", new Date(sum / count));
+    }
   }
 }
 
@@ -415,7 +417,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
     // No type specific stats
   }
 
-   /**
+  /**
    * {@inheritDoc}
    */
   protected void updateMinMax(String min, String max) {
