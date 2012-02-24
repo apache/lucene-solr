@@ -453,6 +453,9 @@ Upgrading from Solr 3.5
   HTMLStripCharFilter in Solr version 3.5 and earlier: the old implementation
   (bugs and all) is preserved as LegacyHTMLStripCharFilter.
 
+* SOLR-3040: The DIH's admin UI (dataimport.jsp) now requires DIH request handlers to start with
+  a '/'. (dsmiley)
+
 New Features
 ----------------------
 * SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from

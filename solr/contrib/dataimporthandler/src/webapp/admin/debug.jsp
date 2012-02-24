@@ -30,9 +30,8 @@
 <%
   String handler = request.getParameter("handler");  // must be specified
 %>
-<form action="../select" target="result" method="get">
+<form action="..<%=handler%>" target="result" method="get">
 <input type="hidden" name="debug" value="on"/>
-<input type="hidden" name="qt" value="<%=handler%>"/>
 <table>
   <tr>
     <th>Handler: </th>
@@ -69,17 +68,16 @@
 	<tr>
 		<td colspan="2"><textarea id="txtDataConfig" rows="30" cols="80" name="dataConfig"></textarea></td>
     <script type="text/javascript" language="javascript">
-        $.get("../select?qt=<%=handler%>&command=show-config", function(data){
+        $.get("..<%=handler%>?command=show-config", function(data){
             $('#txtDataConfig').attr('value', data);
         });
     </script>
 	</tr>
 </table>
 </form>
-<form action="../select" target="result" method="get">
+<form action="..<%=handler%>" target="result" method="get">
 	<input type="hidden" name="clean" value="false">
 	<input type="hidden" name="commit" value="true">
-  <input type="hidden" name="qt" value="<%=handler%>"/>
 	<input class="stdbutton" type="submit" name="command" value="full-import">
 	<input class="stdbutton" type="submit" name="command" value="delta-import">
 	<input class="stdbutton" type="submit" name="command" value="status">
@@ -92,8 +90,7 @@
 	<input type="hidden" name="rows" value="0">
 	<input class="stdbutton" type="submit" value="Documents Count">
 </form>
-<form action="../select" target="result" method="get">
-  <input type="hidden" name="qt" value="<%=handler%>"/>
+<form action="..<%=handler%>" target="result" method="get">
 	<input type="hidden" name="verbose" value="true">
 	<input type="hidden" name="clean" value="true">
 	<input type="hidden" name="commit" value="true">
