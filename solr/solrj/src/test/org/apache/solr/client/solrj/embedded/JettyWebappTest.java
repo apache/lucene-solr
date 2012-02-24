@@ -26,11 +26,16 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.ExternalPaths;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.servlet.HashSessionIdManager;
-import org.mortbay.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.Ignore;
 
 /**
  *
@@ -80,6 +85,8 @@ public class JettyWebappTest extends LuceneTestCase
     super.tearDown();
   }
   
+  @Ignore // JSP not included in 4.0
+  @Deprecated
   public void testJSP() throws Exception
   {
     // Currently not an extensive test, but it does fire up the JSP pages and make 

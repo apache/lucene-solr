@@ -17,10 +17,10 @@
 
 package org.apache.solr.client.solrj;
 
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * @since solr 1.3
@@ -31,6 +31,9 @@ public class StartSolrJetty
   {
     //System.setProperty("solr.solr.home", "../../../example/solr");
 
+    javax.servlet.FilterRegistration xx;
+    
+    
     Server server = new Server();
     SocketConnector connector = new SocketConnector();
     // Set some timeout options to make debugging easier.
@@ -52,7 +55,7 @@ public class StartSolrJetty
 //      mBeanContainer.start();
 //    }
     
-    server.addHandler(bb);
+    server.setHandler(bb);
 
     try {
       System.out.println(">>> STARTING EMBEDDED JETTY SERVER, PRESS ANY KEY TO STOP");
