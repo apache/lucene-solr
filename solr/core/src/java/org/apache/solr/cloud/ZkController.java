@@ -87,7 +87,7 @@ public final class ZkController {
   public final static String COLLECTION_PARAM_PREFIX="collection.";
   public final static String CONFIGNAME_PROP="configName";
 
-  private Map<String, CoreState> coreStates = null;
+  private Map<String, CoreState> coreStates = new HashMap<String, CoreState>();   // key is the local core name
   private long coreStatesVersion; // bumped by 1 each time we serialize coreStates... sync on  coreStates
   private long coreStatesPublishedVersion; // last version published to ZK... sync on coreStatesPublishLock
   private Object coreStatesPublishLock = new Object(); // only publish one at a time
@@ -382,14 +382,14 @@ public final class ZkController {
 
     final byte[] data = zkClient.getData(path, null, null, true);
 
-    coreStates = new HashMap<String,CoreState>();
-
     if (data != null) {
-        CoreState[] states = CoreState.load(data);
-        List<CoreState> stateList = Arrays.asList(states);
-        for(CoreState coreState: stateList) {
+      CoreState[] states = CoreState.load(data);
+      synchronized (coreStates) {
+        coreStates.clear();    // TODO: should we do this?
+        for(CoreState coreState: states) {
           coreStates.put(coreState.getCoreName(), coreState);
         }
+      }
     }
     log.debug("after sync: " + coreStates);
   }
@@ -758,11 +758,11 @@ public final class ZkController {
    */
   public void unregister(String coreName, CloudDescriptor cloudDesc)
       throws InterruptedException, KeeperException {
-    final String zkNodeName = getNodeName() + "_" + coreName;
     synchronized (coreStates) {
-      coreStates.remove(zkNodeName);
+      coreStates.remove(coreName);
     }
     publishState();
+    final String zkNodeName = getNodeName() + "_" + coreName;
     ElectionContext context = electionContexts.remove(zkNodeName);
     if (context != null) {
       context.cancelElection();
@@ -946,7 +946,7 @@ public final class ZkController {
         cloudDesc.getCollectionName(), props, numShards);
     
     synchronized (coreStates) {
-      coreStates.put(shardZkNodeName, coreState);
+      coreStates.put(coreName, coreState);
     }
     
     publishState();
