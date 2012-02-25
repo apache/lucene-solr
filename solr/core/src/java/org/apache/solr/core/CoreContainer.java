@@ -173,8 +173,9 @@ public class CoreContainer
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
     if (zkRun != null) {
-      String zkDataDir = System.getProperty("zkServerDataDir", solrHome);
-      zkServer = new SolrZkServer(zkRun, zookeeperHost, zkDataDir, hostPort);
+      String zkDataHome = System.getProperty("zkServerDataDir", solrHome + "zoo_data");
+      String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
+      zkServer = new SolrZkServer(zkRun, zookeeperHost, zkDataHome, zkConfHome, hostPort);
       zkServer.parseConfig();
       zkServer.start();
       

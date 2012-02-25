@@ -130,7 +130,7 @@ public final class ZkController {
     }
     SolrZkServer zkServer = null;
     if (solrHome != null) {
-      zkServer = new SolrZkServer("true", null, solrHome, solrPort);
+      zkServer = new SolrZkServer("true", null, solrHome + "/zoo_data", solrHome, solrPort);
       zkServer.parseConfig();
       zkServer.start();
     }
