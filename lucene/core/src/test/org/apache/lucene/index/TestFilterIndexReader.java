@@ -146,6 +146,22 @@ public class TestFilterIndexReader extends LuceneTestCase {
     directory.close();
   }
 
+  private void checkOverrideMethods(Class<?> clazz) throws Exception {
+    boolean fail = false;
+    for (Method m : clazz.getMethods()) {
+      int mods = m.getModifiers();
+      if (Modifier.isStatic(mods) || Modifier.isFinal(mods) || m.isSynthetic()) {
+        continue;
+      }
+      Class<?> declaringClass = m.getDeclaringClass();
+      if (declaringClass != clazz && declaringClass != Object.class) {
+        System.err.println("method is not overridden by "+clazz.getName()+": " + m.toGenericString());
+        fail = true;
+      }
+    }
+    assertFalse(clazz.getName()+" does not override some methods; see log above", fail);
+  }
+
   public void testOverrideMethods() throws Exception {
     HashSet<String> methodsThatShouldNotBeOverridden = new HashSet<String>();
     methodsThatShouldNotBeOverridden.add("reopen");
@@ -154,10 +170,10 @@ public class TestFilterIndexReader extends LuceneTestCase {
     boolean fail = false;
     for (Method m : FilterIndexReader.class.getMethods()) {
       int mods = m.getModifiers();
-      if (Modifier.isStatic(mods) || Modifier.isFinal(mods)) {
+      if (Modifier.isStatic(mods) || Modifier.isFinal(mods) || m.isSynthetic()) {
         continue;
       }
-      Class< ? > declaringClass = m.getDeclaringClass();
+      Class<?> declaringClass = m.getDeclaringClass();
       String name = m.getName();
       if (declaringClass != FilterIndexReader.class && declaringClass != Object.class && !methodsThatShouldNotBeOverridden.contains(name)) {
         System.err.println("method is not overridden by FilterIndexReader: " + name);
@@ -168,6 +184,13 @@ public class TestFilterIndexReader extends LuceneTestCase {
       }
     }
     assertFalse("FilterIndexReader overrides (or not) some problematic methods; see log above", fail);
+    
+    // some more inner classes:
+    checkOverrideMethods(FilterIndexReader.FilterTermEnum.class);
+    checkOverrideMethods(FilterIndexReader.FilterTermDocs.class);
+    // TODO: FilterTermPositions should extend correctly, this is borken,
+    // but for backwards compatibility we let it be:
+    // checkOverrideMethods(FilterIndexReader.FilterTermPositions.class);
   }
 
 }
