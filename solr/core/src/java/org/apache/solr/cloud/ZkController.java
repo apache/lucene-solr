@@ -273,6 +273,13 @@ public final class ZkController {
     return zkStateReader.getCloudState();
   }
 
+  /** @return the CoreState for the core, which may not yet be visible to ZooKeeper or other nodes in the cluster */
+  public CoreState getCoreState(String coreName) {
+    synchronized (coreStates) {
+      return coreStates.get(coreName);
+    }
+  }
+
   /**
    * @param zkConfigName
    * @param fileName
@@ -557,29 +564,28 @@ public final class ZkController {
       try {
         core = cc.getCore(desc.getName());
 
-        if (isLeader) {
-          // recover from local transaction log and wait for it to complete before
-          // going active
-          // TODO: should this be moved to another thread? To recoveryStrat?
-          // TODO: should this actually be done earlier, before (or as part of)
-          // leader election perhaps?
-          // TODO: ensure that a replica that is trying to recover waits until I'm
-          // active (or don't make me the
-          // leader until my local replay is done. But this replay is only needed
-          // on the leader - replicas
-          // will do recovery anyway
-          
-          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-          if (!core.isReloaded() && ulog != null) {
-            Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
-                .getUpdateLog().recoverFromLog();
-            if (recoveryFuture != null) {
-              recoveryFuture.get(); // NOTE: this could potentially block for
-                                    // minutes or more!
-              // TODO: public as recovering in the mean time?
-            }
+
+        // recover from local transaction log and wait for it to complete before
+        // going active
+        // TODO: should this be moved to another thread? To recoveryStrat?
+        // TODO: should this actually be done earlier, before (or as part of)
+        // leader election perhaps?
+        // TODO: if I'm the leader, ensure that a replica that is trying to recover waits until I'm
+        // active (or don't make me the
+        // leader until my local replay is done.
+
+        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+        if (!core.isReloaded() && ulog != null) {
+          Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
+              .getUpdateLog().recoverFromLog();
+          if (recoveryFuture != null) {
+            recoveryFuture.get(); // NOTE: this could potentially block for
+            // minutes or more!
+            // TODO: public as recovering in the mean time?
+            // TODO: in the future we could do peerync in parallel with recoverFromLog
           }
         }
+
         
         boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
             collection, coreZkNodeName, shardId, leaderProps, core, cc);
