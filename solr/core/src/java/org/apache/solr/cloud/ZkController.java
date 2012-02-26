@@ -100,14 +100,15 @@ public final class ZkController {
 
   private LeaderElector leaderElector;
   
-  private String zkServerAddress;
+  private String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
-  private String localHostPort;
-  private String localHostContext;
-  private String localHostName;
-  private String localHost;
+  private final String localHostPort;      // example: 54065
+  private final String localHostContext;   // example: solr
+  private final String localHost;          // example: http://127.0.0.1
+  private final String hostName;           // example: 127.0.0.1
+  private final String nodeName;           // example: 127.0.0.1:54065_solr
+  private final String baseURL;            // example: http://127.0.0.1:54065/solr
 
-  private String hostName;
 
   private LeaderElector overseerElector;
   
@@ -172,7 +173,10 @@ public final class ZkController {
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
-    this.localHost = localHost;
+    this.localHost = getHostAddress(localHost);
+    this.hostName = getHostNameFromAddress(this.localHost);
+    this.nodeName = this.hostName + ':' + this.localHostPort + '_' + this.localHostContext;
+    this.baseURL = this.localHost + ":" + this.localHostPort + "/" + this.localHostContext;
 
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
@@ -300,23 +304,38 @@ public final class ZkController {
     return bytes;
   }
 
-  // TODO: consider how this is done
-  private String getHostAddress() throws IOException {
+  // normalize host to url_prefix://host
+  // input can be null, host, or url_prefix://host
+  private String getHostAddress(String host) throws IOException {
 
-    if (localHost == null) {
-      localHost = "http://" + InetAddress.getLocalHost().getHostName();
+    if (host == null) {
+      host = "http://" + InetAddress.getLocalHost().getHostName();
     } else {
-      Matcher m = URL_PREFIX.matcher(localHost);
+      Matcher m = URL_PREFIX.matcher(host);
       if (m.matches()) {
         String prefix = m.group(1);
-        localHost = prefix + localHost;
+        host = prefix + host;
       } else {
-        localHost = "http://" + localHost;
+        host = "http://" + host;
       }
     }
 
-    return localHost;
+    return host;
   }
+
+  // extract host from url_prefix://host
+  private String getHostNameFromAddress(String addr) {
+    Matcher m = URL_POST.matcher(addr);
+    if (m.matches()) {
+      return m.group(1);
+    } else {
+      log.error("Unrecognized host:" + addr);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unrecognized host:" + addr);
+    }
+  }
+  
+  
   
   public String getHostName() {
     return hostName;
@@ -336,17 +355,6 @@ public final class ZkController {
   private void init() {
 
     try {
-      localHostName = getHostAddress();
-      Matcher m = URL_POST.matcher(localHostName);
-
-      if (m.matches()) {
-        hostName = m.group(1);
-      } else {
-        log.error("Unrecognized host:" + localHostName);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unrecognized host:" + localHostName);
-      }
-      
       // makes nodes zkNode
       cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
       
@@ -440,7 +448,7 @@ public final class ZkController {
   }
   
   public String getNodeName() {
-    return hostName + ":" + localHostPort + "_" + localHostContext;
+    return nodeName;
   }
 
   /**
@@ -694,8 +702,7 @@ public final class ZkController {
 
 
   public String getBaseUrl() {
-    final String baseUrl = localHostName + ":" + localHostPort + "/" + localHostContext;
-    return baseUrl;
+    return baseURL;
   }
 
 
