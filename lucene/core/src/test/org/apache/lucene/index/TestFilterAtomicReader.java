@@ -187,7 +187,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
         fail = true;
       }
     }
-    assertFalse(clazz.getName()+"does not override some methods; see log above", fail);
+    assertFalse(clazz.getName()+" does not override some methods; see log above", fail);
   }
 
   public void testOverrideMethods() throws Exception {
