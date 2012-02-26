@@ -180,7 +180,7 @@ public class MultiPassIndexSplitter {
   private static final class FakeDeleteIndexReader extends MultiReader {
 
     public FakeDeleteIndexReader(IndexReader reader) throws IOException {
-      super(initSubReaders(reader), false /* dont close */);
+      super(initSubReaders(reader));
     }
     
     private static AtomicReader[] initSubReaders(IndexReader reader) throws IOException {
