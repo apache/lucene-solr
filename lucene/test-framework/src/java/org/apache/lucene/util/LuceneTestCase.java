@@ -55,8 +55,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CompositeReader;
-import org.apache.lucene.index.FilterAtomicReader;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldFilterAtomicReader;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -1349,45 +1349,56 @@ public abstract class LuceneTestCase extends Assert {
   
   /** Sometimes wrap the IndexReader as slow, parallel or filter reader (or combinations of that) */
   public static IndexReader maybeWrapReader(IndexReader r) throws IOException {
-    // TODO: remove this, and fix those tests to wrap before putting slow around:
-    final boolean wasOriginallyAtomic = r instanceof AtomicReader;
     if (rarely()) {
+      // TODO: remove this, and fix those tests to wrap before putting slow around:
+      final boolean wasOriginallyAtomic = r instanceof AtomicReader;
       for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
         switch(random.nextInt(4)) {
           case 0:
             r = SlowCompositeReaderWrapper.wrap(r);
             break;
           case 1:
+            // will create no FC insanity as Parallel*Reader has own cache key:
             r = (r instanceof AtomicReader) ?
               new ParallelAtomicReader((AtomicReader) r) :
               new ParallelCompositeReader((CompositeReader) r);
             break;
           case 2:
-            if (!wasOriginallyAtomic) { // dont wrap originally atomic readers to be composite (some tests don't like)
-              r = new MultiReader(r);
-            }
+            // Häckidy-Hick-Hack: this will create FC insanity, so we patch MultiReader to
+            // return a fake cache key, so insanity checker cannot walk along our reader:
+            r = new MultiReader(r) {
+              private final Object cacheKey = new Object();
+              @Override public Object getCoreCacheKey() { return cacheKey; }
+              @Override public Object getCombinedCoreAndDeletesKey() { return cacheKey; }
+              @Override public String toString() { return "MultiReader(" + subReaders[0] + ")"; }
+            };
             break;
           case 3:
-            if (r instanceof AtomicReader) {
-              r = new FilterAtomicReader((AtomicReader) r) {
-                @Override
-                public Fields fields() throws IOException {
-                  Fields f = super.fields();
-                  if (f == null) {
-                    return null;
-                  } else {
-                    return new FilterFields(f);
-                  }
-                }
-              };
+            final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+            final List<String> allFields = new ArrayList<String>();
+            for (FieldInfo fi : ar.getFieldInfos()) {
+              allFields.add(fi.name);
             }
+            Collections.shuffle(allFields, random);
+            final int end = allFields.isEmpty() ? 0 : random.nextInt(allFields.size());
+            final Set<String> fields = new HashSet<String>(allFields.subList(0, end));
+            // will create no FC insanity as ParallelAtomicReader has own cache key:
+            r = new ParallelAtomicReader(
+              new FieldFilterAtomicReader(ar, fields, false),
+              new FieldFilterAtomicReader(ar, fields, true)
+            );
             break;
           default:
             fail("should not get here");
         }
       }
+      if (wasOriginallyAtomic) {
+        r = SlowCompositeReaderWrapper.wrap(r);
+      }
+      if (VERBOSE) {
+        System.out.println("maybeWrapReader wrapped: " +r);
+      }
     }
-    //System.out.println(r);
     return r;
   }
 
