@@ -138,7 +138,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    ignoreException(".*");
+    // ignoreException(".*");
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
