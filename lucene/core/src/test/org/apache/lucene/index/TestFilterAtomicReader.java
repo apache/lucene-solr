@@ -21,8 +21,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.HashSet;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
@@ -31,7 +29,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ReaderUtil;
 
 public class TestFilterAtomicReader extends LuceneTestCase {
 
@@ -176,22 +173,31 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     directory.close();
     target.close();
   }
-
-  public void testOverrideMethods() throws Exception {
+  
+  private void checkOverrideMethods(Class<?> clazz) throws Exception {
     boolean fail = false;
-    for (Method m : FilterAtomicReader.class.getMethods()) {
+    for (Method m : clazz.getMethods()) {
       int mods = m.getModifiers();
       if (Modifier.isStatic(mods) || Modifier.isFinal(mods) || m.isSynthetic()) {
         continue;
       }
       Class<?> declaringClass = m.getDeclaringClass();
-      String name = m.getName();
-      if (declaringClass != FilterAtomicReader.class && declaringClass != Object.class) {
-        System.err.println("method is not overridden by FilterIndexReader: " + name);
+      if (declaringClass != clazz && declaringClass != Object.class) {
+        System.err.println("method is not overridden by "+clazz.getName()+": " + m.toGenericString());
         fail = true;
       }
     }
-    assertFalse("FilterIndexReader overrides (or not) some problematic methods; see log above", fail);
+    assertFalse(clazz.getName()+"does not override some methods; see log above", fail);
+  }
+
+  public void testOverrideMethods() throws Exception {
+    checkOverrideMethods(FilterAtomicReader.class);
+    checkOverrideMethods(FilterAtomicReader.FilterFields.class);
+    checkOverrideMethods(FilterAtomicReader.FilterTerms.class);
+    checkOverrideMethods(FilterAtomicReader.FilterFieldsEnum.class);
+    checkOverrideMethods(FilterAtomicReader.FilterTermsEnum.class);
+    checkOverrideMethods(FilterAtomicReader.FilterDocsEnum.class);
+    checkOverrideMethods(FilterAtomicReader.FilterDocsAndPositionsEnum.class);
   }
 
 }

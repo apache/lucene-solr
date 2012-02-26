@@ -17,8 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -37,7 +39,7 @@ public class FilterAtomicReader extends AtomicReader {
   /** Base class for filtering {@link Fields}
    *  implementations. */
   public static class FilterFields extends Fields {
-    protected Fields in;
+    protected final Fields in;
 
     public FilterFields(Fields in) {
       this.in = in;
@@ -57,12 +59,17 @@ public class FilterAtomicReader extends AtomicReader {
     public int getUniqueFieldCount() throws IOException {
       return in.getUniqueFieldCount();
     }
+
+    @Override
+    public long getUniqueTermCount() throws IOException {
+      return in.getUniqueTermCount();
+    }
   }
 
   /** Base class for filtering {@link Terms}
    *  implementations. */
   public static class FilterTerms extends Terms {
-    protected Terms in;
+    protected final Terms in;
 
     public FilterTerms(Terms in) {
       this.in = in;
@@ -97,11 +104,16 @@ public class FilterAtomicReader extends AtomicReader {
     public int getDocCount() throws IOException {
       return in.getDocCount();
     }
+    
+    @Override
+    public TermsEnum intersect(CompiledAutomaton automaton, BytesRef bytes) throws java.io.IOException {
+      return in.intersect(automaton, bytes);
+    }
   }
 
   /** Base class for filtering {@link TermsEnum} implementations. */
   public static class FilterFieldsEnum extends FieldsEnum {
-    protected FieldsEnum in;
+    protected final FieldsEnum in;
     public FilterFieldsEnum(FieldsEnum in) {
       this.in = in;
     }
@@ -115,11 +127,16 @@ public class FilterAtomicReader extends AtomicReader {
     public Terms terms() throws IOException {
       return in.terms();
     }
+    
+    @Override
+    public AttributeSource attributes() {
+      return in.attributes();
+    }
   }
 
   /** Base class for filtering {@link TermsEnum} implementations. */
   public static class FilterTermsEnum extends TermsEnum {
-    protected TermsEnum in;
+    protected final TermsEnum in;
 
     public FilterTermsEnum(TermsEnum in) { this.in = in; }
 
@@ -187,11 +204,16 @@ public class FilterAtomicReader extends AtomicReader {
     public TermState termState() throws IOException {
       return in.termState();
     }
+    
+    @Override
+    public AttributeSource attributes() {
+      return in.attributes();
+    }
   }
 
   /** Base class for filtering {@link DocsEnum} implementations. */
   public static class FilterDocsEnum extends DocsEnum {
-    protected DocsEnum in;
+    protected final DocsEnum in;
 
     public FilterDocsEnum(DocsEnum in) {
       this.in = in;
@@ -216,11 +238,16 @@ public class FilterAtomicReader extends AtomicReader {
     public int advance(int target) throws IOException {
       return in.advance(target);
     }
+    
+    @Override
+    public AttributeSource attributes() {
+      return in.attributes();
+    }
   }
 
   /** Base class for filtering {@link DocsAndPositionsEnum} implementations. */
   public static class FilterDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    protected DocsAndPositionsEnum in;
+    protected final DocsAndPositionsEnum in;
 
     public FilterDocsAndPositionsEnum(DocsAndPositionsEnum in) {
       this.in = in;
@@ -270,9 +297,14 @@ public class FilterAtomicReader extends AtomicReader {
     public boolean hasPayload() {
       return in.hasPayload();
     }
+    
+    @Override
+    public AttributeSource attributes() {
+      return in.attributes();
+    }
   }
 
-  protected AtomicReader in;
+  protected final AtomicReader in;
 
   /**
    * <p>Construct a FilterAtomicReader based on the specified base reader.
