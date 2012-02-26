@@ -229,10 +229,11 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         if (startingRecentVersions.get(oldIdx) == firstStartingVersion) break;
       }
 
-      if (oldIdx < startingRecentVersions.size()) {
-        log.info("####### Found new versions added after startup: num=" + (startingRecentVersions.size()-oldIdx));
+      if (oldIdx > 0) {
+        log.info("####### Found new versions added after startup: num=" + oldIdx);
       }
-      
+
+      // TODO: only log at debug level in the future (or move to oldIdx > 0 block)
       log.info("###### startupVersions=" + reallyStartingVersions);
       log.info("###### currentVersions=" + startingRecentVersions);
     }
