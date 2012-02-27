@@ -200,9 +200,13 @@ public final class ZkController {
                 for (CoreDescriptor descriptor : descriptors) {
                   final String coreZkNodeName = getNodeName() + "_"
                       + descriptor.getName();
-                  publishAsDown(getBaseUrl(), descriptor, coreZkNodeName,
-                      descriptor.getName());
-                  waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
+                  try {
+                    publishAsDown(getBaseUrl(), descriptor, coreZkNodeName,
+                        descriptor.getName());
+                    waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
+                  } catch (Exception e) {
+                    SolrException.log(log, "", e);
+                  }
                 }
               }
               
@@ -1084,16 +1088,25 @@ public final class ZkController {
     CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
     String collection = cloudDesc.getCollectionName();
     String shard = cloudDesc.getShardId();
-    ZkCoreNodeProps leaderProps;
-    try {
-      // go straight to zk, not the cloud state - we must have current info
-      leaderProps = getLeaderProps(collection, shard);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-    } catch (KeeperException e) {
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    ZkCoreNodeProps leaderProps = null;
+    
+    int retries = 6;
+    for (int i = 0; i < retries; i++) {
+      try {
+        // go straight to zk, not the cloud state - we must have current info
+        leaderProps = getLeaderProps(collection, shard);
+        break;
+      } catch (Exception e) {
+        SolrException.log(log, "There was a problem finding the leader in zk", e);
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException e1) {
+          Thread.currentThread().interrupt();
+        }
+        if (i == retries - 1) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "There was a problem finding the leader in zk");
+        }
+      }
     }
     
     String leaderBaseUrl = leaderProps.getBaseUrl();
@@ -1122,7 +1135,8 @@ public final class ZkController {
       
       // let's retry a couple times - perhaps the leader just went down,
       // or perhaps he is just not quite ready for us yet
-      for (int i = 0; i < 3; i++) {
+      retries = 6;
+      for (int i = 0; i < retries; i++) {
         try {
           server.request(prepCmd);
           break;
@@ -1132,6 +1146,9 @@ public final class ZkController {
             Thread.sleep(2000);
           } catch (InterruptedException e1) {
             Thread.currentThread().interrupt();
+          }
+          if (i == retries - 1) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "There was a problem making a request to the leader");
           }
         }
       }
