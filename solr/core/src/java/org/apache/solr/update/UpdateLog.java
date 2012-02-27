@@ -28,6 +28,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -68,6 +69,11 @@ public class UpdateLog implements PluginInfoInitialized {
     public int deletes;
     public int deleteByQuery;
     public int errors;
+
+    @Override
+    public String toString() {
+      return "RecoveryInfo{adds="+adds+" deletes="+deletes+ " deleteByQuery="+deleteByQuery+" errors="+errors + " positionOfStart="+positionOfStart+"}";
+    }
   }
 
 
@@ -906,14 +912,17 @@ public class UpdateLog implements PluginInfoInitialized {
 
 
   private RecoveryInfo recoveryInfo;
+  public static Logger loglog = LoggerFactory.getLogger(LogReplayer.class);
 
   // TODO: do we let the log replayer run across core reloads?
   class LogReplayer implements Runnable {
+
+
     TransactionLog translog;
     TransactionLog.LogReader tlogReader;
     boolean activeLog;
     boolean finishing = false;  // state where we lock out other updates and finish those updates that snuck in before we locked
-
+    boolean debug = loglog.isDebugEnabled();
 
     public LogReplayer(TransactionLog translog, boolean activeLog) {
       this.translog = translog;
@@ -922,16 +931,17 @@ public class UpdateLog implements PluginInfoInitialized {
 
     @Override
     public void run() {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(DistributedUpdateProcessor.SEEN_LEADER, true);
+      SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));    // setting request info will help logging
+
       try {
 
-        uhandler.core.log.warn("Starting log replay " + translog + " active="+activeLog + "starting pos=" + recoveryInfo.positionOfStart);
+        loglog.warn("Starting log replay " + translog + " active="+activeLog + " starting pos=" + recoveryInfo.positionOfStart);
 
         tlogReader = translog.getReader(recoveryInfo.positionOfStart);
-
-        ModifiableSolrParams params = new ModifiableSolrParams();
-        params.set(DistributedUpdateProcessor.SEEN_LEADER, true);
-        SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
-        SolrQueryResponse rsp = new SolrQueryResponse();
 
         // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
         // to change underneath us.
@@ -1003,6 +1013,8 @@ public class UpdateLog implements PluginInfoInitialized {
                 cmd.solrDoc = sdoc;
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
+                if (debug) log.debug("add " +  cmd);
+
                 proc.processAdd(cmd);
                 break;
               }
@@ -1014,6 +1026,7 @@ public class UpdateLog implements PluginInfoInitialized {
                 cmd.setIndexedId(new BytesRef(idBytes));
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
+                if (debug) log.debug("delete " +  cmd);
                 proc.processDelete(cmd);
                 break;
               }
@@ -1026,6 +1039,7 @@ public class UpdateLog implements PluginInfoInitialized {
                 cmd.query = query;
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
+                if (debug) log.debug("deleteByQuery " +  cmd);
                 proc.processDelete(cmd);
                 break;
               }
@@ -1041,20 +1055,20 @@ public class UpdateLog implements PluginInfoInitialized {
             }
 
             if (rsp.getException() != null) {
-              log.error("Exception replaying log", rsp.getException());
+              loglog.error("REPLAY_ERR: Exception replaying log", rsp.getException());
               throw rsp.getException();
             }
           } catch (IOException ex) {
             recoveryInfo.errors++;
-            log.warn("IOException reading log", ex);
+            loglog.warn("REYPLAY_ERR: IOException reading log", ex);
             // could be caused by an incomplete flush if recovering from log
           } catch (ClassCastException cl) {
             recoveryInfo.errors++;
-            log.warn("Unexpected log entry or corrupt log.  Entry=" + o, cl);
+            loglog.warn("REPLAY_ERR: Unexpected log entry or corrupt log.  Entry=" + o, cl);
             // would be caused by a corrupt transaction log
           } catch (Throwable ex) {
             recoveryInfo.errors++;
-            log.warn("Exception replaying log", ex);
+            loglog.warn("REPLAY_ERR: Exception replaying log", ex);
             // something wrong with the request?
           }
         }
@@ -1065,10 +1079,11 @@ public class UpdateLog implements PluginInfoInitialized {
         cmd.waitSearcher = true;
         cmd.setFlags(UpdateCommand.REPLAY);
         try {
+          if (debug) log.debug("commit " +  cmd);
           uhandler.commit(cmd);          // this should cause a commit to be added to the incomplete log and avoid it being replayed again after a restart.
         } catch (IOException ex) {
           recoveryInfo.errors++;
-          log.error("Replay exception: final commit.", ex);
+          loglog.error("Replay exception: final commit.", ex);
         }
         
         if (!activeLog) {
@@ -1081,7 +1096,7 @@ public class UpdateLog implements PluginInfoInitialized {
           proc.finish();
         } catch (IOException ex) {
           recoveryInfo.errors++;
-          log.error("Replay exception: finish()", ex);
+          loglog.error("Replay exception: finish()", ex);
         }
 
         tlogReader.close();
@@ -1098,9 +1113,11 @@ public class UpdateLog implements PluginInfoInitialized {
         }
       }
 
-      log.warn("Ending log replay " + tlogReader);
+      loglog.warn("Ending log replay " + tlogReader + " recoveryInfo=" + recoveryInfo);
 
       if (testing_logReplayFinishHook != null) testing_logReplayFinishHook.run();
+
+      SolrRequestInfo.clearRequestInfo();
     }
   }
   
