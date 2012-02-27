@@ -542,7 +542,7 @@ public class CoreContainer
 
     if (zkController != null) {
       // this happens before we can receive requests
-      zkController.preRegisterSetup(core, core.getCoreDescriptor(), false);
+      zkController.preRegister(core.getCoreDescriptor());
     }
     
     SolrCore old = null;

@@ -80,13 +80,12 @@ public  class LeaderElector {
    * @param seq
    * @param context 
    * @param replacement has someone else been the leader already?
-   * @param core 
    * @throws KeeperException
    * @throws InterruptedException
    * @throws IOException 
    * @throws UnsupportedEncodingException
    */
-  private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement, SolrCore core) throws KeeperException,
+  private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement) throws KeeperException,
       InterruptedException, IOException {
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
@@ -95,7 +94,7 @@ public  class LeaderElector {
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
     if (seq <= intSeqs.get(0)) {
-      runIamLeaderProcess(context, replacement, core);
+      runIamLeaderProcess(context, replacement);
     } else {
       // I am not the leader - watch the node below me
       int i = 1;
@@ -119,7 +118,7 @@ public  class LeaderElector {
               public void process(WatchedEvent event) {
                 // am I the next leader?
                 try {
-                  checkIfIamLeader(seq, context, true, null);
+                  checkIfIamLeader(seq, context, true);
                 } catch (InterruptedException e) {
                   // Restore the interrupted status
                   Thread.currentThread().interrupt();
@@ -137,15 +136,15 @@ public  class LeaderElector {
       } catch (KeeperException e) {
         // we couldn't set our watch - the node before us may already be down?
         // we need to check if we are the leader again
-        checkIfIamLeader(seq, context, true, null);
+        checkIfIamLeader(seq, context, true);
       }
     }
   }
 
   // TODO: get this core param out of here
-  protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement, SolrCore core) throws KeeperException,
+  protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
-    context.runLeaderProcess(weAreReplacement, core);
+    context.runLeaderProcess(weAreReplacement);
   }
   
   /**
@@ -206,7 +205,7 @@ public  class LeaderElector {
    * @throws IOException 
    * @throws UnsupportedEncodingException
    */
-  public int joinElection(ElectionContext context, SolrCore core) throws KeeperException, InterruptedException, IOException {
+  public int joinElection(ElectionContext context) throws KeeperException, InterruptedException, IOException {
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
@@ -249,7 +248,7 @@ public  class LeaderElector {
       }
     }
     int seq = getSeq(leaderSeqPath);
-    checkIfIamLeader(seq, context, false, core);
+    checkIfIamLeader(seq, context, false);
     
     return seq;
   }

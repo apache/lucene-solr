@@ -142,7 +142,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
               elector, shardId, collection, nodeName + "_" + coreName, props,
               zkStateReader);
-          elector.joinElection(ctx, null);
+          elector.joinElection(ctx);
           break;
         }
         Thread.sleep(200);
@@ -218,7 +218,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         collection1Desc.setCollectionName("collection1");
         CoreDescriptor desc1 = new CoreDescriptor(null, "core" + (i + 1), "");
         desc1.setCloudDescriptor(collection1Desc);
-        zkController.preRegisterSetup(null, desc1, false);
+        zkController.preRegister(desc1);
         ids[i] = zkController.register("core" + (i + 1), desc1);
       }
       
@@ -318,7 +318,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             final CoreDescriptor desc = new CoreDescriptor(null, coreName, "");
             desc.setCloudDescriptor(collection1Desc);
             try {
-              controllers[slot % nodeCount].preRegisterSetup(null, desc, false);
+              controllers[slot % nodeCount].preRegister(desc);
               ids[slot] = controllers[slot % nodeCount]
                   .register(coreName, desc);
             } catch (Throwable e) {
@@ -870,7 +870,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     LeaderElector overseerElector = new LeaderElector(zkClient);
     ElectionContext ec = new OverseerElectionContext(address.replaceAll("/", "_"), zkClient, reader);
     overseerElector.setup(ec);
-    overseerElector.joinElection(ec, null);
+    overseerElector.joinElection(ec);
     return zkClient;
   }
 }

@@ -190,7 +190,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         collection1Desc.setCollectionName("collection1");
         CoreDescriptor desc1 = new CoreDescriptor(null, "core" + (i + 1), "");
         desc1.setCloudDescriptor(collection1Desc);
-        zkController.preRegisterSetup(null, desc1, false);
+        zkController.preRegister(desc1);
         ids[i] = zkController.register("core" + (i + 1), desc1);
       }
       
