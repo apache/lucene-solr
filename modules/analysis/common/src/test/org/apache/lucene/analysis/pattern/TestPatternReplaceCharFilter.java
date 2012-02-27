@@ -279,7 +279,9 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     int numPatterns = atLeast(100);
-    for (int i = 0; i < numPatterns; i++) {
+    long start = System.currentTimeMillis();
+    long maxTime = 1000 * 2;
+    for (int i = 0; i < numPatterns && start + maxTime > System.currentTimeMillis(); i++) {
       final Pattern p = randomPattern();
       final String replacement = _TestUtil.randomSimpleString(random);
       Analyzer a = new Analyzer() {
