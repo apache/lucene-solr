@@ -75,6 +75,8 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     super.setUp();
     createTempDir();
     ignoreException("No UpdateLog found - cannot sync");
+    ignoreException("No UpdateLog found - cannot recover");
+    
     System.setProperty("zkClientTimeout", "3000");
     
     zkDir = dataDir.getAbsolutePath() + File.separator
