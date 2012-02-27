@@ -374,7 +374,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                + gen, e);
     }
     rsp.add(CMD_GET_FILE_LIST, result);
-    if (confFileNameAlias.size() < 1)
+    if (confFileNameAlias.size() < 1 || core.getCoreDescriptor().getCoreContainer().isZooKeeperAware())
       return;
     LOG.debug("Adding config files to list: " + includeConfFiles);
     //if configuration files need to be included get their details
