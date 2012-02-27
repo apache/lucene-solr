@@ -219,6 +219,12 @@ public class CoreContainer
           String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
           zkController.uploadConfigDir(dir, confName);
         }
+        
+        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+        if(boostrapConf) {
+          bootstrapConf();
+        }
+        
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -240,6 +246,28 @@ public class CoreContainer
       }
     }
     
+  }
+
+  private void bootstrapConf() throws IOException,
+      KeeperException, InterruptedException {
+
+    NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
+
+    for (int i=0; i<nodes.getLength(); i++) {
+      Node node = nodes.item(i);
+      String rawName = DOMUtil.getAttr(node, "name", null);
+      String instanceDir = DOMUtil.getAttr(node, "instanceDir", null);
+      File idir = new File(instanceDir);
+      if (!idir.isAbsolute()) {
+        idir = new File(solrHome, instanceDir);
+      }
+      String confName = DOMUtil.getAttr(node, "collection", null);
+      if (confName == null) {
+        confName = rawName;
+      }
+
+      zkController.uploadConfigDir(new File(idir, "conf"), confName);
+    }
   }
 
   public Properties getContainerProperties() {

@@ -878,6 +878,9 @@ public final class ZkController {
             if (!collectionProps.containsKey(CONFIGNAME_PROP))
               collectionProps.put(CONFIGNAME_PROP,  defaultConfigName);
 
+          } else if (Boolean.getBoolean("bootstrap_conf")) {
+            // the conf name should should be the collection name of this core
+            collectionProps.put(CONFIGNAME_PROP,  cd.getCollectionName());
           } else {
             getConfName(collection, collectionPath, collectionProps);
           }
@@ -920,9 +923,15 @@ public final class ZkController {
           break;
         }
       }
+      List<String> configNames = null;
       // if there is only one conf, use that
-      List<String> configNames = zkClient.getChildren(CONFIGS_ZKNODE, null, true);
-      if (configNames.size() == 1) {
+      try {
+        configNames = zkClient.getChildren(CONFIGS_ZKNODE, null,
+            true);
+      } catch (NoNodeException e) {
+        // just keep trying
+      }
+      if (configNames != null && configNames.size() == 1) {
         // no config set named, but there is only 1 - use it
         log.info("Only one config set found in zk - using it:" + configNames.get(0));
         collectionProps.put(CONFIGNAME_PROP,  configNames.get(0));
