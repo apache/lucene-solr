@@ -89,13 +89,13 @@
   <inceptionYear>2000</inceptionYear>
   <scm>
     <connection>
-      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x
     </connection>
     <developerConnection>
-      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x
     </developerConnection>
     <url>
-      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
+      http://svn.apache.org/viewvc/lucene/dev/branches/branch_3x
     </url>
   </scm>
   <licenses>

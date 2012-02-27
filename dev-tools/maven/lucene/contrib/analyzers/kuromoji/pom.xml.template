@@ -37,6 +37,17 @@
     <module-directory>lucene/contrib/analyzers/kuromoji</module-directory>
     <build-directory>../../../build/contrib/analyzers/kuromoji</build-directory>
   </properties>
+  <scm>
+    <connection>
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x/${module-directory}
+    </connection>
+    <developerConnection>
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x/${module-directory}
+    </developerConnection>
+    <url>
+      http://svn.apache.org/viewvc/lucene/dev/branches/branch_3x/${module-directory}
+    </url>
+  </scm>
   <dependencies>
     <dependency> 
       <!-- lucene-test-framework dependency must be declared before lucene-core -->

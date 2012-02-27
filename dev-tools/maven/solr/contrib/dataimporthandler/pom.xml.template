@@ -33,8 +33,19 @@
   <description>Apache Solr DataImportHandler</description>
   <properties>
     <module-directory>solr/contrib/dataimporthandler</module-directory>
-    <build-directory>../../build/contrib/dataimporthandler</build-directory>
+    <build-directory>../../build/contrib/solr-dataimporthandler</build-directory>
   </properties>
+  <scm>
+    <connection>
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x/${module-directory}
+    </connection>
+    <developerConnection>
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x/${module-directory}
+    </developerConnection>
+    <url>
+      http://svn.apache.org/viewvc/lucene/dev/branches/branch_3x/${module-directory}
+    </url>
+  </scm>
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>

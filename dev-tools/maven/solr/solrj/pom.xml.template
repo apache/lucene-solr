@@ -35,6 +35,17 @@
     <module-directory>solr/solrj</module-directory>
     <build-directory>../build/solr-solrj</build-directory>
   </properties>
+  <scm>
+    <connection>
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x/${module-directory}
+    </connection>
+    <developerConnection>
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x/${module-directory}
+    </developerConnection>
+    <url>
+      http://svn.apache.org/viewvc/lucene/dev/branches/branch_3x/${module-directory}
+    </url>
+  </scm>
   <dependencies>
     <dependency>
       <groupId>commons-httpclient</groupId>
