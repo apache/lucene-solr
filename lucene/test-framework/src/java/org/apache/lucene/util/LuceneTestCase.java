@@ -1573,4 +1573,8 @@ public abstract class LuceneTestCase extends Assert {
 
   @Ignore("just a hack")
   public final void alwaysIgnoredTestMethod() {}
+
+  protected static boolean defaultCodecSupportsDocValues() {
+    return !Codec.getDefault().getName().equals("Lucene3x");
+  }
 }

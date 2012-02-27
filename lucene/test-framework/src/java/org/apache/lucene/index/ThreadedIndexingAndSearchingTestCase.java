@@ -356,37 +356,29 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                       shift = 0;
                       trigger = 1;
                     } else {
-                      trigger = totTermCount.get()/10;
+                      trigger = totTermCount.get()/30;
                       shift = random.nextInt(trigger);
                     }
-                    BytesRef term = termsEnum.next();
-                    if (term == null) {
-                      if (seenTermCount == 0) {
+                    while (true) {
+                      BytesRef term = termsEnum.next();
+                      if (term == null) {
+                        if (seenTermCount == 0) {
+                          break;
+                        }
+                        totTermCount.set(seenTermCount);
                         break;
                       }
-                      totTermCount.set(seenTermCount);
-                      seenTermCount = 0;
-                      if (totTermCount.get() < 10) {
-                        shift = 0;
+                      seenTermCount++;
+                      // search 30 terms
+                      if (trigger == 0) {
                         trigger = 1;
-                      } else {
-                        trigger = totTermCount.get()/10;
-                        //System.out.println("trigger " + trigger);
-                        shift = random.nextInt(trigger);
                       }
-                      termsEnum.seekCeil(new BytesRef(""));
-                      continue;
-                    }
-                    seenTermCount++;
-                    // search 10 terms
-                    if (trigger == 0) {
-                      trigger = 1;
-                    }
-                    if ((seenTermCount + shift) % trigger == 0) {
-                      //if (VERBOSE) {
-                      //System.out.println(Thread.currentThread().getName() + " now search body:" + term.utf8ToString());
-                      //}
-                      totHits.addAndGet(runQuery(s, new TermQuery(new Term("body", term))));
+                      if ((seenTermCount + shift) % trigger == 0) {
+                        //if (VERBOSE) {
+                        //System.out.println(Thread.currentThread().getName() + " now search body:" + term.utf8ToString());
+                        //}
+                        totHits.addAndGet(runQuery(s, new TermQuery(new Term("body", term))));
+                      }
                     }
                     //if (VERBOSE) {
                     //System.out.println(Thread.currentThread().getName() + ": search done");
@@ -432,7 +424,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     final long t0 = System.currentTimeMillis();
 
-    final LineFileDocs docs = new LineFileDocs(random);
+    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
     final File tempDir = _TestUtil.getTempDir(testName);
     dir = newFSDirectory(tempDir);
     ((MockDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
@@ -636,7 +628,14 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
   private int runQuery(IndexSearcher s, Query q) throws Exception {
     s.search(q, 10);
-    return s.search(q, null, 10, new Sort(new SortField("title", SortField.Type.STRING))).totalHits;
+    int hitCount = s.search(q, null, 10, new Sort(new SortField("title", SortField.Type.STRING))).totalHits;
+    if (defaultCodecSupportsDocValues()) {
+      final Sort dvSort = new Sort(new SortField("title", SortField.Type.STRING));
+      dvSort.getSort()[0].setUseIndexValues(true);
+      int hitCount2 = s.search(q, null, 10, dvSort).totalHits;
+      assertEquals(hitCount, hitCount2);
+    }
+    return hitCount;
   }
 
   protected void smokeTestSearcher(IndexSearcher s) throws Exception {

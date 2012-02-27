@@ -23,16 +23,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.SortedSource;
@@ -817,6 +818,103 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     int nextDoc = termDocsEnum.nextDoc();
     assertEquals(DocsEnum.NO_MORE_DOCS, termDocsEnum.nextDoc());
     return nextDoc;
+  }
+
+  public void testWithThreads() throws Exception {
+    final int NUM_DOCS = atLeast(100);
+    final Directory dir = newDirectory();
+    final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    final boolean allowDups = random.nextBoolean();
+    final Set<String> seen = new HashSet<String>();
+    if (VERBOSE) {
+      System.out.println("TEST: NUM_DOCS=" + NUM_DOCS + " allowDups=" + allowDups);
+    }
+    int numDocs = 0;
+    final List<BytesRef> docValues = new ArrayList<BytesRef>();
+
+    // TODO: deletions
+    while (numDocs < NUM_DOCS) {
+      final String s;
+      if (random.nextBoolean()) {
+        s = _TestUtil.randomSimpleString(random);
+      } else {
+        s = _TestUtil.randomUnicodeString(random);
+      }
+      final BytesRef br = new BytesRef(s);
+
+      if (!allowDups) {
+        if (seen.contains(s)) {
+          continue;
+        }
+        seen.add(s);
+      }
+
+      if (VERBOSE) {
+        System.out.println("  " + numDocs + ": s=" + s);
+      }
+      
+      final Document doc = new Document();
+      doc.add(new DocValuesField("stringdv", br, DocValues.Type.BYTES_VAR_SORTED));
+      doc.add(new DocValuesField("id", numDocs, DocValues.Type.VAR_INTS));
+      docValues.add(br);
+      writer.addDocument(doc);
+      numDocs++;
+
+      if (random.nextInt(40) == 17) {
+        // force flush
+        writer.getReader().close();
+      }
+    }
+
+    writer.forceMerge(1);
+    final DirectoryReader r = writer.getReader();
+    writer.close();
     
+    final AtomicReader sr = getOnlySegmentReader(r);
+    final DocValues dv = sr.docValues("stringdv");
+    final DocValues.Source stringDVSource = dv.getSource();
+    assertNotNull(stringDVSource);
+    final DocValues.Source stringDVDirectSource = dv.getDirectSource();
+    assertNotNull(stringDVDirectSource);
+    assertNotNull(dv);
+
+    final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
+
+    final DocValues.Source docIDToID = sr.docValues("id").getSource();
+
+    final int NUM_THREADS = _TestUtil.nextInt(random, 1, 10);
+    Thread[] threads = new Thread[NUM_THREADS];
+    for(int thread=0;thread<NUM_THREADS;thread++) {
+      threads[thread] = new Thread() {
+          @Override
+          public void run() {
+            while(System.currentTimeMillis() < END_TIME) {
+              final DocValues.Source source;
+              // LUCENE-3829: remove this 'true ||' below
+              // once we fix thread safety of DirectSource
+              if (true || random.nextBoolean()) {
+                source = stringDVSource;
+              } else {
+                source = stringDVDirectSource;
+              }
+
+              final DocValues.SortedSource sortedSource = source.asSortedSource();
+              assertNotNull(sortedSource);
+
+              final BytesRef scratch = new BytesRef();
+
+              for(int iter=0;iter<100;iter++) {
+                final int docID = random.nextInt(sr.maxDoc());
+                final BytesRef br = sortedSource.getBytes(docID, scratch);
+                assertEquals(docValues.get((int) docIDToID.getInt(docID)), br);
+              }
+            }
+          }
+        };
+      threads[thread].start();
+    }
+
+    r.close();
+    dir.close();
   }
 }

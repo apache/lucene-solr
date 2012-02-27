@@ -51,7 +51,7 @@ import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 public class TestTermsEnum extends LuceneTestCase {
 
   public void test() throws Exception {
-    final LineFileDocs docs = new LineFileDocs(random);
+    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
     final Directory d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random, d);
     final int numDocs = atLeast(10);

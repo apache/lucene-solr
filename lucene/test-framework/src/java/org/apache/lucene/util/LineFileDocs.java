@@ -17,22 +17,24 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
-import java.util.Random;
 
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DocValues;
 
 /** Minimal port of contrib/benchmark's LneDocSource +
  * DocMaker, so tests can enum docs from a line file created
@@ -43,16 +45,22 @@ public class LineFileDocs implements Closeable {
   private final static int BUFFER_SIZE = 1 << 16;     // 64K
   private final AtomicInteger id = new AtomicInteger();
   private final String path;
+  private final boolean useDocValues;
 
   /** If forever is true, we rewind the file at EOF (repeat
    * the docs over and over) */
-  public LineFileDocs(Random random, String path) throws IOException {
+  public LineFileDocs(Random random, String path, boolean useDocValues) throws IOException {
     this.path = path;
+    this.useDocValues = useDocValues;
     open(random);
   }
 
   public LineFileDocs(Random random) throws IOException {
-    this(random, LuceneTestCase.TEST_LINE_DOCS_FILE);
+    this(random, LuceneTestCase.TEST_LINE_DOCS_FILE, true);
+  }
+
+  public LineFileDocs(Random random, boolean useDocValues) throws IOException {
+    this(random, LuceneTestCase.TEST_LINE_DOCS_FILE, useDocValues);
   }
 
   public synchronized void close() throws IOException {
@@ -113,11 +121,12 @@ public class LineFileDocs implements Closeable {
     final Document doc;
     final Field titleTokenized;
     final Field title;
+    final Field titleDV;
     final Field body;
     final Field id;
     final Field date;
 
-    public DocState() {
+    public DocState(boolean useDocValues) {
       doc = new Document();
       
       title = new StringField("title", "");
@@ -139,6 +148,13 @@ public class LineFileDocs implements Closeable {
 
       date = new Field("date", "", StringField.TYPE_STORED);
       doc.add(date);
+
+      if (useDocValues) {
+        titleDV = new DocValuesField("titleDV", new BytesRef(), DocValues.Type.BYTES_VAR_SORTED);
+        doc.add(titleDV);
+      } else {
+        titleDV = null;
+      }
     }
   }
 
@@ -162,7 +178,7 @@ public class LineFileDocs implements Closeable {
 
     DocState docState = threadDocs.get();
     if (docState == null) {
-      docState = new DocState();
+      docState = new DocState(useDocValues);
       threadDocs.set(docState);
     }
 
@@ -178,6 +194,9 @@ public class LineFileDocs implements Closeable {
     docState.body.setStringValue(line.substring(1+spot2, line.length()));
     final String title = line.substring(0, spot);
     docState.title.setStringValue(title);
+    if (docState.titleDV != null) {
+      docState.titleDV.setBytesValue(new BytesRef(title));
+    }
     docState.titleTokenized.setStringValue(title);
     docState.date.setStringValue(line.substring(1+spot, spot2));
     docState.id.setStringValue(Integer.toString(id.getAndIncrement()));
