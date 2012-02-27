@@ -250,6 +250,36 @@ public class _TestUtil {
     }
   }
   
+  /**
+   * Returns a String thats "regexpish" (contains lots of operators typically found in regular expressions)
+   * If you call this enough times, you might get a valid regex!
+   */
+  public static String randomRegexpishString(Random r) {
+    final int end = r.nextInt(20);
+    if (end == 0) {
+      // allow 0 length
+      return "";
+    }
+    final char[] buffer = new char[end];
+    for (int i = 0; i < end; i++) {
+      int t = r.nextInt(11);
+      if (t == 0) {
+        buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
+      }
+      else if (1 == t) buffer[i] = '.';
+      else if (2 == t) buffer[i] = '?';
+      else if (3 == t) buffer[i] = '*';
+      else if (4 == t) buffer[i] = '+';
+      else if (5 == t) buffer[i] = '(';
+      else if (6 == t) buffer[i] = ')';
+      else if (7 == t) buffer[i] = '-';
+      else if (8 == t) buffer[i] = '[';
+      else if (9 == t) buffer[i] = ']';
+      else if (10 == t) buffer[i] = '|';
+    }
+    return new String(buffer, 0, end);
+  }
+  
   private static final String[] HTML_CHAR_ENTITIES = {
       "AElig", "Aacute", "Acirc", "Agrave", "Alpha", "AMP", "Aring", "Atilde",
       "Auml", "Beta", "COPY", "Ccedil", "Chi", "Dagger", "Delta", "ETH",
