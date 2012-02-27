@@ -33,8 +33,19 @@
   <description>Apache Solr DataImportHandler Extras</description>
   <properties>
     <module-directory>solr/contrib/dataimporthandler-extras</module-directory>
-    <build-directory>../../build/contrib/dataimporthandler-extras</build-directory>
+    <build-directory>../../build/contrib/solr-dataimporthandler-extras</build-directory>
   </properties>
+  <scm>
+    <connection>
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </connection>
+    <developerConnection>
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </developerConnection>
+    <url>
+      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
+    </url>
+  </scm>
   <dependencies>
     <dependency>
       <!-- lucene-test-framework dependency must be declared before lucene-core -->

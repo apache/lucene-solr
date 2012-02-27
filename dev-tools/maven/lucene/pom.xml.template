@@ -31,6 +31,20 @@
   <packaging>pom</packaging>
   <name>Lucene parent POM</name>
   <description>Lucene parent POM</description>
+  <properties>
+    <module-directory>lucene</module-directory>
+  </properties>
+  <scm>
+    <connection>
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </connection>
+    <developerConnection>
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </developerConnection>
+    <url>
+      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
+    </url>
+  </scm>
   <modules>
     <module>core</module>
     <module>test-framework</module>
