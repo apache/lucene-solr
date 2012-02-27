@@ -114,13 +114,9 @@ public class QueryUtils {
         checkFirstSkipTo(q1,s);
         checkSkipTo(q1,s);
         if (wrap) {
-          IndexSearcher wrapped;
-          check(random, q1, wrapped = wrapUnderlyingReader(random, s, -1), false);
-          purgeFieldCache(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
-          check(random, q1, wrapped = wrapUnderlyingReader(random, s,  0), false);
-          purgeFieldCache(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
-          check(random, q1, wrapped = wrapUnderlyingReader(random, s, +1), false);
-          purgeFieldCache(wrapped.getIndexReader()); // our wrapping can create insanity otherwise
+          check(random, q1, wrapUnderlyingReader(random, s, -1), false);
+          check(random, q1, wrapUnderlyingReader(random, s,  0), false);
+          check(random, q1, wrapUnderlyingReader(random, s, +1), false);
         }
         checkExplanations(q1,s);
         
@@ -136,6 +132,27 @@ public class QueryUtils {
   public static void purgeFieldCache(IndexReader r) throws IOException {
     // this is just a hack, to get an atomic reader that contains all subreaders for insanity checks
     FieldCache.DEFAULT.purge(SlowCompositeReaderWrapper.wrap(r));
+  }
+  
+  /** This is a MultiReader that can be used for randomly wrapping other readers
+   * without creating FieldCache insanity.
+   * The trick is to use an opaque/fake cache key. */
+  public static class FCInvisibleMultiReader extends MultiReader {
+    private final Object cacheKey = new Object();
+  
+    public FCInvisibleMultiReader(IndexReader... readers) throws IOException {
+      super(readers);
+    }
+    
+    @Override
+    public Object getCoreCacheKey() {
+      return cacheKey;
+    }
+    
+    @Override
+    public Object getCombinedCoreAndDeletesKey() {
+      return cacheKey;
+    }
   }
 
   /**
@@ -157,17 +174,17 @@ public class QueryUtils {
     IndexReader[] readers = new IndexReader[] {
       edge < 0 ? r : emptyReaders[0],
       emptyReaders[0],
-      new MultiReader(edge < 0 ? emptyReaders[4] : emptyReaders[0],
+      new FCInvisibleMultiReader(edge < 0 ? emptyReaders[4] : emptyReaders[0],
           emptyReaders[0],
           0 == edge ? r : emptyReaders[0]),
       0 < edge ? emptyReaders[0] : emptyReaders[7],
       emptyReaders[0],
-      new MultiReader(0 < edge ? emptyReaders[0] : emptyReaders[5],
+      new FCInvisibleMultiReader(0 < edge ? emptyReaders[0] : emptyReaders[5],
           emptyReaders[0],
           0 < edge ? r : emptyReaders[0])
     };
 
-    IndexSearcher out = LuceneTestCase.newSearcher(new MultiReader(readers));
+    IndexSearcher out = LuceneTestCase.newSearcher(new FCInvisibleMultiReader(readers));
     out.setSimilarity(s.getSimilarity());
     return out;
   }

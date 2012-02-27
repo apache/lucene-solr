@@ -116,7 +116,6 @@ public class CheckHits {
       Assert.assertEquals("Wrap Reader " + i + ": " +
                           query.toString(defaultFieldName),
                           correct, actual);
-      QueryUtils.purgeFieldCache(s.getIndexReader()); // our wrapping can create insanity otherwise
     }
   }
 

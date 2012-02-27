@@ -57,7 +57,6 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.FieldFilterAtomicReader;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
@@ -83,6 +82,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.RandomSimilarityProvider;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FlushInfo;
@@ -1364,14 +1364,10 @@ public abstract class LuceneTestCase extends Assert {
               new ParallelCompositeReader((CompositeReader) r);
             break;
           case 2:
-            // Häckidy-Hick-Hack: this will create FC insanity, so we patch MultiReader to
-            // return a fake cache key, so insanity checker cannot walk along our reader:
-            r = new MultiReader(r) {
-              private final Object cacheKey = new Object();
-              @Override public Object getCoreCacheKey() { return cacheKey; }
-              @Override public Object getCombinedCoreAndDeletesKey() { return cacheKey; }
-              @Override public String toString() { return "MultiReader(" + subReaders[0] + ")"; }
-            };
+            // Häckidy-Hick-Hack: a standard MultiReader will cause FC insanity, so we use
+            // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
+            // along our reader:
+            r = new FCInvisibleMultiReader(r);
             break;
           case 3:
             final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
