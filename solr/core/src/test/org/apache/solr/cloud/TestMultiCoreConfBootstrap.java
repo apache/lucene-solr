@@ -74,7 +74,7 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    System.clearProperty("bootstrap_confdir");
+    System.clearProperty("bootstrap_conf");
     System.clearProperty("zkHost");
     System.clearProperty("solr.solr.home");
     
