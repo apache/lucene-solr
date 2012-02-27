@@ -432,7 +432,7 @@ public class PeerSync  {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.SEEN_LEADER, true);
-params.set("peersync",true); // nocommit
+    // params.set("peersync",true); // debugging
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
     SolrQueryResponse rsp = new SolrQueryResponse();
 
