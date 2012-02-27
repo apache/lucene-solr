@@ -1532,20 +1532,28 @@ public final class SolrCore implements SolrInfoMBean {
     NamedList<Object> toLog = rsp.getToLog();
     // for back compat, we set these now just in case other code
     // are expecting them during handleRequest
-    toLog.add("webapp", req.getContext().get("webapp"));
+
+    // multiple webaps are no longer best practise
+    // toLog.add("webapp", req.getContext().get("webapp"));
+
     toLog.add("path", req.getContext().get("path"));
     toLog.add("params", "{" + req.getParamString() + "}");
     
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(handler,req,rsp);
 
-    if (log.isInfoEnabled()) {
-      StringBuilder sb = new StringBuilder(logid);
+    if (log.isInfoEnabled() && toLog.size() > 0) {
+      StringBuilder sb = new StringBuilder();
       for (int i=0; i<toLog.size(); i++) {
         String name = toLog.getName(i);
         Object val = toLog.getVal(i);
-        sb.append(name).append("=").append(val).append(" ");
+        if ("path"==name || "params"==name) {    //equals OK here
+          sb.append(val).append(' ');
+        } else {
+          sb.append(name).append('=').append(val).append(' ');
+        }
       }
+
       log.info(sb.toString());
     }
 
@@ -1567,9 +1575,12 @@ public final class SolrCore implements SolrInfoMBean {
     }
     responseHeader.add("status",status);
     responseHeader.add("QTime",qtime);
-    rsp.getToLog().add("status",status);
-    rsp.getToLog().add("QTime",qtime);
-    
+
+    if (rsp.getToLog().size() > 0) {
+      rsp.getToLog().add("status",status);
+      rsp.getToLog().add("QTime",qtime);
+    }
+
     SolrParams params = req.getParams();
     if( params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
       responseHeader.add("handler", handler.getName() );

@@ -131,12 +131,12 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         dbgCmp = (DebugComponent) comp;
       } else {
         components.add(comp);
-        log.info("Adding  component:"+comp);
+        log.debug("Adding  component:"+comp);
       }
     }
     if (makeDebugLast == true && dbgCmp != null){
       components.add(dbgCmp);
-      log.info("Adding  debug component:" + dbgCmp);
+      log.debug("Adding  debug component:" + dbgCmp);
     }
     if(shfInfo ==null) {
       shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();

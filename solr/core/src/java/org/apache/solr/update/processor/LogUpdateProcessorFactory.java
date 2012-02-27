@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   
   int maxNumToLog = 10;
-  
   @Override
   public void init( final NamedList args ) {
     if( args != null ) {
@@ -191,6 +190,21 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     // be logged by SolrCore
     
     // if id lists were truncated, show how many more there were
+
+    NamedList<Object> stdLog = rsp.getToLog();
+
+    StringBuilder sb = new StringBuilder();
+    for (int i=0; i<stdLog.size(); i++) {
+      String name = stdLog.getName(i);
+      Object val = stdLog.getVal(i);
+      if ("path"==name || "params"==name) {    //equals OK here
+        sb.append(val).append(' ');
+      } else {
+        sb.append(name).append('=').append(val).append(' ');
+      }
+    }
+    stdLog.clear();   // make it so SolrCore.exec won't log this again
+
     if (adds != null && numAdds > maxNumToLog) {
       adds.add("... (" + numAdds + " adds)");
     }
@@ -198,7 +212,9 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
       deletes.add("... (" + numDeletes + " deletes)");
     }
     long elapsed = rsp.getEndTime() - req.getStartTime();
-    log.info( ""+toLog + " 0 " + (elapsed) );
+
+    sb.append(toLog).append(" 0 ").append(elapsed);
+    log.info(sb.toString());
   }
 }
 

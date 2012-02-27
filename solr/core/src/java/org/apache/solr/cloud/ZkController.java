@@ -339,6 +339,10 @@ public final class ZkController {
   public String getHostName() {
     return hostName;
   }
+  
+  public String getHostPort() {
+    return localHostPort;
+  }
 
   public SolrZkClient getZkClient() {
     return zkClient;
