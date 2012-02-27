@@ -66,6 +66,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.update.SolrCoreState;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -485,14 +486,16 @@ public class CoreContainer
    * Stops all cores.
    */
   public void shutdown() {
-    log.info("Shutting down CoreContainer instance="+System.identityHashCode(this));    
+    log.info("Shutting down CoreContainer instance="+System.identityHashCode(this));
+    if (isZooKeeperAware()) {
+      cancelCoreRecoveries();
+    }
+    
     synchronized(cores) {
       try {
         for (SolrCore core : cores.values()) {
           try {
              core.close();
-             // make sure we wait for any recoveries to stop
-             core.getUpdateHandler().getSolrCoreState().cancelRecovery();
           } catch (Throwable t) {
             SolrException.log(log, "Error shutting down core", t);
           }
@@ -509,6 +512,28 @@ public class CoreContainer
           shardHandlerFactory.close();
         }
         isShutDown = true;
+      }
+    }
+  }
+
+  private void cancelCoreRecoveries() {
+    ArrayList<SolrCoreState> coreStates = null;
+    synchronized (cores) {
+        for (SolrCore core : cores.values()) {
+          try {
+            coreStates = new ArrayList<SolrCoreState>(cores.size());
+            // make sure we wait for any recoveries to stop
+            coreStates.add(core.getUpdateHandler().getSolrCoreState());
+          } catch (Throwable t) {
+            SolrException.log(log, "Error canceling recovery for core", t);
+          }
+        }
+    }
+    
+    // we must cancel without holding the cores sync
+    if (coreStates != null) {
+      for (SolrCoreState coreState : coreStates) {
+        coreState.cancelRecovery();
       }
     }
   }
