@@ -246,15 +246,22 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     assertAnalyzesToReuse(a, input, new String[]{expected});
   }
   
-  // simple utility method for blasting tokenstreams with data to make sure they don't do anything crazy
-  // TODO: add a MockCharStream, and use it here too, to ensure that correctOffset etc is being done by tokenizers.
+  /** utility method for blasting tokenstreams with data to make sure they don't do anything crazy */
   public static void checkRandomData(Random random, Analyzer a, int iterations) throws IOException {
-    checkRandomData(random, a, iterations, 20);
+    checkRandomData(random, a, iterations, false);
+  }
+  
+  /** 
+   * utility method for blasting tokenstreams with data to make sure they don't do anything crazy 
+   * @param simple true if only ascii strings will be used (try to avoid)
+   */
+  public static void checkRandomData(Random random, Analyzer a, int iterations, boolean simple) throws IOException {
+    checkRandomData(random, a, iterations, 20, simple);
     // now test with multiple threads
     int numThreads = _TestUtil.nextInt(random, 4, 8);
     Thread threads[] = new Thread[numThreads];
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new AnalysisThread(new Random(random.nextLong()), a, iterations);
+      threads[i] = new AnalysisThread(new Random(random.nextLong()), a, iterations, simple);
     }
     for (int i = 0; i < threads.length; i++) {
       threads[i].start();
@@ -272,11 +279,13 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     final int iterations;
     final Random random;
     final Analyzer a;
+    final boolean simple;
     
-    AnalysisThread(Random random, Analyzer a, int iterations) {
+    AnalysisThread(Random random, Analyzer a, int iterations, boolean simple) {
       this.random = random;
       this.a = a;
       this.iterations = iterations;
+      this.simple = simple;
     }
     
     @Override
@@ -284,32 +293,36 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       try {
         // see the part in checkRandomData where it replays the same text again
         // to verify reproducability/reuse: hopefully this would catch thread hazards.
-        checkRandomData(random, a, iterations, 20);
+        checkRandomData(random, a, iterations, 20, simple);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
   };
   
-  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength) throws IOException {
-    checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean());
+  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple) throws IOException {
+    checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean(), simple);
   }
 
-  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter) throws IOException {
+  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple) throws IOException {
     for (int i = 0; i < iterations; i++) {
       String text;
-      switch(_TestUtil.nextInt(random, 0, 4)) {
-        case 0: 
-          text = _TestUtil.randomSimpleString(random);
-          break;
-        case 1:
-          text = _TestUtil.randomRealisticUnicodeString(random, maxWordLength);
-          break;
-        case 2:
-          text = _TestUtil.randomHtmlishString(random, maxWordLength);
-          break;
-        default:
-          text = _TestUtil.randomUnicodeString(random, maxWordLength);
+      if (simple) { 
+        text = random.nextBoolean() ? _TestUtil.randomSimpleString(random) : _TestUtil.randomHtmlishString(random, maxWordLength);
+      } else {
+        switch(_TestUtil.nextInt(random, 0, 4)) {
+          case 0: 
+            text = _TestUtil.randomSimpleString(random);
+            break;
+          case 1:
+            text = _TestUtil.randomRealisticUnicodeString(random, maxWordLength);
+            break;
+          case 2:
+            text = _TestUtil.randomHtmlishString(random, maxWordLength);
+            break;
+          default:
+            text = _TestUtil.randomUnicodeString(random, maxWordLength);
+        }
       }
 
       if (VERBOSE) {

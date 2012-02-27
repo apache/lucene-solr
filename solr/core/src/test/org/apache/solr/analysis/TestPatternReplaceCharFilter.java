@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -163,7 +162,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   //   aa##bb cc --- aa##bb aa. bb aa##bb cc
   public void test2blocksMultiMatches() throws IOException {
     final String BLOCK = "  aa bb cc --- aa bb aa. bb aa   bb cc";
-    CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)"), "$1##$2", ".",
+    CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)"), "$1##$2",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
@@ -179,10 +178,10 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   //  aa b - c . --- b aa . c c b
   public void testChain() throws IOException {
     final String BLOCK = " a bb - ccc . --- bb a . ccc ccc bb";
-    CharStream cs = new PatternReplaceCharFilter( pattern("a"), "aa", ".",
+    CharStream cs = new PatternReplaceCharFilter( pattern("a"), "aa",
         CharReader.get( new StringReader( BLOCK ) ) );
-    cs = new PatternReplaceCharFilter( pattern("bb"), "b", ".", cs );
-    cs = new PatternReplaceCharFilter( pattern("ccc"), "c", ".", cs );
+    cs = new PatternReplaceCharFilter( pattern("bb"), "b", cs );
+    cs = new PatternReplaceCharFilter( pattern("ccc"), "c", cs );
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa", "b", "-", "c", ".", "---", "b", "aa", ".", "c", "c", "b" },

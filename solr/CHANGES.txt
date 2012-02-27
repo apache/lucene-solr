@@ -120,6 +120,10 @@ Optimizations
 
 Bug Fixes
 ----------------------
+* LUCENE-3820: Fixed invalid position indexes by reimplementing PatternReplaceCharFilter.
+             This change also drops real support for boundary characters -- all input is prebuffered
+             for pattern matching. (Dawid Weiss)
+
 * SOLR-3068: Fixed NPE in ThreadDumpHandler (siren)
 
 * SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
