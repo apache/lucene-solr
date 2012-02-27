@@ -204,13 +204,16 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   
   public void testDocsAndPositionsEnumStart() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random);
-    MemoryIndex memory = new MemoryIndex();
+    MemoryIndex memory = new MemoryIndex(true);
     memory.addField("foo", "bar", analyzer);
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
     DocsAndPositionsEnum disi = reader.termPositionsEnum(null, "foo", new BytesRef("bar"), false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(0, disi.nextPosition());
+    assertEquals(0, disi.startOffset());
+    assertEquals(3, disi.endOffset());
     
     // now reuse and check again
     TermsEnum te = reader.terms("foo").iterator(null);

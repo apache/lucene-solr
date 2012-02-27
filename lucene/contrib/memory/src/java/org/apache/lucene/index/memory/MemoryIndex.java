@@ -43,7 +43,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
@@ -226,14 +225,14 @@ public class MemoryIndex {
    * Constructs an empty instance that can optionally store the start and end
    * character offset of each token term in the text. This can be useful for
    * highlighting of hit locations with the Lucene highlighter package.
-   * Private until the highlighter package matures, so that this can actually
+   * Protected until the highlighter package matures, so that this can actually
    * be meaningfully integrated.
    * 
    * @param storeOffsets
    *            whether or not to store the start and end character offset of
    *            each token term in the text
    */
-  private MemoryIndex(boolean storeOffsets) {
+  protected MemoryIndex(boolean storeOffsets) {
     this.stride = storeOffsets ? 3 : 1;
     fieldInfos = new FieldInfos();
   }
@@ -1046,22 +1045,22 @@ public class MemoryIndex {
 
       @Override
       public int freq() {
-        return positions.size();
+        return positions.size() / stride;
       }
 
       @Override
       public int nextPosition() {
-        return positions.get(posUpto++);
+        return positions.get(posUpto++ * stride);
       }
 
       @Override
       public int startOffset() {
-        return -1;
+        return stride == 1 ? -1 : positions.get((posUpto - 1) * stride + 1);
       }
 
       @Override
       public int endOffset() {
-        return -1;
+        return stride == 1 ? -1 : positions.get((posUpto - 1) * stride + 2);
       }
 
       @Override

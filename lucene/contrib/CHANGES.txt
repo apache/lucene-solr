@@ -68,6 +68,10 @@ New Features
    cached IO pages due to large merges.  (Varun Thacker, Mike
    McCandless)
 
+ * LUCENE-3827: DocsAndPositionsEnum from MemoryIndex implements
+   start/endOffset, if offsets are indexed. (Alan Woodward via Mike
+   McCandless)
+
 API Changes
 
  * LUCENE-2606: Changed RegexCapabilities interface to fix thread 
