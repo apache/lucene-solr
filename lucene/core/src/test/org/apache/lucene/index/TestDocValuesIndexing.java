@@ -872,10 +872,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     
     final AtomicReader sr = getOnlySegmentReader(r);
     final DocValues dv = sr.docValues("stringdv");
-    final DocValues.Source stringDVSource = dv.getSource();
-    assertNotNull(stringDVSource);
-    final DocValues.Source stringDVDirectSource = dv.getDirectSource();
-    assertNotNull(stringDVDirectSource);
     assertNotNull(dv);
 
     final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
@@ -888,11 +884,19 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       threads[thread] = new Thread() {
           @Override
           public void run() {
+            final DocValues.Source stringDVSource;
+            final DocValues.Source stringDVDirectSource;
+            try {
+              stringDVSource = dv.getSource();
+              assertNotNull(stringDVSource);
+              stringDVDirectSource = dv.getDirectSource();
+              assertNotNull(stringDVDirectSource);
+            } catch (IOException ioe) {
+              throw new RuntimeException(ioe);
+            }
             while(System.currentTimeMillis() < END_TIME) {
               final DocValues.Source source;
-              // LUCENE-3829: remove this 'true ||' below
-              // once we fix thread safety of DirectSource
-              if (true || random.nextBoolean()) {
+              if (random.nextBoolean()) {
                 source = stringDVSource;
               } else {
                 source = stringDVDirectSource;
@@ -912,6 +916,10 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           }
         };
       threads[thread].start();
+    }
+
+    for(Thread thread : threads) {
+      thread.join();
     }
 
     r.close();
