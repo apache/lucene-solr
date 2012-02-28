@@ -45,6 +45,8 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
@@ -186,17 +188,31 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     server.request(prepCmd);
     server.shutdown();
   }
-  
+
   @Override
   public void run() {
-    boolean replayed = false;
-    boolean succesfulRecovery = false;
-    
     SolrCore core = cc.getCore(coreName);
     if (core == null) {
       SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
       return;
     }
+
+    // set request info for logging
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+    
+    try {
+      doRecovery(core);
+    } finally {
+      SolrRequestInfo.clearRequestInfo();
+    }
+  }
+  
+  public void doRecovery(SolrCore core) {
+    boolean replayed = false;
+    boolean succesfulRecovery = false;
+
     UpdateLog ulog;
     try {
       ulog = core.getUpdateHandler().getUpdateLog();

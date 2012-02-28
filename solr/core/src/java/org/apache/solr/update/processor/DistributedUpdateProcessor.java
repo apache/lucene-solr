@@ -61,10 +61,14 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionBucket;
 import org.apache.solr.update.VersionInfo;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
+  public final static Logger log = LoggerFactory.getLogger(DistributedUpdateProcessor.class);
+
   public static final String SEEN_LEADER = "leader";
   public static final String COMMIT_END_POINT = "commit_end_point";
   public static final String DELETE_BY_QUERY_LEVEL = "dbq_level";

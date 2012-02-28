@@ -57,6 +57,9 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4.
@@ -65,8 +68,10 @@ import java.util.Map.Entry;
  */
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
+
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {
+    setupLogging();
     startTrackingSearchers();
     startTrackingZkClients();
     ignoreException("ignore_exception");
@@ -91,6 +96,32 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     log.info("###Ending " + getName());    
     super.tearDown();
   }
+
+
+  public static void setupLogging() {
+    boolean register = false;
+    Handler[] handlers = java.util.logging.Logger.getLogger("").getHandlers();
+    ConsoleHandler consoleHandler = null;
+    for (Handler handler : handlers) {
+      if (handler instanceof ConsoleHandler) {
+        consoleHandler = (ConsoleHandler)handler;
+        break;
+      }
+    }
+
+    if (consoleHandler == null) {
+      consoleHandler = new ConsoleHandler();
+      register = true;
+    }
+
+    consoleHandler.setLevel(Level.ALL);
+    consoleHandler.setFormatter(new SolrLogFormatter());
+
+    if (register) {
+      java.util.logging.Logger.getLogger("").addHandler(consoleHandler);
+    }
+  }
+
 
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */

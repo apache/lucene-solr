@@ -117,7 +117,7 @@ public class AddUpdateCommand extends UpdateCommand {
    @Override
   public String toString() {
      StringBuilder sb = new StringBuilder(super.toString());
-     if (indexedId != null) sb.append(",id=").append(indexedId);
+     sb.append(",id=").append(getPrintableId());
      if (!overwrite) sb.append(",overwrite=").append(overwrite);
      if (commitWithin != -1) sb.append(",commitWithin=").append(commitWithin);
      sb.append('}');

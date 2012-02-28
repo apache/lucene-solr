@@ -56,20 +56,13 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    final Logger logger = LoggerFactory.getLogger(LogUpdateProcessor.class);
-    boolean doLog = logger.isInfoEnabled();
-    // LogUpdateProcessor.log.error("Will Log=" + doLog);
-    if( doLog ) {
-      // only create the log processor if we will use it
-      final LogUpdateProcessor processor = new LogUpdateProcessor(req, rsp, this, next);
-      assert processor.log == logger;
-      return processor;
-    }
-    return null;
+    return LogUpdateProcessor.log.isInfoEnabled() ? new LogUpdateProcessor(req, rsp, this, next) : null;
   }
 }
 
 class LogUpdateProcessor extends UpdateRequestProcessor {
+  public final static Logger log = LoggerFactory.getLogger(UpdateRequestProcessor.class);
+
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
   private final NamedList<Object> toLog;
@@ -98,7 +91,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    if (logDebug) { log.debug(cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
 
     // call delegate first so we can log things like the version that get set later
     if (next != null) next.processAdd(cmd);
@@ -121,7 +114,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processDelete( DeleteUpdateCommand cmd ) throws IOException {
-    if (logDebug) { log.debug(cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
     if (next != null) next.processDelete(cmd);
 
     if (cmd.isDeleteById()) {
@@ -149,7 +142,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    if (logDebug) { log.debug(cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
     if (next != null) next.processMergeIndexes(cmd);
 
     toLog.add("mergeIndexes", cmd.toString());
@@ -157,7 +150,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processCommit( CommitUpdateCommand cmd ) throws IOException {
-    if (logDebug) { log.debug(cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
     if (next != null) next.processCommit(cmd);
 
 
@@ -170,7 +163,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
    */
   @Override
   public void processRollback( RollbackUpdateCommand cmd ) throws IOException {
-    if (logDebug) { log.debug(cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
     if (next != null) next.processRollback(cmd);
 
     toLog.add("rollback", "");
@@ -179,17 +172,12 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void finish() throws IOException {
+    if (logDebug) { log.debug("PRE_UPDATE finish()"); }
     if (next != null) next.finish();
-    if (logDebug) { log.debug("finish"); }
 
     // LOG A SUMMARY WHEN ALL DONE (INFO LEVEL)
     
-    // TODO: right now, update requests are logged twice...
-    // this will slow down things compared to Solr 1.2
-    // we should have extra log info on the SolrQueryResponse, to
-    // be logged by SolrCore
-    
-    // if id lists were truncated, show how many more there were
+
 
     NamedList<Object> stdLog = rsp.getToLog();
 
@@ -205,6 +193,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     }
     stdLog.clear();   // make it so SolrCore.exec won't log this again
 
+    // if id lists were truncated, show how many more there were
     if (adds != null && numAdds > maxNumToLog) {
       adds.add("... (" + numAdds + " adds)");
     }

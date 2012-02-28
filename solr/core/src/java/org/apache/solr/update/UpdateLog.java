@@ -624,6 +624,7 @@ public class UpdateLog implements PluginInfoInitialized {
       if (tlog != null) {
         if (committed) {
           // record a commit
+          log.info("Recording current log as closed for " + uhandler.core);
           CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams((SolrParams)null)), false);
           tlog.writeCommit(cmd);
         }
