@@ -30,8 +30,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -53,6 +51,10 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -73,6 +75,8 @@ import org.slf4j.LoggerFactory;
 public class CoreAdminHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(CoreAdminHandler.class);
   protected final CoreContainer coreContainer;
+  private ShardHandlerFactory shardHandlerFactory;
+  private ShardHandler shardHandler;
 
   public CoreAdminHandler() {
     super();
@@ -89,6 +93,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    */
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
+    shardHandlerFactory = coreContainer.getShardHandlerFactory();
+    shardHandler = shardHandlerFactory.getShardHandler();
   }
 
 
@@ -754,6 +760,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
     String collection = required.get("collection");
     
+    newParams.set(CoreAdminParams.ACTION, subAction);
+
+    
     SolrCore core = req.getCore();
     ZkController zkController = core.getCoreDescriptor().getCoreContainer()
         .getZkController();
@@ -767,26 +776,30 @@ public class CoreAdminHandler extends RequestHandlerBase {
       for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
         if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
-          CommonsHttpSolrServer server = new CommonsHttpSolrServer(node.get(ZkStateReader.BASE_URL_PROP));
+          newParams.set(CoreAdminParams.CORE, node.get(ZkStateReader.CORE_NAME_PROP));
+          String replica = node.get(ZkStateReader.BASE_URL_PROP) + "/admin/cores";
+          ShardRequest sreq = new ShardRequest();
+          sreq.purpose = 1;
+          // TODO: this sucks
+          if (replica.startsWith("http://"))
+            replica = replica.substring(7);
+          sreq.shards = new String[]{replica};
+          sreq.actualShards = sreq.shards;
+          sreq.params = newParams;
 
-          server.request(new CoreAdminRequest() {
-            {
-              action = CoreAdminAction.valueOf(subAction);
-              setCoreName(node.get(ZkStateReader.CORE_NAME_PROP));
-            }
-            
-            @Override
-            public SolrParams getParams() {
-              SolrParams superParams = super.getParams();
-              newParams.add(superParams);
-              return newParams;
-            }
-          });
+          shardHandler.submit(sreq, replica, sreq.params);
         }
       }
     }
  
-
+    ShardResponse srsp;
+    do {
+      srsp = shardHandler.takeCompletedOrError();
+      Throwable e = srsp.getException();
+      if (e != null) {
+        log.error("Error talking to shard: " + srsp.getShard(), e);
+      }
+    } while(srsp != null);
     
   }
 
