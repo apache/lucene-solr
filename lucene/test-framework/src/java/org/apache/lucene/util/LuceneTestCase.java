@@ -560,14 +560,19 @@ public abstract class LuceneTestCase extends Assert {
    * @see LuceneTestCase#testCaseThread 
    */
   private class RememberThreadRule implements TestRule {
+    private String previousName;
+
     @Override
     public Statement apply(final Statement base, Description description) {
       return new Statement() {
         public void evaluate() throws Throwable {
           try {
-            LuceneTestCase.this.testCaseThread = Thread.currentThread();
+            Thread current = Thread.currentThread();
+            previousName = current.getName();
+            LuceneTestCase.this.testCaseThread = current;
             base.evaluate();
           } finally {
+            LuceneTestCase.this.testCaseThread.setName(previousName);
             LuceneTestCase.this.testCaseThread = null;
           }
         }
@@ -617,6 +622,9 @@ public abstract class LuceneTestCase extends Assert {
     seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
     
+    Thread.currentThread().setName("LTC-main#seed=" + 
+        new ThreeLongs(staticSeed, seed, LuceneTestCaseRunner.runnerSeed));
+
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
