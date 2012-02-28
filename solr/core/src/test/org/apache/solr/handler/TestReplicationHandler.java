@@ -242,14 +242,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   public void test() throws Exception {
-    doTestReplicateAfterCoreReload();
+   /* doTestReplicateAfterCoreReload();
     doTestDetails();
     doTestReplicateAfterWrite2Slave();
     doTestIndexAndConfigReplication();
     doTestStopPoll();
     doTestSnapPullWithMasterUrl();
     doTestReplicateAfterStartup();
-    doTestIndexAndConfigAliasReplication();
+    doTestIndexAndConfigAliasReplication();*/
     doTestBackup();
   }
 
@@ -769,8 +769,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   
   private void doTestBackup() throws Exception {
+    String configFile = "solrconfig-master1.xml";
+    boolean addNumberToKeepInRequest = true;
+    String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;
+    if(random.nextBoolean()) {
+      configFile = "solrconfig-master1-keepOneBackup.xml";
+      addNumberToKeepInRequest = false;
+      backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;
+    }
+    
     masterJetty.stop();
-    master.copyConfigFile(CONF_DIR + "solrconfig-master1.xml", 
+    master.copyConfigFile(CONF_DIR + configFile, 
                           "solrconfig.xml");
 
     masterJetty = createJetty(master);
@@ -785,9 +794,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    
     class BackupThread extends Thread {
       volatile String fail = null;
+      final boolean addNumberToKeepInRequest;
+      String backupKeepParamName;
+      BackupThread(boolean addNumberToKeepInRequest, String backupKeepParamName) {
+        this.addNumberToKeepInRequest = addNumberToKeepInRequest;
+        this.backupKeepParamName = backupKeepParamName;
+      }
       @Override
       public void run() {
-        String masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_BACKUP + "&" + ReplicationHandler.NUMBER_BACKUPS_TO_KEEP + "=1";
+        String masterUrl = 
+          "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_BACKUP + 
+          (addNumberToKeepInRequest ? "&" + backupKeepParamName + "=1" : "");
         URL url;
         InputStream stream = null;
         try {
@@ -846,7 +863,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     File[] snapDir = new File[2];
     String firstBackupTimestamp = null;
     for(int i=0 ; i<2 ; i++) {
-      BackupThread backupThread = new BackupThread();
+      BackupThread backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
       backupThread.start();
       
       File dataDir = new File(master.getDataDir());
@@ -896,7 +913,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       dir.close();
     }
     if(snapDir[0].exists()) {
-      fail("The first backup should have been cleaned up because " + ReplicationHandler.NUMBER_BACKUPS_TO_KEEP + " was set to 1");
+      fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
     }
     
     for(int i=0 ; i< snapDir.length ; i++) {

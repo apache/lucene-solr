@@ -518,6 +518,9 @@ New Features
 * SOLR-3143: Add SuggestQueryConverter, a QueryConverter intended for
   auto-suggesters. (Robert Muir)
 
+* SOLR-3033: ReplicationHandler's backup command now supports a 'maxNumberOfBackups' 
+  init param that can be used to delete all but the most recent N backups. (Torsten Krah, James Dyer)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
@@ -679,7 +682,7 @@ New Features
   (Chris Male, Mark Holland, Gunnlaugur Thor Briem, Ryan McKinley)
 
 * SOLR-2578: ReplicationHandler's backup command now supports a 'numberToKeep' 
-  param that can be used to delete all but the most recent N backups.
+  request param that can be used to delete all but the most recent N backups.
   (James Dyer via hossman)
 
 Optimizations

@@ -45,6 +45,7 @@ import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -105,6 +106,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private boolean replicateOnCommit = false;
 
   private boolean replicateOnStart = false;
+  
+  private int numberBackupsToKeep = 0; //zero: do not delete old backups
 
   private int numTimesReplicated = 0;
 
@@ -308,18 +311,31 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return snapPullLock.isLocked();
   }
 
-  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
+  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp,
+      SolrQueryRequest req) {
     try {
-      int numberToKeep = params.getInt(NUMBER_BACKUPS_TO_KEEP, Integer.MAX_VALUE);
+      int numberToKeep = params.getInt(NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM, 0);
+      if (numberToKeep > 0 && numberBackupsToKeep > 0) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot use "
+            + NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM + " if "
+            + NUMBER_BACKUPS_TO_KEEP_INIT_PARAM
+            + " was specified in the configuration.");
+      }
+      numberToKeep = Math.max(numberToKeep, numberBackupsToKeep);
+      if (numberToKeep < 1) {
+        numberToKeep = Integer.MAX_VALUE;
+      }
+      
       IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();
       IndexCommit indexCommit = delPolicy.getLatestCommit();
       
-      if(indexCommit == null) {
+      if (indexCommit == null) {
         indexCommit = req.getSearcher().getIndexReader().getIndexCommit();
       }
       
       // small race here before the commit point is saved
-      new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit, numberToKeep, this);
+      new SnapShooter(core, params.get("location")).createSnapAsync(
+          indexCommit, numberToKeep, this);
       
     } catch (Exception e) {
       LOG.warn("Exception during creating a snapshot", e);
@@ -790,6 +806,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     this.core = core;
     registerFileStreamResponseWriter();
     registerCloseHook();
+    Object nbtk = initArgs.get(NUMBER_BACKUPS_TO_KEEP_INIT_PARAM);
+    if(nbtk!=null) {
+      numberBackupsToKeep = Integer.parseInt(nbtk.toString());
+    } else {
+      numberBackupsToKeep = 0;
+    }
     NamedList slave = (NamedList) initArgs.get("slave");
     boolean enableSlave = isEnabled( slave );
     if (enableSlave) {
@@ -1179,5 +1201,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   public static final String NEXT_EXECUTION_AT = "nextExecutionAt";
   
-  public static final String NUMBER_BACKUPS_TO_KEEP = "numberToKeep";
+  public static final String NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM = "numberToKeep";
+  
+  public static final String NUMBER_BACKUPS_TO_KEEP_INIT_PARAM = "maxNumberOfBackups";
 }
