@@ -142,16 +142,17 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
     } else {
       shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
+      core.addCloseHook(new CloseHook() {
+        @Override
+        public void preClose(SolrCore core) {
+          shardHandlerFactory.close();
+        }
+        @Override
+        public void postClose(SolrCore core) {
+        }
+      });
     }
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        shardHandlerFactory.close();
-      }
-      @Override
-      public void postClose(SolrCore core) {
-      }
-    });
+
   }
 
   public List<SearchComponent> getComponents() {
