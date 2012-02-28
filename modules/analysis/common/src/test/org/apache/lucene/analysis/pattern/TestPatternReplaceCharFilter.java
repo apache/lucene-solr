@@ -296,7 +296,9 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
           return new PatternReplaceCharFilter(p, replacement, CharReader.get(reader));
         }
       };
+      long s = System.currentTimeMillis();
       checkRandomData(random, a, 1000 * RANDOM_MULTIPLIER, true); // only ascii
+      System.out.println((System.currentTimeMillis() - s) / 1000.0 + " > " + p);
     }
   }
   
