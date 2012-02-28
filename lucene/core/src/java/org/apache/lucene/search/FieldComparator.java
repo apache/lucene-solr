@@ -886,31 +886,17 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareBottom(int doc) {
       assert bottomSlot != -1;
+      final int docOrd = this.order[doc];
       if (bottomSameReader) {
         // ord is precisely comparable, even in the equal case
-        return bottomOrd - this.order[doc];
+        return bottomOrd - docOrd;
+      } else if (bottomOrd >= docOrd) {
+        // the equals case always means bottom is > doc
+        // (because we set bottomOrd to the lower bound in
+        // setBottom):
+        return 1;
       } else {
-        // ord is only approx comparable: if they are not
-        // equal, we can use that; if they are equal, we
-        // must fallback to compare by value
-        final int order = this.order[doc];
-        final int cmp = bottomOrd - order;
-        if (cmp != 0) {
-          return cmp;
-        }
-
-        final String val2 = lookup[order];
-        if (bottomValue == null) {
-          if (val2 == null) {
-            return 0;
-          }
-          // bottom wins
-          return -1;
-        } else if (val2 == null) {
-          // doc wins
-          return 1;
-        }
-        return bottomValue.compareTo(val2);
+        return -1;
       }
     }
 
