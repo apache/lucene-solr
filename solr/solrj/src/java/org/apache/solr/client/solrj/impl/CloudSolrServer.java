@@ -142,6 +142,10 @@ public class CloudSolrServer extends SolrServer {
     }
     String collection = reqParams.get("collection", defaultCollection);
     
+    if (collection == null) {
+      throw new SolrServerException("No collection param specified on request and no default collection has been set.");
+    }
+    
     // Extract each comma separated collection name and store in a List.
     List<String> collectionList = StrUtils.splitSmart(collection, ",", true);
     
