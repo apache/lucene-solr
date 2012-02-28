@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.pattern;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -31,6 +32,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Ignore;
 
 /**
  * Tests {@link PatternReplaceCharFilter}
@@ -275,7 +277,27 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
   private Pattern pattern( String p ){
     return Pattern.compile( p );
   }
-  
+
+  /**
+   * A demonstration of how backtracking regular expressions can lead to relatively 
+   * easy DoS attacks.
+   * 
+   * @see "http://swtch.com/~rsc/regexp/regexp1.html"
+   */
+  @Ignore
+  public void testNastyPattern() throws Exception {
+    Pattern p = Pattern.compile("(c.+)*xy");
+    String input = "[;<!--aecbbaa--><    febcfdc fbb = \"fbeeebff\" fc = dd   >\\';<eefceceaa e= babae\" eacbaff =\"fcfaccacd\" = bcced>>><  bccaafe edb = ecfccdff\"   <?</script><    edbd ebbcd=\"faacfcc\" aeca= bedbc ceeaac =adeafde aadccdaf = \"afcc ffda=aafbe &#x16921ed5\"1843785582']";
+    for (int i = 0; i < input.length(); i++) {
+      Matcher matcher = p.matcher(input.substring(0, i));
+      long t = System.currentTimeMillis();
+      if (matcher.find()) {
+        System.out.println(matcher.group());
+      }
+      System.out.println(i + " > " + (System.currentTimeMillis() - t) / 1000.0);
+    }
+  }
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     int numPatterns = atLeast(100);
@@ -296,9 +318,9 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
           return new PatternReplaceCharFilter(p, replacement, CharReader.get(reader));
         }
       };
-      long s = System.currentTimeMillis();
-      checkRandomData(random, a, 1000 * RANDOM_MULTIPLIER, true); // only ascii
-      System.out.println((System.currentTimeMillis() - s) / 1000.0 + " > " + p);
+      checkRandomData(random, a, 1000 * RANDOM_MULTIPLIER, 
+          /* max input length. don't make it longer -- exponential processing
+           * time for certain patterns. */ 40, true); // only ascii
     }
   }
   
