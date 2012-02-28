@@ -31,6 +31,8 @@ import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.jcas.JCas;
 import org.apache.uima.resource.ResourceInitializationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -41,6 +43,8 @@ import java.util.Map;
  *
  */
 public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
+
+  private final Logger log = LoggerFactory.getLogger(UIMAUpdateRequestProcessor.class);
 
   SolrUIMAConfiguration solrUIMAConfiguration;
 
