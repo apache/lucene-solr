@@ -777,8 +777,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
         final ZkNodeProps node = shardEntry.getValue();
         if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
           newParams.set(CoreAdminParams.CORE, node.get(ZkStateReader.CORE_NAME_PROP));
-          String replica = node.get(ZkStateReader.BASE_URL_PROP) + "/admin/cores";
+          String replica = node.get(ZkStateReader.BASE_URL_PROP);
           ShardRequest sreq = new ShardRequest();
+          newParams.set("qt", "/admin/cores");
           sreq.purpose = 1;
           // TODO: this sucks
           if (replica.startsWith("http://"))
@@ -795,9 +796,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
     ShardResponse srsp;
     do {
       srsp = shardHandler.takeCompletedOrError();
-      Throwable e = srsp.getException();
-      if (e != null) {
-        log.error("Error talking to shard: " + srsp.getShard(), e);
+      if (srsp != null) {
+        Throwable e = srsp.getException();
+        if (e != null) {
+          log.error("Error talking to shard: " + srsp.getShard(), e);
+        }
       }
     } while(srsp != null);
     
