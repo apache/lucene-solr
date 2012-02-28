@@ -81,7 +81,7 @@ public final class SortedBytesMergeUtils {
     }
   }
 
-  public static List<SortedSourceSlice> buildSlices(int[] docBases ,int[][] docMaps,
+  public static List<SortedSourceSlice> buildSlices(int[] docBases, int[][] docMaps,
       DocValues[] docValues, MergeContext ctx) throws IOException {
     final List<SortedSourceSlice> slices = new ArrayList<SortedSourceSlice>();
     for (int i = 0; i < docValues.length; i++) {
@@ -111,7 +111,7 @@ public final class SortedBytesMergeUtils {
    * mapping in docIDToRelativeOrd. After the merge SortedSourceSlice#ordMapping
    * contains the new global ordinals for the relative index.
    */
-  private static void createOrdMapping(int[] docBases ,int[][] docMaps,
+  private static void createOrdMapping(int[] docBases, int[][] docMaps,
       SortedSourceSlice currentSlice) {
     final int readerIdx = currentSlice.readerIdx;
     final int[] currentDocMap = docMaps[readerIdx];

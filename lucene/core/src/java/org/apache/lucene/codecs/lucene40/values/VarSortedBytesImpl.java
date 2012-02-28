@@ -63,6 +63,7 @@ final class VarSortedBytesImpl {
       this.comp = comp;
       size = 0;
     }
+
     @Override
     public void merge(MergeState mergeState, DocValues[] docValues)
         throws IOException {

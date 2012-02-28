@@ -793,7 +793,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         hash.get(sort[i], expected);
         asSortedSource.getByOrd(i, actual);
         assertEquals(expected.utf8ToString(), actual.utf8ToString());
-        int ord = asSortedSource.getByValue(expected, actual);
+        int ord = asSortedSource.getOrdByValue(expected, actual);
         assertEquals(i, ord);
       }
       AtomicReader slowR = SlowCompositeReaderWrapper.wrap(reader);

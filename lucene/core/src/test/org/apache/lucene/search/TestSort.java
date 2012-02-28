@@ -20,27 +20,32 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.Directory;
@@ -48,6 +53,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.BeforeClass;
@@ -1293,5 +1299,152 @@ public class TestSort extends LuceneTestCase {
     assertEquals(5, c.getTotalHits());
     reader.close();
     indexStore.close();
+  }
+
+  private static class RandomFilter extends Filter {
+    private final Random random;
+    private float density;
+    private final List<BytesRef> docValues;
+    public final List<BytesRef> matchValues = Collections.synchronizedList(new ArrayList<BytesRef>());
+
+    // density should be 0.0 ... 1.0
+    public RandomFilter(Random random, float density, List<BytesRef> docValues) {
+      this.random = random;
+      this.density = density;
+      this.docValues = docValues;
+    }
+
+    @Override
+    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+      final int maxDoc = context.reader().maxDoc();
+      final DocValues.Source idSource = context.reader().docValues("id").getSource();
+      assertNotNull(idSource);
+      final FixedBitSet bits = new FixedBitSet(maxDoc);
+      for(int docID=0;docID<maxDoc;docID++) {
+        if (random.nextFloat() <= density && (acceptDocs == null || acceptDocs.get(docID))) {
+          bits.set(docID);
+          //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
+          matchValues.add(docValues.get((int) idSource.getInt(docID)));
+        }
+      }
+
+      return bits;
+    }
+  }
+
+  public void testRandomStringSort() throws Exception {
+    final int NUM_DOCS = atLeast(100);
+    final Directory dir = newDirectory();
+    final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    final boolean allowDups = random.nextBoolean();
+    final Set<String> seen = new HashSet<String>();
+    final int maxLength = _TestUtil.nextInt(random, 5, 100);
+    if (VERBOSE) {
+      System.out.println("TEST: NUM_DOCS=" + NUM_DOCS + " maxLength=" + maxLength + " allowDups=" + allowDups);
+    }
+    int numDocs = 0;
+    final List<BytesRef> docValues = new ArrayList<BytesRef>();
+    // TODO: deletions
+    while (numDocs < NUM_DOCS) {
+      final String s;
+      if (random.nextBoolean()) {
+        s = _TestUtil.randomSimpleString(random, maxLength);
+      } else {
+        s = _TestUtil.randomUnicodeString(random, maxLength);
+      }
+      final BytesRef br = new BytesRef(s);
+
+      if (!allowDups) {
+        if (seen.contains(s)) {
+          continue;
+        }
+        seen.add(s);
+      }
+
+      if (VERBOSE) {
+        System.out.println("  " + numDocs + ": s=" + s);
+      }
+      
+      final Document doc = new Document();
+      doc.add(new DocValuesField("stringdv", br, DocValues.Type.BYTES_VAR_SORTED));
+      doc.add(newField("string", s, StringField.TYPE_UNSTORED));
+      doc.add(new DocValuesField("id", numDocs, DocValues.Type.VAR_INTS));
+      docValues.add(br);
+      writer.addDocument(doc);
+      numDocs++;
+
+      if (random.nextInt(40) == 17) {
+        // force flush
+        writer.getReader().close();
+      }
+    }
+
+    final IndexReader r = writer.getReader();
+    writer.close();
+    if (VERBOSE) {
+      System.out.println("  reader=" + r);
+    }
+    
+    final IndexSearcher s = newSearcher(r, false);
+    final int ITERS = atLeast(100);
+    for(int iter=0;iter<ITERS;iter++) {
+      final boolean reverse = random.nextBoolean();
+      final TopFieldDocs hits;
+      final SortField sf;
+      if (random.nextBoolean()) {
+        sf = new SortField("stringdv", SortField.Type.STRING, reverse);
+        sf.setUseIndexValues(true);
+      } else {
+        sf = new SortField("string", SortField.Type.STRING, reverse);
+      }
+      final Sort sort = new Sort(sf);
+      final int hitCount = _TestUtil.nextInt(random, 1, r.maxDoc() + 20);
+      final RandomFilter f = new RandomFilter(random, random.nextFloat(), docValues);
+      if (random.nextBoolean()) {
+        hits = s.search(new ConstantScoreQuery(f),
+                        hitCount,
+                        sort);
+      } else {
+        hits = s.search(new MatchAllDocsQuery(),
+                        f,
+                        hitCount,
+                        sort);
+      }
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " hits; topN=" + hitCount + "; reverse=" + reverse);
+      }
+
+      // Compute expected results:
+      Collections.sort(f.matchValues);
+      if (reverse) {
+        Collections.reverse(f.matchValues);
+      }
+      final List<BytesRef> expected = f.matchValues;
+      if (VERBOSE) {
+        System.out.println("  expected:");
+        for(int idx=0;idx<expected.size();idx++) {
+          System.out.println("    " + idx + ": " + expected.get(idx).utf8ToString());
+          if (idx == hitCount-1) {
+            break;
+          }
+        }
+      }
+      
+      if (VERBOSE) {
+        System.out.println("  actual:");
+        for(int hitIDX=0;hitIDX<hits.scoreDocs.length;hitIDX++) {
+          final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
+          System.out.println("    " + hitIDX + ": " + ((BytesRef) fd.fields[0]).utf8ToString());
+        }
+      }
+      for(int hitIDX=0;hitIDX<hits.scoreDocs.length;hitIDX++) {
+        final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
+        assertEquals(expected.get(hitIDX), (BytesRef) fd.fields[0]);
+      }
+    }
+
+    r.close();
+    dir.close();
   }
 }

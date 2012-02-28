@@ -1055,32 +1055,17 @@ public abstract class FieldComparator<T> {
       @Override
       public int compareBottom(int doc) {
         assert bottomSlot != -1;
+        final int docOrd = (readerOrds[doc]&0xFF);
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
-          return bottomOrd - (readerOrds[doc]&0xFF);
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
         } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int order = readerOrds[doc]&0xFF;
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          if (bottomValue == null) {
-            if (order == 0) {
-              // unset
-              return 0;
-            }
-            // bottom wins
-            return -1;
-          } else if (order == 0) {
-            // doc wins
-            return 1;
-          }
-          termsIndex.lookup(order, tempBR);
-          return bottomValue.compareTo(tempBR);
+          return -1;
         }
       }
 
@@ -1116,32 +1101,17 @@ public abstract class FieldComparator<T> {
       @Override
       public int compareBottom(int doc) {
         assert bottomSlot != -1;
+        final int docOrd = (readerOrds[doc]&0xFFFF);
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
-          return bottomOrd - (readerOrds[doc]&0xFFFF);
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
         } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int order = readerOrds[doc]&0xFFFF;
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          if (bottomValue == null) {
-            if (order == 0) {
-              // unset
-              return 0;
-            }
-            // bottom wins
-            return -1;
-          } else if (order == 0) {
-            // doc wins
-            return 1;
-          }
-          termsIndex.lookup(order, tempBR);
-          return bottomValue.compareTo(tempBR);
+          return -1;
         }
       }
 
@@ -1177,32 +1147,17 @@ public abstract class FieldComparator<T> {
       @Override
       public int compareBottom(int doc) {
         assert bottomSlot != -1;
+        final int docOrd = readerOrds[doc];
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
-          return bottomOrd - readerOrds[doc];
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
         } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int order = readerOrds[doc];
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          if (bottomValue == null) {
-            if (order == 0) {
-              // unset
-              return 0;
-            }
-            // bottom wins
-            return -1;
-          } else if (order == 0) {
-            // doc wins
-            return 1;
-          }
-          termsIndex.lookup(order, tempBR);
-          return bottomValue.compareTo(tempBR);
+          return -1;
         }
       }
 
@@ -1239,32 +1194,17 @@ public abstract class FieldComparator<T> {
       @Override
       public int compareBottom(int doc) {
         assert bottomSlot != -1;
+        final int docOrd = (int) readerOrds.get(doc);
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
-          return bottomOrd - (int) readerOrds.get(doc);
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
         } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int order = (int) readerOrds.get(doc);
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          if (bottomValue == null) {
-            if (order == 0) {
-              // unset
-              return 0;
-            }
-            // bottom wins
-            return -1;
-          } else if (order == 0) {
-            // doc wins
-            return 1;
-          }
-          termsIndex.lookup(order, tempBR);
-          return bottomValue.compareTo(tempBR);
+          return -1;
         }
       }
 
@@ -1499,21 +1439,17 @@ public abstract class FieldComparator<T> {
       @Override
       public int compareBottom(int doc) {
         assert bottomSlot != -1;
+        final int docOrd = readerOrds[doc]&0xFF;
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
-          return bottomOrd - (readerOrds[doc]&0xFF);
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
         } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int order = readerOrds[doc]&0xFF;
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          termsIndex.getByOrd(order, tempBR);
-          return comp.compare(bottomValue, tempBR);
+          return -1;
         }
       }
 
@@ -1544,21 +1480,17 @@ public abstract class FieldComparator<T> {
       @Override
       public int compareBottom(int doc) {
         assert bottomSlot != -1;
+        final int docOrd = readerOrds[doc]&0xFFFF;
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
-          return bottomOrd - (readerOrds[doc]&0xFFFF);
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
         } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int order = readerOrds[doc]&0xFFFF;
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          termsIndex.getByOrd(order, tempBR);
-          return comp.compare(bottomValue, tempBR);
+          return -1;
         }
       }
 
@@ -1589,20 +1521,17 @@ public abstract class FieldComparator<T> {
       @Override
       public int compareBottom(int doc) {
         assert bottomSlot != -1;
+        final int docOrd = readerOrds[doc];
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
-          return bottomOrd - readerOrds[doc];
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
         } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int order = readerOrds[doc];
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-          termsIndex.getByOrd(order, tempBR);
-          return comp.compare(bottomValue, tempBR);
+          return -1;
         }
       }
 
@@ -1632,20 +1561,17 @@ public abstract class FieldComparator<T> {
       @Override
       public int compareBottom(int doc) {
         assert bottomSlot != -1;
+        final int docOrd = (int) readerOrds.get(doc);
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
-          return bottomOrd - (int) readerOrds.get(doc);
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
         } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int order = (int) readerOrds.get(doc);
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-          termsIndex.getByOrd(order, tempBR);
-          return comp.compare(bottomValue, tempBR);
+          return -1;
         }
       }
 
@@ -1672,21 +1598,17 @@ public abstract class FieldComparator<T> {
 
       @Override
       public int compareBottom(int doc) {
-        assert bottomSlot != -1;
+        final int docOrd = termsIndex.ord(doc);
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
-          return bottomOrd - termsIndex.ord(doc);
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
         } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int order = termsIndex.ord(doc);
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-          termsIndex.getByOrd(order, tempBR);
-          return comp.compare(bottomValue, tempBR);
+          return -1;
         }
       }
 
@@ -1775,7 +1697,7 @@ public abstract class FieldComparator<T> {
           bottomSameReader = true;
           readerGen[bottomSlot] = currentReaderGen;
         } else {
-          final int index = termsIndex.getByValue(bottomValue, tempBR);
+          final int index = termsIndex.getOrdByValue(bottomValue, tempBR);
           if (index < 0) {
             bottomOrd = -index - 2;
             bottomSameReader = false;

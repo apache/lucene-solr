@@ -193,8 +193,8 @@ public class _TestUtil {
     return start + r.nextInt(end-start+1);
   }
 
-  public static String randomSimpleString(Random r) {
-    final int end = r.nextInt(10);
+  public static String randomSimpleString(Random r, int maxLength) {
+    final int end = r.nextInt(maxLength);
     if (end == 0) {
       // allow 0 length
       return "";
@@ -204,6 +204,10 @@ public class _TestUtil {
       buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
     }
     return new String(buffer, 0, end);
+  }
+
+  public static String randomSimpleString(Random r) {
+    return randomSimpleString(r, 10);
   }
 
   /** Returns random string, including full unicode range. */
