@@ -622,6 +622,9 @@ Bug Fixes
 
 * SOLR-2909: Add support for ResourceLoaderAware tokenizerFactories in synonym
   filter factories. (Tom Klonikowski, Jun Ohtani via Koji Sekiguchi)
+  
+* SOLR-3168: ReplicationHandler "numberToKeep" & "maxNumberOfBackups" parameters
+  would keep only 1 backup, even if more than 1 was specified (Neil Hooey, James Dyer)
 
 Other Changes
 ----------------------
