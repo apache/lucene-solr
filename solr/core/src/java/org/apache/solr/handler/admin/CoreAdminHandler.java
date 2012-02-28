@@ -21,8 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
@@ -30,14 +31,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -746,26 +746,48 @@ public class CoreAdminHandler extends RequestHandlerBase {
       SolrQueryResponse rsp) throws IOException, InterruptedException, SolrServerException {
     // TODO: finish this and tests
     SolrParams params = req.getParams();
+    final ModifiableSolrParams newParams = new ModifiableSolrParams(params);
+    newParams.remove("action");
     
     SolrParams required = params.required();
-    String path = required.get("path");
-    String shard = params.get("shard");
+    final String subAction = required.get("subAction");
+
     String collection = required.get("collection");
     
     SolrCore core = req.getCore();
     ZkController zkController = core.getCoreDescriptor().getCoreContainer()
         .getZkController();
-    if (shard != null) {
-      List<ZkCoreNodeProps> replicas = zkController.getZkStateReader().getReplicaProps(
-          collection, shard, zkController.getNodeName(), core.getName());
-      
-      for (ZkCoreNodeProps node : replicas) {
-        CommonsHttpSolrServer server = new CommonsHttpSolrServer(node.getCoreUrl() + path);
-        QueryRequest qr = new QueryRequest();
-        server.request(qr);
-      }
+    
+    CloudState cloudState = zkController.getCloudState();
+    Map<String,Slice> slices = cloudState.getCollectionStates().get(collection);
+    for (Map.Entry<String,Slice> entry : slices.entrySet()) {
+      Slice slice = entry.getValue();
+      Map<String,ZkNodeProps> shards = slice.getShards();
+      Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
+      for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
+        final ZkNodeProps node = shardEntry.getValue();
+        if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
+          CommonsHttpSolrServer server = new CommonsHttpSolrServer(node.get(ZkStateReader.BASE_URL_PROP));
 
+          server.request(new CoreAdminRequest() {
+            {
+              action = CoreAdminAction.valueOf(subAction);
+              setCoreName(node.get(ZkStateReader.CORE_NAME_PROP));
+            }
+            
+            @Override
+            public SolrParams getParams() {
+              SolrParams superParams = super.getParams();
+              newParams.add(superParams);
+              return newParams;
+            }
+          });
+        }
+      }
     }
+ 
+
+    
   }
 
   protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname) throws IOException {
