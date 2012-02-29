@@ -1514,9 +1514,6 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-  /** @lucene.internal use the more consiste testLoggingFormat for tests... for use with SolrLogFormatter */
-  public static boolean isTestLoggingFormat;
-
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     if (handler==null) {
