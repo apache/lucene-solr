@@ -17,8 +17,17 @@
 
 package org.apache.solr;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -292,7 +301,32 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertNotNull("missing shard info", sinfo);
     assertEquals("should have an entry for each shard ["+sinfo+"] "+shards, cnt, sinfo.size());
     
-    
+    // test shards.tolerant=true
+    for(int numDownServers = 0; numDownServers < jettys.size()-1; numDownServers++)
+    {
+      List<JettySolrRunner> upJettys = new ArrayList<JettySolrRunner>(jettys);
+      List<SolrServer> upClients = new ArrayList<SolrServer>(clients);
+      List<JettySolrRunner> downJettys = new ArrayList<JettySolrRunner>();
+      List<String> upShards = new ArrayList<String>(Arrays.asList(shardsArr));
+      for(int i=0; i<numDownServers; i++)
+      {
+        // shut down some of the jettys
+        int indexToRemove = r.nextInt(upJettys.size());
+        JettySolrRunner downJetty = upJettys.remove(indexToRemove);
+        upClients.remove(indexToRemove);
+        upShards.remove(indexToRemove);
+        ChaosMonkey.stop(downJetty);
+        downJettys.add(downJetty);
+      }
+      
+      queryPartialResults(upShards, upClients, "q","*:*",ShardParams.SHARDS_INFO,"true",ShardParams.SHARDS_TOLERANT,"true");
+      
+      // restart the jettys
+      for (JettySolrRunner downJetty : downJettys) {
+        downJetty.start();
+      }
+    }
+
     // This index has the same number for every field
     
     // TODO: This test currently fails because debug info is obtained only
@@ -301,5 +335,90 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // Thread.sleep(10000000000L);
   }
+  
+  protected void queryPartialResults(final List<String> upShards, List<SolrServer> upClients, Object... q) throws Exception {
+    
+    final ModifiableSolrParams params = new ModifiableSolrParams();
 
+    for (int i = 0; i < q.length; i += 2) {
+      params.add(q[i].toString(), q[i + 1].toString());
+    }
+    // TODO: look into why passing true causes fails
+    params.set("distrib", "false");
+    final QueryResponse controlRsp = controlClient.query(params);
+    validateControlData(controlRsp);
+
+    params.remove("distrib");
+    setDistributedParams(params);
+
+    QueryResponse rsp = queryRandomUpServer(params,upClients);
+
+    comparePartialResponses(rsp, controlRsp, upShards);
+
+    if (stress > 0) {
+      log.info("starting stress...");
+      Thread[] threads = new Thread[nThreads];
+      for (int i = 0; i < threads.length; i++) {
+        threads[i] = new Thread() {
+          @Override
+          public void run() {
+            for (int j = 0; j < stress; j++) {
+              int which = r.nextInt(clients.size());
+              SolrServer client = clients.get(which);
+              try {
+                QueryResponse rsp = client.query(new ModifiableSolrParams(params));
+                if (verifyStress) {
+                  comparePartialResponses(rsp, controlRsp, upShards);
+                }
+              } catch (SolrServerException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
+        };
+        threads[i].start();
+      }
+
+      for (Thread thread : threads) {
+        thread.join();
+      }
+    }
+  }
+
+  protected QueryResponse queryRandomUpServer(ModifiableSolrParams params, List<SolrServer> upClients) throws SolrServerException {
+    // query a random "up" server
+    int which = r.nextInt(upClients.size());
+    SolrServer client = upClients.get(which);
+    QueryResponse rsp = client.query(params);
+    return rsp;
+  }
+
+  protected void comparePartialResponses(QueryResponse rsp, QueryResponse controlRsp, List<String> upShards)
+  {
+    NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
+    
+    assertNotNull("missing shard info", sinfo);
+    assertEquals("should have an entry for each shard ["+sinfo+"] "+shards, shardsArr.length, sinfo.size());
+    // identify each one
+    for (Map.Entry<String,?> entry : sinfo) {
+      String shard = entry.getKey();
+      NamedList<?> info = (NamedList<?>) entry.getValue();
+      boolean found = false;
+      for(int i=0; i<shardsArr.length; i++) {
+        String s = shardsArr[i];
+        if (shard.contains(s)) {
+          found = true;
+          // make sure that it responded if it's up
+          if (upShards.contains(s)) {
+            assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
+          }
+          else {
+            assertTrue("Expected to find error in the down shard info",info.get("error") != null);
+          }
+        }
+      }
+      assertTrue("Couldn't find shard " + shard + " represented in shards info", found);
+    }
+  }
+  
 }

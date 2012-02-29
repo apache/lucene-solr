@@ -180,26 +180,11 @@ public class HttpShardHandler extends ShardHandler {
     pending.add( completionService.submit(task) );
   }
 
-  /** returns a ShardResponse of the last response correlated with a ShardRequest */
-  ShardResponse take() {
-    while (pending.size() > 0) {
-      try {
-        Future<ShardResponse> future = completionService.take();
-        pending.remove(future);
-        ShardResponse rsp = future.get();
-        rsp.getShardRequest().responses.add(rsp);
-        if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
-          return rsp;
-        }
-      } catch (InterruptedException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (ExecutionException e) {
-        // should be impossible... the problem with catching the exception
-        // at this level is we don't know what ShardRequest it applied to
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Impossible Exception",e);
-      }
-    }
-    return null;
+  /** returns a ShardResponse of the last response correlated with a ShardRequest.  This won't 
+   * return early if it runs into an error.  
+   **/
+  public ShardResponse takeCompletedIncludingErrors() {
+    return take(false);
   }
 
 
@@ -207,12 +192,17 @@ public class HttpShardHandler extends ShardHandler {
    * or immediately returns a ShardResponse if there was an error detected
    */
   public ShardResponse takeCompletedOrError() {
+    return take(true);
+  }
+  
+  private ShardResponse take(boolean bailOnError) {
+    
     while (pending.size() > 0) {
       try {
         Future<ShardResponse> future = completionService.take();
         pending.remove(future);
         ShardResponse rsp = future.get();
-        if (rsp.getException() != null) return rsp; // if exception, return immediately
+        if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
         // for a request was received.  Otherwise we might return the same

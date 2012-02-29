@@ -227,7 +227,8 @@ New Features
 * SOLR-2459: Expose LogLevel selection with a RequestHandler rather then servlet
   (Stefan Matheis, Upayavira, ryan)
 
-* SOLR-3134: Include shard info in distributed response when shards.info=true (ryan)
+* SOLR-3134: Include shard info in distributed response when shards.info=true 
+  (Russell Black, ryan)
 
 
 Optimizations
