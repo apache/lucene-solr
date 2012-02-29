@@ -211,7 +211,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   
   public void doRecovery(SolrCore core) {
     boolean replayed = false;
-    boolean succesfulRecovery = false;
+    boolean successfulRecovery = false;
 
     UpdateLog ulog;
     try {
@@ -262,7 +262,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
     boolean firstTime = true;
 
-    while (!succesfulRecovery && !close && !isInterrupted()) { // don't use interruption or it will close channels though
+    while (!successfulRecovery && !close && !isInterrupted()) { // don't use interruption or it will close channels though
       core = cc.getCore(coreName);
       if (core == null) {
         SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
@@ -299,9 +299,9 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-            log.info("Sync Recovery was succesful - registering as Active");
+            log.info("Sync Recovery was successful - registering as Active");
             // System.out
-            // .println("Sync Recovery was succesful - registering as Active "
+            // .println("Sync Recovery was successful - registering as Active "
             // + zkController.getNodeName());
             
             // solrcloud_debug
@@ -323,7 +323,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
             // sync success - register as active and return
             zkController.publishAsActive(baseUrl, core.getCoreDescriptor(),
                 coreZkNodeName, coreName);
-            succesfulRecovery = true;
+            successfulRecovery = true;
             close = true;
             return;
           }
@@ -344,12 +344,12 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           replay(ulog);
           replayed = true;
           
-          log.info("Recovery was succesful - registering as Active");
+          log.info("Recovery was successful - registering as Active");
           // if there are pending recovery requests, don't advert as active
           zkController.publishAsActive(baseUrl, core.getCoreDescriptor(),
               coreZkNodeName, coreName);
           close = true;
-          succesfulRecovery = true;
+          successfulRecovery = true;
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           log.warn("Recovery was interrupted", e);
@@ -375,7 +375,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         }
       }
       
-      if (!succesfulRecovery) {
+      if (!successfulRecovery) {
         // lets pause for a moment and we need to try again...
         // TODO: we don't want to retry for some problems?
         // Or do a fall off retry...
