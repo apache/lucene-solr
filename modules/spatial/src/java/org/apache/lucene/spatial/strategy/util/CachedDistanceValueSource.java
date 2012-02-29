@@ -22,8 +22,8 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.spatial.base.distance.DistanceCalculator;
-import org.apache.lucene.spatial.base.shape.Point;
+import com.spatial4j.core.distance.DistanceCalculator;
+import com.spatial4j.core.shape.Point;
 
 import java.io.IOException;
 import java.util.List;

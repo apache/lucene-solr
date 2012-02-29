@@ -18,7 +18,7 @@
 package org.apache.lucene.spatial.strategy.vector;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.spatial.base.context.SpatialContext;
+import com.spatial4j.core.context.SpatialContext;
 import org.apache.lucene.spatial.strategy.util.NumericFieldInfo;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;

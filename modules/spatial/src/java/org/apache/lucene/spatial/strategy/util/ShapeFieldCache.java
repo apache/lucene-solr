@@ -20,7 +20,7 @@ package org.apache.lucene.spatial.strategy.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.spatial.base.shape.Shape;
+import com.spatial4j.core.shape.Shape;
 
 public class ShapeFieldCache<T extends Shape> {
   private List<T>[] cache;

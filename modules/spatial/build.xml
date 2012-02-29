@@ -1,78 +1,41 @@
 <?xml version="1.0"?>
-
-<!--
-    Licensed to the Apache Software Foundation (ASF) under one or more
-    contributor license agreements.  See the NOTICE file distributed with
-    this work for additional information regarding copyright ownership.
-    The ASF licenses this file to You under the Apache License, Version 2.0
-    the "License"); you may not use this file except in compliance with
-    the License.  You may obtain a copy of the License at
- 
-        http://www.apache.org/licenses/LICENSE-2.0
- 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
- -->
-
 <project name="spatial" default="default">
-
   <description>
-    Lucene Spatial Support
-      - base:	Spatial API w/o lucene dependencies
-      - strategy: Lucene based indexing strategies
+    Lucene Spatial
   </description>
+
+  <property name="build.dir" location="build/" />
+  <property name="dist.dir" location="dist/" />
+  <property name="maven.dist.dir" location="../dist/maven" />
+
+  <path id="additional.dependencies">
+    <fileset dir="lib" includes="*.jar"/>
+  </path>
+
+  <pathconvert property="project.classpath"
+               targetos="unix"
+               refid="additional.dependencies"
+  />
   
-  <target name="base">
-    <ant dir="base" />
-  </target>
+  <import file="../../lucene/contrib/contrib-build.xml"/>
 
-  <target name="strategy">
-    <ant dir="strategy" />
-  </target>
+  <path id="classpath">
+    <path refid="base.classpath"/>
+    <pathelement path="${spatial-base.jar}" />
+    <pathelement path="${queries.jar}" />
+  </path>
 
-  <target name="default" depends="compile"/>
-  <target name="compile" depends="base,strategy" />
+  <path id="test.classpath">
+    <path refid="test.base.classpath" />
+    <path refid="base.classpath"/>
+    <pathelement path="${analyzers-common.jar}" />
+    <pathelement path="src/test-files" />
+  </path>
 
-  <target name="clean">
-    <ant dir="base" target="clean" />
-    <ant dir="strategy" target="clean" />
-  </target>
-  
-  <target name="validate">
-    <ant dir="base" target="validate" />
-    <ant dir="strategy" target="validate" />
-  </target>
-  <target name="compile-core">
-    <ant dir="base" target="compile-core" />
-    <ant dir="strategy" target="compile-core" />
-  </target>
-  <target name="compile-test">
-    <ant dir="base" target="compile-test" />
-    <ant dir="strategy" target="compile-test" />
-  </target>
-  <target name="test">
-    <ant dir="base" target="test" />
-    <ant dir="strategy" target="test" />
-  </target>
 
-  <target name="build-artifacts-and-tests" depends="default,compile-test" />
+  <target name="init" depends="contrib-build.init"/>
+  <target name="dist-maven" depends="jar-core,javadocs,common.dist-maven"/>
+  <target name="compile" depends="jar-queries,common.compile-core" />
+  <target name="test" depends="jar-analyzers-common,compile-test,validate,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
 
-  <target name="dist-maven" depends="default,javadocs">
-    <ant dir="base" target="dist-maven" />
-    <ant dir="strategy" target="dist-maven" />
-  </target>  	
-
-  <target name="javadocs">
-    <ant dir="base" target="javadocs" />
-    <ant dir="strategy" target="javadocs" />
-  </target>  	
-
-  <target name="javadocs-index.html">
-    <ant dir="base" target="javadocs-index.html" />
-    <ant dir="strategy" target="javadocs-index.html" />
-  </target>
-	
 </project>

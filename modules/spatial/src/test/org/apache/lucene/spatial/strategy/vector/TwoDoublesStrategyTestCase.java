@@ -17,8 +17,8 @@
 
 package org.apache.lucene.spatial.strategy.vector;
 
-import org.apache.lucene.spatial.base.context.SpatialContext;
-import org.apache.lucene.spatial.base.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.simple.SimpleSpatialContext;
 
 public class TwoDoublesStrategyTestCase extends BaseTwoDoublesStrategyTestCase {
 

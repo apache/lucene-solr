@@ -25,9 +25,9 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.DoubleParser;
-import org.apache.lucene.spatial.base.distance.DistanceCalculator;
-import org.apache.lucene.spatial.base.shape.Point;
-import org.apache.lucene.spatial.base.shape.simple.PointImpl;
+import com.spatial4j.core.distance.DistanceCalculator;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.simple.PointImpl;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;

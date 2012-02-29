@@ -228,26 +228,15 @@
     <property name="sandbox.uptodate" value="true"/>
   </target>
 
-  <property name="spatial-base.jar" value="${common.dir}/../modules/spatial/build/base/lucene-spatial-base-${version}.jar"/>
-  <target name="check-spatial-base-uptodate" unless="spatial-base.uptodate">
-    <module-uptodate name="spatial/base" jarfile="${spatial-base.jar}" property="spatial-base.uptodate"/>
+  <property name="spatial.jar" value="${common.dir}/../modules/spatial/build/lucene-spatial-${version}.jar"/>
+  <target name="check-spatial-uptodate" unless="spatial.uptodate">
+    <module-uptodate name="spatial" jarfile="${spatial.jar}" property="spatial.uptodate"/>
   </target>
-  <target name="jar-spatial-base" unless="spatial-base.uptodate" depends="check-spatial-base-uptodate">
-  	<ant dir="${common.dir}/../modules/spatial/base" target="jar-core" inheritAll="false">
+  <target name="jar-spatial" unless="spatial.uptodate" depends="check-spatial-uptodate">
+  	<ant dir="${common.dir}/../modules/spatial" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-    <property name="spatial-base.uptodate" value="true"/>
-  </target>
-
-  <property name="spatial-strategy.jar" value="${common.dir}/../modules/spatial/build/strategy/lucene-spatial-strategy-${version}.jar"/>
-  <target name="check-spatial-strategy-uptodate" unless="spatial-strategy.uptodate">
-    <module-uptodate name="spatial/strategy" jarfile="${spatial-strategy.jar}" property="spatial-strategy.uptodate"/>
-  </target>
-  <target name="jar-spatial-strategy" unless="spatial-strategy.uptodate" depends="check-spatial-strategy-uptodate">
-    <ant dir="${common.dir}/../modules/spatial/strategy" target="jar-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="spatial-strategy.uptodate" value="true"/>
+    <property name="spatial.uptodate" value="true"/>
   </target>
 
   <property name="suggest.jar" value="${common.dir}/../modules/suggest/build/lucene-suggest-${version}.jar"/>

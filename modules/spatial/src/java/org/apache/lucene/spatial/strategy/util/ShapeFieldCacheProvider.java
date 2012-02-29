@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.strategy.util;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.spatial.base.shape.Shape;
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.util.BytesRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

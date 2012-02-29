@@ -22,12 +22,12 @@ import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.spatial.base.context.ParseUtils;
-import org.apache.lucene.spatial.base.context.SpatialContext;
-import org.apache.lucene.spatial.base.context.simple.SimpleSpatialContext;
-import org.apache.lucene.spatial.base.exception.InvalidShapeException;
-import org.apache.lucene.spatial.base.prefix.geohash.GeohashUtils;
-import org.apache.lucene.spatial.base.shape.Point;
+import com.spatial4j.core.context.ParseUtils;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.exception.InvalidShapeException;
+import com.spatial4j.core.prefix.geohash.GeohashUtils;
+import com.spatial4j.core.shape.Point;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -44,7 +44,7 @@ import java.io.IOException;
  * href="http://en.wikipedia.org/wiki/Geohash">Geohash</a> field. The field is
  * provided as a lat/lon pair and is internally represented as a string.
  *
- * @see org.apache.lucene.spatial.base.context.ParseUtils#parseLatitudeLongitude(double[], String) 
+ * @see com.spatial4j.core.context.ParseUtils#parseLatitudeLongitude(double[], String) 
  */
 public class GeoHashField extends FieldType implements SpatialQueryable {
 

@@ -19,12 +19,12 @@ package org.apache.lucene.spatial.strategy.prefix;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.spatial.base.exception.UnsupportedSpatialOperation;
-import org.apache.lucene.spatial.base.prefix.Node;
-import org.apache.lucene.spatial.base.prefix.SpatialPrefixTree;
-import org.apache.lucene.spatial.base.query.SpatialArgs;
-import org.apache.lucene.spatial.base.query.SpatialOperation;
-import org.apache.lucene.spatial.base.shape.Shape;
+import com.spatial4j.core.exception.UnsupportedSpatialOperation;
+import com.spatial4j.core.prefix.Node;
+import com.spatial4j.core.prefix.SpatialPrefixTree;
+import com.spatial4j.core.query.SpatialArgs;
+import com.spatial4j.core.query.SpatialOperation;
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.strategy.SimpleSpatialFieldInfo;
 
 import java.util.List;

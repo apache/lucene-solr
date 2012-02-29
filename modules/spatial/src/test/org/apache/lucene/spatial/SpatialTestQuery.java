@@ -17,10 +17,10 @@
 
 package org.apache.lucene.spatial;
 
-import org.apache.lucene.spatial.base.context.SpatialContext;
-import org.apache.lucene.spatial.base.io.LineReader;
-import org.apache.lucene.spatial.base.query.SpatialArgs;
-import org.apache.lucene.spatial.base.query.SpatialArgsParser;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.io.LineReader;
+import com.spatial4j.core.query.SpatialArgs;
+import com.spatial4j.core.query.SpatialArgsParser;
 
 import java.io.IOException;
 import java.io.InputStream;

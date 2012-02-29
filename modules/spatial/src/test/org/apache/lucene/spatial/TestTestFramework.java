@@ -17,11 +17,11 @@
 
 package org.apache.lucene.spatial;
 
-import org.apache.lucene.spatial.base.context.SpatialContext;
-import org.apache.lucene.spatial.base.context.simple.SimpleSpatialContext;
-import org.apache.lucene.spatial.base.query.SpatialArgsParser;
-import org.apache.lucene.spatial.base.query.SpatialOperation;
-import org.apache.lucene.spatial.base.shape.Rectangle;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.query.SpatialArgsParser;
+import com.spatial4j.core.query.SpatialOperation;
+import com.spatial4j.core.shape.Rectangle;
 import org.junit.Assert;
 import org.junit.Test;
 

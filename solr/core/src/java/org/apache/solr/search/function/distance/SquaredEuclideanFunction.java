@@ -18,7 +18,7 @@ package org.apache.solr.search.function.distance;
 
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
-import org.apache.lucene.spatial.base.distance.DistanceUtils;
+import com.spatial4j.core.distance.DistanceUtils;
 
 /**
  * While not strictly a distance, the Sq. Euclidean Distance is often all that is needed in many applications

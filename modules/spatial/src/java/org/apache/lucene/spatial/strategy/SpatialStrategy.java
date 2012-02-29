@@ -21,9 +21,9 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.base.context.SpatialContext;
-import org.apache.lucene.spatial.base.query.SpatialArgs;
-import org.apache.lucene.spatial.base.shape.Shape;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.query.SpatialArgs;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * must be thread safe

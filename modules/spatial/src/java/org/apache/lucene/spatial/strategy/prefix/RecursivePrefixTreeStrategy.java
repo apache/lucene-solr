@@ -22,11 +22,11 @@ import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.spatial.base.exception.UnsupportedSpatialOperation;
-import org.apache.lucene.spatial.base.prefix.SpatialPrefixTree;
-import org.apache.lucene.spatial.base.query.SpatialArgs;
-import org.apache.lucene.spatial.base.query.SpatialOperation;
-import org.apache.lucene.spatial.base.shape.Shape;
+import com.spatial4j.core.exception.UnsupportedSpatialOperation;
+import com.spatial4j.core.prefix.SpatialPrefixTree;
+import com.spatial4j.core.query.SpatialArgs;
+import com.spatial4j.core.query.SpatialOperation;
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.strategy.SimpleSpatialFieldInfo;
 
 

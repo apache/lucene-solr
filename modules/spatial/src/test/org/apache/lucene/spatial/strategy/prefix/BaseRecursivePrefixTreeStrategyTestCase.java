@@ -17,8 +17,8 @@
 
 package org.apache.lucene.spatial.strategy.prefix;
 
-import org.apache.lucene.spatial.base.context.SpatialContext;
-import org.apache.lucene.spatial.base.prefix.geohash.GeohashPrefixTree;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.prefix.geohash.GeohashPrefixTree;
 import org.apache.lucene.spatial.strategy.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;

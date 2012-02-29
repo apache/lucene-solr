@@ -24,12 +24,12 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.spatial.base.distance.DistanceCalculator;
-import org.apache.lucene.spatial.base.prefix.Node;
-import org.apache.lucene.spatial.base.prefix.SpatialPrefixTree;
-import org.apache.lucene.spatial.base.query.SpatialArgs;
-import org.apache.lucene.spatial.base.shape.Point;
-import org.apache.lucene.spatial.base.shape.Shape;
+import com.spatial4j.core.distance.DistanceCalculator;
+import com.spatial4j.core.prefix.Node;
+import com.spatial4j.core.prefix.SpatialPrefixTree;
+import com.spatial4j.core.query.SpatialArgs;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.strategy.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.strategy.SpatialStrategy;
 import org.apache.lucene.spatial.strategy.util.CachedDistanceValueSource;
@@ -56,7 +56,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy<SimpleSpatialFi
     this.defaultFieldValuesArrayLen = defaultFieldValuesArrayLen;
   }
 
-  /** See {@link SpatialPrefixTree#getMaxLevelForPrecision(org.apache.lucene.spatial.base.shape.Shape, double)}. */
+  /** See {@link SpatialPrefixTree#getMaxLevelForPrecision(com.spatial4j.core.shape.Shape, double)}. */
   public void setDistErrPct(double distErrPct) {
     this.distErrPct = distErrPct;
   }
