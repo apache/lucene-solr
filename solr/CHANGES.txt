@@ -261,6 +261,9 @@ Optimizations
 Bug Fixes
 ----------------------
 
+* SOLR-3165: Cannot use DIH in Solrcloud + Zookeeper (Alexey Serba, 
+  Mark Miller, siren)
+
 * SOLR-3068: Occasional NPE in ThreadDumpHandler (siren)
 
 * SOLR-2762: FSTLookup could return duplicate results or one results less
