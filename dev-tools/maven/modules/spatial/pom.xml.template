@@ -24,26 +24,64 @@
     <groupId>org.apache.lucene</groupId>
     <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
-    <relativePath>../../lucene/pom.xml</relativePath>
+    <relativePath>../../../lucene/pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-spatial-modules-aggregator</artifactId>
-  <name>Lucene Spatial Modules aggregator POM</name>
-  <packaging>pom</packaging>
-  <modules>
-    <module>base</module>
-    <module>strategy</module>
-  </modules>
+  <artifactId>lucene-spatial</artifactId>
+  <packaging>jar</packaging>
+  <name>Lucene Spatial</name>
+  <description>    
+  	Spatial Strategies for Apache Lucene
+  </description>
+  <properties>
+    <module-directory>modules/spatial</module-directory>
+    <build-directory>../build</build-directory>
+  </properties>
+  <dependencies>
+    <dependency> 
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.spatial4j</groupId>
+      <artifactId>spatial4j</artifactId>
+      <version>0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-queries</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-analyzers-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-benchmark</artifactId>
+      <version>${project.version}</version>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
   <build>
-    <directory>build/lucene-spatial-modules-aggregator</directory>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
+    <directory>${build-directory}</directory>
+    <outputDirectory>${build-directory}/classes/java</outputDirectory>
+    <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
+    <testResources>
+      <testResource>
+        <directory>src/test-files</directory>
+      </testResource>
+    </testResources>
   </build>
 </project>

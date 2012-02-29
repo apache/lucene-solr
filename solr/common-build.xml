@@ -86,8 +86,7 @@
   	<pathelement path="${highlighter.jar}"/>
   	<pathelement path="${memory.jar}"/>
   	<pathelement path="${misc.jar}"/>
-  	<pathelement path="${spatial-base.jar}"/>
-  	<pathelement path="${spatial-strategy.jar}"/>
+  	<pathelement path="${spatial.jar}"/>
   	<pathelement path="${suggest.jar}"/>
     <pathelement path="${grouping.jar}"/>
     <pathelement path="${queries.jar}"/>
@@ -156,8 +155,7 @@
       <fileset file="${highlighter.jar}" />
       <fileset file="${memory.jar}" />
       <fileset file="${misc.jar}" />
-      <fileset file="${spatial-base.jar}" />
-      <fileset file="${spatial-strategy.jar}" />
+      <fileset file="${spatial.jar}" />
     </copy>
     </sequential>
   </target>
