@@ -493,10 +493,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
     @Override
     public String toString() {
-      MergePolicy.OneMerge merge = getRunningMerge();
-      if (merge == null)
-        merge = startMerge;
-      return "merge thread: " + merge.segString(dir);
+      try {
+        MergePolicy.OneMerge merge = getRunningMerge();
+        if (merge == null)
+          merge = startMerge;
+        return "merge thread: " + merge.segString(dir);
+      } catch (Throwable e) {
+        return "merge thread: " + e.toString();
+      }
     }
   }
 
