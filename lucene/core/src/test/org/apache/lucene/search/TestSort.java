@@ -1333,6 +1333,9 @@ public class TestSort extends LuceneTestCase {
   }
 
   public void testRandomStringSort() throws Exception {
+    assumeTrue("cannot work with Lucene3x codec",
+               defaultCodecSupportsDocValues());
+
     final int NUM_DOCS = atLeast(100);
     final Directory dir = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
@@ -1342,6 +1345,7 @@ public class TestSort extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: NUM_DOCS=" + NUM_DOCS + " maxLength=" + maxLength + " allowDups=" + allowDups);
     }
+
     int numDocs = 0;
     final List<BytesRef> docValues = new ArrayList<BytesRef>();
     // TODO: deletions
