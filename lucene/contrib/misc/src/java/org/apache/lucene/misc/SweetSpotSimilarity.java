@@ -43,6 +43,7 @@ import java.util.HashMap;
  * subclasses can choose between.
  * </p>
  *
+ * @see <a href="doc-files/ss.gnuplot">A Gnuplot file used to generate some of the visualizations refrenced from each function.</a> 
  */
 public class SweetSpotSimilarity extends DefaultSimilarity {
 
@@ -82,7 +83,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    *
    * @param min the minimum tf value to ever be returned (default: 0.0)
    * @param max the maximum tf value to ever be returned (default: 2.0)
-   * @param base the base value to be used in the exponential for the hyperbolic function (default: e)
+   * @param base the base value to be used in the exponential for the hyperbolic function (default: 1.3)
    * @param xoffset the midpoint of the hyperbolic function (default: 10.0)
    * @see #hyperbolicTf
    */
@@ -166,6 +167,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * </p>
    *
    * @see #setLengthNormFactors
+   * @see <a href="doc-files/ss.computeLengthNorm.svg">An SVG visualization of this function</a> 
    */
   public float computeLengthNorm(String fieldName, int numTerms) {
     int l = ln_min;
@@ -216,6 +218,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * </p>
    *
    * @see #setBaselineTfFactors
+   * @see <a href="doc-files/ss.baselineTf.svg">An SVG visualization of this function</a> 
    */
   public float baselineTf(float freq) {
 
@@ -239,6 +242,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * </p>
    *
    * @see #setHyperbolicTfFactors
+   * @see <a href="doc-files/ss.hyperbolicTf.svg">An SVG visualization of this function</a> 
    */
   public float hyperbolicTf(float freq) {
     if (0.0f == freq) return 0.0f;
