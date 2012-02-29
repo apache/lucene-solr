@@ -61,7 +61,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 }
 
 class LogUpdateProcessor extends UpdateRequestProcessor {
-  public final static Logger log = LoggerFactory.getLogger(UpdateRequestProcessor.class);
+  public final static Logger log = LoggerFactory.getLogger(LogUpdateProcessor.class);
 
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
@@ -182,15 +182,16 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     NamedList<Object> stdLog = rsp.getToLog();
 
     StringBuilder sb = new StringBuilder();
-    for (int i=0; i<stdLog.size(); i++) {
-      String name = stdLog.getName(i);
-      Object val = stdLog.getVal(i);
-      if ("path"==name || "params"==name) {    //equals OK here
-        sb.append(val).append(' ');
-      } else {
-        sb.append(name).append('=').append(val).append(' ');
+
+    for (int i=0; i<toLog.size(); i++) {
+      String name = toLog.getName(i);
+      Object val = toLog.getVal(i);
+      if (name != null) {
+        sb.append(name).append('=');
       }
+      sb.append(val).append(' ');
     }
+
     stdLog.clear();   // make it so SolrCore.exec won't log this again
 
     // if id lists were truncated, show how many more there were
@@ -202,7 +203,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     }
     long elapsed = rsp.getEndTime() - req.getStartTime();
 
-    sb.append(toLog).append(" 0 ").append(elapsed);
+    sb.append(" 0 ").append(elapsed);
     log.info(sb.toString());
   }
 }

@@ -1514,6 +1514,9 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
+  /** @lucene.internal use the more consiste testLoggingFormat for tests... for use with SolrLogFormatter */
+  public static boolean isTestLoggingFormat;
+
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     if (handler==null) {
@@ -1533,12 +1536,12 @@ public final class SolrCore implements SolrInfoMBean {
     // for back compat, we set these now just in case other code
     // are expecting them during handleRequest
 
-    // multiple webaps are no longer best practise
-    // toLog.add("webapp", req.getContext().get("webapp"));
+    if (!isTestLoggingFormat) {
+      toLog.add("webapp", req.getContext().get("webapp"));
+    }
+    toLog.add(isTestLoggingFormat ? null : "path", req.getContext().get("path"));
+    toLog.add(isTestLoggingFormat ? null : "params", "{" + req.getParamString() + "}");
 
-    toLog.add("path", req.getContext().get("path"));
-    toLog.add("params", "{" + req.getParamString() + "}");
-    
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(handler,req,rsp);
 
@@ -1547,11 +1550,10 @@ public final class SolrCore implements SolrInfoMBean {
       for (int i=0; i<toLog.size(); i++) {
         String name = toLog.getName(i);
         Object val = toLog.getVal(i);
-        if ("path"==name || "params"==name) {    //equals OK here
-          sb.append(val).append(' ');
-        } else {
-          sb.append(name).append('=').append(val).append(' ');
+        if (name != null) {
+          sb.append(name).append('=');
         }
+        sb.append(val).append(' ');
       }
 
       log.info(sb.toString());

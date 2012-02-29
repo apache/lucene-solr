@@ -99,6 +99,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
 
   public static void setupLogging() {
+    SolrCore.isTestLoggingFormat = true;
     boolean register = false;
     Handler[] handlers = java.util.logging.Logger.getLogger("").getHandlers();
     ConsoleHandler consoleHandler = null;

@@ -186,8 +186,8 @@ sb.append("(group_name=").append(tg.getName()).append(")");
 
     if (info != null) {
       sb.append(' ').append(info.shortId);                     // core
-    } else if (zkController != null) {
-      // if we don't have info about the core, then at least try to do core container
+    }
+    if (zkController != null) {
       sb.append(" P").append(zkController.getHostPort());
     }
 

@@ -913,11 +913,10 @@ public class UpdateLog implements PluginInfoInitialized {
 
 
   private RecoveryInfo recoveryInfo;
-  public static Logger loglog = LoggerFactory.getLogger(LogReplayer.class);
 
   // TODO: do we let the log replayer run across core reloads?
   class LogReplayer implements Runnable {
-
+    private Logger loglog = log;  // set to something different?
 
     TransactionLog translog;
     TransactionLog.LogReader tlogReader;
