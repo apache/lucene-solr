@@ -183,9 +183,9 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
     StringBuilder sb = new StringBuilder();
 
-    for (int i=0; i<toLog.size(); i++) {
-      String name = toLog.getName(i);
-      Object val = toLog.getVal(i);
+    for (int i=0; i<stdLog.size(); i++) {
+      String name = stdLog.getName(i);
+      Object val = stdLog.getVal(i);
       if (name != null) {
         sb.append(name).append('=');
       }
@@ -203,7 +203,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     }
     long elapsed = rsp.getEndTime() - req.getStartTime();
 
-    sb.append(" 0 ").append(elapsed);
+    sb.append(toLog).append(" 0 ").append(elapsed);
     log.info(sb.toString());
   }
 }
