@@ -181,7 +181,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
     NamedList<Object> stdLog = rsp.getToLog();
 
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(req.getCore().getLogId());
 
     for (int i=0; i<stdLog.size(); i++) {
       String name = stdLog.getName(i);

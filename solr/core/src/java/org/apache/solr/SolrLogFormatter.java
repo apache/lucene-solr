@@ -54,16 +54,32 @@ public class SolrLogFormatter extends Formatter {
       return className + '.' + methodName;
     }
   }
-  
-  
 
-  
-  protected SolrLogFormatter() {
+
+  public SolrLogFormatter() {
     super();
     
     methodAlias.put(new Method("org.apache.solr.update.processor.LogUpdateProcessor","finish"), "UPDATE");
     methodAlias.put(new Method("org.apache.solr.core.SolrCore","execute"), "REQ");
   }
+
+
+  // TODO: name this better... it's only for cloud tests where every core container has just one solr server so Port/Core are fine
+  public boolean shorterFormat = false;
+
+  /**  Removes info that is redundant for current cloud tests including core name, webapp, and common labels path= and params=
+   * [] webapp=/solr path=/select params={q=foobarbaz} hits=0 status=0 QTime=1
+   * /select {q=foobarbaz} hits=0 status=0 QTime=1
+   * NOTE: this is a work in progress and different settings may be ideal for other types of tests.
+   */
+  public void setShorterFormat() {
+    shorterFormat = true;
+    // looking at /update is enough... we don't need "UPDATE /update"
+    methodAlias.put(new Method("org.apache.solr.update.processor.LogUpdateProcessor","finish"), "");
+  }
+
+
+
 
   public static class CoreInfo {
     public static int maxCoreNum;
@@ -188,10 +204,13 @@ sb.append("(group_name=").append(tg.getName()).append(")");
       sb.append(' ').append(info.shortId);                     // core
     }
     if (zkController != null) {
-      sb.append(" P").append(zkController.getHostPort());
+      sb.append(" P").append(zkController.getHostPort());      // todo: should be able to get this from core container for non zk tests
     }
 
-    sb.append(' ').append(shortClassName);
+    if (shortClassName.length() > 0) {
+      sb.append(' ').append(shortClassName);
+    }
+
     if (record.getLevel() != Level.INFO) {
       sb.append(' ').append(record.getLevel());
     }
@@ -254,20 +273,62 @@ sb.append("(group_name=").append(tg.getName()).append(")");
     return sb.toString() + '.' + method;
   }
   
+  private void addFirstLine(StringBuilder sb, String msg) {
+//    INFO: [] webapp=/solr path=/select params={q=foobarbaz} hits=0 status=0 QTime=1
+
+    if (!shorterFormat || !msg.startsWith("[")) {
+      sb.append(msg);      
+      return;
+    }
+
+    int idx = msg.indexOf(']');
+    if (idx < 0 || !msg.startsWith(" webapp=", idx+1)) {
+      sb.append(msg);
+      return;
+    }
+    
+    idx = msg.indexOf(' ',idx+8); // space after webapp=
+    if (idx < 0) { sb.append(msg); return; }
+    idx = msg.indexOf('=',idx+1);   // = in  path=
+    if (idx < 0) { sb.append(msg); return; }
+
+    int idx2 = msg.indexOf(' ',idx+1);
+    if (idx2 < 0) { sb.append(msg); return; }
+
+
+    sb.append(msg.substring(idx+1, idx2+1));  // path
+    
+    idx = msg.indexOf("params=", idx2);
+    if (idx < 0) {
+      sb.append(msg.substring(idx2));
+    } else {
+      sb.append(msg.substring(idx+7));
+    }
+  }
+  
   private void appendMultiLineString(StringBuilder sb, String msg) {
     int idx = msg.indexOf('\n');
     if (idx < 0) {
-      sb.append(msg);
+      addFirstLine(sb, msg);
       return;
     }
 
     int lastIdx = -1;
     for (;;) {
       if (idx < 0) {
-        sb.append(msg.substring(lastIdx+1));
+        if (lastIdx == -1) {
+          addFirstLine(sb, msg.substring(lastIdx+1));
+        } else {
+          sb.append(msg.substring(lastIdx+1));
+        }
         break;
       }
-      sb.append(msg.substring(lastIdx+1, idx));
+      if (lastIdx == -1) {
+        addFirstLine(sb, msg.substring(lastIdx+1, idx));
+      } else {
+        sb.append(msg.substring(lastIdx+1, idx));
+      }
+
       sb.append("\n\t");
       lastIdx = idx;
       idx = msg.indexOf('\n',lastIdx+1);
@@ -352,7 +413,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
       @Override
       public void run() {
         threadLocal.set("from thread1");
-        log.error("InThread1");
+        log.error("[] webapp=/solr path=/select params={hello} wow");
       }
     };
 

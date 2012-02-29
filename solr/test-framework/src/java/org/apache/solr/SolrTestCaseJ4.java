@@ -43,6 +43,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
+import org.apache.zookeeper.server.LogFormatter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -97,6 +98,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     super.tearDown();
   }
 
+  public static SolrLogFormatter formatter;
 
   public static void setupLogging() {
     SolrCore.isTestLoggingFormat = true;
@@ -116,7 +118,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
 
     consoleHandler.setLevel(Level.ALL);
-    consoleHandler.setFormatter(new SolrLogFormatter());
+    formatter = new SolrLogFormatter();
+    consoleHandler.setFormatter(formatter);
 
     if (register) {
       java.util.logging.Logger.getLogger("").addHandler(consoleHandler);
