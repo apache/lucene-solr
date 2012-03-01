@@ -23,8 +23,7 @@
       <module filepath="$PROJECT_DIR$/modules/join/join.iml" />
       <module filepath="$PROJECT_DIR$/modules/queries/queries.iml" />
       <module filepath="$PROJECT_DIR$/modules/queryparser/queryparser.iml" />
-      <module filepath="$PROJECT_DIR$/modules/spatial/base/spatial-base.iml" />
-      <module filepath="$PROJECT_DIR$/modules/spatial/strategy/spatial-strategy.iml" />
+      <module filepath="$PROJECT_DIR$/modules/spatial/spatial.iml" />
       <module filepath="$PROJECT_DIR$/modules/suggest/suggest.iml" />
       <module filepath="$PROJECT_DIR$/solr/solr.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/analysis-extras/analysis-extras.iml" />

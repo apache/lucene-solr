@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/../build/classes/java" />
-    <output-test url="file://$MODULE_DIR$/../build/classes/test" />
+    <output url="file://$MODULE_DIR$/build/classes/java" />
+    <output-test url="file://$MODULE_DIR$/build/classes/test" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/java" isTestSource="false" />
@@ -11,6 +11,16 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/lib" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+        <jarDirectory url="file://$MODULE_DIR$/lib" recursive="false" />
+      </library>
+    </orderEntry>
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="module" module-name="lucene" exported="" />
     <orderEntry type="module" module-name="queries" />
