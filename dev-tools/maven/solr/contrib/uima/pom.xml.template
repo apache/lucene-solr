@@ -29,7 +29,7 @@
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-uima</artifactId>
   <packaging>jar</packaging>
-  <name>Apache Solr - UIMA integration</name>
+  <name>Apache Solr UIMA integration</name>
   <description>Apache Solr - UIMA integration</description>
   <properties>
     <module-directory>solr/contrib/uima</module-directory>
@@ -55,6 +55,11 @@
       <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-analyzers-uima</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
