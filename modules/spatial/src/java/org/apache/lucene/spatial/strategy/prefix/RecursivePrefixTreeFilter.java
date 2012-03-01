@@ -21,9 +21,10 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.spatial.strategy.prefix.tree.Node;
+import org.apache.lucene.spatial.strategy.prefix.tree.SpatialPrefixTree;
+
 import com.spatial4j.core.shape.SpatialRelation;
-import com.spatial4j.core.prefix.Node;
-import com.spatial4j.core.prefix.SpatialPrefixTree;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;

@@ -22,11 +22,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
-import com.spatial4j.core.prefix.quad.QuadPrefixTree;
 import com.spatial4j.core.query.SpatialArgsParser;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.simple.PointImpl;
 import org.apache.lucene.spatial.strategy.SimpleSpatialFieldInfo;
+import org.apache.lucene.spatial.strategy.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.SpatialTestCase;
 import org.junit.Test;
 

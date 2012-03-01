@@ -23,11 +23,11 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.FunctionQuery;
 import com.spatial4j.core.exception.UnsupportedSpatialOperation;
-import com.spatial4j.core.prefix.SpatialPrefixTree;
 import com.spatial4j.core.query.SpatialArgs;
 import com.spatial4j.core.query.SpatialOperation;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.strategy.SimpleSpatialFieldInfo;
+import org.apache.lucene.spatial.strategy.prefix.tree.SpatialPrefixTree;
 
 
 public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {

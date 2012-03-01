@@ -26,7 +26,7 @@ import com.spatial4j.core.context.ParseUtils;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.prefix.geohash.GeohashUtils;
+import com.spatial4j.core.util.GeohashUtils;
 import com.spatial4j.core.shape.Point;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;

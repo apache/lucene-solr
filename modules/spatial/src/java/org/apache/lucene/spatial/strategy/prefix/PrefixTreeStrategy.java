@@ -25,13 +25,13 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import com.spatial4j.core.distance.DistanceCalculator;
-import com.spatial4j.core.prefix.Node;
-import com.spatial4j.core.prefix.SpatialPrefixTree;
 import com.spatial4j.core.query.SpatialArgs;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.strategy.SimpleSpatialFieldInfo;
 import org.apache.lucene.spatial.strategy.SpatialStrategy;
+import org.apache.lucene.spatial.strategy.prefix.tree.Node;
+import org.apache.lucene.spatial.strategy.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.strategy.util.CachedDistanceValueSource;
 
 import java.io.IOException;

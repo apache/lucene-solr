@@ -17,9 +17,10 @@
 
 package org.apache.lucene.spatial.strategy.prefix;
 
-import com.spatial4j.core.prefix.Node;
-import com.spatial4j.core.prefix.SpatialPrefixTree;
 import com.spatial4j.core.shape.Point;
+
+import org.apache.lucene.spatial.strategy.prefix.tree.Node;
+import org.apache.lucene.spatial.strategy.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.strategy.util.ShapeFieldCacheProvider;
 import org.apache.lucene.util.BytesRef;
 

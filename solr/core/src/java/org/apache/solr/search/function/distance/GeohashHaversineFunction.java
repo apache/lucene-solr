@@ -27,7 +27,7 @@ import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.distance.DistanceUnits;
 import com.spatial4j.core.distance.GeodesicSphereDistCalc;
-import com.spatial4j.core.prefix.geohash.GeohashUtils;
+import com.spatial4j.core.util.GeohashUtils;
 import com.spatial4j.core.shape.Point;
 
 import java.util.Map;
