@@ -83,6 +83,7 @@
   	<pathelement path="${analyzers-common.jar}"/>
   	<pathelement path="${analyzers-kuromoji.jar}"/>
   	<pathelement path="${analyzers-phonetic.jar}"/>
+    <pathelement path="${analyzers-uima.jar}"/>
   	<pathelement path="${highlighter.jar}"/>
   	<pathelement path="${memory.jar}"/>
   	<pathelement path="${misc.jar}"/>
