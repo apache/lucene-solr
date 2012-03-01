@@ -191,7 +191,8 @@ public class LookupBenchmarkTest extends LuceneTestCase {
 
       final List<String> input = new ArrayList<String>(benchmarkInput.size());
       for (TermFreq tf : benchmarkInput) {
-        input.add(tf.term.utf8ToString().substring(0, Math.min(tf.term.length, 
+        String s = tf.term.utf8ToString();
+        input.add(s.substring(0, Math.min(s.length(), 
               minPrefixLen + random.nextInt(maxPrefixLen - minPrefixLen + 1))));
       }
 
