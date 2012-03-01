@@ -207,7 +207,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return cloudState.getShard(hash, collection);
   }
 
-  // used for deleteByQyery to get the list of nodes this leader should forward to
+  // used for deleteByQuery to get the list of nodes this leader should forward to
   private List<Node> setupRequest() {
     List<Node> nodes = null;
     String shardId = cloudDesc.getShardId();
@@ -622,20 +622,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
           doLocalDelete(cmd);
 
-          // forward to all replicas
-          if (replicas != null) {
-            ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-            params.set(DELETE_BY_QUERY_LEVEL, 3);
-            params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
-            params.set(SEEN_LEADER, "true");
-            cmdDistrib.distribDelete(cmd, replicas, params);
-
-            // wait for DBQ responses before releasing the update block to eliminate the possibility
-            // of an add being reordered.
-            // TODO: this isn't strictly necessary - we could do the same thing we do for PeerSync
-            // in DUH2 and add a clause that prevents deleting older docs.
-            cmdDistrib.finish();
-          }
 
         } else {
           cmd.setVersion(-versionOnUpdate);
@@ -658,6 +644,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } finally {
       vinfo.unblockUpdates();
     }
+
+
+
+    // TODO: need to handle reorders to replicas somehow
+    // forward to all replicas
+    if (leaderLogic && replicas != null) {
+      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      params.set(DELETE_BY_QUERY_LEVEL, 3);
+      params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
+      params.set(SEEN_LEADER, "true");
+      cmdDistrib.distribDelete(cmd, replicas, params);
+      cmdDistrib.finish();
+    }
+
 
     if (returnVersions && rsp != null) {
       if (deleteByQueryResponse == null) {
