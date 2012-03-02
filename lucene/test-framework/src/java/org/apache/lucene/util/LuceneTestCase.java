@@ -1433,7 +1433,8 @@ public abstract class LuceneTestCase extends Assert {
         ex = new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<Runnable>(),
             new NamedThreadFactory("LuceneTestCase"));
-        ex.prestartAllCoreThreads();
+        // uncomment to intensify LUCENE-3840
+        // ex.prestartAllCoreThreads();
       }
       if (ex != null) {
        if (VERBOSE) {
