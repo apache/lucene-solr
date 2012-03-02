@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
@@ -50,7 +51,7 @@ import org.apache.lucene.util.fst.Util.MinResult;
  * Input weights will be cast to a java integer, and any
  * negative, infinite, or NaN values will be rejected.
  * 
- * @see Util#shortestPaths(FST, FST.Arc, int)
+ * @see Util#shortestPaths(FST, FST.Arc, Comparator, int)
  * @lucene.experimental
  */
 public class WFSTCompletionLookup extends Lookup {
@@ -204,13 +205,13 @@ public class WFSTCompletionLookup extends Lookup {
     }
     
     // complete top-N
-    MinResult completions[] = null;
+    MinResult<Long> completions[] = null;
     try {
-      completions = Util.shortestPaths(fst, arc, num);
+      completions = Util.shortestPaths(fst, arc, weightComparator, num);
     } catch (IOException bogus) { throw new RuntimeException(bogus); }
     
     BytesRef suffix = new BytesRef(8);
-    for (MinResult completion : completions) {
+    for (MinResult<Long> completion : completions) {
       scratch.length = prefixLength;
       // append suffix
       Util.toBytesRef(completion.input, suffix);
@@ -277,4 +278,10 @@ public class WFSTCompletionLookup extends Lookup {
     }
     return Integer.MAX_VALUE - (int)value;
   }
+  
+  static final Comparator<Long> weightComparator = new Comparator<Long> () {
+    public int compare(Long left, Long right) {
+      return left.compareTo(right);
+    }  
+  };
 }
