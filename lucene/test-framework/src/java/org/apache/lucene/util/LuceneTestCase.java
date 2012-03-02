@@ -40,9 +40,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -1427,9 +1425,16 @@ public abstract class LuceneTestCase extends Assert {
       return ret;
     } else {
       int threads = 0;
-      final ExecutorService ex = (random.nextBoolean()) ? null
-          : Executors.newFixedThreadPool(threads = _TestUtil.nextInt(random, 1, 8),
-                      new NamedThreadFactory("LuceneTestCase"));
+      final ThreadPoolExecutor ex;
+      if (random.nextBoolean()) {
+        ex = null;
+      } else {
+        threads = _TestUtil.nextInt(random, 1, 8);
+        ex = new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>(),
+            new NamedThreadFactory("LuceneTestCase"));
+        ex.prestartAllCoreThreads();
+      }
       if (ex != null) {
        if (VERBOSE) {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
