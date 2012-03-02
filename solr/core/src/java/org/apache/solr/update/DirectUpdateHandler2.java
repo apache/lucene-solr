@@ -538,14 +538,33 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         return;
       }
 
-      if (writer != null) {
-        writer.close();
+      // if we are later going to mark everything in the tlog as committed, then we
+      // need to block all updates from coming in so we can be sure that the close
+      // will contain all of the updates.
+
+      VersionInfo vinfo = ulog == null ? null : ulog.getVersionInfo();
+      if (vinfo != null) {
+        // TODO: move the RW update lock somewhere else?
+        vinfo.blockUpdates();
+      }
+      try {
+
+        boolean succeeded = false;
+        try {
+          if (writer != null) {
+            writer.close();
+          }
+          succeeded = true;
+        } finally {
+          if (ulog != null) ulog.close(succeeded);
+        }
+
+      } finally {
+        if (vinfo != null) {
+          vinfo.unblockUpdates();
+        }
       }
 
-      // if the writer hits an exception, it's OK (and perhaps desirable)
-      // to not close the ulog.
-
-      if (ulog != null) ulog.close(true);
     } finally {
       commitLock.unlock();
     }

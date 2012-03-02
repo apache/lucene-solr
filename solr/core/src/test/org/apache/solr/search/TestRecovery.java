@@ -17,9 +17,11 @@
 package org.apache.solr.search;
 
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.ByteUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
@@ -725,6 +727,106 @@ public class TestRecovery extends SolrTestCaseJ4 {
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
+  }
+
+  // in rare circumstances, two logs can be left uncapped (lacking a commit at the end signifying that all the content in the log was committed)
+  @Test
+  public void testRecoveryMultipleLogs() throws Exception {
+    try {
+      DirectUpdateHandler2.commitOnClose = false;
+      final Semaphore logReplay = new Semaphore(0);
+      final Semaphore logReplayFinish = new Semaphore(0);
+
+      UpdateLog.testing_logReplayHook = new Runnable() {
+        @Override
+        public void run() {
+          try {
+            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+
+      UpdateLog.testing_logReplayFinishHook = new Runnable() {
+        @Override
+        public void run() {
+          logReplayFinish.release();
+        }
+      };
+
+      File logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
+
+      clearIndex();
+      assertU(commit());
+
+      assertU(adoc("id","AAAAAA"));
+      assertU(adoc("id","BBBBBB"));
+      assertU(adoc("id","CCCCCC"));
+
+      h.close();
+      String[] files = UpdateLog.getLogList(logDir);
+      Arrays.sort(files);
+      String fname = files[files.length-1];
+      RandomAccessFile raf = new RandomAccessFile(new File(logDir, fname), "rw");
+      raf.seek(raf.length());  // seek to end
+      raf.writeLong(0xffffffffffffffffL);
+      raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
+      
+      byte[] content = new byte[(int)raf.length()];
+      raf.seek(0);
+      raf.readFully(content);
+
+      raf.close();
+
+      // Now make a newer log file with just the IDs changed.  NOTE: this may not work if log format changes too much!
+      findReplace("AAAAAA".getBytes("UTF-8"), "aaaaaa".getBytes("UTF-8"), content);
+      findReplace("BBBBBB".getBytes("UTF-8"), "bbbbbb".getBytes("UTF-8"), content);
+      findReplace("CCCCCC".getBytes("UTF-8"), "cccccc".getBytes("UTF-8"), content);
+
+      // WARNING... assumes format of .00000n where n is less than 9
+      String fname2 = fname.substring(0, fname.length()-1) + (char)(fname.charAt(fname.length()-1)+1);
+      raf = new RandomAccessFile(new File(logDir, fname2), "rw");
+      raf.write(content);
+      raf.close();
+      
+
+      logReplay.release(1000);
+      logReplayFinish.drainPermits();
+      ignoreException("OutOfBoundsException");  // this is what the corrupted log currently produces... subject to change.
+      createCore();
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      resetExceptionIgnores();
+      assertJQ(req("q","*:*") ,"/response/numFound==6");
+
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
+  }
+
+
+  // NOTE: replacement must currently be same size
+  private static void findReplace(byte[] from, byte[] to, byte[] data) {
+    int idx = -from.length;
+    for(;;) {
+      idx = indexOf(from, data, idx + from.length);  // skip over previous match
+      if (idx < 0) break;
+      for (int i=0; i<to.length; i++) {
+        data[idx+i] = to[i];
+      }
+    }
+  }
+  
+  private static int indexOf(byte[] target, byte[] data, int start) {
+    outer: for (int i=start; i<data.length - target.length; i++) {
+      for (int j=0; j<target.length; j++) {
+        if (data[i+j] != target[j]) continue outer;
+      }
+      return i;
+    }
+    return -1;
   }
 
   // stops the core, removes the transaction logs, restarts the core.

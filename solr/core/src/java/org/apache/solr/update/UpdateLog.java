@@ -86,7 +86,7 @@ public class UpdateLog implements PluginInfoInitialized {
   private TransactionLog tlog;
   private TransactionLog prevTlog;
   private Deque<TransactionLog> logs = new LinkedList<TransactionLog>();  // list of recent logs, newest first
-  private TransactionLog newestLogOnStartup;
+  private LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<TransactionLog>();
   private int numOldRecords;  // number of records in the recent logs
 
   private Map<BytesRef,LogPtr> map = new HashMap<BytesRef, LogPtr>();
@@ -172,16 +172,23 @@ public class UpdateLog implements PluginInfoInitialized {
       File f = new File(tlogDir, oldLogName);
       try {
         oldLog = new TransactionLog( f, null, true );
-        addOldLog(oldLog);
+        addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
       } catch (Exception e) {
         SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
         f.delete();
       }
     }
-    newestLogOnStartup = oldLog;
 
+    // Record first two logs (oldest first) at startup for potential tlog recovery.
+    // It's possible that at abnormal shutdown both "tlog" and "prevTlog" were uncapped.
+    for (TransactionLog ll : logs) {
+      newestLogsOnStartup.addFirst(ll);
+      if (newestLogsOnStartup.size() >= 2) break;
+    }
+    
     versionInfo = new VersionInfo(uhandler, 256);
 
+    // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
     UpdateLog.RecentUpdates startingRecentUpdates = getRecentUpdates();
     try {
       startingVersions = startingRecentUpdates.getVersions(numRecordsToKeep);
@@ -207,7 +214,7 @@ public class UpdateLog implements PluginInfoInitialized {
   /* Takes over ownership of the log, keeping it until no longer needed
      and then decrementing it's reference and dropping it.
    */
-  private void addOldLog(TransactionLog oldLog) {
+  private void addOldLog(TransactionLog oldLog, boolean removeOld) {
     if (oldLog == null) return;
 
     numOldRecords += oldLog.numRecords();
@@ -218,7 +225,7 @@ public class UpdateLog implements PluginInfoInitialized {
       currRecords += tlog.numRecords();
     }
 
-    while (logs.size() > 0) {
+    while (removeOld && logs.size() > 0) {
       TransactionLog log = logs.peekLast();
       int nrec = log.numRecords();
       // remove oldest log if we don't need it to keep at least numRecordsToKeep, or if
@@ -386,18 +393,16 @@ public class UpdateLog implements PluginInfoInitialized {
       // since we're changing the log, we must change the map.
       newMap();
 
+      if (prevTlog != null) {
+        globalStrings = prevTlog.getGlobalStrings();
+      }
+
       // since document additions can happen concurrently with commit, create
       // a new transaction log first so that we know the old one is definitely
       // in the index.
       prevTlog = tlog;
       tlog = null;
       id++;
-
-      if (prevTlog != null) {
-        globalStrings = prevTlog.getGlobalStrings();
-      }
-
-      addOldLog(prevTlog);
     }
   }
 
@@ -410,6 +415,8 @@ public class UpdateLog implements PluginInfoInitialized {
         // if we made it through the commit, write a commit command to the log
         // TODO: check that this works to cap a tlog we were using to buffer so we don't replay on startup.
         prevTlog.writeCommit(cmd);
+
+        addOldLog(prevTlog, true);
         // the old log list will decref when no longer needed
         // prevTlog.decref();
         prevTlog = null;
@@ -562,26 +569,32 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
+
   public Future<RecoveryInfo> recoverFromLog() {
     recoveryInfo = new RecoveryInfo();
-    if (newestLogOnStartup == null) return null;
 
-    if (!newestLogOnStartup.try_incref()) return null;   // log file was already closed
+    List<TransactionLog> recoverLogs = new ArrayList<TransactionLog>(1);
+    for (TransactionLog ll : newestLogsOnStartup) {
+      if (!ll.try_incref()) continue;
 
-    // now that we've incremented the reference, the log shouldn't go away.
-    try {
-      if (newestLogOnStartup.endsWithCommit()) {
-        newestLogOnStartup.decref();
-        return null;
+      try {
+        if (ll.endsWithCommit()) {
+          ll.decref();
+          continue;
+        }
+      } catch (IOException e) {
+        log.error("Error inspecting tlog " + ll);
+        ll.decref();
+        continue;
       }
-    } catch (IOException e) {
-      log.error("Error inspecting tlog " + newestLogOnStartup);
-      newestLogOnStartup.decref();
-      return null;
+
+      recoverLogs.add(ll);
     }
 
+    if (recoverLogs.isEmpty()) return null;
+
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<RecoveryInfo>(recoveryExecutor);
-    LogReplayer replayer = new LogReplayer(newestLogOnStartup, false);
+    LogReplayer replayer = new LogReplayer(recoverLogs, false);
 
     versionInfo.blockUpdates();
     try {
@@ -590,8 +603,9 @@ public class UpdateLog implements PluginInfoInitialized {
       versionInfo.unblockUpdates();
     }
 
-    return cs.submit(replayer, recoveryInfo);
+    // At this point, we are guaranteed that any new updates coming in will see the state as "replaying"
 
+    return cs.submit(replayer, recoveryInfo);
   }
 
 
@@ -606,6 +620,22 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
+
+  private void doClose(TransactionLog theLog, boolean writeCommit) {
+    if (theLog != null) {
+      if (writeCommit) {
+        // record a commit
+        log.info("Recording current closed for " + uhandler.core + " log=" + theLog);
+        CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams((SolrParams)null)), false);
+        theLog.writeCommit(cmd);
+      }
+
+      theLog.deleteOnClose = false;
+      theLog.decref();
+      theLog.forceClose();
+    }
+  }
+  
   public void close(boolean committed) {
     synchronized (this) {
       try {
@@ -616,25 +646,11 @@ public class UpdateLog implements PluginInfoInitialized {
 
       // Don't delete the old tlogs, we want to be able to replay from them and retrieve old versions
 
-      if (prevTlog != null) {
-        prevTlog.deleteOnClose = false;
-        prevTlog.decref();
-        prevTlog.forceClose();
-      }
-      if (tlog != null) {
-        if (committed) {
-          // record a commit
-          log.info("Recording current log as closed for " + uhandler.core);
-          CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams((SolrParams)null)), false);
-          tlog.writeCommit(cmd);
-        }
-
-        tlog.deleteOnClose = false;
-        tlog.decref();
-        tlog.forceClose();
-      }
+      doClose(prevTlog, committed);
+      doClose(tlog, committed);
 
       for (TransactionLog log : logs) {
+        if (log == prevTlog || log == tlog) continue;
         log.deleteOnClose = false;
         log.decref();
         log.forceClose();
@@ -894,7 +910,7 @@ public class UpdateLog implements PluginInfoInitialized {
       throw new RuntimeException("executor is not running...");
     }
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<RecoveryInfo>(recoveryExecutor);
-    LogReplayer replayer = new LogReplayer(tlog, true);
+    LogReplayer replayer = new LogReplayer(Arrays.asList(new TransactionLog[]{tlog}), true);
     return cs.submit(replayer, recoveryInfo);
   }
 
@@ -914,31 +930,59 @@ public class UpdateLog implements PluginInfoInitialized {
 
   private RecoveryInfo recoveryInfo;
 
-  // TODO: do we let the log replayer run across core reloads?
   class LogReplayer implements Runnable {
     private Logger loglog = log;  // set to something different?
 
-    TransactionLog translog;
+    List<TransactionLog> translogs;
     TransactionLog.LogReader tlogReader;
     boolean activeLog;
     boolean finishing = false;  // state where we lock out other updates and finish those updates that snuck in before we locked
     boolean debug = loglog.isDebugEnabled();
 
-    public LogReplayer(TransactionLog translog, boolean activeLog) {
-      this.translog = translog;
+    public LogReplayer(List<TransactionLog> translogs, boolean activeLog) {
+      this.translogs = translogs;
       this.activeLog = activeLog;
     }
+
+
+
+    private SolrQueryRequest req;
+    private SolrQueryResponse rsp;
+
 
     @Override
     public void run() {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(DistributedUpdateProcessor.SEEN_LEADER, true);
-      SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
-      SolrQueryResponse rsp = new SolrQueryResponse();
+      req = new LocalSolrQueryRequest(uhandler.core, params);
+      rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));    // setting request info will help logging
 
       try {
+        for (TransactionLog translog : translogs) {
+          doReplay(translog);
+        }
+      } catch (Throwable e) {
+        recoveryInfo.errors++;
+        SolrException.log(log,e);
+      } finally {
+        // change the state while updates are still blocked to prevent races
+        state = State.ACTIVE;
+        if (finishing) {
+          versionInfo.unblockUpdates();
+        }
+      }
 
+      loglog.warn("Log replay finished. recoveryInfo=" + recoveryInfo);
+
+      if (testing_logReplayFinishHook != null) testing_logReplayFinishHook.run();
+
+      SolrRequestInfo.clearRequestInfo();
+    }
+
+
+    public void doReplay(TransactionLog translog) {
+      try {
         loglog.warn("Starting log replay " + translog + " active="+activeLog + " starting pos=" + recoveryInfo.positionOfStart);
 
         tlogReader = translog.getReader(recoveryInfo.positionOfStart);
@@ -1085,7 +1129,7 @@ public class UpdateLog implements PluginInfoInitialized {
           recoveryInfo.errors++;
           loglog.error("Replay exception: final commit.", ex);
         }
-        
+
         if (!activeLog) {
           // if we are replaying an old tlog file, we need to add a commit to the end
           // so we don't replay it again if we restart right after.
@@ -1099,28 +1143,13 @@ public class UpdateLog implements PluginInfoInitialized {
           loglog.error("Replay exception: finish()", ex);
         }
 
-        tlogReader.close();
-        translog.decref();
-
-      } catch (Throwable e) {
-        recoveryInfo.errors++;
-        SolrException.log(log,e);
       } finally {
-        // change the state while updates are still blocked to prevent races
-        state = State.ACTIVE;
-        if (finishing) {
-          versionInfo.unblockUpdates();
-        }
+        if (tlogReader != null) tlogReader.close();
+        translog.decref();
       }
-
-      loglog.warn("Ending log replay " + tlogReader + " recoveryInfo=" + recoveryInfo);
-
-      if (testing_logReplayFinishHook != null) testing_logReplayFinishHook.run();
-
-      SolrRequestInfo.clearRequestInfo();
     }
   }
-  
+
   public void cancelApplyBufferedUpdates() {
     this.cancelApplyBufferUpdate = true;
   }
