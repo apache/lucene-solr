@@ -117,7 +117,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
       // TODO: could be faster... but its slowCompletor for a reason
       for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
         if (e.getKey().startsWith(prefix)) {
-          matches.add(new LookupResult(e.getKey(), (float)e.getValue().longValue()));
+          matches.add(new LookupResult(e.getKey(), e.getValue().longValue()));
         }
       }
 

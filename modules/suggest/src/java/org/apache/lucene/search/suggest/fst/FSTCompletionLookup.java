@@ -59,6 +59,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * use {@link FSTCompletion} directly or {@link TSTLookup}, for example.
  * 
  * @see FSTCompletion
+ * @lucene.experimental
  */
 public class FSTCompletionLookup extends Lookup {
   /** 
@@ -171,7 +172,7 @@ public class FSTCompletionLookup extends Lookup {
         }
 
         output.reset(buffer);
-        output.writeInt(FloatMagic.toSortable(tfit.weight()));
+        output.writeInt(encodeWeight(tfit.weight()));
         output.writeBytes(spare.bytes, spare.offset, spare.length);
         writer.write(buffer, 0, output.getPosition());
       }
@@ -188,13 +189,13 @@ public class FSTCompletionLookup extends Lookup {
       reader = new Sort.ByteSequencesReader(tempSorted);
       long line = 0;
       int previousBucket = 0;
-      float previousScore = 0;
+      int previousScore = 0;
       ByteArrayDataInput input = new ByteArrayDataInput();
       BytesRef tmp1 = new BytesRef();
       BytesRef tmp2 = new BytesRef();
       while (reader.read(tmp1)) {
         input.reset(tmp1.bytes);
-        float currentScore = FloatMagic.fromSortable(input.readInt());
+        int currentScore = input.readInt();
 
         int bucket;
         if (line > 0 && currentScore == previousScore) {
@@ -230,6 +231,14 @@ public class FSTCompletionLookup extends Lookup {
       tempSorted.delete();
     }
   }
+  
+  /** weight -> cost */
+  private static int encodeWeight(long value) {
+    if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+      throw new UnsupportedOperationException("cannot encode value: " + value);
+    }
+    return (int)value;
+  }
 
   @Override
   public List<LookupResult> lookup(CharSequence key, boolean higherWeightsFirst, int num) {
@@ -250,19 +259,9 @@ public class FSTCompletionLookup extends Lookup {
     return results;
   }
 
-  @Override
-  public boolean add(CharSequence key, Object value) {
-    // Not supported.
-    return false;
-  }
-
-  @Override
   public Object get(CharSequence key) {
-    Integer bucket = normalCompletion.getBucket(key);
-    if (bucket == null)
-      return null;
-    else
-      return (float) normalCompletion.getBucket(key) / normalCompletion.getBucketCount();
+    final int bucket = normalCompletion.getBucket(key);
+    return bucket == -1 ? null : Long.valueOf(bucket);
   }
 
   /**

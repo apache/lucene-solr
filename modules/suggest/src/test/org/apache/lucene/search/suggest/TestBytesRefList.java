@@ -29,59 +29,79 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestBytesRefList extends LuceneTestCase {
-
+  
   public void testAppend() throws IOException {
     BytesRefList list = new BytesRefList();
     List<String> stringList = new ArrayList<String>();
-    int entries = atLeast(500);
-    BytesRef spare = new BytesRef();
-    for (int i = 0; i < entries; i++) {
-      String randomRealisticUnicodeString = _TestUtil
-          .randomRealisticUnicodeString(random);
-      spare.copyChars(randomRealisticUnicodeString);
-      list.append(spare);
-      stringList.add(randomRealisticUnicodeString);
-    }
-    for (int i = 0; i < entries; i++) {
-      assertNotNull(list.get(spare, i));
-      assertEquals("entry " + i + " doesn't match", stringList.get(i),
-          spare.utf8ToString());
-    }
-
-    // check random
-    for (int i = 0; i < entries; i++) {
-      int e = random.nextInt(entries);
-      assertNotNull(list.get(spare, e));
-      assertEquals("entry " + i + " doesn't match", stringList.get(e),
-          spare.utf8ToString());
-    }
-    for (int i = 0; i < 2; i++) {
-
-      BytesRefIterator iterator = list.iterator();
-      for (String string : stringList) {
-        assertEquals(string, iterator.next().utf8ToString());
+    for (int j = 0; j < 2; j++) {
+      if (j > 0 && random.nextBoolean()) {
+        list.clear();
+        stringList.clear();
+      }
+      int entries = atLeast(500);
+      BytesRef spare = new BytesRef();
+      for (int i = 0; i < entries; i++) {
+        String randomRealisticUnicodeString = _TestUtil
+            .randomRealisticUnicodeString(random);
+        spare.copyChars(randomRealisticUnicodeString);
+        list.append(spare);
+        stringList.add(randomRealisticUnicodeString);
+      }
+      for (int i = 0; i < entries; i++) {
+        assertNotNull(list.get(spare, i));
+        assertEquals("entry " + i + " doesn't match", stringList.get(i),
+            spare.utf8ToString());
+      }
+      
+      // check random
+      for (int i = 0; i < entries; i++) {
+        int e = random.nextInt(entries);
+        assertNotNull(list.get(spare, e));
+        assertEquals("entry " + i + " doesn't match", stringList.get(e),
+            spare.utf8ToString());
+      }
+      for (int i = 0; i < 2; i++) {
+        
+        BytesRefIterator iterator = list.iterator();
+        for (String string : stringList) {
+          assertEquals(string, iterator.next().utf8ToString());
+        }
       }
     }
   }
-
-  public void testSort() {
+  
+  public void testSort() throws IOException {
     BytesRefList list = new BytesRefList();
     List<String> stringList = new ArrayList<String>();
-    int entries = atLeast(500);
-    BytesRef spare = new BytesRef();
-    for (int i = 0; i < entries; i++) {
-      String randomRealisticUnicodeString = _TestUtil.randomRealisticUnicodeString(random);
-      spare.copyChars(randomRealisticUnicodeString);
-      list.append(spare);
-      stringList.add(randomRealisticUnicodeString);
-    }
-    Collections.sort(stringList);
-    int[] sortedOrds = list.sort(BytesRef.getUTF8SortedAsUTF16Comparator());
-    for (int i = 0; i < entries; i++) {
-      assertNotNull(list.get(spare, sortedOrds[i]));
-      assertEquals("entry " + i + " doesn't match", stringList.get(i),
-          spare.utf8ToString());
+
+    for (int j = 0; j < 2; j++) {
+      if (j > 0 && random.nextBoolean()) {
+        list.clear();
+        stringList.clear();
+      }
+      int entries = atLeast(500);
+      BytesRef spare = new BytesRef();
+      for (int i = 0; i < entries; i++) {
+        String randomRealisticUnicodeString = _TestUtil
+            .randomRealisticUnicodeString(random);
+        spare.copyChars(randomRealisticUnicodeString);
+        list.append(spare);
+        stringList.add(randomRealisticUnicodeString);
+      }
+      
+      Collections.sort(stringList);
+      BytesRefIterator iter = list.iterator(BytesRef
+          .getUTF8SortedAsUTF16Comparator());
+      int i = 0;
+      while ((spare = iter.next()) != null) {
+        assertEquals("entry " + i + " doesn't match", stringList.get(i),
+            spare.utf8ToString());
+        i++;
+      }
+      assertNull(iter.next());
+      assertEquals(i, stringList.size());
     }
     
   }
+  
 }

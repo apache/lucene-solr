@@ -17,8 +17,10 @@
 package org.apache.lucene.search.suggest;
 
 import java.io.File;
+import java.util.List;
 
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
@@ -74,16 +76,18 @@ public class PersistenceTest extends LuceneTestCase {
     lookup.load(storeDir);
 
     // Assert validity.
-    float previous = Float.NEGATIVE_INFINITY;
+    long previous = Long.MIN_VALUE;
     for (TermFreq k : keys) {
-      Float val = (Float) lookup.get(_TestUtil.bytesToCharSequence(k.term, random));
-      assertNotNull(k.term.utf8ToString(), val);
+      List<LookupResult> list = lookup.lookup(_TestUtil.bytesToCharSequence(k.term, random), false, 1);
+      assertEquals(1, list.size());
+      LookupResult lookupResult = list.get(0);
+      assertNotNull(k.term.utf8ToString(), lookupResult.key);
 
       if (supportsExactWeights) { 
-        assertEquals(k.term.utf8ToString(), Float.valueOf(k.v), val);
+        assertEquals(k.term.utf8ToString(), k.v, lookupResult.value);
       } else {
-        assertTrue(val + ">=" + previous, val >= previous);
-        previous = val.floatValue();
+        assertTrue(lookupResult.value + ">=" + previous, lookupResult.value >= previous);
+        previous = lookupResult.value;
       }
     }
   }

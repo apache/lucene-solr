@@ -19,9 +19,9 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.*;
 
@@ -98,6 +98,7 @@ import org.apache.lucene.util.fst.*;
  * change, requiring you to rebuild the FST suggest index.
  * 
  * @see FSTCompletion
+ * @lucene.experimental
  */
 public class FSTCompletionBuilder {
   /** 
@@ -143,10 +144,11 @@ public class FSTCompletionBuilder {
 
   /**
    * Creates an {@link FSTCompletion} with default options: 10 buckets, exact match
-   * promoted to first position and {@link InMemorySorter}.
+   * promoted to first position and {@link InMemorySorter} with a comparator obtained from
+   * {@link BytesRef#getUTF8SortedAsUnicodeComparator()}.
    */
   public FSTCompletionBuilder() {
-    this(DEFAULT_BUCKETS, new InMemorySorter(), Integer.MAX_VALUE);
+    this(DEFAULT_BUCKETS, new InMemorySorter(BytesRef.getUTF8SortedAsUnicodeComparator()), Integer.MAX_VALUE);
   }
 
   /**
@@ -237,10 +239,12 @@ public class FSTCompletionBuilder {
         shareMaxTailLength, outputs, null, false);
     
     BytesRef scratch = new BytesRef();
+    BytesRef entry;
     final IntsRef scratchIntsRef = new IntsRef();
     int count = 0;
-    for (Iterator<BytesRef> i = sorter.iterator(); i.hasNext(); count++) {
-      BytesRef entry = i.next();
+    BytesRefIterator iter = sorter.iterator();
+    while((entry = iter.next()) != null) {
+      count++;
       if (scratch.compareTo(entry) != 0) {
         builder.add(Util.toIntsRef(entry, scratchIntsRef), empty);
         scratch.copyBytes(entry);

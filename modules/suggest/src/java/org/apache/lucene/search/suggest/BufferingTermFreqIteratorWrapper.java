@@ -25,6 +25,7 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * This wrapper buffers incoming elements.
+ * @lucene.experimental
  */
 public class BufferingTermFreqIteratorWrapper implements TermFreqIterator {
   // TODO keep this for now

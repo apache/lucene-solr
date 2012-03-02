@@ -29,15 +29,19 @@ import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.PriorityQueue;
 
+/**
+ * Simple Lookup interface for {@link CharSequence} suggestions.
+ * @lucene.experimental
+ */
 public abstract class Lookup {
   /**
    * Result of a lookup.
    */
   public static final class LookupResult implements Comparable<LookupResult> {
     public final CharSequence key;
-    public final float value;
+    public final long value;
     
-    public LookupResult(CharSequence key, float value) {
+    public LookupResult(CharSequence key, long value) {
       this.key = key;
       this.value = value;
     }
@@ -112,6 +116,10 @@ public abstract class Lookup {
     build(tfit);
   }
   
+  /**
+   * Builds up a new internal {@link Lookup} representation based on the given {@link TermFreqIterator}.
+   * The implementation might re-sort the data internally.
+   */
   public abstract void build(TermFreqIterator tfit) throws IOException;
   
   /**
@@ -124,22 +132,7 @@ public abstract class Lookup {
    */
   public abstract List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num);
 
-  /**
-   * Modify the lookup data by recording additional data. Optional operation.
-   * @param key new lookup key
-   * @param value value to associate with this key
-   * @return true if new key is added, false if it already exists or operation
-   * is not supported.
-   */
-  public abstract boolean add(CharSequence key, Object value);
   
-  /**
-   * Get value associated with a specific key.
-   * @param key lookup key
-   * @return associated value
-   */
-  public abstract Object get(CharSequence key);
-
   /**
    * Persist the constructed lookup data to a directory. Optional operation.
    * @param output {@link OutputStream} to write the data to.
@@ -173,4 +166,5 @@ public abstract class Lookup {
    * @throws IOException when fatal IO error occurs.
    */
   public abstract boolean load(File storeDir) throws IOException;
+  
 }

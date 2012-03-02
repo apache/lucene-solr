@@ -75,7 +75,11 @@ public class FileDictionary implements Dictionary {
         String[] fields = line.split("\t");
         if (fields.length > 1) {
           // keep reading floats for bw compat
-          curFreq = (int)Float.parseFloat(fields[1]);
+          try {
+            curFreq = Long.parseLong(fields[1]);
+          } catch (NumberFormatException e) {
+            curFreq = (long)Double.parseDouble(fields[1]);
+          }
           spare.copyChars(fields[0]);
         } else {
           spare.copyChars(line);

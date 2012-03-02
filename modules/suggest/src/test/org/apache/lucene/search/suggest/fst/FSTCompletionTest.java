@@ -165,9 +165,9 @@ public class FSTCompletionTest extends LuceneTestCase {
 
     // All the weights were constant, so all returned buckets must be constant, whatever they
     // are.
-    Float previous = null; 
+    Long previous = null; 
     for (TermFreq tf : keys) {
-      Float current = (Float)lookup.get(_TestUtil.bytesToCharSequence(tf.term, random));
+      Long current = ((Number)lookup.get(_TestUtil.bytesToCharSequence(tf.term, random))).longValue();
       if (previous != null) {
         assertEquals(previous, current);
       }
@@ -181,7 +181,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     FSTCompletionLookup lookup = new FSTCompletionLookup();
     lookup.build(new TermFreqArrayIterator(input));
     for (TermFreq tf : input) {
-      assertTrue("Not found: " + tf.term.toString(), lookup.get(_TestUtil.bytesToCharSequence(tf.term, random)) != null);
+      assertNotNull("Not found: " + tf.term.toString(), lookup.get(_TestUtil.bytesToCharSequence(tf.term, random)));
       assertEquals(tf.term.utf8ToString(), lookup.lookup(_TestUtil.bytesToCharSequence(tf.term, random), true, 1).get(0).key.toString());
     }
 

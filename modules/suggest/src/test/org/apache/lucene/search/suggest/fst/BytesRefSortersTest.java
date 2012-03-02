@@ -17,9 +17,8 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
-import java.util.Iterator;
-
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -31,7 +30,7 @@ public class BytesRefSortersTest extends LuceneTestCase {
 
   @Test
   public void testInMemorySorter() throws Exception {
-    check(new InMemorySorter());
+    check(new InMemorySorter(BytesRef.getUTF8SortedAsUnicodeComparator()));
   }
 
   private void check(BytesRefSorter sorter) throws Exception {
@@ -42,8 +41,8 @@ public class BytesRefSortersTest extends LuceneTestCase {
     }
 
     // Create two iterators and check that they're aligned with each other.
-    Iterator<BytesRef> i1 = sorter.iterator();
-    Iterator<BytesRef> i2 = sorter.iterator();
+    BytesRefIterator i1 = sorter.iterator();
+    BytesRefIterator i2 = sorter.iterator();
     
     // Verify sorter contract.
     try {
@@ -52,10 +51,12 @@ public class BytesRefSortersTest extends LuceneTestCase {
     } catch (IllegalStateException e) {
       // Expected.
     }
-
-    while (i1.hasNext() && i2.hasNext()) {
-      assertEquals(i1.next(), i2.next());
+    BytesRef spare1;
+    BytesRef spare2;
+    while ((spare1 = i1.next()) != null && (spare2 = i2.next()) != null) {
+      assertEquals(spare1, spare2);
     }
-    assertEquals(i1.hasNext(), i2.hasNext());
+    assertNull(i1.next());
+    assertNull(i2.next());
   }  
 }

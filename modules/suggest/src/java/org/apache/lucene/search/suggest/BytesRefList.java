@@ -18,81 +18,113 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Comparator;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.SorterTemplate;
 
-final class BytesRefList {
-
+/**
+ * A simple append only random-access {@link BytesRef} array that stores full
+ * copies of the appended bytes in a {@link ByteBlockPool}.
+ * 
+ * 
+ * <b>Note: This class is not Thread-Safe!</b>
+ * 
+ * @lucene.internal
+ * @lucene.experimental
+ */
+public final class BytesRefList {
+  // TODO rename to BytesRefArray
   private final ByteBlockPool pool;
   private int[] offsets = new int[1];
-  private int currentElement = 0;
+  private int lastElement = 0;
   private int currentOffset = 0;
-
+  private final Counter bytesUsed = Counter.newCounter(false);
+  
+  /**
+   * Creates a new {@link BytesRefList}
+   */
   public BytesRefList() {
-    this(new ByteBlockPool(new ByteBlockPool.DirectAllocator()));
-  }
-
-  public BytesRefList(ByteBlockPool pool) {
-    this.pool = pool;
+    this.pool = new ByteBlockPool(new ByteBlockPool.DirectTrackingAllocator(
+        bytesUsed));
     pool.nextBuffer();
+    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
+        + RamUsageEstimator.NUM_BYTES_INT);
   }
-
-  public int append(BytesRef bytes) {
-    if (currentElement >= offsets.length) {
-      offsets = ArrayUtil.grow(offsets, offsets.length + 1);
-    }
-    pool.copy(bytes);
-    offsets[currentElement++] = currentOffset;
-    currentOffset += bytes.length;
-    return currentElement;
-  }
-
-  public int size() {
-    return currentElement;
-  }
-
-  public BytesRef get(BytesRef bytes, int pos) {
-    if (currentElement > pos) {
-      bytes.offset = offsets[pos];
-      bytes.length = pos == currentElement - 1 ? currentOffset - bytes.offset
-          : offsets[pos + 1] - bytes.offset;
-      pool.copyFrom(bytes);
-      return bytes;
-    }
-    throw new IndexOutOfBoundsException("index " + pos
-        + " must be less than the size: " + currentElement);
-
-  }
-
-  public BytesRefIterator iterator() {
-    final int numElements = currentElement;
-    
-    return new BytesRefIterator() {
-      private final BytesRef spare = new BytesRef();
-      private int pos = 0;
-
-      @Override
-      public BytesRef next() throws IOException {
-        if (pos < numElements) {
-          get(spare, pos++);
-          return spare;
-        }
-        return null;
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return null;
-      }
-    };
+ 
+  /**
+   * Clears this {@link BytesRefList}
+   */
+  public void clear() {
+    lastElement = 0;
+    currentOffset = 0;
+    Arrays.fill(offsets, 0);
+    pool.reset();
   }
   
-  public int[] sort(final Comparator<BytesRef> comp) {
+  /**
+   * Appends a copy of the given {@link BytesRef} to this {@link BytesRefList}.
+   * @param bytes the bytes to append
+   * @return the ordinal of the appended bytes
+   */
+  public int append(BytesRef bytes) {
+    if (lastElement >= offsets.length) {
+      int oldLen = offsets.length;
+      offsets = ArrayUtil.grow(offsets, offsets.length + 1);
+      bytesUsed.addAndGet((offsets.length - oldLen)
+          * RamUsageEstimator.NUM_BYTES_INT);
+    }
+    pool.copy(bytes);
+    offsets[lastElement++] = currentOffset;
+    currentOffset += bytes.length;
+    return lastElement;
+  }
+  
+  /**
+   * Returns the current size of this {@link BytesRefList}
+   * @return the current size of this {@link BytesRefList}
+   */
+  public int size() {
+    return lastElement;
+  }
+  
+  /**
+   * Returns the <i>n'th</i> element of this {@link BytesRefList}
+   * @param spare a spare {@link BytesRef} instance
+   * @param ord the elements ordinal to retrieve 
+   * @return the <i>n'th</i> element of this {@link BytesRefList}
+   */
+  public BytesRef get(BytesRef spare, int ord) {
+    if (lastElement > ord) {
+      spare.offset = offsets[ord];
+      spare.length = ord == lastElement - 1 ? currentOffset - spare.offset
+          : offsets[ord + 1] - spare.offset;
+      pool.copyFrom(spare);
+      return spare;
+    }
+    throw new IndexOutOfBoundsException("index " + ord
+        + " must be less than the size: " + lastElement);
+    
+  }
+  
+  /**
+   * Returns the number internally used bytes to hold the appended bytes in
+   * memory
+   * 
+   * @return the number internally used bytes to hold the appended bytes in
+   *         memory
+   */
+  public long bytesUsed() {
+    return bytesUsed.get();
+  }
+  
+  private int[] sort(final Comparator<BytesRef> comp) {
     final int[] orderdEntries = new int[size()];
     for (int i = 0; i < orderdEntries.length; i++) {
       orderdEntries[i] = i;
@@ -110,22 +142,65 @@ final class BytesRefList {
         final int ord1 = orderdEntries[i], ord2 = orderdEntries[j];
         return comp.compare(get(scratch1, ord1), get(scratch2, ord2));
       }
-
+      
       @Override
       protected void setPivot(int i) {
         final int ord = orderdEntries[i];
         get(pivot, ord);
       }
-  
+      
       @Override
       protected int comparePivot(int j) {
         final int ord = orderdEntries[j];
         return comp.compare(pivot, get(scratch2, ord));
       }
       
-      private final BytesRef pivot = new BytesRef(),
-        scratch1 = new BytesRef(), scratch2 = new BytesRef();
+      private final BytesRef pivot = new BytesRef(), scratch1 = new BytesRef(),
+          scratch2 = new BytesRef();
     }.quickSort(0, size() - 1);
     return orderdEntries;
+  }
+  
+  /**
+   * sugar for {@link #iterator(Comparator)} with a <code>null</code> comparator
+   */
+  public BytesRefIterator iterator() {
+    return iterator(null);
+  }
+  
+  /**
+   * <p>
+   * Returns a {@link BytesRefIterator} with point in time semantics. The
+   * iterator provides access to all so far appended {@link BytesRef} instances.
+   * </p>
+   * <p>
+   * If a non <code>null</code> {@link Comparator} is provided the iterator will
+   * iterate the byte values in the order specified by the comparator. Otherwise
+   * the order is the same as the values were appended.
+   * </p>
+   * <p>
+   * This is a non-destructive operation.
+   * </p>
+   */
+  public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
+    final BytesRef spare = new BytesRef();
+    final int size = size();
+    final int[] ords = comp == null ? null : sort(comp);
+    return new BytesRefIterator() {
+      int pos = 0;
+      
+      @Override
+      public BytesRef next() throws IOException {
+        if (pos < size) {
+          return get(spare, ords == null ? pos++ : ords[pos++]);
+        }
+        return null;
+      }
+      
+      @Override
+      public Comparator<BytesRef> getComparator() {
+        return comp;
+      }
+    };
   }
 }

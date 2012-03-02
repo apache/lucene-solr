@@ -26,6 +26,7 @@ import org.apache.lucene.util.BytesRef;
 /**
  * This wrapper buffers the incoming elements and makes sure they are in
  * random order.
+ * @lucene.experimental
  */
 public class UnsortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper {
   // TODO keep this for now

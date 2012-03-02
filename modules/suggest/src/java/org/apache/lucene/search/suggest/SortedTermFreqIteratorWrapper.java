@@ -17,45 +17,166 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.suggest.fst.Sort;
+import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesReader;
+import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesWriter;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
- * This wrapper buffers incoming elements and makes sure they are sorted in
- * ascending lexicographic order.
+ * This wrapper buffers incoming elements and makes sure they are sorted based on given comparator.
+ * @lucene.experimental
  */
-public class SortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper {
-  // TODO keep this for now - but the consumer should really sort this stuff on disk with sorter...
-  private final int[] sortedOrds;
-  private int currentOrd = -1;
-  private final BytesRef spare = new BytesRef();
-  private final Comparator<BytesRef> comp;
-
-  public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comp) throws IOException {
-    super(source);
-    this.sortedOrds = entries.sort(comp);
-    this.comp = comp;
+public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
+  
+  private final TermFreqIterator source;
+  private File tempInput;
+  private File tempSorted;
+  private final ByteSequencesReader reader;
+  private boolean done = false;
+  
+  private long weight;
+  private final BytesRef scratch = new BytesRef();
+  private final Comparator<BytesRef> comparator;
+  
+  public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comparator) throws IOException {
+    this(source, comparator, false);
   }
-
-  @Override
-  public long weight() {
-    return freqs[currentOrd];
+  
+  public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comparator, boolean compareRawBytes) throws IOException {
+    this.source = source;
+    this.comparator = comparator;
+    this.reader = sort(compareRawBytes ? comparator : new BytesOnlyComparator(this.comparator));
   }
-
+  
   @Override
   public BytesRef next() throws IOException {
-    if (++curPos < entries.size()) {
-      return entries.get(spare, (currentOrd = sortedOrds[curPos]));  
+    boolean success = false;
+    if (done) {
+      return null;
     }
-    return null;
+    try {
+      ByteArrayDataInput input = new ByteArrayDataInput();
+      if (reader.read(scratch)) {
+        weight = decode(scratch, input);
+        success = true;
+        return scratch;
+      }
+      close();
+      success = done = true;
+      return null;
+    } finally {
+      if (!success) {
+        done = true;
+        close();
+      }
+    }
   }
-
+  
   @Override
   public Comparator<BytesRef> getComparator() {
-    return comp;
+    return comparator;
+  }
+  
+  @Override
+  public long weight() {
+    return weight;
+  }
+  
+  private Sort.ByteSequencesReader sort(Comparator<BytesRef> comparator) throws IOException {
+    String prefix = getClass().getSimpleName();
+    File directory = Sort.defaultTempDir();
+    tempInput = File.createTempFile(prefix, ".input", directory);
+    tempSorted = File.createTempFile(prefix, ".sorted", directory);
+    
+    final Sort.ByteSequencesWriter writer = new Sort.ByteSequencesWriter(tempInput);
+    boolean success = false;
+    try {
+      BytesRef spare;
+      byte[] buffer = new byte[0];
+      ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
+
+      while ((spare = source.next()) != null) {
+        encode(writer, output, buffer, spare, source.weight());
+      }
+      writer.close();
+      new Sort(comparator).sort(tempInput, tempSorted);
+      ByteSequencesReader reader = new Sort.ByteSequencesReader(tempSorted);
+      success = true;
+      return reader;
+      
+    } finally {
+      if (success) {
+        IOUtils.close(writer);
+      } else {
+        try {
+          IOUtils.closeWhileHandlingException(writer);
+        } finally {
+          close();
+        }
+      }
+      
+    }
+  }
+  
+  private void close() throws IOException {
+    if (tempInput != null) {
+      tempInput.delete();
+    }
+    if (tempSorted != null) {
+      tempSorted.delete();
+    }
+    IOUtils.close(reader);
+  }
+  
+  private final static class BytesOnlyComparator implements Comparator<BytesRef> {
+
+    final Comparator<BytesRef> other;
+    private final BytesRef leftScratch = new BytesRef();
+    private final BytesRef rightScratch = new BytesRef();
+    
+    public BytesOnlyComparator(Comparator<BytesRef> other) {
+      this.other = other;
+    }
+
+    @Override
+    public int compare(BytesRef left, BytesRef right) {
+      wrap(leftScratch, left);
+      wrap(rightScratch, right);
+      return other.compare(leftScratch, rightScratch);
+    }
+    
+    private void wrap(BytesRef wrapper, BytesRef source) {
+      wrapper.bytes = source.bytes;
+      wrapper.offset = source.offset;
+      wrapper.length = source.length - 8;
+      
+    }
+  }
+  
+  protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, long weight) throws IOException {
+    if (spare.length + 8 >= buffer.length) {
+      buffer = ArrayUtil.grow(buffer, spare.length + 8);
+    }
+    output.reset(buffer);
+    output.writeBytes(spare.bytes, spare.offset, spare.length);
+    output.writeLong(weight);
+    writer.write(buffer, 0, output.getPosition());
+  }
+  
+  protected long decode(BytesRef scratch, ByteArrayDataInput tmpInput) {
+    tmpInput.reset(scratch.bytes);
+    tmpInput.skipBytes(scratch.length - 8); // suggestion + separator
+    scratch.length -= 8; // sep + long
+    return tmpInput.readLong();
   }
   
 }

@@ -28,6 +28,7 @@ import org.apache.lucene.util.fst.FST.Arc;
  * Finite state automata based implementation of "autocomplete" functionality.
  * 
  * @see FSTCompletionBuilder
+ * @lucene.experimental
  */
 
 // TODO: we could store exact weights as outputs from the FST (int4 encoded
@@ -159,10 +160,10 @@ public class FSTCompletion {
    * @param utf8
    *          The sequence of utf8 bytes to follow.
    * 
-   * @return Returns the bucket number of the match or <code>null</code> if no
+   * @return Returns the bucket number of the match or <code>-1</code> if no
    *         match was found.
    */
-  private Integer getExactMatchStartingFromRootArc(
+  private int getExactMatchStartingFromRootArc(
       int rootArcIndex, BytesRef utf8) {
     // Get the UTF-8 bytes representation of the input key.
     try {
@@ -186,7 +187,7 @@ public class FSTCompletion {
     }
     
     // No match.
-    return null;
+    return -1;
   }
   
   /**
@@ -273,8 +274,8 @@ public class FSTCompletion {
           // exact match, if requested.
           if (exactFirst) {
             if (!checkExistingAndReorder(res, key)) {
-              Integer exactMatchBucket = getExactMatchStartingFromRootArc(i, key);
-              if (exactMatchBucket != null) {
+              int exactMatchBucket = getExactMatchStartingFromRootArc(i, key);
+              if (exactMatchBucket != -1) {
                 // Insert as the first result and truncate at num.
                 while (res.size() >= num) {
                   res.remove(res.size() - 1);
@@ -385,10 +386,10 @@ public class FSTCompletion {
   }
 
   /**
-   * Returns the bucket assigned to a given key (if found) or <code>null</code> if
+   * Returns the bucket assigned to a given key (if found) or <code>-1</code> if
    * no exact match exists.
    */
-  public Integer getBucket(CharSequence key) {
+  public int getBucket(CharSequence key) {
     return getExactMatchStartingFromRootArc(0, new BytesRef(key));
   }
 

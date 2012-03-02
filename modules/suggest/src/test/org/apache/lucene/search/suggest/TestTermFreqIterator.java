@@ -17,12 +17,16 @@ package org.apache.lucene.search.suggest;
  * the License.
  */
 
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -38,7 +42,8 @@ public class TestTermFreqIterator extends LuceneTestCase {
   public void testTerms() throws Exception {
     int num = atLeast(10000);
     
-    TreeMap<BytesRef,Long> sorted = new TreeMap<BytesRef,Long>();
+    Comparator<BytesRef> comparator = random.nextBoolean() ? BytesRef.getUTF8SortedAsUnicodeComparator() : BytesRef.getUTF8SortedAsUTF16Comparator();
+    TreeMap<BytesRef,Long> sorted = new TreeMap<BytesRef,Long>(comparator);
     TermFreq[] unsorted = new TermFreq[num];
 
     for (int i = 0; i < num; i++) {
@@ -52,13 +57,13 @@ public class TestTermFreqIterator extends LuceneTestCase {
     }
     
     // test the sorted iterator wrapper
-    TermFreqIterator wrapper = new SortedTermFreqIteratorWrapper(new TermFreqArrayIterator(unsorted), BytesRef.getUTF8SortedAsUnicodeComparator());
+    TermFreqIterator wrapper = new SortedTermFreqIteratorWrapper(new TermFreqArrayIterator(unsorted), comparator);
     Iterator<Map.Entry<BytesRef,Long>> expected = sorted.entrySet().iterator();
     while (expected.hasNext()) {
       Map.Entry<BytesRef,Long> entry = expected.next();
       
       assertEquals(entry.getKey(), wrapper.next());
-      assertEquals(entry.getValue().longValue(), wrapper.weight(), 0F);
+      assertEquals(entry.getValue().longValue(), wrapper.weight());
     }
     assertNull(wrapper.next());
     
@@ -71,5 +76,58 @@ public class TestTermFreqIterator extends LuceneTestCase {
       actual.put(BytesRef.deepCopyOf(key), value);
     }
     assertEquals(sorted, actual);
+  }
+  
+  
+  public void testRaw() throws Exception {
+    int num = atLeast(10000);
+    
+    Comparator<BytesRef> comparator = BytesRef.getUTF8SortedAsUnicodeComparator();
+    BytesRefHash sorted = new BytesRefHash();
+    TermFreq[] unsorted = new TermFreq[num];
+    byte[] buffer = new byte[0];
+    ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
+
+    for (int i = 0; i < num; i++) {
+      BytesRef spare;
+      long weight;
+      do {
+        spare = new BytesRef(_TestUtil.randomUnicodeString(random));
+        if (spare.length + 8 >= buffer.length) {
+          buffer = ArrayUtil.grow(buffer, spare.length + 8);
+        }
+        output.reset(buffer);
+        output.writeBytes(spare.bytes, spare.offset, spare.length);
+        weight = random.nextLong();
+        output.writeLong(weight);
+        
+      } while (sorted.add(new BytesRef(buffer, 0, output.getPosition())) < 0);
+      unsorted[i] = new TermFreq(spare, weight);
+    }
+    
+    // test the sorted iterator wrapper
+    TermFreqIterator wrapper = new SortedTermFreqIteratorWrapper(new TermFreqArrayIterator(unsorted), comparator, true);
+    int[] sort = sorted.sort(comparator);
+    int size = sorted.size();
+    BytesRef spare = new BytesRef();
+    for (int i = 0; i < size; i++) {
+      sorted.get(sort[i], spare);
+      spare.length -= 8; // sub the long value
+      assertEquals(spare, wrapper.next());
+      spare.offset = spare.offset + spare.length;
+      spare.length = 8;
+      assertEquals(asLong(spare), wrapper.weight());
+    }
+    assertNull(wrapper.next());
+  }
+  
+  public static long asLong(BytesRef b) {
+    return (((long) asIntInternal(b, b.offset) << 32) | asIntInternal(b,
+        b.offset + 4) & 0xFFFFFFFFL);
+  }
+
+  private static int asIntInternal(BytesRef b, int pos) {
+    return ((b.bytes[pos++] & 0xFF) << 24) | ((b.bytes[pos++] & 0xFF) << 16)
+        | ((b.bytes[pos++] & 0xFF) << 8) | (b.bytes[pos] & 0xFF);
   }
 }

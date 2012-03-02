@@ -115,6 +115,13 @@ Changes in backwards compatibility policy
  * LUCENE-3626: The internal implementation classes in PKIndexSplitter
    and MultiPassIndexSplitter were made private as they now work
    per segment.  (Uwe Schindler)
+   
+ * LUCENE-3807: Cleaned up Suggest / Lookup API. Term weights (freqs) are now
+   64bit signed integers instead of 32bit floats. Sorting of terms is now a 
+   disk based merge sort instead of an in-memory sort. The Lookup API now 
+   accepts and returns CharSequence instead of String which should be converted
+   into a String before used in a datastructure that relies on hashCode / equals.
+   (Simon Willnauer)
   
 Changes in Runtime Behavior
 
