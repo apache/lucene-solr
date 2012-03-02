@@ -180,8 +180,4 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     zkClient.printLayoutToStdOut();
     zkClient.close();
   }
-  
-  @AfterClass
-  public static void afterClass() throws InterruptedException {
-  }
 }
