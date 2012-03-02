@@ -18,18 +18,16 @@
 package org.apache.lucene.spatial;
 
 
-import junit.framework.Assert;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.io.sample.SampleData;
 import com.spatial4j.core.io.sample.SampleDataReader;
 import com.spatial4j.core.query.SpatialArgsParser;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.spatial.strategy.SpatialFieldInfo;
-import org.apache.lucene.spatial.strategy.SpatialStrategy;
+import junit.framework.Assert;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexableField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
