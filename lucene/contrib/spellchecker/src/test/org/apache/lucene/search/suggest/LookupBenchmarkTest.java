@@ -207,7 +207,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       });
 
       System.err.println(
-          String.format(Locale.ENGLISH, "%-15s queries: %d, time[ms]: %s, ~qps: %.0f",
+          String.format(Locale.ENGLISH, "%-15s queries: %d, time[ms]: %s, ~kQPS: %.0f",
               lookup.getClass().getSimpleName(),
               input.size(),
               result.average.toString(),
