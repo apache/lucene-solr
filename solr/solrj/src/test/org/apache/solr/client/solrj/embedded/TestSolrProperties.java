@@ -263,7 +263,7 @@ public class TestSolrProperties extends LuceneTestCase {
     fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
     try {
       Document document = builder.parse(fis);
-      assertTrue(exists("/solr/cores/core[@name='collection1' and @instanceDir='./']", document));
+      assertTrue(exists("/solr/cores/core[@name='collection1' and (@instanceDir='./' or @instanceDir='.\\')]", document));
     } finally {
       fis.close();
     }
