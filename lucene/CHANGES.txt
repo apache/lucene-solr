@@ -859,7 +859,7 @@ New Features
 * LUCENE-3725: Added optional packing to FST building; this uses extra
   RAM during building but results in a smaller FST.  (Mike McCandless)
 
-* LUCENE-3714: Add top N shortest cost paths search for FST<Long>.
+* LUCENE-3714: Add top N shortest cost paths search for FST.
   (Robert Muir, Dawid Weiss, Mike McCandless)
 
 Bug fixes

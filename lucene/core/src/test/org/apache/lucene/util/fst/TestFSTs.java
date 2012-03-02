@@ -59,6 +59,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
+import org.apache.lucene.util.fst.PairOutputs.Pair;
 
 @UseNoMemoryExpensiveCodec
 public class TestFSTs extends LuceneTestCase {
@@ -1975,6 +1976,12 @@ public class TestFSTs extends LuceneTestCase {
     assertFalse(arc.isFinal());
     assertEquals(42, arc.output.longValue());
   }
+  
+  static final Comparator<Long> minLongComparator = new Comparator<Long> () {
+    public int compare(Long left, Long right) {
+      return left.compareTo(right);
+    }  
+  };
 
   public void testShortestPaths() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
@@ -1989,19 +1996,65 @@ public class TestFSTs extends LuceneTestCase {
     //Util.toDot(fst, w, false, false);
     //w.close();
 
-    Util.MinResult[] r = Util.shortestPaths(fst,
+    Util.MinResult<Long>[] r = Util.shortestPaths(fst,
                                            fst.getFirstArc(new FST.Arc<Long>()),
+                                           minLongComparator,
                                            3);
     assertEquals(3, r.length);
 
     assertEquals(Util.toIntsRef(new BytesRef("aac"), scratch), r[0].input);
-    assertEquals(7, r[0].output);
+    assertEquals(7L, r[0].output.longValue());
 
     assertEquals(Util.toIntsRef(new BytesRef("ax"), scratch), r[1].input);
-    assertEquals(17, r[1].output);
+    assertEquals(17L, r[1].output.longValue());
 
     assertEquals(Util.toIntsRef(new BytesRef("aab"), scratch), r[2].input);
-    assertEquals(22, r[2].output);
+    assertEquals(22L, r[2].output.longValue());
+  }
+  
+  // compares just the weight side of the pair
+  static final Comparator<Pair<Long,Long>> minPairWeightComparator = new Comparator<Pair<Long,Long>> () {
+    public int compare(Pair<Long,Long> left, Pair<Long,Long> right) {
+      return left.output1.compareTo(right.output1);
+    }  
+  };
+  
+  /** like testShortestPaths, but uses pairoutputs so we have both a weight and an output */
+  public void testShortestPathsWFST() throws Exception {
+
+    PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(
+        PositiveIntOutputs.getSingleton(true), // weight
+        PositiveIntOutputs.getSingleton(true)  // output
+    );
+    
+    final Builder<Pair<Long,Long>> builder = new Builder<Pair<Long,Long>>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    final IntsRef scratch = new IntsRef();
+    builder.add(Util.toIntsRef(new BytesRef("aab"), scratch), outputs.newPair(22L, 57L));
+    builder.add(Util.toIntsRef(new BytesRef("aac"), scratch), outputs.newPair(7L, 36L));
+    builder.add(Util.toIntsRef(new BytesRef("ax"), scratch), outputs.newPair(17L, 85L));
+    final FST<Pair<Long,Long>> fst = builder.finish();
+    //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
+    //Util.toDot(fst, w, false, false);
+    //w.close();
+
+    Util.MinResult<Pair<Long,Long>>[] r = Util.shortestPaths(fst,
+                                           fst.getFirstArc(new FST.Arc<Pair<Long,Long>>()),
+                                           minPairWeightComparator,
+                                           3);
+    assertEquals(3, r.length);
+
+    assertEquals(Util.toIntsRef(new BytesRef("aac"), scratch), r[0].input);
+    assertEquals(7L, r[0].output.output1.longValue()); // weight
+    assertEquals(36L, r[0].output.output2.longValue()); // output
+
+    assertEquals(Util.toIntsRef(new BytesRef("ax"), scratch), r[1].input);
+    assertEquals(17L, r[1].output.output1.longValue()); // weight
+    assertEquals(85L, r[1].output.output2.longValue()); // output
+
+    assertEquals(Util.toIntsRef(new BytesRef("aab"), scratch), r[2].input);
+    assertEquals(22L, r[2].output.output1.longValue()); // weight
+    assertEquals(57L, r[2].output.output2.longValue()); // output
   }
   
   public void testShortestPathsRandom() throws Exception {
@@ -2059,17 +2112,121 @@ public class TestFSTs extends LuceneTestCase {
 
       final int topN = _TestUtil.nextInt(random, 1, 10);
 
-      Util.MinResult[] r = Util.shortestPaths(fst, arc, topN);
+      Util.MinResult<Long>[] r = Util.shortestPaths(fst, arc, minLongComparator, topN);
 
       // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
-      final List<Util.MinResult> matches = new ArrayList<Util.MinResult>();
+      final List<Util.MinResult<Long>> matches = new ArrayList<Util.MinResult<Long>>();
 
       // TODO: could be faster... but its slowCompletor for a reason
       for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
         if (e.getKey().startsWith(prefix)) {
           //System.out.println("  consider " + e.getKey());
-          matches.add(new Util.MinResult(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
-                                         e.getValue() - prefixOutput));
+          matches.add(new Util.MinResult<Long>(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
+                                         e.getValue() - prefixOutput, minLongComparator));
+        }
+      }
+
+      assertTrue(matches.size() > 0);
+      Collections.sort(matches);
+      if (matches.size() > topN) {
+        matches.subList(topN, matches.size()).clear();
+      }
+
+      assertEquals(matches.size(), r.length);
+
+      for(int hit=0;hit<r.length;hit++) {
+        //System.out.println("  check hit " + hit);
+        assertEquals(matches.get(hit).input, r[hit].input);
+        assertEquals(matches.get(hit).output, r[hit].output);
+      }
+    }
+  }
+  
+  // used by slowcompletor
+  class TwoLongs {
+    long a;
+    long b;
+
+    TwoLongs(long a, long b) {
+      this.a = a;
+      this.b = b;
+    }
+  }
+  
+  /** like testShortestPathsRandom, but uses pairoutputs so we have both a weight and an output */
+  public void testShortestPathsWFSTRandom() throws Exception {
+    int numWords = atLeast(1000);
+    
+    final TreeMap<String,TwoLongs> slowCompletor = new TreeMap<String,TwoLongs>();
+    final TreeSet<String> allPrefixes = new TreeSet<String>();
+    
+    PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(
+        PositiveIntOutputs.getSingleton(true), // weight
+        PositiveIntOutputs.getSingleton(true)  // output
+    );
+    final Builder<Pair<Long,Long>> builder = new Builder<Pair<Long,Long>>(FST.INPUT_TYPE.BYTE1, outputs);
+    final IntsRef scratch = new IntsRef();
+    
+    for (int i = 0; i < numWords; i++) {
+      String s;
+      while (true) {
+        s = _TestUtil.randomSimpleString(random);
+        if (!slowCompletor.containsKey(s)) {
+          break;
+        }
+      }
+      
+      for (int j = 1; j < s.length(); j++) {
+        allPrefixes.add(s.substring(0, j));
+      }
+      int weight = _TestUtil.nextInt(random, 1, 100); // weights 1..100
+      int output = _TestUtil.nextInt(random, 0, 500); // outputs 0..500 
+      slowCompletor.put(s, new TwoLongs(weight, output));
+    }
+    
+    for (Map.Entry<String,TwoLongs> e : slowCompletor.entrySet()) {
+      //System.out.println("add: " + e);
+      long weight = e.getValue().a;
+      long output = e.getValue().b;
+      builder.add(Util.toIntsRef(new BytesRef(e.getKey()), scratch), outputs.newPair(weight, output));
+    }
+    
+    final FST<Pair<Long,Long>> fst = builder.finish();
+    //System.out.println("SAVE out.dot");
+    //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
+    //Util.toDot(fst, w, false, false);
+    //w.close();
+    
+    BytesReader reader = fst.getBytesReader(0);
+    
+    //System.out.println("testing: " + allPrefixes.size() + " prefixes");
+    for (String prefix : allPrefixes) {
+      // 1. run prefix against fst, then complete by value
+      //System.out.println("TEST: " + prefix);
+    
+      Pair<Long,Long> prefixOutput = outputs.getNoOutput();
+      FST.Arc<Pair<Long,Long>> arc = fst.getFirstArc(new FST.Arc<Pair<Long,Long>>());
+      for(int idx=0;idx<prefix.length();idx++) {
+        if (fst.findTargetArc((int) prefix.charAt(idx), arc, arc, reader) == null) {
+          fail();
+        }
+        prefixOutput = outputs.add(prefixOutput, arc.output);
+      }
+
+      final int topN = _TestUtil.nextInt(random, 1, 10);
+
+      Util.MinResult<Pair<Long,Long>>[] r = Util.shortestPaths(fst, arc, minPairWeightComparator, topN);
+
+      // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
+      final List<Util.MinResult<Pair<Long,Long>>> matches = new ArrayList<Util.MinResult<Pair<Long,Long>>>();
+
+      // TODO: could be faster... but its slowCompletor for a reason
+      for (Map.Entry<String,TwoLongs> e : slowCompletor.entrySet()) {
+        if (e.getKey().startsWith(prefix)) {
+          //System.out.println("  consider " + e.getKey());
+          matches.add(new Util.MinResult<Pair<Long,Long>>(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
+                                         outputs.newPair(e.getValue().a - prefixOutput.output1, e.getValue().b - prefixOutput.output2), 
+                                         minPairWeightComparator));
         }
       }
 
