@@ -354,9 +354,7 @@
       <artifact:pom id="maven.project" file="@{pom.xml}"/>
       <artifact:deploy file="@{jar.file}">
         <artifact-attachments/>
-      	<remoteRepository url="${m2.repository.url}">
-          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}" password="${m2.repository.password}"/>
-        </remoteRepository>
+      	<remoteRepository id="${m2.repository.id}" url="${m2.repository.url}"/>
         <pom refid="maven.project"/>
       </artifact:deploy>
     </sequential>
@@ -374,9 +372,7 @@
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <artifact:pom id="maven.project" file="${maven.build.dir}/pom.xml" />
       <artifact:deploy file="@{jar.file}">
-        <remoteRepository url="${m2.repository.url}">
-          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}" password="${m2.repository.password}"/>
-        </remoteRepository>
+        <remoteRepository id="${m2.repository.id}" url="${m2.repository.url}"/>
         <pom refid="maven.project"/>
       </artifact:deploy>
     </sequential>
