@@ -947,10 +947,10 @@ public final class ZkController {
         collectionProps.put(CONFIGNAME_PROP,  configNames.get(0));
         break;
       }
-      log.info("Could not find collection configName - pausing for 2 seconds and trying again - try: " + retry);
-      Thread.sleep(2000);
+      log.info("Could not find collection configName - pausing for 3 seconds and trying again - try: " + retry);
+      Thread.sleep(3000);
     }
-    if (retry == 6) {
+    if (retry == 10) {
       log.error("Could not find configName for collection " + collection);
       throw new ZooKeeperException(
           SolrException.ErrorCode.SERVER_ERROR,
