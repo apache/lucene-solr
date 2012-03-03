@@ -375,6 +375,10 @@ public class UpdateLog implements PluginInfoInitialized {
     prevMap2 = null;
   }
 
+  public boolean hasUncommittedChanges() {
+    return tlog != null;
+  }
+  
   public void preCommit(CommitUpdateCommand cmd) {
     synchronized (this) {
       if (debug) {
