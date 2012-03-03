@@ -39,13 +39,17 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 
@@ -274,10 +278,44 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     testANewCollectionInOneInstance();
     testSearchByCollectionName();
     testANewCollectionInOneInstanceWithManualShardAssignement();
+    testNumberOfCommitsWithCommitAfterAdd();
+    
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
     }
+  }
+
+  private void testNumberOfCommitsWithCommitAfterAdd()
+      throws MalformedURLException, SolrServerException, IOException {
+    long startCommits = getNumCommits((CommonsHttpSolrServer) clients.get(0));
+    
+    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update/csv");
+    up.addFile(getFile("books_numeric_ids.csv"));
+    up.setCommitWithin(900000);
+    up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+    NamedList<Object> result = clients.get(0).request(up);
+    
+    long endCommits = getNumCommits((CommonsHttpSolrServer) clients.get(0));
+
+    assertEquals(startCommits + 1L, endCommits);
+  }
+
+  private Long getNumCommits(CommonsHttpSolrServer solrServer) throws MalformedURLException,
+      SolrServerException, IOException {
+    CommonsHttpSolrServer server = new CommonsHttpSolrServer(solrServer.getBaseURL());
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("qt", "/admin/mbeans?key=updateHandler&stats=true");
+    // use generic request to avoid extra processing of queries
+    QueryRequest req = new QueryRequest(params);
+    NamedList<Object> resp = server.request(req);
+    NamedList mbeans = (NamedList) resp.get("solr-mbeans");
+    NamedList uhandlerCat = (NamedList) mbeans.get("UPDATEHANDLER");
+    NamedList uhandler = (NamedList) uhandlerCat.get("updateHandler");
+    NamedList stats = (NamedList) uhandler.get("stats");
+    Long commits = (Long) stats.get("commits");
+    System.out.println("resp:" + resp);
+    return commits;
   }
 
   private void testANewCollectionInOneInstanceWithManualShardAssignement() throws Exception {

@@ -60,7 +60,6 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionBucket;
 import org.apache.solr.update.VersionInfo;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -273,6 +272,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
+      params.remove("commit"); // this will be distributed from the local commit
       cmdDistrib.distribAdd(cmd, nodes, params);
     }
     
@@ -493,6 +493,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
+      params.remove("commit"); // we already will have forwarded this from our local commit
       cmdDistrib.distribDelete(cmd, nodes, params);
     }
 
@@ -569,6 +570,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
 
+      params.remove("commit"); // this will be distributed from the local commit
       cmdDistrib.distribDelete(cmd, leaders, params);
 
       if (!leaderForAnyShard) {
