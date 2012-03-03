@@ -314,7 +314,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     NamedList uhandler = (NamedList) uhandlerCat.get("updateHandler");
     NamedList stats = (NamedList) uhandler.get("stats");
     Long commits = (Long) stats.get("commits");
-    System.out.println("resp:" + resp);
+
     return commits;
   }
 
