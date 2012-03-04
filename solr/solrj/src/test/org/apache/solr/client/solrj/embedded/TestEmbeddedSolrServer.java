@@ -7,6 +7,7 @@ import java.util.List;
 import junit.framework.Assert;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.core.CoreContainer;
@@ -14,10 +15,17 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestEmbeddedSolrServer extends LuceneTestCase {
+
+  @Rule
+  public TestRule solrTestRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected static Logger log = LoggerFactory.getLogger(TestEmbeddedSolrServer.class);
   

@@ -16,7 +16,14 @@
  */
 package org.apache.solr.schema;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
+import java.util.List;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -26,13 +33,9 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-
-import java.nio.ByteBuffer;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.util.List;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
 public class TestBinaryField extends LuceneTestCase {
   CommonsHttpSolrServer server;
@@ -40,6 +43,10 @@ public class TestBinaryField extends LuceneTestCase {
 
   int port = 0;
   static final String context = "/example";
+
+  @Rule
+  public TestRule solrTestRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @Override
   public void setUp() throws Exception {

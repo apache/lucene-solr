@@ -16,18 +16,28 @@
  */
 package org.apache.solr;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Properties;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.commons.io.IOUtils;
-
-import java.io.*;
-import java.util.Properties;
+import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
 
 /**
@@ -40,6 +50,10 @@ public class TestSolrCoreProperties extends LuceneTestCase {
   private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
   JettySolrRunner solrJetty;
   SolrServer client;
+
+  @Rule
+  public TestRule solrTestRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @Override
   public void setUp() throws Exception {
