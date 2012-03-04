@@ -27,20 +27,19 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.kuromoji.Segmenter.Mode;
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Mode;
 import org.apache.lucene.util.IOUtils;
 
 public class TestSearchMode extends BaseTokenStreamTestCase {
   private final static String SEGMENTATION_FILENAME = "search-segmentation-tests.txt";
-  private final Segmenter segmenter = new Segmenter(Mode.SEARCH);
   private final Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer(segmenter, reader);
+      Tokenizer tokenizer = new KuromojiTokenizer(reader, null, true, Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
-  
+
   /** Test search mode segmentation */
   public void testSearchSegmentation() throws IOException {
     InputStream is = TestSearchMode.class.getResourceAsStream(SEGMENTATION_FILENAME);
@@ -63,7 +62,18 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
         String[] fields = line.split("\t", 2);
         String sourceText = fields[0];
         String[] expectedTokens = fields[1].split("\\s+");
-        assertAnalyzesTo(analyzer, sourceText, expectedTokens);
+        int[] expectedPosIncrs = new int[expectedTokens.length];
+        int[] expectedPosLengths = new int[expectedTokens.length];
+        for(int tokIDX=0;tokIDX<expectedTokens.length;tokIDX++) {
+          if (expectedTokens[tokIDX].endsWith("/0")) {
+            expectedTokens[tokIDX] = expectedTokens[tokIDX].replace("/0", "");
+            expectedPosLengths[tokIDX] = expectedTokens.length-1;
+          } else {
+            expectedPosIncrs[tokIDX] = 1;
+            expectedPosLengths[tokIDX] = 1;
+          }
+        }
+        assertAnalyzesTo(analyzer, sourceText, expectedTokens, expectedPosIncrs);
       }
     } finally {
       is.close();

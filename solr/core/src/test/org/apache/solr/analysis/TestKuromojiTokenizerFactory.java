@@ -50,7 +50,7 @@ public class TestKuromojiTokenizerFactory extends BaseTokenTestCase {
     factory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
     assertTokenStreamContents(ts,
-        new String[] { "シニア", "ソフトウェア", "エンジニア" }
+                              new String[] { "シニア", "シニアソフトウェアエンジニア", "ソフトウェア", "エンジニア" }
     );
   }
   

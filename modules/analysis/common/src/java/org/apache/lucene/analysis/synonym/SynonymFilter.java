@@ -112,6 +112,8 @@ public final class SynonymFilter extends TokenFilter {
 
   private int captureCount;
 
+  // TODO: we should set PositionLengthAttr too...
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);

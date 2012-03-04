@@ -154,6 +154,9 @@ New Features
  * LUCENE-3730: Refine Kuromoji search mode (Mode.SEARCH) decompounding
    heuristics.  (Christian Moen via Robert Muir)
 
+ * LUCENE-3767: Kuromoji tokenizer/analyzer produces both compound words 
+   and the segmentation of that compound in Mode.SEARCH. (Robert Muir, Mike McCandless via Christian Moen)
+
  * LUCENE-3685: Add ToChildBlockJoinQuery and renamed previous
    BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
    joins in both parent to child and child to parent directions.
