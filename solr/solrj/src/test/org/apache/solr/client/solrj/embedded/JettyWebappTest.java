@@ -21,11 +21,14 @@ import java.io.File;
 import java.net.URL;
 import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.ExternalPaths;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
@@ -40,7 +43,11 @@ public class JettyWebappTest extends LuceneTestCase
 {
   int port = 0;
   static final String context = "/test";
-  
+ 
+  @Rule
+  public TestRule solrTestRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
   Server server;
   
   @Override

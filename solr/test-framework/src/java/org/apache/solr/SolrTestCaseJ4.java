@@ -19,8 +19,25 @@
 package org.apache.solr;
 
 
-import org.apache.lucene.store.MockDirectoryWrapper;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SystemPropertiesInvariantRule;
+import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
@@ -43,24 +60,15 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
-import org.apache.zookeeper.server.LogFormatter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
-
-import javax.xml.xpath.XPathExpressionException;
-
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Handler;
-import java.util.logging.Level;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4.
@@ -69,6 +77,13 @@ import java.util.logging.Level;
  */
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
+  @ClassRule
+  public static TestRule solrClassRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
+  @Rule
+  public TestRule solrTestRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {

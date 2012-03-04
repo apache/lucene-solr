@@ -928,6 +928,12 @@ Documentation
 
 Build
 
+* LUCENE-3847: LuceneTestCase will now check for modifications of System 
+  properties before and after each test (and suite). If changes are detected,
+  the test will fail. A rule can be used to reset system properties to
+  before-scope state (and this has been used to make Solr tests pass).
+  (Dawid Weiss).
+
 * LUCENE-3228: Stop downloading external javadoc package-list files:
 
   - Added package-list files for Oracle Java javadocs and JUnit javadocs to

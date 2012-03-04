@@ -19,27 +19,34 @@
 package org.apache.solr.util;
 
 
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.XML;
-import org.apache.solr.request.*;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import org.xml.sax.SAXException;
-import org.slf4j.LoggerFactory;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
-import javax.xml.xpath.XPathExpressionException;
-
-import java.io.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ArrayList;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 /**
  * An Abstract base class that makes writing Solr JUnit tests "easier"
@@ -55,7 +62,8 @@ import java.util.ArrayList;
  * @see #tearDown
  */
 public abstract class AbstractSolrTestCase extends LuceneTestCase {
-    protected SolrConfig solrConfig;
+  protected SolrConfig solrConfig;
+
   /**
    * Harness initialized by initTestHarness.
    *
@@ -93,6 +101,14 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
   public String getSolrHome() {
     return SolrTestCaseJ4.TEST_HOME();
   }
+  
+  @ClassRule
+  public static TestRule solrClassRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
+  @Rule
+  public TestRule solrTestRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
   
   @BeforeClass
   public static void beforeClassAbstractSolrTestCase() throws Exception {

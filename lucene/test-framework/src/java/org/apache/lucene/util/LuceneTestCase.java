@@ -97,6 +97,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.internal.AssumptionViolatedException;
@@ -257,6 +258,11 @@ public abstract class LuceneTestCase extends Assert {
   private static TimeZone timeZone;
   private static TimeZone savedTimeZone;
 
+  /**
+   * Restore these system property values in {@link #afterClassLuceneTestCaseJ4()}.
+   */
+  private static HashMap<String, String> restoreProperties = new HashMap<String,String>();
+
   protected static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
 
   /** @deprecated (4.0) until we fix no-fork problems in solr tests */
@@ -269,9 +275,12 @@ public abstract class LuceneTestCase extends Assert {
     random.setSeed(staticSeed);
     random.initialized = true;
   }
-  
+
   @Deprecated
   private static boolean icuTested = false;
+
+  @ClassRule
+  public static TestRule classRules = RuleChain.outerRule(new SystemPropertiesInvariantRule());
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
@@ -282,6 +291,7 @@ public abstract class LuceneTestCase extends Assert {
     // enable this by default, for IDE consistency with ant tests (as its the default from ant)
     // TODO: really should be in solr base classes, but some extend LTC directly.
     // we do this in beforeClass, because some tests currently disable it
+    restoreProperties.put("solr.directoryFactory", System.getProperty("solr.directoryFactory"));
     if (System.getProperty("solr.directoryFactory") == null) {
       System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
     }
@@ -363,6 +373,9 @@ public abstract class LuceneTestCase extends Assert {
     
     locale = TEST_LOCALE.equals("random") ? randomLocale(random) : localeForName(TEST_LOCALE);
     Locale.setDefault(locale);
+    // TimeZone.getDefault will set user.timezone to the default timezone of the user's locale.
+    // So store the original property value and restore it at end.
+    restoreProperties.put("user.timezone", System.getProperty("user.timezone"));
     savedTimeZone = TimeZone.getDefault();
     timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(random) : TimeZone.getTimeZone(TEST_TIMEZONE);
     TimeZone.setDefault(timeZone);
@@ -372,6 +385,15 @@ public abstract class LuceneTestCase extends Assert {
 
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
+    for (Map.Entry<String,String> e : restoreProperties.entrySet()) {
+      if (e.getValue() == null) {
+        System.clearProperty(e.getKey());
+      } else {
+        System.setProperty(e.getKey(), e.getValue());
+      }
+    }
+    restoreProperties.clear();
+
     Throwable problem = null;
     
     if (! "false".equals(TEST_CLEAN_THREADS)) {
@@ -587,6 +609,7 @@ public abstract class LuceneTestCase extends Assert {
   public final TestRule ruleChain = RuleChain
     .outerRule(new RememberThreadRule())
     .around(new TestResultInterceptorRule())
+    .around(new SystemPropertiesInvariantRule())
     .around(new InternalSetupTeardownRule())
     .around(new SubclassSetupTeardownRule());
 
