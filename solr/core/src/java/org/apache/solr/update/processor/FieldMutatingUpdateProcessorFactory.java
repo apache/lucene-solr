@@ -47,7 +47,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * <p>
  * This class provides all of the plumbing for configuring the 
  * FieldNameSelector using the following init params to specify selection 
- * critera...
+ * criteria...
  * </p>
  * <ul>
  *   <li><code>fieldName</code> - selecting specific fields by field name lookup</li>
