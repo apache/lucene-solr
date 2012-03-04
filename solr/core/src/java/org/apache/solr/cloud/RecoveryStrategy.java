@@ -201,7 +201,9 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
-    
+
+    log.info("Starting recovery process. recoveringAfterStartup=" + recoveringAfterStartup);
+
     try {
       doRecovery(core);
     } finally {
@@ -247,11 +249,10 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
       if (oldIdx > 0) {
         log.info("####### Found new versions added after startup: num=" + oldIdx);
+        log.info("###### currentVersions=" + startingRecentVersions);
       }
 
-      // TODO: only log at debug level in the future (or move to oldIdx > 0 block)
       log.info("###### startupVersions=" + reallyStartingVersions);
-      log.info("###### currentVersions=" + startingRecentVersions);
     }
     
     if (recoveringAfterStartup) {
@@ -355,7 +356,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           log.warn("Recovery was interrupted", e);
           retries = INTERRUPTED;
         } catch (Throwable t) {
-          SolrException.log(log, "Error while trying to recover", t);
+          log.error("Error while trying to recover", t);
         } finally {
           if (!replayed) {
             try {
@@ -368,11 +369,9 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         }
         
       } catch (Throwable t) {
-        SolrException.log(log, "Error while trying to recover", t);
+        log.error("Error while trying to recover... closing core.", t);
       } finally {
-        if (core != null) {
-          core.close();
-        }
+        core.close();
       }
       
       if (!successfulRecovery) {
@@ -381,21 +380,20 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
         // Or do a fall off retry...
         try {
           
-          SolrException.log(log, "Recovery failed - trying again...");
+          log.error("Recovery failed - trying again...");
           retries++;
           if (retries >= MAX_RETRIES) {
             if (retries == INTERRUPTED) {
               
             } else {
+              log.error("Recovery failed - max retries exceeded.");
               // TODO: for now, give up after X tries - should we do more?
               core = cc.getCore(coreName);
               try {
                 recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
                     core.getCoreDescriptor());
               } finally {
-                if (core != null) {
-                  core.close();
-                }
+                core.close();
               }
             }
             break;
@@ -413,11 +411,10 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
           retries = INTERRUPTED;
         }
       }
-    
-      
-      log.info("Finished recovery process");
-      
+
     }
+    log.info("Finished recovery process");
+
   }
 
   private Future<RecoveryInfo> replay(UpdateLog ulog)
