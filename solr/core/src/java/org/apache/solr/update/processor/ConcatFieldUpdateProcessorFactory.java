@@ -34,7 +34,7 @@ import org.apache.commons.lang.StringUtils;
 /**
  * Concatenates multiple values for fields matching the specified 
  * conditions using a configurable <code>delimiter</code> which defaults 
- * to "<code> ,</code>".
+ * to "<code>, </code>".
  * <p>
  * By default, this processor concatenates the values for any field name 
  * which according to the schema is <code>multiValued="false"</code> 
@@ -45,7 +45,7 @@ import org.apache.commons.lang.StringUtils;
  * For example, in the configuration below, any "single valued" string and 
  * text field which is found to contain multiple values <i>except</i> for 
  * the <code>primary_author</code> field will be concatenated using the 
- * string "<code> ;</code>" as a delimeter.  For the 
+ * string "<code>; </code>" as a delimeter.  For the 
  * <code>primary_author</code> field, the multiple values will be left 
  * alone for <code>FirstFieldValueUpdateProcessorFactory</code> to deal with.
  * </p>
