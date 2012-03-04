@@ -57,10 +57,10 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * </ul>
  *
  * <p>
- * Each critera can specified as either an &lt;arr&gt; of &lt;str&gt;, or 
+ * Each criteria can specified as either an &lt;arr&gt; of &lt;str&gt;, or 
  * multiple &lt;str&gt; with the same name.  When multiple criteria of a 
  * single type exist, fields must match <b>at least one</b> to be selected.  
- * If more then one type of critera exist, fields must match 
+ * If more then one type of criteria exist, fields must match 
  * <b>at least one of each</b> to be selected.
  * </p>
  * <p>
