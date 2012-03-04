@@ -223,6 +223,9 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       Thread.sleep(2000);
       assertEquals("shard was not unregistered", 1, zkController.getZkStateReader().getCloudState().getSlice("collection1", "shard1").getShards().size());
     } finally {
+      System.clearProperty("solrcloud.skip.autorecovery");
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+      System.clearProperty("bootstrap_confdir");
       if (DEBUG) {
         if (zkController != null) {
           zkClient.printLayoutToStdOut();
@@ -235,8 +238,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController.close();
       }
       server.shutdown();
-      System.clearProperty("solrcloud.skip.autorecovery");
-      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
     }
   }
 
