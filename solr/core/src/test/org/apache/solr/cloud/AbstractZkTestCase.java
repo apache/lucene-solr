@@ -24,10 +24,8 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -61,7 +59,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("zkHost", zkServer.getZkAddress());
-    System.setProperty("hostPort", "0000");
+    System.setProperty("jetty.port", "0000");
     
     buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(),
         "solrconfig.xml", "schema.xml");
@@ -120,6 +118,8 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
     System.clearProperty("solrcloud.skip.autorecovery");
+    System.clearProperty("jetty.port");
+
     zkServer.shutdown();
 
     // wait just a bit for any zk client threads to outlast timeout

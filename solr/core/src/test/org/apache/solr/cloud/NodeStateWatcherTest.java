@@ -98,7 +98,7 @@ public class NodeStateWatcherTest extends SolrTestCaseJ4 {
       waitForCall(4, callCounter);
       assertEquals(0, watcher.getCurrentState().size());
     } finally {
-
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
       if (zkClient != null) {
         zkClient.close();
       }

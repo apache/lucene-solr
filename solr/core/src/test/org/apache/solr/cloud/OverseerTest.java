@@ -237,6 +237,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertNotNull(reader.getLeaderUrl("collection1", "shard3", 15000));
       
     } finally {
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+      System.clearProperty("bootstrap_confdir");
       if (DEBUG) {
         if (zkController != null) {
           zkClient.printLayoutToStdOut();
@@ -250,8 +252,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       server.shutdown();
     }
-    
-    System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
   }
 
   @Test
@@ -394,6 +394,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
 
     } finally {
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+      System.clearProperty("bootstrap_confdir");
       if (DEBUG) {
         if (controllers[0] != null) {
           zkClient.printLayoutToStdOut();
@@ -414,8 +416,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
         nodeExecutors[i].shutdownNow();
       }
     }
-    
-    System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
   }
 
   //wait until collections are available

@@ -271,6 +271,11 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() throws InterruptedException {
     System.clearProperty("solrcloud.skip.autorecovery");
+    System.clearProperty("zkClientTimeout");
+    System.clearProperty("zkHost");
+    System.clearProperty("shard");
+    System.clearProperty("solr.data.dir");
+    System.clearProperty("solr.solr.home");
     resetExceptionIgnores();
     // wait just a bit for any zk client threads to outlast timeout
     Thread.sleep(2000);
