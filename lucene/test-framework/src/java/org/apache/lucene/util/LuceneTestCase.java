@@ -1387,7 +1387,7 @@ public abstract class LuceneTestCase extends Assert {
             r = SlowCompositeReaderWrapper.wrap(r);
             break;
           case 1:
-            // will create no FC insanity as Parallel*Reader has own cache key:
+            // will create no FC insanity in atomic case, as ParallelAtomicReader has own cache key:
             r = (r instanceof AtomicReader) ?
               new ParallelAtomicReader((AtomicReader) r) :
               new ParallelCompositeReader((CompositeReader) r);
@@ -1419,6 +1419,9 @@ public abstract class LuceneTestCase extends Assert {
       }
       if (wasOriginallyAtomic) {
         r = SlowCompositeReaderWrapper.wrap(r);
+      } else if ((r instanceof CompositeReader) && !(r instanceof FCInvisibleMultiReader)) {
+        // prevent cache insanity caused by e.g. ParallelCompositeReader, to fix we wrap one more time:
+        r = new FCInvisibleMultiReader(r);
       }
       if (VERBOSE) {
         System.out.println("maybeWrapReader wrapped: " +r);
