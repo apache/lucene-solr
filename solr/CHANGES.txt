@@ -632,6 +632,9 @@ Bug Fixes
 * SOLR-3168: ReplicationHandler "numberToKeep" & "maxNumberOfBackups" parameters
   would keep only 1 backup, even if more than 1 was specified (Neil Hooey, James Dyer)
 
+* SOLR-3195: timeAllowed is ignored for grouping queries
+  (Russell Black via Martijn van Groningen)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)

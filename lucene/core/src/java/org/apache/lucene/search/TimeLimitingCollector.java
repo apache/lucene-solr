@@ -17,11 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.ThreadInterruptedException;
+
+import java.io.IOException;
 
 /**
  * The {@link TimeLimitingCollector} is used to timeout search requests that
@@ -60,7 +60,7 @@ public class TimeLimitingCollector extends Collector {
 
   private long t0 = Long.MIN_VALUE;
   private long timeout = Long.MIN_VALUE;
-  private final Collector collector;
+  private Collector collector;
   private final Counter clock;
   private final long ticksAllowed;
   private boolean greedy = false;
@@ -171,6 +171,17 @@ public class TimeLimitingCollector extends Collector {
   @Override
   public boolean acceptsDocsOutOfOrder() {
     return collector.acceptsDocsOutOfOrder();
+  }
+  
+  /**
+   * This is so the same timer can be used with a multi-phase search process such as grouping. 
+   * We don't want to create a new TimeLimitingCollector for each phase because that would 
+   * reset the timer for each phase.  Once time is up subsequent phases need to timeout quickly.
+   *
+   * @param collector The actual collector performing search functionality
+   */
+  public void setCollector(Collector collector) {
+    this.collector = collector;
   }
 
 

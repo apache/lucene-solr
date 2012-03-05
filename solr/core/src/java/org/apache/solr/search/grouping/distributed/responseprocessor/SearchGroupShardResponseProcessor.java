@@ -57,7 +57,9 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
 
     SearchGroupsResultTransformer serializer = new SearchGroupsResultTransformer(rb.req.getSearcher());
     try {
+      int maxElapsedTime = 0;
       for (ShardResponse srsp : shardRequest.responses) {
+        maxElapsedTime = (int) Math.max(maxElapsedTime, srsp.getSolrResponse().getElapsedTime());
         @SuppressWarnings("unchecked")
         NamedList<NamedList> firstPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("firstPhase");
         Map<String, Collection<SearchGroup<BytesRef>>> result = serializer.transformToNative(firstPhaseResult, groupSort, null, srsp.getShard());
@@ -79,6 +81,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
           }
         }
       }
+      rb.firstPhaseElapsedTime = maxElapsedTime;
       for (String groupField : commandSearchGroups.keySet()) {
         List<Collection<SearchGroup<BytesRef>>> topGroups = commandSearchGroups.get(groupField);
         Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, ss.getOffset(), ss.getCount(), groupSort);
