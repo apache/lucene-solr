@@ -490,7 +490,9 @@ public final class Util {
         }
       }
     
-      return results.toArray(new MinResult[results.size()]);
+      @SuppressWarnings({"rawtypes","unchecked"}) final MinResult<T>[] arr =
+        (MinResult<T>[]) new MinResult[results.size()];
+      return results.toArray(arr);
     }
   }
 
