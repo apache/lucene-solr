@@ -1,6 +1,5 @@
 package org.apache.lucene.util;
 
-import java.util.Map;
 import java.util.*;
 
 import org.junit.rules.TestRule;
@@ -33,8 +32,20 @@ public class SystemPropertiesRestoreRule implements TestRule {
   static TreeMap<String,String> cloneAsMap(Properties properties) {
     TreeMap<String,String> result = new TreeMap<String,String>();
     for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
-      String key = (String) e.nextElement();
-      result.put(key, (String) properties.get(key));
+      final Object key = e.nextElement();
+      // Skip non-string properties or values, they're abuse of Properties object.
+      if (key instanceof String) {
+        String value = properties.getProperty((String) key);
+        if (value == null) {
+          Object ovalue = properties.get(key);
+          if (ovalue != null) {
+            // ovalue has to be a non-string object. Skip the property because
+            // System.clearProperty won't be able to cast back the existing value.
+            continue;
+          }
+        }
+        result.put((String) key, value);
+      }
     }
     return result;
   }

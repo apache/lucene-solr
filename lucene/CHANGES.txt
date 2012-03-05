@@ -932,7 +932,7 @@ Build
   properties before and after each test (and suite). If changes are detected,
   the test will fail. A rule can be used to reset system properties to
   before-scope state (and this has been used to make Solr tests pass).
-  (Dawid Weiss).
+  (Dawid Weiss, Uwe Schindler).
 
 * LUCENE-3228: Stop downloading external javadoc package-list files:
 
