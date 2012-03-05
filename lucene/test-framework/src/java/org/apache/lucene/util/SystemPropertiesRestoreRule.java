@@ -1,9 +1,7 @@
 package org.apache.lucene.util;
 
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.TreeMap;
+import java.util.*;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -34,9 +32,9 @@ public class SystemPropertiesRestoreRule implements TestRule {
   
   static TreeMap<String,String> cloneAsMap(Properties properties) {
     TreeMap<String,String> result = new TreeMap<String,String>();
-    for (Entry<Object,Object> e : properties.entrySet()) {
-      // We can be sure it's always strings, can't we?
-      result.put((String) e.getKey(), (String) e.getValue());
+    for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
+      String key = (String) e.nextElement();
+      result.put(key, (String) properties.get(key));
     }
     return result;
   }
