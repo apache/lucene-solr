@@ -153,7 +153,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       for (GroupHead groupHead : groups.values()) {
-        for (FieldComparator comparator : groupHead.comparators) {
+        for (FieldComparator<?> comparator : groupHead.comparators) {
           comparator.setScorer(scorer);
         }
       }
@@ -161,8 +161,9 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
     class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<String> {
 
-      final FieldComparator[] comparators;
+      final FieldComparator<?>[] comparators;
 
+      @SuppressWarnings({"unchecked","rawtypes"})
       private GroupHead(String groupValue, Sort sort, int doc) throws IOException {
         super(groupValue, doc + docBase);
         final SortField[] sortFields = sort.getSort();
@@ -181,7 +182,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
 
       public void updateDocHead(int doc) throws IOException {
-        for (FieldComparator comparator : comparators) {
+        for (FieldComparator<?> comparator : comparators) {
           comparator.copy(0, doc);
           comparator.setBottom(0);
         }

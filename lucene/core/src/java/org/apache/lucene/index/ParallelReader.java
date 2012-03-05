@@ -49,7 +49,6 @@ public class ParallelReader extends IndexReader {
   private List<Boolean> decrefOnClose = new ArrayList<Boolean>(); // remember which subreaders to decRef on close
   boolean incRefReaders = false;
   private SortedMap<String,IndexReader> fieldToReader = new TreeMap<String,IndexReader>();
-  private Map<IndexReader,Collection<String>> readerToFields = new HashMap<IndexReader,Collection<String>>();
   private List<IndexReader> storedFieldReaders = new ArrayList<IndexReader>();
 
   private int maxDoc;
@@ -627,8 +626,7 @@ public class ParallelReader extends IndexReader {
     extends ParallelTermDocs implements TermPositions {
 
     public ParallelTermPositions() {}
-    public ParallelTermPositions(Term term) throws IOException { seek(term); }
-
+    
     @Override
     public void seek(Term term) throws IOException {
       IndexReader reader = fieldToReader.get(term.field());

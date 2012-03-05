@@ -568,26 +568,6 @@ final class FieldsReader implements Cloneable, Closeable {
       }
     }
 
-    public long getPointer() {
-      ensureOpen();
-      return pointer;
-    }
-
-    public void setPointer(long pointer) {
-      ensureOpen();
-      this.pointer = pointer;
-    }
-
-    public int getToRead() {
-      ensureOpen();
-      return toRead;
-    }
-
-    public void setToRead(int toRead) {
-      ensureOpen();
-      this.toRead = toRead;
-    }
-
     @Override
     public byte[] getBinaryValue(byte[] result) {
       ensureOpen();

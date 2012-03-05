@@ -26,7 +26,6 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -454,7 +453,7 @@ public class BlockGroupingCollector extends Collector {
 
         //System.out.println("       best w/in group!");
         
-        for (FieldComparator fc : comparators) {
+        for (FieldComparator<?> fc : comparators) {
           fc.copy(bottomSlot, doc);
           // Necessary because some comparators cache
           // details of bottom slot; this forces them to
@@ -484,7 +483,7 @@ public class BlockGroupingCollector extends Collector {
         }
       }
       groupCompetes = true;
-      for (FieldComparator fc : comparators) {
+      for (FieldComparator<?> fc : comparators) {
         fc.copy(bottomSlot, doc);
         // Necessary because some comparators cache
         // details of bottom slot; this forces them to

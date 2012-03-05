@@ -327,7 +327,6 @@ public class TestCharArraySet extends LuceneTestCase {
     }
   }
   
-  @SuppressWarnings("deprecated")
   public void testCopyCharArraySetBWCompat() {
     CharArraySet setIngoreCase = new CharArraySet(TEST_VERSION_CURRENT, 10, true);
     CharArraySet setCaseSensitive = new CharArraySet(TEST_VERSION_CURRENT, 10, false);

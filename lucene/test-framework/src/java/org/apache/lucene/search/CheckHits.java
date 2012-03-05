@@ -78,7 +78,6 @@ public class CheckHits {
    * @param searcher the searcher to test the query against
    * @param defaultFieldName used for displaying the query in assertion messages
    * @param results a list of documentIds that must match the query
-   * @see Searcher#search(Query,Collector)
    * @see #checkHits
    */
   public static void checkHitCollector(Random random, Query query, String defaultFieldName,
@@ -151,7 +150,6 @@ public class CheckHits {
    * @param searcher the searcher to test the query against
    * @param defaultFieldName used for displaing the query in assertion messages
    * @param results a list of documentIds that must match the query
-   * @see Searcher#search(Query, int)
    * @see #checkHitCollector
    */
   public static void checkHits(

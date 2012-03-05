@@ -121,10 +121,8 @@ public class IntHashSetTest extends LuceneTestCase {
       }
     }
     assertEquals(set2.size(), set1.size());
-    int i = 0;
     for (int value : set2) {
       assertTrue(set1.contains(value));
-      i++;
     }
   }
 

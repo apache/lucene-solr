@@ -153,9 +153,10 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
 
   private static class GroupComparator<T> implements Comparator<MergedGroup<T>> {
 
-    public final FieldComparator[] comparators;
+    public final FieldComparator<?>[] comparators;
     public final int[] reversed;
 
+    @SuppressWarnings({"unchecked","rawtypes"})
     public GroupComparator(Sort groupSort) throws IOException {
       final SortField[] sortFields = groupSort.getSort();
       comparators = new FieldComparator[sortFields.length];
@@ -167,7 +168,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
       }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"rawtypes","unchecked"})
     public int compare(MergedGroup<T> group, MergedGroup<T> other) {
       if (group == other) {
         return 0;
@@ -177,7 +178,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
       final Object[] otherValues = other.topValues;
       //System.out.println("  groupValues=" + groupValues + " otherValues=" + otherValues);
       for (int compIDX = 0;compIDX < comparators.length; compIDX++) {
-        final int c = reversed[compIDX] * comparators[compIDX].compareValues(groupValues[compIDX],
+        final int c = reversed[compIDX] * ((FieldComparator) comparators[compIDX]).compareValues(groupValues[compIDX],
                                                                              otherValues[compIDX]);
         if (c != 0) {
           return c;
@@ -228,7 +229,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
           //System.out.println("      old");
           boolean competes = false;
           for(int compIDX=0;compIDX<groupComp.comparators.length;compIDX++) {
-            final int cmp = groupComp.reversed[compIDX] * groupComp.comparators[compIDX].compareValues(group.sortValues[compIDX],
+            final int cmp = groupComp.reversed[compIDX] * ((FieldComparator) groupComp.comparators[compIDX]).compareValues(group.sortValues[compIDX],
                                                                                                        mergedGroup.topValues[compIDX]);
             if (cmp < 0) {
               // Definitely competes

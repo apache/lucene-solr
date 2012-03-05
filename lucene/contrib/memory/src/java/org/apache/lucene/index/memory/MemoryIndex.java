@@ -200,7 +200,7 @@ public class MemoryIndex implements Serializable {
    * Arrays.binarySearch() and Arrays.sort()
    */
   private static final Comparator<Object> termComparator = new Comparator<Object>() {
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     public int compare(Object o1, Object o2) {
       if (o1 instanceof Map.Entry<?,?>) o1 = ((Map.Entry<?,?>) o1).getKey();
       if (o2 instanceof Map.Entry<?,?>) o2 = ((Map.Entry<?,?>) o2).getKey();
@@ -660,10 +660,6 @@ public class MemoryIndex implements Serializable {
     
     private static final long serialVersionUID = 2282195016849084649L;  
       
-    public ArrayIntList() {
-      this(10);
-    }
-
     public ArrayIntList(int initialCapacity) {
       elements = new int[initialCapacity];
     }
@@ -1208,16 +1204,7 @@ public class MemoryIndex implements Serializable {
         
     public static final int PTR = Constants.JRE_IS_64BIT ? 8 : 4;    
 
-    // bytes occupied by primitive data types
-    public static final int BOOLEAN = 1;
-    public static final int BYTE = 1;
-    public static final int CHAR = 2;
-    public static final int SHORT = 2;
     public static final int INT = 4;
-    public static final int LONG = 8;
-    public static final int FLOAT = 4;
-    public static final int DOUBLE = 8;
-    
     private static final int LOG_PTR = (int) Math.round(log2(PTR));
     
     /**
@@ -1245,26 +1232,13 @@ public class MemoryIndex implements Serializable {
         return sizeOfObject(INT + PTR*len);        
     }
     
-    public static int sizeOfCharArray(int len) {
-        return sizeOfObject(INT + CHAR*len);        
-    }
-    
     public static int sizeOfIntArray(int len) {
         return sizeOfObject(INT + INT*len);        
-    }
-    
-    public static int sizeOfString(int len) {
-        return sizeOfObject(3*INT + PTR) + sizeOfCharArray(len);
     }
     
     public static int sizeOfHashMap(int len) {
         return sizeOfObject(4*PTR + 4*INT) + sizeOfObjectArray(len) 
             + len * sizeOfObject(3*PTR + INT); // entries
-    }
-    
-    // note: does not include referenced objects
-    public static int sizeOfArrayList(int len) {
-        return sizeOfObject(PTR + 2*INT) + sizeOfObjectArray(len); 
     }
     
     public static int sizeOfArrayIntList(int len) {

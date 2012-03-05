@@ -55,6 +55,7 @@ public class InstantiatedTermDocumentInformation
     }
   };
 
+  @SuppressWarnings({"unchecked","rawtypes"})
   public static final Comparator doumentNumberIntegerComparator = new Comparator() {
     public int compare(Object o1, Object o2) {
       InstantiatedTermDocumentInformation di = (InstantiatedTermDocumentInformation) o1;

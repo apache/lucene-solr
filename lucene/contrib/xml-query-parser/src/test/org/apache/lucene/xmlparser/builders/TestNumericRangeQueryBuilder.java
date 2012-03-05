@@ -48,6 +48,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 		fail("Expected to throw " + ParserException.class);
 	}
 
+	@SuppressWarnings({"unchecked","rawtypes"})
 	public void testGetFilterInt() throws Exception {
 		NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
 
@@ -55,7 +56,6 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 		Document doc = getDocumentFromString(xml);
 		Query filter = filterBuilder.getQuery(doc.getDocumentElement());
 		assertTrue(filter instanceof NumericRangeQuery<?>);
-		@SuppressWarnings("unchecked")
 		NumericRangeQuery<Integer> numRangeFilter = (NumericRangeQuery<Integer>) filter;
 		assertEquals(Integer.valueOf(-1), numRangeFilter.getMin());
 		assertEquals(Integer.valueOf(10), numRangeFilter.getMax());
@@ -67,7 +67,6 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 		Document doc2 = getDocumentFromString(xml2);
 		Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
 		assertTrue(filter2 instanceof NumericRangeQuery<?>);
-		@SuppressWarnings("unchecked")
 		NumericRangeQuery<Integer> numRangeFilter2 = (NumericRangeQuery) filter2;
 		assertEquals(Integer.valueOf(-1), numRangeFilter2.getMin());
 		assertEquals(Integer.valueOf(10), numRangeFilter2.getMax());
@@ -76,6 +75,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 		assertFalse(numRangeFilter2.includesMax());
 	}
 
+	@SuppressWarnings({"unchecked","rawtypes"})
 	public void testGetFilterLong() throws Exception {
 		NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
 
@@ -83,7 +83,6 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 		Document doc = getDocumentFromString(xml);
 		Query filter = filterBuilder.getQuery(doc.getDocumentElement());
 		assertTrue(filter instanceof NumericRangeQuery<?>);
-		@SuppressWarnings("unchecked")
 		NumericRangeQuery<Long> numRangeFilter = (NumericRangeQuery) filter;
 		assertEquals(Long.valueOf(-2321L), numRangeFilter.getMin());
 		assertEquals(Long.valueOf(60000000L), numRangeFilter.getMax());
@@ -95,7 +94,6 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 		Document doc2 = getDocumentFromString(xml2);
 		Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
 		assertTrue(filter2 instanceof NumericRangeQuery<?>);
-		@SuppressWarnings("unchecked")
 		NumericRangeQuery<Long> numRangeFilter2 = (NumericRangeQuery) filter2;
 		assertEquals(Long.valueOf(-2321L), numRangeFilter2.getMin());
 		assertEquals(Long.valueOf(60000000L), numRangeFilter2.getMax());
@@ -104,6 +102,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 		assertFalse(numRangeFilter2.includesMax());
 	}
 
+	@SuppressWarnings({"unchecked","rawtypes"})
 	public void testGetFilterDouble() throws Exception {
 		NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
 
@@ -112,7 +111,6 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
 		Query filter = filterBuilder.getQuery(doc.getDocumentElement());
 		assertTrue(filter instanceof NumericRangeQuery<?>);
-		@SuppressWarnings("unchecked")
 		NumericRangeQuery<Double> numRangeFilter = (NumericRangeQuery) filter;
 		assertEquals(Double.valueOf(-23.21d), numRangeFilter.getMin());
 		assertEquals(Double.valueOf(60000.00023d), numRangeFilter.getMax());
@@ -124,7 +122,6 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 		Document doc2 = getDocumentFromString(xml2);
 		Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
 		assertTrue(filter2 instanceof NumericRangeQuery<?>);
-		@SuppressWarnings("unchecked")
 		NumericRangeQuery<Double> numRangeFilter2 = (NumericRangeQuery) filter2;
 		assertEquals(Double.valueOf(-23.21d), numRangeFilter2.getMin());
 		assertEquals(Double.valueOf(60000.00023d), numRangeFilter2.getMax());
@@ -133,6 +130,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 		assertFalse(numRangeFilter2.includesMax());
 	}
 
+	@SuppressWarnings({"unchecked","rawtypes"})
 	public void testGetFilterFloat() throws Exception {
 		NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
 
@@ -141,7 +139,6 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
 		Query filter = filterBuilder.getQuery(doc.getDocumentElement());
 		assertTrue(filter instanceof NumericRangeQuery<?>);
-		@SuppressWarnings("unchecked")
 		NumericRangeQuery<Float> numRangeFilter = (NumericRangeQuery) filter;
 		assertEquals(Float.valueOf(-2.321432f), numRangeFilter.getMin());
 		assertEquals(Float.valueOf(32432.23f), numRangeFilter.getMax());
@@ -154,7 +151,6 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
 		Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
 		assertTrue(filter2 instanceof NumericRangeQuery<?>);
-		@SuppressWarnings("unchecked")
 		NumericRangeQuery<Float> numRangeFilter2 = (NumericRangeQuery) filter2;
 		assertEquals(Float.valueOf(-2.321432f), numRangeFilter2.getMin());
 		assertEquals(Float.valueOf(32432.23f), numRangeFilter2.getMax());
