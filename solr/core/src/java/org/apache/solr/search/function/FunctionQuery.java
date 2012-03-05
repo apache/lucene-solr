@@ -65,7 +65,7 @@ public class FunctionQuery extends Query {
 
     public FunctionWeight(Searcher searcher) throws IOException {
       this.searcher = searcher;
-      this.context = func.newContext();
+      this.context = ValueSource.newContext();
       func.createWeight(context, searcher);
     }
 

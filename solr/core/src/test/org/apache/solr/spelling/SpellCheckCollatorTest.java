@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -58,9 +59,9 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     
     ModifiableSolrParams params = new ModifiableSolrParams();   
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-    params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");   
-    params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
+    params.add(SpellingParams.SPELLCHECK_BUILD, "true");
+    params.add(SpellingParams.SPELLCHECK_COUNT, "10");   
+    params.add(SpellingParams.SPELLCHECK_COLLATE, "true");
     
     params.add(CommonParams.Q, "lowerfilt:(hypenated-wotd)");
     {
@@ -110,11 +111,11 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		
 		ModifiableSolrParams params = new ModifiableSolrParams();		
 		params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");		
-		params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "10");
+		params.add(SpellingParams.SPELLCHECK_BUILD, "true");
+		params.add(SpellingParams.SPELLCHECK_COUNT, "10");		
+		params.add(SpellingParams.SPELLCHECK_COLLATE, "true");
+		params.add(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "10");
+		params.add(SpellingParams.SPELLCHECK_MAX_COLLATIONS, "10");
 		params.add(CommonParams.Q, "lowerfilt:(+fauth +home +loane)");
 		params.add(CommonParams.FQ, "NOT(id:1)");
 		
@@ -145,12 +146,12 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		
 		ModifiableSolrParams params = new ModifiableSolrParams();		
 		params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_DICT, "multipleFields");
-		params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");		
-		params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "1");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1");
+		params.add(SpellingParams.SPELLCHECK_DICT, "multipleFields");
+		params.add(SpellingParams.SPELLCHECK_BUILD, "true");
+		params.add(SpellingParams.SPELLCHECK_COUNT, "10");		
+		params.add(SpellingParams.SPELLCHECK_COLLATE, "true");
+		params.add(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1");
+		params.add(SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1");
 		params.add(CommonParams.Q, "peac");	
 		
 		//SpellCheckCompRH has no "qf" defined.  It will not find "peace" from "peac" despite it being in the dictionary
@@ -169,7 +170,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		
 		//SpellCheckCompRH1 has "lowerfilt1" defined in the "qf" param.  It will find "peace" from "peac" because
 		//requrying field "lowerfilt1" returns the hit.
-		params.remove(SpellCheckComponent.SPELLCHECK_BUILD);
+		params.remove(SpellingParams.SPELLCHECK_BUILD);
 		handler = core.getRequestHandler("spellCheckCompRH1");
 		rsp = new SolrQueryResponse();
 		rsp.add("responseHeader", new SimpleOrderedMap());
@@ -192,11 +193,11 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		ModifiableSolrParams params = new ModifiableSolrParams();
 		params.add(CommonParams.QT, "spellCheckCompRH");
 		params.add(CommonParams.Q, "lowerfilt:(+fauth +home +loane)");
-		params.add(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");
+		params.add(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true");
 		params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");
-		params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
+		params.add(SpellingParams.SPELLCHECK_BUILD, "true");
+		params.add(SpellingParams.SPELLCHECK_COUNT, "10");
+		params.add(SpellingParams.SPELLCHECK_COLLATE, "true");
 
 		// Testing backwards-compatible behavior.
 		// Returns 1 collation as a single string.
@@ -216,9 +217,9 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
 		// Testing backwards-compatible response format but will only return a
 		// collation that would return results.
-		params.remove(SpellCheckComponent.SPELLCHECK_BUILD);
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "5");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1");
+		params.remove(SpellingParams.SPELLCHECK_BUILD);
+		params.add(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "5");
+		params.add(SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1");
 		handler = core.getRequestHandler("spellCheckCompRH");
 		rsp = new SolrQueryResponse();
 		rsp.add("responseHeader", new SimpleOrderedMap());
@@ -233,10 +234,10 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
 		// Testing returning multiple collations if more than one valid
 		// combination exists.
-		params.remove(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES);
-		params.remove(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS);
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "2");
+		params.remove(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES);
+		params.remove(SpellingParams.SPELLCHECK_MAX_COLLATIONS);
+		params.add(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "10");
+		params.add(SpellingParams.SPELLCHECK_MAX_COLLATIONS, "2");
 		handler = core.getRequestHandler("spellCheckCompRH");
 		rsp = new SolrQueryResponse();
 		rsp.add("responseHeader", new SimpleOrderedMap());
@@ -255,7 +256,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
 		// Testing return multiple collations with expanded collation response
 		// format.
-		params.add(SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true");
+		params.add(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true");
 		handler = core.getRequestHandler("spellCheckCompRH");
 		rsp = new SolrQueryResponse();
 		rsp.add("responseHeader", new SimpleOrderedMap());

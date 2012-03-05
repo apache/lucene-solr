@@ -30,9 +30,9 @@ import java.io.IOException;
 abstract class FSTEnum<T> {
   protected final FST<T> fst;
 
-  @SuppressWarnings("unchecked") protected FST.Arc<T>[] arcs = new FST.Arc[10];
+  @SuppressWarnings({"rawtypes","unchecked"}) protected FST.Arc<T>[] arcs = new FST.Arc[10];
   // outputs are cumulative
-  @SuppressWarnings("unchecked") protected T[] output = (T[]) new Object[10];
+  @SuppressWarnings({"rawtypes","unchecked"}) protected T[] output = (T[]) new Object[10];
 
   protected final T NO_OUTPUT;
   protected final FST.Arc<T> scratchArc = new FST.Arc<T>();
@@ -462,13 +462,13 @@ abstract class FSTEnum<T> {
     upto++;
     grow();
     if (arcs.length <= upto) {
-      @SuppressWarnings("unchecked") final FST.Arc<T>[] newArcs =
+      @SuppressWarnings({"rawtypes","unchecked"}) final FST.Arc<T>[] newArcs =
         new FST.Arc[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(arcs, 0, newArcs, 0, arcs.length);
       arcs = newArcs;
     }
     if (output.length <= upto) {
-      @SuppressWarnings("unchecked") final T[] newOutput =
+      @SuppressWarnings({"rawtypes","unchecked"}) final T[] newOutput =
         (T[]) new Object[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(output, 0, newOutput, 0, output.length);
       output = newOutput;

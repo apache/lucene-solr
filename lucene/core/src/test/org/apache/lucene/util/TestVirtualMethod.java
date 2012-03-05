@@ -69,7 +69,7 @@ public class TestVirtualMethod extends LuceneTestCase {
     assertEquals(0, VirtualMethod.compareImplementationDistance(TestClass5.class, publicTestMethod, protectedTestMethod));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   public void testExceptions() {
     try {
       // cast to Class to remove generics:

@@ -304,7 +304,7 @@ public class CharArraySet extends AbstractSet<Object> {
    * return {@code char[]} on {@code next()}</li>
    * </ul>
    */
-  @Override @SuppressWarnings("unchecked")
+  @Override @SuppressWarnings({"unchecked","rawtypes"})
   public Iterator<Object> iterator() {
     // use the AbstractSet#keySet()'s iterator (to not produce endless recursion)
     return map.matchVersion.onOrAfter(Version.LUCENE_31) ?

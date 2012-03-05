@@ -135,8 +135,8 @@ public class DirectUpdateHandler extends UpdateHandler {
     try {
       Term term = new Term(idField.getName(), indexedId);
       num = ir.deleteDocuments(term);
-      if (core.log.isTraceEnabled()) {
-        core.log.trace( core.getLogId()+"deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
+      if (SolrCore.log.isTraceEnabled()) {
+        SolrCore.log.trace( core.getLogId()+"deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
       }
     } finally {
       try { if (tdocs != null) tdocs.close(); } catch (Exception e) {}
@@ -205,8 +205,8 @@ public class DirectUpdateHandler extends UpdateHandler {
       totDeleted = deleter.deleted;
     }
 
-    if (core.log.isDebugEnabled()) {
-      core.log.debug(core.getLogId()+"docs deleted:" + totDeleted);
+    if (SolrCore.log.isDebugEnabled()) {
+      SolrCore.log.debug(core.getLogId()+"docs deleted:" + totDeleted);
     }
 
   }

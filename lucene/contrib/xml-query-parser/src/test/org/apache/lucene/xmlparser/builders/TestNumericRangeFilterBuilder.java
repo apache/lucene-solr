@@ -103,7 +103,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 		Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
 		assertTrue(filter2 instanceof NumericRangeFilter<?>);
 		@SuppressWarnings("unchecked")
-		NumericRangeFilter<Integer> numRangeFilter2 = (NumericRangeFilter) filter2;
+		NumericRangeFilter<Integer> numRangeFilter2 = (NumericRangeFilter<Integer>) filter2;
 		assertEquals(Integer.valueOf(-1), numRangeFilter2.getMin());
 		assertEquals(Integer.valueOf(10), numRangeFilter2.getMax());
 		assertEquals("AGE", numRangeFilter2.getField());

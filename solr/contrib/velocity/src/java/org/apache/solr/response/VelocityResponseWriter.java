@@ -25,6 +25,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.tools.generic.*;
 
 import java.io.*;
@@ -117,14 +118,14 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     if (template_root != null) {
       baseDir = new File(template_root);
     }
-    engine.setProperty(VelocityEngine.FILE_RESOURCE_LOADER_PATH, baseDir.getAbsolutePath());
+    engine.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, baseDir.getAbsolutePath());
     engine.setProperty("params.resource.loader.instance", new SolrParamResourceLoader(request));
     SolrVelocityResourceLoader resourceLoader =
         new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader());
     engine.setProperty("solr.resource.loader.instance", resourceLoader);
 
     // TODO: Externalize Velocity properties
-    engine.setProperty(VelocityEngine.RESOURCE_LOADER, "params,file,solr");
+    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, "params,file,solr");
     String propFile = request.getParams().get("v.properties");
     try {
       if (propFile == null)

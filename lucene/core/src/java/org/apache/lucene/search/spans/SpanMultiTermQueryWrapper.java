@@ -61,6 +61,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
    * needs a fixed field. The wrapped query must therefore support getField() or getTerm().
    * @throws IllegalArgumentException if the wrapped query does not provide getField() or getTerm().
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   public SpanMultiTermQueryWrapper(Q query) {
     this.query = query;
     
@@ -150,6 +151,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   }
 
   @Override
+  @SuppressWarnings({"rawtypes","unchecked"})
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (obj == null) return false;

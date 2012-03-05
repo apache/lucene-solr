@@ -50,7 +50,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         + System.getProperty("file.separator") + "data");
     dataDir.mkdirs();
 
-    solrConfig = h.createConfig("solrconfig.xml");
+    solrConfig = TestHarness.createConfig("solrconfig.xml");
     h = new TestHarness( dataDir.getAbsolutePath(),
         solrConfig,
         "schema12.xml");

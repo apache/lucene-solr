@@ -160,7 +160,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   // must only be called when iwCommit lock held
   private void deleteAll() throws IOException {
-    core.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
+    SolrCore.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
     closeWriter();
     writer = createMainIndexWriter("DirectUpdateHandler2", true);
   }

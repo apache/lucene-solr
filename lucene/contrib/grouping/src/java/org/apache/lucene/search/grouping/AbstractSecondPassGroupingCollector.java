@@ -66,7 +66,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
 
     for (SearchGroup<GROUP_VALUE_TYPE> group : groups) {
       //System.out.println("  prep group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
-      final TopDocsCollector collector;
+      final TopDocsCollector<?> collector;
       if (withinGroupSort == null) {
         // Sort by score
         collector = TopScoreDocCollector.create(maxDocsPerGroup, true);
@@ -146,9 +146,9 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
   public class SearchGroupDocs<GROUP_VALUE_TYPE> {
 
     public final GROUP_VALUE_TYPE groupValue;
-    public final TopDocsCollector collector;
+    public final TopDocsCollector<?> collector;
 
-    public SearchGroupDocs(GROUP_VALUE_TYPE groupValue, TopDocsCollector collector) {
+    public SearchGroupDocs(GROUP_VALUE_TYPE groupValue, TopDocsCollector<?> collector) {
       this.groupValue = groupValue;
       this.collector = collector;
     }

@@ -1954,16 +1954,16 @@ final class SynonymTokenizer extends TokenStream {
 
         String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
             fragmentSeparator);
-        if (HighlighterTest.VERBOSE) System.out.println("\t" + result);
+        if (LuceneTestCase.VERBOSE) System.out.println("\t" + result);
       }
     }
 
     abstract void run() throws Exception;
 
     void start() throws Exception {
-      if (HighlighterTest.VERBOSE) System.out.println("Run QueryScorer");
+      if (LuceneTestCase.VERBOSE) System.out.println("Run QueryScorer");
       run();
-      if (HighlighterTest.VERBOSE) System.out.println("Run QueryTermScorer");
+      if (LuceneTestCase.VERBOSE) System.out.println("Run QueryTermScorer");
       mode = QUERY_TERM;
       run();
     }

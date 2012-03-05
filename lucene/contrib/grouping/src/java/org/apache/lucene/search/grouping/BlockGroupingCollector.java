@@ -26,6 +26,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -76,7 +77,7 @@ public class BlockGroupingCollector extends Collector {
   // TODO: specialize into 2 classes, static "create" method:
   private final boolean needsScores;
 
-  private final FieldComparator[] comparators;
+  private final FieldComparator<?>[] comparators;
   private final int[] reversed;
   private final int compIDXEnd;
   private int bottomSlot;
@@ -319,14 +320,14 @@ public class BlockGroupingCollector extends Collector {
 
     final FakeScorer fakeScorer = new FakeScorer();
 
-    @SuppressWarnings("unchecked")
-    final GroupDocs<Object>[] groups = new GroupDocs[groupQueue.size() - groupOffset];
+    @SuppressWarnings({"unchecked","rawtypes"})
+    final GroupDocs<Object>[] groups = (GroupDocs<Object>[]) new GroupDocs[groupQueue.size() - groupOffset];
     for(int downTo=groupQueue.size()-groupOffset-1;downTo>=0;downTo--) {
       final OneGroup og = groupQueue.pop();
 
       // At this point we hold all docs w/ in each group,
       // unsorted; we now sort them:
-      final TopDocsCollector collector;
+      final TopDocsCollector<?> collector;
       if (withinGroupSort == null) {
         // Sort by score
         if (!needsScores) {
@@ -387,7 +388,7 @@ public class BlockGroupingCollector extends Collector {
   @Override
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
-    for (FieldComparator comparator : comparators) {
+    for (FieldComparator<?> comparator : comparators) {
       comparator.setScorer(scorer);
     }
   }
@@ -428,7 +429,7 @@ public class BlockGroupingCollector extends Collector {
         assert !queueFull;
 
         //System.out.println("    init copy to bottomSlot=" + bottomSlot);
-        for (FieldComparator fc : comparators) {
+        for (FieldComparator<?> fc : comparators) {
           fc.copy(bottomSlot, doc);
           fc.setBottom(bottomSlot);
         }        

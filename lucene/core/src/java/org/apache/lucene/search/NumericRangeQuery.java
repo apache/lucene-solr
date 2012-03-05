@@ -345,6 +345,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   }
 
   @Override
+  @SuppressWarnings({"unchecked","rawtypes"})
   public final boolean equals(final Object o) {
     if (o==this) return true;
     if (!super.equals(o))

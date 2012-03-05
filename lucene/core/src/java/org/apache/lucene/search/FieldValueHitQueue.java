@@ -53,7 +53,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    */
   private static final class OneComparatorFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
 
-    private final FieldComparator comparator;
+    private final FieldComparator<?> comparator;
     private final int oneReverseMul;
     
     public OneComparatorFieldValueHitQueue(SortField[] fields, int size)
@@ -136,6 +136,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
   }
   
   // prevent instantiation and extension.
+  @SuppressWarnings({"unchecked","rawtypes"})
   private FieldValueHitQueue(SortField[] fields) {
     // When we get here, fields.length is guaranteed to be > 0, therefore no
     // need to check it again.
@@ -175,7 +176,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     }
   }
   
-  public FieldComparator[] getComparators() {
+  public FieldComparator<?>[] getComparators() {
     return comparators;
   }
 
@@ -185,7 +186,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
 
   /** Stores the sort criteria being used. */
   protected final SortField[] fields;
-  protected final FieldComparator[] comparators;
+  protected final FieldComparator<?>[] comparators;
   protected final int[] reverseMul;
 
   @Override

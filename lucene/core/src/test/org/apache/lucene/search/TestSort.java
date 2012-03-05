@@ -553,7 +553,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
   static class MyFieldComparatorSource extends FieldComparatorSource {
     @Override
-    public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
+    public FieldComparator<Integer> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
       return new MyFieldComparator(numHits);
     }
   }

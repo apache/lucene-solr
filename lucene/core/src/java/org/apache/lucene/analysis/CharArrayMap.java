@@ -375,11 +375,11 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
 
   /** Returns an {@link CharArraySet} view on the map's keys.
    * The set will use the same {@code matchVersion} as this map. */
-  @Override @SuppressWarnings("unchecked")
+  @Override @SuppressWarnings({"unchecked","rawtypes"})
   public final CharArraySet keySet() {
     if (keySet == null) {
       // prevent adding of entries
-      keySet = new CharArraySet((CharArrayMap) this) {
+      keySet = new CharArraySet((CharArrayMap<Object>) this) {
         @Override
         public boolean add(Object o) {
           throw new UnsupportedOperationException();
@@ -507,10 +507,11 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     }
     
     @Override
+    @SuppressWarnings({"unchecked","rawtypes"})
     public boolean contains(Object o) {
       if (!(o instanceof Map.Entry))
         return false;
-      final Map.Entry e = (Map.Entry)o;
+      final Map.Entry<Object,V> e = (Map.Entry<Object,V>)o;
       final Object key = e.getKey();
       final Object val = e.getValue();
       final Object v = get(key);

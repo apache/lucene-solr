@@ -38,7 +38,7 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
   // based strings
   volatile Collator[] collators = null;
 
-  volatile FieldComparator[] comparators = null;
+  volatile FieldComparator<?>[] comparators = null;
 
 
   /**
@@ -59,6 +59,7 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
    * This method should be synchronized external like all other PQ methods.
    * @param fields
    */
+  @SuppressWarnings({"unchecked","rawtypes"})
   void setFields (SortField[] fields) throws IOException {
     this.fields = fields;
     this.collators = hasCollators (fields);
@@ -98,7 +99,8 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
    * @param b ScoreDoc
    * @return <code>true</code> if document <code>a</code> should be sorted after document <code>b</code>.
    */
-  @SuppressWarnings("unchecked") @Override
+  @Override
+  @SuppressWarnings({"unchecked","rawtypes"})
   protected final boolean lessThan(final FieldDoc docA, final FieldDoc docB) {
     final int n = fields.length;
     int c = 0;
@@ -120,7 +122,8 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
           c = collators[i].compare(s1, s2);
         }
       } else {
-        c = comparators[i].compareValues(docA.fields[i], docB.fields[i]);
+        final FieldComparator<Object> comp = (FieldComparator<Object>) comparators[i];
+        c = comp.compareValues(docA.fields[i], docB.fields[i]);
       }
       // reverse sort
       if (fields[i].getReverse()) {

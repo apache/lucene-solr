@@ -254,7 +254,7 @@ final class JustCompileSearch {
   static final class JustCompileFieldComparatorSource extends FieldComparatorSource {
 
     @Override
-    public FieldComparator newComparator(String fieldname, int numHits,
+    public FieldComparator<?> newComparator(String fieldname, int numHits,
         int sortPos, boolean reversed) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

@@ -66,11 +66,11 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
-    spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
+    spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
     File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
-    spellchecker.add(FileBasedSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
@@ -102,12 +102,12 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
-    spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
+    spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
     File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
-    spellchecker.add(FileBasedSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
-    spellchecker.add(FileBasedSpellChecker.FIELD_TYPE, "teststop");
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
+    spellchecker.add(SolrSpellChecker.FIELD_TYPE, "teststop");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
@@ -149,8 +149,8 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
-    spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
-    spellchecker.add(FileBasedSpellChecker.FIELD_TYPE, "teststop");
+    spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
+    spellchecker.add(SolrSpellChecker.FIELD_TYPE, "teststop");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
 
     SolrCore core = h.getCore();

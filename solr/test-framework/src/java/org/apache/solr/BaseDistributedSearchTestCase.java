@@ -17,6 +17,7 @@ package org.apache.solr;
  * limitations under the License.
  */
 
+import junit.framework.Assert;
 import junit.framework.TestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -539,7 +540,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
       log.info("Mismatched responses:\n" + a + "\n" + b);
-      TestCase.fail(cmp);
+      Assert.fail(cmp);
     }
   }
 

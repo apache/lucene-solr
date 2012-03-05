@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.*;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 

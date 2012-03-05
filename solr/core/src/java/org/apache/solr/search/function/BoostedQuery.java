@@ -68,7 +68,7 @@ public class BoostedQuery extends Query {
     public BoostedWeight(Searcher searcher) throws IOException {
       this.searcher = searcher;
       this.qWeight = q.createWeight(searcher);
-      this.context = boostVal.newContext();
+      this.context = ValueSource.newContext();
       boostVal.createWeight(context,searcher);
     }
 

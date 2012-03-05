@@ -501,7 +501,7 @@ public class TestCharArraySet extends LuceneTestCase {
     } catch (NullPointerException e) {}
   }
   
-  @Deprecated @SuppressWarnings("unchecked")
+  @Deprecated @SuppressWarnings({"unchecked","rawtypes"})
   public void testIterator() {
     HashSet<String> hset = new HashSet<String>();
     hset.addAll(Arrays.asList(TEST_STOP_WORDS));

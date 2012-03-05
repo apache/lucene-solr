@@ -386,7 +386,7 @@ implements Serializable {
    *   optimize themselves when they are the primary sort.
    * @return {@link FieldComparator} to use when sorting
    */
-  public FieldComparator getComparator(final int numHits, final int sortPos) throws IOException {
+  public FieldComparator<?> getComparator(final int numHits, final int sortPos) throws IOException {
 
     if (locale != null) {
       // TODO: it'd be nice to allow FieldCache.getStringIndex

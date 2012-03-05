@@ -87,7 +87,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     return 31 * size;
   }
 
-  @Override
+  @Override @SuppressWarnings({"unchecked","rawtypes"})
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (obj == null) return false;

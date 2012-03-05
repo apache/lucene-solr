@@ -116,10 +116,11 @@ public class TopDocs implements java.io.Serializable {
     }
   }
 
+  @SuppressWarnings({"rawtypes","unchecked"})
   private static class MergeSortQueue extends PriorityQueue<ShardRef> {
     // These are really FieldDoc instances:
     final ScoreDoc[][] shardHits;
-    final FieldComparator[] comparators;
+    final FieldComparator<?>[] comparators;
     final int[] reverseMul;
 
     public MergeSortQueue(Sort sort, TopDocs[] shardHits) throws IOException {
@@ -145,7 +146,7 @@ public class TopDocs implements java.io.Serializable {
       }
 
       final SortField[] sortFields = sort.getSort();
-      comparators = new FieldComparator[sortFields.length];
+      comparators = new FieldComparator<?>[sortFields.length];
       reverseMul = new int[sortFields.length];
       for(int compIDX=0;compIDX<sortFields.length;compIDX++) {
         final SortField sortField = sortFields[compIDX];
@@ -155,7 +156,7 @@ public class TopDocs implements java.io.Serializable {
     }
 
     // Returns true if first is < second
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     public boolean lessThan(ShardRef first, ShardRef second) {
       assert first != second;
       final FieldDoc firstFD = (FieldDoc) shardHits[first.shardIndex][first.hitIndex];

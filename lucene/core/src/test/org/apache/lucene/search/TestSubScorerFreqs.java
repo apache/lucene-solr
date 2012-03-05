@@ -159,7 +159,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     }
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   @Test
   public void testBooleanQuery() throws Exception {
     TermQuery aQuery = new TermQuery(new Term("f", "a"));

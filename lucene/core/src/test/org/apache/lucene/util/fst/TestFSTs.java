@@ -50,6 +50,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
@@ -964,7 +965,7 @@ public class TestFSTs extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  fstEnum.next prefix=" + inputToString(inputMode, current.input, false) + " output=" + outputs.outputToString(current.output));
         }
-        final CountMinOutput cmo = prefixes.get(current.input);
+        final CountMinOutput<T> cmo = prefixes.get(current.input);
         assertNotNull(cmo);
         assertTrue(cmo.isLeaf || cmo.isFinal);
         //if (cmo.isFinal && !cmo.isLeaf) {
@@ -1190,7 +1191,7 @@ public class TestFSTs extends LuceneTestCase {
           }
 
           termEnum = r.terms(new Term("body", randomTerm));
-          final IntsRefFSTEnum.InputOutput fstSeekResult = fstEnum.seekCeil(toIntsRef(randomTerm));
+          final IntsRefFSTEnum.InputOutput<Long> fstSeekResult = fstEnum.seekCeil(toIntsRef(randomTerm));
 
           if (termEnum.term() == null || !"body".equals(termEnum.term().field())) {
             assertNull("got " + (fstSeekResult == null ? "null" : toString(fstSeekResult.input) + " but expected null"), fstSeekResult);
@@ -1231,7 +1232,7 @@ public class TestFSTs extends LuceneTestCase {
     dir.close();
   }
 
-  private void assertSame(TermEnum termEnum, IntsRefFSTEnum fstEnum, boolean storeOrd) throws Exception {
+  private void assertSame(TermEnum termEnum, IntsRefFSTEnum<?> fstEnum, boolean storeOrd) throws Exception {
     if (termEnum.term() == null || !"body".equals(termEnum.term().field())) {
       if (fstEnum.current() != null) {
         fail("fstEnum.current().input=" + toString(fstEnum.current().input));
@@ -1831,7 +1832,7 @@ public class TestFSTs extends LuceneTestCase {
 
       public int verifyStateAndBelow(FST<Object> fst, Arc<Object> arc, int depth) 
         throws IOException {
-        if (fst.targetHasArcs(arc)) {
+        if (FST.targetHasArcs(arc)) {
           int childCount = 0;
           for (arc = fst.readFirstTargetArc(arc, arc);; 
                arc = fst.readNextArc(arc), childCount++)

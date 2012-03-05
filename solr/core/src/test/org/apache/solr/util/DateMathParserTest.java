@@ -167,7 +167,8 @@ public class DateMathParserTest extends LuceneTestCase {
     Date trash = p.parseMath("+7YEARS");
     trash = p.parseMath("/MONTH");
     trash = p.parseMath("-5DAYS+20MINUTES");
-    Thread.currentThread().sleep(5);
+    Thread.currentThread();
+    Thread.sleep(5);
     
     String a = fmt.format(p.parseMath(""));
     assertEquals("State of DateMathParser changed", e, a);

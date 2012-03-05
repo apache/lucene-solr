@@ -362,7 +362,7 @@ final class PayloadFilter extends TokenFilter {
       }
       posIncrAttr.setPositionIncrement(posIncr);
       pos += posIncr;
-      if (TestPositionIncrement.VERBOSE) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("term=" + termAttr + " pos=" + pos);
       }
       i++;

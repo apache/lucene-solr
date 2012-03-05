@@ -181,7 +181,7 @@ public class QueryTemplateManager
 		Element root = doc.createElement ("Document");
 		doc.appendChild (root);
 		
-		Enumeration keysEnum = formProperties.keys();
+		Enumeration<Object> keysEnum = formProperties.keys();
 		while(keysEnum.hasMoreElements())
 		{
 		    String propName=(String) keysEnum.nextElement();

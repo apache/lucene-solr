@@ -280,7 +280,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     String configFile = getSolrConfigFile();
     if (configFile != null) {
 
-      solrConfig = h.createConfig(getSolrConfigFile());
+      solrConfig = TestHarness.createConfig(getSolrConfigFile());
       h = new TestHarness( dataDir.getAbsolutePath(),
               solrConfig,
               getSchemaFile());
@@ -524,13 +524,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see TestHarness#optimize
    */
   public static String optimize(String... args) {
-    return h.optimize(args);
+    return TestHarness.optimize(args);
   }
   /**
    * @see TestHarness#commit
    */
   public static String commit(String... args) {
-    return h.commit(args);
+    return TestHarness.commit(args);
   }
 
   /**
@@ -595,7 +595,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see TestHarness#deleteById
    */
   public static String delI(String id) {
-    return h.deleteById(id);
+    return TestHarness.deleteById(id);
   }
   /**
    * Generates a &lt;delete&gt;... XML string for an query
@@ -603,7 +603,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see TestHarness#deleteByQuery
    */
   public static String delQ(String q) {
-    return h.deleteByQuery(q);
+    return TestHarness.deleteByQuery(q);
   }
 
   /**
@@ -614,7 +614,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */
   public static XmlDoc doc(String... fieldsAndValues) {
     XmlDoc d = new XmlDoc();
-    d.xml = h.makeSimpleDoc(fieldsAndValues).toString();
+    d.xml = TestHarness.makeSimpleDoc(fieldsAndValues).toString();
     return d;
   }
 

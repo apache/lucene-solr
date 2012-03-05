@@ -37,6 +37,6 @@ public abstract class FieldComparatorSource implements Serializable {
    * @throws IOException
    *           If an error occurs reading the index.
    */
-  public abstract FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed)
+  public abstract FieldComparator<?> newComparator(String fieldname, int numHits, int sortPos, boolean reversed)
       throws IOException;
 }

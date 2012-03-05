@@ -974,7 +974,7 @@ class NumberedTermEnum extends TermEnum {
       // we hit the term exactly... lucky us!
       if (tenum != null) tenum.close();
       tenum = reader.terms(target);
-      pos = startIdx << tindex.intervalBits;
+      pos = startIdx << TermIndex.intervalBits;
       return setTerm();
     }
 
@@ -992,14 +992,14 @@ class NumberedTermEnum extends TermEnum {
     // back up to the start of the block
     startIdx--;
 
-    if ((pos >> tindex.intervalBits) == startIdx && t != null && t.text().compareTo(target.text())<=0) {
+    if ((pos >> TermIndex.intervalBits) == startIdx && t != null && t.text().compareTo(target.text())<=0) {
       // we are already in the right block and the current term is before the term we want,
       // so we don't need to seek.
     } else {
       // seek to the right block
       if (tenum != null) tenum.close();            
       tenum = reader.terms(target.createTerm(tindex.index[startIdx]));
-      pos = startIdx << tindex.intervalBits;
+      pos = startIdx << TermIndex.intervalBits;
       setTerm();  // should be true since it's in the index
     }
 
@@ -1014,10 +1014,10 @@ class NumberedTermEnum extends TermEnum {
 
   public boolean skipTo(int termNumber) throws IOException {
     int delta = termNumber - pos;
-    if (delta < 0 || delta > tindex.interval || tenum==null) {
-      int idx = termNumber >>> tindex.intervalBits;
+    if (delta < 0 || delta > TermIndex.interval || tenum==null) {
+      int idx = termNumber >>> TermIndex.intervalBits;
       String base = tindex.index[idx];
-      pos = idx << tindex.intervalBits;
+      pos = idx << TermIndex.intervalBits;
       delta = termNumber - pos;
       if (tenum != null) tenum.close();
       tenum = reader.terms(tindex.createTerm(base));
