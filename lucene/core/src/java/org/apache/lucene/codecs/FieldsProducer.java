@@ -21,8 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.Terms;
 
 /** Abstract API that produces terms, doc, freq, prox and
  *  payloads postings.  

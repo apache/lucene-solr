@@ -723,7 +723,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         numHighlights = 0;
-        String queryString = FIELD_NAME + ":[kannedy TO kznnedy]";
 
         // Need to explicitly set the QueryParser property to use TermRangeQuery
         // rather
@@ -1250,8 +1249,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         String text = "this is a text with searchterm in it";
         SimpleHTMLFormatter fm = new SimpleHTMLFormatter();
-        TokenStream tokenStream = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true)
-            .tokenStream("text", new StringReader(text));
         Highlighter hg = getHighlighter(query, "text", fm);
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocCharsToAnalyze(36);

@@ -29,6 +29,7 @@ import java.util.Collection;
  *
  * @lucene.experimental
  */
+@SuppressWarnings({"unchecked","rawtypes"})
 public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsCollector.GroupHead> extends Collector {
 
   protected final int[] reversed;

@@ -406,7 +406,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
       // At this point we hold all docs w/ in each group,
       // unsorted; we now sort them:
-      final TopDocsCollector collector;
+      final TopDocsCollector<?> collector;
       if (withinGroupSort == null) {
         // Sort by score
         if (!trackScores) {

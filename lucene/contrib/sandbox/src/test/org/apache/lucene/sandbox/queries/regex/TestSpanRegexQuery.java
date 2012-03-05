@@ -83,31 +83,4 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     reader.close();
     directory.close();
   }
-  
-  private void createRAMDirectories() throws CorruptIndexException,
-      LockObtainFailedException, IOException {
-    // creating a document to store
-    Document lDoc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setOmitNorms(true);
-    lDoc.add(newField("field", "a1 b1", customType));
-
-    // creating a document to store
-    Document lDoc2 = new Document();
-    lDoc2.add(newField("field", "a2 b2", customType));
-
-    // creating first index writer
-    IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
-    writerA.addDocument(lDoc);
-    writerA.forceMerge(1);
-    writerA.close();
-
-    // creating second index writer
-    IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
-    writerB.addDocument(lDoc2);
-    writerB.forceMerge(1);
-    writerB.close();
-  }
 }

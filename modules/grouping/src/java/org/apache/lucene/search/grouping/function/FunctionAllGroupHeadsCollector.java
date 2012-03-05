@@ -18,7 +18,6 @@ package org.apache.lucene.search.grouping.function;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldComparator;
@@ -98,7 +97,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
     for (GroupHead groupHead : groups.values()) {
-      for (FieldComparator comparator : groupHead.comparators) {
+      for (FieldComparator<?> comparator : groupHead.comparators) {
         comparator.setScorer(scorer);
       }
     }
@@ -119,7 +118,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
 
   class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<MutableValue> {
 
-    final FieldComparator[] comparators;
+    final FieldComparator<?>[] comparators;
 
     private GroupHead(MutableValue groupValue, Sort sort, int doc) throws IOException {
       super(groupValue, doc + readerContext.docBase);
@@ -138,7 +137,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
     }
 
     public void updateDocHead(int doc) throws IOException {
-      for (FieldComparator comparator : comparators) {
+      for (FieldComparator<?> comparator : comparators) {
         comparator.copy(0, doc);
         comparator.setBottom(0);
       }

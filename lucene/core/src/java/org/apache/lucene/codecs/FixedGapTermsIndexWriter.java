@@ -53,7 +53,8 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   final private int termIndexInterval;
 
   private final List<SimpleFieldWriter> fields = new ArrayList<SimpleFieldWriter>();
-  private final FieldInfos fieldInfos; // unread
+  
+  @SuppressWarnings("unused") private final FieldInfos fieldInfos; // unread
 
   public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
     final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, TERMS_INDEX_EXTENSION);

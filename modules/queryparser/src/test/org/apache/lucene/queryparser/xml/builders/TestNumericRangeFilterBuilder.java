@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.xml.builders;
  */
 
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -79,7 +78,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     }
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterInt() throws Exception {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
     filterBuilder.setStrictMode(true);
@@ -99,7 +98,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     String xml2 = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
     Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
-    assertTrue(filter2 instanceof NumericRangeFilter<?>);
+    assertTrue(filter2 instanceof NumericRangeFilter);
 
     NumericRangeFilter<Integer> numRangeFilter2 = (NumericRangeFilter) filter2;
     assertEquals(Integer.valueOf(-1), numRangeFilter2.getMin());
@@ -109,7 +108,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     assertFalse(numRangeFilter2.includesMax());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterLong() throws Exception {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
     filterBuilder.setStrictMode(true);
@@ -138,7 +137,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     assertFalse(numRangeFilter2.includesMax());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterDouble() throws Exception {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
     filterBuilder.setStrictMode(true);
@@ -169,7 +168,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     assertFalse(numRangeFilter2.includesMax());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterFloat() throws Exception {
     NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
     filterBuilder.setStrictMode(true);

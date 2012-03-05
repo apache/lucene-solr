@@ -45,7 +45,6 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -205,7 +204,7 @@ public class MemoryIndex {
    * Arrays.binarySearch() and Arrays.sort()
    */
   private static final Comparator<Object> termComparator = new Comparator<Object>() {
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     public int compare(Object o1, Object o2) {
       if (o1 instanceof Map.Entry<?,?>) o1 = ((Map.Entry<?,?>) o1).getKey();
       if (o2 instanceof Map.Entry<?,?>) o2 = ((Map.Entry<?,?>) o2).getKey();
@@ -609,9 +608,6 @@ public class MemoryIndex {
     /** Boost factor for hits for this field */
     private final float boost;
 
-    /** Term for this field's fieldName, lazily computed on demand */
-    public transient Term template;
-
     private final long sumTotalTermFreq;
 
     public Info(HashMap<BytesRef,ArrayIntList> terms, int numTokens, int numOverlapTokens, float boost) {
@@ -642,16 +638,6 @@ public class MemoryIndex {
       if (sortedTerms == null) sortedTerms = sort(terms);
     }
         
-    /** note that the frequency can be calculated as numPosition(getPositions(x)) */
-    public ArrayIntList getPositions(BytesRef term) {
-      return terms.get(term);
-    }
-
-    /** note that the frequency can be calculated as numPosition(getPositions(x)) */
-    public ArrayIntList getPositions(int pos) {
-      return sortedTerms[pos].getValue();
-    }
-    
     public float getBoost() {
       return boost;
     }
@@ -671,10 +657,6 @@ public class MemoryIndex {
     private int[] elements;
     private int size = 0;
       
-    public ArrayIntList() {
-      this(10);
-    }
-
     public ArrayIntList(int initialCapacity) {
       elements = new int[initialCapacity];
     }
@@ -699,16 +681,6 @@ public class MemoryIndex {
     
     public int size() {
       return size;
-    }
-    
-    public int[] toArray(int stride) {
-      int[] arr = new int[size() / stride];
-      if (stride == 1) {
-        System.arraycopy(elements, 0, arr, 0, size); // fast path
-      } else { 
-        for (int i=0, j=0; j < size; i++, j += stride) arr[i] = elements[j];
-      }
-      return arr;
     }
     
     private void ensureCapacity(int minCapacity) {
@@ -1163,16 +1135,7 @@ public class MemoryIndex {
         
     public static final int PTR = Constants.JRE_IS_64BIT ? 8 : 4;    
 
-    // bytes occupied by primitive data types
-    public static final int BOOLEAN = 1;
-    public static final int BYTE = 1;
-    public static final int CHAR = 2;
-    public static final int SHORT = 2;
     public static final int INT = 4;
-    public static final int LONG = 8;
-    public static final int FLOAT = 4;
-    public static final int DOUBLE = 8;
-    
     private static final int LOG_PTR = (int) Math.round(log2(PTR));
     
     /**
@@ -1200,26 +1163,13 @@ public class MemoryIndex {
         return sizeOfObject(INT + PTR*len);        
     }
     
-    public static int sizeOfCharArray(int len) {
-        return sizeOfObject(INT + CHAR*len);        
-    }
-    
     public static int sizeOfIntArray(int len) {
         return sizeOfObject(INT + INT*len);        
-    }
-    
-    public static int sizeOfString(int len) {
-        return sizeOfObject(3*INT + PTR) + sizeOfCharArray(len);
     }
     
     public static int sizeOfHashMap(int len) {
         return sizeOfObject(4*PTR + 4*INT) + sizeOfObjectArray(len) 
             + len * sizeOfObject(3*PTR + INT); // entries
-    }
-    
-    // note: does not include referenced objects
-    public static int sizeOfArrayList(int len) {
-        return sizeOfObject(PTR + 2*INT) + sizeOfObjectArray(len); 
     }
     
     public static int sizeOfArrayIntList(int len) {

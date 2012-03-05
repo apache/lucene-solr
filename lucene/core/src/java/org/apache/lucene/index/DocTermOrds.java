@@ -642,13 +642,11 @@ public class DocTermOrds {
    * ord; in this case we "wrap" our own terms index
    * around it. */
   private final class OrdWrappedTermsEnum extends TermsEnum {
-    private final AtomicReader reader;
     private final TermsEnum termsEnum;
     private BytesRef term;
     private long ord = -indexInterval-1;          // force "real" seek
     
     public OrdWrappedTermsEnum(AtomicReader reader) throws IOException {
-      this.reader = reader;
       assert indexedTermsArray != null;
       termsEnum = reader.fields().terms(field).iterator(null);
     }

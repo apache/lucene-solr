@@ -414,10 +414,6 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
       }
     }
 
-    final public DocsEnum peek() {
-      return top();
-    }
-
     @Override
     public final boolean lessThan(DocsAndPositionsEnum a, DocsAndPositionsEnum b) {
       return a.docID() < b.docID();

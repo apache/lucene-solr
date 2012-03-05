@@ -76,7 +76,7 @@ public class BlockGroupingCollector extends Collector {
   // TODO: specialize into 2 classes, static "create" method:
   private final boolean needsScores;
 
-  private final FieldComparator[] comparators;
+  private final FieldComparator<?>[] comparators;
   private final int[] reversed;
   private final int compIDXEnd;
   private int bottomSlot;
@@ -323,7 +323,7 @@ public class BlockGroupingCollector extends Collector {
 
       // At this point we hold all docs w/ in each group,
       // unsorted; we now sort them:
-      final TopDocsCollector collector;
+      final TopDocsCollector<?> collector;
       if (withinGroupSort == null) {
         // Sort by score
         if (!needsScores) {
@@ -384,7 +384,7 @@ public class BlockGroupingCollector extends Collector {
   @Override
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
-    for (FieldComparator comparator : comparators) {
+    for (FieldComparator<?> comparator : comparators) {
       comparator.setScorer(scorer);
     }
   }
@@ -425,7 +425,7 @@ public class BlockGroupingCollector extends Collector {
         assert !queueFull;
 
         //System.out.println("    init copy to bottomSlot=" + bottomSlot);
-        for (FieldComparator fc : comparators) {
+        for (FieldComparator<?> fc : comparators) {
           fc.copy(bottomSlot, doc);
           fc.setBottom(bottomSlot);
         }        
@@ -450,7 +450,7 @@ public class BlockGroupingCollector extends Collector {
 
         //System.out.println("       best w/in group!");
         
-        for (FieldComparator fc : comparators) {
+        for (FieldComparator<?> fc : comparators) {
           fc.copy(bottomSlot, doc);
           // Necessary because some comparators cache
           // details of bottom slot; this forces them to
@@ -480,7 +480,7 @@ public class BlockGroupingCollector extends Collector {
         }
       }
       groupCompetes = true;
-      for (FieldComparator fc : comparators) {
+      for (FieldComparator<?> fc : comparators) {
         fc.copy(bottomSlot, doc);
         // Necessary because some comparators cache
         // details of bottom slot; this forces them to

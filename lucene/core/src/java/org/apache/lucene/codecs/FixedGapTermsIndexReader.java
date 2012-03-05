@@ -227,8 +227,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
   private final class FieldIndexData {
 
-    final private FieldInfo fieldInfo;
-
     volatile CoreFieldIndex coreIndex;
 
     private final long indexStart;
@@ -241,7 +239,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     public FieldIndexData(FieldInfo fieldInfo, int numIndexTerms, long indexStart, long termsStart, long packedIndexStart,
                           long packedOffsetsStart) throws IOException {
 
-      this.fieldInfo = fieldInfo;
       this.termsStart = termsStart;
       this.indexStart = indexStart;
       this.packedIndexStart = packedIndexStart;

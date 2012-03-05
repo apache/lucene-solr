@@ -34,6 +34,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -135,7 +136,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    * Run all queries against both the RAMDirectory and MemoryIndex, ensuring they are the same.
    */
   public void assertAllQueries(MemoryIndex memory, Directory ramdir, Analyzer analyzer) throws Exception {
-    IndexReader reader = IndexReader.open(ramdir);
+    IndexReader reader = DirectoryReader.open(ramdir);
     IndexSearcher ram = new IndexSearcher(reader);
     IndexSearcher mem = memory.createSearcher();
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "foo", analyzer);

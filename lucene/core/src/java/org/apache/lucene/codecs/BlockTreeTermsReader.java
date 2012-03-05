@@ -35,7 +35,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
@@ -1947,6 +1946,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         }
       }
 
+      @SuppressWarnings("unused")
       private void printSeekState() throws IOException {
         if (currentFrame == staticFrame) {
           System.out.println("  no prior seek");
