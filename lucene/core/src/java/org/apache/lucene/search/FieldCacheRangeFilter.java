@@ -459,6 +459,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
 
   @Override
+  @SuppressWarnings({"unchecked","rawtypes"})
   public final boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof FieldCacheRangeFilter)) return false;

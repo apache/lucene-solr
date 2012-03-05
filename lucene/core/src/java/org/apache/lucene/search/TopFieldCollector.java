@@ -46,7 +46,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   private static class OneComparatorNonScoringCollector extends 
       TopFieldCollector {
 
-    FieldComparator comparator;
+    FieldComparator<?> comparator;
     final int reverseMul;
     final FieldValueHitQueue<Entry> queue;
     
@@ -382,7 +382,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    */
   private static class MultiComparatorNonScoringCollector extends TopFieldCollector {
     
-    final FieldComparator[] comparators;
+    final FieldComparator<?>[] comparators;
     final int[] reverseMul;
     final FieldValueHitQueue<Entry> queue;
     public MultiComparatorNonScoringCollector(FieldValueHitQueue<Entry> queue,

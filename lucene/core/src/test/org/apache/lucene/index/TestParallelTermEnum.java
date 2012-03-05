@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -79,9 +80,9 @@ public class TestParallelTermEnum extends LuceneTestCase {
       assertNotNull(b);
       assertEquals(t, b.utf8ToString());
       DocsEnum td = _TestUtil.docs(random, te, liveDocs, null, false);
-      assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+      assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(0, td.docID());
-      assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+      assertEquals(td.nextDoc(), DocIdSetIterator.NO_MORE_DOCS);
     }
     assertNull(te.next());
   }

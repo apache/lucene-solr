@@ -27,6 +27,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -399,7 +400,7 @@ public class LukeRequestHandler extends RequestHandlerBase
           false);
       if (docsEnum != null) {
         int docId;
-        if ((docId = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+        if ((docId = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           return reader.document(docId);
         }
       }

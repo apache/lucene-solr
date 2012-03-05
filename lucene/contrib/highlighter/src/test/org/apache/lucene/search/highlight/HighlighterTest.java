@@ -50,6 +50,7 @@ import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
 import org.apache.lucene.search.spans.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -1969,16 +1970,16 @@ final class SynonymTokenizer extends TokenStream {
 
         String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
             fragmentSeparator);
-        if (HighlighterTest.VERBOSE) System.out.println("\t" + result);
+        if (LuceneTestCase.VERBOSE) System.out.println("\t" + result);
       }
     }
 
     abstract void run() throws Exception;
 
     void start() throws Exception {
-      if (HighlighterTest.VERBOSE) System.out.println("Run QueryScorer");
+      if (LuceneTestCase.VERBOSE) System.out.println("Run QueryScorer");
       run();
-      if (HighlighterTest.VERBOSE) System.out.println("Run QueryTermScorer");
+      if (LuceneTestCase.VERBOSE) System.out.println("Run QueryTermScorer");
       mode = QUERY_TERM;
       run();
     }

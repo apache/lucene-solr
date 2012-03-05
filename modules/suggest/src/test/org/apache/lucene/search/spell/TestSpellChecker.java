@@ -412,7 +412,7 @@ public class TestSpellChecker extends LuceneTestCase {
     assertEquals(4, searchers.size());
     int num_field2 = this.numdoc();
     assertEquals(num_field2, num_field1 + 1);
-    int numThreads = 5 + this.random.nextInt(5);
+    int numThreads = 5 + LuceneTestCase.random.nextInt(5);
     ExecutorService executor = Executors.newFixedThreadPool(numThreads);
     SpellCheckWorker[] workers = new SpellCheckWorker[numThreads];
     for (int i = 0; i < numThreads; i++) {

@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
@@ -105,7 +106,7 @@ public class TestSegmentMerger extends LuceneTestCase {
                                        null,
                                        false);
     assertTrue(termDocs != null);
-    assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     int tvCount = 0;
     for(FieldInfo fieldInfo : mergedReader.getFieldInfos()) {

@@ -38,6 +38,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.CharStream;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.apache.lucene.queryparser.classic.QueryParserTokenManager;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -160,7 +161,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   
   public void assertEscapedQueryEquals(String query, Analyzer a, String result)
     throws Exception {
-    String escapedQuery = QueryParser.escape(query);
+    String escapedQuery = QueryParserBase.escape(query);
     if (!escapedQuery.equals(result)) {
       fail("Query /" + query + "/ yielded /" + escapedQuery
           + "/, expecting /" + result + "/");
@@ -200,7 +201,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     if (a == null)
       a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", a);
-    qp.setDefaultOperator(QueryParser.AND_OPERATOR);
+    qp.setDefaultOperator(QueryParserBase.AND_OPERATOR);
     return qp.parse(query);
   }
 
@@ -382,11 +383,11 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
     // make sure OR is the default:
-    assertEquals(QueryParser.OR_OPERATOR, qp.getDefaultOperator());
-    qp.setDefaultOperator(QueryParser.AND_OPERATOR);
-    assertEquals(QueryParser.AND_OPERATOR, qp.getDefaultOperator());
-    qp.setDefaultOperator(QueryParser.OR_OPERATOR);
-    assertEquals(QueryParser.OR_OPERATOR, qp.getDefaultOperator());
+    assertEquals(QueryParserBase.OR_OPERATOR, qp.getDefaultOperator());
+    qp.setDefaultOperator(QueryParserBase.AND_OPERATOR);
+    assertEquals(QueryParserBase.AND_OPERATOR, qp.getDefaultOperator());
+    qp.setDefaultOperator(QueryParserBase.OR_OPERATOR);
+    assertEquals(QueryParserBase.OR_OPERATOR, qp.getDefaultOperator());
   }
 
   public void testPunct() throws Exception {

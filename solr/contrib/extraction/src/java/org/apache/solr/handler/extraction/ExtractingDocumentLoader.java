@@ -36,7 +36,9 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaMetadataKeys;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.DefaultParser;
@@ -150,11 +152,11 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       // then Tika can make use of it in guessing the appropriate MIME type:
       String resourceName = req.getParams().get(ExtractingParams.RESOURCE_NAME, null);
       if (resourceName != null) {
-        metadata.add(Metadata.RESOURCE_NAME_KEY, resourceName);
+        metadata.add(TikaMetadataKeys.RESOURCE_NAME_KEY, resourceName);
       }
       // Provide stream's content type as hint for auto detection
       if(stream.getContentType() != null) {
-        metadata.add(Metadata.CONTENT_TYPE, stream.getContentType());
+        metadata.add(HttpHeaders.CONTENT_TYPE, stream.getContentType());
       }
 
       InputStream inputStream = null;
@@ -167,7 +169,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         // HtmlParser and TXTParser regard Metadata.CONTENT_ENCODING in metadata
         String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
         if(charset != null){
-          metadata.add(Metadata.CONTENT_ENCODING, charset);
+          metadata.add(HttpHeaders.CONTENT_ENCODING, charset);
         }
 
         String xpathExpr = params.get(ExtractingParams.XPATH_EXPRESSION);

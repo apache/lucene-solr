@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -217,7 +218,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
                                       null,
                                       false);
       int count = 0;
-      while(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+      while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         count++;
       }
       assertTrue(count > 0);

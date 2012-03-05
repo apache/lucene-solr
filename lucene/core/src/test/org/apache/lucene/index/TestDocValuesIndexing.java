@@ -816,7 +816,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     assertEquals(1, docFreq);
     DocsEnum termDocsEnum = reader.termDocsEnum(null, term.field, term.bytes, false);
     int nextDoc = termDocsEnum.nextDoc();
-    assertEquals(DocsEnum.NO_MORE_DOCS, termDocsEnum.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, termDocsEnum.nextDoc());
     return nextDoc;
   }
 

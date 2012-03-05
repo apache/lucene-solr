@@ -116,10 +116,11 @@ public class TopDocs {
     }
   }
 
+  @SuppressWarnings({"rawtypes","unchecked"})
   private static class MergeSortQueue extends PriorityQueue<ShardRef> {
     // These are really FieldDoc instances:
     final ScoreDoc[][] shardHits;
-    final FieldComparator[] comparators;
+    final FieldComparator<?>[] comparators;
     final int[] reverseMul;
 
     public MergeSortQueue(Sort sort, TopDocs[] shardHits) throws IOException {
@@ -155,7 +156,7 @@ public class TopDocs {
     }
 
     // Returns true if first is < second
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     public boolean lessThan(ShardRef first, ShardRef second) {
       assert first != second;
       final FieldDoc firstFD = (FieldDoc) shardHits[first.shardIndex][first.hitIndex];

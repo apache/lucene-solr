@@ -969,14 +969,14 @@ public class TestIndexWriter extends LuceneTestCase {
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
     assertNotNull(dpEnum);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
     assertEquals(100, dpEnum.nextPosition());
 
     assertNotNull(termsEnum.next());
     dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
     assertNotNull(dpEnum);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
     assertEquals(101, dpEnum.nextPosition());
     assertNull(termsEnum.next());

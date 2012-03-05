@@ -24,6 +24,7 @@ import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaMetadataKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
@@ -191,7 +192,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     if (sf==null && unknownFieldPrefix.length() > 0) {
       name = unknownFieldPrefix + name;
       sf = schema.getFieldOrNull(name);
-    } else if (sf == null && defaultField.length() > 0 && name.equals(Metadata.RESOURCE_NAME_KEY) == false /*let the fall through below handle this*/){
+    } else if (sf == null && defaultField.length() > 0 && name.equals(TikaMetadataKeys.RESOURCE_NAME_KEY) == false /*let the fall through below handle this*/){
       name = defaultField;
       sf = schema.getFieldOrNull(name);
     }
@@ -201,7 +202,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     // ExtractingDocumentLoader.load(). You shouldn't have to define a mapping for this
     // field just because you specified a resource.name parameter to the handler, should
     // you?
-    if (sf == null && unknownFieldPrefix.length()==0 && name == Metadata.RESOURCE_NAME_KEY) {
+    if (sf == null && unknownFieldPrefix.length()==0 && name == TikaMetadataKeys.RESOURCE_NAME_KEY) {
       return;
     }
 

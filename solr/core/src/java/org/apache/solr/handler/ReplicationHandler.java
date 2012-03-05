@@ -150,7 +150,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         // the CMD_GET_FILE_LIST command.
         //
         core.getDeletionPolicy().setReserveDuration(commitPoint.getGeneration(), reserveCommitDuration);
-        rsp.add(CMD_INDEX_VERSION, core.getDeletionPolicy().getCommitTimestamp(commitPoint));
+        rsp.add(CMD_INDEX_VERSION, IndexDeletionPolicyWrapper.getCommitTimestamp(commitPoint));
         rsp.add(GENERATION, commitPoint.getGeneration());
       } else {
         // This happens when replication is not configured to happen after startup and no commit/optimize
@@ -229,7 +229,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     for (IndexCommit c : commits.values()) {
       try {
         NamedList<Object> nl = new NamedList<Object>();
-        nl.add("indexVersion", core.getDeletionPolicy().getCommitTimestamp(c));
+        nl.add("indexVersion", IndexDeletionPolicyWrapper.getCommitTimestamp(c));
         nl.add(GENERATION, c.getGeneration());
         nl.add(CMD_GET_FILE_LIST, c.getFileNames());
         l.add(nl);

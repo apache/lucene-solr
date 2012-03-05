@@ -376,7 +376,7 @@ public final class FST<T> {
   }
 
   // Caches first 128 labels
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   private void cacheRootArcs() throws IOException {
     cachedRootArcs = (Arc<T>[]) new Arc[0x80];
     final Arc<T> arc = new Arc<T>();

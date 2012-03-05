@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
@@ -133,7 +134,7 @@ public class TestSegmentReader extends LuceneTestCase {
                                        MultiFields.getLiveDocs(reader),
                                        null,
                                        false);
-    assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     termDocs = _TestUtil.docs(random, reader,
                               DocHelper.NO_NORMS_KEY,
@@ -142,7 +143,7 @@ public class TestSegmentReader extends LuceneTestCase {
                               null,
                               false);
 
-    assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     
     DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(reader,
@@ -152,7 +153,7 @@ public class TestSegmentReader extends LuceneTestCase {
                                                                       false);
     // NOTE: prior rev of this test was failing to first
     // call next here:
-    assertTrue(positions.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(positions.docID() == 0);
     assertTrue(positions.nextPosition() >= 0);
   }    

@@ -135,19 +135,19 @@ public class TestTermVectors extends LuceneTestCase {
       TermsEnum termsEnum = terms.iterator(null);
       assertEquals("content", termsEnum.next().utf8ToString());
       dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
-      assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+      assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(1, dpEnum.freq());
       assertEquals(expectedPositions[0], dpEnum.nextPosition());
 
       assertEquals("here", termsEnum.next().utf8ToString());
       dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
-      assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+      assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(1, dpEnum.freq());
       assertEquals(expectedPositions[1], dpEnum.nextPosition());
 
       assertEquals("some", termsEnum.next().utf8ToString());
       dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
-      assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+      assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(1, dpEnum.freq());
       assertEquals(expectedPositions[2], dpEnum.nextPosition());
 
@@ -178,7 +178,7 @@ public class TestTermVectors extends LuceneTestCase {
         while(true) {
           dpEnum = termsEnum.docsAndPositions(null, dpEnum, shouldBeOffVector);
           assertNotNull(dpEnum);
-          assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+          assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
           dpEnum.nextPosition();
 
@@ -263,7 +263,7 @@ public class TestTermVectors extends LuceneTestCase {
         String text = termsEnum.term().utf8ToString();
         docs = _TestUtil.docs(random, termsEnum, MultiFields.getLiveDocs(knownSearcher.reader), docs, true);
         
-        while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+        while (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           int docId = docs.docID();
           int freq = docs.freq();
           //System.out.println("Doc Id: " + docId + " freq " + freq);
@@ -428,7 +428,7 @@ public class TestTermVectors extends LuceneTestCase {
     assertEquals(5, termsEnum.totalTermFreq());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
     assertNotNull(dpEnum);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(5, dpEnum.freq());
     for(int i=0;i<5;i++) {
       assertEquals(i, dpEnum.nextPosition());
@@ -436,7 +436,7 @@ public class TestTermVectors extends LuceneTestCase {
 
     dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
     assertNotNull(dpEnum);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(5, dpEnum.freq());
     for(int i=0;i<5;i++) {
       dpEnum.nextPosition();

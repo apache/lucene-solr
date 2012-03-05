@@ -34,6 +34,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
@@ -142,7 +143,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   private static ContentHandler getHtmlHandler(Writer writer)
           throws TransformerConfigurationException {
     SAXTransformerFactory factory = (SAXTransformerFactory)
-            SAXTransformerFactory.newInstance();
+            TransformerFactory.newInstance();
     TransformerHandler handler = factory.newTransformerHandler();
     handler.getTransformer().setOutputProperty(OutputKeys.METHOD, "html");
     handler.setResult(new StreamResult(writer));
@@ -185,7 +186,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   private static ContentHandler getXmlContentHandler(Writer writer)
           throws TransformerConfigurationException {
     SAXTransformerFactory factory = (SAXTransformerFactory)
-            SAXTransformerFactory.newInstance();
+            TransformerFactory.newInstance();
     TransformerHandler handler = factory.newTransformerHandler();
     handler.getTransformer().setOutputProperty(OutputKeys.METHOD, "xml");
     handler.setResult(new StreamResult(writer));

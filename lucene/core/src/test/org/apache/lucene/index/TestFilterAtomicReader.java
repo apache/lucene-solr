@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
@@ -165,7 +166,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     
     DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getLiveDocs(reader),
                                                             null, false);
-    while (positions.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+    while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       assertTrue((positions.docID() % 2) == 1);
     }
 

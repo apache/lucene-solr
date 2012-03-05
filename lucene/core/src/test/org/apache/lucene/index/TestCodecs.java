@@ -81,7 +81,7 @@ public class TestCodecs extends LuceneTestCase {
     NUM_TEST_ITER = atLeast(20);
   }
 
-  class FieldData implements Comparable {
+  class FieldData implements Comparable<FieldData> {
     final FieldInfo fieldInfo;
     final TermData[] terms;
     final boolean omitTF;
@@ -102,8 +102,8 @@ public class TestCodecs extends LuceneTestCase {
       Arrays.sort(terms);
     }
 
-    public int compareTo(final Object other) {
-      return fieldInfo.name.compareTo(((FieldData) other).fieldInfo.name);
+    public int compareTo(final FieldData other) {
+      return fieldInfo.name.compareTo(other.fieldInfo.name);
     }
 
     public void write(final FieldsConsumer consumer) throws Throwable {
@@ -133,7 +133,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  class TermData implements Comparable {
+  class TermData implements Comparable<TermData> {
     String text2;
     final BytesRef text;
     int[] docs;
@@ -147,8 +147,8 @@ public class TestCodecs extends LuceneTestCase {
       this.positions = positions;
     }
 
-    public int compareTo(final Object o) {
-      return text.compareTo(((TermData) o).text);
+    public int compareTo(final TermData o) {
+      return text.compareTo(o.text);
     }
 
     public long write(final TermsConsumer termsConsumer) throws Throwable {
@@ -281,7 +281,7 @@ public class TestCodecs extends LuceneTestCase {
       for(int iter=0;iter<2;iter++) {
         docsEnum = _TestUtil.docs(random, termsEnum, null,  docsEnum, false);
         assertEquals(terms[i].docs[0], docsEnum.nextDoc());
-        assertEquals(DocsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
+        assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
       }
     }
     assertNull(termsEnum.next());
@@ -439,7 +439,7 @@ public class TestCodecs extends LuceneTestCase {
         assertEquals(positions[i].pos, pos);
         if (positions[i].payload != null) {
           assertTrue(posEnum.hasPayload());
-          if (TestCodecs.random.nextInt(3) < 2) {
+          if (LuceneTestCase.random.nextInt(3) < 2) {
             // Verify the payload bytes
             final BytesRef otherPayload = posEnum.getPayload();
             assertTrue("expected=" + positions[i].payload.toString() + " got=" + otherPayload.toString(), positions[i].payload.equals(otherPayload));
@@ -453,7 +453,7 @@ public class TestCodecs extends LuceneTestCase {
     public void _run() throws Throwable {
 
       for(int iter=0;iter<NUM_TEST_ITER;iter++) {
-        final FieldData field = fields[TestCodecs.random.nextInt(fields.length)];
+        final FieldData field = fields[LuceneTestCase.random.nextInt(fields.length)];
         final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator(null);
         if (si.getCodec() instanceof Lucene3xCodec) {
           // code below expects unicode sort order
@@ -473,7 +473,7 @@ public class TestCodecs extends LuceneTestCase {
         assertEquals(upto, field.terms.length);
 
         // Test random seek:
-        TermData term = field.terms[TestCodecs.random.nextInt(field.terms.length)];
+        TermData term = field.terms[LuceneTestCase.random.nextInt(field.terms.length)];
         TermsEnum.SeekStatus status = termsEnum.seekCeil(new BytesRef(term.text2));
         assertEquals(status, TermsEnum.SeekStatus.FOUND);
         assertEquals(term.docs.length, termsEnum.docFreq());
@@ -484,7 +484,7 @@ public class TestCodecs extends LuceneTestCase {
         }
 
         // Test random seek by ord:
-        final int idx = TestCodecs.random.nextInt(field.terms.length);
+        final int idx = LuceneTestCase.random.nextInt(field.terms.length);
         term = field.terms[idx];
         boolean success = false;
         try {
@@ -547,7 +547,7 @@ public class TestCodecs extends LuceneTestCase {
         upto = 0;
         do {
           term = field.terms[upto];
-          if (TestCodecs.random.nextInt(3) == 1) {
+          if (LuceneTestCase.random.nextInt(3) == 1) {
             final DocsEnum docs;
             final DocsEnum docsAndFreqs;
             final DocsAndPositionsEnum postings;
@@ -569,10 +569,10 @@ public class TestCodecs extends LuceneTestCase {
               // Maybe skip:
               final int left = term.docs.length-upto2;
               int doc;
-              if (TestCodecs.random.nextInt(3) == 1 && left >= 1) {
-                final int inc = 1+TestCodecs.random.nextInt(left-1);
+              if (LuceneTestCase.random.nextInt(3) == 1 && left >= 1) {
+                final int inc = 1+LuceneTestCase.random.nextInt(left-1);
                 upto2 += inc;
-                if (TestCodecs.random.nextInt(2) == 1) {
+                if (LuceneTestCase.random.nextInt(2) == 1) {
                   doc = docs.advance(term.docs[upto2]);
                   assertEquals(term.docs[upto2], doc);
                 } else {
@@ -597,7 +597,7 @@ public class TestCodecs extends LuceneTestCase {
               assertEquals(term.docs[upto2], doc);
               if (!field.omitTF) {
                 assertEquals(term.positions[upto2].length, postings.freq());
-                if (TestCodecs.random.nextInt(2) == 1) {
+                if (LuceneTestCase.random.nextInt(2) == 1) {
                   this.verifyPositions(term.positions[upto2], postings);
                 }
               }

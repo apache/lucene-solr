@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.apache.lucene.document.*;
@@ -128,7 +129,7 @@ public class TestMultiFields extends LuceneTestCase {
             assertEquals(docID, docsEnum.nextDoc());
           }
         }
-        assertEquals(docsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
+        assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
       }
 
       reader.close();

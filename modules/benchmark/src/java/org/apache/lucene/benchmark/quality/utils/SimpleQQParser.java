@@ -21,6 +21,7 @@ import org.apache.lucene.benchmark.quality.QualityQuery;
 import org.apache.lucene.benchmark.quality.QualityQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -66,7 +67,7 @@ public class SimpleQQParser implements QualityQueryParser {
     }
     BooleanQuery bq = new BooleanQuery();
     for (int i = 0; i < qqNames.length; i++)
-      bq.add(qp.parse(QueryParser.escape(qq.getValue(qqNames[i]))), BooleanClause.Occur.SHOULD);
+      bq.add(qp.parse(QueryParserBase.escape(qq.getValue(qqNames[i]))), BooleanClause.Occur.SHOULD);
     
     return bq;
   }

@@ -32,7 +32,7 @@ public class TestQueryParser extends QueryParserTestBase {
     if (a == null)
       a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", a);
-    qp.setDefaultOperator(QueryParser.OR_OPERATOR);
+    qp.setDefaultOperator(QueryParserBase.OR_OPERATOR);
     return qp;
   }
 }

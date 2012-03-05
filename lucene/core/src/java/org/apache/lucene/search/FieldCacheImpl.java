@@ -367,7 +367,7 @@ class FieldCacheImpl implements FieldCache {
             docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
               retArray[docID] = termval;
@@ -440,7 +440,7 @@ class FieldCacheImpl implements FieldCache {
             docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
               retArray[docID] = termval;
@@ -544,7 +544,7 @@ class FieldCacheImpl implements FieldCache {
             docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
               retArray[docID] = termval;
@@ -612,7 +612,7 @@ class FieldCacheImpl implements FieldCache {
           // TODO: use bulk API
           while (true) {
             final int docID = docs.nextDoc();
-            if (docID == DocsEnum.NO_MORE_DOCS) {
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
             res.set(docID);
@@ -694,7 +694,7 @@ class FieldCacheImpl implements FieldCache {
             docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
               retArray[docID] = termval;
@@ -782,7 +782,7 @@ class FieldCacheImpl implements FieldCache {
             docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
               retArray[docID] = termval;
@@ -871,7 +871,7 @@ class FieldCacheImpl implements FieldCache {
             docs = termsEnum.docs(null, docs, false);
             while (true) {
               final int docID = docs.nextDoc();
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
               retArray[docID] = termval;
@@ -1172,7 +1172,7 @@ class FieldCacheImpl implements FieldCache {
           docs = termsEnum.docs(null, docs, false);
           while (true) {
             final int docID = docs.nextDoc();
-            if (docID == DocsEnum.NO_MORE_DOCS) {
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
             docToTermOrd.set(docID, termOrd);
@@ -1293,7 +1293,7 @@ class FieldCacheImpl implements FieldCache {
           docs = termsEnum.docs(null, docs, false);
           while (true) {
             final int docID = docs.nextDoc();
-            if (docID == DocsEnum.NO_MORE_DOCS) {
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
             docToOffset.set(docID, pointer);

@@ -821,7 +821,7 @@ public class SimpleFacets {
     }
 
     final String gap = required.getFieldParam(f,FacetParams.FACET_DATE_GAP);
-    final DateMathParser dmp = new DateMathParser(ft.UTC, Locale.US);
+    final DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
 
     final int minCount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
 

@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
@@ -76,7 +77,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
                                                                           "preanalyzed",
                                                                           new BytesRef("term1"),
                                                                           false);
-    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
+    assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(0, termPositions.nextPosition());
 
@@ -85,7 +86,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
                                                      "preanalyzed",
                                                      new BytesRef("term2"),
                                                      false);
-    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
+    assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(2, termPositions.freq());
     assertEquals(1, termPositions.nextPosition());
     assertEquals(3, termPositions.nextPosition());
@@ -95,7 +96,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
                                                      "preanalyzed",
                                                      new BytesRef("term3"),
                                                      false);
-    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
+    assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());
     reader.close();

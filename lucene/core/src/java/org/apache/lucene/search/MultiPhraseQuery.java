@@ -408,7 +408,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
       Iterator<DocsAndPositionsEnum> i = docsEnums.iterator();
       while (i.hasNext()) {
         DocsAndPositionsEnum postings = i.next();
-        if (postings.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS) {
+        if (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           add(postings);
         }
       }

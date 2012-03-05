@@ -49,7 +49,7 @@ class ConjunctionTermScorer extends Scorer {
 
   private int doNext(int doc) throws IOException {
     do {
-      if (lead.doc == DocsEnum.NO_MORE_DOCS) {
+      if (lead.doc == DocIdSetIterator.NO_MORE_DOCS) {
         return NO_MORE_DOCS;
       }
       advanceHead: do {

@@ -126,7 +126,7 @@ public class TestAttributeSource extends LuceneTestCase {
       src.addAttribute(TypeAttribute.class) instanceof TypeAttributeImpl);
   }
   
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   public void testInvalidArguments() throws Exception {
     try {
       AttributeSource src = new AttributeSource();

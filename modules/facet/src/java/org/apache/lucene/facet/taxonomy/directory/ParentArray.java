@@ -6,6 +6,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -106,7 +107,7 @@ class ParentArray {
     DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(indexReader, liveDocs,
                                                                       Consts.FIELD_PAYLOADS, new BytesRef(Consts.PAYLOAD_PARENT),
                                                                       false);
-      if ((positions == null || positions.advance(first) == DocsAndPositionsEnum.NO_MORE_DOCS) && first < num) {
+      if ((positions == null || positions.advance(first) == DocIdSetIterator.NO_MORE_DOCS) && first < num) {
         throw new CorruptIndexException("Missing parent data for category " + first);
       }
       for (int i=first; i<num; i++) {
@@ -124,7 +125,7 @@ class ParentArray {
           // increment we added originally, so we get here the right numbers:
           prefetchParentOrdinal[i] = positions.nextPosition();
 
-          if (positions.nextDoc() == DocsAndPositionsEnum.NO_MORE_DOCS) {
+          if (positions.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
             if ( i+1 < num ) {
               throw new CorruptIndexException(
                   "Missing parent data for category "+(i+1));

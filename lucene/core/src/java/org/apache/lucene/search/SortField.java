@@ -376,7 +376,7 @@ public class SortField {
    *   optimize themselves when they are the primary sort.
    * @return {@link FieldComparator} to use when sorting
    */
-  public FieldComparator getComparator(final int numHits, final int sortPos) throws IOException {
+  public FieldComparator<?> getComparator(final int numHits, final int sortPos) throws IOException {
 
     switch (type) {
     case SCORE:

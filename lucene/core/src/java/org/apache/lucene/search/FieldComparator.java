@@ -150,7 +150,7 @@ public abstract class FieldComparator<T> {
    *   comparator across segments
    * @throws IOException
    */
-  public abstract FieldComparator setNextReader(AtomicReaderContext context) throws IOException;
+  public abstract FieldComparator<T> setNextReader(AtomicReaderContext context) throws IOException;
 
   /** Sets the Scorer to use in case a document's score is
    *  needed.
@@ -201,7 +201,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<T> setNextReader(AtomicReaderContext context) throws IOException {
       if (missingValue != null) {
         docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader(), field);
         // optimization to remove unneeded checks on the bit interface:
@@ -258,7 +258,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<Byte> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getBytes(context.reader(), field, parser, missingValue != null);
@@ -335,7 +335,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<Double> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getDoubles(context.reader(), field, parser, missingValue != null);
@@ -396,7 +396,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<Double> setNextReader(AtomicReaderContext context) throws IOException {
       final DocValues docValues = context.reader().docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource(); 
@@ -478,7 +478,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<Float> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getFloats(context.reader(), field, parser, missingValue != null);
@@ -540,7 +540,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<Short> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getShorts(context.reader(), field, parser, missingValue != null);
@@ -624,7 +624,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<Integer> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getInts(context.reader(), field, parser, missingValue != null);
@@ -689,7 +689,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<Long> setNextReader(AtomicReaderContext context) throws IOException {
       DocValues docValues = context.reader().docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource();
@@ -772,7 +772,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<Long> setNextReader(AtomicReaderContext context) throws IOException {
       // NOTE: must do this before calling super otherwise
       // we compute the docsWithField Bits twice!
       currentReaderValues = FieldCache.DEFAULT.getLongs(context.reader(), field, parser, missingValue != null);
@@ -824,7 +824,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) {
+    public FieldComparator<Float> setNextReader(AtomicReaderContext context) {
       return this;
     }
     
@@ -887,7 +887,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) {
+    public FieldComparator<Integer> setNextReader(AtomicReaderContext context) {
       // TODO: can we "map" our docIDs to the current
       // reader? saves having to then subtract on every
       // compare call
@@ -1007,7 +1007,7 @@ public abstract class FieldComparator<T> {
     abstract class PerSegmentComparator extends FieldComparator<BytesRef> {
       
       @Override
-      public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
         return TermOrdValComparator.this.setNextReader(context);
       }
 
@@ -1226,11 +1226,11 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
       final int docBase = context.docBase;
       termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
       final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
-      FieldComparator perSegComp = null;
+      FieldComparator<BytesRef> perSegComp = null;
       if (docToOrd.hasArray()) {
         final Object arr = docToOrd.getArray();
         if (arr instanceof byte[]) {
@@ -1397,7 +1397,7 @@ public abstract class FieldComparator<T> {
     abstract class PerSegmentComparator extends FieldComparator<BytesRef> {
       
       @Override
-      public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
         return TermOrdValDocValuesComparator.this.setNextReader(context);
       }
 
@@ -1625,7 +1625,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
       final int docBase = context.docBase;
 
       final DocValues dv = context.reader().docValues(field);
@@ -1646,7 +1646,7 @@ public abstract class FieldComparator<T> {
 
       comp = termsIndex.getComparator();
 
-      FieldComparator perSegComp = null;
+      FieldComparator<BytesRef> perSegComp = null;
       if (termsIndex.hasPackedDocToOrd()) {
         final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
         if (docToOrd.hasArray()) {
@@ -1774,7 +1774,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
       docTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
       return this;
     }
@@ -1843,7 +1843,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
       final DocValues dv = context.reader().docValues(field);
       if (dv != null) {
         docTerms = dv.getSource();

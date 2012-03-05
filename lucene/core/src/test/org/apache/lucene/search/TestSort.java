@@ -699,7 +699,7 @@ public class TestSort extends LuceneTestCase {
     };
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public FieldComparator<Integer> setNextReader(AtomicReaderContext context) throws IOException {
       docValues = FieldCache.DEFAULT.getInts(context.reader(), "parser", testIntParser, false);
       return this;
     }
@@ -712,7 +712,7 @@ public class TestSort extends LuceneTestCase {
 
   static class MyFieldComparatorSource extends FieldComparatorSource {
     @Override
-    public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
+    public FieldComparator<Integer> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
       return new MyFieldComparator(numHits);
     }
   }

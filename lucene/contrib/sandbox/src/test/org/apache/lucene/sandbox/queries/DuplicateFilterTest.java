@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -142,7 +143,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
                                    false);
 
       int lastDoc = 0;
-      while (td.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+      while (td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         lastDoc = td.docID();
       }
       assertEquals("Duplicate urls should return last doc", lastDoc, hit.doc);

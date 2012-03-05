@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -233,7 +234,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
   public static int[] toArray(DocsEnum docsEnum) throws IOException {
     List<Integer> docs = new ArrayList<Integer>();
-    while (docsEnum.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+    while (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       int docID = docsEnum.docID();
       docs.add(docID);
     }

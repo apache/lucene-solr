@@ -29,6 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -176,7 +177,7 @@ public class TestLongPostings extends LuceneTestCase {
       final DocsAndPositionsEnum postings = MultiFields.getTermPositionsEnum(r, null, "field", new BytesRef(term), false);
 
       int docID = -1;
-      while(docID < DocsEnum.NO_MORE_DOCS) {
+      while(docID < DocIdSetIterator.NO_MORE_DOCS) {
         final int what = random.nextInt(3);
         if (what == 0) {
           if (VERBOSE) {
@@ -199,7 +200,7 @@ public class TestLongPostings extends LuceneTestCase {
             System.out.println("  got docID=" + docID);
           }
           assertEquals(expected, docID);
-          if (docID == DocsEnum.NO_MORE_DOCS) {
+          if (docID == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
 
@@ -241,7 +242,7 @@ public class TestLongPostings extends LuceneTestCase {
             System.out.println("  got docID=" + docID);
           }
           assertEquals(expected, docID);
-          if (docID == DocsEnum.NO_MORE_DOCS) {
+          if (docID == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
           
@@ -380,7 +381,7 @@ public class TestLongPostings extends LuceneTestCase {
       assert docs != null;
 
       int docID = -1;
-      while(docID < DocsEnum.NO_MORE_DOCS) {
+      while(docID < DocIdSetIterator.NO_MORE_DOCS) {
         final int what = random.nextInt(3);
         if (what == 0) {
           if (VERBOSE) {
@@ -403,7 +404,7 @@ public class TestLongPostings extends LuceneTestCase {
             System.out.println("  got docID=" + docID);
           }
           assertEquals(expected, docID);
-          if (docID == DocsEnum.NO_MORE_DOCS) {
+          if (docID == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
 
@@ -439,7 +440,7 @@ public class TestLongPostings extends LuceneTestCase {
             System.out.println("  got docID=" + docID);
           }
           assertEquals(expected, docID);
-          if (docID == DocsEnum.NO_MORE_DOCS) {
+          if (docID == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
           

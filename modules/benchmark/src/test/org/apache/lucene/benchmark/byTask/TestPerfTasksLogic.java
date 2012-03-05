@@ -55,6 +55,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
@@ -497,7 +498,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       DocsEnum docs = null;
       while(termsEnum.next() != null) {
         docs = _TestUtil.docs(random, termsEnum, MultiFields.getLiveDocs(reader), docs, true);
-        while(docs.nextDoc() != docs.NO_MORE_DOCS) {
+        while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           totalTokenCount2 += docs.freq();
         }
       }

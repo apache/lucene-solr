@@ -57,6 +57,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
@@ -494,7 +495,7 @@ public class TestFSTs extends LuceneTestCase {
 
       if (random.nextBoolean() && fst != null && !willRewrite) {
         TestFSTs t = new TestFSTs();
-        IOContext context = t.newIOContext(random);
+        IOContext context = LuceneTestCase.newIOContext(random);
         IndexOutput out = dir.createOutput("fst.bin", context);
         fst.save(out);
         out.close();
@@ -984,7 +985,7 @@ public class TestFSTs extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  fstEnum.next prefix=" + inputToString(inputMode, current.input, false) + " output=" + outputs.outputToString(current.output));
         }
-        final CountMinOutput cmo = prefixes.get(current.input);
+        final CountMinOutput<T> cmo = prefixes.get(current.input);
         assertNotNull(cmo);
         assertTrue(cmo.isLeaf || cmo.isFinal);
         //if (cmo.isFinal && !cmo.isLeaf) {
@@ -1183,7 +1184,7 @@ public class TestFSTs extends LuceneTestCase {
             }
 
             final TermsEnum.SeekStatus seekResult = termsEnum.seekCeil(randomTerm);
-            final BytesRefFSTEnum.InputOutput fstSeekResult = fstEnum.seekCeil(randomTerm);
+            final InputOutput<Long> fstSeekResult = fstEnum.seekCeil(randomTerm);
 
             if (seekResult == TermsEnum.SeekStatus.END) {
               assertNull("got " + (fstSeekResult == null ? "null" : fstSeekResult.input.utf8ToString()) + " but expected null", fstSeekResult);
@@ -1224,7 +1225,7 @@ public class TestFSTs extends LuceneTestCase {
     dir.close();
   }
 
-  private void assertSame(TermsEnum termsEnum, BytesRefFSTEnum fstEnum, boolean storeOrd) throws Exception {
+  private void assertSame(TermsEnum termsEnum, BytesRefFSTEnum<?> fstEnum, boolean storeOrd) throws Exception {
     if (termsEnum.term() == null) {
       assertNull(fstEnum.current());
     } else {
@@ -1829,7 +1830,7 @@ public class TestFSTs extends LuceneTestCase {
 
       public int verifyStateAndBelow(FST<Object> fst, Arc<Object> arc, int depth) 
         throws IOException {
-        if (fst.targetHasArcs(arc)) {
+        if (FST.targetHasArcs(arc)) {
           int childCount = 0;
           for (arc = fst.readFirstTargetArc(arc, arc);; 
                arc = fst.readNextArc(arc), childCount++)

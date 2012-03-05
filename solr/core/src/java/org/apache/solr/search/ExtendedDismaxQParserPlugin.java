@@ -103,25 +103,25 @@ class ExtendedDismaxQParser extends QParser {
     final String minShouldMatch = 
       DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams);
 
-    queryFields = U.parseFieldBoosts(solrParams.getParams(DMP.QF));
+    queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
     if (0 == queryFields.size()) {
       queryFields.put(req.getSchema().getDefaultSearchFieldName(), 1.0f);
     }
     
     // Boosted phrase of the full query string
     Map<String,Float> phraseFields = 
-      U.parseFieldBoosts(solrParams.getParams(DMP.PF));
+      SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.PF));
     // Boosted Bi-Term Shingles from the query string
     Map<String,Float> phraseFields2 = 
-      U.parseFieldBoosts(solrParams.getParams("pf2"));
+      SolrPluginUtils.parseFieldBoosts(solrParams.getParams("pf2"));
     // Boosted Tri-Term Shingles from the query string
     Map<String,Float> phraseFields3 = 
-      U.parseFieldBoosts(solrParams.getParams("pf3"));
+      SolrPluginUtils.parseFieldBoosts(solrParams.getParams("pf3"));
 
-    float tiebreaker = solrParams.getFloat(DMP.TIE, 0.0f);
+    float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
 
-    int pslop = solrParams.getInt(DMP.PS, 0);
-    int qslop = solrParams.getInt(DMP.QS, 0);
+    int pslop = solrParams.getInt(DisMaxParams.PS, 0);
+    int qslop = solrParams.getInt(DisMaxParams.QS, 0);
 
     // remove stopwords from mandatory "matching" component?
     boolean stopwords = solrParams.getBool("stopwords", true);
@@ -137,7 +137,7 @@ class ExtendedDismaxQParser extends QParser {
     altUserQuery = null;
     if( userQuery == null || userQuery.length() < 1 ) {
       // If no query is specified, we may have an alternate
-      String altQ = solrParams.get( DMP.ALTQ );
+      String altQ = solrParams.get( DisMaxParams.ALTQ );
       if (altQ != null) {
         altQParser = subQuery(altQ, null);
         altUserQuery = altQParser.getQuery();
@@ -248,7 +248,7 @@ class ExtendedDismaxQParser extends QParser {
 
       if (parsedUserQuery != null && doMinMatched) {
         if (parsedUserQuery instanceof BooleanQuery) {
-          U.setMinShouldMatch((BooleanQuery)parsedUserQuery, minShouldMatch);
+          SolrPluginUtils.setMinShouldMatch((BooleanQuery)parsedUserQuery, minShouldMatch);
         }
       }
 
@@ -285,8 +285,8 @@ class ExtendedDismaxQParser extends QParser {
 
         if (parsedUserQuery instanceof BooleanQuery) {
           BooleanQuery t = new BooleanQuery();
-          U.flattenBooleanQuery(t, (BooleanQuery)parsedUserQuery);
-          U.setMinShouldMatch(t, minShouldMatch);
+          SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery)parsedUserQuery);
+          SolrPluginUtils.setMinShouldMatch(t, minShouldMatch);
           parsedUserQuery = t;
         }
       }
@@ -326,7 +326,7 @@ class ExtendedDismaxQParser extends QParser {
 
 
     /* * * Boosting Query * * */
-    boostParams = solrParams.getParams(DMP.BQ);
+    boostParams = solrParams.getParams(DisMaxParams.BQ);
     //List<Query> boostQueries = U.parseQueryStrings(req, boostParams);
     boostQueries=null;
     if (boostParams!=null && boostParams.length>0) {
@@ -345,7 +345,7 @@ class ExtendedDismaxQParser extends QParser {
 
     /* * * Boosting Functions * * */
 
-    String[] boostFuncs = solrParams.getParams(DMP.BF);
+    String[] boostFuncs = solrParams.getParams(DisMaxParams.BF);
     if (null != boostFuncs && 0 != boostFuncs.length) {
       for (String boostFunc : boostFuncs) {
         if(null == boostFunc || "".equals(boostFunc)) continue;
