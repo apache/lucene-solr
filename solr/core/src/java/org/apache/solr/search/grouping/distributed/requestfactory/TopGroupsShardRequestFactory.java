@@ -130,6 +130,11 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
     } else {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
     }
+    
+    int origTimeAllowed = sreq.params.getInt(CommonParams.TIME_ALLOWED, -1);
+    if (origTimeAllowed > 0) {
+      sreq.params.set(CommonParams.TIME_ALLOWED, Math.max(1,origTimeAllowed - rb.firstPhaseElapsedTime));
+    }
 
     return new ShardRequest[] {sreq};
   }

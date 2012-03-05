@@ -350,6 +350,9 @@ Bug Fixes
 * SOLR-1730: Made it clearer when a core failed to load as well as better logging when the
   QueryElevationComponent fails to properly initialize (gsingers)
 
+* k
+  (Russell Black via Martijn van Groningen)
+
  Other Changes
 ----------------------
 

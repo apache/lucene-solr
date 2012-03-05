@@ -20,7 +20,6 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -31,16 +30,12 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class is experimental and will be changing in the future.
@@ -163,6 +158,8 @@ public class ResponseBuilder
   public final Map<String, TopGroups<String>> mergedTopGroups = new HashMap<String, TopGroups<String>>();
   public final Map<String, QueryCommandResult> mergedQueryCommandResults = new HashMap<String, QueryCommandResult>();
   public final Map<Object, SolrDocument> retrievedDocuments = new HashMap<Object, SolrDocument>();
+  // Used for timeAllowed parameter. First phase elapsed time is subtracted from the time allowed for the second phase.
+  public int firstPhaseElapsedTime;
 
   /**
    * Utility function to add debugging info.  This will make sure a valid
