@@ -1,10 +1,9 @@
 package org.apache.lucene.util.junitcompat;
 
+import java.util.Properties;
+
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
@@ -43,7 +42,28 @@ public class TestSystemPropertiesInvariantRule {
       testMethod1();
     }
   }
-  
+
+  public static class NonStringProperties extends Base {
+    public void testMethod1() {
+      if (System.getProperties().get(PROP_KEY1) != null) {
+        throw new RuntimeException("Will pass.");
+      }
+
+      Properties properties = System.getProperties();
+      properties.put(PROP_KEY1, new Object());
+      Assert.assertTrue(System.getProperties().get(PROP_KEY1) != null);
+    }
+
+    public void testMethod2() {
+      testMethod1();
+    }
+
+    @AfterClass
+    public static void cleanup() {
+      System.getProperties().remove(PROP_KEY1);
+    }
+  }
+
   @Test
   public void testRuleInvariantBeforeClass() {
     Result runClasses = JUnitCore.runClasses(InBeforeClass.class);
@@ -70,5 +90,13 @@ public class TestSystemPropertiesInvariantRule {
       Assert.assertTrue(f.getMessage().contains(PROP_KEY1));
     }
     Assert.assertNull(System.getProperty(PROP_KEY1));
+  }
+  
+  @Test
+  public void testNonStringProperties() {
+    Result runClasses = JUnitCore.runClasses(NonStringProperties.class);
+    Assert.assertEquals(1, runClasses.getFailureCount());
+    Assert.assertTrue(runClasses.getFailures().get(0).getMessage().contains("Will pass"));
+    Assert.assertEquals(3, runClasses.getRunCount());
   }
 }
