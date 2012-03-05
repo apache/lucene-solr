@@ -183,7 +183,7 @@ public class CommandHandler {
     }
     try {
       searcher.search(query, luceneFilter, collector);
-    } catch( TimeLimitingCollector.TimeExceededException x ) {
+    } catch (TimeLimitingCollector.TimeExceededException x) {
       partialResults = true;
       logger.warn( "Query: " + query + "; " + x.getMessage() );
     }
