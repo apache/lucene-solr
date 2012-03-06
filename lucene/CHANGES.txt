@@ -165,6 +165,9 @@ New Features
 
 * LUCENE-3714: Add top N shortest cost paths search for FST.
   (Robert Muir, Dawid Weiss, Mike McCandless)
+
+* LUCENE-3789: Expose MTQ TermsEnum via RewriteMethod for non package private
+  access (Simon Willnauer)
   
 Bug fixes
 

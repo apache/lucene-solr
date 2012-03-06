@@ -31,7 +31,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
   protected abstract void addClause(Q topLevel, Term term, float boost) throws IOException;
   
   protected final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
-    final FilteredTermEnum enumerator = query.getEnum(reader);
+    final FilteredTermEnum enumerator = getTermsEnum(reader, query);
     try {
       do {
         final Term t = enumerator.term();
