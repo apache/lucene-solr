@@ -23,20 +23,8 @@
 	<property name="exclude.from.war" value="" />
   <property name="solr.war.suffix" value="" />
 	
-  <!-- Checks that all JSP files in the webapp compile successfully using Jetty's Jasper -->
   <target name="test" depends="compile-test-solr-core">
-    <property name="jsp.target" location="${dest}/jsp-temp" />
-    <taskdef classname="org.apache.jasper.JspC" name="jasper" >
-      <classpath>
-        <fileset dir="${common-solr.dir}/example/lib" includes="**/*.jar" />
-      </classpath>
-    </taskdef>
-    <delete dir="${jsp.target}" />
-    <mkdir dir="${jsp.target}" />
-    <jasper uriroot="${common-solr.dir}/webapp/web" outputDir="${jsp.target}" compile="false" verbose="1" package="j"/>
-    <javac srcdir="${jsp.target}" destdir="${jsp.target}" target="${javac.target}"
-           source="${javac.source}" debug="off" includeAntRuntime="${javac.includeAntRuntime}"
-           encoding="utf8" classpathref="test.classpath"/>
+  	<!-- no more JSP -->
   </target>
 
   <target name="dist"

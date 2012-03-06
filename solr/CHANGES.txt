@@ -438,6 +438,9 @@ Other Changes
 
 * SOLR-2607: Removed obsolete client/ folder (ehatcher, Eric Pugh, janhoy)
 
+* SOLR-3202: Dropping Support for JSP.  New Admin UI is all client side (ryan)
+
+
 Documentation
 ----------------------
 

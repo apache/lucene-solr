@@ -87,29 +87,13 @@ public class JettyWebappTest extends LuceneTestCase
     super.tearDown();
   }
   
-  public void testJSP() throws Exception
+  public void testAdminUI() throws Exception
   {
     // Currently not an extensive test, but it does fire up the JSP pages and make 
     // sure they compile ok
     
     String adminPath = "http://localhost:"+port+context+"/";
     byte[] bytes = IOUtils.toByteArray( new URL(adminPath).openStream() );
-    assertNotNull( bytes ); // real error will be an exception
-
-    adminPath += "admin/";
-    bytes = IOUtils.toByteArray( new URL(adminPath).openStream() );
-    assertNotNull( bytes ); // real error will be an exception
-
-    // analysis
-    bytes = IOUtils.toByteArray( new URL(adminPath+"analysis.jsp").openStream() );
-    assertNotNull( bytes ); // real error will be an exception
-
-    // schema browser
-    bytes = IOUtils.toByteArray( new URL(adminPath+"schema.jsp").openStream() );
-    assertNotNull( bytes ); // real error will be an exception
-
-    // schema browser
-    bytes = IOUtils.toByteArray( new URL(adminPath+"threaddump.jsp").openStream() );
     assertNotNull( bytes ); // real error will be an exception
   }
 }
