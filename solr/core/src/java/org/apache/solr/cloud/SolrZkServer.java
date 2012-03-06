@@ -45,17 +45,21 @@ public class SolrZkServer {
   
   String zkRun;
   String zkHost;
-  String solrHome;
+
   String solrPort;
   Properties props;
   SolrZkServerProps zkProps;
 
   private Thread zkThread;  // the thread running a zookeeper server, only if zkRun is set
 
-  public SolrZkServer(String zkRun, String zkHost, String solrHome, String solrPort) {
+  private String dataHome;
+  private String confHome;
+
+  public SolrZkServer(String zkRun, String zkHost, String dataHome, String confHome, String solrPort) {
     this.zkRun = zkRun;
     this.zkHost = zkHost;
-    this.solrHome = solrHome;
+    this.dataHome = dataHome;
+    this.confHome = confHome;
     this.solrPort = solrPort;
   }
 
@@ -74,13 +78,13 @@ public class SolrZkServer {
       zkProps = new SolrZkServerProps();
       // set default data dir
       // TODO: use something based on IP+port???  support ensemble all from same solr home?
-      zkProps.setDataDir(solrHome + '/' + "zoo_data");
+      zkProps.setDataDir(dataHome);
       zkProps.zkRun = zkRun;
       zkProps.solrPort = solrPort;
     }
     
     try {
-      props = SolrZkServerProps.getProperties(solrHome + '/' + "zoo.cfg");
+      props = SolrZkServerProps.getProperties(confHome + '/' + "zoo.cfg");
       SolrZkServerProps.injectServers(props, zkRun, zkHost);
       zkProps.parseProperties(props);
       if (zkProps.getClientPortAddress() == null) {

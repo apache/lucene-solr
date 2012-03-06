@@ -110,7 +110,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         
         try {
           elector.setup(context);
-          seq = elector.joinElection(context, null);
+          seq = elector.joinElection(context);
           electionDone = true;
           seqToThread.put(seq, this);
         } catch (InterruptedException e) {
@@ -153,7 +153,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ElectionContext context = new ShardLeaderElectionContextBase(elector,
         "shard2", "collection1", "dummynode1", props, zkStateReader);
     elector.setup(context);
-    elector.joinElection(context, null);
+    elector.joinElection(context);
     assertEquals("http://127.0.0.1/solr/",
         getLeaderUrl("collection1", "shard2"));
   }
@@ -166,7 +166,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ElectionContext firstContext = new ShardLeaderElectionContextBase(first,
         "slice1", "collection2", "dummynode1", props, zkStateReader);
     first.setup(firstContext);
-    first.joinElection(firstContext, null);
+    first.joinElection(firstContext);
 
     Thread.sleep(1000);
     assertEquals("original leader was not registered", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
@@ -177,7 +177,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ElectionContext context = new ShardLeaderElectionContextBase(second,
         "slice1", "collection2", "dummynode1", props, zkStateReader);
     second.setup(context);
-    second.joinElection(context, null);
+    second.joinElection(context);
     Thread.sleep(1000);
     assertEquals("original leader should have stayed leader", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
     firstContext.cancelElection();

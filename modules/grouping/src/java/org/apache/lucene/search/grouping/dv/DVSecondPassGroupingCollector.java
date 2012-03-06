@@ -20,7 +20,6 @@ package org.apache.lucene.search.grouping.dv;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadocs
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -215,7 +214,7 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
 
       ordSet.clear();
       for (SearchGroupDocs<BytesRef> group : groupMap.values()) {
-        int ord = this.source.getByValue(group.groupValue, spare);
+        int ord = this.source.getOrdByValue(group.groupValue, spare);
         if (ord >= 0) {
           groupDocs[ordSet.put(ord)] = group;
         }

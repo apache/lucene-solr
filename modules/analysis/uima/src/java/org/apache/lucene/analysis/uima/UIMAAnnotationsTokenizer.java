@@ -37,7 +37,7 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
   private final OffsetAttribute offsetAttr;
 
   private final String tokenTypeString;
-  
+
   private int finalOffset = 0;
 
   public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Reader input) {
@@ -47,8 +47,12 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
     this.offsetAttr = addAttribute(OffsetAttribute.class);
   }
 
-  private void analyzeText() throws IOException, AnalysisEngineProcessException {
-    analyzeInput();
+  protected void initializeIterator() throws IOException {
+    try {
+      analyzeInput();
+    } catch (AnalysisEngineProcessException e) {
+      throw new IOException(e);
+    }
     finalOffset = correctOffset(cas.getDocumentText().length());
     Type tokenType = cas.getTypeSystem().getType(tokenTypeString);
     iterator = cas.getAnnotationIndex(tokenType).iterator();
@@ -57,11 +61,7 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
   @Override
   public boolean incrementToken() throws IOException {
     if (iterator == null) {
-      try {
-        analyzeText();
-      } catch (Exception e) {
-        throw new IOException(e);
-      }
+      initializeIterator();
     }
     if (iterator.hasNext()) {
       clearAttributes();

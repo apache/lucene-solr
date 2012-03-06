@@ -19,8 +19,25 @@
 package org.apache.solr;
 
 
-import org.apache.lucene.store.MockDirectoryWrapper;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SystemPropertiesInvariantRule;
+import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
@@ -45,18 +62,13 @@ import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
-
-import javax.xml.xpath.XPathExpressionException;
-
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.*;
-import java.util.Map.Entry;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4.
@@ -65,8 +77,17 @@ import java.util.Map.Entry;
  */
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
+  @ClassRule
+  public static TestRule solrClassRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
+  @Rule
+  public TestRule solrTestRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {
+    setupLogging();
     startTrackingSearchers();
     startTrackingZkClients();
     ignoreException("ignore_exception");
@@ -91,6 +112,34 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     log.info("###Ending " + getName());    
     super.tearDown();
   }
+
+  public static SolrLogFormatter formatter;
+
+  public static void setupLogging() {
+    boolean register = false;
+    Handler[] handlers = java.util.logging.Logger.getLogger("").getHandlers();
+    ConsoleHandler consoleHandler = null;
+    for (Handler handler : handlers) {
+      if (handler instanceof ConsoleHandler) {
+        consoleHandler = (ConsoleHandler)handler;
+        break;
+      }
+    }
+
+    if (consoleHandler == null) {
+      consoleHandler = new ConsoleHandler();
+      register = true;
+    }
+
+    consoleHandler.setLevel(Level.ALL);
+    formatter = new SolrLogFormatter();
+    consoleHandler.setFormatter(formatter);
+
+    if (register) {
+      java.util.logging.Logger.getLogger("").addHandler(consoleHandler);
+    }
+  }
+
 
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
@@ -298,7 +347,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static void createCore() throws Exception {
-    solrConfig = h.createConfig(getSolrConfigFile());
+    solrConfig = TestHarness.createConfig(getSolrConfigFile());
     h = new TestHarness( dataDir.getAbsolutePath(),
             solrConfig,
             getSchemaFile());
@@ -563,13 +612,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see TestHarness#optimize
    */
   public static String optimize(String... args) {
-    return h.optimize(args);
+    return TestHarness.optimize(args);
   }
   /**
    * @see TestHarness#commit
    */
   public static String commit(String... args) {
-    return h.commit(args);
+    return TestHarness.commit(args);
   }
 
   /**
@@ -634,7 +683,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see TestHarness#deleteById
    */
   public static String delI(String id) {
-    return h.deleteById(id);
+    return TestHarness.deleteById(id);
   }
   /**
    * Generates a &lt;delete&gt;... XML string for an query
@@ -642,7 +691,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see TestHarness#deleteByQuery
    */
   public static String delQ(String q) {
-    return h.deleteByQuery(q);
+    return TestHarness.deleteByQuery(q);
   }
 
   /**
@@ -653,7 +702,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */
   public static XmlDoc doc(String... fieldsAndValues) {
     XmlDoc d = new XmlDoc();
-    d.xml = h.makeSimpleDoc(fieldsAndValues).toString();
+    d.xml = TestHarness.makeSimpleDoc(fieldsAndValues).toString();
     return d;
   }
 

@@ -268,11 +268,13 @@ public class CommonsHttpSolrServer extends SolrServer
     }
     
     // The parser 'wt=' and 'version=' params are used instead of the original params
-    ModifiableSolrParams wparams = new ModifiableSolrParams();
+    ModifiableSolrParams wparams = new ModifiableSolrParams(params);
     wparams.set( CommonParams.WT, parser.getWriterType() );
     wparams.set( CommonParams.VERSION, parser.getVersion());
-    params = SolrParams.wrapDefaults(wparams, params);
-    params = SolrParams.wrapDefaults(_invariantParams, params);
+    if (_invariantParams != null) {
+      wparams.add( _invariantParams );
+    }
+    params = wparams;
 
     int tries = _maxRetries + 1;
     try {

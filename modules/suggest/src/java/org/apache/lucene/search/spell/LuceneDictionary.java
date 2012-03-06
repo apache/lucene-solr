@@ -43,17 +43,12 @@ public class LuceneDictionary implements Dictionary {
     this.field = field;
   }
 
-  public final BytesRefIterator getWordsIterator() {
-    
-    try {
-      final Terms terms = MultiFields.getTerms(reader, field);
-      if (terms != null) {
-        return terms.iterator(null);
-      } else {
-        return BytesRefIterator.EMPTY_ITERATOR;
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+  public final BytesRefIterator getWordsIterator() throws IOException {
+    final Terms terms = MultiFields.getTerms(reader, field);
+    if (terms != null) {
+      return terms.iterator(null);
+    } else {
+      return BytesRefIterator.EMPTY_ITERATOR;
     }
   }
   

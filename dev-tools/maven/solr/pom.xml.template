@@ -40,7 +40,19 @@
   </modules>
   <properties>
     <tests.luceneMatchVersion>LUCENE_CURRENT</tests.luceneMatchVersion>
+    <module-directory>solr</module-directory>
   </properties>
+  <scm>
+    <connection>
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </connection>
+    <developerConnection>
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </developerConnection>
+    <url>
+      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
+    </url>
+  </scm>
   <issueManagement>
     <system>JIRA</system>
     <url>http://issues.apache.org/jira/browse/SOLR</url>

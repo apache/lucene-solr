@@ -34,6 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
+import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -355,7 +356,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                 if (rand.nextInt(100) < softCommitPercent) {
                   verbose("softCommit start");
-                  assertU(h.commit("softCommit","true"));
+                  assertU(TestHarness.commit("softCommit","true"));
                   verbose("softCommit end");
                 } else {
                   verbose("hardCommit start");
@@ -577,7 +578,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                 if (rand.nextInt(100) < softCommitPercent) {
                   verbose("softCommit start");
-                  assertU(h.commit("softCommit","true"));
+                  assertU(TestHarness.commit("softCommit","true"));
                   verbose("softCommit end");
                 } else {
                   verbose("hardCommit start");
@@ -815,7 +816,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                 if (rand.nextInt(100) < softCommitPercent) {
                   verbose("softCommit start");
-                  assertU(h.commit("softCommit","true"));
+                  assertU(TestHarness.commit("softCommit","true"));
                   verbose("softCommit end");
                 } else {
                   verbose("hardCommit start");
@@ -1085,7 +1086,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   if (uLog.getState() != UpdateLog.State.ACTIVE) version = -1;
                   if (rand.nextInt(100) < softCommitPercent) {
                     verbose("softCommit start");
-                    assertU(h.commit("softCommit","true"));
+                    assertU(TestHarness.commit("softCommit","true"));
                     verbose("softCommit end");
                   } else {
                     verbose("hardCommit start");

@@ -54,7 +54,8 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   final static int VERSION_CURRENT = VERSION_START;
 
   private final List<FSTFieldWriter> fields = new ArrayList<FSTFieldWriter>();
-  private final FieldInfos fieldInfos; // unread
+  
+  @SuppressWarnings("unused") private final FieldInfos fieldInfos; // unread
   private final IndexTermSelector policy;
 
   /** @lucene.experimental */
@@ -214,7 +215,6 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     private final long startTermsFilePointer;
 
     final FieldInfo fieldInfo;
-    int numIndexTerms;
     FST<Long> fst;
     final long indexStart;
 

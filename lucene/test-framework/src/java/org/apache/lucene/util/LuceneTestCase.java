@@ -40,9 +40,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -55,9 +53,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CompositeReader;
-import org.apache.lucene.index.FilterAtomicReader;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.FieldFilterAtomicReader;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
@@ -83,6 +80,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.RandomSimilarityProvider;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FlushInfo;
@@ -99,6 +97,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.internal.AssumptionViolatedException;
@@ -259,6 +258,11 @@ public abstract class LuceneTestCase extends Assert {
   private static TimeZone timeZone;
   private static TimeZone savedTimeZone;
 
+  /**
+   * Restore these system property values in {@link #afterClassLuceneTestCaseJ4()}.
+   */
+  private static HashMap<String, String> restoreProperties = new HashMap<String,String>();
+
   protected static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
 
   /** @deprecated (4.0) until we fix no-fork problems in solr tests */
@@ -271,9 +275,12 @@ public abstract class LuceneTestCase extends Assert {
     random.setSeed(staticSeed);
     random.initialized = true;
   }
-  
+
   @Deprecated
   private static boolean icuTested = false;
+
+  @ClassRule
+  public static TestRule classRules = RuleChain.outerRule(new SystemPropertiesInvariantRule());
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
@@ -284,6 +291,7 @@ public abstract class LuceneTestCase extends Assert {
     // enable this by default, for IDE consistency with ant tests (as its the default from ant)
     // TODO: really should be in solr base classes, but some extend LTC directly.
     // we do this in beforeClass, because some tests currently disable it
+    restoreProperties.put("solr.directoryFactory", System.getProperty("solr.directoryFactory"));
     if (System.getProperty("solr.directoryFactory") == null) {
       System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
     }
@@ -365,6 +373,9 @@ public abstract class LuceneTestCase extends Assert {
     
     locale = TEST_LOCALE.equals("random") ? randomLocale(random) : localeForName(TEST_LOCALE);
     Locale.setDefault(locale);
+    // TimeZone.getDefault will set user.timezone to the default timezone of the user's locale.
+    // So store the original property value and restore it at end.
+    restoreProperties.put("user.timezone", System.getProperty("user.timezone"));
     savedTimeZone = TimeZone.getDefault();
     timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(random) : TimeZone.getTimeZone(TEST_TIMEZONE);
     TimeZone.setDefault(timeZone);
@@ -374,6 +385,15 @@ public abstract class LuceneTestCase extends Assert {
 
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
+    for (Map.Entry<String,String> e : restoreProperties.entrySet()) {
+      if (e.getValue() == null) {
+        System.clearProperty(e.getKey());
+      } else {
+        System.setProperty(e.getKey(), e.getValue());
+      }
+    }
+    restoreProperties.clear();
+
     Throwable problem = null;
     
     if (! "false".equals(TEST_CLEAN_THREADS)) {
@@ -560,14 +580,19 @@ public abstract class LuceneTestCase extends Assert {
    * @see LuceneTestCase#testCaseThread 
    */
   private class RememberThreadRule implements TestRule {
+    private String previousName;
+
     @Override
     public Statement apply(final Statement base, Description description) {
       return new Statement() {
         public void evaluate() throws Throwable {
           try {
-            LuceneTestCase.this.testCaseThread = Thread.currentThread();
+            Thread current = Thread.currentThread();
+            previousName = current.getName();
+            LuceneTestCase.this.testCaseThread = current;
             base.evaluate();
           } finally {
+            LuceneTestCase.this.testCaseThread.setName(previousName);
             LuceneTestCase.this.testCaseThread = null;
           }
         }
@@ -584,6 +609,7 @@ public abstract class LuceneTestCase extends Assert {
   public final TestRule ruleChain = RuleChain
     .outerRule(new RememberThreadRule())
     .around(new TestResultInterceptorRule())
+    .around(new SystemPropertiesInvariantRule())
     .around(new InternalSetupTeardownRule())
     .around(new SubclassSetupTeardownRule());
 
@@ -617,6 +643,9 @@ public abstract class LuceneTestCase extends Assert {
     seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
     
+    Thread.currentThread().setName("LTC-main#seed=" + 
+        new ThreeLongs(staticSeed, seed, LuceneTestCaseRunner.runnerSeed));
+
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -1349,45 +1378,55 @@ public abstract class LuceneTestCase extends Assert {
   
   /** Sometimes wrap the IndexReader as slow, parallel or filter reader (or combinations of that) */
   public static IndexReader maybeWrapReader(IndexReader r) throws IOException {
-    // TODO: remove this, and fix those tests to wrap before putting slow around:
-    final boolean wasOriginallyAtomic = r instanceof AtomicReader;
     if (rarely()) {
+      // TODO: remove this, and fix those tests to wrap before putting slow around:
+      final boolean wasOriginallyAtomic = r instanceof AtomicReader;
       for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
         switch(random.nextInt(4)) {
           case 0:
             r = SlowCompositeReaderWrapper.wrap(r);
             break;
           case 1:
+            // will create no FC insanity in atomic case, as ParallelAtomicReader has own cache key:
             r = (r instanceof AtomicReader) ?
               new ParallelAtomicReader((AtomicReader) r) :
               new ParallelCompositeReader((CompositeReader) r);
             break;
           case 2:
-            if (!wasOriginallyAtomic) { // dont wrap originally atomic readers to be composite (some tests don't like)
-              r = new MultiReader(r);
-            }
+            // Häckidy-Hick-Hack: a standard MultiReader will cause FC insanity, so we use
+            // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
+            // along our reader:
+            r = new FCInvisibleMultiReader(r);
             break;
           case 3:
-            if (r instanceof AtomicReader) {
-              r = new FilterAtomicReader((AtomicReader) r) {
-                @Override
-                public Fields fields() throws IOException {
-                  Fields f = super.fields();
-                  if (f == null) {
-                    return null;
-                  } else {
-                    return new FilterFields(f);
-                  }
-                }
-              };
+            final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+            final List<String> allFields = new ArrayList<String>();
+            for (FieldInfo fi : ar.getFieldInfos()) {
+              allFields.add(fi.name);
             }
+            Collections.shuffle(allFields, random);
+            final int end = allFields.isEmpty() ? 0 : random.nextInt(allFields.size());
+            final Set<String> fields = new HashSet<String>(allFields.subList(0, end));
+            // will create no FC insanity as ParallelAtomicReader has own cache key:
+            r = new ParallelAtomicReader(
+              new FieldFilterAtomicReader(ar, fields, false),
+              new FieldFilterAtomicReader(ar, fields, true)
+            );
             break;
           default:
             fail("should not get here");
         }
       }
+      if (wasOriginallyAtomic) {
+        r = SlowCompositeReaderWrapper.wrap(r);
+      } else if ((r instanceof CompositeReader) && !(r instanceof FCInvisibleMultiReader)) {
+        // prevent cache insanity caused by e.g. ParallelCompositeReader, to fix we wrap one more time:
+        r = new FCInvisibleMultiReader(r);
+      }
+      if (VERBOSE) {
+        System.out.println("maybeWrapReader wrapped: " +r);
+      }
     }
-    //System.out.println(r);
     return r;
   }
 
@@ -1412,9 +1451,17 @@ public abstract class LuceneTestCase extends Assert {
       return ret;
     } else {
       int threads = 0;
-      final ExecutorService ex = (random.nextBoolean()) ? null
-          : Executors.newFixedThreadPool(threads = _TestUtil.nextInt(random, 1, 8),
-                      new NamedThreadFactory("LuceneTestCase"));
+      final ThreadPoolExecutor ex;
+      if (random.nextBoolean()) {
+        ex = null;
+      } else {
+        threads = _TestUtil.nextInt(random, 1, 8);
+        ex = new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>(),
+            new NamedThreadFactory("LuceneTestCase"));
+        // uncomment to intensify LUCENE-3840
+        // ex.prestartAllCoreThreads();
+      }
       if (ex != null) {
        if (VERBOSE) {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
@@ -1566,4 +1613,8 @@ public abstract class LuceneTestCase extends Assert {
 
   @Ignore("just a hack")
   public final void alwaysIgnoredTestMethod() {}
+
+  protected static boolean defaultCodecSupportsDocValues() {
+    return !Codec.getDefault().getName().equals("Lucene3x");
+  }
 }

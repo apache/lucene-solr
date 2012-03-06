@@ -34,7 +34,7 @@ public class TestRollingUpdates extends LuceneTestCase {
   public void testRollingUpdates() throws Exception {
     final MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
-    final LineFileDocs docs = new LineFileDocs(random);
+    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
 
     //provider.register(new MemoryCodec());
     if ( (!"Lucene3x".equals(Codec.getDefault().getName())) && random.nextBoolean()) {

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
 import org.apache.lucene.analysis.kuromoji.util.CSVUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
@@ -159,6 +160,10 @@ public final class UserDictionary implements Dictionary {
     return found ? toIndexArray(result) : EMPTY_RESULT;
   }
   
+  public TokenInfoFST getFST() {
+    return fst;
+  }
+
   private static final int[][] EMPTY_RESULT = new int[0][];
   
   /**
@@ -180,6 +185,10 @@ public final class UserDictionary implements Dictionary {
       }
     }
     return result.toArray(new int[result.size()][]);
+  }
+
+  public int[] lookupSegmentation(int phraseID) {
+    return segmentations[phraseID];
   }
   
   @Override

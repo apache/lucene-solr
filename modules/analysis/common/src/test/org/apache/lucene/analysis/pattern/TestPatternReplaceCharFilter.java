@@ -20,7 +20,9 @@ package org.apache.lucene.analysis.pattern;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -29,12 +31,108 @@ import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util._TestUtil;
+import org.junit.Ignore;
 
 /**
  * Tests {@link PatternReplaceCharFilter}
  */
 public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
-  
+  public void testFailingDot() throws IOException {
+    checkOutput(
+        "A. .B.", "\\.[\\s]*", ".",
+        "A..B.",
+        "A..B.");
+  }
+
+  public void testLongerReplacement() throws IOException {
+    checkOutput(
+        "XXabcZZabcYY", "abc", "abcde",
+        "XXabcdeZZabcdeYY",
+        "XXabcccZZabcccYY");
+    checkOutput(
+        "XXabcabcYY", "abc", "abcde",
+        "XXabcdeabcdeYY",
+        "XXabcccabcccYY");
+    checkOutput(
+        "abcabcYY", "abc", "abcde",
+        "abcdeabcdeYY",
+        "abcccabcccYY");
+    checkOutput(
+        "YY", "^", "abcde",
+        "abcdeYY",
+        // Should be: "-----YY" but we're enforcing non-negative offsets.
+        "YYYYYYY");
+    checkOutput(
+        "YY", "$", "abcde",
+        "YYabcde",
+        "YYYYYYY");
+    checkOutput(
+        "XYZ", ".", "abc",
+        "abcabcabc",
+        "XXXYYYZZZ");
+    checkOutput(
+        "XYZ", ".", "$0abc",
+        "XabcYabcZabc",
+        "XXXXYYYYZZZZ");
+  }
+
+  public void testShorterReplacement() throws IOException {
+    checkOutput(
+        "XXabcZZabcYY", "abc", "xy",
+        "XXxyZZxyYY",
+        "XXabZZabYY");
+    checkOutput(
+        "XXabcabcYY", "abc", "xy",
+        "XXxyxyYY",
+        "XXababYY");
+    checkOutput(
+        "abcabcYY", "abc", "xy",
+        "xyxyYY",
+        "ababYY");
+    checkOutput(
+        "abcabcYY", "abc", "",
+        "YY",
+        "YY");
+    checkOutput(
+        "YYabcabc", "abc", "",
+        "YY",
+        "YY");
+  }
+
+  private void checkOutput(String input, String pattern, String replacement,
+      String expectedOutput, String expectedIndexMatchedOutput) throws IOException {
+    CharStream cs = new PatternReplaceCharFilter(pattern(pattern), replacement,
+        CharReader.get(new StringReader(input)));
+
+    StringBuilder output = new StringBuilder();
+    for (int chr = cs.read(); chr > 0; chr = cs.read()) {
+      output.append((char) chr);
+    }
+
+    StringBuilder indexMatched = new StringBuilder();
+    for (int i = 0; i < output.length(); i++) {
+      indexMatched.append((cs.correctOffset(i) < 0 ? "-" : input.charAt(cs.correctOffset(i))));
+    }
+
+    boolean outputGood = expectedOutput.equals(output.toString());
+    boolean indexMatchedGood = expectedIndexMatchedOutput.equals(indexMatched.toString());
+
+    if (!outputGood || !indexMatchedGood || false) {
+      System.out.println("Pattern : " + pattern);
+      System.out.println("Replac. : " + replacement);
+      System.out.println("Input   : " + input);
+      System.out.println("Output  : " + output);
+      System.out.println("Expected: " + expectedOutput);
+      System.out.println("Output/i: " + indexMatched);
+      System.out.println("Expected: " + expectedIndexMatchedOutput);
+      System.out.println();
+    }
+
+    assertTrue("Output doesn't match.", outputGood);
+    assertTrue("Index-matched output doesn't match.", indexMatchedGood);
+  }
+
   //           1111
   // 01234567890123
   // this is test.
@@ -142,9 +240,13 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
   // 012345678901234567890123456789012345678
   //   aa bb cc --- aa bb aa. bb aa   bb cc
   //   aa##bb cc --- aa##bb aa. bb aa##bb cc
+
+  //   aa bb cc --- aa bbbaa. bb aa   b cc
+  
   public void test2blocksMultiMatches() throws IOException {
     final String BLOCK = "  aa bb cc --- aa bb aa. bb aa   bb cc";
-    CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)"), "$1##$2", ".",
+
+    CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)"), "$1##$2",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
@@ -160,10 +262,10 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
   //  aa b - c . --- b aa . c c b
   public void testChain() throws IOException {
     final String BLOCK = " a bb - ccc . --- bb a . ccc ccc bb";
-    CharStream cs = new PatternReplaceCharFilter( pattern("a"), "aa", ".",
+    CharStream cs = new PatternReplaceCharFilter( pattern("a"), "aa",
         CharReader.get( new StringReader( BLOCK ) ) );
-    cs = new PatternReplaceCharFilter( pattern("bb"), "b", ".", cs );
-    cs = new PatternReplaceCharFilter( pattern("ccc"), "c", ".", cs );
+    cs = new PatternReplaceCharFilter( pattern("bb"), "b", cs );
+    cs = new PatternReplaceCharFilter( pattern("ccc"), "c", cs );
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa", "b", "-", "c", ".", "---", "b", "aa", ".", "c", "c", "b" },
@@ -175,21 +277,60 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
   private Pattern pattern( String p ){
     return Pattern.compile( p );
   }
-  
+
+  /**
+   * A demonstration of how backtracking regular expressions can lead to relatively 
+   * easy DoS attacks.
+   * 
+   * @see "http://swtch.com/~rsc/regexp/regexp1.html"
+   */
+  @Ignore
+  public void testNastyPattern() throws Exception {
+    Pattern p = Pattern.compile("(c.+)*xy");
+    String input = "[;<!--aecbbaa--><    febcfdc fbb = \"fbeeebff\" fc = dd   >\\';<eefceceaa e= babae\" eacbaff =\"fcfaccacd\" = bcced>>><  bccaafe edb = ecfccdff\"   <?</script><    edbd ebbcd=\"faacfcc\" aeca= bedbc ceeaac =adeafde aadccdaf = \"afcc ffda=aafbe &#x16921ed5\"1843785582']";
+    for (int i = 0; i < input.length(); i++) {
+      Matcher matcher = p.matcher(input.substring(0, i));
+      long t = System.currentTimeMillis();
+      if (matcher.find()) {
+        System.out.println(matcher.group());
+      }
+      System.out.println(i + " > " + (System.currentTimeMillis() - t) / 1000.0);
+    }
+  }
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
+    int numPatterns = atLeast(100);
+    long start = System.currentTimeMillis();
+    long maxTime = 1000 * 2;
+    for (int i = 0; i < numPatterns && start + maxTime > System.currentTimeMillis(); i++) {
+      final Pattern p = randomPattern();
+      final String replacement = _TestUtil.randomSimpleString(random);
+      Analyzer a = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+          return new TokenStreamComponents(tokenizer, tokenizer);
+        }
 
-      @Override
-      protected Reader initReader(Reader reader) {
-        return new PatternReplaceCharFilter(Pattern.compile("a"), "b", CharReader.get(reader));
-      }
-    };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+        @Override
+        protected Reader initReader(Reader reader) {
+          return new PatternReplaceCharFilter(p, replacement, CharReader.get(reader));
+        }
+      };
+      checkRandomData(random, a, 1000 * RANDOM_MULTIPLIER, 
+          /* max input length. don't make it longer -- exponential processing
+           * time for certain patterns. */ 40, true); // only ascii
+    }
   }
-}
+  
+  public static Pattern randomPattern() {
+    while (true) {
+      try {
+        return Pattern.compile(_TestUtil.randomRegexpishString(random));
+      } catch (PatternSyntaxException ignored) {
+        // if at first you don't succeed...
+      }
+    }
+  }
+ }

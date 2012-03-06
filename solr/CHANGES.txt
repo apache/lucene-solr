@@ -104,6 +104,8 @@ New Features
   (Stefan Matheis, Mark Miller)
   SOLR-3108: Error in SolrCloud's replica lookup code when replica's are hosted in same Solr instance.
   (Bruno Dumon, Sami Siren, Mark Miller)
+  SOLR-3080: Remove shard info from zookeeper when SolrCore is explicitlyunloaded.
+  (yonik, Mark Miller, siren)
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
@@ -227,7 +229,8 @@ New Features
 * SOLR-2459: Expose LogLevel selection with a RequestHandler rather then servlet
   (Stefan Matheis, Upayavira, ryan)
 
-* SOLR-3134: Include shard info in distributed response when shards.info=true (ryan)
+* SOLR-3134: Include shard info in distributed response when shards.info=true 
+  (Russell Black, ryan)
 
 
 Optimizations
@@ -260,6 +263,9 @@ Optimizations
 
 Bug Fixes
 ----------------------
+
+* SOLR-3165: Cannot use DIH in Solrcloud + Zookeeper (Alexey Serba, 
+  Mark Miller, siren)
 
 * SOLR-3068: Occasional NPE in ThreadDumpHandler (siren)
 
@@ -432,6 +438,9 @@ Other Changes
 
 * SOLR-2607: Removed obsolete client/ folder (ehatcher, Eric Pugh, janhoy)
 
+* SOLR-3202: Dropping Support for JSP.  New Admin UI is all client side (ryan)
+
+
 Documentation
 ----------------------
 
@@ -452,6 +461,9 @@ Upgrading from Solr 3.5
   detailed list of changes.  For people who depend on the behavior of
   HTMLStripCharFilter in Solr version 3.5 and earlier: the old implementation
   (bugs and all) is preserved as LegacyHTMLStripCharFilter.
+
+* SOLR-3040: The DIH's admin UI (dataimport.jsp) now requires DIH request handlers to start with
+  a '/'. (dsmiley)
 
 New Features
 ----------------------
@@ -515,6 +527,9 @@ New Features
 * SOLR-3143: Add SuggestQueryConverter, a QueryConverter intended for
   auto-suggesters. (Robert Muir)
 
+* SOLR-3033: ReplicationHandler's backup command now supports a 'maxNumberOfBackups' 
+  init param that can be used to delete all but the most recent N backups. (Torsten Krah, James Dyer)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
@@ -531,6 +546,8 @@ Optimizations
 
 Bug Fixes
 ----------------------
+* SOLR-3187 SystemInfoHandler leaks filehandles (siren)
+
 * SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
 
 * SOLR-2819: Improved speed of parsing hex entities in HTMLStripCharFilter
@@ -616,6 +633,12 @@ Bug Fixes
 
 * SOLR-2909: Add support for ResourceLoaderAware tokenizerFactories in synonym
   filter factories. (Tom Klonikowski, Jun Ohtani via Koji Sekiguchi)
+  
+* SOLR-3168: ReplicationHandler "numberToKeep" & "maxNumberOfBackups" parameters
+  would keep only 1 backup, even if more than 1 was specified (Neil Hooey, James Dyer)
+
+* SOLR-3195: timeAllowed is ignored for grouping queries
+  (Russell Black via Martijn van Groningen)
 
 Other Changes
 ----------------------
@@ -676,7 +699,7 @@ New Features
   (Chris Male, Mark Holland, Gunnlaugur Thor Briem, Ryan McKinley)
 
 * SOLR-2578: ReplicationHandler's backup command now supports a 'numberToKeep' 
-  param that can be used to delete all but the most recent N backups.
+  request param that can be used to delete all but the most recent N backups.
   (James Dyer via hossman)
 
 Optimizations

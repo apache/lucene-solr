@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -30,6 +29,7 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -236,7 +236,7 @@ public abstract class TermVectorsWriter implements Closeable {
 
         if (docsAndPositionsEnum != null) {
           final int docID = docsAndPositionsEnum.nextDoc();
-          assert docID != DocsEnum.NO_MORE_DOCS;
+          assert docID != DocIdSetIterator.NO_MORE_DOCS;
           assert docsAndPositionsEnum.freq() == freq;
 
           for(int posUpto=0; posUpto<freq; posUpto++) {

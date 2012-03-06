@@ -21,10 +21,12 @@ import java.util.Random;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Ignore;
 
 /**
  * random sloppy phrase query tests
  */
+@Ignore("Put this back when we fix LUCENE-3821")
 public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   /** "A B"~N ⊆ "A B"~N+1 */
   public void testIncreasingSloppiness() throws Exception {

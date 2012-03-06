@@ -337,6 +337,9 @@ final class DocFieldProcessor extends DocConsumer {
     if (perDocConsumer == null) {
       PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState("");
       perDocConsumer = docState.docWriter.codec.docValuesFormat().docsConsumer(perDocWriteState);
+      if (perDocConsumer == null) {
+        throw new IllegalStateException("codec=" +  docState.docWriter.codec + " does not support docValues: from docValuesFormat().docsConsumer(...) returned null; field=" + fieldInfo.name);
+      }
     }
     DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
     fieldInfo.setDocValuesType(valueType, false);

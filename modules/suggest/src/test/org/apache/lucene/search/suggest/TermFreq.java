@@ -21,13 +21,13 @@ import org.apache.lucene.util.BytesRef;
 
 public final class TermFreq {
   public final BytesRef term;
-  public final float v;
+  public final long v;
 
-  public TermFreq(String term, float v) {
+  public TermFreq(String term, long v) {
    this(new BytesRef(term), v);
   }
   
-  public TermFreq(BytesRef term, float v) {
+  public TermFreq(BytesRef term, long v) {
     this.term = term;
     this.v = v;
   }

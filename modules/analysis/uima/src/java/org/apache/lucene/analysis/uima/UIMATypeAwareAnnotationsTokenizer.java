@@ -47,7 +47,7 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
   private final String typeAttributeFeaturePath;
 
   private FeaturePath featurePath;
-  
+
   private int finalOffset = 0;
 
   public UIMATypeAwareAnnotationsTokenizer(String descriptorPath, String tokenType, String typeAttributeFeaturePath, Reader input) {
@@ -59,23 +59,29 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
     this.typeAttributeFeaturePath = typeAttributeFeaturePath;
   }
 
-  private void analyzeText() throws IOException, AnalysisEngineProcessException, CASException {
-    analyzeInput();
+  protected void initializeIterator() throws IOException {
+    try {
+      analyzeInput();
+    } catch (AnalysisEngineProcessException e) {
+      throw new IOException(e);
+    }
+    featurePath = cas.createFeaturePath();
+    try {
+      featurePath.initialize(typeAttributeFeaturePath);
+    } catch (CASException e) {
+      featurePath = null;
+      throw new IOException(e);
+    }
     finalOffset = correctOffset(cas.getDocumentText().length());
     Type tokenType = cas.getTypeSystem().getType(tokenTypeString);
     iterator = cas.getAnnotationIndex(tokenType).iterator();
-    featurePath = cas.createFeaturePath();
-    featurePath.initialize(typeAttributeFeaturePath);
+
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     if (iterator == null) {
-      try {
-        analyzeText();
-      } catch (Exception e) {
-        throw new IOException(e);
-      }
+      initializeIterator();
     }
     if (iterator.hasNext()) {
       clearAttributes();

@@ -35,6 +35,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -141,10 +142,10 @@ public class TestAppendingCodec extends LuceneTestCase {
     assertEquals(SeekStatus.FOUND, te.seekCeil(new BytesRef("dog")));
     assertEquals(SeekStatus.FOUND, te.seekCeil(new BytesRef("the")));
     DocsEnum de = te.docs(null, null, true);
-    assertTrue(de.advance(0) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(de.advance(0) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(2, de.freq());
-    assertTrue(de.advance(1) != DocsEnum.NO_MORE_DOCS);
-    assertTrue(de.advance(2) == DocsEnum.NO_MORE_DOCS);
+    assertTrue(de.advance(1) != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(de.advance(2) == DocIdSetIterator.NO_MORE_DOCS);
     reader.close();
   }
   

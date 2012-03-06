@@ -18,59 +18,63 @@ package org.apache.lucene.search.suggest.fst;
  */
 
 import java.io.*;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.Comparator;
 
 import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesReader;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Builds and iterates over sequences stored on disk.
+ * @lucene.experimental
+ * @lucene.internal
  */
 public class ExternalRefSorter implements BytesRefSorter, Closeable {
   private final Sort sort;
   private Sort.ByteSequencesWriter writer;
   private File input;
-  private File sorted; 
-
+  private File sorted;
+  
   /**
    * Will buffer all sequences to a temporary file and then sort (all on-disk).
    */
   public ExternalRefSorter(Sort sort) throws IOException {
     this.sort = sort;
-    this.input = File.createTempFile("RefSorter-", ".raw", Sort.defaultTempDir());
+    this.input = File.createTempFile("RefSorter-", ".raw",
+        Sort.defaultTempDir());
     this.writer = new Sort.ByteSequencesWriter(input);
   }
-
+  
   @Override
   public void add(BytesRef utf8) throws IOException {
-    if (writer == null)
-      throw new IllegalStateException();
+    if (writer == null) throw new IllegalStateException();
     writer.write(utf8);
   }
-
-  @Override
-  public Iterator<BytesRef> iterator() throws IOException {
+  
+  public BytesRefIterator iterator() throws IOException {
     if (sorted == null) {
       closeWriter();
-
-      sorted = File.createTempFile("RefSorter-", ".sorted", Sort.defaultTempDir());
+      
+      sorted = File.createTempFile("RefSorter-", ".sorted",
+          Sort.defaultTempDir());
       sort.sort(input, sorted);
-
+      
       input.delete();
       input = null;
     }
-
-    return new ByteSequenceIterator(new Sort.ByteSequencesReader(sorted));
+    
+    return new ByteSequenceIterator(new Sort.ByteSequencesReader(sorted),
+        sort.getComparator());
   }
-
+  
   private void closeWriter() throws IOException {
     if (writer != null) {
       writer.close();
       writer = null;
     }
   }
-
+  
   /**
    * Removes any written temporary files.
    */
@@ -83,40 +87,54 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
       if (sorted != null) sorted.delete();
     }
   }
-
+  
   /**
    * Iterate over byte refs in a file.
    */
-  class ByteSequenceIterator implements Iterator<BytesRef> {
-    private ByteSequencesReader reader;
-    private byte[] next;
-
-    public ByteSequenceIterator(ByteSequencesReader reader) throws IOException {
+  class ByteSequenceIterator implements BytesRefIterator {
+    private final ByteSequencesReader reader;
+    private BytesRef scratch = new BytesRef();
+    private final Comparator<BytesRef> comparator;
+    
+    public ByteSequenceIterator(ByteSequencesReader reader,
+        Comparator<BytesRef> comparator) {
       this.reader = reader;
-      this.next = reader.read();
-    }
-
-    @Override
-    public boolean hasNext() {
-      return next != null;
+      this.comparator = comparator;
     }
     
     @Override
-    public BytesRef next() {
-      if (next == null) throw new NoSuchElementException();
-      BytesRef r = new BytesRef(next);
-      try {
-        next = reader.read();
-        if (next == null) {
-          reader.close();
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    public BytesRef next() throws IOException {
+      if (scratch == null) {
+        return null;
       }
-      return r;
+      boolean success = false;
+      try {
+        byte[] next = reader.read();
+        if (next != null) {
+          scratch.bytes = next;
+          scratch.length = next.length;
+          scratch.offset = 0;
+        } else {
+          IOUtils.close(reader);
+          scratch = null;
+        }
+        success = true;
+        return scratch;
+      } finally {
+        if (!success) {
+          IOUtils.closeWhileHandlingException(reader);
+        }
+      }
     }
-
+    
     @Override
-    public void remove() { throw new UnsupportedOperationException(); }
+    public Comparator<BytesRef> getComparator() {
+      return comparator;
+    }
+  }
+
+  @Override
+  public Comparator<BytesRef> getComparator() {
+    return sort.getComparator();
   }
 }

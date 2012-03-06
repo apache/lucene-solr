@@ -92,8 +92,8 @@ public class SolrCmdDistributor {
   public void finish() {
 
     // piggyback on any outstanding adds or deletes if possible.
-    flushAdds(1, null, null);
-    flushDeletes(1, null, null);
+    flushAdds(1);
+    flushDeletes(1);
 
     checkResponses(true);
   }
@@ -108,11 +108,11 @@ public class SolrCmdDistributor {
     }
   }
   
-  public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams commitParams) throws IOException {
+  public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params) throws IOException {
     checkResponses(false);
     
     // make sure any pending deletes are flushed
-    flushDeletes(1, null, null);
+    flushDeletes(1);
     
     // TODO: this is brittle
     // need to make a clone since these commands may be reused
@@ -124,7 +124,7 @@ public class SolrCmdDistributor {
     clone.setVersion(cmd.getVersion());
     AddRequest addRequest = new AddRequest();
     addRequest.cmd = clone;
-    addRequest.params = commitParams;
+    addRequest.params = params;
 
     for (Node node : nodes) {
       List<AddRequest> alist = adds.get(node);
@@ -135,7 +135,7 @@ public class SolrCmdDistributor {
       alist.add(addRequest);
     }
     
-    flushAdds(maxBufferedAddsPerServer, null, null);
+    flushAdds(maxBufferedAddsPerServer);
   }
   
   public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
@@ -168,7 +168,7 @@ public class SolrCmdDistributor {
   private void doDelete(DeleteUpdateCommand cmd, List<Node> nodes,
       ModifiableSolrParams params) throws IOException {
     
-    flushAdds(1, null, null);
+    flushAdds(1);
     
     DeleteUpdateCommand clonedCmd = clone(cmd);
     DeleteRequest deleteRequest = new DeleteRequest();
@@ -184,7 +184,7 @@ public class SolrCmdDistributor {
       dlist.add(deleteRequest);
     }
     
-    flushDeletes(maxBufferedDeletesPerServer, null, null);
+    flushDeletes(maxBufferedDeletesPerServer);
   }
   
   void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
@@ -193,7 +193,7 @@ public class SolrCmdDistributor {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
   }
   
-  boolean flushAdds(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams commitParams) {
+  boolean flushAdds(int limit) {
     // check for pending deletes
   
     Set<Node> removeNodes = new HashSet<Node>();
@@ -205,8 +205,6 @@ public class SolrCmdDistributor {
   
       UpdateRequestExt ureq = new UpdateRequestExt();
       
-      addCommit(ureq, ccmd);
-      
       ModifiableSolrParams combinedParams = new ModifiableSolrParams();
       
       for (AddRequest aReq : alist) {
@@ -216,7 +214,6 @@ public class SolrCmdDistributor {
         ureq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
       }
       
-      if (commitParams != null) combinedParams.add(commitParams);
       if (ureq.getParams() == null) ureq.setParams(new ModifiableSolrParams());
       ureq.getParams().add(combinedParams);
 
@@ -232,7 +229,7 @@ public class SolrCmdDistributor {
     return true;
   }
   
-  boolean flushDeletes(int limit, CommitUpdateCommand ccmd, ModifiableSolrParams commitParams) {
+  boolean flushDeletes(int limit) {
     // check for pending deletes
  
     Set<Node> removeNodes = new HashSet<Node>();
@@ -241,8 +238,6 @@ public class SolrCmdDistributor {
       List<DeleteRequest> dlist = deletes.get(node);
       if (dlist == null || dlist.size() < limit) return false;
       UpdateRequestExt ureq = new UpdateRequestExt();
-      
-      addCommit(ureq, ccmd);
       
       ModifiableSolrParams combinedParams = new ModifiableSolrParams();
       
@@ -255,7 +250,6 @@ public class SolrCmdDistributor {
           ureq.deleteByQuery(cmd.query);
         }
         
-        if (commitParams != null) combinedParams.add(commitParams);
         if (ureq.getParams() == null) ureq
             .setParams(new ModifiableSolrParams());
         ureq.getParams().add(combinedParams);

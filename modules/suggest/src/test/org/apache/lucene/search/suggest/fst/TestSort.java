@@ -20,6 +20,7 @@ package org.apache.lucene.search.suggest.fst;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 
 import org.apache.lucene.search.suggest.fst.Sort.BufferSize;
 import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesWriter;
@@ -61,7 +62,7 @@ public class TestSort extends LuceneTestCase {
   @Test
   public void testIntermediateMerges() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer, binary merging.
-    SortInfo info = checkSort(new Sort(BufferSize.megabytes(1), Sort.defaultTempDir(), 2), 
+    SortInfo info = checkSort(new Sort(Sort.DEFAULT_COMPARATOR, BufferSize.megabytes(1), Sort.defaultTempDir(), 2), 
         generateRandom(Sort.MB * 20));
     assertTrue(info.mergeRounds > 10);
   }
@@ -69,7 +70,7 @@ public class TestSort extends LuceneTestCase {
   @Test
   public void testSmallRandom() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer.
-    SortInfo sortInfo = checkSort(new Sort(BufferSize.megabytes(1), Sort.defaultTempDir(), Sort.MAX_TEMPFILES), 
+    SortInfo sortInfo = checkSort(new Sort(Sort.DEFAULT_COMPARATOR, BufferSize.megabytes(1), Sort.defaultTempDir(), Sort.MAX_TEMPFILES), 
         generateRandom(Sort.MB * 20));
     assertEquals(1, sortInfo.mergeRounds);
   }
@@ -77,7 +78,7 @@ public class TestSort extends LuceneTestCase {
   @Test @Nightly
   public void testLargerRandom() throws Exception {
     // Sort 100MB worth of data with 15mb buffer.
-    checkSort(new Sort(BufferSize.megabytes(16), Sort.defaultTempDir(), Sort.MAX_TEMPFILES), 
+    checkSort(new Sort(Sort.DEFAULT_COMPARATOR, BufferSize.megabytes(16), Sort.defaultTempDir(), Sort.MAX_TEMPFILES), 
         generateRandom(Sort.MB * 100));
   }
 
@@ -92,14 +93,25 @@ public class TestSort extends LuceneTestCase {
     byte [][] bytes = data.toArray(new byte[data.size()][]);
     return bytes;
   }
-
+  
+  static final Comparator<byte[]> unsignedByteOrderComparator = new Comparator<byte[]>() {
+    public int compare(byte[] left, byte[] right) {
+      final int max = Math.min(left.length, right.length);
+      for (int i = 0, j = 0; i < max; i++, j++) {
+        int diff = (left[i]  & 0xff) - (right[j] & 0xff); 
+        if (diff != 0) 
+          return diff;
+      }
+      return left.length - right.length;
+    }
+  };
   /**
    * Check sorting data on an instance of {@link Sort}.
    */
   private SortInfo checkSort(Sort sort, byte[][] data) throws IOException {
     File unsorted = writeAll("unsorted", data);
 
-    Arrays.sort(data, Sort.unsignedByteOrderComparator);
+    Arrays.sort(data, unsignedByteOrderComparator);
     File golden = writeAll("golden", data);
 
     File sorted = new File(tempDir, "sorted");

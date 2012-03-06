@@ -25,43 +25,45 @@
 ##
 
 # Kansai Internationl Airport
-関西国際空港	関西 国際 空港
+関西国際空港	関西 関西国際空港/0 国際 空港
 # Narita Airport
-成田空港	成田 空港
+成田空港	成田 成田空港/0 空港
 # Haneda Airport
-羽田空港	羽田 空港
+羽田空港	羽田 羽田空港/0 空港
 # Nara Institute of Science and Technology
-奈良先端科学技術大学院大学	奈良 先端 科学 技術 大学院 大学
+奈良先端科学技術大学院大学	奈良 奈良先端科学技術大学院大学/0 先端 科学 技術 大学院 大学
 # Tokyo University
-東京大学	東京 大学
+東京大学	東京 東京大学/0 大学
 # Kyoto University
-京都大学	京都 大学
+京都大学	京都 京都大学/0 大学
+
+# NOTE: differs from non-compound mode:
 # Kyoto University Baseball Club
-京都大学硬式野球部	京都 大学 硬式 野球 部
+京都大学硬式野球部	京都大 学 硬式 野球 部
 
 ##
 ## Katakana titles
 ##
 
 # Senior Software Engineer
-シニアソフトウェアエンジニア	シニア ソフトウェア エンジニア
+シニアソフトウェアエンジニア	シニア シニアソフトウェアエンジニア/0 ソフトウェア エンジニア
 # Software Engineer
 ソフトウェアエンジニア	ソフトウェア エンジニア
 # Senior Project Manager
-シニアプロジェクトマネジャー	シニア プロジェクト マネジャー
+シニアプロジェクトマネジャー	シニア シニアプロジェクトマネジャー/0 プロジェクト マネジャー
 # Project Manager
 プロジェクトマネジャー	プロジェクト マネジャー
 # Senior Sales Engineer
-シニアセールスエンジニア	シニア セールス エンジニア
+シニアセールスエンジニア	シニア シニアセールスエンジニア/0 セールス エンジニア
 # System Architect
-システムアーキテクト	システム アーキテクト
+システムアーキテクト	システム システムアーキテクト/0 アーキテクト
 # Senior System Architect
-シニアシステムアーキテクト	シニア システム アーキテクト
+シニアシステムアーキテクト	シニア シニアシステムアーキテクト/0 システム アーキテクト
 # System Administrator
 システムアドミニストレータ	システム アドミニストレータ
-システムアドミニストレーター	システム アドミニストレーター
+システムアドミニストレーター	システム システムアドミニストレーター/0 アドミニストレーター
 # Senior System Administrator
-シニアシステムアドミニストレーター	シニア システム アドミニストレーター
+シニアシステムアドミニストレーター	シニア シニアシステムアドミニストレーター/0 システム アドミニストレーター
 
 ##
 ## Company names (several are fictitious)
@@ -70,25 +72,25 @@
 # SoftBank Mobile
 ソフトバンクモバイル	ソフトバンク モバイル
 # Alpine Materials
-アルパインマテリアルズ	アルパイン マテリアルズ
+アルパインマテリアルズ	アルパイン アルパインマテリアルズ/0 マテリアルズ
 # Sapporo Holdings
 サッポロホールディングス	サッポロ ホールディングス
 # Yamada Corporation
-ヤマダコーポレーション	ヤマダ コーポレーション
+ヤマダコーポレーション	ヤマダ ヤマダコーポレーション/0 コーポレーション
 # Canon Semiconductor equipement	NOTE: Semiconductor becomes semi + conductor
-キヤノンセミコンダクターエクィップメント	キヤノン セミ コンダクター エクィップメント
+キヤノンセミコンダクターエクィップメント	キヤノン キヤノンセミコンダクターエクィップメント/0 セミ コンダクター エクィップメント
 # Orental Chain
-オリエンタルチエン	オリエンタル チエン
+オリエンタルチエン	オリエンタル オリエンタルチエン/0 チエン
 # Ally Projects Japan	NOTE: Becomes one token as プロジェクツ is not in IPADIC
 アーリープロジェクツジャパン	アーリープロジェクツジャパン
 # Peter Pan Corporation
-ピーターパンコーポレーション	ピーター パン コーポレーション
+ピーターパンコーポレーション	ピーター ピーターパンコーポレーション/0 パン コーポレーション
 # AIM Create
 エイムクリエイツ	エイムクリエイツ
 # Mars Engineering
-マースエンジニアリング	マース エンジニアリング
+マースエンジニアリング	マース マースエンジニアリング/0 エンジニアリング
 # Fuji Protein Technology
-フジプロテインテクノロジー	フジ プロテイン テクノロジー
+フジプロテインテクノロジー	フジ フジプロテインテクノロジー/0 プロテイン テクノロジー
 
 ##
 ## Person names
@@ -100,7 +102,7 @@
 スティーブジョブズ	スティーブ ジョブズ
 # Harry Potter	NOTE: Becomes one token (short word)
 ハリーポッター	ハリーポッター
-# Bill Gates	NOTE: Becomes one token (short work)
+# Bill Gates	NOTE: Becomes one token (short word)
 ビルゲイツ	ビルゲイツ
 # Sean Connery	NOTE: Becomes one token (okay)
 ショーンコネリー	ショーンコネリー
@@ -133,8 +135,8 @@
 ##
 
 # JT Engineering	NOTE: Becomes J Tien ginia ring (substrings are in IPADIC)
-ジェイティエンジニアリング	ジェイ ティエン ジニア リング
+ジェイティエンジニアリング	ジェイ ジェイティエンジニアリング/0 ティエン ジニア リング
 # Anchovy pasta	NOTE: Become Anch yvipasta
-アンチョビパスタ	アンチ ョビパスタ
+アンチョビパスタ	アンチ アンチョビパスタ/0 ョビパスタ
 # Surprise gift	NOTE: Becomes one token (surprise not in IPADIC)
 サプライズギフト	サプライズギフト

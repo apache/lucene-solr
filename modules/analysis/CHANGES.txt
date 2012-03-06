@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
    
 API Changes
 
+ * LUCENE-3820: Deprecated constructors accepting pattern matching bounds. The input
+   is buffered and matched in one pass. (Dawid Weiss)
+
  * LUCENE-2413: Deprecated PatternAnalyzer in common/miscellaneous, in favor 
    of the pattern package (CharFilter, Tokenizer, TokenFilter).  (Robert Muir)
 
@@ -33,6 +36,11 @@ API Changes
    CharArraySet and CharArrayMap respectively. Previously the behavior was confusing,
    and sometimes different depending on the type of set, and ultimately a CharArraySet
    or CharArrayMap was always used anyway.  (Robert Muir)
+
+Bug fixes
+
+ * LUCENE-3820: PatternReplaceCharFilter could return invalid token positions. 
+   (Dawid Weiss)
 
 New Features
 

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.*;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 
@@ -117,14 +118,14 @@ public class TestStressAdvance extends LuceneTestCase {
       }
       if (upto == expected.size()) {
         if (VERBOSE) {
-          System.out.println("  expect docID=" + DocsEnum.NO_MORE_DOCS + " actual=" + docID);
+          System.out.println("  expect docID=" + DocIdSetIterator.NO_MORE_DOCS + " actual=" + docID);
         }
-        assertEquals(DocsEnum.NO_MORE_DOCS, docID);
+        assertEquals(DocIdSetIterator.NO_MORE_DOCS, docID);
       } else {
         if (VERBOSE) {
           System.out.println("  expect docID=" + expected.get(upto) + " actual=" + docID);
         }
-        assertTrue(docID != DocsEnum.NO_MORE_DOCS);
+        assertTrue(docID != DocIdSetIterator.NO_MORE_DOCS);
         assertEquals(expected.get(upto).intValue(), docID);
       }
     }

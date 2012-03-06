@@ -925,7 +925,7 @@ public class CheckIndex {
               final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
               postings = termsEnum.docsAndPositions(liveDocs, postings, false);
               final int docID = postings.advance(skipDocID);
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               } else {
                 if (docID < skipDocID) {
@@ -948,7 +948,7 @@ public class CheckIndex {
                 } 
 
                 final int nextDocID = postings.nextDoc();
-                if (nextDocID == DocsEnum.NO_MORE_DOCS) {
+                if (nextDocID == DocIdSetIterator.NO_MORE_DOCS) {
                   break;
                 }
                 if (nextDocID <= docID) {
@@ -961,14 +961,14 @@ public class CheckIndex {
               final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
               docs = termsEnum.docs(liveDocs, docs, false);
               final int docID = docs.advance(skipDocID);
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               } else {
                 if (docID < skipDocID) {
                   throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
                 }
                 final int nextDocID = docs.nextDoc();
-                if (nextDocID == DocsEnum.NO_MORE_DOCS) {
+                if (nextDocID == DocIdSetIterator.NO_MORE_DOCS) {
                   break;
                 }
                 if (nextDocID <= docID) {
@@ -1067,7 +1067,7 @@ public class CheckIndex {
                   throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
                 }
 
-                while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+                while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                   totDocCount++;
                 }
               }

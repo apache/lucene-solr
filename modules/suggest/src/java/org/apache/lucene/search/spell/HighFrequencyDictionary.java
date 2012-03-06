@@ -19,16 +19,13 @@ package org.apache.lucene.search.spell;
 
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * HighFrequencyDictionary: terms taken from the given field
@@ -44,7 +41,6 @@ public class HighFrequencyDictionary implements Dictionary {
   private IndexReader reader;
   private String field;
   private float thresh;
-  private final CharsRef spare = new CharsRef();
 
   public HighFrequencyDictionary(IndexReader reader, String field, float thresh) {
     this.reader = reader;
@@ -52,66 +48,55 @@ public class HighFrequencyDictionary implements Dictionary {
     this.thresh = thresh;
   }
 
-  public final BytesRefIterator getWordsIterator() {
+  public final BytesRefIterator getWordsIterator() throws IOException {
     return new HighFrequencyIterator();
   }
 
-  final class HighFrequencyIterator implements TermFreqIterator, SortedIterator {
+  final class HighFrequencyIterator implements TermFreqIterator {
     private final BytesRef spare = new BytesRef();
     private final TermsEnum termsEnum;
     private int minNumDocs;
+    private long freq;
 
-    HighFrequencyIterator() {
-      try {
-        Terms terms = MultiFields.getTerms(reader, field);
-        if (terms != null) {
-          termsEnum = terms.iterator(null);
-        } else {
-          termsEnum = null;
-        }
-        minNumDocs = (int)(thresh * (float)reader.numDocs());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    HighFrequencyIterator() throws IOException {
+      Terms terms = MultiFields.getTerms(reader, field);
+      if (terms != null) {
+        termsEnum = terms.iterator(null);
+      } else {
+        termsEnum = null;
       }
+      minNumDocs = (int)(thresh * (float)reader.numDocs());
     }
 
     private boolean isFrequent(int freq) {
       return freq >= minNumDocs;
     }
     
-    public float freq() {
-      try {
-        return termsEnum.docFreq();
-      } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
-      }
+    public long weight() {
+      return freq;
     }
-
 
     @Override
     public BytesRef next() throws IOException {
       if (termsEnum != null) {
         BytesRef next;
-	while ((next = termsEnum.next()) != null) {
+        while((next = termsEnum.next()) != null) {
           if (isFrequent(termsEnum.docFreq())) {
+            freq = termsEnum.docFreq();
             spare.copyBytes(next);
             return spare;
           }
-	}
+        }
       }
       return  null;
     }
 
     @Override
-    public Comparator<BytesRef> comparator() {
-      try {
-        if (termsEnum == null) {
-          return null;
-        } else {
-          return termsEnum.getComparator();
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    public Comparator<BytesRef> getComparator() {
+      if (termsEnum == null) {
+        return null;
+      } else {
+        return termsEnum.getComparator();
       }
     }
   }

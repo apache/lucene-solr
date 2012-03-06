@@ -35,6 +35,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -51,7 +52,7 @@ import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 public class TestTermsEnum extends LuceneTestCase {
 
   public void test() throws Exception {
-    final LineFileDocs docs = new LineFileDocs(random);
+    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
     final Directory d = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random, d);
     final int numDocs = atLeast(10);
@@ -333,7 +334,7 @@ public class TestTermsEnum extends LuceneTestCase {
           assertEquals(1, te.docFreq());
           docsEnum = _TestUtil.docs(random, te, null, docsEnum, false);
           final int docID = docsEnum.nextDoc();
-          assertTrue(docID != DocsEnum.NO_MORE_DOCS);
+          assertTrue(docID != DocIdSetIterator.NO_MORE_DOCS);
           assertEquals(docIDToID[docID], termToID.get(expected).intValue());
           do {
             loc++;

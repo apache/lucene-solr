@@ -349,8 +349,8 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
     public SpatialWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
-      this.latContext = latSource.newContext(searcher);
-      this.lonContext = lonSource.newContext(searcher);
+      this.latContext = ValueSource.newContext(searcher);
+      this.lonContext = ValueSource.newContext(searcher);
       latSource.createWeight(latContext, searcher);
       lonSource.createWeight(lonContext, searcher);
     }

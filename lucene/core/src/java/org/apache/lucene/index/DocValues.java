@@ -148,6 +148,7 @@ public abstract class DocValues implements Closeable {
     protected Source(Type type) {
       this.type = type;
     }
+
     /**
      * Returns a <tt>long</tt> for the given document id or throws an
      * {@link UnsupportedOperationException} if this source doesn't support
@@ -239,9 +240,10 @@ public abstract class DocValues implements Closeable {
     public BytesRef getBytes(int docID, BytesRef bytesRef) {
       final int ord = ord(docID);
       if (ord < 0) {
+        // Negative ord means doc was missing?
         bytesRef.length = 0;
       } else {
-        getByOrd(ord , bytesRef);
+        getByOrd(ord, bytesRef);
       }
       return bytesRef;
     }
@@ -253,7 +255,7 @@ public abstract class DocValues implements Closeable {
     public abstract int ord(int docID);
 
     /** Returns value for specified ord. */
-    public abstract BytesRef getByOrd(int ord, BytesRef bytesRef);
+    public abstract BytesRef getByOrd(int ord, BytesRef result);
 
     /** Return true if it's safe to call {@link
      *  #getDocToOrd}. */
@@ -274,7 +276,7 @@ public abstract class DocValues implements Closeable {
     }
 
     /**
-     * Performs a lookup by value.
+     * Lookup ord by value.
      * 
      * @param value
      *          the value to look up
@@ -283,11 +285,11 @@ public abstract class DocValues implements Closeable {
      *          values to the given value. Must not be <code>null</code>
      * @return the given values ordinal if found or otherwise
      *         <code>(-(ord)-1)</code>, defined as the ordinal of the first
-     *         element that is greater than the given value. This guarantees
-     *         that the return value will always be &gt;= 0 if the given value
-     *         is found.
+     *         element that is greater than the given value (the insertion
+     *         point). This guarantees that the return value will always be
+     *         &gt;= 0 if the given value is found.
      */
-    public int getByValue(BytesRef value, BytesRef spare) {
+    public int getOrdByValue(BytesRef value, BytesRef spare) {
       return binarySearch(value, spare, 0, getValueCount() - 1);
     }    
 
@@ -405,7 +407,7 @@ public abstract class DocValues implements Closeable {
       }
 
       @Override
-      public int getByValue(BytesRef value, BytesRef spare) {
+      public int getOrdByValue(BytesRef value, BytesRef spare) {
         if (value.length == 0) {
           return 0;
         } else {
@@ -414,7 +416,7 @@ public abstract class DocValues implements Closeable {
       }
 
       @Override
-        public int getValueCount() {
+      public int getValueCount() {
         return 1;
       }
     };

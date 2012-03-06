@@ -1,0 +1,122 @@
+<html>
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<head>
+    
+    <title>solr-admin</title>
+    
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+    <link rel="icon" type="image/ico" href="img/favicon.ico">
+    
+    <script type="text/javascript">
+    
+    var app_config = {};
+    
+    app_config.solr_path = '${contextPath}';
+    app_config.core_admin_path = '${adminPath}';
+    app_config.zookeeper_path = 'zookeeper';
+    app_config.schema_path = '/admin/file?file=schema.xml&contentType=text/xml;charset=utf-8';
+    app_config.config_path = '/admin/file?file=solrconfig.xml&contentType=text/xml;charset=utf-8';
+    
+    </script>
+    
+</head>
+<body>
+    
+    <div id="wrapper">
+    
+        <div id="header">
+            
+            <a href="./" id="solr"><span>Apache SOLR</span></a>
+
+            <div id="wip-notice">
+                <p>This interface is work in progress.</p>
+                <p>Please report any <a href="https://issues.apache.org/jira/browse/SOLR-2667">Bugs/Requests/Suggestions: <span>SOLR-2667</span></a></p>
+            </div>
+
+            <p id="environment">&nbsp;</p>
+
+        </div>
+
+        <div id="main" class="clearfix">
+        
+            <div id="content-wrapper">
+            <div id="content">
+                
+                &nbsp;
+                
+            </div>
+            </div>
+            
+            <div id="menu-wrapper">
+            <div id="menu">
+                
+                <ul>
+
+                    <li id="index" class="global">
+                        <p><a href="#/">Dashboard</a></p>
+                    </li>
+
+                    <li id="logging" class="global">
+                        <p><a href="#/logging">Logging</a></p>
+                    </li>
+
+                    <li id="cloud" class="global optional">
+                        <p><a href="#/cloud">Cloud</a></p>
+                    </li>
+
+                    <li id="cores" class="global optional">
+                        <p><a href="#/cores">Core Admin</a></p>
+                    </li>
+
+                    <li id="java-properties" class="global">
+                        <p><a href="#/java-properties">Java Properties</a>
+                    </li>
+
+                    <li id="threads" class="global">
+                        <p><a href="#/threads">Thread Dump</a></p>
+                    </li>
+                    
+                </ul>
+                
+            </div>
+            </div>
+            
+            <div id="meta">
+                
+                <ul>
+                    
+                    <li class="documentation"><a href="http://lucene.apache.org/solr/"><span>Documentation</span></a></li>
+                    <li class="issues"><a href="http://issues.apache.org/jira/browse/SOLR"><span>Issue Tracker</span></a></li>
+                    <li class="irc"><a href="http://webchat.freenode.net/?channels=#solr"><span>IRC Channel</span></a></li>
+                    <li class="mailinglist"><a href="http://wiki.apache.org/solr/UsingMailingLists"><span>Community forum</span></a></li>
+                    <li class="wiki-query-syntax"><a href="http://wiki.apache.org/solr/SolrQuerySyntax"><span>Solr Query Syntax</span></a></li>
+                    
+                </ul>
+                
+            </div>
+            
+        </div>
+    
+    </div>
+    
+    <script src="js/require.js" data-main="js/main"></script>
+
+</body>
+</html>

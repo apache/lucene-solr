@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import junit.framework.Assert;
 import junit.framework.TestCase;
 
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -91,7 +92,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
 
       try {
         zkClient.makePath("collections/collection2", false);
-        TestCase.fail("Server should be down here");
+        Assert.fail("Server should be down here");
       } catch (KeeperException.ConnectionLossException e) {
 
       }

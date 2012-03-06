@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -29,7 +31,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -97,10 +98,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
     createRandomIndex(numdocs, leftWriter, seed);
     createRandomIndex(numdocs, rightWriter, seed);
 
-    // TODO: maybe we should do this wrapping in another test?
-    leftReader = maybeWrap(leftWriter.getReader());
+    leftReader = maybeWrapReader(leftWriter.getReader());
     leftWriter.close();
-    rightReader = maybeWrap(rightWriter.getReader());
+    rightReader = maybeWrapReader(rightWriter.getReader());
     rightWriter.close();
     
     info = "left: " + leftCodec.toString() + " / right: " + rightCodec.toString();
@@ -114,12 +114,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
     rightDir.close();
     
     super.tearDown();
-  }
-  
-  static IndexReader maybeWrap(IndexReader other) throws IOException {
-    // TODO: bogus how we do this
-    IndexSearcher is = newSearcher(other);
-    return is.getIndexReader();
   }
   
   /**
@@ -488,8 +482,18 @@ public class TestDuelingCodecs extends LuceneTestCase {
       Document rightDoc = rightReader.document(i);
       
       // TODO: I think this is bogus because we don't document what the order should be
-      // from these iterators, etc. I think the codec should be free to order this stuff
+      // from these iterators, etc. I think the codec/IndexReader should be free to order this stuff
       // in whatever way it wants (e.g. maybe it packs related fields together or something)
+      // To fix this, we sort the fields in both documents by name, but
+      // we still assume that all instances with same name are in order:
+      Comparator<IndexableField> comp = new Comparator<IndexableField>() {
+        @Override
+        public int compare(IndexableField arg0, IndexableField arg1) {
+          return arg0.name().compareTo(arg1.name());
+        }        
+      };
+      Collections.sort(leftDoc.getFields(), comp);
+      Collections.sort(rightDoc.getFields(), comp);
 
       Iterator<IndexableField> leftIterator = leftDoc.iterator();
       Iterator<IndexableField> rightIterator = rightDoc.iterator();

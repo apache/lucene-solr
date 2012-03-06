@@ -161,7 +161,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     query.add(inner, Occur.MUST);
     query.add(aQuery, Occur.MUST);
     query.add(dQuery, Occur.MUST);
-    Set<String>[] occurList = new Set[] {
+    @SuppressWarnings({"rawtypes","unchecked"}) Set<String>[] occurList = new Set[] {
         Collections.singleton(Occur.MUST.toString()), 
         new HashSet<String>(Arrays.asList(Occur.MUST.toString(), Occur.SHOULD.toString()))
     };

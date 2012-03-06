@@ -30,7 +30,6 @@ import java.util.List;
 
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
-import org.apache.lucene.search.spell.SortedIterator;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -45,47 +44,58 @@ public class TSTLookup extends Lookup {
   public void build(TermFreqIterator tfit) throws IOException {
     root = new TernaryTreeNode();
     // buffer first
-    if ((!(tfit instanceof SortedIterator)) || ((SortedIterator)tfit).comparator() != BytesRef.getUTF8SortedAsUTF16Comparator()) {
+    if (tfit.getComparator() != BytesRef.getUTF8SortedAsUTF16Comparator()) {
       // make sure it's sorted and the comparator uses UTF16 sort order
       tfit = new SortedTermFreqIteratorWrapper(tfit, BytesRef.getUTF8SortedAsUTF16Comparator());
     }
 
     ArrayList<String> tokens = new ArrayList<String>();
-    ArrayList<Float> vals = new ArrayList<Float>();
+    ArrayList<Number> vals = new ArrayList<Number>();
     BytesRef spare;
     CharsRef charsSpare = new CharsRef();
     while ((spare = tfit.next()) != null) {
       charsSpare.grow(spare.length);
       UnicodeUtil.UTF8toUTF16(spare.bytes, spare.offset, spare.length, charsSpare);
       tokens.add(charsSpare.toString());
-      vals.add(new Float(tfit.freq()));
+      vals.add(Long.valueOf(tfit.weight()));
     }
     autocomplete.balancedTree(tokens.toArray(), vals.toArray(), 0, tokens.size() - 1, root);
   }
 
-  @Override
-  public boolean add(String key, Object value) {
+  public boolean add(CharSequence key, Object value) {
     autocomplete.insert(root, key, value, 0);
     // XXX we don't know if a new node was created
     return true;
   }
 
-  @Override
-  public Object get(String key) {
+  public Object get(CharSequence key) {
     List<TernaryTreeNode> list = autocomplete.prefixCompletion(root, key, 0);
     if (list == null || list.isEmpty()) {
       return null;
     }
     for (TernaryTreeNode n : list) {
-      if (n.token.equals(key)) {
+      if (charSeqEquals(n.token, key)) {
         return n.val;
       }
     }
     return null;
   }
+  
+  private static boolean charSeqEquals(CharSequence left, CharSequence right) {
+    int len = left.length();
+    if (len != right.length()) {
+      return false;
+    }
+    for (int i = 0; i < len; i++) {
+      if (left.charAt(i) != right.charAt(i)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   @Override
-  public List<LookupResult> lookup(String key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
     List<TernaryTreeNode> list = autocomplete.prefixCompletion(root, key, 0);
     List<LookupResult> res = new ArrayList<LookupResult>();
     if (list == null || list.size() == 0) {
@@ -95,7 +105,7 @@ public class TSTLookup extends Lookup {
     if (onlyMorePopular) {
       LookupPriorityQueue queue = new LookupPriorityQueue(num);
       for (TernaryTreeNode ttn : list) {
-        queue.insertWithOverflow(new LookupResult(ttn.token, (Float)ttn.val));
+        queue.insertWithOverflow(new LookupResult(ttn.token, ((Number)ttn.val).longValue()));
       }
       for (LookupResult lr : queue.getResults()) {
         res.add(lr);
@@ -103,7 +113,7 @@ public class TSTLookup extends Lookup {
     } else {
       for (int i = 0; i < maxCnt; i++) {
         TernaryTreeNode ttn = list.get(i);
-        res.add(new LookupResult(ttn.token, (Float)ttn.val));
+        res.add(new LookupResult(ttn.token, ((Number)ttn.val).longValue()));
       }
     }
     return res;
@@ -134,7 +144,7 @@ public class TSTLookup extends Lookup {
       node.token = in.readUTF();
     }
     if ((mask & HAS_VALUE) != 0) {
-      node.val = new Float(in.readFloat());
+      node.val = Long.valueOf(in.readLong());
     }
     if ((mask & LO_KID) != 0) {
       node.loKid = new TernaryTreeNode();
@@ -172,7 +182,7 @@ public class TSTLookup extends Lookup {
     if (node.val != null) mask |= HAS_VALUE;
     out.writeByte(mask);
     if (node.token != null) out.writeUTF(node.token);
-    if (node.val != null) out.writeFloat((Float)node.val);
+    if (node.val != null) out.writeLong(((Number)node.val).longValue());
     // recurse and write kids
     if (node.loKid != null) {
       writeRecursively(out, node.loKid);

@@ -171,7 +171,7 @@ public class Overseer implements NodeStateChangeListener, ShardLeaderListener {
       
       private boolean amILeader() {
         try {
-          ZkNodeProps props = ZkNodeProps.load(zkClient.getData("/overseer_elect/leader", null, null, false));
+          ZkNodeProps props = ZkNodeProps.load(zkClient.getData("/overseer_elect/leader", null, null, true));
           if(myId.equals(props.get("id"))) {
             return true;
           }

@@ -16,6 +16,7 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import org.apache.lucene.util.BytesRefIterator;
 
 /**
@@ -30,5 +31,5 @@ public interface Dictionary {
    * Return all words present in the dictionary
    * @return Iterator
    */
-  BytesRefIterator getWordsIterator();
+  BytesRefIterator getWordsIterator() throws IOException;
 }

@@ -18,6 +18,7 @@ package org.apache.lucene.sandbox.queries;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -94,7 +95,7 @@ public class DuplicateFilter extends Filter {
       } else {
         docs = termsEnum.docs(acceptDocs, docs, false);
         int doc = docs.nextDoc();
-        if (doc != DocsEnum.NO_MORE_DOCS) {
+        if (doc != DocIdSetIterator.NO_MORE_DOCS) {
           if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {
             bits.set(doc);
           } else {
@@ -102,7 +103,7 @@ public class DuplicateFilter extends Filter {
             while (true) {
               lastDoc = doc;
               doc = docs.nextDoc();
-              if (doc == DocsEnum.NO_MORE_DOCS) {
+              if (doc == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
             }
@@ -134,7 +135,7 @@ public class DuplicateFilter extends Filter {
           // unset potential duplicates
           docs = termsEnum.docs(acceptDocs, docs, false);
           int doc = docs.nextDoc();
-          if (doc != DocsEnum.NO_MORE_DOCS) {
+          if (doc != DocIdSetIterator.NO_MORE_DOCS) {
             if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {
               doc = docs.nextDoc();
             }
@@ -145,7 +146,7 @@ public class DuplicateFilter extends Filter {
             lastDoc = doc;
             bits.clear(lastDoc);
             doc = docs.nextDoc();
-            if (doc == DocsEnum.NO_MORE_DOCS) {
+            if (doc == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
           }

@@ -52,7 +52,7 @@ public class CloudSolrServer extends SolrServer {
   private String zkHost; // the zk server address
   private int zkConnectTimeout = 10000;
   private int zkClientTimeout = 10000;
-  private String defaultCollection;
+  private volatile String defaultCollection;
   private LBHttpSolrServer lbServer;
   Random rand = new Random();
   private MultiThreadedHttpConnectionManager connManager;
@@ -141,6 +141,10 @@ public class CloudSolrServer extends SolrServer {
       reqParams = new ModifiableSolrParams();
     }
     String collection = reqParams.get("collection", defaultCollection);
+    
+    if (collection == null) {
+      throw new SolrServerException("No collection param specified on request and no default collection has been set.");
+    }
     
     // Extract each comma separated collection name and store in a List.
     List<String> collectionList = StrUtils.splitSmart(collection, ",", true);

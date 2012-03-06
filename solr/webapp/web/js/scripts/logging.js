@@ -105,9 +105,11 @@ sammy.get
                     }
 
                     var logger_content = logger_tree( null );
+                    
+                    var warn = '<div>TODO, this is not yet implemented.  For now, use <a href="logging" style="color:00AA00;">the old logging UI</a></div><br/>'
 
-                    this
-                        .html( '<ul class="tree jstree">' + logger_content + '</ul>' );
+
+                    this.html( warn + '<ul class="tree jstree">' + logger_content + '</ul>' );
 
                     $( 'li:last-child', this )
                         .addClass( 'jstree-last' );

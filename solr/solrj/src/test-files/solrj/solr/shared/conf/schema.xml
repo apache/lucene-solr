@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="example core ${l10n}" version="1.1">
+<schema name="example core ${l10n:}" version="1.1">
   <types>
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
     <fieldType name="text-FR" class="solr.TextField" positionIncrementGap="100">
@@ -54,7 +54,7 @@
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
     <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="name" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="${ctlField}" type="text-${l10n}" indexed="true" stored="true" multiValued="true"/>
+    <field name="${ctlField:}" type="text-${l10n:EN}" indexed="true" stored="true" multiValued="true"/>
   </fields>
 
   <!-- field to use to determine and enforce document uniqueness. -->

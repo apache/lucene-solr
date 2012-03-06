@@ -46,7 +46,7 @@ import java.util.Set;
  * by number of documents per segment. If you use different {@link MergePolicy}s
  * it might happen that the segment structure of your index is no longer predictable.
  */
-public final class ParallelCompositeReader extends BaseMultiReader<IndexReader> {
+public final class ParallelCompositeReader extends BaseCompositeReader<IndexReader> {
   private final boolean closeSubReaders;
   private final Set<CompositeReader> completeReaderSet =
     Collections.newSetFromMap(new IdentityHashMap<CompositeReader,Boolean>());

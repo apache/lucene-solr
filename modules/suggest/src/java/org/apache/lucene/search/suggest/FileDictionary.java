@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest;
 
 
 import java.io.*;
+import java.util.Comparator;
 
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.TermFreqIterator;
@@ -56,11 +57,11 @@ public class FileDictionary implements Dictionary {
   }
 
   final class FileIterator implements TermFreqIterator {
-    private float curFreq;
+    private long curFreq;
     private final BytesRef spare = new BytesRef();
     
    
-    public float freq() {
+    public long weight() {
       return curFreq;
     }
 
@@ -73,7 +74,12 @@ public class FileDictionary implements Dictionary {
       if (line != null) {
         String[] fields = line.split("\t");
         if (fields.length > 1) {
-          curFreq = Float.parseFloat(fields[1]);
+          // keep reading floats for bw compat
+          try {
+            curFreq = Long.parseLong(fields[1]);
+          } catch (NumberFormatException e) {
+            curFreq = (long)Double.parseDouble(fields[1]);
+          }
           spare.copyChars(fields[0]);
         } else {
           spare.copyChars(line);
@@ -85,6 +91,11 @@ public class FileDictionary implements Dictionary {
         IOUtils.close(in);
         return null;
       }
+    }
+
+    @Override
+    public Comparator<BytesRef> getComparator() {
+      return null;
     }
   }
 

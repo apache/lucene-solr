@@ -27,21 +27,25 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.cjk.CJKWidthFilter;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Mode;
+import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.util.Version;
 
 public class KuromojiAnalyzer extends StopwordAnalyzerBase {
-  private final Segmenter segmenter;
+  private final Mode mode;
   private final Set<String> stoptags;
+  private final UserDictionary userDict;
   
   public KuromojiAnalyzer(Version matchVersion) {
-    this(matchVersion, new Segmenter(), DefaultSetHolder.DEFAULT_STOP_SET, DefaultSetHolder.DEFAULT_STOP_TAGS);
+    this(matchVersion, null, KuromojiTokenizer.DEFAULT_MODE, DefaultSetHolder.DEFAULT_STOP_SET, DefaultSetHolder.DEFAULT_STOP_TAGS);
   }
   
-  public KuromojiAnalyzer(Version matchVersion, Segmenter segmenter, CharArraySet stopwords, Set<String> stoptags) {
+  public KuromojiAnalyzer(Version matchVersion, UserDictionary userDict, Mode mode, CharArraySet stopwords, Set<String> stoptags) {
     super(matchVersion, stopwords);
-    this.segmenter = segmenter;
+    this.userDict = userDict;
+    this.mode = mode;
     this.stoptags = stoptags;
   }
   
@@ -79,7 +83,7 @@ public class KuromojiAnalyzer extends StopwordAnalyzerBase {
   
   @Override
   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    Tokenizer tokenizer = new KuromojiTokenizer(this.segmenter, reader);
+    Tokenizer tokenizer = new KuromojiTokenizer(reader, userDict, true, mode);
     TokenStream stream = new KuromojiBaseFormFilter(tokenizer);
     stream = new KuromojiPartOfSpeechStopFilter(true, stream, stoptags);
     stream = new CJKWidthFilter(stream);

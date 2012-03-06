@@ -21,12 +21,15 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.*;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.ShardResultTransformer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -91,11 +94,14 @@ public class CommandHandler {
 
   }
 
+  private final static Logger logger = LoggerFactory.getLogger(CommandHandler.class);
+
   private final SolrIndexSearcher.QueryCommand queryCommand;
   private final List<Command> commands;
   private final SolrIndexSearcher searcher;
   private final boolean needDocset;
   private final boolean truncateGroups;
+  private boolean partialResults = false;
 
   private DocSet docSet;
 
@@ -129,7 +135,7 @@ public class CommandHandler {
     } else if (needDocset) {
       docSet = computeDocSet(query, luceneFilter, collectors);
     } else {
-      searcher.search(query, luceneFilter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
+      searchWithTimeLimiter(query, luceneFilter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
     }
   }
 
@@ -138,10 +144,10 @@ public class CommandHandler {
     AbstractAllGroupHeadsCollector termAllGroupHeadsCollector =
         TermAllGroupHeadsCollector.create(firstCommand.getKey(), firstCommand.getSortWithinGroup());
     if (collectors.isEmpty()) {
-      searcher.search(query, luceneFilter, termAllGroupHeadsCollector);
+      searchWithTimeLimiter(query, luceneFilter, termAllGroupHeadsCollector);
     } else {
       collectors.add(termAllGroupHeadsCollector);
-      searcher.search(query, luceneFilter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
+      searchWithTimeLimiter(query, luceneFilter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
     }
 
     int maxDoc = searcher.maxDoc();
@@ -158,7 +164,7 @@ public class CommandHandler {
       Collector wrappedCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
       docSetCollector = new DocSetDelegateCollector(maxDoc >> 6, maxDoc, wrappedCollectors);
     }
-    searcher.search(query, luceneFilter, docSetCollector);
+    searchWithTimeLimiter(query, luceneFilter, docSetCollector);
     return docSetCollector.getDocSet();
   }
 
@@ -167,7 +173,24 @@ public class CommandHandler {
     if (docSet != null) {
       queryResult.setDocSet(docSet);
     }
+    queryResult.setPartialResults(partialResults);
     return transformer.transform(commands);
+  }
+
+  /**
+   * Invokes search with the specified filter and collector.  
+   * If a time limit has been specified then wrap the collector in the TimeLimitingCollector
+   */
+  private void searchWithTimeLimiter(final Query query, final Filter luceneFilter, Collector collector) throws IOException {
+    if (queryCommand.getTimeAllowed() > 0 ) {
+      collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), queryCommand.getTimeAllowed());
+    }
+    try {
+      searcher.search(query, luceneFilter, collector);
+    } catch (TimeLimitingCollector.TimeExceededException x) {
+      partialResults = true;
+      logger.warn( "Query: " + query + "; " + x.getMessage() );
+    }
   }
 
 }

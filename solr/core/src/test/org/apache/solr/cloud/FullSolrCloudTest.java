@@ -60,7 +60,12 @@ import org.junit.Ignore;
  */
 @Ignore
 public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
-  
+  @BeforeClass
+  public static void beforeFullSolrCloudTest() throws Exception {
+    // shorten the log output more for this test type
+    if (formatter != null) formatter.setShorterFormat();
+  }
+
   private static final String SHARD2 = "shard2";
   
   private boolean printLayoutOnTearDown = false;
@@ -138,7 +143,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    ignoreException(".*");
+    // ignoreException(".*");
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   

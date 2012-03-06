@@ -21,6 +21,7 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.SolrTestCaseJ4;
@@ -211,12 +212,12 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     
     TokenStream ts = factoryDefault.create(
         new MockTokenizer(new StringReader(testText), MockTokenizer.WHITESPACE, false));
-    BaseTokenTestCase.assertTokenStreamContents(ts, 
+    BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
         new String[] { "I", "borrowed", "5", "400", "00", "540000", "at", "25", "interest", "rate", "interestrate" });
 
     ts = factoryDefault.create(
         new MockTokenizer(new StringReader("foo\u200Dbar"), MockTokenizer.WHITESPACE, false));
-    BaseTokenTestCase.assertTokenStreamContents(ts, 
+    BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
         new String[] { "foo", "bar", "foobar" });
 
     
@@ -229,13 +230,13 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     
     ts = factoryCustom.create(
         new MockTokenizer(new StringReader(testText), MockTokenizer.WHITESPACE, false));
-    BaseTokenTestCase.assertTokenStreamContents(ts, 
+    BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
         new String[] { "I", "borrowed", "$5,400.00", "at", "25%", "interest", "rate", "interestrate" });
     
     /* test custom behavior with a char > 0x7F, because we had to make a larger byte[] */
     ts = factoryCustom.create(
         new MockTokenizer(new StringReader("foo\u200Dbar"), MockTokenizer.WHITESPACE, false));
-    BaseTokenTestCase.assertTokenStreamContents(ts, 
+    BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
         new String[] { "foo\u200Dbar" });
   }
 }

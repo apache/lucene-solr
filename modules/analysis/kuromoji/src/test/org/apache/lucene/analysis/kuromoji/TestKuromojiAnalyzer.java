@@ -18,8 +18,11 @@ package org.apache.lucene.analysis.kuromoji;
  */
 
 import java.io.IOException;
+import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Mode;
 
 public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -41,20 +44,103 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 1, 2, 2,  2 }
       );
   }
-  
+
   /**
    * Test that search mode is enabled and working by default
    */
   public void testDecomposition() throws IOException {
-    assertAnalyzesTo(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "シニアソフトウェアエンジニア",
-        new String[] { "シニア", "ソフトウェア", "エンジニア" }
-    );
+
+    final Analyzer a = new KuromojiAnalyzer(TEST_VERSION_CURRENT, null, Mode.SEARCH,
+                                            KuromojiAnalyzer.getDefaultStopSet(),
+                                            KuromojiAnalyzer.getDefaultStopTags());
+
+    /*
+    //TokenStream ts = a.tokenStream("foo", new StringReader("妹の咲子です。俺と年子で、今受験生です。"));
+    TokenStream ts = a.tokenStream("foo", new StringReader("&#x250cdf66<!--\"<!--#<!--;?><!--#<!--#><!---->?>-->;"));
+    ts.reset();
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+    while(ts.incrementToken()) {
+      System.out.println("  " + termAtt.toString());
+    }
+    System.out.println("DONE PARSE\n\n");
+    */
+
+    // Senior software engineer:
+    assertAnalyzesToPositions(a, "シニアソフトウェアエンジニア",
+                              new String[] { "シニア",
+                                             "シニアソフトウェアエンジニア",
+                                             "ソフトウェア",
+                                             "エンジニア" },
+                              new int[] { 1, 0, 1, 1},
+                              new int[] { 1, 3, 1, 1}
+                              );
+
+    // Kansai International Airport:
+    assertAnalyzesToPositions(a, "関西国際空港",
+                              new String[] { "関西",
+                                             "関西国際空港", // zero pos inc
+                                             "国際",
+                                             "空港" },
+                              new int[] {1, 0, 1, 1},
+                              new int[] {1, 3, 1, 1}
+                              );
+
+    // Konika Minolta Holdings; not quite the right
+    // segmentation (see LUCENE-3726):
+    assertAnalyzesToPositions(a, "コニカミノルタホールディングス",
+                              new String[] { "コニカ",
+                                             "コニカミノルタホールディングス", // zero pos inc
+                                             "ミノルタ", 
+                                             "ホールディングス"},
+                              new int[] {1, 0, 1, 1},
+                              new int[] {1, 3, 1, 1}
+                              );
+
+    // Narita Airport
+    assertAnalyzesToPositions(a, "成田空港",
+                              new String[] { "成田",
+                                             "成田空港",
+                                             "空港" },
+                              new int[] {1, 0, 1},
+                              new int[] {1, 2, 1}
+                              );
+
+    // Kyoto University Baseball Club
+    assertAnalyzesToPositions(new KuromojiAnalyzer(TEST_VERSION_CURRENT), "京都大学硬式野球部",
+                     new String[] { "京都大",
+                                    "学",
+                                    "硬式",
+                                    "野球",
+                                    "部" },
+                              new int[] {1, 1, 1, 1, 1},
+                              new int[] {1, 1, 1, 1, 1});
+    // toDotFile(a, "成田空港", "/mnt/scratch/out.dot");
   }
+
   
   /**
    * blast random strings against the analyzer
    */
   public void testRandom() throws IOException {
-    checkRandomData(random, new KuromojiAnalyzer(TEST_VERSION_CURRENT), atLeast(10000));
+    final Analyzer a = new KuromojiAnalyzer(TEST_VERSION_CURRENT, null, Mode.SEARCH,
+                                            KuromojiAnalyzer.getDefaultStopSet(),
+                                            KuromojiAnalyzer.getDefaultStopTags());
+    checkRandomData(random, a, atLeast(10000));
+  }
+
+  // Copied from TestKuromojiTokenizer, to make sure passing
+  // user dict to analyzer works:
+  public void testUserDict3() throws Exception {
+    // Test entry that breaks into multiple tokens:
+    final Analyzer a = new KuromojiAnalyzer(TEST_VERSION_CURRENT, TestKuromojiTokenizer.readDict(),
+                                            Mode.SEARCH,
+                                            KuromojiAnalyzer.getDefaultStopSet(),
+                                            KuromojiAnalyzer.getDefaultStopTags());
+    assertTokenStreamContents(a.tokenStream("foo", new StringReader("abcd")),
+                              new String[] { "a", "b", "cd"  },
+                              new int[] { 0, 1, 2 },
+                              new int[] { 1, 2, 4 },
+                              new Integer(4)
+    );
   }
 }

@@ -190,7 +190,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         collection1Desc.setCollectionName("collection1");
         CoreDescriptor desc1 = new CoreDescriptor(null, "core" + (i + 1), "");
         desc1.setCloudDescriptor(collection1Desc);
-        zkController.preRegisterSetup(null, desc1, false);
+        zkController.preRegister(desc1);
         ids[i] = zkController.register("core" + (i + 1), desc1);
       }
       
@@ -220,9 +220,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       assertNotNull("New leader was null.",
           reader.getLeaderUrl("collection1", "shard1", 15000));
 
-      Thread.sleep(1000);
+      Thread.sleep(2000);
       assertEquals("shard was not unregistered", 1, zkController.getZkStateReader().getCloudState().getSlice("collection1", "shard1").getShards().size());
     } finally {
+      System.clearProperty("solrcloud.skip.autorecovery");
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+      System.clearProperty("bootstrap_confdir");
       if (DEBUG) {
         if (zkController != null) {
           zkClient.printLayoutToStdOut();
@@ -235,8 +238,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController.close();
       }
       server.shutdown();
-      System.clearProperty("solrcloud.skip.autorecovery");
-      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
     }
   }
 

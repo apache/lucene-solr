@@ -17,9 +17,6 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.util.*;
-
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.codecs.*;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;

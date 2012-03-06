@@ -25,12 +25,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosReader;
-import org.apache.lucene.codecs.lucene3x.Lucene3xPostingsFormat;
-import org.apache.lucene.codecs.lucene3x.PreFlexRWCodec;
-import org.apache.lucene.codecs.lucene3x.SegmentTermEnum;
-import org.apache.lucene.codecs.lucene3x.TermInfosReaderIndex;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.CorruptIndexException;
@@ -86,8 +81,8 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     directory = newDirectory();
 
     config.setCodec(new PreFlexRWCodec());
-    // turn off compound file, this test will open some index files directly.
     LogMergePolicy mp = newLogMergePolicy();
+    // turn off compound file, this test will open some index files directly.
     mp.setUseCompoundFile(false);
     config.setMergePolicy(mp);
 
@@ -182,9 +177,16 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     int termPosition = index * termIndexInterval * indexDivisor;
     for (int i = 0; i < termPosition; i++) {
       // TODO: this test just uses random terms, so this is always possible
-      assumeTrue("ran out of terms.", termEnum.next());
+      assumeTrue("ran out of terms", termEnum.next());
     }
-    return termEnum.term();
+    final Term term = termEnum.term();
+    // An indexed term is only written when the term after
+    // it exists, so, if the number of terms is 0 mod
+    // termIndexInterval, the last index term will not be
+    // written; so we require a term after this term
+    // as well:
+    assumeTrue("ran out of terms", termEnum.next());
+    return term;
   }
 
   private static void populate(Directory directory, IndexWriterConfig config) throws CorruptIndexException, LockObtainFailedException, IOException {

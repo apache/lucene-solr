@@ -281,4 +281,62 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 	            , "//lst[@name='false']/double[@name='stddev'][.='0.0']"
 	    );
 	  }
+
+  public void testFieldStatisticsResultsNumericFieldAlwaysMissing() throws Exception {
+    SolrCore core = h.getCore();
+    assertU(adoc("id", "1"));
+    assertU(adoc("id", "2"));
+    assertU(adoc("id", "3"));
+    assertU(adoc("id", "4"));
+    assertU(commit());
+
+    Map<String, String> args = new HashMap<String, String>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, "active_i");
+    args.put("indent", "true");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+
+    assertQ("test string statistics values", req,
+        "//null[@name='active_i'][.='']");
+  }
+
+  public void testFieldStatisticsResultsStringFieldAlwaysMissing() throws Exception {
+    SolrCore core = h.getCore();
+    assertU(adoc("id", "1"));
+    assertU(adoc("id", "2"));
+    assertU(adoc("id", "3"));
+    assertU(adoc("id", "4"));
+    assertU(commit());
+
+    Map<String, String> args = new HashMap<String, String>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, "active_s");
+    args.put("indent", "true");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+
+    assertQ("test string statistics values", req,
+        "//null[@name='active_s'][.='']");
+  }
+
+  //SOLR-3160
+  public void testFieldStatisticsResultsDateFieldAlwaysMissing() throws Exception {
+    SolrCore core = h.getCore();
+
+    assertU(adoc("id", "1"));
+    assertU(adoc("id", "2"));
+    assertU(adoc("id", "3"));
+    assertU(commit());
+
+    Map<String, String> args = new HashMap<String, String>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, "active_dt");
+    args.put("indent", "true");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+
+    assertQ("test string statistics values", req,
+        "//null[@name='active_dt'][.='']");
+  }
 }

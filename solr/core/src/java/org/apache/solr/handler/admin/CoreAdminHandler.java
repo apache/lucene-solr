@@ -21,23 +21,21 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.CloudState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -53,6 +51,10 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -73,6 +75,8 @@ import org.slf4j.LoggerFactory;
 public class CoreAdminHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(CoreAdminHandler.class);
   protected final CoreContainer coreContainer;
+  private ShardHandlerFactory shardHandlerFactory;
+  private ShardHandler shardHandler;
 
   public CoreAdminHandler() {
     super();
@@ -89,6 +93,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    */
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
+    shardHandlerFactory = coreContainer.getShardHandlerFactory();
+    shardHandler = shardHandlerFactory.getShardHandler();
   }
 
 
@@ -746,26 +752,58 @@ public class CoreAdminHandler extends RequestHandlerBase {
       SolrQueryResponse rsp) throws IOException, InterruptedException, SolrServerException {
     // TODO: finish this and tests
     SolrParams params = req.getParams();
+    final ModifiableSolrParams newParams = new ModifiableSolrParams(params);
+    newParams.remove("action");
     
     SolrParams required = params.required();
-    String path = required.get("path");
-    String shard = params.get("shard");
+    final String subAction = required.get("subAction");
+
     String collection = required.get("collection");
+    
+    newParams.set(CoreAdminParams.ACTION, subAction);
+
     
     SolrCore core = req.getCore();
     ZkController zkController = core.getCoreDescriptor().getCoreContainer()
         .getZkController();
-    if (shard != null) {
-      List<ZkCoreNodeProps> replicas = zkController.getZkStateReader().getReplicaProps(
-          collection, shard, zkController.getNodeName(), core.getName());
-      
-      for (ZkCoreNodeProps node : replicas) {
-        CommonsHttpSolrServer server = new CommonsHttpSolrServer(node.getCoreUrl() + path);
-        QueryRequest qr = new QueryRequest();
-        server.request(qr);
-      }
+    
+    CloudState cloudState = zkController.getCloudState();
+    Map<String,Slice> slices = cloudState.getCollectionStates().get(collection);
+    for (Map.Entry<String,Slice> entry : slices.entrySet()) {
+      Slice slice = entry.getValue();
+      Map<String,ZkNodeProps> shards = slice.getShards();
+      Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
+      for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
+        final ZkNodeProps node = shardEntry.getValue();
+        if (cloudState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
+          newParams.set(CoreAdminParams.CORE, node.get(ZkStateReader.CORE_NAME_PROP));
+          String replica = node.get(ZkStateReader.BASE_URL_PROP);
+          ShardRequest sreq = new ShardRequest();
+          newParams.set("qt", "/admin/cores");
+          sreq.purpose = 1;
+          // TODO: this sucks
+          if (replica.startsWith("http://"))
+            replica = replica.substring(7);
+          sreq.shards = new String[]{replica};
+          sreq.actualShards = sreq.shards;
+          sreq.params = newParams;
 
+          shardHandler.submit(sreq, replica, sreq.params);
+        }
+      }
     }
+ 
+    ShardResponse srsp;
+    do {
+      srsp = shardHandler.takeCompletedOrError();
+      if (srsp != null) {
+        Throwable e = srsp.getException();
+        if (e != null) {
+          log.error("Error talking to shard: " + srsp.getShard(), e);
+        }
+      }
+    } while(srsp != null);
+    
   }
 
   protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname) throws IOException {

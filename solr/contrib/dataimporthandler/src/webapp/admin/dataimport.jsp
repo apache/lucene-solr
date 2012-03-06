@@ -47,7 +47,7 @@ Select handler:
 
 <frameset cols = "50%, 50%">
   <frame src ="debug.jsp?handler=<%=handler%>" />
-  <frame src ="../select?qt=<%=handler%>&command=status"  name="result"/>
+  <frame src ="..<%=handler%>?command=status"  name="result"/>
 </frameset>
 <% } %>
 </html>

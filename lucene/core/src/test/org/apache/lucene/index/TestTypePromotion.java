@@ -97,9 +97,8 @@ public class TestTypePromotion extends LuceneTestCase {
         writer.addIndexes(dir_2);
       } else {
         // do a real merge here
-        IndexReader open = IndexReader.open(dir_2);
-        // TODO: wrap in a better way
-        writer.addIndexes(newSearcher(open).getIndexReader());
+        IndexReader open = maybeWrapReader(IndexReader.open(dir_2));
+        writer.addIndexes(open);
         open.close();
       }
       dir_2.close();

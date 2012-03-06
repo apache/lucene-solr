@@ -31,6 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -69,18 +70,18 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertEquals(1, termsEnum.totalTermFreq());
 
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, true);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(8, dpEnum.startOffset());
     assertEquals(8, dpEnum.endOffset());
-    assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
 
     // Token "abcd" occurred three times
     assertEquals(new BytesRef("abcd"), termsEnum.next());
     dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
     assertEquals(3, termsEnum.totalTermFreq());
 
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(0, dpEnum.startOffset());
     assertEquals(4, dpEnum.endOffset());
@@ -93,7 +94,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertEquals(8, dpEnum.startOffset());
     assertEquals(12, dpEnum.endOffset());
 
-    assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
     assertNull(termsEnum.next());
     r.close();
     dir.close();
@@ -120,7 +121,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, true);
     assertEquals(2, termsEnum.totalTermFreq());
 
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(0, dpEnum.startOffset());
     assertEquals(4, dpEnum.endOffset());
@@ -128,7 +129,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     dpEnum.nextPosition();
     assertEquals(5, dpEnum.startOffset());
     assertEquals(9, dpEnum.endOffset());
-    assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
 
     r.close();
     dir.close();
@@ -155,7 +156,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, true);
     assertEquals(2, termsEnum.totalTermFreq());
 
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(0, dpEnum.startOffset());
     assertEquals(4, dpEnum.endOffset());
@@ -163,7 +164,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     dpEnum.nextPosition();
     assertEquals(8, dpEnum.startOffset());
     assertEquals(12, dpEnum.endOffset());
-    assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
 
     r.close();
     dir.close();
@@ -194,7 +195,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, true);
     assertEquals(2, termsEnum.totalTermFreq());
 
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(0, dpEnum.startOffset());
     assertEquals(4, dpEnum.endOffset());
@@ -202,7 +203,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     dpEnum.nextPosition();
     assertEquals(8, dpEnum.startOffset());
     assertEquals(12, dpEnum.endOffset());
-    assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
 
     r.close();
     dir.close();
@@ -230,7 +231,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, true);
     assertEquals(2, termsEnum.totalTermFreq());
 
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(0, dpEnum.startOffset());
     assertEquals(4, dpEnum.endOffset());
@@ -238,7 +239,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     dpEnum.nextPosition();
     assertEquals(9, dpEnum.startOffset());
     assertEquals(13, dpEnum.endOffset());
-    assertEquals(DocsEnum.NO_MORE_DOCS, dpEnum.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
 
     r.close();
     dir.close();
@@ -266,21 +267,21 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, true);
 
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(0, dpEnum.startOffset());
     assertEquals(4, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
     dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(11, dpEnum.startOffset());
     assertEquals(17, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
     dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(18, dpEnum.startOffset());
     assertEquals(21, dpEnum.endOffset());
@@ -312,14 +313,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, true);
 
     assertEquals(1, (int) termsEnum.totalTermFreq());
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(1, dpEnum.startOffset());
     assertEquals(7, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
     dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(8, dpEnum.startOffset());
     assertEquals(11, dpEnum.endOffset());
@@ -355,14 +356,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, true);
 
     assertEquals(1, (int) termsEnum.totalTermFreq());
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(0, dpEnum.startOffset());
     assertEquals(4, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
     dpEnum = termsEnum.docsAndPositions(null, dpEnum, true);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(6, dpEnum.startOffset());
     assertEquals(12, dpEnum.endOffset());

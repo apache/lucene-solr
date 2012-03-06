@@ -218,7 +218,7 @@ public class TestPositionIncrement extends LuceneTestCase {
                                                   false);
     
     int count = 0;
-    assertTrue(tp.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS);
+    assertTrue(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     // "a" occurs 4 times
     assertEquals(4, tp.freq());
     int expected = 0;
@@ -228,7 +228,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(6, tp.nextPosition());
 
     // only one doc has "a"
-    assertEquals(DocsAndPositionsEnum.NO_MORE_DOCS, tp.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, tp.nextDoc());
 
     IndexSearcher is = newSearcher(readerFromWriter);
   

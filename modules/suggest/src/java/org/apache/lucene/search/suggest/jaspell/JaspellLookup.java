@@ -28,7 +28,6 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.search.spell.SortedIterator;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.UnsortedTermFreqIteratorWrapper;
@@ -45,7 +44,7 @@ public class JaspellLookup extends Lookup {
 
   @Override
   public void build(TermFreqIterator tfit) throws IOException {
-    if (tfit instanceof SortedIterator) {
+    if (tfit.getComparator() != null) {
       // make sure it's unsorted
       // WTF - this could result in yet another sorted iteration....
       tfit = new UnsortedTermFreqIteratorWrapper(tfit);
@@ -56,30 +55,28 @@ public class JaspellLookup extends Lookup {
     final CharsRef charsSpare = new CharsRef();
 
     while ((spare = tfit.next()) != null) {
-      float freq = tfit.freq();
+      final long weight = tfit.weight();
       if (spare.length == 0) {
         continue;
       }
       charsSpare.grow(spare.length);
       UnicodeUtil.UTF8toUTF16(spare.bytes, spare.offset, spare.length, charsSpare);
-      trie.put(charsSpare.toString(), new Float(freq));
+      trie.put(charsSpare.toString(), Long.valueOf(weight));
     }
   }
 
-  @Override
-  public boolean add(String key, Object value) {
+  public boolean add(CharSequence key, Object value) {
     trie.put(key, value);
     // XXX
     return false;
   }
 
-  @Override
-  public Object get(String key) {
+  public Object get(CharSequence key) {
     return trie.get(key);
   }
 
   @Override
-  public List<LookupResult> lookup(String key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
     List<LookupResult> res = new ArrayList<LookupResult>();
     List<String> list;
     int count = onlyMorePopular ? num * 2 : num;
@@ -96,8 +93,8 @@ public class JaspellLookup extends Lookup {
     if (onlyMorePopular) {
       LookupPriorityQueue queue = new LookupPriorityQueue(num);
       for (String s : list) {
-        float freq = (Float)trie.get(s);
-        queue.insertWithOverflow(new LookupResult(s, freq));
+        long freq = ((Number)trie.get(s)).longValue();
+        queue.insertWithOverflow(new LookupResult(new CharsRef(s), freq));
       }
       for (LookupResult lr : queue.getResults()) {
         res.add(lr);
@@ -105,8 +102,8 @@ public class JaspellLookup extends Lookup {
     } else {
       for (int i = 0; i < maxCnt; i++) {
         String s = list.get(i);
-        float freq = (Float)trie.get(s);
-        res.add(new LookupResult(s, freq));
+        long freq = ((Number)trie.get(s)).longValue();
+        res.add(new LookupResult(new CharsRef(s), freq));
       }      
     }
     return res;
@@ -132,7 +129,7 @@ public class JaspellLookup extends Lookup {
     node.splitchar = in.readChar();
     byte mask = in.readByte();
     if ((mask & HAS_VALUE) != 0) {
-      node.data = new Float(in.readFloat());
+      node.data = Long.valueOf(in.readLong());
     }
     if ((mask & LO_KID) != 0) {
       TSTNode kid = trie.new TSTNode('\0', node);
@@ -172,7 +169,7 @@ public class JaspellLookup extends Lookup {
     if (node.data != null) mask |= HAS_VALUE;
     out.writeByte(mask);
     if (node.data != null) {
-      out.writeFloat((Float)node.data);
+      out.writeLong(((Number)node.data).longValue());
     }
     writeRecursively(out, node.relatives[TSTNode.LOKID]);
     writeRecursively(out, node.relatives[TSTNode.EQKID]);

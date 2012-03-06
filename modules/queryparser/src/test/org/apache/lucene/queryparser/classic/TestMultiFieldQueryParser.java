@@ -117,7 +117,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     assertEquals("(b:one t:one) f:two", q.toString());
 
     // AND mode:
-    mfqp.setDefaultOperator(QueryParser.AND_OPERATOR);
+    mfqp.setDefaultOperator(QueryParserBase.AND_OPERATOR);
     q = mfqp.parse("one two");
     assertEquals("+(b:one t:one) +(b:two t:two)", q.toString());
     q = mfqp.parse("\"aa bb cc\" \"dd ee\"");

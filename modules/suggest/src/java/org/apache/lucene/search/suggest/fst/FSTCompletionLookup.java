@@ -41,7 +41,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * An adapter from {@link Lookup} API to {@link FSTCompletion}.
  * 
  * <p>This adapter differs from {@link FSTCompletion} in that it attempts
- * to discretize any "weights" as passed from in {@link TermFreqIterator#freq()}
+ * to discretize any "weights" as passed from in {@link TermFreqIterator#weight()}
  * to match the number of buckets. For the rationale for bucketing, see
  * {@link FSTCompletion}.
  * 
@@ -59,6 +59,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * use {@link FSTCompletion} directly or {@link TSTLookup}, for example.
  * 
  * @see FSTCompletion
+ * @lucene.experimental
  */
 public class FSTCompletionLookup extends Lookup {
   /** 
@@ -171,7 +172,7 @@ public class FSTCompletionLookup extends Lookup {
         }
 
         output.reset(buffer);
-        output.writeInt(FloatMagic.toSortable(tfit.freq()));
+        output.writeInt(encodeWeight(tfit.weight()));
         output.writeBytes(spare.bytes, spare.offset, spare.length);
         writer.write(buffer, 0, output.getPosition());
       }
@@ -188,13 +189,13 @@ public class FSTCompletionLookup extends Lookup {
       reader = new Sort.ByteSequencesReader(tempSorted);
       long line = 0;
       int previousBucket = 0;
-      float previousScore = 0;
+      int previousScore = 0;
       ByteArrayDataInput input = new ByteArrayDataInput();
       BytesRef tmp1 = new BytesRef();
       BytesRef tmp2 = new BytesRef();
       while (reader.read(tmp1)) {
         input.reset(tmp1.bytes);
-        float currentScore = FloatMagic.fromSortable(input.readInt());
+        int currentScore = input.readInt();
 
         int bucket;
         if (line > 0 && currentScore == previousScore) {
@@ -230,9 +231,17 @@ public class FSTCompletionLookup extends Lookup {
       tempSorted.delete();
     }
   }
+  
+  /** weight -> cost */
+  private static int encodeWeight(long value) {
+    if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+      throw new UnsupportedOperationException("cannot encode value: " + value);
+    }
+    return (int)value;
+  }
 
   @Override
-  public List<LookupResult> lookup(String key, boolean higherWeightsFirst, int num) {
+  public List<LookupResult> lookup(CharSequence key, boolean higherWeightsFirst, int num) {
     final List<Completion> completions;
     if (higherWeightsFirst) {
       completions = higherWeightsCompletion.lookup(key, num);
@@ -241,25 +250,18 @@ public class FSTCompletionLookup extends Lookup {
     }
     
     final ArrayList<LookupResult> results = new ArrayList<LookupResult>(completions.size());
+    CharsRef spare = new CharsRef();
     for (Completion c : completions) {
-      results.add(new LookupResult(c.utf8.utf8ToString(), c.bucket));
+      spare.grow(c.utf8.length);
+      UnicodeUtil.UTF8toUTF16(c.utf8, spare);
+      results.add(new LookupResult(spare.toString(), c.bucket));
     }
     return results;
   }
 
-  @Override
-  public boolean add(String key, Object value) {
-    // Not supported.
-    return false;
-  }
-
-  @Override
-  public Float get(String key) {
-    Integer bucket = normalCompletion.getBucket(key);
-    if (bucket == null)
-      return null;
-    else
-      return (float) normalCompletion.getBucket(key) / normalCompletion.getBucketCount();
+  public Object get(CharSequence key) {
+    final int bucket = normalCompletion.getBucket(key);
+    return bucket == -1 ? null : Long.valueOf(bucket);
   }
 
   /**

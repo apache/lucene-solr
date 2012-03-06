@@ -90,7 +90,7 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
   }
 
   @Override
-  public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+  public FieldComparator<String> setNextReader(AtomicReaderContext context) throws IOException {
     currentDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
     return this;
   }

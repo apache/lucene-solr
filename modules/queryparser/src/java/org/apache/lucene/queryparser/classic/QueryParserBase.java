@@ -1187,7 +1187,7 @@ public abstract class QueryParserBase {
       // These characters are part of the query syntax and must be escaped
       if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
         || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
-        || c == '*' || c == '?' || c == '|' || c == '&') {
+        || c == '*' || c == '?' || c == '|' || c == '&' || c == '/') {
         sb.append('\\');
       }
       sb.append(c);

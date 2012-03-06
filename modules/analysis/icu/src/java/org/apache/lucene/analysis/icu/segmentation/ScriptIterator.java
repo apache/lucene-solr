@@ -29,6 +29,7 @@ package org.apache.lucene.analysis.icu.segmentation;
  */
 
 import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UCharacterEnums.ECharacterCategory;
 import com.ibm.icu.lang.UScript;
 import com.ibm.icu.text.UTF16;
 
@@ -110,7 +111,7 @@ final class ScriptIterator {
        * value — should inherit the script value of its base character.
        */
       if (isSameScript(scriptCode, sc)
-          || UCharacter.getType(ch) == UCharacter.NON_SPACING_MARK) {
+          || UCharacter.getType(ch) == ECharacterCategory.NON_SPACING_MARK) {
         index += UTF16.getCharCount(ch);
 
         /*

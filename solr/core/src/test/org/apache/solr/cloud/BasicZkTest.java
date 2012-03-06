@@ -46,8 +46,12 @@ public class BasicZkTest extends AbstractZkTestCase {
   
   @Test
   public void testBasic() throws Exception {
+    
     // test using ZooKeeper
     assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
+    
+    // for the really slow/busy computer, we wait to make sure we have a leader before starting
+    h.getCoreContainer().getZkController().getZkStateReader().getLeaderUrl("collection1", "shard1", 30000);
     
     ZkController zkController = h.getCoreContainer().getZkController();
     
@@ -154,6 +158,7 @@ public class BasicZkTest extends AbstractZkTestCase {
       
     }
     
+    zkController.getZkClient().printLayoutToStdOut();
   }
   
   public SolrQueryRequest request(String... q) {

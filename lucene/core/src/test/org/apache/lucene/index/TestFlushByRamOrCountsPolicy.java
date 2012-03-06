@@ -39,7 +39,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    lineDocFile = new LineFileDocs(random);
+    lineDocFile = new LineFileDocs(random, defaultCodecSupportsDocValues());
   }
   
   @AfterClass
@@ -323,6 +323,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
         }
         writer.commit();
       } catch (Throwable ex) {
+        System.out.println("FAILED exc:");
+        ex.printStackTrace(System.out);
         throw new RuntimeException(ex);
       }
     }

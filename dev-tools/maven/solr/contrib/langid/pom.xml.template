@@ -36,9 +36,20 @@
     Its purpose is to identify language from documents and tag the document with language code.
   </description>
   <properties>
-    <module-directory>solr/contrib/solr-langid</module-directory>
+    <module-directory>solr/contrib/langid</module-directory>
     <build-directory>../../build/contrib/solr-langid</build-directory>
   </properties>
+  <scm>
+    <connection>
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </connection>
+    <developerConnection>
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </developerConnection>
+    <url>
+      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
+    </url>
+  </scm>
   <dependencies>
     <dependency>
       <!-- lucene-test-framework dependency must be declared before lucene-core -->

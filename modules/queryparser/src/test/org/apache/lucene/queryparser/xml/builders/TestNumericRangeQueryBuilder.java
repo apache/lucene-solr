@@ -46,7 +46,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
     fail("Expected to throw " + ParserException.class);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterInt() throws Exception {
     NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
 
@@ -75,7 +75,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
     assertFalse(numRangeFilter2.includesMax());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterLong() throws Exception {
     NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
 
@@ -103,7 +103,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
     assertFalse(numRangeFilter2.includesMax());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterDouble() throws Exception {
     NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
 
@@ -133,7 +133,7 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
     assertFalse(numRangeFilter2.includesMax());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterFloat() throws Exception {
     NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
 

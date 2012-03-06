@@ -135,7 +135,7 @@ public class SnapShooter {
     Collections.sort(dirs);
     int i=1;
     for(OldBackupDirectory dir : dirs) {
-      if( i > numberToKeep-1 ) {
+      if( i++ > numberToKeep-1 ) {
         SnapPuller.delTree(dir.dir);
       }
     }   

@@ -37,6 +37,11 @@
     width: 30%;
 }
 
+#content #cloud .show #tree
+{
+    overflow: hidden;
+}
+
 #content #cloud #file-content
 {
     display: none;

@@ -38,6 +38,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -83,7 +84,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
   protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     //Take all completed form fields and add to a Properties object
     Properties completedFormFields = new Properties();
-    Enumeration pNames = request.getParameterNames();
+    Enumeration<?> pNames = request.getParameterNames();
     while (pNames.hasMoreElements()) {
       String propName = (String) pNames.nextElement();
       String value = request.getParameter(propName);
@@ -147,7 +148,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
 
     //open searcher
     // this example never closes it reader!
-    IndexReader reader = IndexReader.open(rd);
+    IndexReader reader = DirectoryReader.open(rd);
     searcher = new IndexSearcher(reader);
   }
 }

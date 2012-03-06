@@ -40,6 +40,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reusable base class for UpdateProcessors that will consider 
@@ -57,7 +59,8 @@ import org.apache.solr.update.AddUpdateCommand;
  */
 public abstract class FieldMutatingUpdateProcessor 
   extends UpdateRequestProcessor {
-  
+  public final static Logger log = LoggerFactory.getLogger(FieldMutatingUpdateProcessor.class);
+
   private final FieldNameSelector selector;
   public FieldMutatingUpdateProcessor(FieldNameSelector selector,
                                       UpdateRequestProcessor next) {

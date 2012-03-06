@@ -120,7 +120,7 @@ public abstract class ValueSource implements Serializable {
     }
 
     @Override
-    public FieldComparator newComparator(String fieldname, int numHits,
+    public FieldComparator<Double> newComparator(String fieldname, int numHits,
                                          int sortPos, boolean reversed) throws IOException {
       return new ValueSourceComparator(context, numHits);
     }

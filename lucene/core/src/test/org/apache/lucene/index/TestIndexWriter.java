@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,8 +39,8 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -968,14 +969,14 @@ public class TestIndexWriter extends LuceneTestCase {
     assertNotNull(termsEnum.next());
     DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
     assertNotNull(dpEnum);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
     assertEquals(100, dpEnum.nextPosition());
 
     assertNotNull(termsEnum.next());
     dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
     assertNotNull(dpEnum);
-    assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
     assertEquals(101, dpEnum.nextPosition());
     assertNull(termsEnum.next());
@@ -1784,6 +1785,19 @@ public class TestIndexWriter extends LuceneTestCase {
     doc = new Document();
     doc.add(new Field("field", "a b c", docsOnly));
     w.addDocument(doc);
+    w.close();
+    dir.close();
+  }
+
+  public void testOnlyUpdateDocuments() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir,
+                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+
+    final List<Document> docs = new ArrayList<Document>();
+    docs.add(new Document());
+    w.updateDocuments(new Term("foo", "bar"),
+                      docs);
     w.close();
     dir.close();
   }
