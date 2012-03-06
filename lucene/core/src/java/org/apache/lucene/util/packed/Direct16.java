@@ -69,6 +69,7 @@ class Direct16 extends PackedInts.ReaderImpl
   }
 
   public long get(final int index) {
+    assert index >= 0 && index < size();
     return 0xFFFFL & values[index];
   }
 

@@ -61,6 +61,7 @@ class Direct64 extends PackedInts.ReaderImpl
   }
 
   public long get(final int index) {
+    assert index >= 0 && index < size();
     return values[index];
   }
 

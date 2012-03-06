@@ -63,8 +63,8 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     NUMBER_OF_FIELDS = atLeast(Math.max(10, 3*termIndexInterval*indexDivisor/NUMBER_OF_DOCUMENTS));
     
     directory = newDirectory();
-    // turn off compound file, this test will open some index files directly.
     LogMergePolicy mp = newLogMergePolicy();
+    // turn off compound file, this test will open some index files directly.
     mp.setUseCompoundFile(false);
     config.setMergePolicy(mp);
 
@@ -156,7 +156,14 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
       // TODO: this test just uses random terms, so this is always possible
       assumeTrue("ran out of terms.", termEnum.next());
     }
-    return termEnum.term();
+    final Term term = termEnum.term();
+    // An indexed term is only written when the term after
+    // it exists, so, if the number of terms is 0 mod
+    // termIndexInterval, the last index term will not be
+    // written; so we require a term after this term
+    // as well:
+    assumeTrue("ran out of terms", termEnum.next());
+    return term;
   }
 
   private static void populate(Directory directory, IndexWriterConfig config) throws CorruptIndexException, LockObtainFailedException, IOException {
