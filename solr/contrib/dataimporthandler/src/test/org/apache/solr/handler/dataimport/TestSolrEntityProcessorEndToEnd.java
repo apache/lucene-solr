@@ -152,7 +152,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     
     try {
       addDocumentsToSolr(generateSolrDocuments(7));
-      runFullImport(generateDIHConfig("query='*:*' fields='id' rows='2'"));
+      runFullImport(generateDIHConfig("query='*:*' fl='id' rows='2'"));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -178,6 +178,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     try {
       MockDataSource.setIterator("select * from x", DB_DOCS.iterator());
       addDocumentsToSolr(SOLR_DOCS);
+      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'"));
       runFullImport(DIH_CONFIG_TAGS_INNER_ENTITY);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -218,6 +219,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     assertQ(req("*:*"), "//result[@numFound='0']");
     
     try {
+      runFullImport(generateDIHConfig("query='bogus:3' rows='2' fl='id,desc' onError='abort'"));
       runFullImport(generateDIHConfig("query='bogus:3' rows='2' fields='id,desc' onError='abort'"));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -233,6 +235,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     List<Map<String,Object>> docList = generateSolrDocuments(numDocs);
     
     try {
+      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'"));
       addDocumentsToSolr(docList);
       Map<String,String> map = new HashMap<String,String>();
       map.put("rows", "50");
