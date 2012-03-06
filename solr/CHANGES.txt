@@ -543,6 +543,8 @@ Optimizations
 
 Bug Fixes
 ----------------------
+* SOLR-3187 SystemInfoHandler leaks filehandles (siren)
+
 * SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
 
 * SOLR-2819: Improved speed of parsing hex entities in HTMLStripCharFilter
