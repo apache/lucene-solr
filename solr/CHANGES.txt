@@ -123,6 +123,8 @@ Optimizations
 
 Bug Fixes
 ----------------------
+* SOLR-3187 SystemInfoHandler leaks filehandles (siren)
+
 * LUCENE-3820: Fixed invalid position indexes by reimplementing PatternReplaceCharFilter.
              This change also drops real support for boundary characters -- all input is prebuffered
              for pattern matching. (Dawid Weiss)
