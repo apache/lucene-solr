@@ -20,7 +20,6 @@ package org.apache.lucene.search.grouping.dv;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type; // javadocs
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
@@ -239,7 +238,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
 
       ordSet.clear();
       for (BytesRef countedGroup : groups) {
-        int ord = this.source.getByValue(countedGroup, spare);
+        int ord = this.source.getOrdByValue(countedGroup, spare);
         if (ord >= 0) {
           ordSet.put(ord);
         }

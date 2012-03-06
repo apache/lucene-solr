@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.apache.lucene.queryparser.util.QueryParserTestBase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -47,7 +48,7 @@ public class TestExtendableQueryParser extends QueryParserTestBase {
     QueryParser qp = extensions == null ? new ExtendableQueryParser(
         TEST_VERSION_CURRENT, "field", a) : new ExtendableQueryParser(
         TEST_VERSION_CURRENT, "field", a, extensions);
-    qp.setDefaultOperator(QueryParser.OR_OPERATOR);
+    qp.setDefaultOperator(QueryParserBase.OR_OPERATOR);
     return qp;
   }
 

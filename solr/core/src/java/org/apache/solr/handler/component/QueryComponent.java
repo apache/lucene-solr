@@ -31,6 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -44,6 +45,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
@@ -74,6 +76,8 @@ import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTrans
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URL;
 import java.util.*;
 
@@ -768,11 +772,50 @@ public class QueryComponent extends SearchComponent
       ShardFieldSortedHitQueue queue;
       queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount());
 
+      NamedList<Object> shardInfo = null;
+      if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
+        shardInfo = new SimpleOrderedMap<Object>();
+        rb.rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);
+      }
+      
       long numFound = 0;
       Float maxScore=null;
       for (ShardResponse srsp : sreq.responses) {
-        SolrDocumentList docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
+        SolrDocumentList docs = null;
 
+        if(shardInfo!=null) {
+          SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
+          
+          if (srsp.getException() != null) {
+            Throwable t = srsp.getException();
+            if(t instanceof SolrServerException) {
+              t = ((SolrServerException)t).getCause();
+            }
+            nl.add("error", t.toString() );
+            StringWriter trace = new StringWriter();
+            t.printStackTrace(new PrintWriter(trace));
+            nl.add("trace", trace.toString() );
+          }
+          else {
+            docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
+            nl.add("numFound", docs.getNumFound());
+            nl.add("maxScore", docs.getMaxScore());
+          }
+          if(srsp.getSolrResponse()!=null) {
+            nl.add("time", srsp.getSolrResponse().getElapsedTime());
+          }
+
+          shardInfo.add(srsp.getShard(), nl);
+        }
+        // now that we've added the shard info, let's only proceed if we have no error.
+        if (srsp.getException() != null) {
+          continue;
+        }
+
+        if (docs == null) { // could have been initialized in the shards info block above
+          docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
+        }
+        
         // calculate global maxScore and numDocsFound
         if (docs.getMaxScore() != null) {
           maxScore = maxScore==null ? docs.getMaxScore() : Math.max(maxScore, docs.getMaxScore());

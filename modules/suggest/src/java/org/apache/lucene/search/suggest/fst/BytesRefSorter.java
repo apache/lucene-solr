@@ -18,13 +18,16 @@ package org.apache.lucene.search.suggest.fst;
  */
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * Collects {@link BytesRef} and then allows one to iterate over their sorted order. Implementations
- * of this interface will be called in a single-threaded scenario.  
+ * of this interface will be called in a single-threaded scenario.
+ * @lucene.experimental
+ * @lucene.internal  
  */
 public interface BytesRefSorter {
   /**
@@ -42,5 +45,7 @@ public interface BytesRefSorter {
    * 
    * @throws IOException If an I/O exception occurs.
    */
-  Iterator<BytesRef> iterator() throws IOException;
+   BytesRefIterator iterator() throws IOException;
+   
+   Comparator<BytesRef> getComparator();
 }

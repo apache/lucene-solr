@@ -39,4 +39,10 @@ public interface ShardParams {
   
   /** query type for shard requests */
   public static final String SHARDS_QT = "shards.qt";
+  
+  /** Request detailed match info for each shard (true/false) */
+  public static final String SHARDS_INFO = "shards.info";
+
+  /** Should things fail if there is an error? (true/false) */
+  public static final String SHARDS_TOLERANT = "shards.tolerant";
 }

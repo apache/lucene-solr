@@ -56,7 +56,7 @@ public class TermSpans extends Spans {
         return false;
       }
       doc = postings.nextDoc();
-      if (doc == DocsAndPositionsEnum.NO_MORE_DOCS) {
+      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
         return false;
       }
       freq = postings.freq();
@@ -70,7 +70,7 @@ public class TermSpans extends Spans {
   @Override
   public boolean skipTo(int target) throws IOException {
     doc = postings.advance(target);
-    if (doc == DocsAndPositionsEnum.NO_MORE_DOCS) {
+    if (doc == DocIdSetIterator.NO_MORE_DOCS) {
       return false;
     }
 

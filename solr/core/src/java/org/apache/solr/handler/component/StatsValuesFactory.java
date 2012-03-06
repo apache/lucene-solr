@@ -354,7 +354,9 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    */
   protected void addTypeSpecificStats(NamedList<Object> res) {
     res.add("sum", new Date(sum));
-    res.add("mean", new Date(sum / count));
+    if (count > 0) {
+      res.add("mean", new Date(sum / count));
+    }
   }
 }
 

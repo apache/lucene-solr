@@ -18,10 +18,13 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -34,7 +37,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -96,9 +98,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
     createRandomIndex(numdocs, leftWriter, seed);
     createRandomIndex(numdocs, rightWriter, seed);
 
-    leftReader = leftWriter.getReader();
+    leftReader = maybeWrapReader(leftWriter.getReader());
     leftWriter.close();
-    rightReader = rightWriter.getReader();
+    rightReader = maybeWrapReader(rightWriter.getReader());
     rightWriter.close();
     
     info = "left: " + leftCodec.toString() + " / right: " + rightCodec.toString();
@@ -140,6 +142,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     assertTermVectors(leftReader, rightReader);
     assertDocValues(leftReader, rightReader);
     assertDeletedDocs(leftReader, rightReader);
+    assertFieldInfos(leftReader, rightReader);
   }
   
   /** 
@@ -479,8 +482,18 @@ public class TestDuelingCodecs extends LuceneTestCase {
       Document rightDoc = rightReader.document(i);
       
       // TODO: I think this is bogus because we don't document what the order should be
-      // from these iterators, etc. I think the codec should be free to order this stuff
+      // from these iterators, etc. I think the codec/IndexReader should be free to order this stuff
       // in whatever way it wants (e.g. maybe it packs related fields together or something)
+      // To fix this, we sort the fields in both documents by name, but
+      // we still assume that all instances with same name are in order:
+      Comparator<IndexableField> comp = new Comparator<IndexableField>() {
+        @Override
+        public int compare(IndexableField arg0, IndexableField arg1) {
+          return arg0.name().compareTo(arg1.name());
+        }        
+      };
+      Collections.sort(leftDoc.getFields(), comp);
+      Collections.sort(rightDoc.getFields(), comp);
 
       Iterator<IndexableField> leftIterator = leftDoc.iterator();
       Iterator<IndexableField> rightIterator = rightDoc.iterator();
@@ -612,6 +625,25 @@ public class TestDuelingCodecs extends LuceneTestCase {
     for (int i = 0; i < leftReader.maxDoc(); i++) {
       assertEquals(info, leftBits.get(i), rightBits.get(i));
     }
+  }
+  
+  public void assertFieldInfos(IndexReader leftReader, IndexReader rightReader) throws Exception {
+    FieldInfos leftInfos = MultiFields.getMergedFieldInfos(leftReader);
+    FieldInfos rightInfos = MultiFields.getMergedFieldInfos(rightReader);
+    
+    // TODO: would be great to verify more than just the names of the fields!
+    TreeSet<String> left = new TreeSet<String>();
+    TreeSet<String> right = new TreeSet<String>();
+    
+    for (FieldInfo fi : leftInfos) {
+      left.add(fi.name);
+    }
+    
+    for (FieldInfo fi : rightInfos) {
+      right.add(fi.name);
+    }
+    
+    assertEquals(info, left, right);
   }
   
   

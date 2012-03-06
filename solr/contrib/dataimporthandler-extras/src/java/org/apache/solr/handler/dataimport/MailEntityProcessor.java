@@ -19,7 +19,9 @@ package org.apache.solr.handler.dataimport;
 import com.sun.mail.imap.IMAPMessage;
 
 import org.apache.tika.Tika;
+import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaMetadataKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,8 +171,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
       InputStream is = part.getInputStream();
       String fileName = part.getFileName();
       Metadata md = new Metadata();
-      md.set(Metadata.CONTENT_TYPE, ctype.getBaseType().toLowerCase(Locale.ENGLISH));
-      md.set(Metadata.RESOURCE_NAME_KEY, fileName);
+      md.set(HttpHeaders.CONTENT_TYPE, ctype.getBaseType().toLowerCase(Locale.ENGLISH));
+      md.set(TikaMetadataKeys.RESOURCE_NAME_KEY, fileName);
       String content = tika.parseToString(is, md);
       if (disp != null && disp.equalsIgnoreCase(Part.ATTACHMENT)) {
         if (row.get(ATTACHMENT) == null)

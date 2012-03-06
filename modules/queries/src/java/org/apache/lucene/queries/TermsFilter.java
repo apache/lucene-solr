@@ -19,6 +19,7 @@ package org.apache.lucene.queries;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -81,7 +82,7 @@ public class TermsFilter extends Filter {
         br.copyBytes(term.bytes());
         if (termsEnum.seekCeil(br) == TermsEnum.SeekStatus.FOUND) {
           docs = termsEnum.docs(acceptDocs, docs, false);
-          while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+          while (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             result.set(docs.docID());
           }
         }

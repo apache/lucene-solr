@@ -17,29 +17,40 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
-import java.util.*;
+import java.util.Comparator;
 
+import org.apache.lucene.search.suggest.BytesRefList;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * An {@link BytesRefSorter} that keeps all the entries in memory.
+ * @lucene.experimental
+ * @lucene.internal
  */
 public final class InMemorySorter implements BytesRefSorter {
-  // TODO: use a single byte[] to back up all entries?
-  private final ArrayList<BytesRef> refs = new ArrayList<BytesRef>();
-  
+  private final BytesRefList buffer = new BytesRefList();
   private boolean closed = false;
+  private final Comparator<BytesRef> comparator;
 
+  public InMemorySorter(Comparator<BytesRef> comparator) {
+    this.comparator = comparator;
+  }
+  
   @Override
   public void add(BytesRef utf8) {
     if (closed) throw new IllegalStateException();
-    refs.add(BytesRef.deepCopyOf(utf8));
+    buffer.append(utf8);
   }
 
   @Override
-  public Iterator<BytesRef> iterator() {
+  public BytesRefIterator iterator() {
     closed = true;
-    Collections.sort(refs, BytesRef.getUTF8SortedAsUnicodeComparator());
-    return Collections.unmodifiableCollection(refs).iterator();
+    return buffer.iterator(comparator);
+  }
+
+  @Override
+  public Comparator<BytesRef> getComparator() {
+    return comparator;
   }
 }

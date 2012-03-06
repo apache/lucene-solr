@@ -32,9 +32,20 @@
   <name>Apache Solr Core</name>
   <description>Apache Solr Core</description>
   <properties>
-    <module-directory>solr</module-directory>
+    <module-directory>solr/core</module-directory>
     <build-directory>../build/solr-maven</build-directory>
   </properties>
+  <scm>
+    <connection>
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </connection>
+    <developerConnection>
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
+    </developerConnection>
+    <url>
+      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
+    </url>
+  </scm>
   <dependencies>
     <dependency>
       <!-- lucene-test-framework dependency must be declared before lucene-core -->
@@ -169,11 +180,6 @@
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jetty-util</artifactId>
       <optional>true</optional> <!-- Only used for tests and one command-line utility: JettySolrRunner -->
-    </dependency>
-    <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jsp-2.1-jetty</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.codehaus.woodstox</groupId>

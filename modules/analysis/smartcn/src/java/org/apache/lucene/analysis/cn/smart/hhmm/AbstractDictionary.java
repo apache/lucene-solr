@@ -85,7 +85,7 @@ abstract class AbstractDictionary {
    * @return unicode String
    */
   public String getCCByGB2312Id(int ccid) {
-    if (ccid < 0 || ccid > WordDictionary.GB2312_CHAR_NUM)
+    if (ccid < 0 || ccid > AbstractDictionary.GB2312_CHAR_NUM)
       return "";
     int cc1 = ccid / 94 + 161;
     int cc2 = ccid % 94 + 161;

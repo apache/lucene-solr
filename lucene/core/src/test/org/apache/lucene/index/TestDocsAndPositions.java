@@ -84,7 +84,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
           assertEquals(msg, 20, docsAndPosEnum.nextPosition());
           assertEquals(msg, 4, docsAndPosEnum.freq());
           assertEquals(msg, 30, docsAndPosEnum.nextPosition());
-        } while (docsAndPosEnum.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS);
+        } while (docsAndPosEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       }
     }
     reader.close();
@@ -156,7 +156,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
         // now run through the scorer and check if all positions are there...
         do {
           int docID = docsAndPosEnum.docID();
-          if (docID == DocsAndPositionsEnum.NO_MORE_DOCS) {
+          if (docID == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
           Integer[] pos = positionsInDoc[atomicReaderContext.docBase + docID];
@@ -177,7 +177,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
                 .advance(docID + 1 + random.nextInt((maxDoc - docID)));
           }
 
-        } while (docsAndPosEnum.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS);
+        } while (docsAndPosEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       }
 
     }
@@ -234,7 +234,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
               int next = findNext(freqInDoc, context.docBase+j+1, context.docBase + maxDoc) - context.docBase;
               int advancedTo = docsEnum.advance(next);
               if (next >= maxDoc) {
-                assertEquals(DocsEnum.NO_MORE_DOCS, advancedTo);
+                assertEquals(DocIdSetIterator.NO_MORE_DOCS, advancedTo);
               } else {
                 assertTrue("advanced to: " +advancedTo + " but should be <= " + next, next >= advancedTo);  
               }
@@ -243,7 +243,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
             }
           } 
         }
-        assertEquals("docBase: " + context.docBase + " maxDoc: " + maxDoc + " " + docsEnum.getClass(), DocsEnum.NO_MORE_DOCS, docsEnum.docID());
+        assertEquals("docBase: " + context.docBase + " maxDoc: " + maxDoc + " " + docsEnum.getClass(), DocIdSetIterator.NO_MORE_DOCS, docsEnum.docID());
       }
       
     }

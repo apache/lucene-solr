@@ -9,6 +9,10 @@ import java.util.TimeZone;
 import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SystemPropertiesRestoreRule;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,6 +31,9 @@ import org.apache.lucene.util.LuceneTestCase;
  * limitations under the License.
  */
 public class TestDateTools extends LuceneTestCase {
+  @Rule
+  public TestRule testRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   public void testStringToDate() throws ParseException {
     

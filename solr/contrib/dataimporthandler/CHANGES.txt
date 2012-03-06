@@ -18,6 +18,10 @@ New Features
 ----------------------
 * SOLR-1499: Added SolrEntityProcessor that imports data from another Solr core or instance based on a specified query.
              (Lance Norskog, Erik Hatcher, Pulkit Singhal, Ahmet Arslan, Luca Cavanna, Martijn van Groningen)
+             Additional Work:
+             SOLR-3190: Minor improvements to SolrEntityProcessor. Add more consistency between solr parameters
+             and parameters used in SolrEntityProcessor and ability to specify a custom HttpClient instance.
+             (Luca Cavanna via Martijn van Groningen)
 
 Changes in Runtime Behavior
 ----------------------

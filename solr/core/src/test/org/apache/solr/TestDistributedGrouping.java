@@ -18,6 +18,7 @@ package org.apache.solr;
  */
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
@@ -169,6 +170,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " desc", "group.sort", "score desc"); // SOLR-2955
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", "score desc, _docid_ asc, id asc");
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10);
+
+    // Can't validate the response, but can check if no errors occur.
+    simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc", CommonParams.TIME_ALLOWED, 1);
   }
 
   private void simpleQuery(Object... queryParams) throws SolrServerException {

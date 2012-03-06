@@ -42,7 +42,7 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   protected BaseUIMATokenizer(Reader reader, String descriptorPath) {
     super(reader);
     try {
-      ae = AEProviderFactory.getInstance().getAEProvider("", descriptorPath).getAE();
+      ae = AEProviderFactory.getInstance().getAEProvider(descriptorPath).getAE();
       cas = ae.newCAS();
     } catch (ResourceInitializationException e) {
       throw new RuntimeException(e);
@@ -51,17 +51,24 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
 
   /**
    * analyzes the tokenizer input using the given analysis engine
-   * 
+   * <p/>
    * {@link #cas} will be filled with  extracted metadata (UIMA annotations, feature structures)
    *
    * @throws AnalysisEngineProcessException
    * @throws IOException
    */
-  protected void analyzeInput() throws AnalysisEngineProcessException,IOException {
+  protected void analyzeInput() throws AnalysisEngineProcessException, IOException {
     cas.reset();
     cas.setDocumentText(toString(input));
     ae.process(cas);
   }
+
+  /**
+   * initialize the FSIterator which is used to build tokens at each incrementToken() method call
+   *
+   * @throws IOException
+   */
+  protected abstract void initializeIterator() throws IOException;
 
   private String toString(Reader reader) throws IOException {
     StringBuilder stringBuilder = new StringBuilder();
@@ -82,6 +89,6 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   public void end() throws IOException {
     iterator = null;
   }
-  
-  
+
+
 }

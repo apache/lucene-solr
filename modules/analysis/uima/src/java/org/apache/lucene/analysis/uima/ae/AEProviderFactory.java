@@ -22,7 +22,6 @@ import java.util.Map;
 
 /**
  * Singleton factory class responsible of {@link AEProvider}s' creation
- *
  */
 public class AEProviderFactory {
 
@@ -42,32 +41,39 @@ public class AEProviderFactory {
   }
 
   /**
-   *
-   * @param keyPrefix
-   * @param aePath
+   * @param keyPrefix a prefix of the key used to cache the AEProvider
+   * @param aePath the AnalysisEngine descriptor path
+   * @param runtimeParameters map of runtime parameters to configure inside the AnalysisEngine
    * @return AEProvider
    */
-  public synchronized AEProvider getAEProvider(String keyPrefix, String aePath) {
-    String key = new StringBuilder(keyPrefix).append(aePath).append(BasicAEProvider.class).toString();
+  public synchronized AEProvider getAEProvider(String keyPrefix, String aePath, Map<String, Object> runtimeParameters) {
+    String key = new StringBuilder(keyPrefix != null ? keyPrefix : "").append(aePath).append(runtimeParameters != null ?
+        runtimeParameters.toString() : "").toString();
     if (providerCache.get(key) == null) {
-      providerCache.put(key, new BasicAEProvider(aePath));
+      AEProvider aeProvider;
+      if (runtimeParameters != null)
+        aeProvider = new OverridingParamsAEProvider(aePath, runtimeParameters);
+      else
+        aeProvider = new BasicAEProvider(aePath);
+      providerCache.put(key, aeProvider);
     }
     return providerCache.get(key);
   }
 
   /**
-   *
-   * @param keyPrefix
-   * @param aePath
-   * @param runtimeParameters
+   * @param aePath the AnalysisEngine descriptor path
    * @return AEProvider
    */
-  public synchronized AEProvider getAEProvider(String keyPrefix, String aePath,
-          Map<String, Object> runtimeParameters) {
-    String key = new StringBuilder(keyPrefix).append(aePath).append(OverridingParamsAEProvider.class).toString();
-    if (providerCache.get(key) == null) {
-      providerCache.put(key, new OverridingParamsAEProvider(aePath, runtimeParameters));
-    }
-    return providerCache.get(key);
+  public synchronized AEProvider getAEProvider(String aePath) {
+    return getAEProvider(null, aePath, null);
+  }
+
+  /**
+   * @param aePath the AnalysisEngine descriptor path
+   * @param runtimeParameters map of runtime parameters to configure inside the AnalysisEngine
+   * @return AEProvider
+   */
+  public synchronized AEProvider getAEProvider(String aePath, Map<String, Object> runtimeParameters) {
+    return getAEProvider(null, aePath, runtimeParameters);
   }
 }

@@ -49,6 +49,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.*;
@@ -134,13 +135,13 @@ public class SolrDispatchFilter implements Filter
       return;
     }
     CoreContainer cores = this.cores;
+    SolrCore core = null;
+    SolrQueryRequest solrReq = null;
     
     if( request instanceof HttpServletRequest) {
       HttpServletRequest req = (HttpServletRequest)request;
       HttpServletResponse resp = (HttpServletResponse)response;
       SolrRequestHandler handler = null;
-      SolrQueryRequest solrReq = null;
-      SolrCore core = null;
       String corename = "";
       try {
         // put the core container in request attribute
@@ -269,21 +270,11 @@ public class SolrDispatchFilter implements Filter
             }
             return; // we are done with a valid handler
           }
-          // otherwise (we have a core), let's ensure the core is in the SolrCore request attribute so
-          // a servlet/jsp can retrieve it
-          else {
-            req.setAttribute("org.apache.solr.SolrCore", core);
-            // Modify the request so each core gets its own /admin
-            if( path.startsWith( "/admin" ) ) {
-              req.getRequestDispatcher( pathPrefix == null ? path : pathPrefix + path ).forward( request, response );
-              return;
-            }
-          }
         }
         log.debug("no handler or core retrieved for " + path + ", follow through...");
       } 
       catch (Throwable ex) {
-        sendError( (HttpServletResponse)response, ex );
+        sendError( core, solrReq, request, (HttpServletResponse)response, ex );
         return;
       } 
       finally {
@@ -300,7 +291,7 @@ public class SolrDispatchFilter implements Filter
     // Otherwise let the webapp handle the request
     chain.doFilter(request, response);
   }
-
+  
   private SolrCore getCoreByCollection(CoreContainer cores, String corename, String path) {
     String collection = corename;
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
@@ -372,30 +363,66 @@ public class SolrDispatchFilter implements Filter
   private void writeResponse(SolrQueryResponse solrRsp, ServletResponse response,
                              QueryResponseWriter responseWriter, SolrQueryRequest solrReq, Method reqMethod)
           throws IOException {
-    if (solrRsp.getException() != null) {
-      sendError((HttpServletResponse) response, solrRsp.getException());
-    } else {
-      // Now write it out
-      final String ct = responseWriter.getContentType(solrReq, solrRsp);
-      // don't call setContentType on null
-      if (null != ct) response.setContentType(ct); 
 
-      if (Method.HEAD != reqMethod) {
-        if (responseWriter instanceof BinaryQueryResponseWriter) {
-          BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
-          binWriter.write(response.getOutputStream(), solrReq, solrRsp);
-        } else {
-          String charset = ContentStreamBase.getCharsetFromContentType(ct);
-          Writer out = (charset == null || charset.equalsIgnoreCase("UTF-8"))
-            ? new OutputStreamWriter(response.getOutputStream(), UTF8)
-            : new OutputStreamWriter(response.getOutputStream(), charset);
-          out = new FastWriter(out);
-          responseWriter.write(out, solrReq, solrRsp);
-          out.flush();
-        }
-      }
-      //else http HEAD request, nothing to write out, waited this long just to get ContentType
+    // Now write it out
+    final String ct = responseWriter.getContentType(solrReq, solrRsp);
+    // don't call setContentType on null
+    if (null != ct) response.setContentType(ct); 
+
+    if (solrRsp.getException() != null) {
+      NamedList info = new SimpleOrderedMap();
+      int code = getErrorInfo(solrRsp.getException(),info);
+      solrRsp.add("error", info);
+      ((HttpServletResponse) response).setStatus(code);
     }
+    
+    if (Method.HEAD != reqMethod) {
+      if (responseWriter instanceof BinaryQueryResponseWriter) {
+        BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
+        binWriter.write(response.getOutputStream(), solrReq, solrRsp);
+      } else {
+        String charset = ContentStreamBase.getCharsetFromContentType(ct);
+        Writer out = (charset == null || charset.equalsIgnoreCase("UTF-8"))
+          ? new OutputStreamWriter(response.getOutputStream(), UTF8)
+          : new OutputStreamWriter(response.getOutputStream(), charset);
+        out = new FastWriter(out);
+        responseWriter.write(out, solrReq, solrRsp);
+        out.flush();
+      }
+    }
+    //else http HEAD request, nothing to write out, waited this long just to get ContentType
+  }
+  
+  protected int getErrorInfo(Throwable ex, NamedList info) {
+    int code=500;
+    if( ex instanceof SolrException ) {
+      code = ((SolrException)ex).code();
+    }
+
+    String msg = null;
+    for (Throwable th = ex; th != null; th = th.getCause()) {
+      msg = th.getMessage();
+      if (msg != null) break;
+    }
+    if(msg != null) {
+      info.add("msg", msg);
+    }
+    
+    // For any regular code, don't include the stack trace
+    if( code == 500 || code < 100 ) {
+      StringWriter sw = new StringWriter();
+      ex.printStackTrace(new PrintWriter(sw));
+      SolrException.log(log, null, ex);
+      info.add("trace", sw.toString());
+
+      // non standard codes have undefined results with various servers
+      if( code < 100 ) {
+        log.warn( "invalid return code: "+code );
+        code = 500;
+      }
+    }
+    info.add("code", new Integer(code));
+    return code;
   }
 
   protected void execute( HttpServletRequest req, SolrRequestHandler handler, SolrQueryRequest sreq, SolrQueryResponse rsp) {
@@ -406,35 +433,33 @@ public class SolrDispatchFilter implements Filter
     sreq.getCore().execute( handler, sreq, rsp );
   }
 
-  protected void sendError(HttpServletResponse res, Throwable ex) throws IOException {
-    int code=500;
-    String trace = "";
-    if( ex instanceof SolrException ) {
-      code = ((SolrException)ex).code();
-    }
-
-    String msg = null;
-    for (Throwable th = ex; th != null; th = th.getCause()) {
-      msg = th.getMessage();
-      if (msg != null) break;
-    }
-
-    // For any regular code, don't include the stack trace
-    if( code == 500 || code < 100 ) {
-      StringWriter sw = new StringWriter();
-      ex.printStackTrace(new PrintWriter(sw));
-      trace = "\n\n"+sw.toString();
-
-      SolrException.log(log, null, ex);
-
-      // non standard codes have undefined results with various servers
-      if( code < 100 ) {
-        log.warn( "invalid return code: "+code );
-        code = 500;
+  protected void sendError(SolrCore core, 
+      SolrQueryRequest req, 
+      ServletRequest request, 
+      HttpServletResponse response, 
+      Throwable ex) throws IOException {
+    try {
+      SolrQueryResponse solrResp = new SolrQueryResponse();
+      if(ex instanceof Exception) {
+        solrResp.setException((Exception)ex);
       }
+      else {
+        solrResp.setException(new RuntimeException(ex));
+      }
+      if(core==null) {
+        core = cores.getCore(""); // default core
+      }
+      if(req==null) {
+        req = new SolrQueryRequestBase(core,new ServletSolrParams(request)) {};
+      }
+      QueryResponseWriter writer = core.getQueryResponseWriter(req);
+      writeResponse(solrResp, response, writer, req, Method.GET);
     }
-
-    res.sendError( code, msg + trace );
+    catch( Throwable t ) { // This error really does not matter
+      SimpleOrderedMap info = new SimpleOrderedMap();
+      int code=getErrorInfo(ex, info);
+      response.sendError( code, info.toString() );
+    }
   }
 
   //---------------------------------------------------------------------

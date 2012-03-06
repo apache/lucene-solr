@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,6 +43,8 @@ public class NodeStateWatcher implements Watcher {
   public static interface NodeStateChangeListener {
     void coreChanged(String nodeName, Set<CoreState> states)
         throws KeeperException, InterruptedException;
+    void coreDeleted(String nodeName, Collection<CoreState> states)
+    throws KeeperException, InterruptedException;
   }
 
   private final SolrZkClient zkClient;
@@ -102,6 +105,19 @@ public class NodeStateWatcher implements Watcher {
               modifiedCores.add(lookup.get(state.getCoreName()));
             }
           }
+        }
+        
+        HashMap<String, CoreState> deletedCores = new HashMap<String, CoreState>();
+        for(CoreState state: currentState) {
+          deletedCores.put(state.getCoreNodeName(), state);
+        }
+
+        for(CoreState state: stateList) {
+          deletedCores.remove(state.getCoreNodeName());
+        }
+
+        if (deletedCores.size() > 0) {
+          listener.coreDeleted(nodeName, deletedCores.values());
         }
         
         currentState = Collections.unmodifiableSet(newState);

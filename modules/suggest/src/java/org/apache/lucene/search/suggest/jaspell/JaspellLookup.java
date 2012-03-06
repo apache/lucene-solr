@@ -23,14 +23,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.search.spell.SortedIterator;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.UnsortedTermFreqIteratorWrapper;
 import org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.UnicodeUtil;
 
 public class JaspellLookup extends Lookup {
   JaspellTernarySearchTrie trie = new JaspellTernarySearchTrie();
@@ -39,36 +44,39 @@ public class JaspellLookup extends Lookup {
 
   @Override
   public void build(TermFreqIterator tfit) throws IOException {
-    if (tfit instanceof SortedIterator) {
+    if (tfit.getComparator() != null) {
       // make sure it's unsorted
+      // WTF - this could result in yet another sorted iteration....
       tfit = new UnsortedTermFreqIteratorWrapper(tfit);
     }
     trie = new JaspellTernarySearchTrie();
     trie.setMatchAlmostDiff(editDistance);
-    while (tfit.hasNext()) {
-      String key = tfit.next();
-      float freq = tfit.freq();
-      if (key.length() == 0) {
+    BytesRef spare;
+    final CharsRef charsSpare = new CharsRef();
+
+    while ((spare = tfit.next()) != null) {
+      final long weight = tfit.weight();
+      if (spare.length == 0) {
         continue;
       }
-      trie.put(key, new Float(freq));
+      charsSpare.grow(spare.length);
+      UnicodeUtil.UTF8toUTF16(spare.bytes, spare.offset, spare.length, charsSpare);
+      trie.put(charsSpare.toString(), Long.valueOf(weight));
     }
   }
 
-  @Override
-  public boolean add(String key, Object value) {
+  public boolean add(CharSequence key, Object value) {
     trie.put(key, value);
     // XXX
     return false;
   }
 
-  @Override
-  public Object get(String key) {
+  public Object get(CharSequence key) {
     return trie.get(key);
   }
 
   @Override
-  public List<LookupResult> lookup(String key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
     List<LookupResult> res = new ArrayList<LookupResult>();
     List<String> list;
     int count = onlyMorePopular ? num * 2 : num;
@@ -85,8 +93,8 @@ public class JaspellLookup extends Lookup {
     if (onlyMorePopular) {
       LookupPriorityQueue queue = new LookupPriorityQueue(num);
       for (String s : list) {
-        float freq = (Float)trie.get(s);
-        queue.insertWithOverflow(new LookupResult(s, freq));
+        long freq = ((Number)trie.get(s)).longValue();
+        queue.insertWithOverflow(new LookupResult(new CharsRef(s), freq));
       }
       for (LookupResult lr : queue.getResults()) {
         res.add(lr);
@@ -94,8 +102,8 @@ public class JaspellLookup extends Lookup {
     } else {
       for (int i = 0; i < maxCnt; i++) {
         String s = list.get(i);
-        float freq = (Float)trie.get(s);
-        res.add(new LookupResult(s, freq));
+        long freq = ((Number)trie.get(s)).longValue();
+        res.add(new LookupResult(new CharsRef(s), freq));
       }      
     }
     return res;
@@ -114,22 +122,14 @@ public class JaspellLookup extends Lookup {
     if (!data.exists() || !data.canRead()) {
       return false;
     }
-    DataInputStream in = new DataInputStream(new FileInputStream(data));
-    TSTNode root = trie.new TSTNode('\0', null);
-    try {
-      readRecursively(in, root);
-      trie.setRoot(root);
-    } finally {
-      in.close();
-    }
-    return true;
+    return load(new FileInputStream(data));
   }
   
   private void readRecursively(DataInputStream in, TSTNode node) throws IOException {
     node.splitchar = in.readChar();
     byte mask = in.readByte();
     if ((mask & HAS_VALUE) != 0) {
-      node.data = new Float(in.readFloat());
+      node.data = Long.valueOf(in.readLong());
     }
     if ((mask & LO_KID) != 0) {
       TSTNode kid = trie.new TSTNode('\0', node);
@@ -153,19 +153,8 @@ public class JaspellLookup extends Lookup {
     if (!storeDir.exists() || !storeDir.isDirectory() || !storeDir.canWrite()) {
       return false;
     }
-    TSTNode root = trie.getRoot();
-    if (root == null) { // empty tree
-      return false;
-    }
     File data = new File(storeDir, FILENAME);
-    DataOutputStream out = new DataOutputStream(new FileOutputStream(data));
-    try {
-      writeRecursively(out, root);
-      out.flush();
-    } finally {
-      out.close();
-    }
-    return true;
+    return store(new FileOutputStream(data));
   }
   
   private void writeRecursively(DataOutputStream out, TSTNode node) throws IOException {
@@ -180,10 +169,39 @@ public class JaspellLookup extends Lookup {
     if (node.data != null) mask |= HAS_VALUE;
     out.writeByte(mask);
     if (node.data != null) {
-      out.writeFloat((Float)node.data);
+      out.writeLong(((Number)node.data).longValue());
     }
     writeRecursively(out, node.relatives[TSTNode.LOKID]);
     writeRecursively(out, node.relatives[TSTNode.EQKID]);
     writeRecursively(out, node.relatives[TSTNode.HIKID]);
+  }
+
+  @Override
+  public boolean store(OutputStream output) throws IOException {
+    TSTNode root = trie.getRoot();
+    if (root == null) { // empty tree
+      return false;
+    }
+    DataOutputStream out = new DataOutputStream(output);
+    try {
+      writeRecursively(out, root);
+      out.flush();
+    } finally {
+      IOUtils.close(out);
+    }
+    return true;
+  }
+
+  @Override
+  public boolean load(InputStream input) throws IOException {
+    DataInputStream in = new DataInputStream(input);
+    TSTNode root = trie.new TSTNode('\0', null);
+    try {
+      readRecursively(in, root);
+      trie.setRoot(root);
+    } finally {
+      IOUtils.close(in);
+    }
+    return true;
   }
 }

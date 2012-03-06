@@ -90,6 +90,7 @@ public class Grouping {
   private int maxMatches;  // max number of matches from any grouping command
   private float maxScore = Float.NEGATIVE_INFINITY;  // max score seen in any doclist
   private boolean signalCacheWarning = false;
+  private TimeLimitingCollector timeLimitingCollector;
 
 
   public DocList mainResult;  // output if one of the grouping commands should be used as the main result.
@@ -348,7 +349,7 @@ public class Grouping {
     }
 
     if (allCollectors != null) {
-      searcher.search(query, luceneFilter, allCollectors);
+      searchWithTimeLimiter(luceneFilter, allCollectors);
     }
 
     if (getGroupedDocSet && allGroupHeadsCollector != null) {
@@ -377,14 +378,14 @@ public class Grouping {
             signalCacheWarning = true;
             logger.warn(String.format("The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
             logger.warn("Please increase cache size or disable group caching.");
-            searcher.search(query, luceneFilter, secondPhaseCollectors);
+            searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
           }
         } else {
           if (pf.postFilter != null) {
             pf.postFilter.setLastDelegate(secondPhaseCollectors);
             secondPhaseCollectors = pf.postFilter;
           }
-          searcher.search(query, luceneFilter, secondPhaseCollectors);
+          searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
         }
       }
     }
@@ -403,6 +404,33 @@ public class Grouping {
         ids[idx++] = val;
       }
       qr.setDocList(new DocSlice(0, sz, ids, null, maxMatches, maxScore));
+    }
+  }
+
+  /**
+   * Invokes search with the specified filter and collector.  
+   * If a time limit has been specified, wrap the collector in a TimeLimitingCollector
+   */
+  private void searchWithTimeLimiter(final Filter luceneFilter, Collector collector) throws IOException {
+    if (cmd.getTimeAllowed() > 0) {
+      if (timeLimitingCollector == null) {
+        timeLimitingCollector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), cmd.getTimeAllowed());
+      } else {
+        /*
+         * This is so the same timer can be used for grouping's multiple phases.   
+         * We don't want to create a new TimeLimitingCollector for each phase because that would 
+         * reset the timer for each phase.  If time runs out during the first phase, the 
+         * second phase should timeout quickly.
+         */
+        timeLimitingCollector.setCollector(collector);
+      }
+      collector = timeLimitingCollector;
+    }
+    try {
+      searcher.search(query, luceneFilter, collector);
+    } catch (TimeLimitingCollector.TimeExceededException x) {
+      logger.warn( "Query: " + query + "; " + x.getMessage() );
+      qr.setPartialResults(true);
     }
   }
 

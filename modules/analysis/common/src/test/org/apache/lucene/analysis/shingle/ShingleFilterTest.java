@@ -59,7 +59,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
         termAtt.copyBuffer(t.buffer(), 0, t.length());
         offsetAtt.setOffset(t.startOffset(), t.endOffset());
         posIncrAtt.setPositionIncrement(t.getPositionIncrement());
-        typeAtt.setType(TypeAttributeImpl.DEFAULT_TYPE);
+        typeAtt.setType(TypeAttribute.DEFAULT_TYPE);
         return true;
       } else {
         return false;
@@ -1018,14 +1018,14 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter,
       new String[]{"please","please divide","divide","divide this","this","this sentence","sentence"},
       new int[]{0,0,7,7,14,14,19}, new int[]{6,13,13,18,18,27,27},
-      new String[]{TypeAttributeImpl.DEFAULT_TYPE,"shingle",TypeAttributeImpl.DEFAULT_TYPE,"shingle",TypeAttributeImpl.DEFAULT_TYPE,"shingle",TypeAttributeImpl.DEFAULT_TYPE},
+      new String[]{TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE},
       new int[]{1,0,1,0,1,0,1}
     );
     wsTokenizer.reset(new StringReader("please divide this sentence"));
     assertTokenStreamContents(filter,
       new String[]{"please","please divide","divide","divide this","this","this sentence","sentence"},
       new int[]{0,0,7,7,14,14,19}, new int[]{6,13,13,18,18,27,27},
-      new String[]{TypeAttributeImpl.DEFAULT_TYPE,"shingle",TypeAttributeImpl.DEFAULT_TYPE,"shingle",TypeAttributeImpl.DEFAULT_TYPE,"shingle",TypeAttributeImpl.DEFAULT_TYPE},
+      new String[]{TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE,"shingle",TypeAttribute.DEFAULT_TYPE},
       new int[]{1,0,1,0,1,0,1}
     );
   }

@@ -51,7 +51,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     INDEX_SIZE = atLeast(2000);
     index = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, index);
-    RandomGen random = new RandomGen(this.random);
+    RandomGen random = new RandomGen(LuceneTestCase.random);
     for (int i = 0; i < INDEX_SIZE; ++i) { // don't decrease; if to low the
                                            // problem doesn't show up
       Document doc = new Document();

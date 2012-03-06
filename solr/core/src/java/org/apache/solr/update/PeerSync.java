@@ -26,18 +26,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.NoHttpResponseException;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
@@ -63,7 +66,7 @@ public class PeerSync  {
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
-  private ShardHandlerFactory shardHandlerFactory;
+  private HttpShardHandlerFactory shardHandlerFactory;
   private ShardHandler shardHandler;
 
   private UpdateLog.RecentUpdates recentUpdates;
@@ -74,6 +77,18 @@ public class PeerSync  {
   private Set<Long> requestedUpdateSet;
   private long ourLowThreshold;  // 20th percentile
   private long ourHighThreshold; // 80th percentile
+  private static MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
+  private static HttpClient client = new HttpClient(mgr);
+  static {
+    mgr.getParams().setDefaultMaxConnectionsPerHost(20);
+    mgr.getParams().setMaxTotalConnections(10000);
+    mgr.getParams().setConnectionTimeout(30000);
+    mgr.getParams().setSoTimeout(30000);
+
+    // prevent retries  (note: this didn't work when set on mgr.. needed to be set on client)
+    DefaultHttpMethodRetryHandler retryhandler = new DefaultHttpMethodRetryHandler(0, false);
+    client.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, retryhandler);
+  }
 
   // comparator that sorts by absolute value, putting highest first
   private static Comparator<Long> absComparator = new Comparator<Long>() {
@@ -125,10 +140,13 @@ public class PeerSync  {
     this.nUpdates = nUpdates;
     this.maxUpdates = nUpdates;
 
+
+    
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
-    shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
-    shardHandler = shardHandlerFactory.getShardHandler();
+    // TODO: shutdown
+    shardHandlerFactory = new HttpShardHandlerFactory();
+    shardHandler = shardHandlerFactory.getShardHandler(client);
   }
 
   /** optional list of updates we had before possibly receiving new updates */
@@ -166,6 +184,12 @@ public class PeerSync  {
 
     log.info(msg() + "START replicas=" + replicas + " nUpdates=" + nUpdates);
 
+    // TODO: does it ever make sense to allow sync when buffering or applying buffered?  Someone might request that we do it...
+    if (!(ulog.getState() == UpdateLog.State.ACTIVE || ulog.getState()==UpdateLog.State.REPLAYING)) {
+      log.error(msg() + "ERROR, update log not in ACTIVE or REPLAY state. " + ulog);
+      // return false;
+    }
+    
     if (debug) {
       if (startingVersions != null) {
         log.debug(msg() + "startingVersions=" + startingVersions.size() + " " + startingVersions);
@@ -378,7 +402,7 @@ public class PeerSync  {
   private boolean requestUpdates(ShardResponse srsp, List<Long> toRequest) {
     String replica = srsp.getShardRequest().shards[0];
 
-    log.info(msg() + "Requesting updates from " + replica + " versions=" + toRequest);
+    log.info(msg() + "Requesting updates from " + replica + "n=" + toRequest.size() + " versions=" + toRequest);
 
     // reuse our original request object
     ShardRequest sreq = srsp.getShardRequest();
@@ -408,6 +432,7 @@ public class PeerSync  {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DistributedUpdateProcessor.SEEN_LEADER, true);
+    // params.set("peersync",true); // debugging
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
     SolrQueryResponse rsp = new SolrQueryResponse();
 
@@ -518,8 +543,6 @@ public class PeerSync  {
 
   /** Requests and applies recent updates from peers */
   public static void sync(SolrCore core, List<String> replicas, int nUpdates) {
-    UpdateHandler uhandler = core.getUpdateHandler();
-
     ShardHandlerFactory shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
 
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
@@ -537,7 +560,6 @@ public class PeerSync  {
     for (String replica : replicas) {
       ShardResponse srsp = shardHandler.takeCompletedOrError();
     }
-
 
   }
   

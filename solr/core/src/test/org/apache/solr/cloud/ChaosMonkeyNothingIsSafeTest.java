@@ -65,6 +65,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   @Override
   @After
   public void tearDown() throws Exception {
+    System.clearProperty("numShards");
     super.tearDown();
     resetExceptionIgnores();
   }

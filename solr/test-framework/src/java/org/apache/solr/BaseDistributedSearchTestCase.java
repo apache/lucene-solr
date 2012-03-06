@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import junit.framework.Assert;
 import junit.framework.TestCase;
 
 import org.apache.solr.client.solrj.SolrServer;
@@ -652,7 +653,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
       log.error("Mismatched responses:\n" + a + "\n" + b);
-      TestCase.fail(cmp);
+      Assert.fail(cmp);
     }
   }
 

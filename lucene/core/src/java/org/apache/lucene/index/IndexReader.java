@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.WeakHashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -72,10 +73,13 @@ import org.apache.lucene.util.ReaderUtil;         // for javadocs
 */
 public abstract class IndexReader implements Closeable {
   
+  private boolean closed = false;
+  private boolean closedByChild = false;
+  private final AtomicInteger refCount = new AtomicInteger(1);
+
   IndexReader() {
     if (!(this instanceof CompositeReader || this instanceof AtomicReader))
-      throw new Error("This class should never be directly extended, subclass AtomicReader or CompositeReader instead!");
-    refCount.set(1);
+      throw new Error("IndexReader should never be directly extended, subclass AtomicReader or CompositeReader instead.");
   }
   
   /**
@@ -90,6 +94,9 @@ public abstract class IndexReader implements Closeable {
 
   private final Set<ReaderClosedListener> readerClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<ReaderClosedListener>());
+
+  private final Set<IndexReader> parentReaders = 
+      Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<IndexReader,Boolean>()));
 
   /** Expert: adds a {@link ReaderClosedListener}.  The
    * provided listener will be invoked when this reader is closed.
@@ -107,8 +114,19 @@ public abstract class IndexReader implements Closeable {
     ensureOpen();
     readerClosedListeners.remove(listener);
   }
+  
+  /** Expert: This method is called by {@code IndexReader}s which wrap other readers
+   * (e.g. {@link CompositeReader} or {@link FilterAtomicReader}) to register the parent
+   * at the child (this reader) on construction of the parent. When this reader is closed,
+   * it will mark all registered parents as closed, too. The references to parent readers
+   * are weak only, so they can be GCed once they are no longer in use.
+   * @lucene.experimental */
+  public final void registerParentReader(IndexReader reader) {
+    ensureOpen();
+    parentReaders.add(reader);
+  }
 
-  private final void notifyReaderClosedListeners() {
+  private void notifyReaderClosedListeners() {
     synchronized(readerClosedListeners) {
       for(ReaderClosedListener listener : readerClosedListeners) {
         listener.onClose(this);
@@ -116,9 +134,17 @@ public abstract class IndexReader implements Closeable {
     }
   }
 
-  private boolean closed = false;
-  
-  private final AtomicInteger refCount = new AtomicInteger();
+  private void reportCloseToParentReaders() {
+    synchronized(parentReaders) {
+      for(IndexReader parent : parentReaders) {
+        parent.closedByChild = true;
+        // cross memory barrier by a fake write:
+        parent.refCount.addAndGet(0);
+        // recurse:
+        parent.reportCloseToParentReaders();
+      }
+    }
+  }
 
   /** Expert: returns the current refCount for this reader */
   public final int getRefCount() {
@@ -191,7 +217,12 @@ public abstract class IndexReader implements Closeable {
    * @see #incRef
    */
   public final void decRef() throws IOException {
-    ensureOpen();
+    // only check refcount here (don't call ensureOpen()), so we can
+    // still close the reader if it was made invalid by a child:
+    if (refCount.get() <= 0) {
+      throw new AlreadyClosedException("this IndexReader is closed");
+    }
+    
     final int rc = refCount.decrementAndGet();
     if (rc == 0) {
       boolean success = false;
@@ -204,6 +235,7 @@ public abstract class IndexReader implements Closeable {
           refCount.incrementAndGet();
         }
       }
+      reportCloseToParentReaders();
       notifyReaderClosedListeners();
     } else if (rc < 0) {
       throw new IllegalStateException("too many decRef calls: refCount is " + rc + " after decrement");
@@ -217,6 +249,33 @@ public abstract class IndexReader implements Closeable {
     if (refCount.get() <= 0) {
       throw new AlreadyClosedException("this IndexReader is closed");
     }
+    // the happens before rule on reading the refCount, which must be after the fake write,
+    // ensures that we see the value:
+    if (closedByChild) {
+      throw new AlreadyClosedException("this IndexReader cannot be used anymore as one of its child readers was closed");
+    }
+  }
+  
+  /** {@inheritDoc}
+   * <p>For caching purposes, {@code IndexReader} subclasses are not allowed
+   * to implement equals/hashCode, so methods are declared final.
+   * To lookup instances from caches use {@link #getCoreCacheKey} and 
+   * {@link #getCombinedCoreAndDeletesKey}.
+   */
+  @Override
+  public final boolean equals(Object obj) {
+    return (this == obj);
+  }
+  
+  /** {@inheritDoc}
+   * <p>For caching purposes, {@code IndexReader} subclasses are not allowed
+   * to implement equals/hashCode, so methods are declared final.
+   * To lookup instances from caches use {@link #getCoreCacheKey} and 
+   * {@link #getCombinedCoreAndDeletesKey}.
+   */
+  @Override
+  public final int hashCode() {
+    return System.identityHashCode(this);
   }
   
   /** Returns a IndexReader reading the index in the given

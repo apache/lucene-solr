@@ -401,7 +401,7 @@ class BufferedDeletesStream {
           while (true) {
             final int docID = docsEnum.nextDoc();
             //System.out.println(Thread.currentThread().getName() + " del term=" + term + " doc=" + docID);
-            if (docID == DocsEnum.NO_MORE_DOCS) {
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }   
             // NOTE: there is no limit check on the docID

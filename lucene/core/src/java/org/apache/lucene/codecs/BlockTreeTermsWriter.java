@@ -640,7 +640,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
     // for debugging
     @SuppressWarnings("unused")
-    private String toString(BytesRef b) {
+	private String toString(BytesRef b) {
       try {
         return b.utf8ToString() + " " + b;
       } catch (Throwable t) {

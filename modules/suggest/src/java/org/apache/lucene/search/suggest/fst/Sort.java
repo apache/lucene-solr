@@ -20,14 +20,9 @@ package org.apache.lucene.search.suggest.fst;
 import java.io.*;
 import java.util.*;
 
+import org.apache.lucene.search.suggest.BytesRefList;
 import org.apache.lucene.util.*;
 import org.apache.lucene.util.PriorityQueue;
-
-// TODO: the buffer is currently byte[][] which with very small arrays will terribly overallocate
-// memory (alignments) and make GC very happy.
-// 
-// We could move it to a single byte[] + and use custom sorting, but we'd need to check if this
-// yields any improvement first.
 
 /**
  * On-disk sorting of byte arrays. Each byte array (entry) is a composed of the following
@@ -38,6 +33,8 @@ import org.apache.lucene.util.PriorityQueue;
  * </ul>
  * 
  * @see #sort(File, File)
+ * @lucene.experimental
+ * @lucene.internal
  */
 public final class Sort {
   public final static int MB = 1024 * 1024;
@@ -58,11 +55,6 @@ public final class Sort {
    * Maximum number of temporary files before doing an intermediate merge.
    */
   public final static int MAX_TEMPFILES = 128;
-
-  /**
-   * Minimum slot buffer expansion.
-   */
-  private final static int MIN_EXPECTED_GROWTH = 1000;
 
   /** 
    * A bit more descriptive unit for constructors.
@@ -112,21 +104,6 @@ public final class Sort {
   }
 
   /**
-   * byte[] in unsigned byte order.
-   */
-  static final Comparator<byte[]> unsignedByteOrderComparator = new Comparator<byte[]>() {
-    public int compare(byte[] left, byte[] right) {
-      final int max = Math.min(left.length, right.length);
-      for (int i = 0, j = 0; i < max; i++, j++) {
-        int diff = (left[i]  & 0xff) - (right[j] & 0xff); 
-        if (diff != 0) 
-          return diff;
-      }
-      return left.length - right.length;
-    }
-  };
-
-  /**
    * Sort info (debugging mostly).
    */
   public class SortInfo {
@@ -149,14 +126,15 @@ public final class Sort {
     }
   }
 
-  private final static byte [][] EMPTY = new byte [0][];
-
   private final BufferSize ramBufferSize;
   private final File tempDirectory;
-
-  private byte [][] buffer = new byte [0][];
+  
+  private final BytesRefList buffer = new BytesRefList();
   private SortInfo sortInfo;
   private int maxTempFiles;
+  private final Comparator<BytesRef> comparator;
+  
+  public static final Comparator<BytesRef> DEFAULT_COMPARATOR = BytesRef.getUTF8SortedAsUnicodeComparator();
 
   /**
    * Defaults constructor.
@@ -165,13 +143,17 @@ public final class Sort {
    * @see BufferSize#automatic()
    */
   public Sort() throws IOException {
-    this(BufferSize.automatic(), defaultTempDir(), MAX_TEMPFILES);
+    this(DEFAULT_COMPARATOR, BufferSize.automatic(), defaultTempDir(), MAX_TEMPFILES);
+  }
+  
+  public Sort(Comparator<BytesRef> comparator) throws IOException {
+    this(comparator, BufferSize.automatic(), defaultTempDir(), MAX_TEMPFILES);
   }
 
   /**
    * All-details constructor.
    */
-  public Sort(BufferSize ramBufferSize, File tempDirectory, int maxTempfiles) {
+  public Sort(Comparator<BytesRef> comparator, BufferSize ramBufferSize, File tempDirectory, int maxTempfiles) {
     if (ramBufferSize.bytes < ABSOLUTE_MIN_SORT_BUFFER_SIZE) {
       throw new IllegalArgumentException(MIN_BUFFER_SIZE_MSG + ": " + ramBufferSize.bytes);
     }
@@ -183,6 +165,7 @@ public final class Sort {
     this.ramBufferSize = ramBufferSize;
     this.tempDirectory = tempDirectory;
     this.maxTempFiles = maxTempfiles;
+    this.comparator = comparator;
   }
 
   /** 
@@ -283,23 +266,25 @@ public final class Sort {
 
   /** Sort a single partition in-memory. */
   protected File sortPartition(int len) throws IOException {
-    byte [][] data = this.buffer;
+    BytesRefList data = this.buffer;
     File tempFile = File.createTempFile("sort", "partition", tempDirectory);
 
     long start = System.currentTimeMillis();
-    Arrays.sort(data, 0, len, unsignedByteOrderComparator);
     sortInfo.sortTime += (System.currentTimeMillis() - start);
     
-    ByteSequencesWriter out = new ByteSequencesWriter(tempFile);
+    final ByteSequencesWriter out = new ByteSequencesWriter(tempFile);
+    BytesRef spare;
     try {
-      for (int i = 0; i < len; i++) {
-        assert data[i].length <= Short.MAX_VALUE;
-        out.write(data[i]);
+      BytesRefIterator iter = buffer.iterator(comparator);
+      while((spare = iter.next()) != null) {
+        assert spare.length <= Short.MAX_VALUE;
+        out.write(spare);
       }
+      
       out.close();
 
       // Clean up the buffer for the next partition.
-      this.buffer = EMPTY;
+      data.clear();
       return tempFile;
     } finally {
       IOUtils.close(out);
@@ -314,7 +299,7 @@ public final class Sort {
 
     PriorityQueue<FileAndTop> queue = new PriorityQueue<FileAndTop>(merges.size()) {
       protected boolean lessThan(FileAndTop a, FileAndTop b) {
-        return a.current.compareTo(b.current) < 0;
+        return comparator.compare(a.current, b.current) < 0;
       }
     };
 
@@ -359,33 +344,18 @@ public final class Sort {
   /** Read in a single partition of data */
   int readPartition(ByteSequencesReader reader) throws IOException {
     long start = System.currentTimeMillis();
-
-    // We will be reallocating from scratch.
-    Arrays.fill(this.buffer, null);
-
-    int bytesLimit = this.ramBufferSize.bytes;
-    byte [][] data = this.buffer;
-    byte[] line;
-    int linesRead = 0;
-    while ((line = reader.read()) != null) {
-      if (linesRead + 1 >= data.length) {
-        data = Arrays.copyOf(data,
-            ArrayUtil.oversize(linesRead + MIN_EXPECTED_GROWTH, 
-                RamUsageEstimator.NUM_BYTES_OBJECT_REF));
-      }
-      data[linesRead++] = line;
-
+    final BytesRef scratch = new BytesRef();
+    while ((scratch.bytes = reader.read()) != null) {
+      scratch.length = scratch.bytes.length; 
+      buffer.append(scratch);
       // Account for the created objects.
       // (buffer slots do not account to buffer size.) 
-      bytesLimit -= line.length + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
-      if (bytesLimit < 0) {
+      if (ramBufferSize.bytes < buffer.bytesUsed()) {
         break;
       }
     }
-    this.buffer = data;
-
     sortInfo.readTime += (System.currentTimeMillis() - start);
-    return linesRead;
+    return buffer.size();
   }
 
   static class FileAndTop {
@@ -515,5 +485,9 @@ public final class Sort {
         ((Closeable) is).close();
       }
     }
+  }
+
+  public Comparator<BytesRef> getComparator() {
+    return comparator;
   }  
 }

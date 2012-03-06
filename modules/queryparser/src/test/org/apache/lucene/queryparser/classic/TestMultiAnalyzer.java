@@ -88,7 +88,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     qp.setPhraseSlop(0);
 
     // non-default operator:
-    qp.setDefaultOperator(QueryParser.AND_OPERATOR);
+    qp.setDefaultOperator(QueryParserBase.AND_OPERATOR);
     assertEquals("+(multi multi2) +foo", qp.parse("multi foo").toString());
 
   }

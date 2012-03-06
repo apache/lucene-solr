@@ -28,6 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -264,14 +265,14 @@ public class TestIndexableField extends LuceneTestCase {
             assertEquals(new BytesRef(""+counter), termsEnum.next());
             assertEquals(1, termsEnum.totalTermFreq());
             DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null, false);
-            assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+            assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
             assertEquals(1, dpEnum.freq());
             assertEquals(1, dpEnum.nextPosition());
 
             assertEquals(new BytesRef("text"), termsEnum.next());
             assertEquals(1, termsEnum.totalTermFreq());
             dpEnum = termsEnum.docsAndPositions(null, dpEnum, false);
-            assertTrue(dpEnum.nextDoc() != DocsEnum.NO_MORE_DOCS);
+            assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
             assertEquals(1, dpEnum.freq());
             assertEquals(0, dpEnum.nextPosition());
 

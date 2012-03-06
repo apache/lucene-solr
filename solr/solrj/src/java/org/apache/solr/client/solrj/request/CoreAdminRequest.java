@@ -105,7 +105,7 @@ public class CoreAdminRequest extends SolrRequest
         params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
       }
       if (shardId != null) {
-        params.set( ZkStateReader.SHARD_ID_PROP, shardId);
+        params.set( CoreAdminParams.SHARD, shardId);
       }
       if (roles != null) {
         params.set( CoreAdminParams.ROLES, roles);

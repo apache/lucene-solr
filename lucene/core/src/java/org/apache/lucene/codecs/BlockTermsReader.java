@@ -778,9 +778,6 @@ public class BlockTermsReader extends FieldsProducer {
         return state.ord;
       }
 
-      private void doPendingSeek() {
-      }
-
       /* Does initial decode of next block of terms; this
          doesn't actually decode the docFreq, totalTermFreq,
          postings details (frq/prx offset, etc.) metadata;

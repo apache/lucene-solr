@@ -31,6 +31,7 @@
     If 'null' (or absent), cores will not be manageable via REST
   -->
   <cores adminPath="/admin/cores" defaultCoreName="core0" host="127.0.0.1" hostPort="${hostPort:8983}" hostContext="solr" zkClientTimeout="8000">
+    <core name="collection1" instanceDir="." />
     <core name="core0" instanceDir="${theInstanceDir:./}" collection="${collection:acollection}">
       <property name="version" value="3.5"/>
       <property name="l10n" value="EN"/>

@@ -430,7 +430,7 @@ public class Automaton implements Cloneable {
       }
     }
     // map<state, set<state>>
-    @SuppressWarnings("unchecked") Set<State> map[] = new Set[states.length];
+    @SuppressWarnings({"rawtypes","unchecked"}) Set<State> map[] = new Set[states.length];
     for (int i = 0; i < map.length; i++)
       map[i] = new HashSet<State>();
     for (State s : states) {

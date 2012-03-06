@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -63,7 +64,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator(null);
     terms.seekCeil(new BytesRef("field"));
     DocsEnum termDocs = _TestUtil.docs(random, terms, reader.getLiveDocs(), null, true);
-    if (termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS)    {
+    if (termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)    {
       int docId = termDocs.docID();
       assertTrue(docId == 0);
       int freq = termDocs.freq();
@@ -142,19 +143,19 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     // without optimization (assumption skipInterval == 16)
     
     // with next
-    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(0, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.advance(0) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(0) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(2, tdocs.docID());
-    assertTrue(tdocs.advance(4) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(4) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(4, tdocs.docID());
-    assertTrue(tdocs.advance(9) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(9) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(9, tdocs.docID());
-    assertFalse(tdocs.advance(10) != DocsEnum.NO_MORE_DOCS);
+    assertFalse(tdocs.advance(10) != DocIdSetIterator.NO_MORE_DOCS);
     
     // without next
     tdocs = _TestUtil.docs(random, reader,
@@ -164,13 +165,13 @@ public class TestSegmentTermDocs extends LuceneTestCase {
                            null,
                            false);
     
-    assertTrue(tdocs.advance(0) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(0) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(0, tdocs.docID());
-    assertTrue(tdocs.advance(4) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(4) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(4, tdocs.docID());
-    assertTrue(tdocs.advance(9) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(9) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(9, tdocs.docID());
-    assertFalse(tdocs.advance(10) != DocsEnum.NO_MORE_DOCS);
+    assertFalse(tdocs.advance(10) != DocIdSetIterator.NO_MORE_DOCS);
     
     // exactly skipInterval documents and therefore with optimization
     
@@ -182,21 +183,21 @@ public class TestSegmentTermDocs extends LuceneTestCase {
                            null,
                            true);
 
-    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(10, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(11, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.advance(5) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(12, tdocs.docID());
-    assertTrue(tdocs.advance(15) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(15) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(15, tdocs.docID());
-    assertTrue(tdocs.advance(24) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(24) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(24, tdocs.docID());
-    assertTrue(tdocs.advance(25) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(25) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(25, tdocs.docID());
-    assertFalse(tdocs.advance(26) != DocsEnum.NO_MORE_DOCS);
+    assertFalse(tdocs.advance(26) != DocIdSetIterator.NO_MORE_DOCS);
     
     // without next
     tdocs = _TestUtil.docs(random, reader,
@@ -206,15 +207,15 @@ public class TestSegmentTermDocs extends LuceneTestCase {
                            null,
                            true);
     
-    assertTrue(tdocs.advance(5) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(10, tdocs.docID());
-    assertTrue(tdocs.advance(15) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(15) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(15, tdocs.docID());
-    assertTrue(tdocs.advance(24) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(24) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(24, tdocs.docID());
-    assertTrue(tdocs.advance(25) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(25) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(25, tdocs.docID());
-    assertFalse(tdocs.advance(26) != DocsEnum.NO_MORE_DOCS);
+    assertFalse(tdocs.advance(26) != DocIdSetIterator.NO_MORE_DOCS);
     
     // much more than skipInterval documents and therefore with optimization
     
@@ -226,23 +227,23 @@ public class TestSegmentTermDocs extends LuceneTestCase {
                            null,
                            true);
 
-    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(26, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(27, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.advance(5) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(28, tdocs.docID());
-    assertTrue(tdocs.advance(40) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(40) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(40, tdocs.docID());
-    assertTrue(tdocs.advance(57) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(57) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(57, tdocs.docID());
-    assertTrue(tdocs.advance(74) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(74) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(74, tdocs.docID());
-    assertTrue(tdocs.advance(75) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(75) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(75, tdocs.docID());
-    assertFalse(tdocs.advance(76) != DocsEnum.NO_MORE_DOCS);
+    assertFalse(tdocs.advance(76) != DocIdSetIterator.NO_MORE_DOCS);
     
     //without next
     tdocs = _TestUtil.docs(random, reader,
@@ -251,17 +252,17 @@ public class TestSegmentTermDocs extends LuceneTestCase {
                            MultiFields.getLiveDocs(reader),
                            null,
                            false);
-    assertTrue(tdocs.advance(5) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(26, tdocs.docID());
-    assertTrue(tdocs.advance(40) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(40) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(40, tdocs.docID());
-    assertTrue(tdocs.advance(57) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(57) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(57, tdocs.docID());
-    assertTrue(tdocs.advance(74) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(74) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(74, tdocs.docID());
-    assertTrue(tdocs.advance(75) != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(75) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(75, tdocs.docID());
-    assertFalse(tdocs.advance(76) != DocsEnum.NO_MORE_DOCS);
+    assertFalse(tdocs.advance(76) != DocIdSetIterator.NO_MORE_DOCS);
     
     reader.close();
     dir.close();

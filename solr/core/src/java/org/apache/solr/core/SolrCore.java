@@ -56,6 +56,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.URL;
@@ -69,6 +71,12 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class SolrCore implements SolrInfoMBean {
   public static final String version="1.0";  
 
+  // These should *only* be used for debugging or monitoring purposes
+  public static final AtomicLong numOpens = new AtomicLong();
+  public static final AtomicLong numCloses = new AtomicLong();
+  public static Map<SolrCore,Exception> openHandles = Collections.synchronizedMap(new IdentityHashMap<SolrCore,Exception>());
+
+  
   public static Logger log = LoggerFactory.getLogger(SolrCore.class);
 
   private String name;
@@ -618,6 +626,10 @@ public final class SolrCore implements SolrInfoMBean {
     // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
     // from the core.
     resourceLoader.inform(infoRegistry);
+    
+    // For debugging   
+//    numOpens.incrementAndGet();
+//    openHandles.put(this, new RuntimeException("unclosed core - name:" + getName() + " refs: " + refCount.get()));
   }
 
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {
@@ -772,6 +784,10 @@ public final class SolrCore implements SolrInfoMBean {
          }
       }
     }
+    
+    // For debugging 
+//    numCloses.incrementAndGet();
+//    openHandles.remove(this);
   }
 
   /** Current core usage count. */
@@ -1516,20 +1532,25 @@ public final class SolrCore implements SolrInfoMBean {
     NamedList<Object> toLog = rsp.getToLog();
     // for back compat, we set these now just in case other code
     // are expecting them during handleRequest
+
     toLog.add("webapp", req.getContext().get("webapp"));
     toLog.add("path", req.getContext().get("path"));
     toLog.add("params", "{" + req.getParamString() + "}");
-    
+
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(handler,req,rsp);
 
-    if (log.isInfoEnabled()) {
+    if (log.isInfoEnabled() && toLog.size() > 0) {
       StringBuilder sb = new StringBuilder(logid);
       for (int i=0; i<toLog.size(); i++) {
         String name = toLog.getName(i);
         Object val = toLog.getVal(i);
-        sb.append(name).append("=").append(val).append(" ");
+        if (name != null) {
+          sb.append(name).append('=');
+        }
+        sb.append(val).append(' ');
       }
+
       log.info(sb.toString());
     }
 
@@ -1551,9 +1572,12 @@ public final class SolrCore implements SolrInfoMBean {
     }
     responseHeader.add("status",status);
     responseHeader.add("QTime",qtime);
-    rsp.getToLog().add("status",status);
-    rsp.getToLog().add("QTime",qtime);
-    
+
+    if (rsp.getToLog().size() > 0) {
+      rsp.getToLog().add("status",status);
+      rsp.getToLog().add("QTime",qtime);
+    }
+
     SolrParams params = req.getParams();
     if( params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
       responseHeader.add("handler", handler.getName() );

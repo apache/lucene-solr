@@ -76,7 +76,7 @@ final class ExactPhraseScorer extends Scorer {
       // freq of rarest 2 terms is close:
       final boolean useAdvance = postings[i].docFreq > 5*postings[0].docFreq;
       chunkStates[i] = new ChunkState(postings[i].postings, -postings[i].position, useAdvance);
-      if (i > 0 && postings[i].postings.nextDoc() == DocsEnum.NO_MORE_DOCS) {
+      if (i > 0 && postings[i].postings.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
         noDocs = true;
         return;
       }
@@ -89,7 +89,7 @@ final class ExactPhraseScorer extends Scorer {
 
       // first (rarest) term
       final int doc = chunkStates[0].posEnum.nextDoc();
-      if (doc == DocsEnum.NO_MORE_DOCS) {
+      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
         docID = doc;
         return doc;
       }
@@ -140,8 +140,8 @@ final class ExactPhraseScorer extends Scorer {
 
     // first term
     int doc = chunkStates[0].posEnum.advance(target);
-    if (doc == DocsEnum.NO_MORE_DOCS) {
-      docID = DocsEnum.NO_MORE_DOCS;
+    if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+      docID = DocIdSetIterator.NO_MORE_DOCS;
       return doc;
     }
 
@@ -171,7 +171,7 @@ final class ExactPhraseScorer extends Scorer {
       }
 
       doc = chunkStates[0].posEnum.nextDoc();
-      if (doc == DocsEnum.NO_MORE_DOCS) {
+      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
         docID = doc;
         return doc;
       }

@@ -1,0 +1,263 @@
+#content #analysis-holder
+{
+    background-image: url( ../../img/div.gif );
+    background-position: 50% 0;
+    background-repeat: repeat-y;
+}
+
+#content #analysis #field-analysis
+{
+    margin-bottom: 0;
+}
+
+#content #analysis #field-analysis .content
+{
+    padding-bottom: 0;
+}
+
+#content #analysis .settings-holder
+{
+    clear: both;
+    padding-top: 15px;
+}
+
+#content #analysis .settings
+{
+    background-color: #fff;
+    border-top: 1px solid #fafafa;
+    border-bottom: 1px solid #fafafa;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+#content #analysis .settings select.loader
+{
+    background-position: 3px 50%;
+    padding-left: 21px;
+}
+
+#content #analysis .settings select optgroup
+{
+    font-style: normal;
+    padding: 5px;
+}
+
+#content #analysis .settings select option
+{
+    padding-left: 10px;
+}
+
+#content #analysis .settings div
+{
+    float: right;
+    width: 47%;
+}
+
+#content #analysis .settings button
+{
+    float: right;
+}
+
+#content #analysis .settings button.loader
+{
+    background-position: 2px 50%;
+    padding-left: 21px;
+}
+
+#content #analysis .settings .verbose_output
+{
+    float: left;
+    width: auto;
+}
+
+#content #analysis .settings .verbose_output a
+{
+    background-image: url( ../../img/ico/ui-check-box-uncheck.png );
+    background-position: 0 50%;
+    color: #999;
+    display: block;
+    padding-left: 21px;
+}
+
+#content #analysis .settings .verbose_output.active a
+{
+    background-image: url( ../../img/ico/ui-check-box.png );
+}
+
+#content #analysis .index label,
+#content #analysis .query label
+{
+    display: block;
+}
+
+#content #analysis .index textarea,
+#content #analysis .query textarea
+{
+    display: block;
+    width: 100%;
+}
+
+#content #analysis .index
+{
+    float: left;
+    margin-right: 0.5%;
+    min-width: 47%;
+    max-width: 99%;
+}
+
+#content #analysis .query
+{
+    float: right;
+    margin-left: 0.5%;
+    min-width: 47%;
+    max-width: 99%;
+}
+
+#content #analysis .analysis-error
+{
+    background-color: #f00;
+    background-image: url( ../../img/ico/construction.png );
+    background-position: 10px 50%;
+    color: #fff;
+    display: none;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding: 10px;
+    padding-left: 35px;
+}
+
+#content #analysis #analysis-result
+{
+    overflow: auto;
+}
+
+#content #analysis #analysis-result .index,
+#content #analysis #analysis-result .query
+{
+    background-color: #fff;
+    padding-top: 20px;
+}
+
+#content #analysis #analysis-result table
+{
+    border-collapse: collapse;
+}
+
+#content #analysis #analysis-result td
+{
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+#content #analysis #analysis-result td.part.analyzer div,
+#content #analysis #analysis-result td.part.spacer .holder,
+#content #analysis #analysis-result td td td
+{
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+
+#content #analysis #analysis-result td.legend,
+#content #analysis #analysis-result td.data tr.verbose_output
+{
+    display: none;
+}
+
+#content #analysis #analysis-result.verbose_output td.legend
+{
+    display: table-cell;
+}
+
+#content #analysis #analysis-result.verbose_output td.data tr.verbose_output
+{
+    display: table-row;
+}
+
+#content #analysis #analysis-result .match
+{
+    background-color: #e9eff7;
+    background-color: #f2f2ff;
+}
+
+#content #analysis #analysis-result td.part
+{
+    padding-bottom: 10px;
+}
+
+#content #analysis #analysis-result td.part.analyzer div
+{
+    border-right: 1px solid #f0f0f0;
+    padding-right: 10px;
+}
+
+#content #analysis #analysis-result td.part.analyzer abbr
+{
+    color: #c0c0c0;
+}
+
+#content #analysis #analysis-result td.part.legend .holder,
+#content #analysis #analysis-result td.part.data .holder
+{
+    padding-left: 10px;
+    padding-right: 10px;
+    border-right: 1px solid #c0c0c0;
+}
+
+#content #analysis #analysis-result td.part.legend td
+{
+    color: #c0c0c0;
+}
+
+#content #analysis #analysis-result td.part.legend .holder
+{
+    border-right-color: #f0f0f0;
+}
+
+#content #analysis #analysis-result td.part.data:last-child .holder
+{
+    padding-right: 0;
+    border-right: 0;
+}
+
+#content #analysis #analysis-result td.details 
+{
+    padding-left: 10px;
+    padding-right: 10px;
+    border-left: 1px solid #f0f0f0;
+    border-right: 1px solid #f0f0f0;
+}
+
+#content #analysis #analysis-result td.details:first-child
+{
+    padding-left: 0;
+    border-left: 0;
+}
+
+#content #analysis #analysis-result td.details:last-child
+{
+    padding-right: 0;
+    border-right: 0;
+}
+
+#content #analysis #analysis-result td.details tr.empty td
+{
+    color: #f0f0f0;
+}
+
+#content #analysis #analysis-result td.details tr.raw_bytes td
+{
+    letter-spacing: -1px;
+}
+
+#content #analysis #analysis-result .part table table td
+{
+    border-top: 1px solid #f0f0f0;
+}
+
+#content #analysis #analysis-result .part table table tr:first-child td
+{
+    border-top: 0;
+}
+
+#content #analysis #field-analysis h2 { background-image: url( ../../img/ico/receipt.png ); }
+#content #analysis .analysis-result h2 { background-image: url( ../../img/ico/receipt-invoice.png ); }

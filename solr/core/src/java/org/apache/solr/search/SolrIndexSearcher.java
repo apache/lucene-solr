@@ -79,6 +79,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final SolrCore core;
   private final IndexSchema schema;
   private String indexDir;
+  private boolean debug = log.isDebugEnabled();
 
   private final String name;
   private long openTime = System.currentTimeMillis();
@@ -244,17 +245,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * In particular, the underlying reader and any cache's in use are closed.
    */
   public void close() throws IOException {
-    if (cachingEnabled) {
-      StringBuilder sb = new StringBuilder();
-      sb.append("Closing ").append(name);
-      for (SolrCache cache : cacheList) {
-        sb.append("\n\t");
-        sb.append(cache);
+    if (debug) {
+      if (cachingEnabled) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Closing ").append(name);
+        for (SolrCache cache : cacheList) {
+          sb.append("\n\t");
+          sb.append(cache);
+        }
+        log.debug(sb.toString());
+      } else {
+        if (debug) log.debug("Closing " + name);
       }
-      log.info(sb.toString());
-    } else {
-      log.debug("Closing " + name);
     }
+
     core.getInfoRegistry().remove(name);
 
     // super.close();
@@ -1897,13 +1901,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    */
   public void warm(SolrIndexSearcher old) throws IOException {
     // Make sure this is first!  filters can help queryResults execute!
-    boolean logme = log.isInfoEnabled();
     long warmingStartTime = System.currentTimeMillis();
     // warm the caches in order...
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("warming","true");
     for (int i=0; i<cacheList.length; i++) {
-      if (logme) log.info("autowarming " + this + " from " + old + "\n\t" + old.cacheList[i]);
+      if (debug) log.debug("autowarming " + this + " from " + old + "\n\t" + old.cacheList[i]);
 
 
       SolrQueryRequest req = new LocalSolrQueryRequest(core,params) {
@@ -1923,7 +1926,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         }
       }
 
-      if (logme) log.info("autowarming result for " + this + "\n\t" + this.cacheList[i]);
+      if (debug) log.debug("autowarming result for " + this + "\n\t" + this.cacheList[i]);
     }
     warmupTime = System.currentTimeMillis() - warmingStartTime;
   }

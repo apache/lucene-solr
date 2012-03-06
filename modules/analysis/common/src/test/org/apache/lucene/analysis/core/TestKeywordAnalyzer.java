@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -102,7 +103,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
                                  MultiFields.getLiveDocs(reader),
                                  null,
                                  false);
-    assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     td = _TestUtil.docs(random,
                         reader,
                         "partnum",
@@ -110,7 +111,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
                         MultiFields.getLiveDocs(reader),
                         null,
                         false);
-    assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
   }
 
   // LUCENE-1441

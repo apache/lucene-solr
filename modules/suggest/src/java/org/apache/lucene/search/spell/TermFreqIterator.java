@@ -17,34 +17,34 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-import java.util.Iterator;
+import java.io.IOException;
+import java.util.Comparator;
 
-public interface TermFreqIterator extends Iterator<String> {
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 
-  public float freq();
+public interface TermFreqIterator extends BytesRefIterator {
+
+  public long weight();
   
   public static class TermFreqIteratorWrapper implements TermFreqIterator {
-    private Iterator<String> wrapped;
+    private BytesRefIterator wrapped;
     
-    public TermFreqIteratorWrapper(Iterator<String> wrapped) {
+    public TermFreqIteratorWrapper(BytesRefIterator wrapped) {
       this.wrapped = wrapped;
     }
 
-    public float freq() {
-      return 1.0f;
+    public long weight() {
+      return 1;
     }
 
-    public boolean hasNext() {
-      return wrapped.hasNext();
+    public BytesRef next() throws IOException {
+      return wrapped.next();
     }
 
-    public String next() {
-      return wrapped.next().toString();
+    @Override
+    public Comparator<BytesRef> getComparator() {
+      return wrapped.getComparator();
     }
-
-    public void remove() {
-      throw new UnsupportedOperationException();
-    }
-    
   }
 }

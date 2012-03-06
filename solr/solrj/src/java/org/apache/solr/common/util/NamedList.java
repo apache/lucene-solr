@@ -395,6 +395,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return null;
   }
 
+
+  public void clear() {
+    nvPairs.clear();
+  }
+
   @Override
   public int hashCode() {
     return nvPairs.hashCode();

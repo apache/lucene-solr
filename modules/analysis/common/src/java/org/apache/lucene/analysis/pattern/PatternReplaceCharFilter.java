@@ -18,12 +18,13 @@
 package org.apache.lucene.analysis.pattern;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.charfilter.BaseCharFilter;
 import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.charfilter.BaseCharFilter;
 
 /**
  * CharFilter that uses a regular expression for the target of replace string.
@@ -48,147 +49,88 @@ import org.apache.lucene.analysis.CharStream;
  * @since Solr 1.5
  */
 public class PatternReplaceCharFilter extends BaseCharFilter {
+  @Deprecated
+  public static final int DEFAULT_MAX_BLOCK_CHARS = 10000;
 
   private final Pattern pattern;
   private final String replacement;
-  private final int maxBlockChars;
-  private final String blockDelimiters;
-  public static final int DEFAULT_MAX_BLOCK_CHARS = 10000;
+  private Reader transformedInput;
 
-  private LinkedList<Character> buffer;
-  private int nextCharCounter;
-  private char[] blockBuffer;
-  private int blockBufferLength;
-  private String replaceBlockBuffer;
-  private int replaceBlockBufferOffset;
-  
-  public PatternReplaceCharFilter( Pattern pattern, String replacement, CharStream in ){
-    this( pattern, replacement, DEFAULT_MAX_BLOCK_CHARS, null, in );
-  }
-
-  public PatternReplaceCharFilter( Pattern pattern, String replacement,
-      int maxBlockChars, CharStream in ){
-    this( pattern, replacement, maxBlockChars, null, in );
-  }
-
-  public PatternReplaceCharFilter( Pattern pattern, String replacement,
-      String blockDelimiters, CharStream in ){
-    this( pattern, replacement, DEFAULT_MAX_BLOCK_CHARS, blockDelimiters, in );
-  }
-
-  public PatternReplaceCharFilter( Pattern pattern, String replacement,
-      int maxBlockChars, String blockDelimiters, CharStream in ){
-    super( in );
+  public PatternReplaceCharFilter(Pattern pattern, String replacement, CharStream in) {
+    super(in);
     this.pattern = pattern;
     this.replacement = replacement;
-    if( maxBlockChars < 1 )
-      throw new IllegalArgumentException( "maxBlockChars should be greater than 0, but it is " + maxBlockChars );
-    this.maxBlockChars = maxBlockChars;
-    this.blockDelimiters = blockDelimiters;
-    blockBuffer = new char[maxBlockChars];
-  }
-  
-  private boolean prepareReplaceBlock() throws IOException {
-    while( true ){
-      if( replaceBlockBuffer != null && replaceBlockBuffer.length() > replaceBlockBufferOffset )
-        return true;
-      // prepare block buffer
-      blockBufferLength = 0;
-      while( true ){
-        int c = nextChar();
-        if( c == -1 ) break;
-        blockBuffer[blockBufferLength++] = (char)c;
-        // end of block?
-        boolean foundDelimiter =
-          ( blockDelimiters != null ) &&
-          ( blockDelimiters.length() > 0 ) &&
-          blockDelimiters.indexOf( c ) >= 0;
-        if( foundDelimiter ||
-            blockBufferLength >= maxBlockChars ) break;
-      }
-      // block buffer available?
-      if( blockBufferLength == 0 ) return false;
-      replaceBlockBuffer = getReplaceBlock( blockBuffer, 0, blockBufferLength );
-      replaceBlockBufferOffset = 0;
-    }
   }
 
-  @Override
-  public int read() throws IOException {
-    while( prepareReplaceBlock() ){
-      return replaceBlockBuffer.charAt( replaceBlockBufferOffset++ );
-    }
-    return -1;
+  @Deprecated
+  public PatternReplaceCharFilter(Pattern pattern, String replacement, 
+      int maxBlockChars, String blockDelimiter, CharStream in) {
+    this(pattern, replacement, in);
   }
 
   @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
-    char[] tmp = new char[len];
-    int l = input.read(tmp, 0, len);
-    if (l != -1) {
-      for(int i = 0; i < l; i++)
-        pushLastChar(tmp[i]);
+    // Buffer all input on the first call.
+    if (transformedInput == null) {
+      StringBuilder buffered = new StringBuilder();
+      char [] temp = new char [1024];
+      for (int cnt = input.read(temp); cnt > 0; cnt = input.read(temp)) {
+        buffered.append(temp, 0, cnt);
+      }
+      transformedInput = new StringReader(processPattern(buffered).toString());
     }
-    l = 0;
-    for(int i = off; i < off + len; i++) {
-      int c = read();
-      if (c == -1) break;
-      cbuf[i] = (char) c;
-      l++;
-    }
-    return l == 0 ? -1 : l;
+
+    return transformedInput.read(cbuf, off, len);
   }
 
-  private int nextChar() throws IOException {
-    if (buffer != null && !buffer.isEmpty()) {
-      nextCharCounter++;
-      return buffer.removeFirst().charValue();
-    }
-    int c = input.read();
-    if( c != -1 )
-      nextCharCounter++;
-    return c;
+  @Override
+  protected int correct(int currentOff) {
+    return Math.max(0,  super.correct(currentOff));
   }
 
-  private void pushLastChar(int c) {
-    if (buffer == null) {
-      buffer = new LinkedList<Character>();
-    }
-    buffer.addLast(new Character((char) c));
-  }
-  
-  String getReplaceBlock( String block ){
-    char[] blockChars = block.toCharArray();
-    return getReplaceBlock( blockChars, 0, blockChars.length );
-  }
-    
-  String getReplaceBlock( char block[], int offset, int length ){
-    StringBuffer replaceBlock = new StringBuffer();
-    String sourceBlock = new String( block, offset, length );
-    Matcher m = pattern.matcher( sourceBlock );
-    int lastMatchOffset = 0, lastDiff = 0;
-    while( m.find() ){
-      m.appendReplacement( replaceBlock, replacement );
-      // record cumulative diff for the offset correction
-      int diff = replaceBlock.length() - lastMatchOffset - lastDiff - ( m.end( 0 ) - lastMatchOffset );
-      if (diff != 0) {
-        int prevCumulativeDiff = getLastCumulativeDiff();
-        if (diff > 0) {
-          for(int i = 0; i < diff; i++){
-            addOffCorrectMap(nextCharCounter - length + m.end( 0 ) + i - prevCumulativeDiff,
-                prevCumulativeDiff - 1 - i);
-          }
+  /**
+   * Replace pattern in input and mark correction offsets. 
+   */
+  CharSequence processPattern(CharSequence input) {
+    final Matcher m = pattern.matcher(input);
+
+    final StringBuffer cumulativeOutput = new StringBuffer();
+    int cumulative = 0;
+    int lastMatchEnd = 0;
+    while (m.find()) {
+      final int groupSize = m.end() - m.start();
+      final int skippedSize = m.start() - lastMatchEnd;
+      lastMatchEnd = m.end();
+
+      final int lengthBeforeReplacement = cumulativeOutput.length() + skippedSize;
+      m.appendReplacement(cumulativeOutput, replacement);
+      // Matcher doesn't tell us how many characters have been appended before the replacement.
+      // So we need to calculate it. Skipped characters have been added as part of appendReplacement.
+      final int replacementSize = cumulativeOutput.length() - lengthBeforeReplacement;
+
+      if (groupSize != replacementSize) {
+        if (replacementSize < groupSize) {
+          // The replacement is smaller. 
+          // Add the 'backskip' to the next index after the replacement (this is possibly 
+          // after the end of string, but it's fine -- it just means the last character 
+          // of the replaced block doesn't reach the end of the original string.
+          cumulative += groupSize - replacementSize;
+          int atIndex = lengthBeforeReplacement + replacementSize;
+          // System.err.println(atIndex + "!" + cumulative);
+          addOffCorrectMap(atIndex, cumulative);
         } else {
-          addOffCorrectMap(nextCharCounter - length + m.end( 0 ) + diff - prevCumulativeDiff,
-              prevCumulativeDiff - diff);
+          // The replacement is larger. Every new index needs to point to the last
+          // element of the original group (if any).
+          for (int i = groupSize; i < replacementSize; i++) {
+            addOffCorrectMap(lengthBeforeReplacement + i, --cumulative);
+            // System.err.println((lengthBeforeReplacement + i) + " " + cumulative);
+          }
         }
       }
-      // save last offsets
-      lastMatchOffset = m.end( 0 );
-      lastDiff = diff;
     }
-    // copy remaining of the part of source block
-    m.appendTail( replaceBlock );
-    return replaceBlock.toString();
+
+    // Append the remaining output, no further changes to indices.
+    m.appendTail(cumulativeOutput);
+    return cumulativeOutput;    
   }
 }

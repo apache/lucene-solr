@@ -859,8 +859,12 @@ New Features
 * LUCENE-3725: Added optional packing to FST building; this uses extra
   RAM during building but results in a smaller FST.  (Mike McCandless)
 
-* LUCENE-3714: Add top N shortest cost paths search for FST<Long>.
+* LUCENE-3714: Add top N shortest cost paths search for FST.
   (Robert Muir, Dawid Weiss, Mike McCandless)
+
+* LUCENE-3789: Expose MTQ TermsEnum via RewriteMethod for non package private
+  access (Simon Willnauer)
+
 
 Bug fixes
 
@@ -911,6 +915,11 @@ Bug fixes
   These checks now use getFilePointer instead to avoid this.
   (Jamir Shaikh, Mike McCandless, Robert Muir)
 
+* LUCENE-3816: Fixed problem in FilteredDocIdSet, if null was returned
+  from the delegate DocIdSet.iterator(), which is allowed to return
+  null by DocIdSet specification when no documents match.
+  (Shay Banon via Uwe Schindler)
+
 Optimizations
 
 * LUCENE-3653: Improve concurrency in VirtualMethod and AttributeSource by
@@ -922,6 +931,12 @@ Documentation
 * LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)
 
 Build
+
+* LUCENE-3847: LuceneTestCase will now check for modifications of System 
+  properties before and after each test (and suite). If changes are detected,
+  the test will fail. A rule can be used to reset system properties to
+  before-scope state (and this has been used to make Solr tests pass).
+  (Dawid Weiss, Uwe Schindler).
 
 * LUCENE-3228: Stop downloading external javadoc package-list files:
 
@@ -1108,9 +1123,6 @@ New Features
   
 * LUCENE-3558: Moved SearcherManager, NRTManager & SearcherLifetimeManager into
   core. All classes are contained in o.a.l.search. (Simon Willnauer)
-
-* LUCENE-3789: Expose MTQ TermsEnum via RewriteMethod for non package private
-  access (Simon Willnauer)
 
 Optimizations
 

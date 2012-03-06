@@ -88,7 +88,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     assertEquals(2, dp.nextPosition());
     assertEquals(9, dp.startOffset());
     assertEquals(17, dp.endOffset());
-    assertEquals(DocsEnum.NO_MORE_DOCS, dp.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
 
     dp = MultiFields.getTermPositionsEnum(r, null, "content", new BytesRef("b"), true);
     assertNotNull(dp);
@@ -97,7 +97,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     assertEquals(1, dp.nextPosition());
     assertEquals(8, dp.startOffset());
     assertEquals(9, dp.endOffset());
-    assertEquals(DocsEnum.NO_MORE_DOCS, dp.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
 
     dp = MultiFields.getTermPositionsEnum(r, null, "content", new BytesRef("c"), true);
     assertNotNull(dp);
@@ -106,7 +106,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     assertEquals(3, dp.nextPosition());
     assertEquals(19, dp.startOffset());
     assertEquals(50, dp.endOffset());
-    assertEquals(DocsEnum.NO_MORE_DOCS, dp.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
 
     r.close();
     dir.close();
@@ -156,7 +156,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     for (String term : terms) {
       DocsAndPositionsEnum dp = MultiFields.getTermPositionsEnum(reader, null, "numbers", new BytesRef(term), true);
       int doc;
-      while((doc = dp.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+      while((doc = dp.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         String storedNumbers = reader.document(doc).get("numbers");
         int freq = dp.freq();
         for (int i = 0; i < freq; i++) {
@@ -304,7 +304,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
           assertNotNull(docs);
           int doc;
           //System.out.println("    doc/freq");
-          while((doc = docs.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+          while((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
             //System.out.println("      doc=" + docIDToID[doc] + " docID=" + doc + " " + expected.size() + " freq");
             assertNotNull(expected);
@@ -314,7 +314,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
           docsAndPositions = termsEnum.docsAndPositions(null, docsAndPositions, false);
           assertNotNull(docsAndPositions);
           //System.out.println("    doc/freq/pos");
-          while((doc = docsAndPositions.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+          while((doc = docsAndPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
             //System.out.println("      doc=" + docIDToID[doc] + " " + expected.size() + " freq");
             assertNotNull(expected);
@@ -329,7 +329,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
           docsAndPositionsAndOffsets = termsEnum.docsAndPositions(null, docsAndPositions, true);
           assertNotNull(docsAndPositionsAndOffsets);
           //System.out.println("    doc/freq/pos/offs");
-          while((doc = docsAndPositions.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+          while((doc = docsAndPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
             //System.out.println("      doc=" + docIDToID[doc] + " " + expected.size() + " freq");
             assertNotNull(expected);

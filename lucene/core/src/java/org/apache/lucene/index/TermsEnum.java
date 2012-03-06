@@ -23,6 +23,7 @@ import java.util.Comparator;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 
 /** Iterator to seek ({@link #seekCeil(BytesRef)}, {@link
  * #seekExact(BytesRef,boolean)}) or step through ({@link
@@ -40,7 +41,7 @@ import org.apache.lucene.util.BytesRef;
  * of the <code>seek</code> methods.
  *
  * @lucene.experimental */
-public abstract class TermsEnum {
+public abstract class TermsEnum implements BytesRefIterator {
 
   private AttributeSource atts = null;
 
@@ -114,14 +115,6 @@ public abstract class TermsEnum {
     }
   }
 
-  /** Increments the enumeration to the next term.
-   *  Returns the resulting term, or null if the end was
-   *  hit (which means the enum is unpositioned).  The
-   *  returned BytesRef may be re-used across calls to next.
-   *  After this method returns null, do not call it again:
-   *  the results are undefined. */
-  public abstract BytesRef next() throws IOException;
-
   /** Returns current term. Do not call this when the enum
    *  is unpositioned. */
   public abstract BytesRef term() throws IOException;
@@ -186,13 +179,6 @@ public abstract class TermsEnum {
       }
     };
   }
-  
-  /** Return the {@link BytesRef} Comparator used to sort
-   *  terms provided by the iterator.  This may return
-   *  null if there are no terms.  Callers may invoke this
-   *  method many times, so it's best to cache a single
-   *  instance & reuse it. */
-  public abstract Comparator<BytesRef> getComparator() throws IOException;
 
   /** An empty TermsEnum for quickly returning an empty instance e.g.
    * in {@link org.apache.lucene.search.MultiTermQuery}

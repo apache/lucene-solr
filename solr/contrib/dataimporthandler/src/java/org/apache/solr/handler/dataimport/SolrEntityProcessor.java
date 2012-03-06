@@ -17,16 +17,6 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -37,8 +27,19 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 
 /**
  * <p>
@@ -58,15 +59,8 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   
   public static final String SOLR_SERVER = "url";
   public static final String QUERY = "query";
-  /**
-   * (format="javabin|xml") default is javabin
-   */
-  public static final String FORMAT = "format";
-  public static final String ROWS = "rows";
-  public static final String FIELDS = "fields";
-  public static final String FQ = "fq";
   public static final String TIMEOUT = "timeout";
-  
+
   public static final int TIMEOUT_SECS = 5 * 60; // 5 minutes
   public static final int ROWS_DEFAULT = 50;
   
@@ -75,10 +69,22 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   private int rows = ROWS_DEFAULT;
   private String[] filterQueries;
   private String[] fields;
+  private String queryType;
   private int timeout = TIMEOUT_SECS;
   
   private boolean initDone = false;
-  
+
+  /**
+   * Factory method that returns a {@link HttpClient} instance used for interfacing with a source Solr service.
+   * One can override this method to return a differently configured {@link HttpClient} instance.
+   * For example configure https and http authentication.
+   *
+   * @return a {@link HttpClient} instance used for interfacing with a source Solr service
+   */
+  protected HttpClient getHttpClient() {
+    return new HttpClient(new MultiThreadedHttpConnectionManager());
+  }
+
   @Override
   protected void firstInit(Context context) {
     super.firstInit(context);
@@ -89,23 +95,21 @@ public class SolrEntityProcessor extends EntityProcessorBase {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
             "SolrEntityProcessor: parameter 'url' is required");
       }
-      HttpClient client = new HttpClient(
-          new MultiThreadedHttpConnectionManager());
+
+      HttpClient client = getHttpClient();
       URL url = new URL(serverPath);
-      
-      if ("xml".equals(context.getResolvedEntityAttribute(FORMAT))) {
-        solrServer = new CommonsHttpSolrServer(url, client,
-            new XMLResponseParser(), false);
+      // (wt="javabin|xml") default is javabin
+      if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {
+        solrServer = new CommonsHttpSolrServer(url, client, new XMLResponseParser(), false);
         LOG.info("using XMLResponseParser");
       } else {
         solrServer = new CommonsHttpSolrServer(url, client);
         LOG.info("using BinaryResponseParser");
       }
-      
     } catch (MalformedURLException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE, e);
     }
-    
+
     this.queryString = context.getResolvedEntityAttribute(QUERY);
     if (this.queryString == null) {
       throw new DataImportHandlerException(
@@ -114,21 +118,21 @@ public class SolrEntityProcessor extends EntityProcessorBase {
       );
     }
     
-    String rowsP = context.getResolvedEntityAttribute(ROWS);
+    String rowsP = context.getResolvedEntityAttribute(CommonParams.ROWS);
     if (rowsP != null) {
       rows = Integer.parseInt(rowsP);
     }
     
-    String fqAsString = context.getResolvedEntityAttribute(FQ);
+    String fqAsString = context.getResolvedEntityAttribute(CommonParams.FQ);
     if (fqAsString != null) {
       this.filterQueries = fqAsString.split(",");
     }
     
-    String fieldsAsString = context.getResolvedEntityAttribute(FIELDS);
+    String fieldsAsString = context.getResolvedEntityAttribute(CommonParams.FL);
     if (fieldsAsString != null) {
       this.fields = fieldsAsString.split(",");
     }
-    
+    this.queryType = context.getResolvedEntityAttribute(CommonParams.QT);
     String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
     if (timeoutAsString != null) {
       this.timeout = Integer.parseInt(timeoutAsString);
@@ -181,6 +185,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
         solrQuery.addField(field);
       }
     }
+    solrQuery.setQueryType(queryType);
     solrQuery.setFilterQueries(filterQueries);
     solrQuery.setTimeAllowed(timeout * 1000);
     

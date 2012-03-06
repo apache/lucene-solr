@@ -179,7 +179,7 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   @Override
   public String toString()
   {
-    return "SolrInputDocument{" + _fields.values() + "}";
+    return "SolrInputDocument" + _fields.values();
   }
   
 

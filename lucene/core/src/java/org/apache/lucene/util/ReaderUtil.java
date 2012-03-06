@@ -17,13 +17,10 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
 import java.util.List;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;

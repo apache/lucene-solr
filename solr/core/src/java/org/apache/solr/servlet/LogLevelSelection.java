@@ -21,6 +21,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.solr.handler.admin.LogLevelHandler;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
@@ -32,8 +35,8 @@ import java.util.logging.Logger;
 /**
  * Admin JDK Logger level report and selection servlet.
  *
- *
  * @since solr 1.3
+ * @deprecated  {@link LogLevelHandler} this servlet will be removed before solr 4.0
  */
 public final class LogLevelSelection extends HttpServlet {
   @Override
@@ -56,8 +59,9 @@ public final class LogLevelSelection extends HttpServlet {
     out.write("<title>Solr Admin: JDK Log Level Selector</title>\n");
     out.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"solr-admin.css\" />");
     out.write("</head><body>\n");
-    out.write("<a href=\".\"><img border=\"0\" align=\"right\" height=\"78\" width=\"142\" src=\"solr_small.png\" alt=\"Solr\"></a>");
-    out.write("<h1>JDK Log Level Selector</h1>");
+    out.write("<a href=\".\"><img border=\"0\" align=\"right\" height=\"78\" width=\"142\" src=\"img/solr.png\" alt=\"Solr\"></a>");
+    out.write("<h1 style='margin-bottom:5px;'>JDK Log Level Selector</h1>");
+    out.write("<h2 style='color:#AA0000; margin-top:0px;'>This will be removed before Solr 4.0.  See <a href='/#/logging'>logging</a></h1>");
 
     out.write("<p>Below is the complete JDK Log hierarchy with " +
             "intermediate logger/categories synthesized.  " +

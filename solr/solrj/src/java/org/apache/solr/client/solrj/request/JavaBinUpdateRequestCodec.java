@@ -200,15 +200,7 @@ public class JavaBinUpdateRequestCodec {
 
   private NamedList solrParamsToNamedList(SolrParams params) {
     if (params == null) return new NamedList();
-    Iterator<String> it = params.getParameterNamesIterator();
-    NamedList nl = new NamedList();
-    while (it.hasNext()) {
-      String s = it.next();
-      for(String val: params.getParams(s)) {
-        nl.add(s, val);
-      }
-    }
-    return nl;
+    return params.toNamedList();
   }
 
   public static interface StreamingUpdateHandler {

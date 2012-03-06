@@ -22,7 +22,6 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.io.Closeable;
-import java.util.Collection;
 
 
 // TODO

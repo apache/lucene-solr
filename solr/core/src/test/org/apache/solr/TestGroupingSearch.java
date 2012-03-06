@@ -215,6 +215,19 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testGroupingWithTimeAllowed() throws Exception {
+    assertU(add(doc("id", "1")));
+    assertU(add(doc("id", "2")));
+    assertU(add(doc("id", "3")));
+    assertU(add(doc("id", "4")));
+    assertU(add(doc("id", "5")));
+    assertU(commit());
+
+    // Just checking if no errors occur
+    assertJQ(req("q", "*:*", "group", "true", "group.query", "id:1", "group.query", "id:2", "timeAllowed", "1"));
+  }
+
+  @Test
   public void testGroupingSortByFunction() throws Exception {
     assertU(add(doc("id", "1", "value1_i", "1", "value2_i", "1", "store", "45.18014,-93.87742")));
     assertU(add(doc("id", "2", "value1_i", "1", "value2_i", "2", "store", "45.18014,-93.87743")));

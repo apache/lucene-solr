@@ -17,10 +17,13 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * A {@link TermFreqIterator} over a sequence of {@link TermFreq}s.
@@ -28,6 +31,7 @@ import org.apache.lucene.search.spell.TermFreqIterator;
 public final class TermFreqArrayIterator implements TermFreqIterator {
   private final Iterator<TermFreq> i;
   private TermFreq current;
+  private final BytesRef spare = new BytesRef();
 
   public TermFreqArrayIterator(Iterator<TermFreq> i) {
     this.i = i;
@@ -41,17 +45,22 @@ public final class TermFreqArrayIterator implements TermFreqIterator {
     this(i.iterator());
   }
   
-  public float freq() {
+  public long weight() {
     return current.v;
   }
-  
-  public boolean hasNext() {
-    return i.hasNext();
-  }
-  
-  public String next() {
-    return (current = i.next()).term;
+
+  @Override
+  public BytesRef next() throws IOException {
+    if (i.hasNext()) {
+      current = i.next();
+      spare.copyBytes(current.term);
+      return spare;
+    }
+    return null;
   }
 
-  public void remove() { throw new UnsupportedOperationException(); }
+  @Override
+  public Comparator<BytesRef> getComparator() {
+    return null;
+  }
 }

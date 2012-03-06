@@ -114,7 +114,7 @@ public class TestDocValues extends LuceneTestCase {
           assertEquals("doc " + idx, values[idx], ss.getByOrd(ss.ord(idx),
               bytesRef).utf8ToString());
          int ord = ss
-              .getByValue(new BytesRef(values[idx]), new BytesRef());
+              .getOrdByValue(new BytesRef(values[idx]), new BytesRef());
           assertTrue(ord >= 0);
           assertEquals(ss.ord(idx), ord);
         }
@@ -125,7 +125,7 @@ public class TestDocValues extends LuceneTestCase {
         final int valueCount = ss.getValueCount();
         for (int i = 0; i < 1000; i++) {
           BytesRef bytesValue = new BytesRef(_TestUtil.randomFixedByteLengthUnicodeString(random, fixedSize? fixedLength : 1 + random.nextInt(39)));
-          int ord = ss.getByValue(bytesValue, new BytesRef());
+          int ord = ss.getOrdByValue(bytesValue, new BytesRef());
           if (ord >= 0) {
             assertTrue(bytesValue
                 .bytesEquals(ss.getByOrd(ord, bytesRef)));

@@ -129,7 +129,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public FieldComparator setNextReader(AtomicReaderContext context)
+    public FieldComparator<Object> setNextReader(AtomicReaderContext context)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -144,7 +144,7 @@ final class JustCompileSearch {
   static final class JustCompileFieldComparatorSource extends FieldComparatorSource {
 
     @Override
-    public FieldComparator newComparator(String fieldname, int numHits,
+    public FieldComparator<?> newComparator(String fieldname, int numHits,
         int sortPos, boolean reversed) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

@@ -488,19 +488,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         }
       }
     }
-
-    @Override
-    public String toString() {
-      MergePolicy.OneMerge merge = getRunningMerge();
-      if (merge == null) {
-        merge = startMerge;
-      }
-      try {
-        return "merge thread: " + tWriter.segString(merge.segments);
-      } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
-      }
-    }
   }
 
   /** Called when an exception is hit in a background merge

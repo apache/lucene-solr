@@ -56,7 +56,8 @@ public class SolrException extends RuntimeException {
   };
 
   public SolrException(ErrorCode code, String msg) {
-    this(code, msg, null);
+    super(msg);
+    this.code = code.code;
   }
   public SolrException(ErrorCode code, String msg, Throwable th) {
     super(msg, th);
@@ -64,7 +65,8 @@ public class SolrException extends RuntimeException {
   }
 
   public SolrException(ErrorCode code, Throwable th) {
-    this(code, null, th);
+    super(th);
+    this.code = code.code;
   }
   
   int code=0;

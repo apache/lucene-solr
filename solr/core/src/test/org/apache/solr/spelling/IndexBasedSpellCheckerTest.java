@@ -110,7 +110,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
-    spellchecker.add(IndexBasedSpellChecker.FIELD, "title");
+    spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
 
@@ -186,7 +186,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
-    spellchecker.add(IndexBasedSpellChecker.FIELD, "title");
+    spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
@@ -243,7 +243,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
-    spellchecker.add(IndexBasedSpellChecker.FIELD, "title");
+    spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     spellchecker.add(AbstractLuceneSpellChecker.STRING_DISTANCE, JaroWinklerDistance.class.getName());
     SolrCore core = h.getCore();
@@ -299,7 +299,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, altIndexDir.getAbsolutePath());
-    spellchecker.add(IndexBasedSpellChecker.FIELD, "title");
+    spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);

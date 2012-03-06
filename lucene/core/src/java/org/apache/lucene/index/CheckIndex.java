@@ -576,7 +576,7 @@ public class CheckIndex {
         segInfoStat.fieldNormStatus = testFieldNorms(fieldInfos, reader);
 
         // Test the Term Index
-        segInfoStat.termIndexStatus = testPostings(reader);
+        segInfoStat.termIndexStatus = testPostings(fieldInfos, reader);
 
         // Test Stored Fields
         segInfoStat.storedFieldStatus = testStoredFields(info, reader, nf);
@@ -691,7 +691,7 @@ public class CheckIndex {
   /**
    * Test the term index.
    */
-  private Status.TermIndexStatus testPostings(SegmentReader reader) {
+  private Status.TermIndexStatus testPostings(FieldInfos fieldInfos, SegmentReader reader) {
 
     // TODO: we should go and verify term vectors match, if
     // crossCheckTermVectors is on...
@@ -720,15 +720,31 @@ public class CheckIndex {
       DocsEnum docsAndFreqs = null;
       DocsAndPositionsEnum postings = null;
 
+      String lastField = null;
       final FieldsEnum fieldsEnum = fields.iterator();
       while(true) {
         final String field = fieldsEnum.next();
         if (field == null) {
           break;
         }
+        // MultiFieldsEnum relies upon this order...
+        if (lastField != null && field.compareTo(lastField) <= 0) {
+          throw new RuntimeException("fields out of order: lastField=" + lastField + " field=" + field);
+        }
+        lastField = field;
+        
+        // check that the field is in fieldinfos, and is indexed.
+        // TODO: add a separate test to check this for different reader impls
+        FieldInfo fi = fieldInfos.fieldInfo(field);
+        if (fi == null) {
+          throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, no fieldInfos for: " + field);
+        }
+        if (!fi.isIndexed) {
+          throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, isIndexed == false for: " + field);
+        }
 
         // TODO: really the codec should not return a field
-        // from FieldsEnum if it has to Terms... but we do
+        // from FieldsEnum if it has no Terms... but we do
         // this today:
         // assert fields.terms(field) != null;
         computedFieldCount++;
@@ -909,7 +925,7 @@ public class CheckIndex {
               final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
               postings = termsEnum.docsAndPositions(liveDocs, postings, false);
               final int docID = postings.advance(skipDocID);
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               } else {
                 if (docID < skipDocID) {
@@ -932,7 +948,7 @@ public class CheckIndex {
                 } 
 
                 final int nextDocID = postings.nextDoc();
-                if (nextDocID == DocsEnum.NO_MORE_DOCS) {
+                if (nextDocID == DocIdSetIterator.NO_MORE_DOCS) {
                   break;
                 }
                 if (nextDocID <= docID) {
@@ -945,14 +961,14 @@ public class CheckIndex {
               final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
               docs = termsEnum.docs(liveDocs, docs, false);
               final int docID = docs.advance(skipDocID);
-              if (docID == DocsEnum.NO_MORE_DOCS) {
+              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               } else {
                 if (docID < skipDocID) {
                   throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
                 }
                 final int nextDocID = docs.nextDoc();
-                if (nextDocID == DocsEnum.NO_MORE_DOCS) {
+                if (nextDocID == DocIdSetIterator.NO_MORE_DOCS) {
                   break;
                 }
                 if (nextDocID <= docID) {
@@ -1051,7 +1067,7 @@ public class CheckIndex {
                   throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
                 }
 
-                while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+                while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                   totDocCount++;
                 }
               }

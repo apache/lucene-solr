@@ -171,6 +171,9 @@ final class SlowSynonymFilterFactory extends BaseTokenFilterFactory implements R
   private static TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname, Map<String,String> args){
     TokenizerFactory tokFactory = (TokenizerFactory)loader.newInstance( cname );
     tokFactory.init( args );
+    if (tokFactory instanceof ResourceLoaderAware) {
+      ((ResourceLoaderAware) tokFactory).inform(loader);
+    }
     return tokFactory;
   }
 

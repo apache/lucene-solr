@@ -60,11 +60,14 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionBucket;
 import org.apache.solr.update.VersionInfo;
-import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
+  public final static Logger log = LoggerFactory.getLogger(DistributedUpdateProcessor.class);
+
   public static final String SEEN_LEADER = "leader";
   public static final String COMMIT_END_POINT = "commit_end_point";
   public static final String DELETE_BY_QUERY_LEVEL = "dbq_level";
@@ -203,7 +206,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return cloudState.getShard(hash, collection);
   }
 
-  // used for deleteByQyery to get the list of nodes this leader should forward to
+  // used for deleteByQuery to get the list of nodes this leader should forward to
   private List<Node> setupRequest() {
     List<Node> nodes = null;
     String shardId = cloudDesc.getShardId();
@@ -269,6 +272,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
+      params.remove("commit"); // this will be distributed from the local commit
       cmdDistrib.distribAdd(cmd, nodes, params);
     }
     
@@ -489,6 +493,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader) {
         params.set(SEEN_LEADER, true);
       }
+      params.remove("commit"); // we already will have forwarded this from our local commit
       cmdDistrib.distribDelete(cmd, nodes, params);
     }
 
@@ -565,6 +570,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
 
+      params.remove("commit"); // this will be distributed from the local commit
       cmdDistrib.distribDelete(cmd, leaders, params);
 
       if (!leaderForAnyShard) {
@@ -618,20 +624,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
           doLocalDelete(cmd);
 
-          // forward to all replicas
-          if (replicas != null) {
-            ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-            params.set(DELETE_BY_QUERY_LEVEL, 3);
-            params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
-            params.set(SEEN_LEADER, "true");
-            cmdDistrib.distribDelete(cmd, replicas, params);
-
-            // wait for DBQ responses before releasing the update block to eliminate the possibility
-            // of an add being reordered.
-            // TODO: this isn't strictly necessary - we could do the same thing we do for PeerSync
-            // in DUH2 and add a clause that prevents deleting older docs.
-            cmdDistrib.finish();
-          }
 
         } else {
           cmd.setVersion(-versionOnUpdate);
@@ -654,6 +646,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } finally {
       vinfo.unblockUpdates();
     }
+
+
+
+    // TODO: need to handle reorders to replicas somehow
+    // forward to all replicas
+    if (leaderLogic && replicas != null) {
+      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      params.set(DELETE_BY_QUERY_LEVEL, 3);
+      params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
+      params.set(SEEN_LEADER, "true");
+      cmdDistrib.distribDelete(cmd, replicas, params);
+      cmdDistrib.finish();
+    }
+
 
     if (returnVersions && rsp != null) {
       if (deleteByQueryResponse == null) {

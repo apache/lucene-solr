@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.Token;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SpellCheckComponent;
@@ -59,7 +60,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
-    spellchecker.add(DirectSolrSpellChecker.FIELD, "teststop");
+    spellchecker.add(SolrSpellChecker.FIELD, "teststop");
     spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2); // we will try "fob"
 
     SolrCore core = h.getCore();
@@ -85,7 +86,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testOnlyMorePopularWithExtendedResults() throws Exception {
-  	assertQ(req("q", "teststop:fox", "qt", "spellCheckCompRH", SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_DICT, "direct", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
+  	assertQ(req("q", "teststop:fox", "qt", "spellCheckCompRH", SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_DICT, "direct", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/int[@name='origFreq']=1",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/arr[@name='suggestion']/lst/str[@name='word']='foo'",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/arr[@name='suggestion']/lst/int[@name='freq']=2",

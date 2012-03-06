@@ -60,7 +60,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   LBHttpSolrServer loadbalancer;
   int soTimeout = 0; //current default values
   int connectionTimeout = 0; //current default values
-  public  String scheme = "http://"; //current default values
+  public String scheme = "http://"; //current default values
 
   private MultiThreadedHttpConnectionManager mgr;
  // socket timeout measured in ms, closes a socket if read
@@ -79,7 +79,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
 
 
   public ShardHandler getShardHandler(){
-    return new HttpShardHandler(this);
+    return getShardHandler(null);
+  }
+  
+
+  public ShardHandler getShardHandler(HttpClient httpClient){
+    return new HttpShardHandler(this, httpClient);
   }
 
   public void init(PluginInfo info) {
@@ -103,7 +108,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
         }
     }
     mgr = new MultiThreadedHttpConnectionManager();
-    mgr.getParams().setDefaultMaxConnectionsPerHost(20);
+    mgr.getParams().setDefaultMaxConnectionsPerHost(256);
     mgr.getParams().setMaxTotalConnections(10000);
     mgr.getParams().setConnectionTimeout(connectionTimeout);
     mgr.getParams().setSoTimeout(soTimeout);

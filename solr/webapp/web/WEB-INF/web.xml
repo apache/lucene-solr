@@ -51,14 +51,14 @@
          You will need to put this prefix in front of the SolrDispatchFilter
          url-pattern mapping too (/solr/*), and also on any paths for
          legacy Solr servlet mappings you may be using.
-         For the admin JSP's to work properly in a path-prefixed configuration,
-         the admin folder containing the JSPs needs to be under the app context root
+         For the Admin UI to work properly in a path-prefixed configuration,
+         the admin folder containing the resources needs to be under the app context root
          named to match the path-prefix.  For example:
 
             .war
                xxx
-                 admin
-                   stats.jsp
+                 js
+                   main.js
     -->
     <!--
     <init-param>
@@ -87,10 +87,31 @@
     <servlet-name>Logging</servlet-name>
     <servlet-class>org.apache.solr.servlet.LogLevelSelection</servlet-class>
   </servlet>
+  
+  <servlet>
+    <servlet-name>Zookeeper</servlet-name>
+    <servlet-class>org.apache.solr.servlet.ZookeeperInfoServlet</servlet-class>
+  </servlet>
+  
+  <servlet>
+    <servlet-name>LoadAdminUI</servlet-name>
+    <servlet-class>org.apache.solr.servlet.LoadAdminUiServlet</servlet-class>
+  </servlet>
 
+  <!-- Will be removed before 4.0 release! -->
   <servlet-mapping>
     <servlet-name>Logging</servlet-name>
-    <url-pattern>/admin/logging</url-pattern>
+    <url-pattern>/logging</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+    <servlet-name>Zookeeper</servlet-name>
+    <url-pattern>/zookeeper</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+    <servlet-name>LoadAdminUI</servlet-name>
+    <url-pattern>/admin.html</url-pattern>
   </servlet-mapping>
 
   <mime-mapping>
@@ -100,8 +121,7 @@
   </mime-mapping>
 
   <welcome-file-list>
-    <welcome-file>index.jsp</welcome-file>
-    <welcome-file>index.html</welcome-file>
+    <welcome-file>admin.html</welcome-file>
   </welcome-file-list>
 
 </web-app>

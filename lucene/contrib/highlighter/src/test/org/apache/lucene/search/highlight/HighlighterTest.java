@@ -50,6 +50,7 @@ import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
 import org.apache.lucene.search.spans.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -722,7 +723,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         numHighlights = 0;
-        String queryString = FIELD_NAME + ":[kannedy TO kznnedy]";
 
         // Need to explicitly set the QueryParser property to use TermRangeQuery
         // rather
@@ -1249,8 +1249,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         String text = "this is a text with searchterm in it";
         SimpleHTMLFormatter fm = new SimpleHTMLFormatter();
-        TokenStream tokenStream = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true)
-            .tokenStream("text", new StringReader(text));
         Highlighter hg = getHighlighter(query, "text", fm);
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocCharsToAnalyze(36);
@@ -1969,16 +1967,16 @@ final class SynonymTokenizer extends TokenStream {
 
         String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
             fragmentSeparator);
-        if (HighlighterTest.VERBOSE) System.out.println("\t" + result);
+        if (LuceneTestCase.VERBOSE) System.out.println("\t" + result);
       }
     }
 
     abstract void run() throws Exception;
 
     void start() throws Exception {
-      if (HighlighterTest.VERBOSE) System.out.println("Run QueryScorer");
+      if (LuceneTestCase.VERBOSE) System.out.println("Run QueryScorer");
       run();
-      if (HighlighterTest.VERBOSE) System.out.println("Run QueryTermScorer");
+      if (LuceneTestCase.VERBOSE) System.out.println("Run QueryTermScorer");
       mode = QUERY_TERM;
       run();
     }

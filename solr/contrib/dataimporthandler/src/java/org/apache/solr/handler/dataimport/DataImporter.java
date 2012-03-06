@@ -19,7 +19,6 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -96,9 +95,18 @@ public class DataImporter {
    */
   DataImporter() {
     coreScopeSession = new ConcurrentHashMap<String, Object>();
-    this.propWriter = new SimplePropertiesWriter();
+    createPropertyWriter();
     propWriter.init(this);
     this.handlerName = "dataimport" ;
+  }
+
+  private void createPropertyWriter() {
+    if (this.core == null
+        || !this.core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+      propWriter = new SimplePropertiesWriter();
+    } else {
+      propWriter = new ZKPropertiesWriter();
+    }
   }
 
   DataImporter(InputSource dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session, String handlerName) {
@@ -108,7 +116,7 @@ public class DataImporter {
               "Configuration not found");
     this.core = core;
     this.schema = core.getSchema();
-    this.propWriter = new SimplePropertiesWriter();
+    createPropertyWriter();
     propWriter.init(this);
     dataSourceProps = ds;
     if (session == null)

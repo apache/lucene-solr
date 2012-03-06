@@ -122,7 +122,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   @Override
-  public Comparator<BytesRef> getComparator() throws IOException {
+  public Comparator<BytesRef> getComparator() {
     return tenum.getComparator();
   }
     

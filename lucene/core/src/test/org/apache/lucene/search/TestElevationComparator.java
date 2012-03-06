@@ -139,7 +139,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
   }
 
   @Override
-  public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
+  public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
    return new FieldComparator<Integer>() {
 
      FieldCache.DocTermsIndex idIndex;
@@ -179,7 +179,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+     public FieldComparator<Integer> setNextReader(AtomicReaderContext context) throws IOException {
        idIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), fieldname);
        return this;
      }

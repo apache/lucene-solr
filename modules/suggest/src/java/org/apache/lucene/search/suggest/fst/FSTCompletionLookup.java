@@ -19,6 +19,8 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +31,8 @@ import org.apache.lucene.search.suggest.fst.Sort.SortInfo;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.*;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
@@ -37,7 +41,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * An adapter from {@link Lookup} API to {@link FSTCompletion}.
  * 
  * <p>This adapter differs from {@link FSTCompletion} in that it attempts
- * to discretize any "weights" as passed from in {@link TermFreqIterator#freq()}
+ * to discretize any "weights" as passed from in {@link TermFreqIterator#weight()}
  * to match the number of buckets. For the rationale for bucketing, see
  * {@link FSTCompletion}.
  * 
@@ -55,6 +59,7 @@ import org.apache.lucene.util.fst.NoOutputs;
  * use {@link FSTCompletion} directly or {@link TSTLookup}, for example.
  * 
  * @see FSTCompletion
+ * @lucene.experimental
  */
 public class FSTCompletionLookup extends Lookup {
   /** 
@@ -158,20 +163,17 @@ public class FSTCompletionLookup extends Lookup {
     // If negative floats are allowed some trickery needs to be done to find their byte order.
     boolean success = false;
     try {
-      BytesRef tmp1 = new BytesRef();
       byte [] buffer = new byte [0];
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
-      while (tfit.hasNext()) {
-        String key = tfit.next();
-        UnicodeUtil.UTF16toUTF8(key, 0, key.length(), tmp1);
-
-        if (tmp1.length + 4 >= buffer.length) {
-          buffer = ArrayUtil.grow(buffer, tmp1.length + 4);
+      BytesRef spare;
+      while ((spare = tfit.next()) != null) {
+        if (spare.length + 4 >= buffer.length) {
+          buffer = ArrayUtil.grow(buffer, spare.length + 4);
         }
 
         output.reset(buffer);
-        output.writeInt(FloatMagic.toSortable(tfit.freq()));
-        output.writeBytes(tmp1.bytes, tmp1.offset, tmp1.length);
+        output.writeInt(encodeWeight(tfit.weight()));
+        output.writeBytes(spare.bytes, spare.offset, spare.length);
         writer.write(buffer, 0, output.getPosition());
       }
       writer.close();
@@ -187,12 +189,13 @@ public class FSTCompletionLookup extends Lookup {
       reader = new Sort.ByteSequencesReader(tempSorted);
       long line = 0;
       int previousBucket = 0;
-      float previousScore = 0;
+      int previousScore = 0;
       ByteArrayDataInput input = new ByteArrayDataInput();
+      BytesRef tmp1 = new BytesRef();
       BytesRef tmp2 = new BytesRef();
       while (reader.read(tmp1)) {
         input.reset(tmp1.bytes);
-        float currentScore = FloatMagic.fromSortable(input.readInt());
+        int currentScore = input.readInt();
 
         int bucket;
         if (line > 0 && currentScore == previousScore) {
@@ -228,9 +231,17 @@ public class FSTCompletionLookup extends Lookup {
       tempSorted.delete();
     }
   }
+  
+  /** weight -> cost */
+  private static int encodeWeight(long value) {
+    if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+      throw new UnsupportedOperationException("cannot encode value: " + value);
+    }
+    return (int)value;
+  }
 
   @Override
-  public List<LookupResult> lookup(String key, boolean higherWeightsFirst, int num) {
+  public List<LookupResult> lookup(CharSequence key, boolean higherWeightsFirst, int num) {
     final List<Completion> completions;
     if (higherWeightsFirst) {
       completions = higherWeightsCompletion.lookup(key, num);
@@ -239,25 +250,18 @@ public class FSTCompletionLookup extends Lookup {
     }
     
     final ArrayList<LookupResult> results = new ArrayList<LookupResult>(completions.size());
+    CharsRef spare = new CharsRef();
     for (Completion c : completions) {
-      results.add(new LookupResult(c.utf8.utf8ToString(), c.bucket));
+      spare.grow(c.utf8.length);
+      UnicodeUtil.UTF8toUTF16(c.utf8, spare);
+      results.add(new LookupResult(spare.toString(), c.bucket));
     }
     return results;
   }
 
-  @Override
-  public boolean add(String key, Object value) {
-    // Not supported.
-    return false;
-  }
-
-  @Override
-  public Float get(String key) {
-    Integer bucket = normalCompletion.getBucket(key);
-    if (bucket == null)
-      return null;
-    else
-      return (float) normalCompletion.getBucket(key) / normalCompletion.getBucketCount();
+  public Object get(CharSequence key) {
+    final int bucket = normalCompletion.getBucket(key);
+    return bucket == -1 ? null : Long.valueOf(bucket);
   }
 
   /**
@@ -291,6 +295,32 @@ public class FSTCompletionLookup extends Lookup {
       return false;
 
     normalCompletion.getFST().save(new File(storeDir, FILENAME));
+    return true;
+  }
+
+  @Override
+  public synchronized boolean store(OutputStream output) throws IOException {
+
+    if (this.normalCompletion == null) 
+      return false;
+    try {
+      normalCompletion.getFST().save(new OutputStreamDataOutput(output));
+    } finally {
+      IOUtils.close(output);
+    }
+    return true;
+  }
+
+  @Override
+  public synchronized boolean load(InputStream input) throws IOException {
+    try {
+      this.higherWeightsCompletion = new FSTCompletion(new FST<Object>(
+          new InputStreamDataInput(input), NoOutputs.getSingleton()));
+      this.normalCompletion = new FSTCompletion(
+          higherWeightsCompletion.getFST(), false, exactMatchFirst);
+    } finally {
+      IOUtils.close(input);
+    }
     return true;
   }
 }

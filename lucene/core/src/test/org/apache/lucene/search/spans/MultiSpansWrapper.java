@@ -28,6 +28,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.TermContext;
 
@@ -121,7 +122,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
   @Override
   public int doc() {
     if (current == null) {
-      return DocsEnum.NO_MORE_DOCS;
+      return DocIdSetIterator.NO_MORE_DOCS;
     }
     return current.doc() + leaves[leafOrd].docBase;
   }
@@ -129,7 +130,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
   @Override
   public int start() {
     if (current == null) {
-      return DocsEnum.NO_MORE_DOCS;
+      return DocIdSetIterator.NO_MORE_DOCS;
     }
     return current.start();
   }
@@ -137,7 +138,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
   @Override
   public int end() {
     if (current == null) {
-      return DocsEnum.NO_MORE_DOCS;
+      return DocIdSetIterator.NO_MORE_DOCS;
     }
     return current.end();
   }

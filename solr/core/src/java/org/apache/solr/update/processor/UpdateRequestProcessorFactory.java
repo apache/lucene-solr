@@ -39,6 +39,5 @@ public abstract class UpdateRequestProcessorFactory implements NamedListInitiali
     // could process the Node
   }
   
-  abstract public UpdateRequestProcessor getInstance( 
-      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next );
+  abstract public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next );
 }

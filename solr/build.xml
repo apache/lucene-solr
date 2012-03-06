@@ -130,7 +130,7 @@
   <target name="compile" description="Compile the source code."
           depends="compile-core, compile-contrib"/>
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
-          depends="validate, test-jsp, test-core, test-contrib"/>
+          depends="validate, test-core, test-contrib"/>
   <target name="test-core" description="Runs the core and solrj unit tests."
           depends="test-solr-core, test-solrj"/>
   <target name="compile-test" description="Compile unit tests."
@@ -169,14 +169,7 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
-  
-  <!-- Webapp targets -->
-  <target name="test-jsp">
-    <ant dir="webapp" target="test" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  
+    
   <!-- Validation (license/ notice checks). -->
   <target name="validate" depends="compile-tools" description="Validate legal stuff.">
     <license-check-macro dir="${basedir}">
@@ -189,8 +182,6 @@
       <additional-filters>
         <replaceregex pattern="/jetty-util([^/]+)$" replace="/jetty-util" flags="gi" />
         <replaceregex pattern="/jetty-6([^/]+)$" replace="/jetty" flags="gi" />
-        <replaceregex pattern="/jsp-2.1-glassfish([^/]+)$" replace="/jsp-2.1-glassfish" flags="gi" />
-        <replaceregex pattern="/jsp-api-2.1-glassfish([^/]+)$" replace="/jsp-api-2.1-glassfish" flags="gi" />
       </additional-filters>
     </license-check-macro>
   </target>

@@ -17,6 +17,7 @@ package org.apache.lucene.queryparser.ext;
  * limitations under the License.
  */
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -139,7 +140,7 @@ public class Extensions {
    *         a backslash character.
    */
   public String escapeExtensionField(String extfield) {
-    return QueryParser.escape(extfield);
+    return QueryParserBase.escape(extfield);
   }
 
   /**

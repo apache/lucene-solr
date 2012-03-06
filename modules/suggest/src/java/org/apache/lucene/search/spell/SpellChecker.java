@@ -46,6 +46,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
@@ -510,20 +511,18 @@ public class SpellChecker implements java.io.Closeable {
       boolean isEmpty = termsEnums.isEmpty();
 
       try { 
-        Iterator<String> iter = dict.getWordsIterator();
-        BytesRef currentTerm = new BytesRef();
+        BytesRefIterator iter = dict.getWordsIterator();
+        BytesRef currentTerm;
         
-        terms: while (iter.hasNext()) {
-          String word = iter.next();
+        terms: while ((currentTerm = iter.next()) != null) {
   
+          String word = currentTerm.utf8ToString();
           int len = word.length();
           if (len < 3) {
             continue; // too short we bail but "too long" is fine...
           }
   
           if (!isEmpty) {
-            // we have a non-empty index, check if the term exists
-            currentTerm.copyChars(word);
             for (TermsEnum te : termsEnums) {
               if (te.seekExact(currentTerm, false)) {
                 continue terms;

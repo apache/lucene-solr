@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -57,7 +56,8 @@ public final class ParallelAtomicReader extends AtomicReader {
   private final boolean closeSubReaders;
   private final int maxDoc, numDocs;
   private final boolean hasDeletions;
-  final SortedMap<String,AtomicReader> fieldToReader = new TreeMap<String,AtomicReader>();
+  private final SortedMap<String,AtomicReader> fieldToReader = new TreeMap<String,AtomicReader>();
+  private final SortedMap<String,AtomicReader> tvFieldToReader = new TreeMap<String,AtomicReader>();
   
   /** Create a ParallelAtomicReader based on the provided
    *  readers; auto-closes the given readers on {@link #close()}. */
@@ -98,24 +98,43 @@ public final class ParallelAtomicReader extends AtomicReader {
         throw new IllegalArgumentException("All readers must have same maxDoc: "+maxDoc+"!="+reader.maxDoc());
       }
     }
-      
+    
+    // build FieldInfos and fieldToReader map:
     for (final AtomicReader reader : this.parallelReaders) {
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
-      for(FieldInfo fieldInfo : readerFieldInfos) { // update fieldToReader map
+      for (FieldInfo fieldInfo : readerFieldInfos) {
         // NOTE: first reader having a given field "wins":
         if (!fieldToReader.containsKey(fieldInfo.name)) {
           fieldInfos.add(fieldInfo);
           fieldToReader.put(fieldInfo.name, reader);
-          this.fields.addField(fieldInfo.name, reader.terms(fieldInfo.name));
+          if (fieldInfo.storeTermVector) {
+            tvFieldToReader.put(fieldInfo.name, reader);
+          }
         }
       }
-    } 
+    }
+    
+    // build Fields instance
+    for (final AtomicReader reader : this.parallelReaders) {
+      final Fields readerFields = reader.fields();
+      if (readerFields != null) {
+        final FieldsEnum it = readerFields.iterator();
+        String name;
+        while ((name = it.next()) != null) {
+          // only add if the reader responsible for that field name is the current:
+          if (fieldToReader.get(name) == reader) {
+            this.fields.addField(name, it.terms());
+          }
+        }
+      }
+    }
 
     // do this finally so any Exceptions occurred before don't affect refcounts:
-    if (!closeSubReaders) {
-      for (AtomicReader reader : completeReaderSet) {
+    for (AtomicReader reader : completeReaderSet) {
+      if (!closeSubReaders) {
         reader.incRef();
       }
+      reader.registerParentReader(this);
     }
   }
 
@@ -132,11 +151,11 @@ public final class ParallelAtomicReader extends AtomicReader {
   private final class ParallelFieldsEnum extends FieldsEnum {
     private String currentField;
     private final Iterator<String> keys;
-    private final Fields fields;
+    private final ParallelFields fields;
     
-    ParallelFieldsEnum(Fields fields) {
+    ParallelFieldsEnum(ParallelFields fields) {
       this.fields = fields;
-      keys = fieldToReader.keySet().iterator();
+      keys = fields.fields.keySet().iterator();
     }
     
     @Override
@@ -158,7 +177,7 @@ public final class ParallelAtomicReader extends AtomicReader {
   
   // Single instance of this, per ParallelReader instance
   private final class ParallelFields extends Fields {
-    final HashMap<String,Terms> fields = new HashMap<String,Terms>();
+    final Map<String,Terms> fields = new TreeMap<String,Terms>();
     
     ParallelFields() {
     }
@@ -197,11 +216,6 @@ public final class ParallelAtomicReader extends AtomicReader {
   @Override
   public Fields fields() {
     ensureOpen();
-    // we cache the inner field instances, so we must check
-    // that the delegate readers are really still open:
-    for (final AtomicReader reader : parallelReaders) {
-      reader.ensureOpen();
-    }
     return fields;
   }
   
@@ -231,15 +245,17 @@ public final class ParallelAtomicReader extends AtomicReader {
     }
   }
   
-  // get all vectors
   @Override
   public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
-    ParallelFields fields = new ParallelFields();
-    for (Map.Entry<String,AtomicReader> ent : fieldToReader.entrySet()) {
+    ParallelFields fields = null;
+    for (Map.Entry<String,AtomicReader> ent : tvFieldToReader.entrySet()) {
       String fieldName = ent.getKey();
       Terms vector = ent.getValue().getTermVector(docID, fieldName);
       if (vector != null) {
+        if (fields == null) {
+          fields = new ParallelFields();
+        }
         fields.addField(fieldName, vector);
       }
     }

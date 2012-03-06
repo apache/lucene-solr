@@ -1,0 +1,133 @@
+#content #cloud .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+#content #cloud #error
+{
+    background-color: #f00;
+    background-image: url( ../../img/ico/construction.png );
+    background-position: 10px 50%;
+    color: #fff;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding: 10px;
+    padding-left: 35px;
+}
+
+#content #cloud h2 { background-image: url( ../../img/ico/sitemap.png ); }
+
+#content #cloud .content
+{
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#content #cloud .content.show
+{
+    background-image: url( ../../img/div.gif );
+    background-repeat: repeat-y;
+    background-position: 31% 0;
+}
+
+#content #cloud #tree
+{
+    float: left;
+    width: 30%;
+}
+
+#content #cloud .show #tree
+{
+    overflow: hidden;
+}
+
+#content #cloud #file-content
+{
+    display: none;
+    float: right;
+    position: relative;
+    width: 68%;
+    min-height: 100px
+}
+
+#content #cloud .show #file-content
+{
+    display: block;
+}
+
+#content #cloud #file-content .close
+{
+    background-image: url( ../../img/ico/cross-0.png );
+    background-position: 50% 50%;
+    display: block;
+    height: 20px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 20px;
+}
+
+#content #cloud #file-content .close:hover
+{
+    background-image: url( ../../img/ico/cross-1.png );
+}
+
+#content #cloud #file-content .close span
+{
+    display: none;
+}
+
+#content #cloud #file-content #data
+{
+    border-top: 1px solid #c0c0c0;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+#content #cloud #file-content #data pre
+{
+    display: block;
+    max-height: 600px;
+    overflow: auto;
+}
+
+#content #cloud #file-content #data em
+{
+    color: #c0c0c0;
+}
+
+#content #cloud #file-content #prop
+{
+}
+
+#content #cloud #file-content li
+{
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+#content #cloud #file-content li.odd
+{
+    background-color: #F8F8F8;
+}
+
+#content #cloud #file-content li dt
+{
+    float: left;
+    width: 19%;
+}
+
+#content #cloud #file-content li dd
+{
+    float: right;
+    width: 80%;
+}
+
+/* tree */
+
+#content #cloud .tree a.active
+{
+    background-color: #f0f0f0;
+    color: #00f;
+}

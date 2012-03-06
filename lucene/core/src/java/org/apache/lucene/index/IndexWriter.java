@@ -532,7 +532,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     public synchronized boolean delete(int docID) {
       assert liveDocs != null;
-      assert docID >= 0 && docID < liveDocs.length();
+      assert docID >= 0 && docID < liveDocs.length() : "out of bounds: docid=" + docID + ",liveDocsLength=" + liveDocs.length();
       assert !shared;
       final boolean didDelete = liveDocs.get(docID);
       if (didDelete) {
@@ -577,6 +577,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     public synchronized void initWritableLiveDocs() throws IOException {
       assert Thread.holdsLock(IndexWriter.this);
+      assert info.docCount > 0;
       //System.out.println("initWritableLivedocs seg=" + info + " liveDocs=" + liveDocs + " shared=" + shared);
       if (shared) {
         // Copy on write: this means we've cloned a
@@ -3133,7 +3134,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return false;
     }
 
-    final ReadersAndLiveDocs mergedDeletes = commitMergedDeletes(merge);
+    final ReadersAndLiveDocs mergedDeletes =  merge.info.docCount == 0 ? null : commitMergedDeletes(merge);
 
     assert mergedDeletes == null || mergedDeletes.pendingDeleteCount != 0;
 

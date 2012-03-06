@@ -210,9 +210,9 @@ final class TermInfosWriter implements Closeable {
     assert ti.freqPointer >= lastTi.freqPointer: "freqPointer out of order (" + ti.freqPointer + " < " + lastTi.freqPointer + ")";
     assert ti.proxPointer >= lastTi.proxPointer: "proxPointer out of order (" + ti.proxPointer + " < " + lastTi.proxPointer + ")";
 
-    if (!isIndex && size % indexInterval == 0)
+    if (!isIndex && size % indexInterval == 0) {
       other.add(lastFieldNumber, lastTerm, lastTi);                      // add an index term
-
+    }
     writeTerm(fieldNumber, term);                        // write term
 
     output.writeVInt(ti.docFreq);                       // write doc freq

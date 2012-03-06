@@ -5,8 +5,8 @@ Lucene/Solr Maven build instructions
 Contents:
 
 A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
-B. How to generate Lucene Maven artifacts
-C. How to generate Solr Maven artifacts
+B. How to generate Maven artifacts
+C. How to deploy Maven artifacts to a repository
 D. How to use Maven to build Lucene/Solr
 
 -----
@@ -14,55 +14,59 @@ D. How to use Maven to build Lucene/Solr
 A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
 
    The most recently produced nightly Jenkins-built Lucene and Solr Maven
-   artifacts are available in Maven repository layout here:
-   
-      <https://builds.apache.org/hudson/job/Lucene-Solr-Maven-trunk/lastSuccessfulBuild/artifact/maven_artifacts/>
-      
+   snapshot artifacts are available in the Apache Snapshot repository here:
+
+      http://repository.apache.org/snapshots
+
    An example POM snippet:
-   
+
      <project ...>
        ...
        <repositories>
          ...
          <repository>
-           <id>lucene-solr-jenkins-trunk</id>
-           <name>Lucene/Solr Jenkins trunk</name>
-           <url>https://builds.apache.org/job/Lucene-Solr-Maven-trunk/lastSuccessfulBuild/artifact/maven_artifacts</url>
-           <layout>default</layout>
-           <snapshots>
-             <enabled>true</enabled>
-           </snapshots>
+           <id>apache.snapshots</id>
+           <name>Apache Snapshot Repository</name>
+           <url>http://repository.apache.org/snapshots</url>
+           <releases>
+             <enabled>false</enabled>
+           </releases>
          </repository>
 
 
-B. How to generate Lucene Maven artifacts
+B. How to generate Lucene/Solr Maven artifacts
 
-   1. Prerequisites: JDK 1.6+ and Ant 1.7.X
+   Prerequisites: JDK 1.6+ and Ant 1.7.X
 
-   2. Run the following command from the lucene/ directory:
+   Run 'ant generate-maven-artifacts' to create an internal Maven
+   repository, including POMs, binary .jars, source .jars, and javadoc
+   .jars.
 
-         ant generate-maven-artifacts
-	  
-      The above command will create an internal Maven repository under
-      lucene/dist/maven/, including POMs, binary .jars, source .jars,
-      and javadoc .jars, for Lucene Core, for the Lucene test framework,
-      for each contrib, and for each module under the top-level modules/
-      directory.
+   You can run the above command in four possible places: the top-level
+   directory; under lucene/; under solr/; or under modules/.  From the
+   top-level directory, from lucene/, or from modules/, the internal
+   repository will be located at dist/maven/.  From solr/, the internal
+   repository will be located at package/maven/.
 
 
-C. How to generate Solr Maven artifacts
+C. How to deploy Maven artifacts to a repository
 
-   1. Prerequisites: JDK 1.6+ and Ant 1.7.X 
+   Prerequisites: JDK 1.6+ and Ant 1.7.X
 
-   2. Run the following from the solr/ directory:
+   You can deploy targets for all of Lucene/Solr, only Lucene, only Solr,
+   or only modules/, as in B. above.  To deploy to a Maven repository, the
+   command is the same as in B. above, with the addition of two system
+   properties:
 
-         ant generate-maven-artifacts
-		 
-      The above command will create an internal Maven repository under
-      solr/package/maven/, including POMs, binary .jars, source .jars,
-      and javadoc .jars, for Solr Core, for the Solr test framework,
-      for each contrib, and for the Solr .war (for which there are no
-      source or javadoc .jars).
+      ant -Dm2.repository.id=my-repo-id \
+          -Dm2.repository.url=http://example.org/my/repo \
+          generate-maven-artifacts
+
+   The repository ID given in the above command corresponds to a <server>
+   entry in either your ~/.m2/settings.xml or ~/.ant/settings.xml.  See
+   <http://maven.apache.org/settings.html#Servers> for more information.
+   (Note that as of version 2.1.3, Maven Ant Tasks cannot handle encrypted
+   passwords.)
 
 
 D. How to use Maven to build Lucene/Solr

@@ -187,7 +187,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   @Override
   public String toString()
   {
-    return "SolrDocument["+_fields.toString()+"]";
+    return "SolrDocument"+_fields;
   }
 
   /**

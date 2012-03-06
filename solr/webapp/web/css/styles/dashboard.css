@@ -1,0 +1,114 @@
+#content #dashboard .block
+{
+    background-image: none;
+    width: 49%;
+}
+
+#content #dashboard #statistics
+{
+    float: left;
+}
+
+#content #dashboard #statistics dt,
+#content #dashboard #statistics dd
+{
+    display: block;
+    float: left;
+}
+
+#content #dashboard #statistics dt
+{
+    clear: left;
+    margin-right: 2%;
+    text-align: right;
+    width: 23%;
+}
+
+#content #dashboard #statistics dd
+{
+    width: 74%;
+}
+
+#content #dashboard #statistics .index_optimized
+{
+    margin-top: 10px;
+}
+
+#content #dashboard #statistics .ico
+{
+    background-image: url( ../../img/ico/slash.png );
+    height: 20px;
+}
+
+#content #dashboard #statistics .ico.ico-1
+{
+    background-image: url( ../../img/ico/tick.png );
+}
+
+#content #dashboard #statistics .ico span
+{
+    display: none;
+}
+
+#content #dashboard #statistics .index_optimized.value a
+{
+    display: none;
+}
+
+#content #dashboard #statistics .index_optimized.value.ico-0 a
+{
+    background-color: #f0f0f0;
+    background-image: url( ../../img/ico/hammer-screwdriver.png );
+    background-position: 5px 50%;
+    border: 1px solid #c0c0c0;
+    display: block;
+    float: left;
+    margin-left: 50px;
+    padding: 1px 5px;
+    padding-left: 26px;
+}
+
+#content #dashboard #statistics .index_has-deletions
+{
+    display: none;
+}
+
+#content #dashboard #statistics .index_has-deletions.value.ico-0
+{
+    background-image: url( ../../img/ico/tick-red.png );
+}
+
+#content #dashboard #replication
+{
+    float: left;
+}
+
+#content #dashboard #replication .is-replicating
+{
+    background-position: 99% 50%;
+    display: block;
+}
+
+#content #dashboard #replication #details table thead td span
+{
+    display: none;
+}
+
+#content #dashboard #dataimport
+{
+    float: right;
+}
+
+
+#content #dashboard #admin-extra
+{
+    float: right;
+}
+
+#content #dashboard #system h2 { background-image: url( ../../img/ico/server.png ); }
+#content #dashboard #statistics h2 { background-image: url( ../../img/ico/chart.png ); }
+#content #dashboard #replication h2 { background-image: url( ../../img/ico/node.png ); }
+#content #dashboard #replication.is-master h2 { background-image: url( ../../img/ico/node-master.png ); }
+#content #dashboard #replication.is-slave h2 { background-image: url( ../../img/ico/node-slave.png ); }
+#content #dashboard #dataimport h2 { background-image: url( ../../img/ico/document-import.png ); }
+#content #dashboard #admin-extra h2 { background-image: url( ../../img/ico/plus-button.png ); }

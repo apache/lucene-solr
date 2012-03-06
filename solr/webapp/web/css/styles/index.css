@@ -1,0 +1,158 @@
+#content #index .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+#content #index #data
+{
+    float: left;
+    width: 74%;
+}
+
+#content #index #memory
+{
+    float: right;
+    width: 24%;
+}
+
+#content #index #data h2 { background-image: url( ../../img/ico/server.png ); }
+#content #index #memory h2 { background-image: url( ../../img/ico/battery.png ); }
+
+#content #index #data li
+{
+    display: none;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+#content #index #data li.odd
+{
+    background-color: #f8f8f8;
+}
+
+#content #index #data li dt
+{
+    float: left;
+    width: 27%;
+}
+
+#content #index #data li dd
+{
+    float: right;
+    width: 72%
+}
+
+#content #index #data li dd.odd
+{
+    color: #999;
+}
+
+#content #index #data dt span
+{
+    background-position: 0 50%;
+    display: block;
+    padding-left: 21px;
+}
+
+#content #index #data .start_time dt span
+{
+    background-image: url( ../../img/ico/clock-select.png );
+}
+
+#content #index #data .host dt span
+{
+    background-image: url( ../../img/ico/globe.png );
+}
+
+#content #index #data .cwd dt span
+{
+    background-image: url( ../../img/ico/folder-export.png );
+}
+
+#content #index #data .jvm dt span
+{
+    background-image: url( ../../img/ico/jar.png );
+}
+
+#content #index #data .command_line_args dt span
+{
+    background-image: url( ../../img/ico/terminal.png );
+}
+
+#content #index #data .lucene dt span
+{
+    background-image: url( ../../img/lucene-ico.png );
+}
+
+#content #index #memory #memory-bar
+{
+    background-color: #00f;
+    box-shadow: 5px 5px 10px #c0c0c0;
+    -moz-box-shadow: 5px 5px 10px #c0c0c0;
+    -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+    margin-top: 20px;
+    width: 100px;
+}
+
+#content #index #memory .bar
+{
+    bottom: 0;
+    position: absolute;
+    width: 100%;
+}
+
+#content #index #memory div .value
+{
+    border-top: 1px solid #f00;
+    display: block;
+    font-size: 10px;
+    line-height: 12px;
+    padding-left: 10px;
+    padding-right: 2px;
+    position: absolute;
+    margin-left: 100px;
+    white-space: nowrap;
+}
+
+#content #index #memory div .value.upper
+{
+    border-top-width: 0;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+}
+
+#content #index #memory #memory-bar-max
+{
+    background-color: #f0f0f0;
+    height: 200px;
+    position: relative;
+}
+
+#content #index #memory #memory-bar-max .value
+{
+    border-color: #f0f0f0;
+    color: #d6d6d6;
+}
+
+#content #index #memory #memory-bar-total
+{
+    background-color: #c0c0c0;
+}
+
+#content #index #memory #memory-bar-total .value
+{
+    border-color: #c0c0c0;
+    color: #c0c0c0;
+}
+
+#content #index #memory #memory-bar-used
+{
+    background-color: #969696;
+}
+
+#content #index #memory #memory-bar-used .value
+{
+    border-color: #969696;
+    color: #969696;
+}

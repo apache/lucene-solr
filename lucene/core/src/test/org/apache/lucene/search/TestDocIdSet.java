@@ -125,4 +125,41 @@ public class TestDocIdSet extends LuceneTestCase {
     dir.close();
   }
 
+  public void testNullIteratorFilteredDocIdSet() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    Document doc = new Document();
+    doc.add(newField("c", "val", StringField.TYPE_UNSTORED));
+    writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
+    writer.close();
+    
+    // First verify the document is searchable.
+    IndexSearcher searcher = newSearcher(reader);
+    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits);
+    
+      // Now search w/ a Filter which returns a null DocIdSet
+    Filter f = new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+        final DocIdSet innerNullIteratorSet = new DocIdSet() {
+          @Override
+          public DocIdSetIterator iterator() {
+            return null;
+          } 
+        };
+        return new FilteredDocIdSet(innerNullIteratorSet) {
+          @Override
+          protected boolean match(int docid) {
+            return true;
+          }	
+        };
+      }
+    };
+    
+    Assert.assertEquals(0, searcher.search(new MatchAllDocsQuery(), f, 10).totalHits);
+    reader.close();
+    dir.close();
+  }
+
 }

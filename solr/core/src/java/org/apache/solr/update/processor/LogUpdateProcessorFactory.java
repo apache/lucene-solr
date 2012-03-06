@@ -45,8 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   
-  int maxNumToLog = 8;
-  
+  int maxNumToLog = 10;
   @Override
   public void init( final NamedList args ) {
     if( args != null ) {
@@ -57,20 +56,13 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    final Logger logger = LoggerFactory.getLogger(LogUpdateProcessor.class);
-    boolean doLog = logger.isInfoEnabled();
-    // LogUpdateProcessor.log.error("Will Log=" + doLog);
-    if( doLog ) {
-      // only create the log processor if we will use it
-      final LogUpdateProcessor processor = new LogUpdateProcessor(req, rsp, this, next);
-      assert processor.log == logger;
-      return processor;
-    }
-    return null;
+    return LogUpdateProcessor.log.isInfoEnabled() ? new LogUpdateProcessor(req, rsp, this, next) : null;
   }
 }
 
 class LogUpdateProcessor extends UpdateRequestProcessor {
+  public final static Logger log = LoggerFactory.getLogger(LogUpdateProcessor.class);
+
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
   private final NamedList<Object> toLog;
@@ -99,6 +91,11 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
+
+    // call delegate first so we can log things like the version that get set later
+    if (next != null) next.processAdd(cmd);
+
     // Add a list of added id's to the response
     if (adds == null) {
       adds = new ArrayList<String>();
@@ -106,52 +103,59 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     }
 
     if (adds.size() < maxNumToLog) {
-      adds.add(cmd.getPrintableId());
+      long version = cmd.getVersion();
+      String msg = cmd.getPrintableId();
+      if (version != 0) msg = msg + " (" + version + ')';
+      adds.add(msg);
     }
-    if (logDebug) { log.debug("add {}", cmd.getPrintableId()); }
 
     numAdds++;
-
-    if (next != null) next.processAdd(cmd);
   }
 
   @Override
   public void processDelete( DeleteUpdateCommand cmd ) throws IOException {
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
+    if (next != null) next.processDelete(cmd);
+
     if (cmd.isDeleteById()) {
       if (deletes == null) {
         deletes = new ArrayList<String>();
         toLog.add("delete",deletes);
       }
       if (deletes.size() < maxNumToLog) {
-        deletes.add(cmd.getId());
+        long version = cmd.getVersion();
+        String msg = cmd.getId();
+        if (version != 0) msg = msg + " (" + version + ')';
+        deletes.add(msg);
       }
-      if (logDebug) { log.debug("delete {}", cmd.getId()); }
     } else {
       if (toLog.size() < maxNumToLog) {
-        toLog.add("deleteByQuery", cmd.query);
+        long version = cmd.getVersion();
+        String msg = cmd.query;
+        if (version != 0) msg = msg + " (" + version + ')';
+        toLog.add("deleteByQuery", msg);
       }
-      if (logDebug) { log.debug("deleteByQuery {}", cmd.getQuery()); }
     }
     numDeletes++;
 
-    if (next != null) next.processDelete(cmd);
   }
 
   @Override
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    toLog.add("mergeIndexes", cmd.toString());
-    if (logDebug) { log.debug("mergeIndexes {}",cmd.toString()); }
-
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
     if (next != null) next.processMergeIndexes(cmd);
+
+    toLog.add("mergeIndexes", cmd.toString());
   }
 
   @Override
   public void processCommit( CommitUpdateCommand cmd ) throws IOException {
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
+    if (next != null) next.processCommit(cmd);
+
+
     final String msg = cmd.optimize ? "optimize" : "commit";
     toLog.add(msg, "");
-    if (logDebug) { log.debug(msg); }
-
-    if (next != null) next.processCommit(cmd);
   }
 
   /**
@@ -159,24 +163,37 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
    */
   @Override
   public void processRollback( RollbackUpdateCommand cmd ) throws IOException {
-    toLog.add("rollback", "");
-    if (logDebug) { log.debug("rollback"); }
-
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
     if (next != null) next.processRollback(cmd);
+
+    toLog.add("rollback", "");
   }
 
 
   @Override
   public void finish() throws IOException {
+    if (logDebug) { log.debug("PRE_UPDATE finish()"); }
     if (next != null) next.finish();
 
     // LOG A SUMMARY WHEN ALL DONE (INFO LEVEL)
     
-    // TODO: right now, update requests are logged twice...
-    // this will slow down things compared to Solr 1.2
-    // we should have extra log info on the SolrQueryResponse, to
-    // be logged by SolrCore
-    
+
+
+    NamedList<Object> stdLog = rsp.getToLog();
+
+    StringBuilder sb = new StringBuilder(req.getCore().getLogId());
+
+    for (int i=0; i<stdLog.size(); i++) {
+      String name = stdLog.getName(i);
+      Object val = stdLog.getVal(i);
+      if (name != null) {
+        sb.append(name).append('=');
+      }
+      sb.append(val).append(' ');
+    }
+
+    stdLog.clear();   // make it so SolrCore.exec won't log this again
+
     // if id lists were truncated, show how many more there were
     if (adds != null && numAdds > maxNumToLog) {
       adds.add("... (" + numAdds + " adds)");
@@ -185,7 +202,9 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
       deletes.add("... (" + numDeletes + " deletes)");
     }
     long elapsed = rsp.getEndTime() - req.getStartTime();
-    log.info( ""+toLog + " 0 " + (elapsed) );
+
+    sb.append(toLog).append(" 0 ").append(elapsed);
+    log.info(sb.toString());
   }
 }
 

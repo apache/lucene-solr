@@ -18,15 +18,17 @@ package org.apache.lucene.search.spell;
  */
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -40,7 +42,8 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
   private IndexReader indexReader = null;
   private LuceneDictionary ld;
-  private Iterator<String> it;
+  private BytesRefIterator it;
+  private BytesRef spare = new BytesRef();
 
   @Override
   public void setUp() throws Exception {
@@ -84,13 +87,12 @@ public class TestLuceneDictionary extends LuceneTestCase {
   
   public void testFieldNonExistent() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = DirectoryReader.open(store);
 
       ld = new LuceneDictionary(indexReader, "nonexistent_field");
       it = ld.getWordsIterator();
 
-      assertFalse("More elements than expected", it.hasNext());
-      assertTrue("Nonexistent element is really null", it.next() == null);
+      assertNull("More elements than expected", spare = it.next());
     } finally {
       if  (indexReader != null) { indexReader.close(); }
     }
@@ -98,15 +100,13 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
   public void testFieldAaa() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = DirectoryReader.open(store);
 
       ld = new LuceneDictionary(indexReader, "aaa");
       it = ld.getWordsIterator();
-
-      assertTrue("First element doesn't exist.", it.hasNext());
-      assertTrue("First element isn't correct", it.next().equals("foo"));
-      assertFalse("More elements than expected", it.hasNext());
-      assertTrue("Nonexistent element is really null", it.next() == null);
+      assertNotNull("First element doesn't exist.", spare = it.next());
+      assertTrue("First element isn't correct", spare.utf8ToString().equals("foo"));
+      assertNull("More elements than expected", it.next());
     } finally {
       if  (indexReader != null) { indexReader.close(); }
     }
@@ -114,24 +114,22 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
   public void testFieldContents_1() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = DirectoryReader.open(store);
 
       ld = new LuceneDictionary(indexReader, "contents");
       it = ld.getWordsIterator();
 
-      assertTrue("First element doesn't exist.", it.hasNext());
-      assertTrue("First element isn't correct", it.next().equals("Jerry"));
-      assertTrue("Second element doesn't exist.", it.hasNext());
-      assertTrue("Second element isn't correct", it.next().equals("Tom"));
-      assertFalse("More elements than expected", it.hasNext());
-      assertTrue("Nonexistent element is really null", it.next() == null);
+      assertNotNull("First element doesn't exist.", spare = it.next());
+      assertTrue("First element isn't correct", spare.utf8ToString().equals("Jerry"));
+      assertNotNull("Second element doesn't exist.", spare = it.next());
+      assertTrue("Second element isn't correct", spare.utf8ToString().equals("Tom"));
+      assertNull("More elements than expected", it.next());
 
       ld = new LuceneDictionary(indexReader, "contents");
       it = ld.getWordsIterator();
 
       int counter = 2;
-      while (it.hasNext()) {
-        it.next();
+      while (it.next() != null) {
         counter--;
       }
 
@@ -144,30 +142,15 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
   public void testFieldContents_2() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = DirectoryReader.open(store);
 
       ld = new LuceneDictionary(indexReader, "contents");
       it = ld.getWordsIterator();
 
-      // hasNext() should have no side effects
-      assertTrue("First element isn't were it should be.", it.hasNext());
-      assertTrue("First element isn't were it should be.", it.hasNext());
-      assertTrue("First element isn't were it should be.", it.hasNext());
-
       // just iterate through words
-      assertTrue("First element isn't correct", it.next().equals("Jerry"));
-      assertTrue("Second element isn't correct", it.next().equals("Tom"));
-      assertTrue("Nonexistent element is really null", it.next() == null);
-
-      // hasNext() should still have no side effects ...
-      assertFalse("There should be any more elements", it.hasNext());
-      assertFalse("There should be any more elements", it.hasNext());
-      assertFalse("There should be any more elements", it.hasNext());
-
-      // .. and there are really no more words
-      assertTrue("Nonexistent element is really null", it.next() == null);
-      assertTrue("Nonexistent element is really null", it.next() == null);
-      assertTrue("Nonexistent element is really null", it.next() == null);
+      assertEquals("First element isn't correct", "Jerry", it.next().utf8ToString());
+      assertEquals("Second element isn't correct",  "Tom", it.next().utf8ToString());
+      assertNull("Nonexistent element is really null", it.next());
     }
     finally {
       if  (indexReader != null) { indexReader.close(); }
@@ -176,15 +159,14 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
   public void testFieldZzz() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = DirectoryReader.open(store);
 
       ld = new LuceneDictionary(indexReader, "zzz");
       it = ld.getWordsIterator();
 
-      assertTrue("First element doesn't exist.", it.hasNext());
-      assertTrue("First element isn't correct", it.next().equals("bar"));
-      assertFalse("More elements than expected", it.hasNext());
-      assertTrue("Nonexistent element is really null", it.next() == null);
+      assertNotNull("First element doesn't exist.", spare = it.next());
+      assertEquals("First element isn't correct", "bar", spare.utf8ToString());
+      assertNull("More elements than expected", it.next());
     }
     finally {
       if  (indexReader != null) { indexReader.close(); }
@@ -194,7 +176,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
   public void testSpellchecker() throws IOException {
     Directory dir = newDirectory();
     SpellChecker sc = new SpellChecker(dir);
-    indexReader = IndexReader.open(store);
+    indexReader = DirectoryReader.open(store);
     sc.indexDictionary(new LuceneDictionary(indexReader, "contents"), newIndexWriterConfig(TEST_VERSION_CURRENT, null), false);
     String[] suggestions = sc.suggestSimilar("Tam", 1);
     assertEquals(1, suggestions.length);

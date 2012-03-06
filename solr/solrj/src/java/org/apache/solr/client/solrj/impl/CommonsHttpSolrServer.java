@@ -268,11 +268,13 @@ public class CommonsHttpSolrServer extends SolrServer
     }
     
     // The parser 'wt=' and 'version=' params are used instead of the original params
-    ModifiableSolrParams wparams = new ModifiableSolrParams();
+    ModifiableSolrParams wparams = new ModifiableSolrParams(params);
     wparams.set( CommonParams.WT, parser.getWriterType() );
     wparams.set( CommonParams.VERSION, parser.getVersion());
-    params = SolrParams.wrapDefaults(wparams, params);
-    params = SolrParams.wrapDefaults(_invariantParams, params);
+    if (_invariantParams != null) {
+      wparams.add( _invariantParams );
+    }
+    params = wparams;
 
     int tries = _maxRetries + 1;
     try {
@@ -421,17 +423,7 @@ public class CommonsHttpSolrServer extends SolrServer
     try {
       // Execute the method.
       //System.out.println( "EXECUTE:"+method.getURI() );
-
       int statusCode = _httpClient.executeMethod(method);
-      if (statusCode != HttpStatus.SC_OK) {
-        StringBuilder msg = new StringBuilder();
-        msg.append( method.getStatusLine().getReasonPhrase() );
-        msg.append( "\n\n" );
-        msg.append( method.getStatusText() );
-        msg.append( "\n\n" );
-        msg.append( "request: "+method.getURI() );
-        throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), java.net.URLDecoder.decode(msg.toString(), "UTF-8") );
-      }
 
       // Read the contents
       String charset = "UTF-8";
@@ -472,7 +464,30 @@ public class CommonsHttpSolrServer extends SolrServer
           }
         }
       }
-      return processor.processResponse(respBody, charset);
+      
+      NamedList<Object> rsp = processor.processResponse(respBody, charset);
+      if (statusCode != HttpStatus.SC_OK) {
+        String reason = null;
+        try {
+          NamedList err = (NamedList)rsp.get("error");
+          if(err!=null) {
+            reason = (String)err.get("msg");
+            // TODO? get the trace?
+          }
+        }
+        catch(Exception ex) {}
+        if(reason == null) {
+          StringBuilder msg = new StringBuilder();
+          msg.append( method.getStatusLine().getReasonPhrase() );
+          msg.append( "\n\n" );
+          msg.append( method.getStatusText() );
+          msg.append( "\n\n" );
+          msg.append( "request: "+method.getURI() );
+          reason = java.net.URLDecoder.decode(msg.toString(), "UTF-8");
+        }
+        throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), reason );
+      }
+      return rsp;
     }
     catch (HttpException e) {
       throw new SolrServerException(getBaseURL(), e);
