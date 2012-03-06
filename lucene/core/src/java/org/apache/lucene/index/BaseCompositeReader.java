@@ -22,14 +22,38 @@ import java.io.IOException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 
-abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
+/** Base class for implementing {@link CompositeReader}s based on an array
+ * of sub-readers. The implementing class has to add code for
+ * correctly refcounting and closing the sub-readers.
+ * 
+ * <p>User code will most likely use {@link MultiReader} to build a
+ * composite reader on a set of sub-readers (like several
+ * {@link DirectoryReader}s).
+ * 
+ * <p> For efficiency, in this API documents are often referred to via
+ * <i>document numbers</i>, non-negative integers which each name a unique
+ * document in the index.  These document numbers are ephemeral -- they may change
+ * as documents are added to and deleted from an index.  Clients should thus not
+ * rely on a given document having the same number between sessions.
+ * 
+ * <p><a name="thread-safety"></a><p><b>NOTE</b>: {@link
+ * IndexReader} instances are completely thread
+ * safe, meaning multiple threads can call any of its methods,
+ * concurrently.  If your application requires external
+ * synchronization, you should <b>not</b> synchronize on the
+ * <code>IndexReader</code> instance; use your own
+ * (non-Lucene) objects instead.
+ * @see MultiReader
+ * @lucene.internal
+ */
+public abstract class BaseCompositeReader<R extends IndexReader> extends CompositeReader {
   protected final R[] subReaders;
   protected final int[] starts;       // 1st docno for each reader
   private final int maxDoc;
   private final int numDocs;
   private final boolean hasDeletions;
   
-  protected BaseMultiReader(R[] subReaders) throws IOException {
+  protected BaseCompositeReader(R[] subReaders) throws IOException {
     this.subReaders = subReaders;
     starts = new int[subReaders.length + 1];    // build starts array
     int maxDoc = 0, numDocs = 0;
@@ -53,8 +77,8 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
   @Override
   public final Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
-    final int i = readerIndex(docID);        // find segment num
-    return subReaders[i].getTermVectors(docID - starts[i]); // dispatch to segment
+    final int i = readerIndex(docID);        // find subreader num
+    return subReaders[i].getTermVectors(docID - starts[i]); // dispatch to subreader
   }
 
   @Override
@@ -72,8 +96,8 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
   @Override
   public final void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     ensureOpen();
-    final int i = readerIndex(docID);                          // find segment num
-    subReaders[i].document(docID - starts[i], visitor);    // dispatch to segment reader
+    final int i = readerIndex(docID);                          // find subreader num
+    subReaders[i].document(docID - starts[i], visitor);    // dispatch to subreader
   }
 
   @Override
@@ -85,7 +109,7 @@ abstract class BaseMultiReader<R extends IndexReader> extends CompositeReader {
   @Override
   public final int docFreq(String field, BytesRef t) throws IOException {
     ensureOpen();
-    int total = 0;          // sum freqs in segments
+    int total = 0;          // sum freqs in subreaders
     for (int i = 0; i < subReaders.length; i++) {
       total += subReaders[i].docFreq(field, t);
     }

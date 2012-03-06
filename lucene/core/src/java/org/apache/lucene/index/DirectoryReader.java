@@ -48,13 +48,8 @@ import org.apache.lucene.store.Directory;
  synchronization, you should <b>not</b> synchronize on the
  <code>IndexReader</code> instance; use your own
  (non-Lucene) objects instead.
- 
- <p><em>Please note:</em> This class extends from an internal (invisible)
- superclass that is generic: The type parameter {@code R} is
- {@link AtomicReader}, see {@link #subReaders} and
- {@link #getSequentialSubReaders}.
 */
-public abstract class DirectoryReader extends BaseMultiReader<AtomicReader> {
+public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> {
   public static final int DEFAULT_TERMS_INDEX_DIVISOR = 1;
 
   protected final Directory directory;
