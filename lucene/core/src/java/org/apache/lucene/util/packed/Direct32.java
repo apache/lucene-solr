@@ -65,6 +65,7 @@ class Direct32 extends PackedInts.ReaderImpl
   }
 
   public long get(final int index) {
+    assert index >= 0 && index < size();
     return 0xFFFFFFFFL & values[index];
   }
 
