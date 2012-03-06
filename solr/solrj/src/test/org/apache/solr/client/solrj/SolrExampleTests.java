@@ -48,9 +48,11 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.junit.Test;
@@ -461,6 +463,42 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     } while(System.currentTimeMillis()<timeout);
     
     Assert.fail("commitWithin failed to commit");
+  }
+
+  @Test
+  public void testErrorHandling() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+
+    SolrQuery query = new SolrQuery();
+    query.set(CommonParams.QT, "/analysis/field");
+    query.set(AnalysisParams.FIELD_TYPE, "int");
+    query.set(AnalysisParams.FIELD_VALUE, "hello");
+    try {
+      server.query( query );
+      Assert.fail("should have a number format exception");
+    }
+    catch(SolrException ex) {
+      assertEquals(400, ex.code());
+      assertEquals("Invalid Number: hello", ex.getMessage());  // The reason should get passed through
+    }
+    catch(Throwable t) {
+      t.printStackTrace();
+      Assert.fail("should have thrown a SolrException! not: "+t);
+    }
+    
+    try {
+      server.deleteByQuery( "??::??" ); // query syntax error
+      Assert.fail("should have a number format exception");
+    }
+    catch(SolrException ex) {
+      assertEquals(400, ex.code());
+      assertTrue(ex.getMessage().indexOf("??::??")>0);  // The reason should get passed through
+    }
+    catch(Throwable t) {
+      t.printStackTrace();
+      Assert.fail("should have thrown a SolrException! not: "+t);
+    }
   }
 
 

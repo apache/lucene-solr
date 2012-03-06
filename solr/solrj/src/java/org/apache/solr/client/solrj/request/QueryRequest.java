@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -91,6 +92,8 @@ public class QueryRequest extends SolrRequest
       return res;
     } catch (SolrServerException e){
       throw e;
+    } catch (SolrException s){
+      throw s;
     } catch (Exception e) {
       throw new SolrServerException("Error executing query", e);
     }
