@@ -112,15 +112,17 @@ public class SystemInfoHandler extends RequestHandlerBase
     // Java 1.6
     addGetterIfAvaliable( os, "systemLoadAverage", info );
 
+   // com.sun.management.OperatingSystemMXBean
+    addGetterIfAvaliable( os, "committedVirtualMemorySize", info);
+    addGetterIfAvaliable( os, "freePhysicalMemorySize", info);
+    addGetterIfAvaliable( os, "freeSwapSpaceSize", info);
+    addGetterIfAvaliable( os, "processCpuTime", info);
+    addGetterIfAvaliable( os, "totalPhysicalMemorySize", info);
+    addGetterIfAvaliable( os, "totalSwapSpaceSize", info);
+
     // com.sun.management.UnixOperatingSystemMXBean
     addGetterIfAvaliable( os, "openFileDescriptorCount", info );
     addGetterIfAvaliable( os, "maxFileDescriptorCount", info );
-
-    // com.sun.management.OperatingSystemMXBean
-    addGetterIfAvaliable( os, "committedVirtualMemorySize", info );
-    addGetterIfAvaliable( os, "totalPhysicalMemorySize", info );
-    addGetterIfAvaliable( os, "totalSwapSpaceSize", info );
-    addGetterIfAvaliable( os, "processCpuTime", info );
 
     try { 
       if( !os.getName().toLowerCase(Locale.ENGLISH).startsWith( "windows" ) ) {
@@ -149,6 +151,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     try {
       String n = Character.toUpperCase( getter.charAt(0) ) + getter.substring( 1 );
       Method m = obj.getClass().getMethod( "get" + n );
+      m.setAccessible(true);
       Object v = m.invoke( obj, (Object[])null );
       if( v != null ) {
         info.add( getter, v );
