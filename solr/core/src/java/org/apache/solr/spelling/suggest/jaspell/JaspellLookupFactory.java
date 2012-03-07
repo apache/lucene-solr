@@ -30,10 +30,16 @@ import org.slf4j.LoggerFactory;
  */
 public class JaspellLookupFactory extends LookupFactory {
   private static final Logger LOG = LoggerFactory.getLogger(JaspellLookup.class);
+  private static final String FILENAME = "jaspell.dat";
 
   @Override
   public Lookup create(NamedList params, SolrCore core) {
     LOG.info("init: " + params);
     return new JaspellLookup();
+  }
+
+  @Override
+  public String storeFileName() {
+    return FILENAME;
   }
 }

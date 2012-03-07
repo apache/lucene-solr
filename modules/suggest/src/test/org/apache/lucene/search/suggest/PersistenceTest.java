@@ -17,6 +17,8 @@
 package org.apache.lucene.search.suggest;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.List;
 
 import org.apache.lucene.search.suggest.Lookup;
@@ -69,11 +71,11 @@ public class PersistenceTest extends LuceneTestCase {
 
     // Store the suggester.
     File storeDir = TEMP_DIR;
-    lookup.store(storeDir);
+    lookup.store(new FileOutputStream(new File(storeDir, "lookup.dat")));
 
     // Re-read it from disk.
     lookup = lookupClass.newInstance();
-    lookup.load(storeDir);
+    lookup.load(new FileInputStream(new File(storeDir, "lookup.dat")));
 
     // Assert validity.
     long previous = Long.MIN_VALUE;

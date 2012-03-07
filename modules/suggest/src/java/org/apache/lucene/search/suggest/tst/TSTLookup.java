@@ -119,23 +119,12 @@ public class TSTLookup extends Lookup {
     return res;
   }
   
-  public static final String FILENAME = "tst.dat";
-  
   private static final byte LO_KID = 0x01;
   private static final byte EQ_KID = 0x02;
   private static final byte HI_KID = 0x04;
   private static final byte HAS_TOKEN = 0x08;
   private static final byte HAS_VALUE = 0x10;
 
-  @Override
-  public synchronized boolean load(File storeDir) throws IOException {
-    File data = new File(storeDir, FILENAME);
-    if (!data.exists() || !data.canRead()) {
-      return false;
-    }
-    return load(new FileInputStream(data));
-  }
-  
   // pre-order traversal
   private void readRecursively(DataInputStream in, TernaryTreeNode node) throws IOException {
     node.splitchar = in.readChar();
@@ -160,15 +149,6 @@ public class TSTLookup extends Lookup {
     }
   }
 
-  @Override
-  public synchronized boolean store(File storeDir) throws IOException {
-    if (!storeDir.exists() || !storeDir.isDirectory() || !storeDir.canWrite()) {
-      return false;
-    }
-    File data = new File(storeDir, FILENAME);
-    return store(new FileOutputStream(data));
-  }
-  
   // pre-order traversal
   private void writeRecursively(DataOutputStream out, TernaryTreeNode node) throws IOException {
     // write out the current node
