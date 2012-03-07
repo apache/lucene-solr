@@ -73,8 +73,12 @@ public class SpanWeight extends Weight {
 
   @Override
   public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-    return new SpanScorer(query.getSpans(reader), this, similarity, reader
-        .norms(query.getField()));
+    if (query.getField() == null) {
+      return null;
+    } else {
+      return new SpanScorer(query.getSpans(reader), this, similarity, reader
+          .norms(query.getField()));
+    }
   }
 
   @Override

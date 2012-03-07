@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -34,9 +35,15 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.FilteredTermEnum;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util._TestUtil;
 
@@ -174,5 +181,61 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       // return a random unicode term
       return _TestUtil.randomUnicodeString(random);
     }
+  }
+
+  // Just an MTQ that (evilly) returns null from getField():
+  public static class EmptyMTQ extends MultiTermQuery {
+    @Override
+    protected FilteredTermEnum getEnum(IndexReader reader) {
+      return new FilteredTermEnum() {
+        @Override
+        protected boolean termCompare(Term term) {
+          return true;
+        }
+
+        @Override
+        public float difference() {
+          return 0.0f;
+        }
+
+        @Override
+        protected boolean endEnum() {
+          return true;
+        }
+      };
+    }
+
+    @Override
+    public String toString(String s) {
+      return "";
+    }
+
+    public String getField() {
+      return null;
+    }
+  }
+    
+  // LUCENE-3831
+  public void testNullPointerException() throws IOException {
+    EmptyMTQ q = new EmptyMTQ();
+    SpanQuery wrappedquery = new SpanMultiTermQueryWrapper<EmptyMTQ>(q);
+        
+    MemoryIndex mindex = new MemoryIndex();
+    mindex.addField("field", new MockAnalyzer(random).tokenStream("field", new StringReader("hello there")));
+
+    // This throws an NPE
+    assertEquals(0, mindex.search(wrappedquery), 0.00001f);
+  }
+
+  // LUCENE-3831
+  public void testPassesIfWrapped() throws IOException {
+    EmptyMTQ q = new EmptyMTQ();
+    SpanQuery wrappedquery = new SpanOrQuery(new SpanMultiTermQueryWrapper<EmptyMTQ>(q));
+
+    MemoryIndex mindex = new MemoryIndex();
+    mindex.addField("field", new MockAnalyzer(random).tokenStream("field", new StringReader("hello there")));
+
+    // This passes though
+    assertEquals(0, mindex.search(wrappedquery), 0.00001f);
   }
 }

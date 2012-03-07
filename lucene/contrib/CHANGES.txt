@@ -156,6 +156,10 @@ Bug Fixes
    the creation time in the taxonomy index commitData, and reads it from the 
    index in the constructor. (Shai Erera)
    
+ * LUCENE-3831: avoid NPE if the SpanQuery has a null field (eg a
+   SpanOrQuery with no clauses added).  (Alan Woodward via Mike
+   McCandless).
+
 Documentation
 
  * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly 
