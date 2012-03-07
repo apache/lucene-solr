@@ -232,6 +232,7 @@ New Features
 * SOLR-3134: Include shard info in distributed response when shards.info=true 
   (Russell Black, ryan)
 
+* SOLR-2898: Support grouped faceting. (Martijn van Groningen)
 
 Optimizations
 ----------------------

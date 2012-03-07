@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
@@ -66,8 +67,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     indexFacetSingleValued();
     indexFacetPrefixMultiValued();
     indexFacetPrefixSingleValued();
-    
-   Collections.shuffle(pendingDocs, random);
+    indexSimpleGroupedFacetCounts();
+
+    Collections.shuffle(pendingDocs, random);
     for (String[] doc : pendingDocs) {
       assertU(adoc(doc));
       randomCommit(random_commit_percent);
@@ -100,6 +102,88 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "trait_s", "Pig",
             "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!",
             "zerolen_s","");   
+  }
+
+  static void indexSimpleGroupedFacetCounts() {
+    add_doc("id", "2000", "hotel_s1", "a", "airport_s1", "ams", "duration_i1", "5");
+    add_doc("id", "2001", "hotel_s1", "a", "airport_s1", "dus", "duration_i1", "10");
+    add_doc("id", "2002", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "10");
+    add_doc("id", "2003", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
+    add_doc("id", "2004", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
+  }
+
+  @Test
+  public void testSimpleGroupedFacets() throws Exception {
+    assertQ(
+        "Return 5 docs with id range 1937 till 1940",
+         req("id:[2000 TO 2004]"),
+        "*[count(//doc)=5]"
+    );
+    assertQ(
+        "Return two facet counts for field airport_a",
+         req(
+             "q", "*:*",
+             "fq", "id:[2000 TO 2004]",
+             "group", "true",
+             "group.facet", "true",
+             "group.field", "hotel_s1",
+             "facet", "true",
+             "facet.field", "airport_s1"
+         ),
+        "//lst[@name='facet_fields']/lst[@name='airport_s1']",
+        "*[count(//lst[@name='airport_s1']/int)=2]",
+        "//lst[@name='airport_s1']/int[@name='ams'][.='2']",
+        "//lst[@name='airport_s1']/int[@name='dus'][.='1']"
+    );
+    assertQ(
+        "Return two facet counts for field airport_a with fq",
+         req(
+             "q", "*:*",
+             "fq", "id:[2000 TO 2004]",
+             "fq", "duration_i1:5",
+             "group", "true",
+             "group.facet", "true",
+             "group.field", "hotel_s1",
+             "facet", "true",
+             "facet.field", "airport_s1"
+         ),
+        "//lst[@name='facet_fields']/lst[@name='airport_s1']",
+        "*[count(//lst[@name='airport_s1']/int)=2]",
+        "//lst[@name='airport_s1']/int[@name='ams'][.='2']",
+        "//lst[@name='airport_s1']/int[@name='dus'][.='0']"
+    );
+    assertQ(
+        "Return one facet count for field airport_s1 with prefix a",
+         req(
+             "q", "*:*",
+             "fq", "id:[2000 TO 2004]",
+             "group", "true",
+             "group.facet", "true",
+             "group.field", "hotel_s1",
+             "facet", "true",
+             "facet.field", "airport_s1",
+             "facet.prefix", "a"
+         ),
+        "//lst[@name='facet_fields']/lst[@name='airport_s1']",
+        "*[count(//lst[@name='airport_s1']/int)=1]",
+        "//lst[@name='airport_s1']/int[@name='ams'][.='2']"
+    );
+    
+    try {
+      h.query(
+           req(
+               "q", "*:*",
+               "fq", "id:[2000 TO 2004]",
+               "group.facet", "true",
+               "facet", "true",
+               "facet.field", "airport_s1",
+               "facet.prefix", "a"
+           )
+      );
+      fail("Exception should have been thrown");
+    } catch (SolrException e) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    }
   }
 
   @Test

@@ -21,22 +21,20 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.util.*;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.params.RequiredSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.*;
 import org.apache.solr.search.*;
+import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -290,30 +288,72 @@ public class SimpleFacets {
       multiToken = true;
     }
 
-    // unless the enum method is explicitly specified, use a counting method.
-    if (enumMethod) {
-      counts = getFacetTermEnumCounts(searcher, base, field, offset, limit, mincount,missing,sort,prefix);
+    if (params.getFieldBool(field, GroupParams.GROUP_FACET, false)) {
+      counts = getGroupedCounts(searcher, base, field, multiToken, offset,limit, mincount, missing, sort, prefix);
     } else {
-      if (multiToken) {
-        UnInvertedField uif = UnInvertedField.getUnInvertedField(field, searcher);
-        counts = uif.getCounts(searcher, base, offset, limit, mincount,missing,sort,prefix);
+      // unless the enum method is explicitly specified, use a counting method.
+      if (enumMethod) {
+        counts = getFacetTermEnumCounts(searcher, base, field, offset, limit, mincount,missing,sort,prefix);
       } else {
-        // TODO: future logic could use filters instead of the fieldcache if
-        // the number of terms in the field is small enough.
-
-        if (per_segment) {
-          PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
-          Executor executor = threads==0 ? directExecutor : facetExecutor;
-          ps.setNumThreads(threads);
-          counts = ps.getFacetCounts(executor);
+        if (multiToken) {
+          UnInvertedField uif = UnInvertedField.getUnInvertedField(field, searcher);
+          counts = uif.getCounts(searcher, base, offset, limit, mincount,missing,sort,prefix);
         } else {
-          counts = getFieldCacheCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix);         
-        }
+          // TODO: future logic could use filters instead of the fieldcache if
+          // the number of terms in the field is small enough.
+          if (per_segment) {
+            PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
+            Executor executor = threads == 0 ? directExecutor : facetExecutor;
+            ps.setNumThreads(threads);
+            counts = ps.getFacetCounts(executor);
+          } else {
+            counts = getFieldCacheCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
+          }
 
+        }
       }
     }
 
     return counts;
+  }
+
+  public NamedList<Integer> getGroupedCounts(SolrIndexSearcher searcher,
+                                             DocSet base,
+                                             String field,
+                                             boolean multiToken,
+                                             int offset,
+                                             int limit,
+                                             int mincount,
+                                             boolean missing,
+                                             String sort,
+                                             String prefix) throws IOException {
+    GroupingSpecification groupingSpecification = rb.getGroupingSpec();
+    String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
+    if (groupField == null) {
+      throw new SolrException (
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Specify the group.field as parameter or local parameter"
+      );
+    }
+
+    BytesRef prefixBR = prefix != null ? new BytesRef(prefix) : null;
+    TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBR, 128);
+    searcher.search(new MatchAllDocsQuery(), base.getTopFilter(), collector);
+    boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
+    TermGroupFacetCollector.GroupedFacetResult result = collector.mergeSegmentResults(offset + limit, mincount, orderByCount);
+
+    NamedList<Integer> facetCounts = new NamedList<Integer>();
+    List<TermGroupFacetCollector.FacetEntry> scopedEntries = result.getFacetEntries(offset, limit);
+    for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
+      String facetDisplayValue = facetEntry.getValue().utf8ToString();
+      facetCounts.add(facetDisplayValue, facetEntry.getCount());
+    }
+
+    if (missing) {
+      facetCounts.add(null, result.getTotalMissingCount());
+    }
+
+    return facetCounts;
   }
 
 
