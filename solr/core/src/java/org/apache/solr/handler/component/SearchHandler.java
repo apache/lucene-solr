@@ -17,58 +17,40 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.RTimer;
-import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.RTimer;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.core.SolrCore;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.HttpClient;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  *
  * Refer SOLR-281
  *
  */
-public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
-{
+public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, PluginInfoInitialized {
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
 
-  // socket timeout measured in ms, closes a socket if read
-  // takes longer than x ms to complete. throws
-  // java.net.SocketTimeoutException: Read timed out exception
-  static final String INIT_SO_TIMEOUT = "shard-socket-timeout";
-
-  // connection timeout measures in ms, closes a socket if connection
-  // cannot be established within x ms. with a
-  // java.net.SocketTimeoutException: Connection timed out
-  static final String INIT_CONNECTION_TIMEOUT = "shard-connection-timeout";
-  static int soTimeout = 0; //current default values
-  static int connectionTimeout = 0; //current default values
-
   protected static Logger log = LoggerFactory.getLogger(SearchHandler.class);
 
   protected List<SearchComponent> components = null;
+  private ShardHandlerFactory shardHandlerFactory = new HttpShardHandlerFactory();
+  private PluginInfo shfInfo;
 
   protected List<String> getDefaultComponents()
   {
@@ -80,6 +62,16 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     names.add( StatsComponent.COMPONENT_NAME );
     names.add( DebugComponent.COMPONENT_NAME );
     return names;
+  }
+
+  public void init(PluginInfo info) {
+    init(info.initArgs);
+    for (PluginInfo child : info.children) {
+      if("shardHandlerFactory".equals(child.type)){
+        this.shfInfo = child;
+        break;
+      }
+    }
   }
 
   /**
@@ -136,17 +128,13 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
       log.info("Adding  debug component:" + dbgCmp);
     }
 
-    Object co = initArgs.get(INIT_CONNECTION_TIMEOUT);
-    if (co != null) {
-      connectionTimeout = (Integer) co;
-      log.info("Setting shard-connection-timeout to: " + connectionTimeout);
+    if(shfInfo == null) {
+      Map m = new HashMap();
+      m.put("class", HttpShardHandlerFactory.class.getName());
+      shfInfo = new PluginInfo("ShardHandlerFactory", m, null, Collections.<PluginInfo>emptyList());
     }
 
-    Object so = initArgs.get(INIT_SO_TIMEOUT);
-    if (so != null) {
-      soTimeout = (Integer) so;
-      log.info("Setting shard-socket-timeout to: " + soTimeout);
-    }
+    shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
   }
 
   public List<SearchComponent> getComponents() {
@@ -167,6 +155,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     rb.setDebug(req.getParams().getBool(CommonParams.DEBUG_QUERY, false));
 
     final RTimer timer = rb.isDebug() ? new RTimer() : null;
+
+    ShardHandler shardHandler1 = shardHandlerFactory.getShardHandler();
+    shardHandler1.checkDistributed(rb);
 
     if (timer == null) {
       // non-debugging prepare phase
@@ -216,8 +207,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     } else {
       // a distributed request
 
-      HttpCommComponent comm = new HttpCommComponent();
-
       if (rb.outgoing == null) {
         rb.outgoing = new LinkedList<ShardRequest>();
       }
@@ -264,7 +253,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
               } else {
                 params.set(CommonParams.QT, shardHandler);
               }
-              comm.submit(sreq, shard, params);
+              shardHandler1.submit(sreq, shard, params);
             }
           }
 
@@ -273,13 +262,13 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
           // the outgoing queue, send them out immediately (by exiting
           // this loop)
           while (rb.outgoing.size() == 0) {
-            ShardResponse srsp = comm.takeCompletedOrError();
+            ShardResponse srsp = shardHandler1.takeCompletedOrError();
             if (srsp == null) break;  // no more requests to wait for
 
             // Was there an exception?  If so, abort everything and
             // rethrow
             if (srsp.getException() != null) {
-              comm.cancelAll();
+              shardHandler1.cancelAll();
               if (srsp.getException() instanceof SolrException) {
                 throw (SolrException)srsp.getException();
               } else {
@@ -334,173 +323,4 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   public String getSource() {
     return "$URL$";
   }
-}
-
-
-// TODO: generalize how a comm component can fit into search component framework
-// TODO: statics should be per-core singletons
-
-class HttpCommComponent {
-
-  // We want an executor that doesn't take up any resources if
-  // it's not used, so it could be created statically for
-  // the distributed search component if desired.
-  //
-  // Consider CallerRuns policy and a lower max threads to throttle
-  // requests at some point (or should we simply return failure?)
-  static Executor commExecutor = new ThreadPoolExecutor(
-          0,
-          Integer.MAX_VALUE,
-          5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
-          new SynchronousQueue<Runnable>()  // directly hand off tasks
-  );
-
-
-  static HttpClient client;
-
-  static {
-    MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
-    mgr.getParams().setDefaultMaxConnectionsPerHost(20);
-    mgr.getParams().setMaxTotalConnections(10000);
-    mgr.getParams().setConnectionTimeout(SearchHandler.connectionTimeout);
-    mgr.getParams().setSoTimeout(SearchHandler.soTimeout);
-    // mgr.getParams().setStaleCheckingEnabled(false);
-    client = new HttpClient(mgr);    
-  }
-
-  CompletionService<ShardResponse> completionService = new ExecutorCompletionService<ShardResponse>(commExecutor);
-  Set<Future<ShardResponse>> pending = new HashSet<Future<ShardResponse>>();
-
-  HttpCommComponent() {
-  }
-
-  private static class SimpleSolrResponse extends SolrResponse {
-    long elapsedTime;
-    NamedList<Object> nl;
-    
-    @Override
-    public long getElapsedTime() {
-      return elapsedTime;
-    }
-
-    @Override
-    public NamedList<Object> getResponse() {
-      return nl;
-    }
-
-    @Override
-    public void setResponse(NamedList<Object> rsp) {
-      nl = rsp;
-    }
-  }
-
-  void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
-    Callable<ShardResponse> task = new Callable<ShardResponse>() {
-      public ShardResponse call() throws Exception {
-
-        ShardResponse srsp = new ShardResponse();
-        srsp.setShardRequest(sreq);
-        srsp.setShard(shard);
-        SimpleSolrResponse ssr = new SimpleSolrResponse();
-        srsp.setSolrResponse(ssr);
-        long startTime = System.currentTimeMillis();
-
-        try {
-          // String url = "http://" + shard + "/select";
-          String url = "http://" + shard;
-
-          params.remove(CommonParams.WT); // use default (currently javabin)
-          params.remove(CommonParams.VERSION);
-
-          SolrServer server = new CommonsHttpSolrServer(url, client);
-          // SolrRequest req = new QueryRequest(SolrRequest.METHOD.POST, "/select");
-          // use generic request to avoid extra processing of queries
-          QueryRequest req = new QueryRequest(params);
-          req.setMethod(SolrRequest.METHOD.POST);
-
-          // no need to set the response parser as binary is the default
-          // req.setResponseParser(new BinaryResponseParser());
-          // srsp.rsp = server.request(req);
-          // srsp.rsp = server.query(sreq.params);
-
-          ssr.nl = server.request(req);
-        } catch (Throwable th) {
-          srsp.setException(th);
-          if (th instanceof SolrException) {
-            srsp.setResponseCode(((SolrException)th).code());
-          } else {
-            srsp.setResponseCode(-1);
-          }
-        }
-
-        ssr.elapsedTime = System.currentTimeMillis() - startTime;
-
-        return srsp;
-      }
-    };
-
-    pending.add( completionService.submit(task) );
-  }
-
-  /** returns a ShardResponse of the last response correlated with a ShardRequest */
-  ShardResponse take() {
-    while (pending.size() > 0) {
-      try {
-        Future<ShardResponse> future = completionService.take();
-        pending.remove(future);
-        ShardResponse rsp = future.get();
-        rsp.getShardRequest().responses.add(rsp);
-        if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
-          return rsp;
-        }
-      } catch (InterruptedException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (ExecutionException e) {
-        // should be impossible... the problem with catching the exception
-        // at this level is we don't know what ShardRequest it applied to
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Impossible Exception",e);
-      }
-    }
-    return null;
-  }
-
-
-  /** returns a ShardResponse of the last response correlated with a ShardRequest,
-   * or immediately returns a ShardResponse if there was an error detected
-   */
-  ShardResponse takeCompletedOrError() {
-    while (pending.size() > 0) {
-      try {
-        Future<ShardResponse> future = completionService.take();
-        pending.remove(future);
-        ShardResponse rsp = future.get();
-        if (rsp.getException() != null) return rsp; // if exception, return immediately
-        // add response to the response list... we do this after the take() and
-        // not after the completion of "call" so we know when the last response
-        // for a request was received.  Otherwise we might return the same
-        // request more than once.
-        rsp.getShardRequest().responses.add(rsp);
-        if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
-          return rsp;
-        }
-      } catch (InterruptedException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (ExecutionException e) {
-        // should be impossible... the problem with catching the exception
-        // at this level is we don't know what ShardRequest it applied to
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Impossible Exception",e);
-      }
-    }
-    return null;
-  }
-
-
-  void cancelAll() {
-    for (Future<ShardResponse> future : pending) {
-      // TODO: any issues with interrupting?  shouldn't be if
-      // there are finally blocks to release connections.
-      future.cancel(true);
-    }
-  }
-
 }
