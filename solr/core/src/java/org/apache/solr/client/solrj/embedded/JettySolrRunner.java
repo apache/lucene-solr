@@ -18,23 +18,24 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.Random;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.mortbay.component.LifeCycle;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.FilterHolder;
-import org.mortbay.jetty.servlet.HashSessionIdManager;
-import org.mortbay.log.Logger;
-import org.mortbay.thread.QueuedThreadPool;
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Run solr using jetty
@@ -122,7 +123,7 @@ public class JettySolrRunner {
     }
 
     // Initialize the servlets
-    final Context root = new Context(server, context, Context.SESSIONS);
+    final ServletContextHandler root = new ServletContextHandler(server,context,ServletContextHandler.SESSIONS);
     server.addLifeCycleListener(new LifeCycle.Listener() {
 
       public void lifeCycleStopping(LifeCycle arg0) {
@@ -147,12 +148,10 @@ public class JettySolrRunner {
             schemaFilename);
 //        SolrDispatchFilter filter = new SolrDispatchFilter();
 //        FilterHolder fh = new FilterHolder(filter);
-        dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*",
-            Handler.REQUEST);
+        dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         if (solrConfigFilename != null) System.clearProperty("solrconfig");
         if (schemaFilename != null) System.clearProperty("schema");
         System.clearProperty("solr.solr.home");
-        
       }
 
       public void lifeCycleFailure(LifeCycle arg0, Throwable arg1) {
@@ -305,19 +304,7 @@ class NoLog implements Logger {
     debug = enabled;
   }
 
-  public void info(String msg, Object arg0, Object arg1) {
-  }
-
   public void debug(String msg, Throwable th) {
-  }
-
-  public void debug(String msg, Object arg0, Object arg1) {
-  }
-
-  public void warn(String msg, Object arg0, Object arg1) {
-  }
-
-  public void warn(String msg, Throwable th) {
   }
 
   public Logger getLogger(String name) {
@@ -330,5 +317,54 @@ class NoLog implements Logger {
   @Override
   public String toString() {
     return "NOLOG[" + name + "]";
+  }
+
+  @Override
+  public void debug(Throwable arg0) {
+    
+  }
+
+  @Override
+  public void debug(String arg0, Object... arg1) {
+    
+  }
+
+  @Override
+  public String getName() {
+    return toString();
+  }
+
+  @Override
+  public void ignore(Throwable arg0) {
+    
+  }
+
+  @Override
+  public void info(Throwable arg0) {
+    
+  }
+
+  @Override
+  public void info(String arg0, Object... arg1) {
+    
+  }
+
+  @Override
+  public void info(String arg0, Throwable arg1) {
+    
+  }
+
+  @Override
+  public void warn(Throwable arg0) {
+    
+  }
+
+  @Override
+  public void warn(String arg0, Object... arg1) {
+    
+  }
+
+  @Override
+  public void warn(String arg0, Throwable arg1) {
   }
 }

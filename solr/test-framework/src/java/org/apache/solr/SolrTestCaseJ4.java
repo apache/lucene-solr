@@ -242,7 +242,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   protected static String getClassName() {
     return getTestClass().getName();
-  }
+      }
 
   protected static String getSimpleClassName() {
     return getTestClass().getSimpleName();

@@ -34,7 +34,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
-import org.mortbay.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterHolder;
 
 /**
  * The monkey can stop random or specific jetties used with SolrCloud.

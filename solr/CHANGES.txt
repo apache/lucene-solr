@@ -440,6 +440,8 @@ Other Changes
 
 * SOLR-3202: Dropping Support for JSP.  New Admin UI is all client side (ryan)
 
+* SOLR-3159: Upgrade example and tests to run with Jetty 8 (ryan)
+
 
 Documentation
 ----------------------

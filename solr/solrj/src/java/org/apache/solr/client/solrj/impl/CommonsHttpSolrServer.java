@@ -473,7 +473,7 @@ public class CommonsHttpSolrServer extends SolrServer
           if(err!=null) {
             reason = (String)err.get("msg");
             // TODO? get the trace?
-          }
+    }
         }
         catch(Exception ex) {}
         if(reason == null) {

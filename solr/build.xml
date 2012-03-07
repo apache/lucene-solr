@@ -180,8 +180,7 @@
         <exclude name="example/work/**" />
       </additional-excludes>
       <additional-filters>
-        <replaceregex pattern="/jetty-util([^/]+)$" replace="/jetty-util" flags="gi" />
-        <replaceregex pattern="/jetty-6([^/]+)$" replace="/jetty" flags="gi" />
+        <replaceregex pattern="/jetty([^/]+)$" replace="/jetty" flags="gi" />
       </additional-filters>
     </license-check-macro>
   </target>
