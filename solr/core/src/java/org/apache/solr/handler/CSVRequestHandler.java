@@ -29,8 +29,8 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.*;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.commons.csv.CSVStrategy;
-import org.apache.commons.csv.CSVParser;
+import org.apache.solr.internal.csv.CSVStrategy;
+import org.apache.solr.internal.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 
 import java.util.regex.Pattern;

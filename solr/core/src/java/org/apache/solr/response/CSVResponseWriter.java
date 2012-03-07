@@ -17,8 +17,8 @@
 
 package org.apache.solr.response;
 
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.CSVStrategy;
+import org.apache.solr.internal.csv.CSVPrinter;
+import org.apache.solr.internal.csv.CSVStrategy;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.common.SolrDocument;
