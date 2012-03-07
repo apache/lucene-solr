@@ -68,7 +68,6 @@ public class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
     
     Random r = new Random(runnerSeed);
     
-    LuceneTestCase.testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
     testMethods = new ArrayList<FrameworkMethod>();
     for (Method m : getTestClass().getJavaClass().getMethods()) {
       // check if the current test's class has methods annotated with @Ignore

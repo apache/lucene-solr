@@ -241,20 +241,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   protected static String getClassName() {
-    StackTraceElement[] stack = new RuntimeException("WhoAmI").fillInStackTrace().getStackTrace();
-    for (int i = stack.length-1; i>=0; i--) {
-      StackTraceElement ste = stack[i];
-      String cname = ste.getClassName();
-      if (cname.indexOf(".lucene.")>=0 || cname.indexOf(".solr.")>=0) {
-        return cname;
-      }
-    }
-    return SolrTestCaseJ4.class.getName();
+    return getTestClass().getName();
   }
 
   protected static String getSimpleClassName() {
-    String cname = getClassName();
-    return cname.substring(cname.lastIndexOf('.')+1);
+    return getTestClass().getSimpleName();
   }
 
   protected static String configString;
