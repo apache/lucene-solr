@@ -216,6 +216,13 @@ public class DocTermOrds {
     }
   }
 
+  /**
+   * @return The number of terms in this field
+   */
+  public int numTerms() {
+    return numTermsInField;
+  }
+
   /** Subclass can override this */
   protected void visitTerm(TermsEnum te, int termNum) throws IOException {
   }

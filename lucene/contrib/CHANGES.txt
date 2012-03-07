@@ -72,6 +72,8 @@ New Features
    start/endOffset, if offsets are indexed. (Alan Woodward via Mike
    McCandless)
 
+ * LUCENE-3802: Support for grouped faceting. (Martijn van Groningen)
+
 API Changes
 
  * LUCENE-2606: Changed RegexCapabilities interface to fix thread 
