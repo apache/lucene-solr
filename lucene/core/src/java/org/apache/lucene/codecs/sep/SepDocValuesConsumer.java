@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.codecs.PerDocProducerBase;
 import org.apache.lucene.codecs.lucene40.values.DocValuesWriterBase;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -58,7 +59,7 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
   private static void files(Directory dir,FieldInfos fieldInfos, String segmentName, Set<String> files)  {
     for (FieldInfo fieldInfo : fieldInfos) {
       if (fieldInfo.hasDocValues()) {
-        String filename = docValuesId(segmentName, fieldInfo.number);
+        String filename = PerDocProducerBase.docValuesId(segmentName, fieldInfo.number);
         switch (fieldInfo.getDocValuesType()) {
           case BYTES_FIXED_DEREF:
           case BYTES_VAR_DEREF:

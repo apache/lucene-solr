@@ -79,14 +79,6 @@ public class FSTCompletionLookup extends Lookup {
    */
   private final static int sharedTailLength = 5;
 
-  /**
-   * File name for the automaton.
-   * 
-   * @see #store(File)
-   * @see #load(File)
-   */
-  private static final String FILENAME = "fst.bin";
-
   private int buckets;
   private boolean exactMatchFirst;
 
@@ -264,46 +256,13 @@ public class FSTCompletionLookup extends Lookup {
     return bucket == -1 ? null : Long.valueOf(bucket);
   }
 
-  /**
-   * Deserialization from disk.
-   */
-  @Override
-  public synchronized boolean load(File storeDir) throws IOException {
-    File data = new File(storeDir, FILENAME);
-    if (!data.exists() || !data.canRead()) {
-      return false;
-    }
-
-    this.higherWeightsCompletion = new FSTCompletion(
-        FST.read(data, NoOutputs.getSingleton()));
-    this.normalCompletion = new FSTCompletion(
-        higherWeightsCompletion.getFST(), false, exactMatchFirst);
-
-    return true;
-  }
-
-  /**
-   * Serialization to disk.
-   */
-  @Override
-  public synchronized boolean store(File storeDir) throws IOException {
-    if (!storeDir.exists() || !storeDir.isDirectory() || !storeDir.canWrite()) {
-      return false;
-    }
-
-    if (this.normalCompletion == null) 
-      return false;
-
-    normalCompletion.getFST().save(new File(storeDir, FILENAME));
-    return true;
-  }
 
   @Override
   public synchronized boolean store(OutputStream output) throws IOException {
 
-    if (this.normalCompletion == null) 
-      return false;
     try {
+      if (this.normalCompletion == null || normalCompletion.getFST() == null) 
+        return false;
       normalCompletion.getFST().save(new OutputStreamDataOutput(output));
     } finally {
       IOUtils.close(output);

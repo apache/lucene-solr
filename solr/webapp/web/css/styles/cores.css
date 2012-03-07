@@ -4,224 +4,224 @@
 
 #content #cores #frame
 {
-    float: right;
-    width: 78%;
+  float: right;
+  width: 78%;
 }
 
 #content #cores #navigation
 {
-    background-image: url( ../../img/div.gif );
-    background-position: 100% 0;
-    background-repeat: repeat-y;
-    width: 20%;
+  background-image: url( ../../img/div.gif );
+  background-position: 100% 0;
+  background-repeat: repeat-y;
+  width: 20%;
 }
 
 #content #cores #list
 {
-    float: left;
-    padding-top: 15px;
-    width: 100%;
+  float: left;
+  padding-top: 15px;
+  width: 100%;
 }
 
 #content #cores #list a
 {
-    border-right: 1px solid #f0f0f0;
-    display: block;
-    margin-left: 1px;
-    padding: 3px 0;
+  border-right: 1px solid #f0f0f0;
+  display: block;
+  margin-left: 1px;
+  padding: 3px 0;
 }
 
 #content #cores #list a:hover
 {
-    background-color: #fafafa;
+  background-color: #fafafa;
 }
 
 #content #cores #list .current a
 {
-    background-color: #fff;
-    border-right-color: #fff;
-    border-top: 1px solid #f0f0f0;
-    border-bottom: 1px solid #f0f0f0;
-    font-weight: bold;
+  background-color: #fff;
+  border-right-color: #fff;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: bold;
 }
 
 #content #cores #frame .actions
 {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 #content #cores .actions form .buttons
 {
-    padding-left: 40px;
+  padding-left: 40px;
 }
 
 #content #cores .actions form a
 {
-    display: block;
-    float: left;
-    height: 20px;
-    margin-right: 5px;
-    padding-left: 21px;
+  display: block;
+  float: left;
+  height: 20px;
+  margin-right: 5px;
+  padding-left: 21px;
 }
 
 #content #cores .actions form a span
 {
-    display: none;
+  display: none;
 }
 
 #content #cores .actions form a.submit
 {
-    background-image: url( ../../img/ico/tick.png );
-    background-position: 50% 50%;
+  background-image: url( ../../img/ico/tick.png );
+  background-position: 50% 50%;
 }
 
 #content #cores .actions form a.submit:hover
 {
-    background-color: #e6f3e6;
+  background-color: #e6f3e6;
 }
 
 #content #cores .actions form a.reset
 {
-    background-image: url( ../../img/ico/cross.png );
-    background-position: 50% 50%;
+  background-image: url( ../../img/ico/cross.png );
+  background-position: 50% 50%;
 }
 
 #content #cores .actions form a.reset:hover
 {
-    background-color: #f3e6e6;
+  background-color: #f3e6e6;
 }
 
 #content #cores .actions form p
 {
-    padding-bottom: 3px;
+  padding-bottom: 3px;
 }
 
 #content #cores .actions form label
 {
-    float: left;
-    width: 40px;
+  float: left;
+  width: 40px;
 }
 
 #content #cores .actions form input,
 #content #cores .actions form select
 {
-    width: 100px;
+  width: 100px;
 }
 
 #content #cores .actions form select option.disabled
 {
-    color: #c0c0c0;
+  color: #c0c0c0;
 }
 
 #content #cores .actions .button-holder
 {
-    float: left;
-    margin-right: 10px;
-    margin-bottom: 5px;
+  float: left;
+  margin-right: 10px;
+  margin-bottom: 5px;
 }
 
 #content #cores .actions .button-holder.active
 {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 #content #cores .actions .button-holder .button
 {
-    background-color: #f5f5f5;
-    border: 1px solid #c0c0c0;
-    position: relative;
-    z-index: 100;
+  background-color: #f5f5f5;
+  border: 1px solid #c0c0c0;
+  position: relative;
+  z-index: 100;
 }
 
 #content #cores .actions .button-holder.active .button
 {
-    background-color: #fff;
-    border-bottom-color: #fff;
-    padding-bottom: 5px;
+  background-color: #fff;
+  border-bottom-color: #fff;
+  padding-bottom: 5px;
 }
 
 #content #cores .actions .button-holder .button a
 {
-    background-position: 5px 50%;
-    display: block;
-    padding: 1px 5px;
-    padding-left: 24px;
+  background-position: 5px 50%;
+  display: block;
+  padding: 1px 5px;
+  padding-left: 24px;
 }
 
 #content #cores .actions .button-holder .button a.success
 {
-    background-image: url( ../../img/ico/tick.png );
+  background-image: url( ../../img/ico/tick.png );
 }
 
 #content #cores .actions .button-holder.active .button a
 {
-    cursor: auto;
+  cursor: auto;
 }
 
 #content #cores .actions .button-holder .button-content
 {
-    background-color: #fff;
-    border: 1px solid #c0c0c0;
-    box-shadow: 5px 5px 10px #c0c0c0;
-    -moz-box-shadow: 5px 5px 10px #c0c0c0;
-    -webkit-box-shadow: 5px 5px 10px #c0c0c0;
-    display: none;
-    margin-top: -1px;
-    padding: 5px;
-    padding-top: 15px;
-    position: absolute;
-    z-index: 99;
+  background-color: #fff;
+  border: 1px solid #c0c0c0;
+  box-shadow: 5px 5px 10px #c0c0c0;
+  -moz-box-shadow: 5px 5px 10px #c0c0c0;
+  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+  display: none;
+  margin-top: -1px;
+  padding: 5px;
+  padding-top: 15px;
+  position: absolute;
+  z-index: 99;
 }
 
 #content #cores .actions .button-holder.active .button-content
 {
-    display: block;
+  display: block;
 }
 
 #content #cores .actions .button .reload
 {
-    background-image: url( ../../img/ico/arrow-circle.png );
+  background-image: url( ../../img/ico/arrow-circle.png );
 }
 
 #content #cores .actions .button .rename
 {
-    background-image: url( ../../img/ico/ui-text-field-select.png );
+  background-image: url( ../../img/ico/ui-text-field-select.png );
 }
 
 #content #cores .actions .button .swap
 {
-    background-image: url( ../../img/ico/arrow-switch.png );
+  background-image: url( ../../img/ico/arrow-switch.png );
 }
 
 #content #cores .actions .button .unload
 {
-    background-image: url( ../../img/ico/cross.png );
+  background-image: url( ../../img/ico/cross.png );
 }
 
 #content #cores .actions .button .optimize
 {
-    background-image: url( ../../img/ico/hammer-screwdriver.png );
-    display: none;
+  background-image: url( ../../img/ico/hammer-screwdriver.png );
+  display: none;
 }
 
 #content #cores #navigation .add
 {
-    background-image: url( ../../img/ico/plus-button.png );
+  background-image: url( ../../img/ico/plus-button.png );
 }
 
 #content #cores #navigation .add label
 {
-    width: 85px;
+  width: 85px;
 }
 
 #content #cores #navigation .add input
 {
-    width: 155px;
+  width: 155px;
 }
 
 #content #cores #navigation .add .buttons
 {
-    padding-left: 85px;
+  padding-left: 85px;
 }
 
 #content #cores #data #core-data h2 { background-image: url( ../../img/ico/database.png ); }
@@ -229,44 +229,44 @@
 
 #content #cores #data #index-data
 {
-    margin-top: 10px;
+  margin-top: 10px;
 }
 
 #content #cores #data li
 {
-    padding-bottom: 3px;
-    padding-top: 3px;
+  padding-bottom: 3px;
+  padding-top: 3px;
 }
 
 #content #cores #data li.odd
 {
-    background-color: #f8f8f8;
+  background-color: #f8f8f8;
 }
 
 #content #cores #data li dt
 {
-    float: left;
-    width: 17%;
+  float: left;
+  width: 17%;
 }
 
 #content #cores #data li dd
 {
-    float: right;
-    width: 82%;
+  float: right;
+  width: 82%;
 }
 
 #content #cores #data li dd.ico
 {
-    background-image: url( ../../img/ico/slash.png );
-    height: 20px;
+  background-image: url( ../../img/ico/slash.png );
+  height: 20px;
 }
 
 #content #cores #data li dd.ico.ico-1
 {
-    background-image: url( ../../img/ico/tick.png );
+  background-image: url( ../../img/ico/tick.png );
 }
 
 #content #cores #data li dd.ico span
 {
-    display: none;
+  display: none;
 }

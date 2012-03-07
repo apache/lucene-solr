@@ -49,6 +49,9 @@ import java.util.concurrent.*;
 
 /** @lucene.experimental */
 public class UpdateLog implements PluginInfoInitialized {
+  public static String LOG_FILENAME_PATTERN = "%s.%019d";
+  public static String TLOG_NAME="tlog";
+
   public static Logger log = LoggerFactory.getLogger(UpdateLog.class);
   public boolean debug = log.isDebugEnabled();
   public boolean trace = log.isTraceEnabled();
@@ -75,10 +78,6 @@ public class UpdateLog implements PluginInfoInitialized {
       return "RecoveryInfo{adds="+adds+" deletes="+deletes+ " deleteByQuery="+deleteByQuery+" errors="+errors + " positionOfStart="+positionOfStart+"}";
     }
   }
-
-
-
-  public static String TLOG_NAME="tlog";
 
   long id = -1;
   private State state = State.ACTIVE;
@@ -615,7 +614,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   private void ensureLog() {
     if (tlog == null) {
-      String newLogName = String.format(Locale.ENGLISH, "%s.%019d", TLOG_NAME, id);
+      String newLogName = String.format(Locale.ENGLISH, LOG_FILENAME_PATTERN, TLOG_NAME, id);
       try {
         tlog = new TransactionLog(new File(tlogDir, newLogName), globalStrings);
       } catch (IOException e) {

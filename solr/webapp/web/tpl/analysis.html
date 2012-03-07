@@ -16,68 +16,68 @@ limitations under the License.
 -->
 <div id="analysis">
 
-    <div class="block analysis-error" id="analysis-handler-missing">
+  <div class="block analysis-error" id="analysis-handler-missing">
 
-        <div class="head">This Functionality requires the <code>/analysis/field</code> Handler to be registered and active!</div>
+    <div class="head">This Functionality requires the <code>/analysis/field</code> Handler to be registered and active!</div>
 
-    </div>
+  </div>
 
-    <div class="block analysis-error" id="analysis-error">
+  <div class="block analysis-error" id="analysis-error">
 
-        <div class="head"><a><span></span></a></div>
-        <div class="body"></div>
+    <div class="head"><a><span></span></a></div>
+    <div class="body"></div>
 
-    </div>
+  </div>
 
-    <div id="analysis-holder">
+  <div id="analysis-holder">
 
-        <div id="field-analysis">
+    <div id="field-analysis">
               
-            <form method="get">
+      <form method="get">
                 
-                <ul class="clearfix">
+        <ul class="clearfix">
                     
-                    <li class="index">
+          <li class="index">
                         
-                        <label for="analysis_fieldvalue_index">Field Value (Index)</label>
-                        <textarea name="analysis.fieldvalue" id="analysis_fieldvalue_index"></textarea>
+            <label for="analysis_fieldvalue_index">Field Value (Index)</label>
+            <textarea name="analysis.fieldvalue" id="analysis_fieldvalue_index"></textarea>
                         
-                    </li>
+          </li>
                     
-                    <li class="query">
+          <li class="query">
                         
-                        <label for="analysis_fieldvalue_query">Field Value (Query)</label>
-                        <textarea name="analysis.query" id="analysis_fieldvalue_query"></textarea>
+            <label for="analysis_fieldvalue_query">Field Value (Query)</label>
+            <textarea name="analysis.query" id="analysis_fieldvalue_query"></textarea>
                         
-                    </li>
+          </li>
 
-                    <li class="settings-holder clearfix">
-                        <div class="settings">
+          <li class="settings-holder clearfix">
+            <div class="settings">
 
-                            <label for="type_or_name">Analyse Fieldname / FieldType:</label>
-                            <select id="type_or_name"></select>
+              <label for="type_or_name">Analyse Fieldname / FieldType:</label>
+              <select id="type_or_name"></select>
 
-                            <div>
+              <div>
 
-                                <button type="submit">Analyse Values</button>
+                <button type="submit">Analyse Values</button>
 
-                                <div class="verbose_output active">
-                                    <a>Verbose Output</a>
-                                </div>
+                <div class="verbose_output active">
+                  <a>Verbose Output</a>
+                </div>
 
-                            </div>
+              </div>
 
-                        </div>
-                    </li>
+            </div>
+          </li>
                     
-                </ul>
+        </ul>
                 
-            </form>
+      </form>
             
-        </div>
-        
-        <div id="analysis-result" class="clearfix verbose_output"></div>
-
     </div>
+        
+    <div id="analysis-result" class="clearfix verbose_output"></div>
+
+  </div>
 
 </div>

@@ -1821,6 +1821,10 @@ Other Changes
   servlet containers was therefore removed and is now ignored if set.
   Output is always UTF-8.  (uschindler, yonik, rmuir)
 
+* SOLR-141: Errors and Exceptions are formated by ResponseWriter.
+  (Mike Sokolov, Rich Cariens, Daniel Naber, ryan)
+
+
 Build
 ----------------------
 

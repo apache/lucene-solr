@@ -22,6 +22,7 @@ import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.util.Bits;
@@ -40,6 +41,7 @@ public abstract class DocValuesConsumer {
 
   protected final BytesRef spare = new BytesRef();
 
+  protected abstract Type getType();
   /**
    * Adds the given {@link IndexableField} instance to this
    * {@link DocValuesConsumer}
@@ -110,7 +112,7 @@ public abstract class DocValuesConsumer {
     final Source source = reader.getDirectSource();
     assert source != null;
     int docID = docBase;
-    final DocValues.Type type = reader.type();
+    final Type type = getType();
     final Field scratchField;
     switch(type) {
     case VAR_INTS:
@@ -160,7 +162,7 @@ public abstract class DocValuesConsumer {
    */
   protected void mergeDoc(Field scratchField, Source source, int docID, int sourceDoc)
       throws IOException {
-    switch(source.type()) {
+    switch(getType()) {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_SORTED:
     case BYTES_FIXED_STRAIGHT:

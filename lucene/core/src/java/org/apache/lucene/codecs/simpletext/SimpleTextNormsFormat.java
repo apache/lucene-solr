@@ -18,35 +18,123 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * plain-text norms format
  * <p>
  * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * 
  * @lucene.experimental
  */
 public class SimpleTextNormsFormat extends NormsFormat {
+  private static final String NORMS_SEG_SUFFIX = "len";
   
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new SimpleTextNormsConsumer(state.directory, state.segmentName, state.context);
+    return new SimpleTextNormsPerDocConsumer(state, NORMS_SEG_SUFFIX);
   }
-
+  
   @Override
   public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
-    return new SimpleTextNormsProducer(state.dir, state.segmentInfo, state.fieldInfos, state.context);
+    return new SimpleTextNormsPerDocProducer(state,
+        BytesRef.getUTF8SortedAsUnicodeComparator(), NORMS_SEG_SUFFIX);
   }
-
+  
   @Override
   public void files(SegmentInfo info, Set<String> files) throws IOException {
-    SimpleTextNormsConsumer.files(info, files);
-  }   
+    SimpleTextNormsPerDocConsumer.files(info, files);
+  }
+  
+  public static class SimpleTextNormsPerDocProducer extends
+      SimpleTextPerDocProducer {
+    
+    public SimpleTextNormsPerDocProducer(SegmentReadState state,
+        Comparator<BytesRef> comp, String segmentSuffix) throws IOException {
+      super(state, comp, segmentSuffix);
+    }
+    
+    @Override
+    protected boolean canLoad(FieldInfo info) {
+      return info.normsPresent();
+    }
+    
+    @Override
+    protected Type getDocValuesType(FieldInfo info) {
+      return info.getNormType();
+    }
+    
+    @Override
+    protected boolean anyDocValuesFields(FieldInfos infos) {
+      return infos.hasNorms();
+    }
+    
+  }
+  
+  public static class SimpleTextNormsPerDocConsumer extends
+      SimpleTextPerDocConsumer {
+    
+    public SimpleTextNormsPerDocConsumer(PerDocWriteState state,
+        String segmentSuffix) throws IOException {
+      super(state, segmentSuffix);
+    }
+    
+    @Override
+    protected DocValues getDocValuesForMerge(AtomicReader reader, FieldInfo info)
+        throws IOException {
+      return reader.normValues(info.name);
+    }
+    
+    @Override
+    protected boolean canMerge(FieldInfo info) {
+      return info.normsPresent();
+    }
+    
+    @Override
+    protected Type getDocValuesType(FieldInfo info) {
+      return info.getNormType();
+    }
+    
+    @Override
+    public void abort() {
+      Set<String> files = new HashSet<String>();
+      filesInternal(state.fieldInfos, state.segmentName, files, segmentSuffix);
+      IOUtils.deleteFilesIgnoringExceptions(state.directory,
+          files.toArray(new String[0]));
+    }
+    
+    public static void files(SegmentInfo segmentInfo, Set<String> files)
+        throws IOException {
+      filesInternal(segmentInfo.getFieldInfos(), segmentInfo.name, files,
+          NORMS_SEG_SUFFIX);
+    }
+    
+    public static void filesInternal(FieldInfos fieldInfos, String segmentName,
+        Set<String> files, String segmentSuffix) {
+      for (FieldInfo fieldInfo : fieldInfos) {
+        if (fieldInfo.normsPresent()) {
+          String id = docValuesId(segmentName, fieldInfo.number);
+          files.add(IndexFileNames.segmentFileName(id, "",
+              segmentSuffix));
+        }
+      }
+    }
+  }
 }

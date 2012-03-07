@@ -155,6 +155,9 @@ public class EmbeddedSolrServer extends SolrServer
       
       core.execute( handler, req, rsp );
       if( rsp.getException() != null ) {
+        if(rsp.getException() instanceof SolrException) {
+          throw rsp.getException();
+        }
         throw new SolrServerException( rsp.getException() );
       }
       
@@ -218,6 +221,9 @@ public class EmbeddedSolrServer extends SolrServer
     }
     catch( IOException iox ) {
       throw iox;
+    }
+    catch( SolrException sx ) {
+      throw sx;
     }
     catch( Exception ex ) {
       throw new SolrServerException( ex );

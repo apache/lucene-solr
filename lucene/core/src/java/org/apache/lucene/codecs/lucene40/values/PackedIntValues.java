@@ -18,9 +18,8 @@ package org.apache.lucene.codecs.lucene40.values;
  */
 import java.io.IOException;
 
-import org.apache.lucene.codecs.lucene40.values.DocValuesArray.LongValues;
+import org.apache.lucene.codecs.DocValuesArraySource;
 import org.apache.lucene.codecs.lucene40.values.FixedStraightBytesImpl.FixedBytesWriterBase;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
@@ -59,27 +58,10 @@ class PackedIntValues {
 
     protected PackedIntsWriter(Directory dir, String id, Counter bytesUsed,
         IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, Type.VAR_INTS);
       bytesRef = new BytesRef(8);
     }
-
-    protected void add(int docID, long v) throws IOException {
-      assert lastDocId < docID;
-      if (!started) {
-        started = true;
-        minValue = maxValue = v;
-      } else {
-        if (v < minValue) {
-          minValue = v;
-        } else if (v > maxValue) {
-          maxValue = v;
-        }
-      }
-      lastDocId = docID;
-      BytesRefUtils.copyLong(bytesRef, v);
-      add(docID, bytesRef);
-    }
-
+    
     @Override
     public void finish(int docCount) throws IOException {
       boolean success = false;
@@ -112,13 +94,6 @@ class PackedIntValues {
       }
     }
 
-    @Override
-    protected void mergeDoc(Field scratchField, Source source, int docID, int sourceDoc) throws IOException {
-      assert docID > lastDocId : "docID: " + docID
-          + " must be greater than the last added doc id: " + lastDocId;
-        add(docID, source.getInt(sourceDoc));
-    }
-
     private void writePackedInts(IndexOutput datOut, int docCount) throws IOException {
       datOut.writeLong(minValue);
       
@@ -149,10 +124,25 @@ class PackedIntValues {
       }
       w.finish();
     }
-
+    
     @Override
     public void add(int docID, IndexableField docValue) throws IOException {
-      add(docID, docValue.numericValue().longValue());
+      final long v = docValue.numericValue().longValue();
+      assert lastDocId < docID;
+      if (!started) {
+        started = true;
+        minValue = maxValue = v;
+      } else {
+        if (v < minValue) {
+          minValue = v;
+        } else if (v > maxValue) {
+          maxValue = v;
+        }
+      }
+      lastDocId = docID;
+      DocValuesArraySource.copyLong(bytesRef, v);
+      bytesSpareField.setBytesValue(bytesRef);
+      super.add(docID, bytesSpareField);
     }
   }
 
@@ -164,7 +154,7 @@ class PackedIntValues {
     private final IndexInput datIn;
     private final byte type;
     private final int numDocs;
-    private final LongValues values;
+    private final DocValuesArraySource values;
 
     protected PackedIntsReader(Directory dir, String id, int numDocs,
         IOContext context) throws IOException {
@@ -176,7 +166,7 @@ class PackedIntValues {
       try {
         CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);
         type = datIn.readByte();
-        values = type == FIXED_64 ? new LongValues() : null;
+        values = type == FIXED_64 ?  DocValuesArraySource.forType(Type.FIXED_INTS_64) : null;
         success = true;
       } finally {
         if (!success) {
@@ -247,7 +237,7 @@ class PackedIntValues {
     @Override
     public BytesRef getBytes(int docID, BytesRef ref) {
       ref.grow(8);
-      BytesRefUtils.copyLong(ref, getInt(docID));
+      DocValuesArraySource.copyLong(ref, getInt(docID));
       return ref;
     }
 

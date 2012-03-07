@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.PerDocProducerBase;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.lucene40.values.Writer;
 import org.apache.lucene.index.FieldInfo;
@@ -81,14 +82,10 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
   @Override
   public DocValuesConsumer addValuesField(Type valueType, FieldInfo field) throws IOException {
     return Writer.create(valueType,
-        docValuesId(segmentName, field.number), 
+        PerDocProducerBase.docValuesId(segmentName, field.number), 
         getDirectory(), getComparator(), bytesUsed, context, fasterButMoreRam);
   }
 
-  public static String docValuesId(String segmentsName, int fieldId) {
-    return segmentsName + "_" + fieldId;
-  }
-  
   
   public Comparator<BytesRef> getComparator() throws IOException {
     return BytesRef.getUTF8SortedAsUnicodeComparator();

@@ -1,3 +1,20 @@
+/*
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 sammy.bind
 (
     'dataimport_queryhandler_load',
@@ -186,7 +203,7 @@ sammy.get
                             {
                                 var code = $(
                                     '<pre class="syntax language-xml"><code>' +
-                                    xhr.responseText.replace( /\</g, '&lt;' ).replace( /\>/g, '&gt;' ) +
+                                    xhr.responseText.esc() +
                                     '</code></pre>'
                                 );
                                 this.html( code );
@@ -415,35 +432,26 @@ sammy.get
                 // form
 
                 $( 'form', form_element )
-                    .die( 'submit' )
-                    .live
+                    .ajaxForm
                     (
-                        'submit',
-                        function( event )
                         {
-                            $.ajax
-                            (
-                                {
-                                    url : handler_url + '?command=full-import',
-                                    dataType : 'xml',
-                                    beforeSend : function( xhr, settings )
-                                    {
-                                    },
-                                    success : function( response, text_status, xhr )
-                                    {
-                                        console.debug( response );
-                                        dataimport_fetch_status();
-                                    },
-                                    error : function( xhr, text_status, error_thrown )
-                                    {
-                                        console.debug( arguments );
-                                    },
-                                    complete : function( xhr, text_status )
-                                    {
-                                    }
-                                }
-                            );
-                            return false;
+                            url : handler_url,
+                            dataType : 'xml',
+                            beforeSend : function( xhr, settings )
+                            {
+                            },
+                            success : function( response, text_status, xhr )
+                            {
+                                console.debug( response );
+                                dataimport_fetch_status();
+                            },
+                            error : function( xhr, text_status, error_thrown )
+                            {
+                                console.debug( arguments );
+                            },
+                            complete : function( xhr, text_status )
+                            {
+                            }
                         }
                     );
             }

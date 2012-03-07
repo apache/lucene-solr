@@ -1,420 +1,441 @@
+/*
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 // #/:core/analysis
 sammy.get
 (
-    /^#\/([\w\d-]+)\/(analysis)$/,
-    function( context )
-    {
-        var core_basepath = this.active_core.attr( 'data-basepath' );
-        var content_element = $( '#content' );
+  /^#\/([\w\d-]+)\/(analysis)$/,
+  function( context )
+  {
+    var core_basepath = this.active_core.attr( 'data-basepath' );
+    var content_element = $( '#content' );
         
-        $.get
+    $.get
+    (
+      'tpl/analysis.html',
+      function( template )
+      {
+        content_element
+          .html( template );
+                
+        var analysis_element = $( '#analysis', content_element );
+        var analysis_form = $( 'form', analysis_element );
+        var analysis_result = $( '#analysis-result', analysis_element );
+        analysis_result.hide();
+                
+        $.ajax
         (
-            'tpl/analysis.html',
-            function( template )
+          {
+            url : core_basepath + '/admin/luke?wt=json&show=schema',
+            dataType : 'json',
+            context : $( '#type_or_name', analysis_form ),
+            beforeSend : function( xhr, settings )
             {
-                content_element
-                    .html( template );
-                
-                var analysis_element = $( '#analysis', content_element );
-                var analysis_form = $( 'form', analysis_element );
-                var analysis_result = $( '#analysis-result', analysis_element );
-                analysis_result.hide();
-                
-                $.ajax
+              this
+                .html( '<option value="">Loading ... </option>' )
+                .addClass( 'loader' );
+            },
+            success : function( response, text_status, xhr )
+            {
+              var content = '';
+                            
+              var fields = [];
+              for( var field_name in response.schema.fields )
+              {
+                fields.push
                 (
-                    {
-                        url : core_basepath + '/admin/luke?wt=json&show=schema',
-                        dataType : 'json',
-                        context : $( '#type_or_name', analysis_form ),
-                        beforeSend : function( xhr, settings )
-                        {
-                            this
-                                .html( '<option value="">Loading ... </option>' )
-                                .addClass( 'loader' );
-                        },
-                        success : function( response, text_status, xhr )
-                        {
-                            var content = '';
-                            
-                            var fields = [];
-                            for( var field_name in response.schema.fields )
-                            {
-                                fields.push
-                                (
-                                    '<option value="fieldname=' + field_name + '">' + field_name + '</option>'
-                                );
-                            }
-                            if( 0 !== fields.length )
-                            {
-                                content += '<optgroup label="Fields">' + "\n";
-                                content += fields.sort().join( "\n" ) + "\n";
-                                content += '</optgroup>' + "\n";
-                            }
-                            
-                            var types = [];
-                            for( var type_name in response.schema.types )
-                            {
-                                types.push
-                                (
-                                    '<option value="fieldtype=' + type_name + '">' + type_name + '</option>'
-                                );
-                            }
-                            if( 0 !== types.length )
-                            {
-                                content += '<optgroup label="Types">' + "\n";
-                                content += types.sort().join( "\n" ) + "\n";
-                                content += '</optgroup>' + "\n";
-                            }
-                            
-                            this
-                                .html( content );
-
-                            $( 'option[value="fieldname\=' + response.schema.defaultSearchField + '"]', this )
-                                .attr( 'selected', 'selected' );
-                        },
-                        error : function( xhr, text_status, error_thrown)
-                        {
-                        },
-                        complete : function( xhr, text_status )
-                        {
-                            this
-                                .removeClass( 'loader' );
-                        }
-                    }
+                  '<option value="fieldname=' + field_name + '">' + field_name + '</option>'
                 );
-                        
-                $( '.analysis-error .head a', analysis_element )
-                    .die( 'click' )
-                    .live
-                    (
-                        'click',
-                        function( event )
-                        {
-                            $( this ).parents( '.analysis-error' )
-                                .toggleClass( 'expanded' );
-                        }
-                    );
-                        
-                $( '.verbose_output a', analysis_element )
-                    .die( 'click' )
-                    .live
-                    (
-                        'click',
-                        function( event )
-                        {
-                            $( this ).parent()
-                                .toggleClass( 'active' );
+              }
+              if( 0 !== fields.length )
+              {
+                content += '<optgroup label="Fields">' + "\n";
+                content += fields.sort().join( "\n" ) + "\n";
+                content += '</optgroup>' + "\n";
+              }
                             
-                            analysis_result
-                                .toggleClass( 'verbose_output' );
+              var types = [];
+              for( var type_name in response.schema.types )
+              {
+                types.push
+                (
+                  '<option value="fieldtype=' + type_name + '">' + type_name + '</option>'
+                );
+              }
+              if( 0 !== types.length )
+              {
+                content += '<optgroup label="Types">' + "\n";
+                content += types.sort().join( "\n" ) + "\n";
+                content += '</optgroup>' + "\n";
+              }
                             
-                            check_empty_spacer();
-                        }
-                    );
+              this
+                .html( content );
+
+              $( 'option[value="fieldname\=' + response.schema.defaultSearchField + '"]', this )
+                .attr( 'selected', 'selected' );
+            },
+            error : function( xhr, text_status, error_thrown)
+            {
+            },
+            complete : function( xhr, text_status )
+            {
+              this
+                .removeClass( 'loader' );
+            }
+          }
+        );
+                        
+        $( '.analysis-error .head a', analysis_element )
+          .die( 'click' )
+          .live
+          (
+            'click',
+            function( event )
+            {
+              $( this ).parents( '.analysis-error' )
+                .toggleClass( 'expanded' );
+            }
+          );
+                        
+        $( '.verbose_output a', analysis_element )
+          .die( 'click' )
+          .live
+          (
+            'click',
+            function( event )
+            {
+              $( this ).parent()
+                .toggleClass( 'active' );
+                            
+              analysis_result
+                .toggleClass( 'verbose_output' );
+                            
+              check_empty_spacer();
+            }
+          );
                 
-                var check_empty_spacer = function()
+        var check_empty_spacer = function()
+        {
+          var spacer_holder = $( 'td.part.data.spacer .holder', analysis_result );
+
+          if( 0 === spacer_holder.size() )
+          {
+            return false;
+          }
+
+          var verbose_output = analysis_result.hasClass( 'verbose_output' );
+
+          spacer_holder
+            .each
+            (
+              function( index, element )
+              {
+                element = $( element );
+
+                if( verbose_output )
                 {
-                    var spacer_holder = $( 'td.part.data.spacer .holder', analysis_result );
+                  var cell = element.parent();
+                  element.height( cell.height() );
+                }
+                else
+                {
+                  element.removeAttr( 'style' );
+                }
+              }
+            );
+        }
 
-                    if( 0 === spacer_holder.size() )
-                    {
-                        return false;
-                    }
-
-                    var verbose_output = analysis_result.hasClass( 'verbose_output' );
-
-                    spacer_holder
-                        .each
-                        (
-                            function( index, element )
-                            {
-                                element = $( element );
-
-                                if( verbose_output )
-                                {
-                                    var cell = element.parent();
-                                    element.height( cell.height() );
-                                }
-                                else
-                                {
-                                    element.removeAttr( 'style' );
-                                }
-                            }
-                        );
+        var button = $( 'button', analysis_form )
+                
+        analysis_form
+          .ajaxForm
+          (
+            {
+              url : core_basepath + '/analysis/field?wt=json',
+              dataType : 'json',
+              beforeSubmit : function( array, form, options )
+              {
+                loader.show( button );
+                button.attr( 'disabled', true );
+                                
+                array.push( { name: 'analysis.showmatch', value: 'true' } );
+                                
+                var type_or_name = $( '#type_or_name', form ).val().split( '=' );
+                                
+                array.push( { name: 'analysis.' + type_or_name[0], value: type_or_name[1] } );
+              },
+              success : function( response, status_text, xhr, form )
+              {
+                $( '.analysis-error', analysis_element )
+                  .hide();
+                                
+                analysis_result
+                  .empty()
+                  .show();
+                                
+                for( var name in response.analysis.field_names )
+                {
+                  build_analysis_table( 'name', name, response.analysis.field_names[name] );
+                }
+                                
+                for( var name in response.analysis.field_types )
+                {
+                  build_analysis_table( 'type', name, response.analysis.field_types[name] );
                 }
 
-                var button = $( 'button', analysis_form )
-                
-                analysis_form
-                    .ajaxForm
-                    (
-                        {
-                            url : core_basepath + '/analysis/field?wt=json',
-                            dataType : 'json',
-                            beforeSubmit : function( array, form, options )
-                            {
-                                loader.show( button );
-                                button.attr( 'disabled', true );
-                                
-                                array.push( { name: 'analysis.showmatch', value: 'true' } );
-                                
-                                var type_or_name = $( '#type_or_name', form ).val().split( '=' );
-                                
-                                array.push( { name: 'analysis.' + type_or_name[0], value: type_or_name[1] } );
-                            },
-                            success : function( response, status_text, xhr, form )
-                            {
-                                $( '.analysis-error', analysis_element )
-                                    .hide();
-                                
-                                analysis_result
-                                    .empty()
-                                    .show();
-                                
-                                for( var name in response.analysis.field_names )
-                                {
-                                    build_analysis_table( 'name', name, response.analysis.field_names[name] );
-                                }
-                                
-                                for( var name in response.analysis.field_types )
-                                {
-                                    build_analysis_table( 'type', name, response.analysis.field_types[name] );
-                                }
+                check_empty_spacer();
+              },
+              error : function( xhr, text_status, error_thrown )
+              {
+                analysis_result
+                  .empty()
+                  .hide();
 
-                                check_empty_spacer();
-                            },
-                            error : function( xhr, text_status, error_thrown )
-                            {
-                                analysis_result
-                                    .empty()
-                                    .hide();
+                if( 404 === xhr.status )
+                {
+                  $( '#analysis-handler-missing', analysis_element )
+                    .show();
+                }
+                else
+                {
+                  var error_message = error_thrown.match( /^(.+Exception):\s+(.*)$/ );
 
-                                if( 404 === xhr.status )
-                                {
-                                    $( '#analysis-handler-missing', analysis_element )
-                                        .show();
-                                }
-                                else
-                                {
-                                    var error_message = error_thrown.match( /^(.+Exception):\s+(.*)$/ );
+                  $( '#analysis-error', analysis_element )
+                    .show();
 
-                                    $( '#analysis-error', analysis_element )
-                                        .show();
+                  if( error_message )
+                  {
+                    $( '#analysis-error .head a span', analysis_element )
+                      .text( error_message[1] );
 
-                                    $( '#analysis-error .head a span', analysis_element )
-                                        .text( error_message[1] );
+                    $( '#analysis-error .body', analysis_element )
+                      .text( error_message[2].replace( /(\s+at\s+)/g, " at\n" ) );
+                  }
+                  else
+                  {
+                    $( '#analysis-error .head a span', analysis_element )
+                      .text( error_thrown );
+                  }
+                }
+              },
+              complete : function()
+              {
+                loader.hide( $( 'button', analysis_form ) );
+                button.removeAttr( 'disabled' );
+              }
+            }
+          );
 
-                                    $( '#analysis-error .body', analysis_element )
-                                        .text( error_message[2].replace( /(\s+at\s+)/g, " at\n" ) );
-                                }
-                            },
-                            complete : function()
-                            {
-                                loader.hide( $( 'button', analysis_form ) );
-                                button.removeAttr( 'disabled' );
-                            }
-                        }
-                    );
-
-                    var generate_class_name = function( type )
-                    {
-                        var classes = [type];
-                        if( 'text' !== type )
-                        {
-                            classes.push( 'verbose_output' );
-                        }
-                        return classes.join( ' ' );
-                    }
+          var generate_class_name = function( type )
+          {
+            var classes = [type];
+            if( 'text' !== type )
+            {
+              classes.push( 'verbose_output' );
+            }
+            return classes.join( ' ' );
+          }
                     
-                    var build_analysis_table = function( field_or_name, name, analysis_data )
-                    {        
-                        for( var type in analysis_data )
-                        {
-                            var type_length = analysis_data[type].length;
-                            if( 0 !== type_length )
-                            {
-                                var global_elements_count = 0;
-                                for( var i = 0; i < analysis_data[type].length; i += 2 )
-                                {
-                                    if( 'string' === typeof analysis_data[type][i+1] )
-                                    {
-                                        analysis_data[type][i+1] = [{ 'text': analysis_data[type][i+1] }]
-                                    }
-                                    global_elements_count = Math.max( global_elements_count,
-                                                                      analysis_data[type][i+1].length );
-                                }
+          var build_analysis_table = function( field_or_name, name, analysis_data )
+          {        
+            for( var type in analysis_data )
+            {
+              var type_length = analysis_data[type].length;
+              if( 0 !== type_length )
+              {
+                var global_elements_count = 0;
+                for( var i = 0; i < analysis_data[type].length; i += 2 )
+                {
+                  if( 'string' === typeof analysis_data[type][i+1] )
+                  {
+                    analysis_data[type][i+1] = [{ 'text': analysis_data[type][i+1] }]
+                  }
+                  global_elements_count = Math.max( global_elements_count, analysis_data[type][i+1].length );
+                }
 
-                                var content = '<div class="' + type + '">' + "\n";
-                                content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
+                var content = '<div class="' + type + '">' + "\n";
+                content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
                                 
-                                for( var i = 0; i < analysis_data[type].length; i += 2 )
-                                {
-                                    var colspan = 1;
-                                    var elements = analysis_data[type][i+1];
-                                    var elements_count = global_elements_count;
+                for( var i = 0; i < analysis_data[type].length; i += 2 )
+                {
+                  var colspan = 1;
+                  var elements = analysis_data[type][i+1];
+                  var elements_count = global_elements_count;
                                     
-                                    if( !elements[0].positionHistory )
-                                    {
-                                        colspan = elements_count;
-                                        elements_count = 1;
-                                    }
+                  if( !elements[0].positionHistory )
+                  {
+                    colspan = elements_count;
+                    elements_count = 1;
+                  }
 
-                                    var legend = [];
-                                    for( var key in elements[0] )
-                                    {
-                                        var key_parts = key.split( '#' );
-                                        var used_key = key_parts.pop();
-                                        var short_key = used_key;
+                  var legend = [];
+                  for( var key in elements[0] )
+                  {
+                    var key_parts = key.split( '#' );
+                    var used_key = key_parts.pop();
+                    var short_key = used_key;
 
-                                        if( 1 === key_parts.length )
-                                        {
-                                            used_key = '<abbr title="' + key + '">' + used_key + '</abbr>';
-                                        }
+                    if( 1 === key_parts.length )
+                    {
+                      used_key = '<abbr title="' + key + '">' + used_key + '</abbr>';
+                    }
 
-                                        if( 'positionHistory' === short_key || 'match' === short_key )
-                                        {
-                                            continue;
-                                        }
+                    if( 'positionHistory' === short_key || 'match' === short_key )
+                    {
+                      continue;
+                    }
 
-                                        legend.push
-                                        (
-                                            '<tr class="' + generate_class_name( short_key ) + '">' +
-                                            '<td>' + used_key + '</td>' +
-                                            '</tr>'
-                                        );
-                                    }
+                    legend.push
+                    (
+                      '<tr class="' + generate_class_name( short_key ) + '">' +
+                      '<td>' + used_key + '</td>' +
+                      '</tr>'
+                    );
+                  }
 
-                                    content += '<tbody>' + "\n";
-                                    content += '<tr class="step">' + "\n";
+                  content += '<tbody>' + "\n";
+                  content += '<tr class="step">' + "\n";
 
-                                        // analyzer
-                                        var analyzer_name = analysis_data[type][i]
+                    // analyzer
+                    var analyzer_name = analysis_data[type][i]
                                                                 .replace( /(\$1)+$/g, '' );
 
-                                        var analyzer_short = -1 !== analyzer_name.indexOf( '$' )
-                                                           ? analyzer_name.split( '$' )[1]
-                                                           : analyzer_name.split( '.' ).pop();
-                                        analyzer_short = analyzer_short.match( /[A-Z]/g ).join( '' );
+                    var analyzer_short = -1 !== analyzer_name.indexOf( '$' )
+                                       ? analyzer_name.split( '$' )[1]
+                                       : analyzer_name.split( '.' ).pop();
+                    analyzer_short = analyzer_short.match( /[A-Z]/g ).join( '' );
 
-                                        content += '<td class="part analyzer"><div>' + "\n";
-                                        content += '<abbr title="' + analysis_data[type][i] + '">' + "\n";
-                                        content += analyzer_short + '</abbr></div></td>' + "\n";
+                    content += '<td class="part analyzer"><div>' + "\n";
+                    content += '<abbr title="' + analysis_data[type][i] + '">' + "\n";
+                    content += analyzer_short + '</abbr></div></td>' + "\n";
 
-                                        // legend
-                                        content += '<td class="part legend"><div class="holder">' + "\n";
-                                        content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
-                                        content += '<tr><td>' + "\n";
-                                        content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
-                                        content += legend.join( "\n" ) + "\n";
-                                        content += '</table></td></tr></table></td>' + "\n";
+                    // legend
+                    content += '<td class="part legend"><div class="holder">' + "\n";
+                    content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
+                    content += '<tr><td>' + "\n";
+                    content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
+                    content += legend.join( "\n" ) + "\n";
+                    content += '</table></td></tr></table></td>' + "\n";
 
-                                        // data
-                                        var cell_content = '<td class="part data spacer" '
-                                                         + '    colspan="' + colspan + '">'
-                                                         + '<div class="holder">&nbsp;</div>'
-                                                         + '</td>';
-                                        var cells = new Array( elements_count + 1 ).join( cell_content );
-                                        content += cells + "\n";
+                    // data
+                    var cell_content = '<td class="part data spacer" colspan="' + colspan + '"><div class="holder">&nbsp;</div></td>';
+                    var cells = new Array( elements_count + 1 ).join( cell_content );
+                    content += cells + "\n";
 
-                                    content += '</tr>' + "\n";
-                                    content += '</tbody>' + "\n";
-                                }
-                                content += '</table>' + "\n";
-                                content += '</div>' + "\n";
+                  content += '</tr>' + "\n";
+                  content += '</tbody>' + "\n";
+                }
+                content += '</table>' + "\n";
+                content += '</div>' + "\n";
 
-                                $( '.' + type, analysis_result )
-                                    .remove();
+                $( '.' + type, analysis_result )
+                  .remove();
 
-                                analysis_result
-                                    .append( content );
+                analysis_result
+                  .append( content );
                                 
-                                var analysis_result_type = $( '.' + type, analysis_result );
+                var analysis_result_type = $( '.' + type, analysis_result );
 
-                                for( var i = 0; i < analysis_data[type].length; i += 2 )
-                                {
-                                    for( var j = 0; j < analysis_data[type][i+1].length; j += 1 )
-                                    {
-                                        var pos = analysis_data[type][i+1][j].positionHistory
-                                                ? analysis_data[type][i+1][j].positionHistory[0]
-                                                : 1;
-                                        var selector = 'tr.step:eq(' + ( i / 2 ) +') '
-                                                     + 'td.data:eq(' + ( pos - 1 ) + ') '
-                                                     + '.holder';
-                                        var cell = $( selector, analysis_result_type );
+                for( var i = 0; i < analysis_data[type].length; i += 2 )
+                {
+                  for( var j = 0; j < analysis_data[type][i+1].length; j += 1 )
+                  {
+                    var pos = analysis_data[type][i+1][j].positionHistory
+                        ? analysis_data[type][i+1][j].positionHistory[0]
+                        : 1;
+                    var selector = 'tr.step:eq(' + ( i / 2 ) +') '
+                                 + 'td.data:eq(' + ( pos - 1 ) + ') '
+                                 + '.holder';
+                    var cell = $( selector, analysis_result_type );
 
-                                        cell.parent()
-                                            .removeClass( 'spacer' );
+                    cell.parent()
+                      .removeClass( 'spacer' );
 
-                                        var table = $( 'table tr.details', cell );
-                                        if( 0 === table.size() )
-                                        {
-                                            cell
-                                                .html
-                                                (
-                                                    '<table border="0" cellspacing="0" cellpadding="0">' + 
-                                                    '<tr class="details"></tr></table>'
-                                                );
-                                            var table = $( 'table tr.details', cell );
-                                        }
-
-                                        var tokens = [];
-                                        for( var key in analysis_data[type][i+1][j] )
-                                        {
-                                            var short_key = key.split( '#' ).pop();
-                                            
-                                            if( 'positionHistory' === short_key || 'match' === short_key )
-                                            {
-                                                continue;
-                                            }
-
-                                            var classes = [];
-                                            classes.push( generate_class_name( short_key ) );
-
-                                            var data = analysis_data[type][i+1][j][key];
-                                            if( 'object' === typeof data && data instanceof Array )
-                                            {
-                                                data = data.join( ' ' );
-                                            }
-                                            if( 'string' === typeof data )
-                                            {
-                                                data = data.esc();
-                                            }
-
-                                            if( null === data || 0 === data.length )
-                                            {
-                                                classes.push( 'empty' );
-                                                data = '&empty;';
-                                            }
-
-                                            if( analysis_data[type][i+1][j].match && 
-                                                ( 'text' === short_key || 'raw_bytes' === short_key ) )
-                                            {
-                                                classes.push( 'match' );
-                                            }
-
-                                            tokens.push
-                                            (
-                                                '<tr class="' + classes.join( ' ' ) + '">' +
-                                                '<td>' + data + '</td>' +
-                                                '</tr>'
-                                            );
-                                        }
-                                        table
-                                            .append
-                                            (
-                                                '<td class="details">' +
-                                                '<table border="0" cellspacing="0" cellpadding="0">' +
-                                                tokens.join( "\n" ) +
-                                                '</table></td>'
-                                            );
-                                    }
-                                }
-                
-                            }
-                        }
+                    var table = $( 'table tr.details', cell );
+                    if( 0 === table.size() )
+                    {
+                      cell
+                        .html
+                        (
+                          '<table border="0" cellspacing="0" cellpadding="0">' + 
+                          '<tr class="details"></tr></table>'
+                        );
+                      var table = $( 'table tr.details', cell );
                     }
-                    
+
+                    var tokens = [];
+                    for( var key in analysis_data[type][i+1][j] )
+                    {
+                      var short_key = key.split( '#' ).pop();
+                                            
+                      if( 'positionHistory' === short_key || 'match' === short_key )
+                      {
+                        continue;
+                      }
+
+                      var classes = [];
+                      classes.push( generate_class_name( short_key ) );
+
+                      var data = analysis_data[type][i+1][j][key];
+                      if( 'object' === typeof data && data instanceof Array )
+                      {
+                        data = data.join( ' ' );
+                      }
+                      if( 'string' === typeof data )
+                      {
+                        data = data.esc();
+                      }
+
+                      if( null === data || 0 === data.length )
+                      {
+                        classes.push( 'empty' );
+                        data = '&empty;';
+                      }
+
+                      if( analysis_data[type][i+1][j].match && 
+                        ( 'text' === short_key || 'raw_bytes' === short_key ) )
+                      {
+                        classes.push( 'match' );
+                      }
+
+                      tokens.push
+                      (
+                        '<tr class="' + classes.join( ' ' ) + '">' +
+                        '<td>' + data + '</td>' +
+                        '</tr>'
+                      );
+                    }
+                    table
+                      .append
+                      (
+                        '<td class="details">' +
+                        '<table border="0" cellspacing="0" cellpadding="0">' +
+                        tokens.join( "\n" ) +
+                        '</table></td>'
+                      );
+                  }
+                }
+                
+              }
             }
-        );
-    }
+          }
+                    
+      }
+    );
+  }
 );

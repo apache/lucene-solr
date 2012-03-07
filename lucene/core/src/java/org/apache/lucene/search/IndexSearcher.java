@@ -584,8 +584,9 @@ public class IndexSearcher {
     Weight weight = query.createWeight(this);
     float v = weight.getValueForNormalization();
     float norm = getSimilarity().queryNorm(v);
-    if (Float.isInfinite(norm) || Float.isNaN(norm))
+    if (Float.isInfinite(norm) || Float.isNaN(norm)) {
       norm = 1.0f;
+    }
     weight.normalize(norm, 1.0f);
     return weight;
   }
@@ -812,6 +813,8 @@ public class IndexSearcher {
     final int docCount;
     final long sumTotalTermFreq;
     final long sumDocFreq;
+
+    assert field != null;
     
     Terms terms = MultiFields.getTerms(reader, field);
     if (terms == null) {

@@ -145,7 +145,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     
     try {
       addDocumentsToSolr(SOLR_DOCS);
-      runFullImport(generateDIHConfig("query='*:*' rows='2' fields='id,desc' onError='skip'", jetty.getLocalPort()));
+      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", jetty.getLocalPort()));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -178,7 +178,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     
     try {
       addDocumentsToSolr(generateSolrDocuments(7));
-      runFullImport(generateDIHConfig("query='*:*' fields='id' rows='2'", jetty.getLocalPort()));
+      runFullImport(generateDIHConfig("query='*:*' fl='id' rows='2'", jetty.getLocalPort()));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -231,7 +231,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     assertQ(req("*:*"), "//result[@numFound='0']");
     
     try {
-      runFullImport(generateDIHConfig("query='*:*' rows='2' fields='id,desc' onError='skip'", jetty.getLocalPort()));
+      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", jetty.getLocalPort()));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -244,7 +244,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     assertQ(req("*:*"), "//result[@numFound='0']");
     
     try {
-      runFullImport(generateDIHConfig("query='bogus:3' rows='2' fields='id,desc' onError='abort'", jetty.getLocalPort()));
+      runFullImport(generateDIHConfig("query='bogus:3' rows='2' fl='id,desc' onError='abort'", jetty.getLocalPort()));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());

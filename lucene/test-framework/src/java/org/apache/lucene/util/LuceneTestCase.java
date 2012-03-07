@@ -265,9 +265,7 @@ public abstract class LuceneTestCase extends Assert {
 
   protected static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
 
-  /** @deprecated (4.0) until we fix no-fork problems in solr tests */
-  @Deprecated
-  static List<String> testClassesRun = new ArrayList<String>();
+  private static List<String> testClassesRun = new ArrayList<String>();
 
   private static void initRandom() {
     assert !random.initialized;
@@ -279,11 +277,20 @@ public abstract class LuceneTestCase extends Assert {
   @Deprecated
   private static boolean icuTested = false;
 
+  /**
+   * Stores the currently class under test.
+   */
+  private static final StoreClassNameRule classNameRule = new StoreClassNameRule(); 
+  
   @ClassRule
-  public static TestRule classRules = RuleChain.outerRule(new SystemPropertiesInvariantRule());
+  public static TestRule classRules = RuleChain
+    .outerRule(new SystemPropertiesInvariantRule())
+    .around(classNameRule);
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
+    testClassesRun.add(getTestClass().getSimpleName());
+
     initRandom();
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
@@ -1563,6 +1570,13 @@ public abstract class LuceneTestCase extends Assert {
        context = IOContext.DEFAULT;
     }
     return context;
+  }
+
+  /**
+   * Return the current class being tested.
+   */
+  public static Class<?> getTestClass() {
+    return classNameRule.getTestClass();
   }
   
   // initialized by the TestRunner

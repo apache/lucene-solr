@@ -1,150 +1,185 @@
 #content #logging .loader
 {
-    background-position: 0 50%;
-    padding-left: 21px;
-}
-
-#content #logging .jstree
-{
-    position: relative;
-}
-
-#content #logging .jstree a
-{
-    cursor: auto;
-}
-
-#content #logging .jstree .trigger span
-{
-    background-position: 100% 50%;
-    cursor: pointer;
-    padding-right: 21px;
-}
-
-#content #logging .jstree a.trigger:hover span
-{
-    background-image: url( ../../img/ico/pencil-small.png );
-}
-
-#content #logging .jstree .inactive,
-#content #logging .jstree .inactive .effective_level
-{
-    color: #c0c0c0;
+  background-position: 0 50%;
+  padding-left: 21px;
 }
 
 #content #logging .jstree li
 {
-    position: relative;
+  position: relative;
 }
 
-#content #logging .jstree .odd
+#content #logging .jstree a
 {
-    background-color: #f8f8f8;
+  color: #c0c0c0;
+  height: 17px;
+  line-height: 17px;
+  padding: 0;
+  width: 90%;
 }
 
-#content #logging .jstree .loglevel
+#content #logging .jstree a.set
 {
-    position: absolute;
-    margin-top: 3px;
-    top: 0;
+  color: #333;
 }
 
-#content #logging .jstree li .loglevel { left: 340px; }
-#content #logging .jstree li li .loglevel { left: 322px; }
-#content #logging .jstree li li li .loglevel { left: 304px; }
-#content #logging .jstree li li li li .loglevel { left: 286px; }
-#content #logging .jstree li li li li li .loglevel { left: 268px; }
-#content #logging .jstree li li li li li li .loglevel { left: 250px; }
-
-#content #logging .jstree .loglevel a
+#content #logging .jstree a.null
 {
-    display: block;
+  color: #f0f0f0;
 }
 
-#content #logging .jstree .loglevel .effective_level
+#content #logging .jstree a:hover,
+#content #logging .jstree a.open
 {
-    height: 22px;
-    line-height: 22px;
-    padding-left: 5px;
-    width: 150px;
+  background-color: #f0f0f0;
 }
 
-#content #logging .jstree .loglevel.open .effective_level
+#content #logging .jstree a:hover
 {
-    background-color: #f0f0f0;
+  color: #008;
 }
 
-#content #logging .jstree .loglevel.open .effective_level
+#content #logging .jstree a span.ns
 {
-    background-image: url( ../../img/ico/arrow-000-small.png );
-    background-position: 75px 50%;
+  display: none;
 }
 
-#content #logging .jstree .loglevel.open .effective_level span
+#content #logging.ns .jstree a span.ns
 {
-    background-image: none;
+  display: inline;
 }
 
-#content #logging .jstree .loglevel ul
+#content #logging .jstree a span.name
 {
-    background-color: #fff;
-    border: 1px solid #f0f0f0;
-    display: none;
-    position: absolute;
-    left: 100px;
-    top: 0;
+  background-position: 100% 50%;
+  cursor: pointer;
+  padding-right: 21px;
 }
 
-#content #logging .jstree .loglevel.open ul
+#content #logging .jstree a:hover span.name
 {
-    display: block;
+  background-image: url( ../../img/ico/pencil-small.png );
 }
 
-#content #logging .jstree .loglevel ul li
+#content #logging .jstree .selector-holder
 {
-    background-image: none;
-    line-height: auto;
-    margin-left: 0;
+  position: absolute;
+  top: -2px;
+  z-index: 700;
 }
 
-#content #logging .jstree .loglevel ul li a
+#content #logging .jstree .selector-holder.open
 {
-    background-image: url( ../../img/ico/ui-radio-button-uncheck.png );
-    background-position: 2px 50%;
-    cursor: pointer;
-    display: block;
-    height: 22px;
-    line-height: 22px;
-    padding-left: 21px;
-    padding-right: 5px;
+  background-color: #fff;
+  margin-left: -19px;
+  z-index: 800;
 }
 
-#content #logging .jstree .loglevel ul li.selected a
+#content #logging .jstree li .selector-holder { left: 440px; }
+#content #logging .jstree li li .selector-holder { left: 422px; }
+#content #logging .jstree li li li .selector-holder { left: 404px; }
+#content #logging .jstree li li li li .selector-holder { left: 386px; }
+#content #logging .jstree li li li li li .selector-holder { left: 368px; }
+#content #logging .jstree li li li li li li .selector-holder { left: 350px; }
+
+#content #logging .jstree .selector
 {
-    background-image: url( ../../img/ico/ui-radio-button.png );
+  border: 1px solid #fff;
+  position: relative;
 }
 
-#content #logging .jstree .loglevel ul li a:hover
+#content #logging .jstree .open .selector
 {
-    background-color: #f8f8f8;
-    color: #008;
+  border-color: #f0f0f0;
+  box-shadow: 5px 5px 10px #c0c0c0;
+  -moz-box-shadow: 5px 5px 10px #c0c0c0;
+  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
 }
 
-#content #logging .jstree .loglevel ul li.unset
+#content #logging .jstree .selector a
 {
-    border-top: 1px solid #f0f0f0;
+  display: block;
+  padding: 2px;
+  width: auto;
 }
 
-#content #logging .jstree .loglevel ul li.unset a
+#content #logging .jstree .selector .close
 {
-    background-image: url( ../../img/ico/cross-0.png );
-    background-position: 4px 50%;
-    padding-top: 3px;
-    padding-bottom: 3px;
+  display: none;
 }
 
-#content #logging .jstree .loglevel ul li.unset a:hover
+#content #logging .jstree .open .selector .close
 {
-    background-image: url( ../../img/ico/cross-1.png );
-    color: #800;
+  background-image: url( ../../img/ico/cross-0.png );
+  background-position: 50% 50%;
+  display: block;
+  position: absolute;
+  right: -25px;
+  top: 0;
+  width: 20px;
+}
+
+#content #logging .jstree .open .selector .close:hover
+{
+  background-image: url( ../../img/ico/cross-1.png );
+}
+
+#content #logging .jstree .open .selector .close span
+{
+  display: none;
+}
+
+#content #logging .jstree .open .selector a.trigger
+{
+  display: none;
+}
+
+#content #logging .jstree .selector ul
+{
+  display: none;
+}
+
+#content #logging .jstree .open .selector ul
+{
+  display: block;
+}
+
+#content #logging .jstree .selector ul li
+{
+  background: none;
+  margin-left: 0;
+}
+
+#content #logging .jstree .selector ul li a
+{
+  background-image: url( ../../img/ico/ui-radio-button-uncheck.png );
+  background-position: 2px 50%;
+  padding-left: 21px;
+}
+
+#content #logging .jstree .selector ul li a.level
+{
+  background-color: #f0f0f0;
+}
+
+#content #logging .jstree .selector ul li a:hover
+{
+  background-image: url( ../../img/ico/ui-radio-button.png );
+}
+
+#content #logging .jstree .selector li.unset
+{
+  border-top: 1px solid #f0f0f0;
+}
+
+#content #logging .jstree .selector li.unset a
+{
+  background-image: url( ../../img/ico/cross-0.png );
+  background-position: 4px 50%;
+}
+
+#content #logging .jstree .selector li.unset a:hover
+{
+  background-image: url( ../../img/ico/cross-1.png );
+  color: #800;
 }

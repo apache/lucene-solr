@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -64,7 +63,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * 
  * @lucene.experimental
  */
-final class Bytes {
+public final class Bytes {
 
   static final String DV_SEGMENT_SUFFIX = "dv";
 
@@ -242,8 +241,8 @@ final class Bytes {
     private final IOContext context;
 
     protected BytesWriterBase(Directory dir, String id, String codecName,
-        int version, Counter bytesUsed, IOContext context) throws IOException {
-      super(bytesUsed);
+        int version, Counter bytesUsed, IOContext context, Type type) throws IOException {
+      super(bytesUsed, type);
       this.id = id;
       this.dir = dir;
       this.codecName = codecName;
@@ -292,25 +291,11 @@ final class Bytes {
       }
       return idxOut;
     }
-    /**
-     * Must be called only with increasing docIDs. It's OK for some docIDs to be
-     * skipped; they will be filled with 0 bytes.
-     */
-    protected
-    abstract void add(int docID, BytesRef bytes) throws IOException;
+
 
     @Override
     public abstract void finish(int docCount) throws IOException;
 
-    @Override
-    protected void mergeDoc(Field scratchField, Source source, int docID, int sourceDoc) throws IOException {
-      add(docID, source.getBytes(sourceDoc, bytesRef));
-    }
-
-    @Override
-    public void add(int docID, IndexableField docValue) throws IOException {
-      add(docID, docValue.binaryValue());
-    }
   }
 
   /**
@@ -393,22 +378,22 @@ final class Bytes {
     protected long maxBytes = 0;
     
     protected DerefBytesWriterBase(Directory dir, String id, String codecName,
-        int codecVersion, Counter bytesUsed, IOContext context)
+        int codecVersion, Counter bytesUsed, IOContext context, Type type)
         throws IOException {
       this(dir, id, codecName, codecVersion, new DirectTrackingAllocator(
-          ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, false);
+          ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, false, type);
     }
 
     protected DerefBytesWriterBase(Directory dir, String id, String codecName,
-                                   int codecVersion, Counter bytesUsed, IOContext context, boolean fasterButMoreRam)
+                                   int codecVersion, Counter bytesUsed, IOContext context, boolean fasterButMoreRam, Type type)
         throws IOException {
       this(dir, id, codecName, codecVersion, new DirectTrackingAllocator(
-          ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, fasterButMoreRam);
+          ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed), bytesUsed, context, fasterButMoreRam,type);
     }
 
     protected DerefBytesWriterBase(Directory dir, String id, String codecName, int codecVersion, Allocator allocator,
-        Counter bytesUsed, IOContext context, boolean fasterButMoreRam) throws IOException {
-      super(dir, id, codecName, codecVersion, bytesUsed, context);
+        Counter bytesUsed, IOContext context, boolean fasterButMoreRam, Type type) throws IOException {
+      super(dir, id, codecName, codecVersion, bytesUsed, context, type);
       hash = new BytesRefHash(new ByteBlockPool(allocator),
           BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
               BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
@@ -430,7 +415,9 @@ final class Bytes {
     }
 
     @Override
-    protected void add(int docID, BytesRef bytes) throws IOException {
+    public void add(int docID, IndexableField value) throws IOException {
+      BytesRef bytes = value.binaryValue();
+      assert bytes != null;
       if (bytes.length == 0) { // default value - skip it
         return;
       }

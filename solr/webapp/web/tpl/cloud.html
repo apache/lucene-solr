@@ -16,32 +16,39 @@ limitations under the License.
 -->
 <div id="cloud">
 
-	<div class="block">
+  <div class="block">
 
-	    <h2><span>Zookeeper-Data</span></h2>
-	    
-	    <div class="message-container">
-	        <div class="message"></div>
-	    </div>
+      <h2><span>Zookeeper-Data</span></h2>
+      
+      <div class="message-container">
+          <div class="message"></div>
+      </div>
 
-	    <div class="content clearfix">
+      <div class="content clearfix">
+  <div id="tree" class="tree">#tree</div>
+  <div id="file-content" class="clearfix">
 
-			<div id="tree" class="tree">#tree</div>
+  <div id="prop">
+          <ul></ul>
+  </div>
 
-			<div id="file-content" class="clearfix">
+  <div id="data"></div>
 
-				<div id="prop">
-					<ul></ul>
-				</div>
+  <a class="close"><span>[x]</span></a>
+  </div>
 
-				<div id="data"></div>
+      </div>
 
-				<a class="close"><span>[x]</span></a>
-
-			</div>
-
-	    </div>
-
+      <a class="debug"><span>Generate Dump</span></a>
+      <div id="debug">
+        <ul class="clearfix">
+          <li class="clipboard"><a href="#" data-copied="Copied to Clipboard!">Copy to Clipboard (BUGGY!)</a></li>
+          <li class="close"><a href="#">Close</a></li>
+        </ul>
+        <pre class="debug"></pre>
+        
     </div>
+
+  </div>
 
 </div>

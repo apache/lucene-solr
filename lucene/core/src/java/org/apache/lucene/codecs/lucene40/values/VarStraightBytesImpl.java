@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -63,7 +64,7 @@ class VarStraightBytesImpl {
     private boolean merge = false;
     public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, Type.BYTES_VAR_STRAIGHT);
       pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
       docToAddress = new long[1];
       pool.nextBuffer(); // init
@@ -84,7 +85,9 @@ class VarStraightBytesImpl {
     }
 
     @Override
-    protected void add(int docID, BytesRef bytes) throws IOException {
+    public void add(int docID, IndexableField value) throws IOException {
+      final BytesRef bytes = value.binaryValue();
+      assert bytes != null;
       assert !merge;
       if (bytes.length == 0) {
         return; // default
