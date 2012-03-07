@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40.values;
+package org.apache.lucene.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,10 +24,6 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.lucene.codecs.PerDocProducer;
-import org.apache.lucene.codecs.lucene40.values.Bytes;
-import org.apache.lucene.codecs.lucene40.values.Floats;
-import org.apache.lucene.codecs.lucene40.values.Ints;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.DocValues;
@@ -40,7 +36,7 @@ import org.apache.lucene.util.BytesRef;
  * Abstract base class for PerDocProducer implementations
  * @lucene.experimental
  */
-public abstract class DocValuesReaderBase extends PerDocProducer {
+public abstract class PerDocProducerBase extends PerDocProducer {
 
   protected abstract void closeInternal(Collection<? extends Closeable> closeables) throws IOException;
   protected abstract Map<String, DocValues> docValues();
@@ -70,9 +66,7 @@ public abstract class DocValuesReaderBase extends PerDocProducer {
       for (FieldInfo fieldInfo : fieldInfos) {
         if (canLoad(fieldInfo)) {
           final String field = fieldInfo.name;
-          // TODO can we have a compound file per segment and codec for
-          // docvalues?
-          final String id = DocValuesWriterBase.docValuesId(segment,
+          final String id = docValuesId(segment,
               fieldInfo.number);
           values.put(field,
               loadDocValues(docCount, dir, id, getDocValuesType(fieldInfo), context));
@@ -100,6 +94,10 @@ public abstract class DocValuesReaderBase extends PerDocProducer {
     return infos.anyDocValuesFields();
   }
   
+  public static String docValuesId(String segmentsName, int fieldId) {
+    return segmentsName + "_" + fieldId;
+  }
+  
   /**
    * Loads a {@link DocValues} instance depending on the given {@link Type}.
    * Codecs that use different implementations for a certain {@link Type} can
@@ -119,33 +117,6 @@ public abstract class DocValuesReaderBase extends PerDocProducer {
    * @throws IllegalArgumentException
    *           if the given {@link Type} is not supported
    */
-  protected DocValues loadDocValues(int docCount, Directory dir, String id,
-      DocValues.Type type, IOContext context) throws IOException {
-    switch (type) {
-    case FIXED_INTS_16:
-    case FIXED_INTS_32:
-    case FIXED_INTS_64:
-    case FIXED_INTS_8:
-    case VAR_INTS:
-      return Ints.getValues(dir, id, docCount, type, context);
-    case FLOAT_32:
-      return Floats.getValues(dir, id, docCount, context, type);
-    case FLOAT_64:
-      return Floats.getValues(dir, id, docCount, context, type);
-    case BYTES_FIXED_STRAIGHT:
-      return Bytes.getValues(dir, id, Bytes.Mode.STRAIGHT, true, docCount, getComparator(), context);
-    case BYTES_FIXED_DEREF:
-      return Bytes.getValues(dir, id, Bytes.Mode.DEREF, true, docCount, getComparator(), context);
-    case BYTES_FIXED_SORTED:
-      return Bytes.getValues(dir, id, Bytes.Mode.SORTED, true, docCount, getComparator(), context);
-    case BYTES_VAR_STRAIGHT:
-      return Bytes.getValues(dir, id, Bytes.Mode.STRAIGHT, false, docCount, getComparator(), context);
-    case BYTES_VAR_DEREF:
-      return Bytes.getValues(dir, id, Bytes.Mode.DEREF, false, docCount, getComparator(), context);
-    case BYTES_VAR_SORTED:
-      return Bytes.getValues(dir, id, Bytes.Mode.SORTED, false, docCount, getComparator(), context);
-    default:
-      throw new IllegalStateException("unrecognized index values mode " + type);
-    }
-  }
+  protected abstract DocValues loadDocValues(int docCount, Directory dir, String id,
+      DocValues.Type type, IOContext context) throws IOException;
 }

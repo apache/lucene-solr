@@ -163,6 +163,11 @@ class PreFlexRWNormsConsumer extends PerDocConsumer {
       docIDs[upto] = docID;
       upto++;
     }
+
+    @Override
+    protected Type getType() {
+      return Type.FIXED_INTS_8;
+    }
     
     
   }

@@ -54,7 +54,7 @@ public interface IndexableField {
   /** Non-null if this field has a Reader value */
   public Reader readerValue();
 
-  /** Non-null if this field hasa numeric value */
+  /** Non-null if this field has a numeric value */
   public Number numericValue();
 
   /**

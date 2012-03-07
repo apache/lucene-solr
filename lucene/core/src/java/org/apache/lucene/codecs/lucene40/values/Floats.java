@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40.values;
  */
 import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesArraySource;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -39,7 +40,7 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.experimental
  */
-class Floats {
+public class Floats {
   
   protected static final String CODEC_NAME = "Floats";
   protected static final int VERSION_START = 0;
@@ -69,31 +70,28 @@ class Floats {
   final static class FloatsWriter extends FixedStraightBytesImpl.Writer {
    
     private final int size; 
-    private final DocValuesArray template;
+    private final DocValuesArraySource template;
     public FloatsWriter(Directory dir, String id, Counter bytesUsed,
         IOContext context, Type type) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
       size = typeToSize(type);
       this.bytesRef = new BytesRef(size);
       bytesRef.length = size;
-      template = DocValuesArray.TEMPLATES.get(type);
+      template = DocValuesArraySource.forType(type);
       assert template != null;
-    }
-    
-    protected void add(int docID, double v) throws IOException {
-      template.toBytes(v, bytesRef);
-      add(docID, bytesRef);
-    }
-    
-    @Override
-    public void add(int docID, IndexableField docValue) throws IOException {
-      add(docID, docValue.numericValue().doubleValue());
     }
     
     @Override
     protected boolean tryBulkMerge(DocValues docValues) {
       // only bulk merge if value type is the same otherwise size differs
       return super.tryBulkMerge(docValues) && docValues.type() == template.type();
+    }
+    
+    @Override
+    public void add(int docID, IndexableField value) throws IOException {
+      template.toBytes(value.numericValue().doubleValue(), bytesRef);
+      bytesSpareField.setBytesValue(bytesRef);
+      super.add(docID, bytesSpareField);
     }
     
     @Override
@@ -104,11 +102,11 @@ class Floats {
   }
   
   final static class FloatsReader extends FixedStraightBytesImpl.FixedStraightReader {
-    final DocValuesArray arrayTemplate;
+    final DocValuesArraySource arrayTemplate;
     FloatsReader(Directory dir, String id, int maxDoc, IOContext context, Type type)
         throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc, context, type);
-      arrayTemplate = DocValuesArray.TEMPLATES.get(type);
+      arrayTemplate = DocValuesArraySource.forType(type);
       assert size == 4 || size == 8: "wrong size=" + size + " type=" + type + " id=" + id;
     }
     

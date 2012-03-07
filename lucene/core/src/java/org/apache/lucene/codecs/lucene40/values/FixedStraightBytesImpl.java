@@ -22,10 +22,12 @@ import java.io.IOException;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesWriterBase;
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -52,6 +54,7 @@ class FixedStraightBytesImpl {
   static final int VERSION_CURRENT = VERSION_START;
   
   static abstract class FixedBytesWriterBase extends BytesWriterBase {
+    protected final DocValuesField bytesSpareField = new DocValuesField("", new BytesRef(), Type.BYTES_FIXED_STRAIGHT);
     protected int lastDocID = -1;
     // start at -1 if the first added value is > 0
     protected int size = -1;
@@ -60,13 +63,20 @@ class FixedStraightBytesImpl {
 
     protected FixedBytesWriterBase(Directory dir, String id, String codecName,
         int version, Counter bytesUsed, IOContext context) throws IOException {
-      super(dir, id, codecName, version, bytesUsed, context);
+     this(dir, id, codecName, version, bytesUsed, context, Type.BYTES_FIXED_STRAIGHT);
+    }
+    
+    protected FixedBytesWriterBase(Directory dir, String id, String codecName,
+        int version, Counter bytesUsed, IOContext context, Type type) throws IOException {
+      super(dir, id, codecName, version, bytesUsed, context, type);
       pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
       pool.nextBuffer();
     }
     
     @Override
-    protected void add(int docID, BytesRef bytes) throws IOException {
+    public void add(int docID, IndexableField value) throws IOException {
+      final BytesRef bytes = value.binaryValue();
+      assert bytes != null;
       assert lastDocID < docID;
 
       if (size == -1) {

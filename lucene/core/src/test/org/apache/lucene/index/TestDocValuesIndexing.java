@@ -148,8 +148,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     Directory target = newDirectory();
     IndexWriter w = new IndexWriter(target, writerConfig(random.nextBoolean()));
-    IndexReader r_1 = IndexReader.open(w_1, true);
-    IndexReader r_2 = IndexReader.open(w_2, true);
+    DirectoryReader r_1 = DirectoryReader.open(w_1, true);
+    DirectoryReader r_2 = DirectoryReader.open(w_2, true);
     if (random.nextBoolean()) {
       w.addIndexes(d_1, d_2);
     } else {
@@ -163,7 +163,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     // check values
     
-    IndexReader merged = IndexReader.open(w, true);
+    DirectoryReader merged = DirectoryReader.open(w, true);
     Source source_1 = getSource(getDocValues(r_1, first.name()));
     Source source_2 = getSource(getDocValues(r_2, second.name()));
     Source source_1_merged = getSource(getDocValues(merged, first.name()));
@@ -260,7 +260,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       FixedBitSet deleted = indexValues(w, numValues, val, numVariantList,
           withDeletions, 7);
       List<Closeable> closeables = new ArrayList<Closeable>();
-      IndexReader r = IndexReader.open(w, true);
+      DirectoryReader r = DirectoryReader.open(w, true);
       final int numRemainingValues = numValues - deleted.cardinality();
       final int base = r.numDocs() - numRemainingValues;
       // for FIXED_INTS_8 we use value mod 128 - to enable testing in 
@@ -338,7 +338,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       final int bytesSize = 1 + atLeast(50);
       FixedBitSet deleted = indexValues(w, numValues, byteIndexValue,
           byteVariantList, withDeletions, bytesSize);
-      final IndexReader r = IndexReader.open(w, withDeletions);
+      final DirectoryReader r = DirectoryReader.open(w, withDeletions);
       assertEquals(0, r.numDeletedDocs());
       final int numRemainingValues = numValues - deleted.cardinality();
       final int base = r.numDocs() - numRemainingValues;
@@ -422,12 +422,16 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     for (Type val : numVariantList) {
       indexValues(w, numValues, val, numVariantList,
           false, 7);
-      IndexReader r = IndexReader.open(w, true);
+      DirectoryReader r = DirectoryReader.open(w, true);
+      if (val == Type.VAR_INTS) {
+        DocValues docValues = getDocValues(r, val.name());
+      }
       DocValues docValues = getDocValues(r, val.name());
       assertNotNull(docValues);
       // make sure we don't get a direct source since they don't support getArray()
+      if (val == Type.VAR_INTS) {
+      }
       Source source = docValues.getSource();
-      
       switch (source.type()) {
       case FIXED_INTS_8:
       {
@@ -465,7 +469,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         }
       }
       break;
-      case VAR_INTS: 
+      case VAR_INTS:
+        System.out.println(source.hasArray());
         assertFalse(source.hasArray());
         break;
       case FLOAT_32:
@@ -503,7 +508,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     final int numValues = 50 + atLeast(10);
     // only single byte fixed straight supports getArray()
     indexValues(w, numValues, Type.BYTES_FIXED_STRAIGHT, null, false, 1);
-    IndexReader r = IndexReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w, true);
     DocValues docValues = getDocValues(r, Type.BYTES_FIXED_STRAIGHT.name());
     assertNotNull(docValues);
     // make sure we don't get a direct source since they don't support
@@ -513,12 +518,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     switch (source.type()) {
     case BYTES_FIXED_STRAIGHT: {
       BytesRef ref = new BytesRef();
-      assertTrue(source.hasArray());
-      byte[] values = (byte[]) source.getArray();
-      for (int i = 0; i < numValues; i++) {
-        source.getBytes(i, ref);
-        assertEquals(1, ref.length);
-        assertEquals(values[i], ref.bytes[ref.offset]);
+      if (source.hasArray()) {
+        byte[] values = (byte[]) source.getArray();
+        for (int i = 0; i < numValues; i++) {
+          source.getBytes(i, ref);
+          assertEquals(1, ref.length);
+          assertEquals(values[i], ref.bytes[ref.offset]);
+        }
       }
     }
       break;

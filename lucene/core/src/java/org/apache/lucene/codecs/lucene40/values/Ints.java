@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene40.values;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesArraySource;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -36,7 +37,7 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.experimental
  */
-final class Ints {
+public final class Ints {
   protected static final String CODEC_NAME = "Ints";
   protected static final int VERSION_START = 0;
   protected static final int VERSION_CURRENT = VERSION_START;
@@ -88,7 +89,7 @@ final class Ints {
 
 
   static class IntsWriter extends FixedStraightBytesImpl.Writer {
-    private final DocValuesArray template;
+    private final DocValuesArraySource template;
 
     public IntsWriter(Directory dir, String id, Counter bytesUsed,
         IOContext context, Type valueType) throws IOException {
@@ -101,17 +102,7 @@ final class Ints {
       size = typeToSize(valueType);
       this.bytesRef = new BytesRef(size);
       bytesRef.length = size;
-      template = DocValuesArray.TEMPLATES.get(valueType);
-    }
-    
-    protected void add(int docID, long v) throws IOException {
-      template.toBytes(v, bytesRef);
-      add(docID, bytesRef);
-    }
-
-    @Override
-    public void add(int docID, IndexableField docValue) throws IOException {
-      add(docID, docValue.numericValue().longValue());
+      template = DocValuesArraySource.forType(valueType);
     }
     
     @Override
@@ -121,6 +112,13 @@ final class Ints {
     }
     
     @Override
+    public void add(int docID, IndexableField value) throws IOException {
+      template.toBytes(value.numericValue().longValue(), bytesRef);
+      bytesSpareField.setBytesValue(bytesRef);
+      super.add(docID, bytesSpareField);
+    }
+
+    @Override
     protected boolean tryBulkMerge(DocValues docValues) {
       // only bulk merge if value type is the same otherwise size differs
       return super.tryBulkMerge(docValues) && docValues.type() == template.type();
@@ -128,13 +126,13 @@ final class Ints {
   }
   
   final static class IntsReader extends FixedStraightBytesImpl.FixedStraightReader {
-    private final DocValuesArray arrayTemplate;
+    private final DocValuesArraySource arrayTemplate;
 
     IntsReader(Directory dir, String id, int maxDoc, IOContext context, Type type)
         throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, maxDoc,
           context, type);
-      arrayTemplate = DocValuesArray.TEMPLATES.get(type);
+      arrayTemplate = DocValuesArraySource.forType(type);
       assert arrayTemplate != null;
       assert type == sizeToType(size);
     }
