@@ -14,110 +14,237 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<div id="index">
+<div id="index" class="clearfix">
 
-    <div class="clearfix">
+  <div class="clearfix">
 
-		<div class="block" id="data">
+    <div class="index-left">
 
-		    <h2><span>Dashboard</span></h2>
-		    
-		    <div class="message-container">
-		        <div class="message"></div>
-		    </div>
+      <div class="block" id="instance">
 
-		    <div class="content">
+          <h2><span>Instance</span></h2>
 
-		    	<ul class="data">
+          <div class="content">
 
-		    		<li class="start_time"><dl class="clearfix">
-		    			<dt><span>startTime</span></dt>
-		    				<dd class="timeago"></dd>
-		    		</dl></li>
+            <ul class="data">
 
-		    		<li class="host"><dl class="clearfix">
-			    		<dt><span>host</span></dt>
-			    			<dd></dd>
-		    		</dl></li>
+              <li class="start_time"><dl class="clearfix">
+                <dt><span>Start</span></dt>
+                  <dd class="timeago"></dd>
+              </dl></li>
 
-		    		<li class="cwd"><dl class="clearfix">
-			    		<dt><span>cwd</span></dt>
-							<dd></dd>
-		    		</dl></li>
+              <li class="host"><dl class="clearfix">
+                <dt><span>Host</span></dt>
+                  <dd></dd>
+              </dl></li>
 
-		    		<li class="jvm"><dl class="clearfix">
-			    		<dt><span>JVM</span></dt>
-			    			<dd></dd>
-		    		</dl></li>
+              <li class="dir dir_cwd"><dl class="clearfix">
+                <dt><span>CWD</span></dt>
+                <dd></dd>
+              </dl></li>
 
-		    		<li class="command_line_args"><dl class="clearfix">
-			    		<dt><span>commandLineArgs</span></dt>
-							<dd></dd>
-		    		</dl></li>
-		    	
-		    	</ul>
+              <li class="dir dir_instance"><dl class="clearfix">
+                <dt><span>Instance</span></dt>
+                <dd></dd>
+              </dl></li>
 
-		    	<ul class="lucene">
+              <li class="dir dir_data"><dl class="clearfix">
+                <dt><span>Data</span></dt>
+                <dd></dd>
+              </dl></li>
 
-		    		<li class="solr_spec_version"><dl class="clearfix">
-			    		<dt><span>solr-spec-version</span></dt>
-			    			<dd></dd>
-		    		</dl></li>
-		    		
-		    		<li class="solr_impl_version"><dl class="clearfix">
-			    		<dt class=""><span>solr-impl-version</span></dt>
-			    			<dd></dd>
-		    		</dl></li>
-		    		
-		    		<li class="lucene_spec_version"><dl class="clearfix">
-			    		<dt><span>lucene-spec-version</span></dt>
-			    			<dd></dd>
-		    		</dl></li>
+              <li class="dir dir_index"><dl class="clearfix">
+                <dt><span>Index</span></dt>
+                <dd></dd>
+              </dl></li>
+            
+            </ul>
 
-		    		<li class="lucene_impl_version"><dl class="clearfix">		    		
-			    		<dt><span>lucene-impl-version</span></dt>
-			    			<dd></dd>
-		    		</dl></li>
-		    	
-		    	</ul>
+          </div>
 
-		    </div>
+      </div>
 
-		</div>
-	
-		<div class="block" id="memory">
+      <div class="block" id="versions">
 
-		    <h2><span>Memory</span></h2>
-		    
-		    <div class="message-container">
-		        <div class="message"></div>
-		    </div>
+          <h2><span>Versions</span></h2>
 
-		    <div class="content">
+          <div class="content">
 
-		    	<div id="memory-bar">
+            <ul class="data">
 
-		    		<div id="memory-bar-max">
-		    			<span class="memory-bar-max value"></span>
+              <li class="solr solr_spec_version"><dl class="clearfix">
+                <dt><span>solr-spec</span></dt>
+                  <dd></dd>
+              </dl></li>
+              
+              <li class="solr_impl_version"><dl class="clearfix">
+                <dt class=""><span>solr-impl</span></dt>
+                  <dd></dd>
+              </dl></li>
+              
+              <li class="lucene lucene_spec_version"><dl class="clearfix">
+                <dt><span>lucene-spec</span></dt>
+                  <dd></dd>
+              </dl></li>
 
-		    			<div id="memory-bar-total" class="bar">
-		    				<span class="memory-bar-total value"></span>
+              <li class="lucene_impl_version"><dl class="clearfix">            
+                <dt><span>lucene-impl</span></dt>
+                  <dd></dd>
+              </dl></li>
+            
+            </ul>
 
-		    				<div id="memory-bar-used" class="bar">
-		    					<span class="memory-bar-used value"></span>
+          </div>
 
-		    				</div>
+      </div>
 
-		    			</div>
+    </div>
+      
+    <div class="index-right">
 
-		    		</div>
+      <div class="block" id="system">
 
-		    	</div>
+          <h2><span>System</span></h2>
+          <a class="reload"><span>reload</span></a>
 
-		    </div>
+          <div class="content">
 
-		</div>
+            <div id="physical-memory-bar">
 
-	</div>
+              <p data-desc="physical-memory-bar">Physical Memory</p>
+              <div class="bar-holder">
+
+                <div class="bar-max bar">
+                  <span class="bar-max val"></span>
+
+                  <div class="bar-total bar">
+                    <span class="bar-total val"></span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div id="swap-space-bar">
+
+              <p data-desc="swap-space-bar">Swap Space</p>
+              <div class="bar-holder">
+
+                <div class="bar-max bar">
+                  <span class="bar-max val"></span>
+
+                  <div class="bar-total bar">
+                    <span class="bar-total val"></span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          <div id="file-descriptor-bar">
+
+              <p data-desc="file-descriptor-bar">File Descriptor Count</p>
+              <div class="bar-holder">
+
+                <div class="bar-max bar">
+                  <span class="bar-max val"></span>
+
+                  <div class="bar-total bar">
+                    <span class="bar-total val"></span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <p class="no-info">Sorry, no information available</p>
+
+          </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="clearfix">
+
+    <div class="index-left">
+
+      <div class="block" id="jvm">
+
+          <h2><span>JVM</span></h2>
+
+          <div class="content clearfix">
+
+            <ul class="data">
+
+              <li class="jvm_version"><dl class="clearfix">            
+                <dt><span>Runtime</span></dt>
+                  <dd></dd>
+              </dl></li>
+
+              <li class="processors"><dl class="clearfix">            
+                <dt><span>Processors</span></dt>
+                  <dd></dd>
+              </dl></li>
+
+              <li class="command_line_args"><dl class="clearfix">
+                <dt><span>Args</span></dt>
+                <dd></dd>
+              </dl></li>
+            
+            </ul>
+
+          </div>
+
+      </div>
+
+    </div>
+    <div class="index-right">
+
+      <div class="block" id="jvm-memory">
+
+          <h2><span data-desc="jvm-memory-bar">JVM-Memory</span></h2>
+
+          <div class="content">
+
+            <div id="jvm-memory-bar">
+              <div class="bar-holder">
+
+                <div class="bar-max bar">
+                  <span class="bar-max val"></span>
+
+                  <div class="bar-total bar">
+                    <span class="bar-total val"></span>
+
+                    <div class="bar-used bar">
+                      <span class="bar-used val"></span>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+      </div>
+
+    </div>
+
+  </div>
 
 </div>

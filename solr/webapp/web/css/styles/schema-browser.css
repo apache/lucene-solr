@@ -1,76 +1,76 @@
 #content #schema-browser .loader
 {
-    background-position: 0 50%;
-    padding-left: 21px;   
+  background-position: 0 50%;
+  padding-left: 21px;   
 }
 
 #content #schema-browser.loaded
 {
-    background-image: url( ../../img/div.gif );
-    background-position: 21% 0;
-    background-repeat: repeat-y;
+  background-image: url( ../../img/div.gif );
+  background-position: 21% 0;
+  background-repeat: repeat-y;
 }
 
 #content #schema-browser #data
 {
-    float: right;
-    width: 78%;
+  float: right;
+  width: 78%;
 }
 
 #content #schema-browser #related
 {
-    float: left;
-    width: 20%;
+  float: left;
+  width: 20%;
 }
 
 #content #schema-browser #related select
 {
-    width: 100%;
+  width: 100%;
 }
 
 #content #schema-browser #related select optgroup
 {
-    font-style: normal;
-    padding: 5px;
+  font-style: normal;
+  padding: 5px;
 }
 
 #content #schema-browser #related select option
 {
-    padding-left: 10px;
+  padding-left: 10px;
 }
 
 #content #schema-browser #related #f-df-t
 {
-    border-bottom: 1px solid #f0f0f0;
-    padding-bottom: 15px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 15px;
 }
 
 #content #schema-browser #related dl
 {
-    margin-top: 15px;
+  margin-top: 15px;
 }
 
 #content #schema-browser #related dl dt,
 #content #schema-browser #related dl dd a
 {
-    color: #c0c0c0;
+  color: #c0c0c0;
 }
 
 #content #schema-browser #related dl dt
 {
-    font-weight: bold;
-    margin-top: 5px;
+  font-weight: bold;
+  margin-top: 5px;
 }
 
 #content #schema-browser #related dl dd a
 {
-    display: block;
-    padding-left: 10px;
+  display: block;
+  padding-left: 10px;
 }
 
 #content #schema-browser #related dl dd a:hover
 {
-    background-color: #f8f8f8;
+  background-color: #f8f8f8;
 }
 
 #content #schema-browser #related .field .field,
@@ -82,264 +82,346 @@
 #content #schema-browser #related .active,
 #content #schema-browser #related .active a
 {
-    color: #333;
+  color: #333;
 }
 
 #content #schema-browser #related .copyfield,
 #content #schema-browser #related .copyfield a
 {
-    color: #666;
+  color: #666;
 }
 
 #content #schema-browser #data
 {
-    display: none;
+  display: none;
 }
 
 #content #schema-browser #data #index dt
 {
-    display: none;
-    float: left;
-    margin-right: 5px;
-    width: 150px;
+  display: none;
+  float: left;
+  margin-right: 5px;
+  width: 150px;
 }
 
 #content #schema-browser #data #field .field-options
 {
-    margin-bottom: 20px;
+  margin-bottom: 10px;
+}
+
+#content #schema-browser #data #field .field-options .head h2
+{
+  padding-left: 5px;
 }
 
 #content #schema-browser #data #field .field-options .options dt,
 #content #schema-browser #data #field .field-options .options dd
 {
-    float: left;
+  float: left;
 }
 
 #content #schema-browser #data #field .field-options .options dt
 {
-    clear: left;
-    display: none;
-    margin-right: 5px;
-    width: 100px;
+  clear: left;
+  display: none;
+  margin-right: 5px;
+  width: 100px;
 }
 
 #content #schema-browser #data #field .field-options .options dd
 {
-    margin-right: 5px;
+  margin-right: 5px;
 }
+
 
 #content #schema-browser #data #field .field-options .analyzer,
 #content #schema-browser #data #field .field-options .analyzer li,
 #content #schema-browser #data #field .field-options .analyzer ul,
 #content #schema-browser #data #field .field-options .analyzer ul li
 {
-    display: none;
+  display: none;
 }
 
 #content #schema-browser #data #field .field-options .analyzer p,
 #content #schema-browser #data #field .field-options .analyzer dl
 {
-    float: left;
+  float: left;
 }
 
 #content #schema-browser #data #field .field-options .analyzer p
 {
-    margin-right: 5px;
-    text-align: right;
-    width: 100px;
+  margin-right: 5px;
+  text-align: right;
+  width: 100px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer a
+{
+  cursor: auto;
+}
+
+#content #schema-browser #data #field .field-options .analyzer .toggle
+{
+  background-image: url( ../../img/ico/chevron-small-expand.png );
+  background-position: 100% 50%;
+  cursor: pointer;
+  display: block;
+  padding-right: 21px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer .open .toggle
+{
+  background-image: url( ../../img/ico/chevron-small.png );
 }
 
 #content #schema-browser #data #field .field-options .analyzer li
 {
-    border-top: 1px solid #f0f0f0;
-    margin-top: 10px;
-    padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 10px;
+  padding-top: 10px;
 }
 
 #content #schema-browser #data #field .field-options .analyzer ul
 {
-    clear: left;
-    display: block;
-    margin-left: 30px;
-    padding-top: 5px;
+  clear: left;
+  display: none;
+  margin-left: 30px;
+  padding-top: 5px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer .open ul
+{
+  display: block;
 }
 
 #content #schema-browser #data #field .field-options .analyzer ul li
 {
-    border-top: 1px solid #f8f8f8;
-    margin-top: 5px;
-    padding-top: 5px;
+  border-top: 1px solid #f8f8f8;
+  margin-top: 5px;
+  padding-top: 5px;
 }
 
 #content #schema-browser #data #field .field-options .analyzer ul p
 {
-    color: #999;
-    margin-right: 5px;
-    text-align: right;
-    width: 70px;
+  color: #999;
+  margin-right: 5px;
+  text-align: right;
+  width: 70px;
 }
 
 #content #schema-browser #data #field .field-options .analyzer ul dd
 {
-    margin-left: 20px;
+  margin-left: 20px;
 }
 
 #content #schema-browser #data #field .field-options .analyzer ul dd
 {
-    background-image: url( ../../img/ico/document-list.png );
-    background-position: 0 50%;
-    color: #c0c0c0;
-    padding-left: 21px;
+  background-image: url( ../../img/ico/document-list.png );
+  background-position: 0 50%;
+  color: #c0c0c0;
+  padding-left: 21px;
 }
 
 #content #schema-browser #data #field .field-options .analyzer ul dd.ico-0
 {
-    background-image: url( ../../img/ico/slash.png );
+  background-image: url( ../../img/ico/slash.png );
 }
 
 #content #schema-browser #data #field .field-options .analyzer ul dd.ico-1
 {
-    background-image: url( ../../img/ico/tick.png );
+  background-image: url( ../../img/ico/tick.png );
 }
 
 #content #schema-browser #data #field .head
 {
-    margin-bottom: 5px;
+  margin-bottom: 5px;
+}
+
+#content #schema-browser #data #field .terminfo-holder
+{
+  border-top: 1px solid #c0c0c0;
+  padding-top: 10px;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger
+{
+  float: left;
+  width: 130px;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger button
+{
+  background-image: url( ../../img/ico/information.png );
+  background-position: 3px 50%;
+  display: block;
+  padding-left: 23px;
+}
+
+#content #schema-browser #data #field .terminfo-holder .status
+{
+  border-left: 1px solid #f0f0f0;
+  display: none;
+  float: left;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+#content #schema-browser #data #field .terminfo-holder.disabled .trigger button
+{
+  background-color: #f0f0f0;
+  background-image: url( ../../img/ico/prohibition.png );
+  border-color: #fff;
+  color: #c0c0c0;
+  cursor: auto;
+}
+
+#content #schema-browser #data #field .terminfo-holder.disabled .status
+{
+  display: block;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger .autoload
+{
+  display: none;
+}
+
+#content #schema-browser #data #field .terminfo-holder.loaded .trigger .autoload
+{
+  background-image: url( ../../img/ico/ui-check-box-uncheck.png );
+  background-position: 0 50%;
+  color: #c0c0c0;
+  display: block;
+  margin-top: 10px;
+  padding-left: 21px;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger .autoload:hover
+{
+  color: #008;
+}
+
+#content #schema-browser #data #field .terminfo-holder .trigger .autoload.on
+{
+  background-image: url( ../../img/ico/ui-check-box.png );
+  color: #333;
 }
 
 #content #schema-browser #data #field .topterms-holder
 {
-    display: none;
-    float: left;
+  border-left: 1px solid #f0f0f0;
+  display: none;
+  float: left;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+#content #schema-browser #data #field .topterms-holder .head input
+{
+  height: 18px;
+  line-height: 16px;
+  text-align: right;
+  width: 30px;
 }
 
 #content #schema-browser #data #field .topterms-holder .head .max-holder
 {
-    color: #c0c0c0;
+  color: #c0c0c0;
 }
 
-#content #schema-browser #data #field .topterms-holder table
+#content #schema-browser #data #field .topterms-holder .head .max-holder:hover .max
 {
-    border-collapse: collapse;
-    width: 100%;
+  color: #008;
 }
 
-#content #schema-browser #data #field .topterms-holder th,
-#content #schema-browser #data #field .topterms-holder td
+#content #schema-browser .topterms-holder li
 {
-    border: 1px solid #f0f0f0;
-    padding: 1px 4px;
+  border-top: 1px solid  #999;
+  margin-bottom: 5px;
 }
 
-#content #schema-browser #data #field .topterms-holder thead tr
+#content #schema-browser .topterms-holder li p
 {
-    background-color: #c0c0c0;
+  background-color:  #999;
+  color: #fff;
+  float: left;
+  width: 25px;
 }
 
-#content #schema-browser #data #field .topterms-holder thead th
+#content #schema-browser .topterms-holder li p span
 {
-    text-align: left;
+  display: block;
+  padding-right: 2px;
+  text-align: right;
 }
 
-#content #schema-browser #data #field .topterms-holder tbody
+#content #schema-browser .topterms-holder li ul
 {
-    display: none;
+  margin-left: 30px;
 }
 
-#content #schema-browser #data #field .topterms-holder tbody .odd
+#content #schema-browser .topterms-holder li li
 {
-    background-color: #f0f0f0;
+  border-top: 0;
+  margin-bottom: 0;
+  white-space: nowrap;
 }
 
-#content #schema-browser #data #field .topterms-holder tbody .position
+#content #schema-browser .topterms-holder li li.odd
 {
-    color: #c0c0c0;
-    text-align: right;
+  background-color: #f0f0f0;
 }
 
-#content #schema-browser #data #field .topterms-holder .navi
+#content #schema-browser .topterms-holder li li span
 {
-    margin-top: 5px;
-}
-
-#content #schema-browser #data #field .topterms-holder .navi a
-{
-    color: #c0c0c0;
-    display: block;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    width: 49%;
-}
-
-#content #schema-browser #data #field .topterms-holder .navi a:hover
-{
-    background-color: #f8f8f8;
-    color: #333;
-}
-
-#content #schema-browser #data #field .topterms-holder .navi .less
-{
-    float: left;
-}
-
-#content #schema-browser #data #field .topterms-holder .navi .less span
-{
-    background-image: url( ../../img/ico/chevron-small.png );
-    background-position: 0 50%;
-    padding-left: 18px;
-}
-
-#content #schema-browser #data #field .topterms-holder .navi .more
-{
-    float: right;
-    text-align: right;
-}
-
-#content #schema-browser #data #field .topterms-holder .navi .more span
-{
-    background-image: url( ../../img/ico/chevron-small-expand.png );
-    background-position: 100% 50%;
-    padding-right: 18px;
+  padding-left: 2px;
+  padding-right: 2px;
 }
 
 #content #schema-browser #data #field .histogram-holder
 {
-    display: none;
-    float: left;
-    margin-left: 50px;
+  border-left: 1px solid #f0f0f0;
+  display: none;
+  float: left;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 #content #schema-browser #data #field .histogram-holder .histogram
 {
-    height: 150px;
+  height: 150px;
+}
+
+#content #schema-browser #data #field .histogram-holder .histogram.single canvas
+{
+  background-color: #c0c0c0;
 }
 
 #content #schema-browser #data #field .histogram-holder dt,
 #content #schema-browser #data #field .histogram-holder dd
 {
-    float: left;
-    font-size: 10px;
-    text-align: center;
+  float: left;
+  font-size: 10px;
+  text-align: center;
 }
 
 #content #schema-browser #data #field .histogram-holder span
 {
-    background-color: #f0f0f0;
-    display: block;
-    width: 20px;
+  background-color: #f0f0f0;
+  display: block;
+  width: 20px;
 }
 
 #content #schema-browser #data #field .histogram-holder dt
 {
-    padding-right: 1px;
+  padding-right: 1px;
 }
 
 #content #schema-browser #data #field .histogram-holder dd
 {
-    padding-right: 3px;
+  padding-right: 3px;
 }
 
 #content #schema-browser #data #field .histogram-holder dd span
 {
-    width: 25px;
+  width: 25px;
 }
