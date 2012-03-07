@@ -181,6 +181,9 @@
       </additional-excludes>
       <additional-filters>
         <replaceregex pattern="/jetty([^/]+)$" replace="/jetty" flags="gi" />
+        <replaceregex pattern="/apache-solr-commons-csv-([^/]+)$" replace="/apache-solr-commons-csv" flags="gi" />
+        <replaceregex pattern="/slf4j-([^/]+)$" replace="/slf4j" flags="gi" />
+        <replaceregex pattern="/(bcmail|bcprov)-([^/]+)$" replace="/\1" flags="gi" />
       </additional-filters>
     </license-check-macro>
   </target>
