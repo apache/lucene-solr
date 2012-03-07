@@ -342,11 +342,13 @@ public class SimpleFacets {
     boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
     TermGroupFacetCollector.GroupedFacetResult result = collector.mergeSegmentResults(offset + limit, mincount, orderByCount);
 
+    CharsRef charsRef = new CharsRef();
+    FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<Integer>();
     List<TermGroupFacetCollector.FacetEntry> scopedEntries = result.getFacetEntries(offset, limit);
     for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
-      String facetDisplayValue = facetEntry.getValue().utf8ToString();
-      facetCounts.add(facetDisplayValue, facetEntry.getCount());
+      facetFieldType.indexedToReadable(facetEntry.getValue(), charsRef);
+      facetCounts.add(charsRef.toString(), facetEntry.getCount());
     }
 
     if (missing) {
