@@ -26,6 +26,7 @@ import java.util.Random;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.fst.FSTLookup;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.search.suggest.LookupBenchmarkTest;
 import org.apache.lucene.search.suggest.TermFreq;
@@ -37,7 +38,7 @@ import org.apache.lucene.search.suggest.TermFreqArrayIterator;
  */
 @Deprecated
 public class FSTLookupTest extends LuceneTestCase {
-  public static TermFreq tf(String t, float v) {
+  public static TermFreq tf(String t, long v) {
     return new TermFreq(t, v);
   }
 
@@ -52,73 +53,73 @@ public class FSTLookupTest extends LuceneTestCase {
 
   private TermFreq[] evalKeys() {
     final TermFreq[] keys = new TermFreq[] {
-        tf("one", 0.5f),
-        tf("oneness", 1),
-        tf("onerous", 1),
-        tf("onesimus", 1),
-        tf("two", 1),
-        tf("twofold", 1),
-        tf("twonk", 1),
-        tf("thrive", 1),
-        tf("through", 1),
-        tf("threat", 1),
-        tf("three", 1),
-        tf("foundation", 1),
-        tf("fourblah", 1),
-        tf("fourteen", 1),
-        tf("four", 0.5f),
-        tf("fourier", 0.5f),
-        tf("fourty", 0.5f),
+        tf("one", 1),
+        tf("oneness", 2),
+        tf("onerous", 2),
+        tf("onesimus", 2),
+        tf("two", 2),
+        tf("twofold", 2),
+        tf("twonk", 2),
+        tf("thrive", 2),
+        tf("through", 2),
+        tf("threat", 2),
+        tf("three", 2),
+        tf("foundation", 2),
+        tf("fourblah", 2),
+        tf("fourteen", 2),
+        tf("four", 1),
+        tf("fourier", 1),
+        tf("fourty", 1),
         tf("xo", 1),
       };
     return keys;
   }
 
   public void testExactMatchHighPriority() throws Exception {
-    assertMatchEquals(lookup.lookup("two", true, 1), "two/1.0");
+    assertMatchEquals(lookup.lookup("two", true, 1), "two/1");
   }
 
   public void testExactMatchLowPriority() throws Exception {
     assertMatchEquals(lookup.lookup("one", true, 2), 
-        "one/0.0",
-        "oneness/1.0");
+        "one/0",
+        "oneness/1");
   }
 
   public void testRequestedCount() throws Exception {
     // 'one' is promoted after collecting two higher ranking results.
     assertMatchEquals(lookup.lookup("one", true, 2), 
-        "one/0.0", 
-        "oneness/1.0");
+        "one/0", 
+        "oneness/1");
 
     // 'one' is at the top after collecting all alphabetical results. 
     assertMatchEquals(lookup.lookup("one", false, 2), 
-        "one/0.0", 
-        "oneness/1.0");
+        "one/0", 
+        "oneness/1");
 
     // 'four' is collected in a bucket and then again as an exact match. 
     assertMatchEquals(lookup.lookup("four", true, 2), 
-        "four/0.0", 
-        "fourblah/1.0");
+        "four/0", 
+        "fourblah/1");
 
     // Check reordering of exact matches. 
     assertMatchEquals(lookup.lookup("four", true, 4), 
-        "four/0.0",
-        "fourblah/1.0",
-        "fourteen/1.0",
-        "fourier/0.0");
+        "four/0",
+        "fourblah/1",
+        "fourteen/1",
+        "fourier/0");
 
     lookup = new FSTLookup(10, false);
     lookup.build(new TermFreqArrayIterator(evalKeys()));
     
     // 'one' is not promoted after collecting two higher ranking results.
     assertMatchEquals(lookup.lookup("one", true, 2),  
-        "oneness/1.0",
-        "onerous/1.0");
+        "oneness/1",
+        "onerous/1");
 
     // 'one' is at the top after collecting all alphabetical results. 
     assertMatchEquals(lookup.lookup("one", false, 2), 
-        "one/0.0", 
-        "oneness/1.0");
+        "one/0", 
+        "oneness/1");
   }
 
   public void testMiss() throws Exception {
@@ -131,10 +132,10 @@ public class FSTLookupTest extends LuceneTestCase {
 
   public void testFullMatchList() throws Exception {
     assertMatchEquals(lookup.lookup("one", true, Integer.MAX_VALUE),
-        "oneness/1.0", 
-        "onerous/1.0",
-        "onesimus/1.0", 
-        "one/0.0");
+        "oneness/1", 
+        "onerous/1",
+        "onesimus/1", 
+        "one/0");
   }
 
   public void testMultilingualInput() throws Exception {
@@ -144,8 +145,8 @@ public class FSTLookupTest extends LuceneTestCase {
     lookup.build(new TermFreqArrayIterator(input));
 
     for (TermFreq tf : input) {
-      assertTrue("Not found: " + tf.term, lookup.get(tf.term) != null);
-      assertEquals(tf.term, lookup.lookup(tf.term, true, 1).get(0).key);
+      assertTrue("Not found: " + tf.term, lookup.get(_TestUtil.bytesToCharSequence(tf.term, random)) != null);
+      assertEquals(tf.term.utf8ToString(), lookup.lookup(_TestUtil.bytesToCharSequence(tf.term, random), true, 1).get(0).key.toString());
     }
   }
 
@@ -166,11 +167,11 @@ public class FSTLookupTest extends LuceneTestCase {
     lookup.build(new TermFreqArrayIterator(freqs.toArray(new TermFreq[freqs.size()])));
 
     for (TermFreq tf : freqs) {
-      final String term = tf.term;
+      final CharSequence term = _TestUtil.bytesToCharSequence(tf.term, random);
       for (int i = 1; i < term.length(); i++) {
-        String prefix = term.substring(0, i);
+        CharSequence prefix = term.subSequence(0, i);
         for (LookupResult lr : lookup.lookup(prefix, true, 10)) {
-          assertTrue(lr.key.startsWith(prefix));
+          assertTrue(lr.key.toString().startsWith(prefix.toString()));
         }
       }
     }

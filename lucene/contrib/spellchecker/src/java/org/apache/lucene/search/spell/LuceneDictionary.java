@@ -18,14 +18,14 @@ package org.apache.lucene.search.spell;
  */
 
 import org.apache.lucene.index.IndexReader;
-
-import java.util.Iterator;
-
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.*;
+import java.util.Comparator;
 
 /**
  * Lucene Dictionary: terms taken from the given field
@@ -46,65 +46,54 @@ public class LuceneDictionary implements Dictionary {
     this.field = StringHelper.intern(field);
   }
 
-  public final Iterator<String> getWordsIterator() {
-    return new LuceneIterator();
+  public final BytesRefIterator getWordsIterator() throws IOException {
+    return new TermIterator();
   }
+  
 
+  final class TermIterator implements TermFreqIterator {
+    private final BytesRef spare = new BytesRef();
+    private final TermEnum termsEnum;
+    private long freq;
+    private final Comparator<BytesRef> comp;
 
-  final class LuceneIterator implements Iterator<String> {
-    private TermEnum termEnum;
-    private Term actualTerm;
-    private boolean hasNextCalled;
-
-    LuceneIterator() {
-      try {
-        termEnum = reader.terms(new Term(field));
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    TermIterator() throws IOException {
+      termsEnum = reader.terms(new Term(field, ""));
+      Term term = termsEnum.term();
+      if (term == null || term.field() != field) {
+        comp = null;
+      } else {
+        comp = BytesRef.getUTF8SortedAsUnicodeComparator();
       }
     }
 
-    public String next() {
-      if (!hasNextCalled) {
-        hasNext();
-      }
-      hasNextCalled = false;
-
-      try {
-        termEnum.next();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-
-      return (actualTerm != null) ? actualTerm.text() : null;
+    public long weight() {
+      return freq;
     }
 
-    public boolean hasNext() {
-      if (hasNextCalled) {
-        return actualTerm != null;
+    //@Override - not until Java 6
+    public BytesRef next() throws IOException {
+      if (termsEnum != null) {
+        Term actualTerm;
+        do {
+          actualTerm = termsEnum.term();
+          if (actualTerm == null || actualTerm.field() != field) {
+            return null;
+          }
+          freq = termsEnum.docFreq();
+          spare.copyChars(actualTerm.text());
+          termsEnum.next();
+          return spare;
+        } while(termsEnum.next());
+
       }
-      hasNextCalled = true;
-
-      actualTerm = termEnum.term();
-
-      // if there are no words return false
-      if (actualTerm == null) {
-        return false;
-      }
-
-      String currentField = actualTerm.field();
-
-      // if the next word doesn't have the same field return false
-      if (currentField != field) {
-        actualTerm = null;
-        return false;
-      }
-
-      return true;
+      return null;
     }
 
-    public void remove() {
-      throw new UnsupportedOperationException();
+    //@Override - not until Java 6
+    public Comparator<BytesRef> getComparator() {
+      return comp;
     }
   }
+  
 }

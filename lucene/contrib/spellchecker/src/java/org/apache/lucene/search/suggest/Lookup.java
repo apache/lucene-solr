@@ -19,22 +19,29 @@ package org.apache.lucene.search.suggest;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.PriorityQueue;
 
+/**
+ * Simple Lookup interface for {@link CharSequence} suggestions.
+ * @lucene.experimental
+ */
 public abstract class Lookup {
   /**
    * Result of a lookup.
    */
   public static final class LookupResult implements Comparable<LookupResult> {
-    public final String key;
-    public final float value;
+    public final CharSequence key;
+    public final long value;
     
-    public LookupResult(String key, float value) {
+    public LookupResult(CharSequence key, long value) {
       this.key = key;
       this.value = value;
     }
@@ -46,8 +53,30 @@ public abstract class Lookup {
 
     /** Compare alphabetically. */
     public int compareTo(LookupResult o) {
-      return this.key.compareTo(o.key);
+      return CHARSEQUENCE_COMPARATOR.compare(key, o.key);
     }
+  }
+  
+  public static final Comparator<CharSequence> CHARSEQUENCE_COMPARATOR = new CharSequenceComparator();
+  
+  private static class CharSequenceComparator implements Comparator<CharSequence> {
+
+    //@Override - not until Java 6
+    public int compare(CharSequence o1, CharSequence o2) {
+      final int l1 = o1.length();
+      final int l2 = o2.length();
+      
+      final int aStop = Math.min(l1, l2);
+      for (int i = 0; i < aStop; i++) {
+        int diff = o1.charAt(i) - o2.charAt(i);
+        if (diff != 0) {
+          return diff;
+        }
+      }
+      // One is a prefix of the other, or, they are equal:
+      return l1 - l2;
+    }
+    
   }
   
   public static final class LookupPriorityQueue extends PriorityQueue<LookupResult> {
@@ -77,7 +106,7 @@ public abstract class Lookup {
    * {@link UnsortedTermFreqIteratorWrapper} in such case.
    */
   public void build(Dictionary dict) throws IOException {
-    Iterator<String> it = dict.getWordsIterator();
+    BytesRefIterator it = dict.getWordsIterator();
     TermFreqIterator tfit;
     if (it instanceof TermFreqIterator) {
       tfit = (TermFreqIterator)it;
@@ -87,7 +116,39 @@ public abstract class Lookup {
     build(tfit);
   }
   
+  /**
+   * Builds up a new internal {@link Lookup} representation based on the given {@link TermFreqIterator}.
+   * The implementation might re-sort the data internally.
+   */
   public abstract void build(TermFreqIterator tfit) throws IOException;
+  
+  /**
+   * Look up a key and return possible completion for this key.
+   * @param key lookup key. Depending on the implementation this may be
+   * a prefix, misspelling, or even infix.
+   * @param onlyMorePopular return only more popular results
+   * @param num maximum number of results to return
+   * @return a list of possible completions, with their relative weight (e.g. popularity)
+   */
+  public abstract List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num);
+
+  
+  /**
+   * Persist the constructed lookup data to a directory. Optional operation.
+   * @param output {@link OutputStream} to write the data to.
+   * @return true if successful, false if unsuccessful or not supported.
+   * @throws IOException when fatal IO error occurs.
+   */
+  public abstract boolean store(OutputStream output) throws IOException;
+
+  /**
+   * Discard current lookup data and load it from a previously saved copy.
+   * Optional operation.
+   * @param input the {@link InputStream} to load the lookup data.
+   * @return true if completed successfully, false if unsuccessful or not supported.
+   * @throws IOException when fatal IO error occurs.
+   */
+  public abstract boolean load(InputStream input) throws IOException;
   
   /**
    * Persist the constructed lookup data to a directory. Optional operation.
@@ -106,29 +167,4 @@ public abstract class Lookup {
    */
   public abstract boolean load(File storeDir) throws IOException;
   
-  /**
-   * Look up a key and return possible completion for this key.
-   * @param key lookup key. Depending on the implementation this may be
-   * a prefix, misspelling, or even infix.
-   * @param onlyMorePopular return only more popular results
-   * @param num maximum number of results to return
-   * @return a list of possible completions, with their relative weight (e.g. popularity)
-   */
-  public abstract List<LookupResult> lookup(String key, boolean onlyMorePopular, int num);
-
-  /**
-   * Modify the lookup data by recording additional data. Optional operation.
-   * @param key new lookup key
-   * @param value value to associate with this key
-   * @return true if new key is added, false if it already exists or operation
-   * is not supported.
-   */
-  public abstract boolean add(String key, Object value);
-  
-  /**
-   * Get value associated with a specific key.
-   * @param key lookup key
-   * @return associated value
-   */
-  public abstract Object get(String key);  
 }

@@ -20,7 +20,6 @@ package org.apache.lucene.search.spell;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -40,6 +39,8 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 
@@ -580,10 +581,11 @@ public class SpellChecker implements java.io.Closeable {
       boolean isEmpty = readers.isEmpty();
 
       try { 
-        Iterator<String> iter = dict.getWordsIterator();
+        BytesRefIterator iter = dict.getWordsIterator();
         
-        terms: while (iter.hasNext()) {
-          String word = iter.next();
+        BytesRef spare;
+        terms: while ((spare = iter.next()) != null) {
+          String word = spare.utf8ToString();
   
           int len = word.length();
           if (len < 3) {

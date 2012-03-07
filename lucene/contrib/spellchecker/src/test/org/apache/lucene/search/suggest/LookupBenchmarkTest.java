@@ -98,7 +98,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     while ((line = br.readLine()) != null) {
       int tab = line.indexOf('|');
       assertTrue("No | separator?: " + line, tab >= 0);
-      float weight = Float.parseFloat(line.substring(tab + 1));
+      int weight = Integer.parseInt(line.substring(tab + 1));
       String key = line.substring(0, tab);
       input.add(new TermFreq(key, weight));
     }
@@ -192,7 +192,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
 
       final List<String> input = new ArrayList<String>(benchmarkInput.size());
       for (TermFreq tf : benchmarkInput) {
-        input.add(tf.term.substring(0, Math.min(tf.term.length(), 
+        input.add(tf.term.utf8ToString().substring(0, Math.min(tf.term.length, 
               minPrefixLen + random.nextInt(maxPrefixLen - minPrefixLen + 1))));
       }
 

@@ -32,6 +32,7 @@ import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.suggest.FileDictionary;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.util.CharsRef;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -132,7 +133,15 @@ public class Suggester extends SolrSpellChecker {
     try {
       lookup.build(dictionary);
       if (storeDir != null) {
-        lookup.store(storeDir);
+        if(!lookup.store(storeDir)) {
+          if (sourceLocation == null) {
+            assert reader != null && field != null;
+            LOG.error("Store Lookup build from index on field: " + field + " failed reader has: " + reader.maxDoc() + " docs");
+          } else {
+            LOG.error("Store Lookup build from sourceloaction: " + sourceLocation + " failed");
+
+          }
+        }
       }
     } catch (Exception e) {
       LOG.error("Error while building or storing Suggester data", e);
@@ -153,11 +162,6 @@ public class Suggester extends SolrSpellChecker {
     build(core, searcher);
   }
 
-  public void add(String query, int numHits) {
-    LOG.info("add " + query + ", " + numHits);
-    lookup.add(query, new Integer(numHits));
-  }
-  
   static SpellingResult EMPTY_RESULT = new SpellingResult();
 
   @Override
@@ -173,9 +177,12 @@ public class Suggester extends SolrSpellChecker {
       return EMPTY_RESULT;
     }
     SpellingResult res = new SpellingResult();
+    CharsRef scratch = new CharsRef();
     for (Token t : options.tokens) {
-      String term = new String(t.buffer(), 0, t.length());
-      List<LookupResult> suggestions = lookup.lookup(term,
+      scratch.chars = t.buffer();
+      scratch.offset = 0;
+      scratch.length = t.length();
+      List<LookupResult> suggestions = lookup.lookup(scratch,
           options.onlyMorePopular, options.count);
       if (suggestions == null) {
         continue;
@@ -184,7 +191,7 @@ public class Suggester extends SolrSpellChecker {
         Collections.sort(suggestions);
       }
       for (LookupResult lr : suggestions) {
-        res.add(t, lr.key, ((Number)lr.value).intValue());
+        res.add(t, lr.key.toString(), (int)lr.value);
       }
     }
     return res;

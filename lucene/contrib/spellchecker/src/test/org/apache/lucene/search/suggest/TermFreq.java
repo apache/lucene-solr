@@ -1,5 +1,7 @@
 package org.apache.lucene.search.suggest;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,10 +20,14 @@ package org.apache.lucene.search.suggest;
  */
 
 public final class TermFreq {
-  public final String term;
-  public final float v;
+  public final BytesRef term;
+  public final long v;
 
-  public TermFreq(String term, float v) {
+  public TermFreq(String term, long v) {
+   this(new BytesRef(term), v);
+  }
+  
+  public TermFreq(BytesRef term, long v) {
     this.term = term;
     this.v = v;
   }

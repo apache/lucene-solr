@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
@@ -51,7 +52,7 @@ import org.apache.lucene.store.OutputStreamDataOutput;
  * arcs labeled with all possible weights. We cache all these arcs, highest-weight first.</li>   
  * </ul>
  * 
- * <p>At runtime, in {@link #lookup(String, boolean, int)}, the automaton is utilized as follows:
+ * <p>At runtime, in {@link #lookup(CharSequence, boolean, int)}, the automaton is utilized as follows:
  * <ul>
  * <li>For each possible term weight encoded in the automaton (cached arcs from the root above), 
  * starting with the highest one, we descend along the path of the input key. If the key is not
@@ -156,12 +157,13 @@ public class FSTLookup extends Lookup {
     // Buffer the input because we will need it twice: for calculating
     // weights distribution and for the actual automata building.
     List<Entry> entries = new ArrayList<Entry>();
-    while (tfit.hasNext()) {
-      String term = tfit.next();
+    BytesRef spare;
+    while ((spare = tfit.next()) != null) {
+      String term = spare.utf8ToString();
       char [] termChars = new char [term.length() + 1]; // add padding for weight.
       for (int i = 0; i < term.length(); i++)
         termChars[i + 1] = term.charAt(i);
-      entries.add(new Entry(termChars, tfit.freq()));
+      entries.add(new Entry(termChars, tfit.weight()));
     }
 
     // Distribute weights into at most N buckets. This is a form of discretization to
@@ -203,15 +205,6 @@ public class FSTLookup extends Lookup {
     }    
   }
 
-  /**
-   * Not implemented.
-   */
-  @Override
-  public boolean add(String key, Object value) {
-    // This implementation does not support ad-hoc additions (all input
-    // must be sorted for the builder).
-    return false;
-  }
 
   /**
    * Get the (approximated) weight of a single key (if there is a perfect match
@@ -220,8 +213,7 @@ public class FSTLookup extends Lookup {
    * @return Returns the approximated weight of the input key or <code>null</code>
    * if not found.
    */
-  @Override
-  public Float get(String key) {
+  public Float get(CharSequence key) {
     return getExactMatchStartingFromRootArc(0, key);
   }
 
@@ -232,7 +224,7 @@ public class FSTLookup extends Lookup {
    * @param i The first root arc index in {@link #rootArcs} to consider when
    * matching. 
    */
-  private Float getExactMatchStartingFromRootArc(int i, String key) {
+  private Float getExactMatchStartingFromRootArc(int i, CharSequence key) {
     // Get the UTF-8 bytes representation of the input key. 
     try {
       final FST.Arc<Object> scratch = new FST.Arc<Object>();
@@ -269,7 +261,7 @@ public class FSTLookup extends Lookup {
    * and then alphabetically (utf16 codepoint order).
    */
   @Override
-  public List<LookupResult> lookup(String key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
     if (key.length() == 0 || automaton == null) {
       // Keep the result an ArrayList to keep calls monomorphic.
       return EMPTY_RESULT; 
@@ -294,7 +286,7 @@ public class FSTLookup extends Lookup {
    * Lookup suggestions sorted alphabetically <b>if weights are not constant</b>. This
    * is a workaround: in general, use constant weights for alphabetically sorted result.
    */
-  private List<LookupResult> lookupSortedAlphabetically(String key, int num) throws IOException {
+  private List<LookupResult> lookupSortedAlphabetically(CharSequence key, int num) throws IOException {
     // Greedily get num results from each weight branch.
     List<LookupResult> res = lookupSortedByWeight(key, num, true);
     
@@ -302,7 +294,7 @@ public class FSTLookup extends Lookup {
     Collections.sort(res, new Comparator<LookupResult>() {
       // not till java6 @Override
       public int compare(LookupResult o1, LookupResult o2) {
-        return o1.key.compareTo(o2.key);
+        return Lookup.CHARSEQUENCE_COMPARATOR.compare(o1.key, o2.key);
       }
     });
     if (res.size() > num) {
@@ -318,7 +310,7 @@ public class FSTLookup extends Lookup {
    * suggestions have been collected. If <code>false</code>, it will collect suggestions from
    * all weight arcs (needed for {@link #lookupSortedAlphabetically}.
    */
-  private ArrayList<LookupResult> lookupSortedByWeight(String key, int num, boolean collectAll) throws IOException {
+  private ArrayList<LookupResult> lookupSortedByWeight(CharSequence key, int num, boolean collectAll) throws IOException {
     // Don't overallocate the results buffers. This also serves the purpose of allowing
     // the user of this class to request all matches using Integer.MAX_VALUE as the number
     // of results.
@@ -333,7 +325,7 @@ public class FSTLookup extends Lookup {
       // Descend into the automaton using the key as prefix.
       if (descendWithPrefix(arc, key)) {
         // Prefix-encoded weight.
-        final float weight = rootArc.label / (float) buckets;
+        final long weight = rootArc.label /  buckets;
 
         // A subgraph starting from the current node has the completions 
         // of the key prefix. The arc we're at is the last key's byte,
@@ -344,13 +336,13 @@ public class FSTLookup extends Lookup {
           // exact match, if requested.
           if (exactMatchFirst) {
             if (!checkExistingAndReorder(res, key)) {
-              Float exactMatchWeight = getExactMatchStartingFromRootArc(i, key);
+              Number exactMatchWeight = getExactMatchStartingFromRootArc(i, key);
               if (exactMatchWeight != null) {
                 // Insert as the first result and truncate at num.
                 while (res.size() >= num) {
                   res.remove(res.size() - 1);
                 }
-                res.add(0, new LookupResult(key, exactMatchWeight));
+                res.add(0, new LookupResult(key, exactMatchWeight.longValue()));
               }
             }
           }
@@ -367,7 +359,7 @@ public class FSTLookup extends Lookup {
    * 
    * @return Returns <code>true<code> if and only if <code>list</code> contained <code>key</code>.
    */
-  private boolean checkExistingAndReorder(ArrayList<LookupResult> list, String key) {
+  private boolean checkExistingAndReorder(ArrayList<LookupResult> list, CharSequence key) {
     // We assume list does not have duplicates (because of how the FST is created).
     for (int i = list.size(); --i >= 0;) {
       if (key.equals(list.get(i).key)) {
@@ -390,7 +382,7 @@ public class FSTLookup extends Lookup {
    * last byte of <code>utf8</code>. <code>false</code> is returned if no such 
    * prefix <code>utf8</code> exists.
    */
-  private boolean descendWithPrefix(Arc<Object> arc, String term) throws IOException {
+  private boolean descendWithPrefix(Arc<Object> arc, CharSequence term) throws IOException {
     final int max = term.length();
 
     final FST.BytesReader fstReader = automaton.getBytesReader(0);
@@ -410,7 +402,7 @@ public class FSTLookup extends Lookup {
    * @param num Maximum number of results needed (early termination).
    * @param weight Weight of all results found during this collection.
    */
-  private boolean collect(List<LookupResult> res, int num, float weight, StringBuilder output, Arc<Object> arc) throws IOException {
+  private boolean collect(List<LookupResult> res, int num, long weight, StringBuilder output, Arc<Object> arc) throws IOException {
     output.append((char) arc.label);
 
     automaton.readFirstTargetArc(arc, arc);
@@ -535,14 +527,7 @@ public class FSTLookup extends Lookup {
       return false;
     }
 
-    InputStream is = new BufferedInputStream(new FileInputStream(data));
-    try {
-      this.automaton = new FST<Object>(new InputStreamDataInput(is), NoOutputs.getSingleton());
-      cacheRootArcs();
-    } finally {
-      IOUtils.close(is);
-    }
-    return true;
+    return load(new FileInputStream(data));
   }
 
   /**
@@ -558,13 +543,29 @@ public class FSTLookup extends Lookup {
       return false;
 
     File data = new File(storeDir, FILENAME);
-    OutputStream os = new BufferedOutputStream(new FileOutputStream(data));
+    return store(new FileOutputStream(data));
+  }
+
+  @Override
+  public boolean store(OutputStream output) throws IOException {
+    OutputStream os = new BufferedOutputStream(output);
     try {
       this.automaton.save(new OutputStreamDataOutput(os));
     } finally {
       IOUtils.close(os);
-    }
+    }   
+    return true;
+  }
 
+  @Override
+  public boolean load(InputStream input) throws IOException {
+    InputStream is = new BufferedInputStream(input);
+    try {
+      this.automaton = new FST<Object>(new InputStreamDataInput(is), NoOutputs.getSingleton());
+      cacheRootArcs();
+    } finally {
+      IOUtils.close(is);
+    }
     return true;
   }
 }

@@ -368,8 +368,8 @@ public class JaspellTernarySearchTrie {
    *          A <code>String</code> index.
    *@return The object retrieved from the Ternary Search Trie.
    */
-  public Object get(String key) {
-    TSTNode node = getNode(key.trim().toLowerCase());
+  public Object get(CharSequence key) {
+    TSTNode node = getNode(key);
     if (node == null) {
       return null;
     }
@@ -435,7 +435,7 @@ public class JaspellTernarySearchTrie {
    *@return The node object indexed by key. This object is an instance of an
    *         inner class named <code>TernarySearchTrie.TSTNode</code>.
    */
-  public TSTNode getNode(String key) {
+  public TSTNode getNode(CharSequence key) {
     return getNode(key, rootNode);
   }
 
@@ -443,15 +443,14 @@ public class JaspellTernarySearchTrie {
    * Returns the node indexed by key, or <code>null</code> if that node doesn't
    * exist. The search begins at root node.
    * 
-   *@param key2
+   *@param key
    *          A <code>String</code> that indexes the node that is returned.
    *@param startNode
    *          The top node defining the subtrie to be searched.
    *@return The node object indexed by key. This object is an instance of an
    *         inner class named <code>TernarySearchTrie.TSTNode</code>.
    */
-  protected TSTNode getNode(String key2, TSTNode startNode) {
-    String key = key2.trim().toLowerCase();
+  protected TSTNode getNode(CharSequence key, TSTNode startNode) {
     if (key == null || startNode == null || key.length() == 0) {
       return null;
     }
@@ -490,7 +489,7 @@ public class JaspellTernarySearchTrie {
    *@exception IllegalArgumentException
    *              If the key is an empty <code>String</code>.
    */
-  protected TSTNode getOrCreateNode(String key) throws NullPointerException,
+  protected TSTNode getOrCreateNode(CharSequence key) throws NullPointerException,
           IllegalArgumentException {
     if (key == null) {
       throw new NullPointerException(
@@ -568,7 +567,7 @@ public class JaspellTernarySearchTrie {
    *          The maximum number of values returned by this method.
    *@return A <code>List</code> with the results
    */
-  public List<String> matchAlmost(String key, int numReturnValues) {
+  public List<String> matchAlmost(CharSequence key, int numReturnValues) {
     return matchAlmostRecursion(rootNode, 0, matchAlmostDiff, key,
             ((numReturnValues < 0) ? -1 : numReturnValues), new Vector<String>(), false);
   }
@@ -598,7 +597,7 @@ public class JaspellTernarySearchTrie {
    *@return A <code>List</code> with the results.
    */
   private List<String> matchAlmostRecursion(TSTNode currentNode, int charIndex,
-          int d, String matchAlmostKey, int matchAlmostNumReturnValues,
+          int d, CharSequence matchAlmostKey, int matchAlmostNumReturnValues,
           List<String> matchAlmostResult2, boolean upTo) {
     if ((currentNode == null)
             || (matchAlmostNumReturnValues != -1 && matchAlmostResult2.size() >= matchAlmostNumReturnValues)
@@ -658,7 +657,7 @@ public class JaspellTernarySearchTrie {
    *          The maximum number of values returned from this method.
    *@return A <code>List</code> with the results
    */
-  public List<String> matchPrefix(String prefix, int numReturnValues) {
+  public List<String> matchPrefix(CharSequence prefix, int numReturnValues) {
     Vector<String> sortKeysResult = new Vector<String>();
     TSTNode startNode = getNode(prefix);
     if (startNode == null) {
@@ -722,8 +721,8 @@ public class JaspellTernarySearchTrie {
    *@param value
    *          The object to be stored in the Trie.
    */
-  public void put(String key, Object value) {
-    getOrCreateNode(key.trim().toLowerCase()).data = value;
+  public void put(CharSequence key, Object value) {
+    getOrCreateNode(key).data = value;
   }
 
   /**

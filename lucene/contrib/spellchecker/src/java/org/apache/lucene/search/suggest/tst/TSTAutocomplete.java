@@ -57,7 +57,7 @@ public class TSTAutocomplete {
    *          index of character in key to be inserted currently.
    * @return currentNode The new reference to root node of TST
    */
-  public TernaryTreeNode insert(TernaryTreeNode currentNode, String s,
+  public TernaryTreeNode insert(TernaryTreeNode currentNode, CharSequence s,
           Object val, int x) {
     if (s == null || s.length() <= x) {
       return currentNode;
@@ -69,7 +69,7 @@ public class TSTAutocomplete {
       if (x < s.length() - 1) {
         currentNode.eqKid = insert(currentNode.eqKid, s, val, x + 1);
       } else {
-        currentNode.token = s;
+        currentNode.token = s.toString();
         currentNode.val = val;
         return currentNode;
       }
@@ -79,7 +79,7 @@ public class TSTAutocomplete {
       if (x < s.length() - 1) {
         currentNode.eqKid = insert(currentNode.eqKid, s, val, x + 1);
       } else {
-        currentNode.token = s;
+        currentNode.token = s.toString();
         currentNode.val = val;
         return currentNode;
       }
@@ -104,7 +104,7 @@ public class TSTAutocomplete {
    * @return suggest list of auto-completed keys for the given prefix query.
    */
   public ArrayList<TernaryTreeNode> prefixCompletion(TernaryTreeNode root,
-          String s, int x) {
+          CharSequence s, int x) {
 
     TernaryTreeNode p = root;
     ArrayList<TernaryTreeNode> suggest = new ArrayList<TernaryTreeNode>();

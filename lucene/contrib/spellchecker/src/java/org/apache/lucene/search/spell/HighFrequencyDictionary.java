@@ -18,21 +18,19 @@
 package org.apache.lucene.search.spell;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.search.spell.Dictionary;
+import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 
 /**
  * HighFrequencyDictionary: terms taken from the given field
  * of a Lucene index, which appear in a number of documents
  * above a given threshold.
- *
- * When using IndexReader.terms(Term) the code must not call next() on TermEnum
- * as the first call to TermEnum, see: http://issues.apache.org/jira/browse/LUCENE-6
  *
  * Threshold is a value in [0..1] representing the minimum
  * number of documents (of the total) where a term should appear.
@@ -50,94 +48,59 @@ public class HighFrequencyDictionary implements Dictionary {
     this.thresh = thresh;
   }
 
-  public final Iterator<String> getWordsIterator() {
+  public final BytesRefIterator getWordsIterator() throws IOException {
     return new HighFrequencyIterator();
   }
 
   final class HighFrequencyIterator implements TermFreqIterator {
-    private TermEnum termEnum;
-    private Term actualTerm;
-    private int actualFreq;
-    private boolean hasNextCalled;
+    private final BytesRef spare = new BytesRef();
+    private final TermEnum termsEnum;
     private int minNumDocs;
+    private long freq;
+    private final Comparator<BytesRef> comp;
 
-    HighFrequencyIterator() {
-      try {
-        termEnum = reader.terms(new Term(field, ""));
-        minNumDocs = (int)(thresh * (float)reader.numDocs());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    HighFrequencyIterator() throws IOException {
+      termsEnum = reader.terms(new Term(field, ""));
+      minNumDocs = (int)(thresh * (float)reader.numDocs());
+      Term term = termsEnum.term();
+      if (term == null || term.field() != field) {
+        comp = null;
+      } else {
+        comp = BytesRef.getUTF8SortedAsUnicodeComparator();
       }
     }
 
-    private boolean isFrequent(Term term) {
-      try {
-        return reader.docFreq(term) >= minNumDocs;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    private boolean isFrequent(int freq) {
+      return freq >= minNumDocs;
+    }
+    
+    public long weight() {
+      return freq;
     }
 
-    public String next() {
-      if (!hasNextCalled) {
-        hasNext();
+    //@Override - not until Java 6
+    public BytesRef next() throws IOException {
+      if (termsEnum != null) {
+        Term actualTerm;
+        do {
+          actualTerm = termsEnum.term();
+          if (actualTerm == null || actualTerm.field() != field) {
+            return null;
+          }
+          if (isFrequent(termsEnum.docFreq())) {
+            freq = termsEnum.docFreq();
+            spare.copyChars(actualTerm.text());
+            termsEnum.next();
+            return spare;
+          }
+        } while(termsEnum.next());
       }
-      hasNextCalled = false;
-
-      try {
-        termEnum.next();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-
-      return (actualTerm != null) ? actualTerm.text() : null;
+      return  null;
     }
 
-    public float freq() {
-      return actualFreq;
-    }
-
-
-    public boolean hasNext() {
-      if (hasNextCalled) {
-        return actualTerm != null;
-      }
-      hasNextCalled = true;
-
-      do {
-        actualTerm = termEnum.term();
-        actualFreq = termEnum.docFreq();
-
-        // if there are no words return false
-        if (actualTerm == null) {
-          return false;
-        }
-
-        String currentField = actualTerm.field();
-
-        // if the next word doesn't have the same field return false
-        if (currentField != field) {   // intern'd comparison
-          actualTerm = null;
-          return false;
-        }
-
-        // got a valid term, does it pass the threshold?
-        if (isFrequent(actualTerm)) {
-          return true;
-        }
-
-        // term not up to threshold
-        try {
-          termEnum.next();
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-
-      } while (true);
-    }
-
-    public void remove() {
-      throw new UnsupportedOperationException();
+    //@Override - not until Java 6
+    public Comparator<BytesRef> getComparator() {
+      return comp;
     }
   }
 }

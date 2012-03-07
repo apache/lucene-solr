@@ -18,7 +18,11 @@ package org.apache.lucene.search.suggest.fst;
  */
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,10 +30,15 @@ import java.util.List;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
+import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesWriter;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -97,90 +106,72 @@ public class WFSTCompletionLookup extends Lookup {
   
   @Override
   public void build(TermFreqIterator iterator) throws IOException {
-    String prefix = getClass().getSimpleName();
-    File directory = Sort.defaultTempDir();
-    File tempInput = File.createTempFile(prefix, ".input", directory);
-    File tempSorted = File.createTempFile(prefix, ".sorted", directory);
-    
-    Sort.ByteSequencesWriter writer = new Sort.ByteSequencesWriter(tempInput);
-    Sort.ByteSequencesReader reader = null;
     BytesRef scratch = new BytesRef();
-    
-    boolean success = false;
-    try {
-      byte [] buffer = new byte [0];
-      ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
-      while (iterator.hasNext()) {
-        String key = iterator.next();
-        UnicodeUtil.UTF16toUTF8(key, 0, key.length(), scratch);
-
-        if (scratch.length + 5 >= buffer.length) {
-          buffer = ArrayUtil.grow(buffer, scratch.length + 5);
-        }
-
-        output.reset(buffer);
-        output.writeBytes(scratch.bytes, scratch.offset, scratch.length);
-        output.writeByte((byte)0); // separator: not used, just for sort order
-        output.writeInt((int)encodeWeight(iterator.freq()));
-        writer.write(buffer, 0, output.getPosition());
-      }
-      writer.close();
-      new Sort().sort(tempInput, tempSorted);
-      reader = new Sort.ByteSequencesReader(tempSorted);
+    TermFreqIterator iter = new WFSTTermFreqIteratorWrapper(iterator,
+        BytesRef.getUTF8SortedAsUnicodeComparator());
+    IntsRef scratchInts = new IntsRef();
+    BytesRef previous = null;
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+    while ((scratch = iter.next()) != null) {
+      long cost = iter.weight();
       
-      PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
-      Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
-      
-      BytesRef previous = null;
-      BytesRef suggestion = new BytesRef();
-      IntsRef scratchInts = new IntsRef();
-      ByteArrayDataInput input = new ByteArrayDataInput();
-      while (reader.read(scratch)) {
-        suggestion.bytes = scratch.bytes;
-        suggestion.offset = scratch.offset;
-        suggestion.length = scratch.length - 5; // int + separator
-
-        input.reset(scratch.bytes);
-        input.skipBytes(suggestion.length + 1); // suggestion + separator
-        long cost = input.readInt();
-   
-        if (previous == null) {
-          previous = new BytesRef();
-        } else if (suggestion.equals(previous)) {
-          continue; // for duplicate suggestions, the best weight is actually added
-        }
-        Util.toIntsRef(suggestion, scratchInts);
-        builder.add(scratchInts, cost);
-        previous.copyBytes(suggestion);
+      if (previous == null) {
+        previous = new BytesRef();
+      } else if (scratch.equals(previous)) {
+        continue; // for duplicate suggestions, the best weight is actually
+                  // added
       }
-      fst = builder.finish();
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(reader, writer);
-      } else {
-        IOUtils.closeWhileHandlingException(reader, writer);
-      }
-      
-      tempInput.delete();
-      tempSorted.delete();
+      Util.toIntsRef(scratch, scratchInts);
+      builder.add(scratchInts, cost);
+      previous.copyBytes(scratch);
     }
+    fst = builder.finish();
   }
 
   @Override
   public boolean store(File storeDir) throws IOException {
-    fst.save(new File(storeDir, FILENAME));
-    return true;
+    if (!storeDir.exists() || !storeDir.isDirectory() || !storeDir.canWrite()) {
+      return false;
+    }
+    return store(new FileOutputStream(new File(storeDir, FILENAME)));
   }
 
   @Override
   public boolean load(File storeDir) throws IOException {
-    this.fst = FST.read(new File(storeDir, FILENAME), PositiveIntOutputs.getSingleton(true));
+    File data = new File(storeDir, FILENAME);
+    if (!data.exists() || !data.canRead()) {
+      return false;
+    }
+    return load(new FileInputStream(data));
+  }
+  
+  @Override
+  public boolean store(OutputStream output) throws IOException {
+    try {
+      if (fst != null) {
+        fst.save(new OutputStreamDataOutput(output));
+        return true;
+      }
+    } finally {
+      IOUtils.close(output);
+    }
+    return false;
+    
+  }
+
+  @Override
+  public boolean load(InputStream input) throws IOException {
+    try {
+      this.fst = new FST<Long>(new InputStreamDataInput(input), PositiveIntOutputs.getSingleton(true));
+    } finally {
+      IOUtils.close(input);
+    }
     return true;
   }
 
   @Override
-  public List<LookupResult> lookup(String key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
     assert num > 0;
     BytesRef scratch = new BytesRef(key);
     int prefixLength = scratch.length;
@@ -197,8 +188,11 @@ public class WFSTCompletionLookup extends Lookup {
     }
     
     List<LookupResult> results = new ArrayList<LookupResult>(num);
+    CharsRef spare = new CharsRef();
     if (exactFirst && arc.isFinal()) {
-      results.add(new LookupResult(scratch.utf8ToString(), decodeWeight(prefixOutput + arc.nextFinalOutput)));
+      spare.grow(scratch.length);
+      UnicodeUtil.UTF8toUTF16(scratch, spare);
+      results.add(new LookupResult(spare.toString(), decodeWeight(prefixOutput + arc.nextFinalOutput)));
       if (--num == 0) {
         return results; // that was quick
       }
@@ -216,8 +210,9 @@ public class WFSTCompletionLookup extends Lookup {
       // append suffix
       Util.toBytesRef(completion.input, suffix);
       scratch.append(suffix);
-
-      results.add(new LookupResult(scratch.utf8ToString(), decodeWeight(prefixOutput + completion.output)));
+      spare.grow(scratch.length);
+      UnicodeUtil.UTF8toUTF16(scratch, spare);
+      results.add(new LookupResult(spare.toString(), decodeWeight(prefixOutput + completion.output)));
     }
     return results;
   }
@@ -243,17 +238,11 @@ public class WFSTCompletionLookup extends Lookup {
     return output;
   }
   
-  @Override
-  public boolean add(String key, Object value) {
-    return false; // Not supported.
-  }
-
   /**
    * Returns the weight associated with an input string,
    * or null if it does not exist.
    */
-  @Override
-  public Float get(String key) {
+  public Object get(CharSequence key) {
     Arc<Long> arc = new Arc<Long>();
     Long result = null;
     try {
@@ -262,21 +251,49 @@ public class WFSTCompletionLookup extends Lookup {
     if (result == null || !arc.isFinal()) {
       return null;
     } else {
-      return decodeWeight(result + arc.nextFinalOutput);
+      return Integer.valueOf(decodeWeight(result + arc.nextFinalOutput));
     }
   }
   
   /** cost -> weight */
-  private static float decodeWeight(long encoded) {
-    return Integer.MAX_VALUE - encoded;
+  private static int decodeWeight(long encoded) {
+    return (int)(Integer.MAX_VALUE - encoded);
   }
   
   /** weight -> cost */
-  private static long encodeWeight(float value) {
-    if (Float.isNaN(value) || Float.isInfinite(value) || value < 0 || value > Integer.MAX_VALUE) {
+  private static int encodeWeight(long value) {
+    if (value < 0 || value > Integer.MAX_VALUE) {
       throw new UnsupportedOperationException("cannot encode value: " + value);
     }
     return Integer.MAX_VALUE - (int)value;
+  }
+  
+  private final class WFSTTermFreqIteratorWrapper extends SortedTermFreqIteratorWrapper {
+
+    WFSTTermFreqIteratorWrapper(TermFreqIterator source,
+        Comparator<BytesRef> comparator) throws IOException {
+      super(source, comparator, true);
+    }
+
+    @Override
+    protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, long weight) throws IOException {
+      if (spare.length + 5 >= buffer.length) {
+        buffer = ArrayUtil.grow(buffer, spare.length + 5);
+      }
+      output.reset(buffer);
+      output.writeBytes(spare.bytes, spare.offset, spare.length);
+      output.writeByte((byte)0); // separator: not used, just for sort order
+      output.writeInt(encodeWeight(weight));
+      writer.write(buffer, 0, output.getPosition());
+    }
+    
+    @Override
+    protected long decode(BytesRef scratch, ByteArrayDataInput tmpInput) {
+      tmpInput.reset(scratch.bytes);
+      tmpInput.skipBytes(scratch.length - 4); // suggestion + separator
+      scratch.length -= 5; // sep + long
+      return tmpInput.readInt();
+    }
   }
   
   static final Comparator<Long> weightComparator = new Comparator<Long> () {

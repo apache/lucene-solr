@@ -16,7 +16,8 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-import java.util.Iterator;
+import java.io.IOException;
+import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * A simple interface representing a Dictionary. A Dictionary
@@ -31,5 +32,5 @@ public interface Dictionary {
    * Return all words present in the dictionary
    * @return Iterator
    */
-  Iterator<String> getWordsIterator();
+  BytesRefIterator getWordsIterator() throws IOException;
 }
