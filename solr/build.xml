@@ -185,7 +185,6 @@
         <exclude name="example/work/**" />
       </additional-excludes>
       <additional-filters>
-        <replaceregex pattern="/apache-solr-commons-csv([^/]+)$" replace="/apache-solr-commons-csv" flags="gi" />
         <replaceregex pattern="/hppc([^/]+)$" replace="/hppc" flags="gi" />
         <replaceregex pattern="/langdetect([^/]+)$" replace="/langdetect" flags="gi" />
         <replaceregex pattern="/geronimo-stax([^/]+)$" replace="/geronimo-stax" flags="gi" />
@@ -193,6 +192,9 @@
         <replaceregex pattern="/jetty-6([^/]+)$" replace="/jetty" flags="gi" />
         <replaceregex pattern="/jsp-2.1-glassfish([^/]+)$" replace="/jsp-2.1-glassfish" flags="gi" />
         <replaceregex pattern="/jsp-api-2.1-glassfish([^/]+)$" replace="/jsp-api-2.1-glassfish" flags="gi" />
+        <replaceregex pattern="/apache-solr-commons-csv-([^/]+)$" replace="/apache-solr-commons-csv" flags="gi" />
+        <replaceregex pattern="/slf4j-([^/]+)$" replace="/slf4j" flags="gi" />
+        <replaceregex pattern="/(bcmail|bcprov)-([^/]+)$" replace="/\1" flags="gi" />
       </additional-filters>
     </license-check-macro>
   </target>
