@@ -27,7 +27,12 @@ import org.apache.solr.spelling.suggest.LookupFactory;
  * Factory for {@link FSTCompletionLookup}
  */
 public class FSTLookupFactory extends LookupFactory {
-
+  
+  /**
+   * File name for the automaton.
+   */
+  private static final String FILENAME = "fst.bin";
+  
   /**
    * The number of separate buckets for weights (discretization). The more buckets,
    * the more fine-grained term weights (priorities) can be assigned. The speed of lookup
@@ -56,5 +61,10 @@ public class FSTLookupFactory extends LookupFactory {
     : true;
 
     return new FSTCompletionLookup(buckets, exactMatchFirst);
+  }
+
+  @Override
+  public String storeFileName() {
+    return FILENAME;
   }
 }

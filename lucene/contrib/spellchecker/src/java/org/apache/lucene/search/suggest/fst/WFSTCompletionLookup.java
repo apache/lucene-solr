@@ -17,9 +17,6 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -64,14 +61,6 @@ import org.apache.lucene.util.fst.Util.MinResult;
  * @lucene.experimental
  */
 public class WFSTCompletionLookup extends Lookup {
-  
-  /**
-   * File name for the automaton.
-   * 
-   * @see #store(File)
-   * @see #load(File)
-   */
-  private static final String FILENAME = "wfst.bin";
   
   /**
    * FST<Long>, weights are encoded as costs: (Integer.MAX_VALUE-weight)
@@ -129,35 +118,18 @@ public class WFSTCompletionLookup extends Lookup {
     fst = builder.finish();
   }
 
-  @Override
-  public boolean store(File storeDir) throws IOException {
-    if (!storeDir.exists() || !storeDir.isDirectory() || !storeDir.canWrite()) {
-      return false;
-    }
-    return store(new FileOutputStream(new File(storeDir, FILENAME)));
-  }
-
-  @Override
-  public boolean load(File storeDir) throws IOException {
-    File data = new File(storeDir, FILENAME);
-    if (!data.exists() || !data.canRead()) {
-      return false;
-    }
-    return load(new FileInputStream(data));
-  }
   
   @Override
   public boolean store(OutputStream output) throws IOException {
     try {
-      if (fst != null) {
-        fst.save(new OutputStreamDataOutput(output));
-        return true;
+      if (fst == null) {
+        return false;
       }
+      fst.save(new OutputStreamDataOutput(output));
     } finally {
       IOUtils.close(output);
     }
-    return false;
-    
+    return true;
   }
 
   @Override

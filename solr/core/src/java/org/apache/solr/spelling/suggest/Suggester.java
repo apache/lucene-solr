@@ -18,6 +18,8 @@
 package org.apache.solr.spelling.suggest;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
@@ -74,6 +76,8 @@ public class Suggester extends SolrSpellChecker {
   protected Lookup lookup;
   protected String lookupImpl;
   protected SolrCore core;
+
+  private LookupFactory factory;
   
   @Override
   public String init(NamedList config, SolrCore core) {
@@ -93,7 +97,8 @@ public class Suggester extends SolrSpellChecker {
       lookupImpl = FSTLookupFactory.class.getName();
     }
 
-    LookupFactory factory = (LookupFactory) core.getResourceLoader().newInstance(lookupImpl);
+    factory = (LookupFactory) core.getResourceLoader().newInstance(lookupImpl);
+    
     lookup = factory.create(config, core);
     String store = (String)config.get(STORE_DIR);
     if (store != null) {
@@ -106,7 +111,7 @@ public class Suggester extends SolrSpellChecker {
       } else {
         // attempt reload of the stored lookup
         try {
-          lookup.load(storeDir);
+          lookup.load(new FileInputStream(new File(storeDir, factory.storeFileName())));
         } catch (IOException e) {
           LOG.warn("Loading stored lookup data failed", e);
         }
@@ -133,16 +138,19 @@ public class Suggester extends SolrSpellChecker {
     try {
       lookup.build(dictionary);
       if (storeDir != null) {
-        if(!lookup.store(storeDir)) {
+        File target = new File(storeDir, factory.storeFileName());
+        if(!lookup.store(new FileOutputStream(target))) {
           if (sourceLocation == null) {
             assert reader != null && field != null;
             LOG.error("Store Lookup build from index on field: " + field + " failed reader has: " + reader.maxDoc() + " docs");
           } else {
             LOG.error("Store Lookup build from sourceloaction: " + sourceLocation + " failed");
-
           }
+        } else {
+          LOG.info("Stored suggest data to: " + target.getAbsolutePath());
         }
       }
+
     } catch (Exception e) {
       LOG.error("Error while building or storing Suggester data", e);
     }
@@ -153,7 +161,7 @@ public class Suggester extends SolrSpellChecker {
     LOG.info("reload()");
     if (dictionary == null && storeDir != null) {
       // this may be a firstSearcher event, try loading it
-      if (lookup.load(storeDir)) {
+      if (lookup.load(new FileInputStream(new File(storeDir, factory.storeFileName())))) {
         return;  // loaded ok
       }
       LOG.debug("load failed, need to build Lookup again");

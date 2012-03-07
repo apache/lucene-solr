@@ -19,9 +19,6 @@ package org.apache.lucene.search.suggest.jaspell;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -109,22 +106,11 @@ public class JaspellLookup extends Lookup {
     return res;
   }
 
-  public static final String FILENAME = "jaspell.dat";
   private static final byte LO_KID = 0x01;
   private static final byte EQ_KID = 0x02;
   private static final byte HI_KID = 0x04;
   private static final byte HAS_VALUE = 0x08;
  
-  
-  @Override
-  public boolean load(File storeDir) throws IOException {
-    File data = new File(storeDir, FILENAME);
-    if (!data.exists() || !data.canRead()) {
-      return false;
-    }
-    return load(new FileInputStream(data));
-  }
-  
   private void readRecursively(DataInputStream in, TSTNode node) throws IOException {
     node.splitchar = in.readChar();
     byte mask = in.readByte();
@@ -148,15 +134,6 @@ public class JaspellLookup extends Lookup {
     }
   }
 
-  @Override
-  public boolean store(File storeDir) throws IOException {
-    if (!storeDir.exists() || !storeDir.isDirectory() || !storeDir.canWrite()) {
-      return false;
-    }
-    File data = new File(storeDir, FILENAME);
-    return store(new FileOutputStream(data));
-  }
-  
   private void writeRecursively(DataOutputStream out, TSTNode node) throws IOException {
     if (node == null) {
       return;

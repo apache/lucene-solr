@@ -26,4 +26,5 @@ import org.apache.solr.core.SolrCore;
  */
 public abstract class LookupFactory {
   public abstract Lookup create(NamedList params, SolrCore core);
+  public abstract String storeFileName();
 }

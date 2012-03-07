@@ -18,8 +18,6 @@ package org.apache.lucene.search.suggest.fst;
  */
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -80,14 +78,6 @@ public class FSTCompletionLookup extends Lookup {
    * <p>Empirical pick.
    */
   private final static int sharedTailLength = 5;
-
-  /**
-   * File name for the automaton.
-   * 
-   * @see #store(File)
-   * @see #load(File)
-   */
-  private static final String FILENAME = "fst.bin";
 
   private int buckets;
   private boolean exactMatchFirst;
@@ -266,36 +256,14 @@ public class FSTCompletionLookup extends Lookup {
     return bucket == -1 ? null : Long.valueOf(bucket);
   }
 
-  /**
-   * Deserialization from disk.
-   */
-  @Override
-  public synchronized boolean load(File storeDir) throws IOException {
-    File data = new File(storeDir, FILENAME);
-    if (!data.exists() || !data.canRead()) {
-      return false;
-    }
-    return load(new FileInputStream(data));
-  }
-
-  /**
-   * Serialization to disk.
-   */
-  @Override
-  public synchronized boolean store(File storeDir) throws IOException {
-    if (!storeDir.exists() || !storeDir.isDirectory() || !storeDir.canWrite()) {
-      return false;
-    }
-    return store(new FileOutputStream(new File(storeDir, FILENAME)));
-  }
 
   @Override
   public synchronized boolean store(OutputStream output) throws IOException {
+
     try {
-      FST<Object> fst;
-      if (this.normalCompletion == null || (fst = normalCompletion.getFST()) == null) 
+      if (this.normalCompletion == null || normalCompletion.getFST() == null) 
         return false;
-      fst.save(new OutputStreamDataOutput(output));
+      normalCompletion.getFST().save(new OutputStreamDataOutput(output));
     } finally {
       IOUtils.close(output);
     }

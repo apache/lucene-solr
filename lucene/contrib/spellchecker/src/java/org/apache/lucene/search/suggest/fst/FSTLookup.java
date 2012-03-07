@@ -517,35 +517,6 @@ public class FSTLookup extends Lookup {
     }
   }
 
-  /**
-   * Deserialization from disk.
-   */
-  @Override
-  public synchronized boolean load(File storeDir) throws IOException {
-    File data = new File(storeDir, FILENAME);
-    if (!data.exists() || !data.canRead()) {
-      return false;
-    }
-
-    return load(new FileInputStream(data));
-  }
-
-  /**
-   * Serialization to disk.
-   */
-  @Override
-  public synchronized boolean store(File storeDir) throws IOException {
-    if (!storeDir.exists() || !storeDir.isDirectory() || !storeDir.canWrite()) {
-      return false;
-    }
-
-    if (this.automaton == null)
-      return false;
-
-    File data = new File(storeDir, FILENAME);
-    return store(new FileOutputStream(data));
-  }
-
   @Override
   public boolean store(OutputStream output) throws IOException {
     OutputStream os = new BufferedOutputStream(output);
