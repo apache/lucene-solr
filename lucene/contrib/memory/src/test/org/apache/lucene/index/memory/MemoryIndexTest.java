@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -40,11 +41,16 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util._TestUtil;
@@ -224,5 +230,29 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     reader.close();
+  }
+
+  // LUCENE-3831
+  public void testNullPointerException() throws IOException {
+    RegexpQuery regex = new RegexpQuery(new Term("field", "worl."));
+    SpanQuery wrappedquery = new SpanMultiTermQueryWrapper<RegexpQuery>(regex);
+        
+    MemoryIndex mindex = new MemoryIndex();
+    mindex.addField("field", new MockAnalyzer(random).tokenStream("field", new StringReader("hello there")));
+
+    // This throws an NPE
+    assertEquals(0, mindex.search(wrappedquery), 0.00001f);
+  }
+    
+  // LUCENE-3831
+  public void testPassesIfWrapped() throws IOException {
+    RegexpQuery regex = new RegexpQuery(new Term("field", "worl."));
+    SpanQuery wrappedquery = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexpQuery>(regex));
+
+    MemoryIndex mindex = new MemoryIndex();
+    mindex.addField("field", new MockAnalyzer(random).tokenStream("field", new StringReader("hello there")));
+
+    // This passes though
+    assertEquals(0, mindex.search(wrappedquery), 0.00001f);
   }
 }
