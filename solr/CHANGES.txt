@@ -642,6 +642,12 @@ Bug Fixes
 * SOLR-3195: timeAllowed is ignored for grouping queries
   (Russell Black via Martijn van Groningen)
 
+* SOLR-3204: The packaged pre-release artifact of Commons CSV used the original
+  package name (org.apache.commons.csv). This created a compatibility issue as
+  the Apache Commons team works toward an official release of Commons CSV.
+  JARJAR (http://code.google.com/p/jarjar/) was used to change the package name
+  to org.apache.solr.internal.csv.  (Uwe Schindler, Emmanuel Bourg)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)

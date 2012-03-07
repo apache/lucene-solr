@@ -23,8 +23,8 @@
   <target name="compile-core" depends="compile-solrj,common-solr.compile-core"/>
 
   <target name="dist-maven" depends="jar-core,javadocs,jar-src,common.dist-maven">
-    <m2-deploy-with-pom-template pom.xml="${common-solr.dir}/lib/solr-commons-csv-pom.xml.template"
-                                 jar.file="${common-solr.dir}/lib/commons-csv-1.0-SNAPSHOT-r966014.jar" />
+    <m2-deploy-with-pom-template pom.xml="${common-solr.dir}/lib/apache-solr-commons-csv-pom.xml.template"
+                                 jar.file="${common-solr.dir}/lib/apache-solr-commons-csv-1.0-SNAPSHOT-r966014.jar" />
 
     <m2-deploy-with-pom-template pom.xml="${common-solr.dir}/lib/apache-solr-noggit-pom.xml.template"
                                  jar.file="${common-solr.dir}/lib/apache-solr-noggit-r1211150.jar" />
