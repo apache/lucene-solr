@@ -55,7 +55,7 @@ public class SimpleTextPerDocProducer extends PerDocProducerBase {
   private final String segmentSuffix;
 
   /**
-   * Creates a new {@link Lucene40DocValuesProducer} instance and loads all
+   * Creates a new {@link SimpleTextPerDocProducer} instance and loads all
    * {@link DocValues} instances for this segment and codec.
    */
   public SimpleTextPerDocProducer(SegmentReadState state,
