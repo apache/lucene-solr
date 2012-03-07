@@ -1,281 +1,20 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta content="Apache Forrest" name="Generator">
-<meta name="Forrest-version" content="0.9">
-<meta name="Forrest-skin-name" content="lucene">
-<title>Solr tutorial</title>
-<link type="text/css" href="skin/basic.css" rel="stylesheet">
-<link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
-<link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
-<link type="text/css" href="skin/profile.css" rel="stylesheet">
-<script src="skin/getBlank.js" language="javascript" type="text/javascript"></script><script src="skin/getMenu.js" language="javascript" type="text/javascript"></script><script src="skin/fontsize.js" language="javascript" type="text/javascript"></script>
-<link rel="shortcut icon" href="images/favicon.ico">
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Solr Tutorial</title>
+<style>
+pre.code {
+  background-color: #D3D3D3;
+  padding: 0.2em;
+}
+</style>
+
 </head>
-<body onload="init()">
-<script type="text/javascript">ndeSetTextSize();</script>
-<div id="top">
-<!--+
-    |breadtrail
-    +-->
-<div class="breadtrail">
-<a href="http://www.apache.org/">apache</a> &gt; <a href="http://lucene.apache.org/">lucene</a><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script>
-</div>
-<!--+
-    |header
-    +-->
-<div class="header">
-<!--+
-    |start group logo
-    +-->
-<div class="grouplogo">
-<a href="http://lucene.apache.org/"><img class="logoImage" alt="Lucene" src="images/lucene_green_150.gif" title="Apache Lucene"></a>
-</div>
-<!--+
-    |end group logo
-    +-->
-<!--+
-    |start Project Logo
-    +-->
-<div class="projectlogo">
-<a href="http://lucene.apache.org/solr/"><img class="logoImage" alt="Solr" src="images/solr.jpg" title="Solr Description"></a>
-</div>
-<!--+
-    |end Project Logo
-    +-->
-<!--+
-    |start Search
-    +-->
-<div class="searchbox">
-<form id="searchform" action="http://search.lucidimagination.com/p:solr" method="get" class="roundtopsmall">
-<input onFocus="getBlank (this, 'Search the site with Solr');" size="25" name="q" id="query" type="text" value="Search the site with Solr">&nbsp; 
-                      <input onclick="selectProvider(this.form)" name="Search" value="Search" type="submit">
-                      @
-                      <select id="searchProvider" name="searchProvider"><option value="any">select provider</option><option value="lucid">Lucid Find</option><option value="sl">Search-Lucene</option></select>
-</form>
-</div>
-<!--+
-    |end search
-    +-->
-<!--+
-    |start Tabs
-    +-->
-<ul id="tabs">
-<li class="current">
-<a class="selected" href="index.html">Main</a>
-</li>
-<li>
-<a class="unselected" href="http://wiki.apache.org/solr/FrontPage">Wiki</a>
-</li>
-</ul>
-<!--+
-    |end Tabs
-    +-->
-</div>
-</div>
-<div id="main">
-<div id="publishedStrip">
-<!--+
-    |start Subtabs
-    +-->
-<div id="level2tabs"></div>
-<!--+
-    |end Endtabs
-    +-->
-<script type="text/javascript"><!--
-document.write("Last Published: " + document.lastModified);
-//  --></script>
-</div>
-<!--+
-    |breadtrail
-    +-->
-<div class="breadtrail">
+<body>
 
-             &nbsp;
-           </div>
-<!--+
-    |start Menu, mainarea
-    +-->
-<!--+
-    |start Menu
-    +-->
-<div id="menu">
-<div onclick="SwitchMenu('menu_1.1', 'skin/')" id="menu_1.1Title" class="menutitle">About</div>
-<div id="menu_1.1" class="menuitemgroup">
-<div class="menuitem">
-<a href="index.html" title="Welcome to Solr">Welcome</a>
-</div>
-<div class="menuitem">
-<a href="http://lucene.apache.org/java/docs/whoweare.html" title="Lucene/Solr Committers">Who We Are</a>
-</div>
-<div class="menuitem">
-<a href="http://lucene.apache.org/privacy.html">Privacy Policy</a>
-</div>
-</div>
-<div onclick="SwitchMenu('menu_selected_1.2', 'skin/')" id="menu_selected_1.2Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">Documentation</div>
-<div id="menu_selected_1.2" class="selectedmenuitemgroup" style="display: block;">
-<div class="menuitem">
-<a href="features.html">Features</a>
-</div>
-<div class="menupage">
-<div class="menupagetitle">Tutorial</div>
-</div>
-<div class="menuitem">
-<a href="http://wiki.apache.org/solr/FrontPage">Docs (Wiki)</a>
-</div>
-<div class="menuitem">
-<a href="http://wiki.apache.org/solr/FAQ">FAQ</a>
-</div>
-<div class="menuitem">
-<a href="api/index.html">All Javadoc</a>
-</div>
-<div class="menuitem">
-<a href="api/solrj/index.html">SolrJ Javadoc</a>
-</div>
-<div class="menuitem">
-<a href="api/test-framework/index.html">Test Framework Javadoc</a>
-</div>
-</div>
-<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">Resources</div>
-<div id="menu_1.3" class="menuitemgroup">
-<div class="menuitem">
-<a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">Download</a>
-</div>
-<div class="menuitem">
-<a href="mailing_lists.html">Mailing Lists</a>
-</div>
-<div class="menuitem">
-<a href="issue_tracking.html">Issue Tracking</a>
-</div>
-<div class="menuitem">
-<a href="version_control.html">Version Control</a>
-</div>
-</div>
-<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Related Projects</div>
-<div id="menu_1.4" class="menuitemgroup">
-<div class="menuitem">
-<a href="http://lucene.apache.org/java/">Lucene Java</a>
-</div>
-<div class="menuitem">
-<a href="http://lucene.apache.org/nutch/">Nutch</a>
-</div>
-<div class="menuitem">
-<a href="http://incubator.apache.org/connectors/">ManifoldCF</a>
-</div>
-</div>
-<script type="text/javascript">
-              function selectProvider(form) {
-                provider = form.elements['searchProvider'].value;
-                if (provider == "any") {
-                  if (Math.random() > 0.5) {
-                    provider = "lucid";
-                  } else {
-                    provider = "sl";
-                  }
-                }
-
-                if (provider == "lucid") {
-                  form.action = "http://search.lucidimagination.com/p:solr";
-                } else if (provider == "sl") {
-                  form.action = "http://search-lucene.com/solr";
-                }
-
-                days = 365; // cookie will be valid for a year
-                date = new Date();
-                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-                expires = "; expires=" + date.toGMTString();
-                document.cookie = "searchProvider=" + provider + expires + "; path=/";
-              }
-
-              if (document.cookie.length>0) {
-                cStart=document.cookie.indexOf("searchProvider=");
-                if (cStart!=-1) {
-                  cStart=cStart + "searchProvider=".length;
-                  cEnd=document.cookie.indexOf(";", cStart);
-                  if (cEnd==-1) {
-                    cEnd=document.cookie.length;
-                  }
-                  provider = unescape(document.cookie.substring(cStart,cEnd));
-                  document.forms['searchform'].elements['searchProvider'].value = provider;
-                }
-              }
-            </script>
-<div id="credit"></div>
-<div id="roundbottom">
-<img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
-<!--+
-  |alternative credits
-  +-->
-<div id="credit2">
-<a href="http://link.packtpub.com/2LjDxE"><img border="0" title="Book: Apache Solr 3 Enterprise Search Server" alt="Book: Apache Solr 3 Enterprise Search Server - logo" src="images/as3ess_book.jpg" style="width: 150px;height: 185px;"></a><a href="http://www.packtpub.com/solr-3-1-enterprise-search-server-cookbook/book"><img border="0" title="Book: Apache Solr 3.1 Cookbook" alt="Book: Apache Solr 3.1 Cookbook - logo" src="images/solr_31_cookbook.jpg" style="width: 150px;height: 180px;"></a><a href="http://www.lucidimagination.com/Downloads/LucidWorks-for-Solr/Reference-Guide?sc=AP"><img border="0" title="LucidWorks for Solr Certified Distribution Reference Guide" alt="LucidWorks for Solr Certified Distribution Reference Guide - logo" src="images/lucidworks_reference_guide.png" style="width: 150px;height: 185px;"></a>
-</div>
-</div>
-<!--+
-    |end Menu
-    +-->
-<!--+
-    |start content
-    +-->
 <div id="content">
-<div title="Portable Document Format" class="pdflink">
-<a class="dida" href="tutorial.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
-        PDF</a>
-</div>
-<h1>Solr tutorial</h1>
-<div id="minitoc-area">
-<ul class="minitoc">
-<li>
-<a href="#Overview">Overview</a>
-</li>
-<li>
-<a href="#Requirements">Requirements</a>
-</li>
-<li>
-<a href="#Getting+Started">Getting Started</a>
-</li>
-<li>
-<a href="#Indexing+Data">Indexing Data</a>
-</li>
-<li>
-<a href="#Updating+Data">Updating Data</a>
-<ul class="minitoc">
-<li>
-<a href="#Deleting+Data">Deleting Data</a>
-</li>
-</ul>
-</li>
-<li>
-<a href="#Querying+Data">Querying Data</a>
-<ul class="minitoc">
-<li>
-<a href="#Sorting">Sorting</a>
-</li>
-</ul>
-</li>
-<li>
-<a href="#Highlighting">Highlighting</a>
-</li>
-<li>
-<a href="#Faceted+Search">Faceted Search</a>
-</li>
-<li>
-<a href="#Search+UI">Search UI</a>
-</li>
-<li>
-<a href="#Text+Analysis">Text Analysis</a>
-<ul class="minitoc">
-<li>
-<a href="#Analysis+Debugging">Analysis Debugging</a>
-</li>
-</ul>
-</li>
-<li>
-<a href="#Conclusion">Conclusion</a>
-</li>
-</ul>
-</div>
-
+<h1>Solr Tutorial</h1>
 
 <a name="N1000E"></a><a name="Overview"></a>
 <h2 class="boxed">Overview</h2>
@@ -299,7 +38,7 @@ To follow along with this tutorial, you will need...
   <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle</a>,
   <a href="http://openjdk.java.net/">Open JDK</a>,
   <a href="http://www.ibm.com/developerworks/java/jdk/">IBM</a>, or
-  <br>
+  <br />
   Running <span class="codefrag">java -version</span> at the command line should indicate a version
   number starting with 1.6.  Gnu's GCJ is not supported and does not work with Solr.
   </li>
@@ -328,7 +67,6 @@ user:~solr$ <strong>ls</strong>
 solr-nightly.zip
 user:~solr$ <strong>unzip -q solr-nightly.zip</strong>
 user:~solr$ <strong>cd solr-nightly/example/</strong>
-
 </pre>
 <p>
 Solr can run in any Java Servlet Container of your choice, but to simplify
@@ -346,7 +84,6 @@ user:~/solr/example$ <strong>java -jar start.jar</strong>
 
 Oct 23, 2009 4:41:56 PM org.apache.solr.core.SolrCore registerSearcher
 INFO: [] Registered new searcher Searcher@7c3885 main
-
 </pre>
 <p>
 This will start up the Jetty application server on port 8983, and use your terminal to display the logging information from Solr.
@@ -401,7 +138,7 @@ Clicking the "Search" button should take you to the following URL...
 You can index all of the sample data, using the following command (assuming your command line shell supports the *.xml notation):
 </p>
 <pre class="code">
-  user:~/solr/example/exampledocs$ <strong>java -jar post.jar *.xml</strong>
+user:~/solr/example/exampledocs$ <strong>java -jar post.jar *.xml</strong>
 SimplePostTool: version 1.2
 SimplePostTool: WARNING: Make sure your XML documents are encoded in UTF-8, other encodings are not currently supported
 SimplePostTool: POSTing files to http://localhost:8983/solr/update..
@@ -815,7 +552,7 @@ in subsequent searches.
 </p>
 <ul>
   
-<li>Subscribe to the Solr <a href="mailing_lists.html">mailing lists</a>!</li>
+<li>Subscribe to the Solr <a href="http://lucene.apache.org/solr/discussion.html">mailing lists</a>!</li>
   
 <li>Make a copy of the Solr <span class="codefrag">example</span> directory as a template for your project.</li>
   
@@ -831,49 +568,22 @@ in subsequent searches.
   and
   <a href="http://wiki.apache.org/solr/ClusteringComponent">search results clustering</a>.
   Explore the <a href="http://wiki.apache.org/solr/FrontPage">Solr Wiki</a> to find
-  more details about Solr's many <a href="features.html">features</a>.
+  more details about Solr's many <a href="http://lucene.apache.org/solr/features.html">features</a>.
 </p>
 <p>
   Have Fun, and we'll see you on the Solr mailing lists!
 </p>
 </div>
 
+</div>
 
-</div>
-<!--+
-    |end content
-    +-->
 <div class="clearboth">&nbsp;</div>
-</div>
+
 <div id="footer">
-<!--+
-    |start bottomstrip
-    +-->
-<div class="lastmodified">
-<script type="text/javascript"><!--
-document.write("Last Published: " + document.lastModified);
-//  --></script>
-</div>
 <div class="copyright">
         Copyright &copy;
          2007 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
 </div>
-<!--+
-    |end bottomstrip
-    +-->
 </div>
-<script type="text/javascript">
-
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-94576-12']);
-  _gaq.push(['_trackPageview']);
-
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
-        </script>
 </body>
 </html>
