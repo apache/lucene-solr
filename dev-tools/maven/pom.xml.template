@@ -631,7 +631,7 @@
                   <artifactId>solr-commons-csv</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/lib/commons-csv-1.0-SNAPSHOT-r966014.jar</file>
+                  <file>solr/lib/apache-solr-commons-csv-1.0-SNAPSHOT-r966014.jar</file>
                 </configuration>  
               </execution>
               <execution>
