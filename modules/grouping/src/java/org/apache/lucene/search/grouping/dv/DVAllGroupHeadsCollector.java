@@ -67,25 +67,27 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
    * @throws IOException If I/O related errors occur
    */
-  public static AbstractAllGroupHeadsCollector<?> create(String groupField, Sort sortWithinGroup, DocValues.Type type, boolean diskResident) throws IOException {
+  @SuppressWarnings("unchecked")
+  public static <T extends AbstractAllGroupHeadsCollector.GroupHead<?>> DVAllGroupHeadsCollector<T> create(String groupField, Sort sortWithinGroup, DocValues.Type type, boolean diskResident) throws IOException {
     switch (type) {
       case VAR_INTS:
       case FIXED_INTS_8:
       case FIXED_INTS_16:
       case FIXED_INTS_32:
       case FIXED_INTS_64:
-        return new GeneralAllGroupHeadsCollector.Lng(groupField, type, sortWithinGroup, diskResident);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.Lng(groupField, type, sortWithinGroup, diskResident);
       case FLOAT_32:
       case FLOAT_64:
-        return new GeneralAllGroupHeadsCollector.Dbl(groupField, type, sortWithinGroup, diskResident);
+        return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.Dbl(groupField, type, sortWithinGroup, diskResident);
       case BYTES_FIXED_STRAIGHT:
       case BYTES_FIXED_DEREF:
       case BYTES_VAR_STRAIGHT:
       case BYTES_VAR_DEREF:
-        return new GeneralAllGroupHeadsCollector.BR(groupField, type, sortWithinGroup, diskResident);
+        return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.BR(groupField, type, sortWithinGroup, diskResident);
       case BYTES_VAR_SORTED:
       case BYTES_FIXED_SORTED:
-        return new GeneralAllGroupHeadsCollector.SortedBR(groupField, type, sortWithinGroup, diskResident);
+        return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.SortedBR(groupField, type, sortWithinGroup, diskResident);
       default:
         throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
     }

@@ -52,25 +52,30 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
    *                    heap usage is 4 bytes * initialSize. Not all concrete implementions use this!
    * @return the most optimal all groups collector implementation for grouping by {@link DocValues}
    */
-  public static DVAllGroupsCollector<?> create(String groupField, DocValues.Type type, boolean diskResident, int initialSize) {
+  @SuppressWarnings("unchecked")
+  public static <T> DVAllGroupsCollector<T> create(String groupField, DocValues.Type type, boolean diskResident, int initialSize) {
     switch (type) {
       case VAR_INTS:
       case FIXED_INTS_8:
       case FIXED_INTS_16:
       case FIXED_INTS_32:
       case FIXED_INTS_64:
-        return new Lng(groupField, type, diskResident);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVAllGroupsCollector) new Lng(groupField, type, diskResident);
       case FLOAT_32:
       case FLOAT_64:
-        return new Dbl(groupField, type, diskResident);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVAllGroupsCollector) new Dbl(groupField, type, diskResident);
       case BYTES_FIXED_STRAIGHT:
       case BYTES_FIXED_DEREF:
       case BYTES_VAR_STRAIGHT:
       case BYTES_VAR_DEREF:
-        return new BR(groupField, type, diskResident);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVAllGroupsCollector) new BR(groupField, type, diskResident);
       case BYTES_VAR_SORTED:
       case BYTES_FIXED_SORTED:
-        return new SortedBR(groupField, type, diskResident, initialSize);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVAllGroupsCollector) new SortedBR(groupField, type, diskResident, initialSize);
       default:
         throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
     }
@@ -87,7 +92,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
    * @param diskResident Wether the values to group by should be disk resident
    * @return the most optimal all groups collector implementation for grouping by {@link DocValues}
    */
-  public static DVAllGroupsCollector<?> create(String groupField, DocValues.Type type, boolean diskResident) {
+  public static <T> DVAllGroupsCollector<T> create(String groupField, DocValues.Type type, boolean diskResident) {
     return create(groupField, type, diskResident, DEFAULT_INITIAL_SIZE);
   }
 

@@ -507,7 +507,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, Type valueType) throws IOException {
-    AbstractAllGroupHeadsCollector<?> collector;
+    AbstractAllGroupHeadsCollector<? extends AbstractAllGroupHeadsCollector.GroupHead> collector;
     if (random.nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
       collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap<Object, Object>(), sortWithinGroup);
