@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @lucene.experimental
  */
-public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsCollector.GroupHead> extends AbstractAllGroupHeadsCollector<GH> {
+public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsCollector.GroupHead<?>> extends AbstractAllGroupHeadsCollector<GH> {
 
   private static final int DEFAULT_INITIAL_SIZE = 128;
 

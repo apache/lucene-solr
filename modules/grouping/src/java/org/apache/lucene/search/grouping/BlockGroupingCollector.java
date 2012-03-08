@@ -254,7 +254,7 @@ public class BlockGroupingCollector extends Collector {
     this.topNGroups = topNGroups;
 
     final SortField[] sortFields = groupSort.getSort();
-    comparators = new FieldComparator[sortFields.length];
+    comparators = new FieldComparator<?>[sortFields.length];
     compIDXEnd = comparators.length - 1;
     reversed = new int[sortFields.length];
     for (int i = 0; i < sortFields.length; i++) {
@@ -290,7 +290,7 @@ public class BlockGroupingCollector extends Collector {
    *  @param fillSortFields If true then the Comparable
    *     values for the sort fields will be set
    */
-  public TopGroups getTopGroups(Sort withinGroupSort, int groupOffset, int withinGroupOffset, int maxDocsPerGroup, boolean fillSortFields) throws IOException {
+  public TopGroups<?> getTopGroups(Sort withinGroupSort, int groupOffset, int withinGroupOffset, int maxDocsPerGroup, boolean fillSortFields) throws IOException {
 
     //if (queueFull) {
     //System.out.println("getTopGroups groupOffset=" + groupOffset + " topNGroups=" + topNGroups);
@@ -339,7 +339,7 @@ public class BlockGroupingCollector extends Collector {
       final Object[] groupSortValues;
 
       if (fillSortFields) {
-        groupSortValues = new Comparable[comparators.length];
+        groupSortValues = new Comparable<?>[comparators.length];
         for(int sortFieldIDX=0;sortFieldIDX<comparators.length;sortFieldIDX++) {
           groupSortValues[sortFieldIDX] = comparators[sortFieldIDX].value(og.comparatorSlot);
         }

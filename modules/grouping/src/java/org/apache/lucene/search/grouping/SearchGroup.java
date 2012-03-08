@@ -51,7 +51,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    SearchGroup that = (SearchGroup) o;
+    SearchGroup<?> that = (SearchGroup<?>) o;
 
     if (groupValue == null) {
       if (that.groupValue != null) {
@@ -113,7 +113,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
     // Only for assert
     private boolean neverEquals(Object _other) {
       if (_other instanceof MergedGroup) {
-        MergedGroup other = (MergedGroup) _other;
+        MergedGroup<?> other = (MergedGroup<?>) _other;
         if (groupValue == null) {
           assert other.groupValue != null;
         } else {
@@ -130,7 +130,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
       assert neverEquals(_other);
 
       if (_other instanceof MergedGroup) {
-        MergedGroup other = (MergedGroup) _other;
+        MergedGroup<?> other = (MergedGroup<?>) _other;
         if (groupValue == null) {
           return other == null;
         } else {
@@ -158,7 +158,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
 
     public GroupComparator(Sort groupSort) throws IOException {
       final SortField[] sortFields = groupSort.getSort();
-      comparators = new FieldComparator[sortFields.length];
+      comparators = new FieldComparator<?>[sortFields.length];
       reversed = new int[sortFields.length];
       for (int compIDX = 0; compIDX < sortFields.length; compIDX++) {
         final SortField sortField = sortFields[compIDX];

@@ -124,7 +124,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
       for(int shardIDX=0;shardIDX<shardGroups.length;shardIDX++) {
         //System.out.println("    shard=" + shardIDX);
         final TopGroups<T> shard = shardGroups[shardIDX];
-        final GroupDocs shardGroupDocs = shard.groups[groupIDX];
+        final GroupDocs<?> shardGroupDocs = shard.groups[groupIDX];
         if (groupValue == null) {
           if (shardGroupDocs.groupValue != null) {
             throw new IllegalArgumentException("group values differ across shards; you must pass same top groups to all shards' second-pass collector");
