@@ -120,7 +120,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
   }
 
   public TopGroups<GROUP_VALUE_TYPE> getTopGroups(int withinGroupOffset) {
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     final GroupDocs<GROUP_VALUE_TYPE>[] groupDocsResult = (GroupDocs<GROUP_VALUE_TYPE>[]) new GroupDocs[groups.size()];
 
     int groupIDX = 0;

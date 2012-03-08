@@ -111,7 +111,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
       }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     final GroupDocs<T>[] mergedGroupDocs = new GroupDocs[numGroups];
 
     final TopDocs[] shardTopDocs = new TopDocs[shardGroups.length];

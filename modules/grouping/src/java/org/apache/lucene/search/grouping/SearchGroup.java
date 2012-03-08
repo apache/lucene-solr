@@ -167,7 +167,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
       }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     public int compare(MergedGroup<T> group, MergedGroup<T> other) {
       if (group == other) {
         return 0;
@@ -202,7 +202,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
       groupsSeen = new HashMap<T,MergedGroup<T>>();
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     private void updateNextGroup(int topN, ShardIter<T> shard) {
       while(shard.iter.hasNext()) {
         final SearchGroup<T> group = shard.next();

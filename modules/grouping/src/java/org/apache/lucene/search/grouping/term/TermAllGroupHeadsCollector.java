@@ -18,11 +18,10 @@ package org.apache.lucene.search.grouping.term;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
-import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SentinelIntSet;
 
 import java.io.IOException;
 import java.util.*;
@@ -60,7 +59,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
    * @throws IOException If I/O related errors occur
    */
-  public static AbstractAllGroupHeadsCollector create(String groupField, Sort sortWithinGroup) throws IOException {
+  public static AbstractAllGroupHeadsCollector<?> create(String groupField, Sort sortWithinGroup) throws IOException {
     return create(groupField, sortWithinGroup, DEFAULT_INITIAL_SIZE);
   }
 
@@ -76,7 +75,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
    * @throws IOException If I/O related errors occur
    */
-  public static AbstractAllGroupHeadsCollector create(String groupField, Sort sortWithinGroup, int initialSize) throws IOException {
+  public static AbstractAllGroupHeadsCollector<?> create(String groupField, Sort sortWithinGroup, int initialSize) throws IOException {
     boolean sortAllScore = true;
     boolean sortAllFieldValue = true;
 
@@ -157,7 +156,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       for (GroupHead groupHead : groups.values()) {
-        for (FieldComparator comparator : groupHead.comparators) {
+        for (FieldComparator<?> comparator : groupHead.comparators) {
           comparator.setScorer(scorer);
         }
       }
@@ -165,8 +164,9 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
     class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<BytesRef> {
 
-      final FieldComparator[] comparators;
+      final FieldComparator<?>[] comparators;
 
+      @SuppressWarnings({"unchecked","rawtypes"})
       private GroupHead(BytesRef groupValue, Sort sort, int doc) throws IOException {
         super(groupValue, doc + readerContext.docBase);
         final SortField[] sortFields = sort.getSort();
@@ -184,7 +184,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
 
       public void updateDocHead(int doc) throws IOException {
-        for (FieldComparator comparator : comparators) {
+        for (FieldComparator<?> comparator : comparators) {
           comparator.copy(0, doc);
           comparator.setBottom(0);
         }

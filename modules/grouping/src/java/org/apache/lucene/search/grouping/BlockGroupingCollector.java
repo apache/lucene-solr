@@ -18,24 +18,13 @@ package org.apache.lucene.search.grouping;
  */
 
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexWriter;       // javadocs
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
+
+import java.io.IOException;
 
 /** BlockGroupingCollector performs grouping with a
  *  single pass collector, as long as you are grouping by a
@@ -316,7 +305,7 @@ public class BlockGroupingCollector extends Collector {
 
     final FakeScorer fakeScorer = new FakeScorer();
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     final GroupDocs<Object>[] groups = new GroupDocs[groupQueue.size() - groupOffset];
     for(int downTo=groupQueue.size()-groupOffset-1;downTo>=0;downTo--) {
       final OneGroup og = groupQueue.pop();
