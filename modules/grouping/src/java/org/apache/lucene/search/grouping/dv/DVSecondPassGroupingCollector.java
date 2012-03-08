@@ -19,12 +19,12 @@ package org.apache.lucene.search.grouping.dv;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Type; // javadocs
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
-import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SentinelIntSet;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -54,10 +54,10 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
    * @throws IOException    If I/O related errors occur
    */
   @SuppressWarnings("unchecked")
-  public static DVSecondPassGroupingCollector create(String groupField,
+  public static <T> DVSecondPassGroupingCollector<T> create(String groupField,
                                                      boolean diskResident,
                                                      DocValues.Type type,
-                                                     Collection<SearchGroup> searchGroups,
+                                                     Collection<SearchGroup<T>> searchGroups,
                                                      Sort groupSort,
                                                      Sort withinGroupSort,
                                                      int maxDocsPerGroup,
@@ -71,21 +71,21 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
       case FIXED_INTS_32:
       case FIXED_INTS_64:
         // Type erasure b/c otherwise we have inconvertible types...
-        return new Lng(groupField, type, diskResident, (Collection) searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
+        return (DVSecondPassGroupingCollector) new Lng(groupField, type, diskResident, (Collection) searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
       case FLOAT_32:
       case FLOAT_64:
         // Type erasure b/c otherwise we have inconvertible types...
-        return new Dbl(groupField, type, diskResident, (Collection) searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
+        return (DVSecondPassGroupingCollector) new Dbl(groupField, type, diskResident, (Collection) searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
       case BYTES_FIXED_STRAIGHT:
       case BYTES_FIXED_DEREF:
       case BYTES_VAR_STRAIGHT:
       case BYTES_VAR_DEREF:
         // Type erasure b/c otherwise we have inconvertible types...
-        return new BR(groupField, type, diskResident, (Collection) searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
+        return (DVSecondPassGroupingCollector) new BR(groupField, type, diskResident, (Collection) searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
       case BYTES_VAR_SORTED:
       case BYTES_FIXED_SORTED:
         // Type erasure b/c otherwise we have inconvertible types...
-        return new SortedBR(groupField, type, diskResident, (Collection) searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
+        return (DVSecondPassGroupingCollector) new SortedBR(groupField, type, diskResident, (Collection) searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
       default:
         throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
     }
@@ -192,7 +192,7 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
     private final BytesRef spare = new BytesRef();
     private final SentinelIntSet ordSet;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     SortedBR(String groupField,  DocValues.Type valueType, boolean diskResident, Collection<SearchGroup<BytesRef>> searchGroups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) throws IOException {
       super(groupField, valueType, diskResident, searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
       ordSet = new SentinelIntSet(groupMap.size(), -1);

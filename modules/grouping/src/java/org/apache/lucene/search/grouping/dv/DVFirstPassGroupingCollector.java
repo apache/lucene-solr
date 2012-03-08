@@ -19,8 +19,6 @@ package org.apache.lucene.search.grouping.dv;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Type; // javadocs
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
@@ -38,25 +36,42 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
   final boolean diskResident;
   final DocValues.Type valueType;
 
-  public static DVFirstPassGroupingCollector create(Sort groupSort, int topNGroups, String groupField, DocValues.Type type, boolean diskResident) throws IOException {
+  /**
+   * Constructs a {@link DVFirstPassGroupingCollector}.
+   * Selects and constructs the most optimal first pass collector implementation for grouping by {@link DocValues}.
+   *
+   * @param groupField      The field to group by
+   * @param topNGroups      The maximum top number of groups to return. Typically this equals to offset + rows.
+   * @param diskResident    Whether the values to group by should be disk resident
+   * @param type            The {@link org.apache.lucene.index.DocValues.Type} which is used to select a concrete implementation.
+   * @param groupSort       The sort used for the groups
+   * @return the most optimal first pass collector implementation for grouping by {@link DocValues}
+   * @throws IOException    If I/O related errors occur
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> DVFirstPassGroupingCollector<T> create(Sort groupSort, int topNGroups, String groupField, DocValues.Type type, boolean diskResident) throws IOException {
     switch (type) {
       case VAR_INTS:
       case FIXED_INTS_8:
       case FIXED_INTS_16:
       case FIXED_INTS_32:
       case FIXED_INTS_64:
-        return new Lng(groupSort, topNGroups, groupField, diskResident, type);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVFirstPassGroupingCollector) new Lng(groupSort, topNGroups, groupField, diskResident, type);
       case FLOAT_32:
       case FLOAT_64:
-        return new Dbl(groupSort, topNGroups, groupField, diskResident, type);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVFirstPassGroupingCollector) new Dbl(groupSort, topNGroups, groupField, diskResident, type);
       case BYTES_FIXED_STRAIGHT:
       case BYTES_FIXED_DEREF:
       case BYTES_VAR_STRAIGHT:
       case BYTES_VAR_DEREF:
-        return new BR(groupSort, topNGroups, groupField, diskResident, type);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVFirstPassGroupingCollector) new BR(groupSort, topNGroups, groupField, diskResident, type);
       case BYTES_VAR_SORTED:
       case BYTES_FIXED_SORTED:
-        return new SortedBR(groupSort, topNGroups, groupField, diskResident, type);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVFirstPassGroupingCollector) new SortedBR(groupSort, topNGroups, groupField, diskResident, type);
       default:
         throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
     }
