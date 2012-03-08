@@ -29,12 +29,7 @@ import java.util.Map;
 /**
  * @version $Id$
  */
-public class StrField extends FieldType {
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-    super.init(schema, args);    
-  }
-
+public class StrField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);

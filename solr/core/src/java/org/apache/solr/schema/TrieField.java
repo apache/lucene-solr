@@ -19,11 +19,8 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -54,7 +51,7 @@ import java.util.Date;
  * @see org.apache.lucene.search.NumericRangeQuery
  * @since solr 1.4
  */
-public class TrieField extends FieldType {
+public class TrieField extends PrimitiveFieldType {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
   protected int precisionStepArg = TrieField.DEFAULT_PRECISION_STEP;  // the one passed in or defaulted
@@ -70,6 +67,7 @@ public class TrieField extends FieldType {
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
+    super.init(schema, args);
     String p = args.remove("precisionStep");
     if (p != null) {
        precisionStepArg = Integer.parseInt(p);

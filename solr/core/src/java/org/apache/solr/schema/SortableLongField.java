@@ -47,11 +47,7 @@ import java.io.IOException;
  * @see TrieLongField
  * @deprecated use {@link LongField} or {@link TrieLongField} - will be removed in 5.x
  */
-public class SortableLongField extends FieldType {
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-  }
-
+public class SortableLongField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);

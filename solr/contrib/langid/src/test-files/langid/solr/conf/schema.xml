@@ -28,7 +28,7 @@
      $Name:  $
   -->
 
-<schema name="test" version="1.4">
+<schema name="test" version="1.5">
   <types>
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
     <!-- solr.TextField allows the specification of custom

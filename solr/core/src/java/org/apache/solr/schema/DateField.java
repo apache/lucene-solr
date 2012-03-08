@@ -96,7 +96,7 @@ import java.util.*;
  * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
  *
  */
-public class DateField extends FieldType {
+public class DateField extends PrimitiveFieldType {
 
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
 
@@ -123,10 +123,6 @@ public class DateField extends FieldType {
   // The easiest fix is to simply remove the 'Z' for the internal
   // format.
   
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-  }
-
   protected static String NOW = "NOW";
   protected static char Z = 'Z';
   

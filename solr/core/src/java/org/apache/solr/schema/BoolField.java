@@ -29,17 +29,12 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 
-import java.util.Map;
 import java.io.Reader;
 import java.io.IOException;
 /**
  * @version $Id$
  */
-public class BoolField extends FieldType {
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-  }
-
+public class BoolField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();
