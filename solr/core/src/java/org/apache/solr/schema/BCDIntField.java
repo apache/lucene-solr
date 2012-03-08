@@ -24,16 +24,11 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.solr.util.BCDUtils;
 import org.apache.solr.response.TextResponseWriter;
 
-import java.util.Map;
 import java.io.IOException;
 /**
  *
  */
-public class BCDIntField extends FieldType {
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-  }
-
+public class BCDIntField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);

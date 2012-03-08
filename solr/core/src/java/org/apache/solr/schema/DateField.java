@@ -34,7 +34,6 @@ import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.*;
 import org.apache.solr.util.DateMathParser;
 
 import java.io.IOException;
@@ -102,7 +101,7 @@ import java.util.*;
  * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
  *
  */
-public class DateField extends FieldType {
+public class DateField extends PrimitiveFieldType {
 
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
 
@@ -129,10 +128,6 @@ public class DateField extends FieldType {
   // The easiest fix is to simply remove the 'Z' for the internal
   // format.
   
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-  }
-
   protected static String NOW = "NOW";
   protected static char Z = 'Z';
   private static char[] Z_ARRAY = new char[] {Z};

@@ -17,7 +17,6 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FieldCache;
@@ -43,11 +42,7 @@ import java.io.IOException;
 /**
  *
  */
-public class BoolField extends FieldType {
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-  }
-
+public class BoolField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();

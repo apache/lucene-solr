@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<schema name="minimal-velocity" version="1.4">
+<schema name="minimal-velocity" version="1.5">
   <types>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
  </types>
 
 

@@ -53,11 +53,7 @@ import java.io.IOException;
  * @deprecated use {@link FloatField} or {@link TrieFloatField} - will be removed in 5.x
  */
 @Deprecated
-public class SortableFloatField extends FieldType {
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-  }
-
+public class SortableFloatField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);
