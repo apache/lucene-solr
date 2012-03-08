@@ -340,42 +340,29 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                     int seenTermCount = 0;
                     int shift;
                     int trigger; 
-                    if (totTermCount.get() < 10) {
+                    if (totTermCount.get() < 30) {
                       shift = 0;
                       trigger = 1;
                     } else {
-                      trigger = totTermCount.get()/10;
+                      trigger = totTermCount.get()/30;
                       shift = random.nextInt(trigger);
                     }
                     while(System.currentTimeMillis() < stopTimeMS) {
                       Term term = termEnum.term();
                       if (term == null) {
-                        if (seenTermCount == 0) {
-                          break;
-                        }
                         totTermCount.set(seenTermCount);
-                        seenTermCount = 0;
-                        if (totTermCount.get() < 10) {
-                          shift = 0;
-                          trigger = 1;
-                        } else {
-                          trigger = totTermCount.get()/10;
-                          //System.out.println("trigger " + trigger);
-                          shift = random.nextInt(trigger);
-                        }
-                        termEnum = s.getIndexReader().terms(new Term("body", ""));
-                        continue;
+                        break;
                       }
                       seenTermCount++;
-                      // search 10 terms
-                      if (trigger == 0) {
-                        trigger = 1;
-                      }
+                      // search 30 terms
                       if ((seenTermCount + shift) % trigger == 0) {
                         //if (VERBOSE) {
                         //System.out.println(Thread.currentThread().getName() + " now search body:" + term.utf8ToString());
                         //}
                         totHits.addAndGet(runQuery(s, new TermQuery(term)));
+                      }
+                      if (!termEnum.next()) {
+                        break;
                       }
                     }
                     //if (VERBOSE) {
