@@ -17,32 +17,20 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.*;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class TestBlockJoin extends LuceneTestCase {
 
@@ -149,7 +137,7 @@ public class TestBlockJoin extends LuceneTestCase {
     childDoc = s.doc(hits.scoreDocs[0].doc);
     //System.out.println("CHILD = " + childDoc + " docID=" + hits.scoreDocs[0].doc);
     assertEquals("java", childDoc.get("skill"));
-    assertEquals(2007, ((StoredField) childDoc.getField("year")).numericValue());
+    assertEquals(2007, (childDoc.getField("year")).numericValue());
     assertEquals("Lisa", getParentDoc(r, parentsFilter, hits.scoreDocs[0].doc).get("name"));
 
     // Test with filter on child docs:
@@ -338,7 +326,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
       if (VERBOSE) {
         StringBuilder sb = new StringBuilder();
-        sb.append("parentID=" + parentDoc.get("parentID"));
+        sb.append("parentID=").append(parentDoc.get("parentID"));
         for(int fieldID=0;fieldID<parentFields.length;fieldID++) {
           String s = parentDoc.get("parent" + fieldID);
           if (s != null) {
@@ -371,7 +359,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
         if (VERBOSE) {
           StringBuilder sb = new StringBuilder();
-          sb.append("childID=" + joinChildDoc.get("childID"));
+          sb.append("childID=").append(joinChildDoc.get("childID"));
           for(int fieldID=0;fieldID<childFields.length;fieldID++) {
             String s = joinChildDoc.get("child" + fieldID);
             if (s != null) {
@@ -755,7 +743,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
       FieldDoc hit0 = (FieldDoc) hit;
       FieldDoc joinHit0 = (FieldDoc) joinHit;
-      assertEquals(hit0.fields, joinHit0.fields);
+      assertArrayEquals(hit0.fields, joinHit0.fields);
     }
   }
 

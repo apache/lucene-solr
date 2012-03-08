@@ -17,32 +17,16 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
-
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;       // javadocs
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.FieldValueHitQueue;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreCachingWrappingScorer;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.Scorer.ChildScorer;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
+
+import java.io.IOException;
+import java.util.*;
 
 
 /** Collects parent document hits for a Query containing one more more
@@ -399,6 +383,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
     final FakeScorer fakeScorer = new FakeScorer();
 
+    @SuppressWarnings({"unchecked","rawtypes"})
     final GroupDocs<Integer>[] groups = new GroupDocs[sortedGroups.length - offset];
 
     for(int groupIDX=offset;groupIDX<sortedGroups.length;groupIDX++) {
