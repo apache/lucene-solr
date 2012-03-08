@@ -19,6 +19,7 @@ package org.apache.lucene.search.grouping.dv;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type; // javadocs
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
@@ -43,7 +44,7 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
    * @param groupField      The field to group by
    * @param topNGroups      The maximum top number of groups to return. Typically this equals to offset + rows.
    * @param diskResident    Whether the values to group by should be disk resident
-   * @param type            The {@link org.apache.lucene.index.DocValues.Type} which is used to select a concrete implementation.
+   * @param type            The {@link Type} which is used to select a concrete implementation.
    * @param groupSort       The sort used for the groups
    * @return the most optimal first pass collector implementation for grouping by {@link DocValues}
    * @throws IOException    If I/O related errors occur
