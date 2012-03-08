@@ -738,7 +738,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertNotNull( stats );
     
     assertEquals( 5.0, ((Double)stats.getMin()).doubleValue(), 0 );
-    assertEquals( 20.0, ((Double)stats.getMin()).doubleValue(), 0 );
+    assertEquals( 20.0, ((Double)stats.getMax()).doubleValue(), 0 );
     assertEquals( new Long(nums.length), stats.getCount() );
     assertEquals( new Long(0), stats.getMissing() );
     
@@ -782,7 +782,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals( inStockF.getCount(), inStockT.getCount() );
     assertEquals( stats.getCount().longValue(), inStockF.getCount()+inStockT.getCount() );
 
-    assertTrue( "check that min max faceted ok", ((Double)inStockF.getMin()).doubleValue() > ((Double)inStockF.getMax()).doubleValue() );
+    assertTrue( "check that min max faceted ok", ((Double)inStockF.getMin()).doubleValue() < ((Double)inStockF.getMax()).doubleValue() );
     assertEquals( "they have the same distribution", inStockF.getStddev(), inStockT.getStddev() );
   }
 
