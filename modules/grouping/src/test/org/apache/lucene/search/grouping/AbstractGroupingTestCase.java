@@ -17,30 +17,14 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Ignore;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Base class for grouping related tests.
  */
 // TODO (MvG) : The grouping tests contain a lot of code duplication. Try to move the common code to this class..
-@Ignore("Maven Surefire will attempt to run this test suite without an @Ignore annotation.")
-public class AbstractGroupingTestCase extends LuceneTestCase {
-  
+public abstract class AbstractGroupingTestCase extends LuceneTestCase {
   protected String generateRandomNonEmptyString() {
     String randomValue;
     do {
@@ -50,5 +34,4 @@ public class AbstractGroupingTestCase extends LuceneTestCase {
     } while ("".equals(randomValue));
     return randomValue;
   }
-
 }

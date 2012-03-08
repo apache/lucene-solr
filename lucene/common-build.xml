@@ -170,7 +170,7 @@
   <property name="junit.output.dir.backwards" location="${build.dir.backwards}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
   <property name="junit.reports.backwards" location="${build.dir.backwards}/test/reports"/>
-  <property name="junit.excludes" value=""/>
+  <property name="junit.excludes" value="**/Abstract*"/>
   <condition property="junit.details.formatter" 
       value="org.apache.tools.ant.taskdefs.optional.junit.BriefJUnitResultFormatter"
       else="org.apache.lucene.util.LuceneJUnitResultFormatter">
