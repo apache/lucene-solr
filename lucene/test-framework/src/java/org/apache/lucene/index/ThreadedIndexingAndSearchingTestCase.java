@@ -352,7 +352,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                     int seenTermCount = 0;
                     int shift;
                     int trigger; 
-                    if (totTermCount.get() < 10) {
+                    if (totTermCount.get() < 30) {
                       shift = 0;
                       trigger = 1;
                     } else {
