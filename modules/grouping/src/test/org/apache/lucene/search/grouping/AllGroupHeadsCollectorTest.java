@@ -122,34 +122,34 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     int maxDoc = reader.maxDoc();
 
     Sort sortWithinGroup = new Sort(new SortField("id", SortField.Type.INT, true));
-    AbstractAllGroupHeadsCollector c1 = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
-    indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
-    assertTrue(arrayContains(new int[]{2, 3, 5, 7}, c1.retrieveGroupHeads()));
-    assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, c1.retrieveGroupHeads(maxDoc), maxDoc));
+    AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
+    indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
+    assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
+    assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
-    AbstractAllGroupHeadsCollector c2 = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
-    indexSearcher.search(new TermQuery(new Term("content", "some")), c2);
-    assertTrue(arrayContains(new int[]{2, 3, 4}, c2.retrieveGroupHeads()));
-    assertTrue(openBitSetContains(new int[]{2, 3, 4}, c2.retrieveGroupHeads(maxDoc), maxDoc));
+    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
+    indexSearcher.search(new TermQuery(new Term("content", "some")), allGroupHeadsCollector);
+    assertTrue(arrayContains(new int[]{2, 3, 4}, allGroupHeadsCollector.retrieveGroupHeads()));
+    assertTrue(openBitSetContains(new int[]{2, 3, 4}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
-    AbstractAllGroupHeadsCollector c3 = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
-    indexSearcher.search(new TermQuery(new Term("content", "blob")), c3);
-    assertTrue(arrayContains(new int[]{1, 5}, c3.retrieveGroupHeads()));
-    assertTrue(openBitSetContains(new int[]{1, 5}, c3.retrieveGroupHeads(maxDoc), maxDoc));
+    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
+    indexSearcher.search(new TermQuery(new Term("content", "blob")), allGroupHeadsCollector);
+    assertTrue(arrayContains(new int[]{1, 5}, allGroupHeadsCollector.retrieveGroupHeads()));
+    assertTrue(openBitSetContains(new int[]{1, 5}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
     // STRING sort type triggers different implementation
     Sort sortWithinGroup2 = new Sort(new SortField("id", SortField.Type.STRING, true));
-    AbstractAllGroupHeadsCollector c4 = createRandomCollector(groupField, sortWithinGroup2, canUseIDV, valueType);
-    indexSearcher.search(new TermQuery(new Term("content", "random")), c4);
-    assertTrue(arrayContains(new int[]{2, 3, 5, 7}, c4.retrieveGroupHeads()));
-    assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, c4.retrieveGroupHeads(maxDoc), maxDoc));
+    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup2, canUseIDV, valueType);
+    indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
+    assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
+    assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
     Sort sortWithinGroup3 = new Sort(new SortField("id", SortField.Type.STRING, false));
-    AbstractAllGroupHeadsCollector c5 = createRandomCollector(groupField, sortWithinGroup3, canUseIDV, valueType);
-    indexSearcher.search(new TermQuery(new Term("content", "random")), c5);
+    allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup3, canUseIDV, valueType);
+    indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     // 7 b/c higher doc id wins, even if order of field is in not in reverse.
-    assertTrue(arrayContains(new int[]{0, 3, 4, 6}, c5.retrieveGroupHeads()));
-    assertTrue(openBitSetContains(new int[]{0, 3, 4, 6}, c5.retrieveGroupHeads(maxDoc), maxDoc));
+    assertTrue(arrayContains(new int[]{0, 3, 4, 6}, allGroupHeadsCollector.retrieveGroupHeads()));
+    assertTrue(openBitSetContains(new int[]{0, 3, 4, 6}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
     indexSearcher.getIndexReader().close();
     dir.close();
@@ -316,7 +316,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           final String searchTerm = "real" + random.nextInt(3);
           boolean sortByScoreOnly = random.nextBoolean();
           Sort sortWithinGroup = getRandomSort(sortByScoreOnly);
-          AbstractAllGroupHeadsCollector allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup, canUseIDV, valueType);
+          AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup, canUseIDV, valueType);
           s.search(new TermQuery(new Term("content", searchTerm)), allGroupHeadsCollector);
           int[] expectedGroupHeads = createExpectedGroupHeads(searchTerm, groupDocs, sortWithinGroup, sortByScoreOnly, fieldIdToDocID);
           int[] actualGroupHeads = allGroupHeadsCollector.retrieveGroupHeads();
@@ -506,11 +506,11 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     };
   }
 
-  private AbstractAllGroupHeadsCollector createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, Type valueType) throws IOException {
-    AbstractAllGroupHeadsCollector collector;
+  private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, Type valueType) throws IOException {
+    AbstractAllGroupHeadsCollector<?> collector;
     if (random.nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap(), sortWithinGroup);
+      collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap<Object, Object>(), sortWithinGroup);
     } else if (canUseIDV && random.nextBoolean()) {
       boolean diskResident = random.nextBoolean();
       collector =  DVAllGroupHeadsCollector.create(groupField, sortWithinGroup, valueType, diskResident);

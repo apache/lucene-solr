@@ -104,17 +104,17 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
     w.close();
 
-    AbstractAllGroupsCollector c1 = createRandomCollector(groupField, canUseIDV);
-    indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
-    assertEquals(4, c1.getGroupCount());
+    AbstractAllGroupsCollector<?> allGroupsCollector = createRandomCollector(groupField, canUseIDV);
+    indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupsCollector);
+    assertEquals(4, allGroupsCollector.getGroupCount());
 
-    AbstractAllGroupsCollector c2 = createRandomCollector(groupField, canUseIDV);
-    indexSearcher.search(new TermQuery(new Term("content", "some")), c2);
-    assertEquals(3, c2.getGroupCount());
+    allGroupsCollector = createRandomCollector(groupField, canUseIDV);
+    indexSearcher.search(new TermQuery(new Term("content", "some")), allGroupsCollector);
+    assertEquals(3, allGroupsCollector.getGroupCount());
 
-    AbstractAllGroupsCollector c3 = createRandomCollector(groupField, canUseIDV);
-    indexSearcher.search(new TermQuery(new Term("content", "blob")), c3);
-    assertEquals(2, c3.getGroupCount());
+    allGroupsCollector = createRandomCollector(groupField, canUseIDV);
+    indexSearcher.search(new TermQuery(new Term("content", "blob")), allGroupsCollector);
+    assertEquals(2, allGroupsCollector.getGroupCount());
 
     indexSearcher.getIndexReader().close();
     dir.close();
@@ -127,8 +127,8 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     }
   }
 
-  private AbstractAllGroupsCollector createRandomCollector(String groupField, boolean canUseIDV) throws IOException {
-    AbstractAllGroupsCollector selected;
+  private AbstractAllGroupsCollector<?> createRandomCollector(String groupField, boolean canUseIDV) throws IOException {
+    AbstractAllGroupsCollector<?> selected;
     if (random.nextBoolean() && canUseIDV) {
       boolean diskResident = random.nextBoolean();
       selected = DVAllGroupsCollector.create(groupField, Type.BYTES_VAR_SORTED, diskResident);
@@ -136,7 +136,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
       selected = new TermAllGroupsCollector(groupField);
     } else {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      selected = new FunctionAllGroupsCollector(vs, new HashMap());
+      selected = new FunctionAllGroupsCollector(vs, new HashMap<Object, Object>());
     }
 
     if (VERBOSE) {
