@@ -196,7 +196,7 @@ public class TestGrouping extends LuceneTestCase {
     return selected;
   }
 
-  private AbstractFirstPassGroupingCollector<?> createFirstPassCollector(String groupField, Sort groupSort, int topDocs, AbstractFirstPassGroupingCollector firstPassGroupingCollector) throws IOException {
+  private AbstractFirstPassGroupingCollector<?> createFirstPassCollector(String groupField, Sort groupSort, int topDocs, AbstractFirstPassGroupingCollector<?> firstPassGroupingCollector) throws IOException {
     if (DVFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
       boolean diskResident = random.nextBoolean();
       return DVFirstPassGroupingCollector.create(groupSort, topDocs, groupField, Type.BYTES_VAR_SORTED, diskResident);
@@ -235,7 +235,7 @@ public class TestGrouping extends LuceneTestCase {
 
   // Basically converts searchGroups from MutableValue to BytesRef if grouping by ValueSource
   @SuppressWarnings("unchecked")
-  private AbstractSecondPassGroupingCollector createSecondPassCollector(AbstractFirstPassGroupingCollector firstPassGroupingCollector,
+  private AbstractSecondPassGroupingCollector<?> createSecondPassCollector(AbstractFirstPassGroupingCollector<?> firstPassGroupingCollector,
                                                                         String groupField,
                                                                         Collection<SearchGroup<BytesRef>> searchGroups,
                                                                         Sort groupSort,
@@ -266,11 +266,11 @@ public class TestGrouping extends LuceneTestCase {
         mvalSearchGroups.add(sg);
       }
 
-      return new FunctionSecondPassGroupingCollector(mvalSearchGroups, groupSort, sortWithinGroup, maxDocsPerGroup, getScores, getMaxScores, fillSortFields, vs, new HashMap());
+      return new FunctionSecondPassGroupingCollector(mvalSearchGroups, groupSort, sortWithinGroup, maxDocsPerGroup, getScores, getMaxScores, fillSortFields, vs, new HashMap<Object, Object>());
     }
   }
 
-  private AbstractAllGroupsCollector createAllGroupsCollector(AbstractFirstPassGroupingCollector firstPassGroupingCollector,
+  private AbstractAllGroupsCollector<?> createAllGroupsCollector(AbstractFirstPassGroupingCollector<?> firstPassGroupingCollector,
                                                               String groupField) {
     if (firstPassGroupingCollector.getClass().isAssignableFrom(TermFirstPassGroupingCollector.class)) {
       return new TermAllGroupsCollector(groupField);
@@ -279,11 +279,11 @@ public class TestGrouping extends LuceneTestCase {
       return DVAllGroupsCollector.create(groupField, Type.BYTES_VAR_SORTED, diskResident);
     } else {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      return new FunctionAllGroupsCollector(vs, new HashMap());
+      return new FunctionAllGroupsCollector(vs, new HashMap<Object, Object>());
     }
   }
 
-  private void compareGroupValue(String expected, GroupDocs group) {
+  private void compareGroupValue(String expected, GroupDocs<?> group) {
     if (expected == null) {
       if (group.groupValue == null) {
         return;
@@ -306,7 +306,7 @@ public class TestGrouping extends LuceneTestCase {
     }
   }
 
-  private Collection<SearchGroup<BytesRef>> getSearchGroups(AbstractFirstPassGroupingCollector c, int groupOffset, boolean fillFields) {
+  private Collection<SearchGroup<BytesRef>> getSearchGroups(AbstractFirstPassGroupingCollector<?> c, int groupOffset, boolean fillFields) {
     if (TermFirstPassGroupingCollector.class.isAssignableFrom(c.getClass())) {
       return ((TermFirstPassGroupingCollector) c).getTopGroups(groupOffset, fillFields);
     } else if (FunctionFirstPassGroupingCollector.class.isAssignableFrom(c.getClass())) {
@@ -332,7 +332,7 @@ public class TestGrouping extends LuceneTestCase {
     return null;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private TopGroups<BytesRef> getTopGroups(AbstractSecondPassGroupingCollector c, int withinGroupOffset) {
     if (c.getClass().isAssignableFrom(TermSecondPassGroupingCollector.class)) {
       return ((TermSecondPassGroupingCollector) c).getTopGroups(withinGroupOffset);
@@ -425,6 +425,7 @@ public class TestGrouping extends LuceneTestCase {
     };
   }
 
+  @SuppressWarnings({"unchecked","rawtypes"})
   private Comparable<?>[] fillFields(GroupDoc d, Sort sort) {
     final SortField[] sortFields = sort.getSort();
     final Comparable<?>[] fields = new Comparable[sortFields.length];
@@ -514,7 +515,7 @@ public class TestGrouping extends LuceneTestCase {
     final int limit = Math.min(groupOffset + topNGroups, groups.size());
 
     final Comparator<GroupDoc> docSortComp = getComparator(docSort);
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     final GroupDocs<BytesRef>[] result = new GroupDocs[limit-groupOffset];
     int totalGroupedHitCount = 0;
     for(int idx=groupOffset;idx < limit;idx++) {
@@ -874,11 +875,11 @@ public class TestGrouping extends LuceneTestCase {
             System.out.println("TEST: groupSort=" + groupSort + " docSort=" + docSort + " searchTerm=" + searchTerm + " dF=" + r.docFreq("content", new BytesRef(searchTerm))  +" dFBlock=" + rBlocks.docFreq("content", new BytesRef(searchTerm)) + " topNGroups=" + topNGroups + " groupOffset=" + groupOffset + " docOffset=" + docOffset + " doCache=" + doCache + " docsPerGroup=" + docsPerGroup + " doAllGroups=" + doAllGroups + " getScores=" + getScores + " getMaxScores=" + getMaxScores);
           }
 
-          final AbstractFirstPassGroupingCollector c1 = createRandomFirstPassCollector("group", groupSort, groupOffset+topNGroups, canUseIDV);
+          final AbstractFirstPassGroupingCollector<?> c1 = createRandomFirstPassCollector("group", groupSort, groupOffset+topNGroups, canUseIDV);
           final CachingCollector cCache;
           final Collector c;
 
-          final AbstractAllGroupsCollector allGroupsCollector;
+          final AbstractAllGroupsCollector<?> allGroupsCollector;
           if (doAllGroups) {
             allGroupsCollector = createAllGroupsCollector(c1, "group");
           } else {
@@ -953,7 +954,7 @@ public class TestGrouping extends LuceneTestCase {
           ValueHolder<Boolean> idvBasedImplsUsedSharded = new ValueHolder<Boolean>(false);
           final TopGroups<BytesRef> topGroupsShards = searchShards(s, shards.subSearchers, query, groupSort, docSort,
               groupOffset, topNGroups, docOffset, docsPerGroup, getScores, getMaxScores, canUseIDV, preFlex, idvBasedImplsUsedSharded);
-          final AbstractSecondPassGroupingCollector c2;
+          final AbstractSecondPassGroupingCollector<?> c2;
           if (topGroups != null) {
 
             if (VERBOSE) {
@@ -1097,7 +1098,7 @@ public class TestGrouping extends LuceneTestCase {
 
           if (expectedGroups != null) {
             // Fixup scores for reader2
-            for (GroupDocs groupDocsHits : expectedGroups.groups) {
+            for (GroupDocs<?> groupDocsHits : expectedGroups.groups) {
               for(ScoreDoc hit : groupDocsHits.scoreDocs) {
                 final GroupDoc gd = groupDocsByID[hit.doc];
                 assertEquals(gd.id, hit.doc);
@@ -1110,7 +1111,7 @@ public class TestGrouping extends LuceneTestCase {
             final Map<Float,Float> termScoreMap = scoreMap.get(searchTerm);
             for(int groupSortIDX=0;groupSortIDX<sortFields.length;groupSortIDX++) {
               if (sortFields[groupSortIDX].getType() == SortField.Type.SCORE) {
-                for (GroupDocs groupDocsHits : expectedGroups.groups) {
+                for (GroupDocs<?> groupDocsHits : expectedGroups.groups) {
                   if (groupDocsHits.groupSortValues != null) {
                     //System.out.println("remap " + groupDocsHits.groupSortValues[groupSortIDX] + " to " + termScoreMap.get(groupDocsHits.groupSortValues[groupSortIDX]));
                     groupDocsHits.groupSortValues[groupSortIDX] = termScoreMap.get(groupDocsHits.groupSortValues[groupSortIDX]);
@@ -1123,7 +1124,7 @@ public class TestGrouping extends LuceneTestCase {
             final SortField[] docSortFields = docSort.getSort();
             for(int docSortIDX=0;docSortIDX<docSortFields.length;docSortIDX++) {
               if (docSortFields[docSortIDX].getType() == SortField.Type.SCORE) {
-                for (GroupDocs groupDocsHits : expectedGroups.groups) {
+                for (GroupDocs<?> groupDocsHits : expectedGroups.groups) {
                   for(ScoreDoc _hit : groupDocsHits.scoreDocs) {
                     FieldDoc hit = (FieldDoc) _hit;
                     if (hit.fields != null) {
@@ -1155,7 +1156,7 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   private void verifyShards(int[] docStarts, TopGroups<BytesRef> topGroups) {
-    for(GroupDocs group : topGroups.groups) {
+    for(GroupDocs<?> group : topGroups.groups) {
       for(int hitIDX=0;hitIDX<group.scoreDocs.length;hitIDX++) {
         final ScoreDoc sd = group.scoreDocs[hitIDX];
         assertEquals("doc=" + sd.doc + " wrong shard",
@@ -1176,8 +1177,8 @@ public class TestGrouping extends LuceneTestCase {
     // Run 1st pass collector to get top groups per shard
     final Weight w = topSearcher.createNormalizedWeight(query);
     final List<Collection<SearchGroup<BytesRef>>> shardGroups = new ArrayList<Collection<SearchGroup<BytesRef>>>();
-    List<AbstractFirstPassGroupingCollector> firstPassGroupingCollectors = new ArrayList<AbstractFirstPassGroupingCollector>();
-    AbstractFirstPassGroupingCollector firstPassCollector = null;
+    List<AbstractFirstPassGroupingCollector<?>> firstPassGroupingCollectors = new ArrayList<AbstractFirstPassGroupingCollector<?>>();
+    AbstractFirstPassGroupingCollector<?> firstPassCollector = null;
     for(int shardIDX=0;shardIDX<subSearchers.length;shardIDX++) {
       if (SlowCompositeReaderWrapper.class.isAssignableFrom(subSearchers[shardIDX].getIndexReader().getClass())) {
         canUseIDV = false;
@@ -1222,10 +1223,10 @@ public class TestGrouping extends LuceneTestCase {
 
     if (mergedTopGroups != null) {
       // Now 2nd pass:
-      @SuppressWarnings("unchecked")
+      @SuppressWarnings({"unchecked","rawtypes"})
       final TopGroups<BytesRef>[] shardTopGroups = new TopGroups[subSearchers.length];
       for(int shardIDX=0;shardIDX<subSearchers.length;shardIDX++) {
-        final AbstractSecondPassGroupingCollector secondPassCollector = createSecondPassCollector(firstPassGroupingCollectors.get(shardIDX),
+        final AbstractSecondPassGroupingCollector<?> secondPassCollector = createSecondPassCollector(firstPassGroupingCollectors.get(shardIDX),
             "group", mergedTopGroups, groupSort, docSort, docOffset + topNDocs, getScores, getMaxScores, true);
         subSearchers[shardIDX].search(w, secondPassCollector);
         shardTopGroups[shardIDX] = getTopGroups(secondPassCollector, 0);
