@@ -359,20 +359,14 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                       trigger = totTermCount.get()/30;
                       shift = random.nextInt(trigger);
                     }
-                    while (true) {
+                    while (System.currentTimeMillis() < stopTimeMS) {
                       BytesRef term = termsEnum.next();
                       if (term == null) {
-                        if (seenTermCount == 0) {
-                          break;
-                        }
                         totTermCount.set(seenTermCount);
                         break;
                       }
                       seenTermCount++;
                       // search 30 terms
-                      if (trigger == 0) {
-                        trigger = 1;
-                      }
                       if ((seenTermCount + shift) % trigger == 0) {
                         //if (VERBOSE) {
                         //System.out.println(Thread.currentThread().getName() + " now search body:" + term.utf8ToString());
