@@ -39,12 +39,12 @@ public class StartSolrJetty
     // Set some timeout options to make debugging easier.
     connector.setMaxIdleTime(1000 * 60 * 60);
     connector.setSoLingerTime(-1);
-    connector.setPort(8080);
+    connector.setPort(8983);
     server.setConnectors(new Connector[] { connector });
     
     WebAppContext bb = new WebAppContext();
     bb.setServer(server);
-    bb.setContextPath("/");
+    bb.setContextPath("/solr");
     bb.setWar("webapp/web");
 
 //    // START JMX SERVER
