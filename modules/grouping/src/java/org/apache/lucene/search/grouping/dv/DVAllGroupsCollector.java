@@ -52,7 +52,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
    *                    heap usage is 4 bytes * initialSize. Not all concrete implementions use this!
    * @return the most optimal all groups collector implementation for grouping by {@link DocValues}
    */
-  public static DVAllGroupsCollector create(String groupField, DocValues.Type type, boolean diskResident, int initialSize) {
+  public static DVAllGroupsCollector<?> create(String groupField, DocValues.Type type, boolean diskResident, int initialSize) {
     switch (type) {
       case VAR_INTS:
       case FIXED_INTS_8:
@@ -87,7 +87,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
    * @param diskResident Wether the values to group by should be disk resident
    * @return the most optimal all groups collector implementation for grouping by {@link DocValues}
    */
-  public static DVAllGroupsCollector create(String groupField, DocValues.Type type, boolean diskResident) {
+  public static DVAllGroupsCollector<?> create(String groupField, DocValues.Type type, boolean diskResident) {
     return create(groupField, type, diskResident, DEFAULT_INITIAL_SIZE);
   }
 
