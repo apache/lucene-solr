@@ -120,6 +120,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
 
     final FieldComparator<?>[] comparators;
 
+    @SuppressWarnings({"unchecked","rawtypes"})
     private GroupHead(MutableValue groupValue, Sort sort, int doc) throws IOException {
       super(groupValue, doc + readerContext.docBase);
       final SortField[] sortFields = sort.getSort();
