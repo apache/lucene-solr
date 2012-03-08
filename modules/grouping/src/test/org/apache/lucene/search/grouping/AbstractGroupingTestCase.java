@@ -24,6 +24,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Ignore;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,6 +38,7 @@ import static org.junit.Assert.fail;
  * Base class for grouping related tests.
  */
 // TODO (MvG) : The grouping tests contain a lot of code duplication. Try to move the common code to this class..
+@Ignore("Maven Surefire will attempt to run this test suite without an @Ignore annotation.")
 public class AbstractGroupingTestCase extends LuceneTestCase {
   
   protected String generateRandomNonEmptyString() {
