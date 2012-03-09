@@ -197,7 +197,7 @@ public class MultiPhraseQuery extends Query {
             return null;
         }
 
-        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(p, docFreq, positions.get(pos).intValue(), terms[0]);
+        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(p, docFreq, positions.get(pos).intValue(), terms);
       }
 
       // sort by increasing docFreq order
@@ -326,9 +326,19 @@ public class MultiPhraseQuery extends Query {
     }
 
     buffer.append("\"");
-    Iterator<Term[]> i = termArrays.iterator();
-    while (i.hasNext()) {
-      Term[] terms = i.next();
+    int lastPos = -1;
+    boolean first = true;
+    for (int i=0; i<termArrays.size(); i++) {
+      Term[] terms = termArrays.get(i);
+      int position = positions.get(i);
+      if (first) {
+        first = false;
+      } else {
+        buffer.append(" ");
+        for (int j=1; j<(position-lastPos); j++) {
+          buffer.append("? ");
+        }
+      }
       if (terms.length > 1) {
         buffer.append("(");
         for (int j = 0; j < terms.length; j++) {
@@ -340,8 +350,7 @@ public class MultiPhraseQuery extends Query {
       } else {
         buffer.append(terms[0].text());
       }
-      if (i.hasNext())
-        buffer.append(" ");
+      lastPos = position;
     }
     buffer.append("\"");
 

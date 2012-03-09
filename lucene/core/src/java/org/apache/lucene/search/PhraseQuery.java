@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.ArrayList;
 
@@ -122,23 +123,46 @@ public class PhraseQuery extends Query {
     final TermPositions postings;
     final int docFreq;
     final int position;
-    final Term term;
+    final Term[] terms;
+    final int nTerms; // for faster comparisons 
 
-    public PostingsAndFreq(TermPositions postings, int docFreq, int position, Term term) {
+    public PostingsAndFreq(TermPositions postings, int docFreq, int position, Term... terms) {
       this.postings = postings;
       this.docFreq = docFreq;
       this.position = position;
-      this.term = term;
+      nTerms = terms==null ? 0 : terms.length;
+      if (nTerms>0) {
+        if (terms.length==1) {
+          this.terms = terms;
+        } else {
+          Term[] terms2 = new Term[terms.length];
+          System.arraycopy(terms, 0, terms2, 0, terms.length);
+          Arrays.sort(terms2);
+          this.terms = terms2;
+        }
+      } else {
+        this.terms = null;
+      }
     }
 
     public int compareTo(PostingsAndFreq other) {
-      if (docFreq == other.docFreq) {
-        if (position == other.position) {
-          return term.compareTo(other.term);
-        }
+      if (docFreq != other.docFreq) {
+        return docFreq - other.docFreq;
+      }
+      if (position != other.position) {
         return position - other.position;
       }
-      return docFreq - other.docFreq;
+      if (nTerms != other.nTerms) {
+        return nTerms - other.nTerms;
+      }
+      if (nTerms == 0) {
+        return 0;
+      }
+      for (int i=0; i<terms.length; i++) {
+        int res = terms[i].compareTo(other.terms[i]);
+        if (res!=0) return res;
+      }
+      return 0;
     }
 
     @Override
@@ -147,7 +171,9 @@ public class PhraseQuery extends Query {
       int result = 1;
       result = prime * result + docFreq;
       result = prime * result + position;
-      result = prime * result + ((term == null) ? 0 : term.hashCode());
+      for (int i=0; i<nTerms; i++) {
+        result = prime * result + terms[i].hashCode(); 
+      }
       return result;
     }
 
@@ -159,10 +185,8 @@ public class PhraseQuery extends Query {
       PostingsAndFreq other = (PostingsAndFreq) obj;
       if (docFreq != other.docFreq) return false;
       if (position != other.position) return false;
-      if (term == null) {
-        if (other.term != null) return false;
-      } else if (!term.equals(other.term)) return false;
-      return true;
+      if (terms == null) return other.terms == null;
+      return Arrays.equals(terms, other.terms);
     }
   }
 

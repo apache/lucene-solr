@@ -27,10 +27,8 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
@@ -39,6 +37,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -154,6 +153,45 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     q.add(new Term("body", "chocolate"));
     q.add(new Term[] {new Term("body", "pie"), new Term("body", "tart")});
     assertEquals(2, searcher.search(q, 1).totalHits);
+    searcher.close();
+    r.close();
+    indexStore.close();
+  }
+
+  @Ignore //LUCENE-3821 fixes sloppy phrase scoring, except for this known problem 
+  public void testMultiSloppyWithRepeats() throws IOException {
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    add("a b c d e f g h i k", writer);
+    IndexReader r = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(r);
+    
+    MultiPhraseQuery q = new MultiPhraseQuery();
+    // this will fail, when the scorer would propagate [a] rather than [a,b],
+    q.add(new Term[] {new Term("body", "a"), new Term("body", "b")});
+    q.add(new Term[] {new Term("body", "a")});
+    q.setSlop(6);
+    assertEquals(1, searcher.search(q, 1).totalHits); // should match on "a b"
+    
+    searcher.close();
+    r.close();
+    indexStore.close();
+  }
+
+  public void testMultiExactWithRepeats() throws IOException {
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    add("a b c d e f g h i k", writer);
+    IndexReader r = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(r);
+    MultiPhraseQuery q = new MultiPhraseQuery();
+    q.add(new Term[] {new Term("body", "a"), new Term("body", "d")}, 0);
+    q.add(new Term[] {new Term("body", "a"), new Term("body", "f")}, 2);
+    assertEquals(1, searcher.search(q, 1).totalHits); // should match on "a b"
     searcher.close();
     r.close();
     indexStore.close();
