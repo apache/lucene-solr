@@ -68,7 +68,7 @@ public class ChecksumIndexOutput extends IndexOutput {
 
   @Override
   public void seek(long pos) {
-    throw new RuntimeException("not allowed");    
+    throw new UnsupportedOperationException();    
   }
 
   /**
