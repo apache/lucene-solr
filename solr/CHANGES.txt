@@ -265,6 +265,9 @@ Other Changes
 * SOLR-3077: Better error messages when attempting to use "blank" field names 
   (Antony Stubbs via hossman)
 
+* SOLR-2712: expecting fl=score to return all fields is now deprecated.  
+  In solr 4.0, this will only return the score.  (ryan)
+
 
 Build
 ----------------------
