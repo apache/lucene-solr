@@ -67,7 +67,7 @@ public class ChecksumIndexInput extends IndexInput {
 
   @Override
   public void seek(long pos) {
-    throw new RuntimeException("not allowed");
+    throw new UnsupportedOperationException();
   }
 
   @Override

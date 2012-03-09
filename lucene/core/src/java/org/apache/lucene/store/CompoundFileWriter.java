@@ -153,7 +153,7 @@ final class CompoundFileWriter implements Closeable{
    */
   public void close() throws IOException {
     if (closed) {
-      throw new IllegalStateException("already closed");
+      return;
     }
     IOException priorException = null;
     IndexOutput entryTableOut = null;
@@ -192,7 +192,7 @@ final class CompoundFileWriter implements Closeable{
 
   private final void ensureOpen() {
     if (closed) {
-      throw new IllegalStateException("CFS Directory is already closed");
+      throw new AlreadyClosedException("CFS Directory is already closed");
     }
   }
 
@@ -260,7 +260,7 @@ final class CompoundFileWriter implements Closeable{
       } else {
         entry.dir = this.directory;
         if (directory.fileExists(name)) {
-          throw new IOException("File already exists");
+          throw new IllegalArgumentException("File " + name + " already exists");
         }
         out = new DirectCFSIndexOutput(directory.createOutput(name, context), entry,
             true);

@@ -682,7 +682,7 @@ public class TestCompoundFile extends LuceneTestCase
     try {
       newDir.copy(csw, "d1", "d1", newIOContext(random));
       fail("file does already exist");
-    } catch (IOException e) {
+    } catch (IllegalArgumentException e) {
       //
     }
     out.close();
