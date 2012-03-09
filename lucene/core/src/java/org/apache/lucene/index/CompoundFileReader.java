@@ -131,8 +131,9 @@ class CompoundFileReader extends Directory {
   
   @Override
   public synchronized void close() throws IOException {
-    if (stream == null)
-      throw new IOException("Already closed");
+    if (stream == null) {
+      return;
+    }
     
     entries.clear();
     stream.close();
