@@ -84,6 +84,7 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.RunListener;
+import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 
 /**
@@ -176,7 +177,6 @@ public abstract class LuceneTestCase extends Assert {
   
   private int savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
 
-  private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
   /**
    * @see SubclassSetupTeardownRule  
    */
@@ -187,17 +187,6 @@ public abstract class LuceneTestCase extends Assert {
    */
   private boolean teardownCalled;
 
-  private static class UncaughtExceptionEntry {
-    public final Thread thread;
-    public final Throwable exception;
-    
-    public UncaughtExceptionEntry(Thread thread, Throwable exception) {
-      this.thread = thread;
-      this.exception = exception;
-    }
-  }
-  private List<UncaughtExceptionEntry> uncaughtExceptions = Collections.synchronizedList(new ArrayList<UncaughtExceptionEntry>());
-  
   private static Locale locale;
   private static Locale savedLocale;
   private static TimeZone timeZone;
@@ -226,11 +215,37 @@ public abstract class LuceneTestCase extends Assert {
    * Stores the currently class under test.
    */
   private static final StoreClassNameRule classNameRule = new StoreClassNameRule(); 
-  
+
+  /**
+   * Catch any uncaught exceptions on threads within the suite scope and fail the test/
+   * suite if they happen.
+   */
+  private static final UncaughtExceptionsRule uncaughtExceptionsRule = new UncaughtExceptionsRule(); 
+
+  /**
+   * This controls how suite-level rules are nested. It is important that _all_ rules declared
+   * in {@link LuceneTestCase} are executed in proper order if they depend on each 
+   * other.
+   */
   @ClassRule
   public static TestRule classRules = RuleChain
     .outerRule(new SystemPropertiesInvariantRule())
-    .around(classNameRule);
+    .around(classNameRule)
+    .around(uncaughtExceptionsRule);
+
+  /**
+   * This controls how individual test rules are nested. It is important that _all_ rules declared
+   * in {@link LuceneTestCase} are executed in proper order if they depend on each 
+   * other.
+   */
+  @Rule
+  public final TestRule ruleChain = RuleChain
+    .outerRule(new RememberThreadRule())
+    .around(new UncaughtExceptionsRule())
+    .around(new TestResultInterceptorRule())
+    .around(new SystemPropertiesInvariantRule())
+    .around(new InternalSetupTeardownRule())
+    .around(new SubclassSetupTeardownRule());
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
@@ -334,6 +349,10 @@ public abstract class LuceneTestCase extends Assert {
     // if we had afterClass failures, get some debugging information
     if (problem != null) {
       reportPartialFailureInfo();      
+    }
+
+    if (uncaughtExceptionsRule.hasUncaughtExceptions()) {
+      testsFailed = true;
     }
     
     // if verbose or tests failed, report some information back
@@ -494,19 +513,6 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * This controls how rules are nested. It is important that _all_ rules declared
-   * in {@link LuceneTestCase} are executed in proper order if they depend on each 
-   * other.
-   */
-  @Rule
-  public final TestRule ruleChain = RuleChain
-    .outerRule(new RememberThreadRule())
-    .around(new TestResultInterceptorRule())
-    .around(new SystemPropertiesInvariantRule())
-    .around(new InternalSetupTeardownRule())
-    .around(new SubclassSetupTeardownRule());
-
-  /**
    * Internal {@link LuceneTestCase} setup before/after each test.
    */
   private class InternalSetupTeardownRule implements TestRule {
@@ -515,15 +521,26 @@ public abstract class LuceneTestCase extends Assert {
       return new Statement() {
         @Override
         public void evaluate() throws Throwable {
-          setUpInternal();
           // We simulate the previous behavior of @Before in that
           // if any statement below us fails, we just propagate the original
           // exception and do not call tearDownInternal.
+          setUpInternal();
+          final ArrayList<Throwable> errors = new ArrayList<Throwable>();
+          try {
+            // But we will collect errors from statements below and wrap them
+            // into a multiple so that tearDownInternal is called.
+            base.evaluate();
+          } catch (Throwable t) {
+            errors.add(t);
+          }
+          
+          try {
+            tearDownInternal();
+          } catch (Throwable t) {
+            errors.add(t);
+          }
 
-          // TODO: [DW] should this really be this way? We could use
-          // JUnit's MultipleFailureException and propagate both?
-          base.evaluate();
-          tearDownInternal();
+          MultipleFailureException.assertEmpty(errors);
         }
       };
     }
@@ -536,36 +553,9 @@ public abstract class LuceneTestCase extends Assert {
     seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
     
-    savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-    Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-      public void uncaughtException(Thread t, Throwable e) {
-        // org.junit.internal.AssumptionViolatedException in older releases
-        // org.junit.Assume.AssumptionViolatedException in recent ones
-        if (e.getClass().getName().endsWith("AssumptionViolatedException")) {
-          String where = "<unknown>";
-          for (StackTraceElement elem : e.getStackTrace()) {
-            if ( ! elem.getClassName().startsWith("org.junit")) {
-              where = elem.toString();
-              break;
-            }
-          }
-          System.err.print("NOTE: Assume failed at " + where + " (ignored):");
-          if (VERBOSE) {
-            System.err.println();
-            e.printStackTrace(System.err);
-          } else {
-            System.err.print(" ");
-            System.err.println(e.getMessage());
-          }
-        } else {
-          testsFailed = true;
-          uncaughtExceptions.add(new UncaughtExceptionEntry(t, e));
-          if (savedUncaughtExceptionHandler != null)
-            savedUncaughtExceptionHandler.uncaughtException(t, e);
-        }
-      }
-    });
-    
+    Thread.currentThread().setName("LTC-main#seed=" + 
+        new ThreeLongs(staticSeed, seed, LuceneTestCaseRunner.runnerSeed));
+
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
   }
 
@@ -674,15 +664,7 @@ public abstract class LuceneTestCase extends Assert {
     // this won't throw any exceptions or fail the test
     // if we change this, then change this logic
     checkRogueThreadsAfter();
-    // restore the default uncaught exception handler
-    Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
-    
-    try {
-      checkUncaughtExceptionsAfter();
-    } catch (Throwable t) {
-      if (problem == null) problem = t;
-    }
-    
+
     try {
       // calling assertSaneFieldCaches here isn't as useful as having test 
       // classes call it directly from the scope where the index readers 
@@ -709,7 +691,7 @@ public abstract class LuceneTestCase extends Assert {
       throw new RuntimeException(problem);
     }
   }
-  
+
   /** check if the test still has threads running, we don't want them to 
    *  fail in a subsequent test and pass the blame to the wrong test */
   private void checkRogueThreadsAfter() {
@@ -718,26 +700,10 @@ public abstract class LuceneTestCase extends Assert {
       if (!testsFailed && rogueThreads > 0) {
         System.err.println("RESOURCE LEAK: test method: '" + getName()
             + "' left " + rogueThreads + " thread(s) running");
-        // TODO: fail, but print seed for now
-        if (uncaughtExceptions.isEmpty()) {
-          reportAdditionalFailureInfo();
-        }
       }
     }
   }
   
-  /** see if any other threads threw uncaught exceptions, and fail the test if so */
-  private void checkUncaughtExceptionsAfter() {
-    if (!uncaughtExceptions.isEmpty()) {
-      System.err.println("The following exceptions were thrown by threads:");
-      for (UncaughtExceptionEntry entry : uncaughtExceptions) {
-        System.err.println("*** Thread: " + entry.thread.getName() + " ***");
-        entry.exception.printStackTrace(System.err);
-      }
-      fail("Some threads threw uncaught exceptions!");
-    }
-  }
-
   private final static int THREAD_STOP_GRACE_MSEC = 10;
   // jvm-wide list of 'rogue threads' we found, so they only get reported once.
   private final static IdentityHashMap<Thread,Boolean> rogueThreads = new IdentityHashMap<Thread,Boolean>();
