@@ -1127,7 +1127,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     // test addition of score field
 
     args = new HashMap<String,String>();
-    args.put("fl","score ");
+    args.put("fl","score,* ");
     req = new LocalSolrQueryRequest(h.getCore(), "id:44",
                                     "standard", 0, 10, args);
     assertQ(req
@@ -1190,7 +1190,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
             ,"//@maxScore = //doc/float[@name='score']"
             );
     args = new HashMap<String,String>();
-    args.put("fl","score");
+    args.put("fl","*,score");
     args.put("defType","lucenePlusSort");
     req = new LocalSolrQueryRequest(h.getCore(), "id:44;id desc;",
                                     "standard", 0, 0 , args);
