@@ -7,14 +7,12 @@ import org.junit.runners.model.Statement;
 public class StoreClassNameRule implements TestRule {
   private volatile Class<?> testClass;
 
-  @Override
   public Statement apply(final Statement s, final Description d) {
     if (!d.isSuite()) {
       throw new IllegalArgumentException("This is a @ClassRule (applies to suites only).");
     }
 
     return new Statement() {
-      @Override
       public void evaluate() throws Throwable {
         try {
           testClass = d.getTestClass();

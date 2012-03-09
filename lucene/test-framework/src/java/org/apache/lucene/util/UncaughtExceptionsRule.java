@@ -41,7 +41,6 @@ public class UncaughtExceptionsRule implements TestRule {
   // Lock on uncaughtExceptions to access.
   private final List<UncaughtExceptionEntry> uncaughtExceptions = new ArrayList<UncaughtExceptionEntry>();
 
-  @Override
   public Statement apply(final Statement s, final Description d) {
     return new Statement() {
       public void evaluate() throws Throwable {
