@@ -25,6 +25,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.SolrQueryResponse;
 
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashSet;
@@ -85,7 +88,16 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       mBeanInfo.add("description", m.getDescription());
       mBeanInfo.add("srcId", m.getSourceId());
       mBeanInfo.add("src", m.getSource());
-      mBeanInfo.add("docs", m.getDocs());
+      
+      // Use an external form
+      URL[] urls = m.getDocs();
+      if(urls!=null) {
+        List<String> docs = new ArrayList<String>(urls.length);
+        for(URL url : urls) {
+          docs.add(url.toExternalForm());
+        }
+        mBeanInfo.add("docs", docs);
+      }
       
       if (req.getParams().getFieldBool(key, "stats", false))
         mBeanInfo.add("stats", m.getStatistics());
