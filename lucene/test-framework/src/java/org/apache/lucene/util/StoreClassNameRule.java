@@ -5,7 +5,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public class StoreClassNameRule implements TestRule {
-  private volatile Class<?> testClass;
+  private volatile Description description;
 
   @Override
   public Statement apply(final Statement s, final Description d) {
@@ -17,10 +17,10 @@ public class StoreClassNameRule implements TestRule {
       @Override
       public void evaluate() throws Throwable {
         try {
-          testClass = d.getTestClass();
+          description = d; 
           s.evaluate();
         } finally {
-          testClass = null;
+          description = null;
         }
       }
     };
@@ -30,10 +30,10 @@ public class StoreClassNameRule implements TestRule {
    * Returns the test class currently executing in this rule.
    */
   public Class<?> getTestClass() {
-    Class<?> clz = testClass;
-    if (clz == null) {
+    Description localDescription = description;
+    if (localDescription == null) {
       throw new RuntimeException("The rule is not currently executing.");
     }
-    return clz;
+    return localDescription.getTestClass();
   }
 }
