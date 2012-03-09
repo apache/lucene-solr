@@ -932,6 +932,9 @@ Documentation
 
 Build
 
+* LUCENE-3857: exceptions from other threads in beforeclass/etc do not fail 
+  the test (Dawid Weiss)
+
 * LUCENE-3847: LuceneTestCase will now check for modifications of System 
   properties before and after each test (and suite). If changes are detected,
   the test will fail. A rule can be used to reset system properties to
