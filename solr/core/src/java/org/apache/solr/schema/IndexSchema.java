@@ -920,7 +920,7 @@ public final class IndexSchema {
     /***  REMOVED -YCS
     if (defaultFieldType != null) return new SchemaField(fieldName,defaultFieldType);
     ***/
-    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"undefined field "+fieldName);
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"undefined field: \""+fieldName+"\"");
   }
 
   /**

@@ -674,6 +674,10 @@ Other Changes
 * SOLR-3140: Upgrade schema version to 1.5, where omitNorms defaults to "true" for all
   primitive (non-analyzed) field types such as int, float, date, bool, string.. (janhoy)
 
+* SOLR-3077: Better error messages when attempting to use "blank" field names 
+  (Antony Stubbs via hossman)
+
+
 Build
 ----------------------
 * SOLR-2487: Add build target to package war without slf4j jars (janhoy)
