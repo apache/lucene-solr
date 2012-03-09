@@ -209,11 +209,9 @@ public abstract class LuceneTestCase extends Assert {
   private static HashMap<String, String> restoreProperties = new HashMap<String,String>();
 
   protected static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
-  
-  /** @deprecated: until we fix no-fork problems in solr tests */
-  @Deprecated
-  static List<String> testClassesRun = new ArrayList<String>();
-  
+
+  private static List<String> testClassesRun = new ArrayList<String>();
+
   private static void initRandom() {
     assert !random.initialized;
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l1;
@@ -224,11 +222,20 @@ public abstract class LuceneTestCase extends Assert {
   @Deprecated
   private static boolean icuTested = false;
 
+  /**
+   * Stores the currently class under test.
+   */
+  private static final StoreClassNameRule classNameRule = new StoreClassNameRule(); 
+  
   @ClassRule
-  public static TestRule classRules = RuleChain.outerRule(new SystemPropertiesInvariantRule());
+  public static TestRule classRules = RuleChain
+    .outerRule(new SystemPropertiesInvariantRule())
+    .around(classNameRule);
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
+    testClassesRun.add(getTestClass().getSimpleName());
+
     initRandom();
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
@@ -1416,6 +1423,13 @@ public abstract class LuceneTestCase extends Assert {
     return sb.toString();
   }
 
+  /**
+   * Return the current class being tested.
+   */
+  public static Class<?> getTestClass() {
+    return classNameRule.getTestClass();
+  }
+  
   // recorded seed: for beforeClass
   private static long staticSeed;
   // seed for individual test methods, changed in @before
