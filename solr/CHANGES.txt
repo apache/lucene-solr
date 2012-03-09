@@ -234,6 +234,9 @@ New Features
 
 * SOLR-2898: Support grouped faceting. (Martijn van Groningen)
 
+* SOLR-2202: Currency FieldType, whith support for currencies and exchange rates
+  (Greg Fodor & Andrew Morrison via janhoy, rmuir, Uwe Schindler)
+
 Optimizations
 ----------------------
 

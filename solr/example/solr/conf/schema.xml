@@ -455,6 +455,15 @@
    -->
     <fieldtype name="geohash" class="solr.GeoHashField"/>
 
+   <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
+        Parameters:
+          defaultCurrency: Specifies the default currency if none specified. Defaults to "USD"
+          providerClass:   Lets you plug in other exchange backend. Defaults to FileExchangeRateProvider
+                           The FileExchangeRateProvider takes one parameter:
+                             currencyConfig: name of an xml file holding exhange rates
+   -->
+    <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" defaultCurrency="USD"/>
+
    <!-- some examples for different languages (generally ordered by ISO code) -->
 
     <!-- Arabic -->
@@ -920,7 +929,7 @@
    <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
 
    <!-- Type used to index the lat and lon components for the "location" FieldType -->
-   <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false"/>
+   <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false" />
 
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
@@ -933,6 +942,7 @@
    <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
 
    <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_c"   type="currency" indexed="true"  stored="true"/>
 
    <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
    <dynamicField name="attr_*" type="text_general" indexed="true" stored="true" multiValued="true"/>
@@ -968,6 +978,9 @@
    <copyField source="features" dest="text"/>
    <copyField source="includes" dest="text"/>
    <copyField source="manu" dest="manu_exact"/>
+
+   <!-- Copy the price into a currency enabled field (default USD) -->
+   <copyField source="price" dest="price_c"/>
 	
    <!-- Above, multiple source fields are copied to the [text] field. 
 	  Another way to map multiple source fields to the same 

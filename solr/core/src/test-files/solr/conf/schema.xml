@@ -394,6 +394,10 @@
 
   <fieldType name="latLon" class="solr.LatLonType" subFieldType="double"/>
 
+  <!-- Currency type -->
+  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml"/>
+  <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="org.apache.solr.schema.MockExchangeRateProvider" foo="bar" />
+
   <!--  some per-field similarity examples -->
   
   <!--  specify a Similarity classname directly -->
@@ -467,6 +471,9 @@
 
    <field name="point10" type="tenD" indexed="true" stored="true" multiValued="false"/>
 
+   <!-- Test currency -->
+   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
+   <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
 
    <!-- test different combinations of indexed and stored -->
    <field name="bind" type="boolean" indexed="true" stored="false"/>
