@@ -22,6 +22,16 @@
 
 package org.apache.solr.search;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queries.function.BoostedQuery;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -30,7 +40,6 @@ import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -38,8 +47,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.analysis.*;
-
-import java.util.*;
 
 /**
  * An advanced multi-field query parser.
@@ -74,7 +81,10 @@ class ExtendedDismaxQParser extends QParser {
 
   /** shorten the class references for utilities */
   private static interface DMP extends DisMaxParams {
-    /* :NOOP */
+    /**
+     * User fields. The fields that can be used by the end user to create field-specific queries.
+     */
+    public static String UF = "uf";
   }
 
 
@@ -82,15 +92,30 @@ class ExtendedDismaxQParser extends QParser {
     super(qstr, localParams, params, req);
   }
 
-  Map<String,Float> queryFields;
-  Query parsedUserQuery;
+  /** 
+   * The field names specified by 'qf' that (most) clauses will 
+   * be queried against 
+   */
+  private Map<String,Float> queryFields;
+   
+  /** 
+   * The field names specified by 'uf' that users are 
+   * allowed to include literally in their query string.  The Float
+   * boost values will be applied automaticly to any clause using that 
+   * field name. '*' will be treated as an alias for any 
+   * field that exists in the schema. Wildcards are allowed to
+   * express dynamicFields.
+   */
+  private UserFields userFields;
 
+  private Query parsedUserQuery;
 
   private String[] boostParams;
   private String[] multBoosts;
   private List<Query> boostQueries;
   private Query altUserQuery;
   private QParser altQParser;
+  private SolrParams solrParams;
 
 
   @Override
@@ -98,11 +123,13 @@ class ExtendedDismaxQParser extends QParser {
     SolrParams localParams = getLocalParams();
     SolrParams params = getParams();
     
-    SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
+    solrParams = SolrParams.wrapDefaults(localParams, params);
 
     final String minShouldMatch = 
       DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams);
 
+    userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
+    
     queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
     if (0 == queryFields.size()) {
       queryFields.put(req.getSchema().getDefaultSearchFieldName(), 1.0f);
@@ -158,75 +185,59 @@ class ExtendedDismaxQParser extends QParser {
         new ExtendedSolrQueryParser(this, IMPOSSIBLE_FIELD_NAME);
       up.addAlias(IMPOSSIBLE_FIELD_NAME,
                 tiebreaker, queryFields);
+      addAliasesFromRequest(up, tiebreaker);
       up.setPhraseSlop(qslop);     // slop for explicit user phrase queries
       up.setAllowLeadingWildcard(true);
 
       // defer escaping and only do if lucene parsing fails, or we need phrases
       // parsing fails.  Need to sloppy phrase queries anyway though.
       List<Clause> clauses = null;
-      boolean specialSyntax = false;
       int numPluses = 0;
       int numMinuses = 0;
-      int numOptional = 0;
-      int numAND = 0;
       int numOR = 0;
       int numNOT = 0;
-      boolean sawLowerAnd=false;
-      boolean sawLowerOr=false;
 
       clauses = splitIntoClauses(userQuery, false);
       for (Clause clause : clauses) {
-        if (!clause.isPhrase && clause.hasSpecialSyntax) {
-          specialSyntax = true;
-        }
         if (clause.must == '+') numPluses++;
         if (clause.must == '-') numMinuses++;
         if (clause.isBareWord()) {
           String s = clause.val;
-          if ("AND".equals(s)) {
-            numAND++;
-          } else if ("OR".equals(s)) {
+          if ("OR".equals(s)) {
             numOR++;
           } else if ("NOT".equals(s)) {
             numNOT++;
-          } else if (lowercaseOperators) {
-            if ("and".equals(s)) {
-              numAND++;
-              sawLowerAnd=true;
-            } else if ("or".equals(s)) {
-              numOR++;
-              sawLowerOr=true;
-            }
+          } else if (lowercaseOperators && "or".equals(s)) {
+            numOR++;
           }
         }
       }
-      numOptional = clauses.size() - (numPluses + numMinuses);
 
-      // convert lower or mixed case operators to uppercase if we saw them.
+      // Always rebuild mainUserQuery from clauses to catch modifications from splitIntoClauses
+      // This was necessary for userFields modifications to get propagated into the query.
+      // Convert lower or mixed case operators to uppercase if we saw them.
       // only do this for the lucene query part and not for phrase query boosting
       // since some fields might not be case insensitive.
       // We don't use a regex for this because it might change and AND or OR in
       // a phrase query in a case sensitive field.
-      if (sawLowerAnd || sawLowerOr) {
-        StringBuilder sb = new StringBuilder();
-        for (int i=0; i<clauses.size(); i++) {
-          Clause clause = clauses.get(i);
-          String s = clause.raw;
-          // and and or won't be operators at the start or end
-          if (i>0 && i+1<clauses.size()) {
-            if ("AND".equalsIgnoreCase(s)) {
-              s="AND";
-            } else if ("OR".equalsIgnoreCase(s)) {
-              s="OR";
-            }
+      StringBuilder sb = new StringBuilder();
+      for (int i=0; i<clauses.size(); i++) {
+        Clause clause = clauses.get(i);
+        String s = clause.raw;
+        // and and or won't be operators at the start or end
+        if (i>0 && i+1<clauses.size()) {
+          if ("AND".equalsIgnoreCase(s)) {
+            s="AND";
+          } else if ("OR".equalsIgnoreCase(s)) {
+            s="OR";
           }
-          sb.append(s);
-          sb.append(' ');
         }
-
-        mainUserQuery = sb.toString();
+        sb.append(s);
+        sb.append(' ');
       }
-
+      
+      mainUserQuery = sb.toString();
+      
       // For correct lucene queries, turn off mm processing if there
       // were explicit operators (except for AND).
       boolean doMinMatched = (numOR + numNOT + numPluses + numMinuses) == 0;
@@ -252,9 +263,8 @@ class ExtendedDismaxQParser extends QParser {
         }
       }
 
-
       if (parsedUserQuery == null) {
-        StringBuilder sb = new StringBuilder();
+        sb = new StringBuilder();
         for (Clause clause : clauses) {
 
           boolean doQuote = clause.isPhrase;
@@ -277,6 +287,12 @@ class ExtendedDismaxQParser extends QParser {
           sb.append(clause.val);
           if (doQuote) {
             sb.append('"');
+          }
+          if (clause.field != null) {
+            // Add the default user field boost, if any
+            Float boost = userFields.getBoost(clause.field);
+            if(boost != null)
+              sb.append("^").append(boost);
           }
           sb.append(' ');
         }
@@ -391,6 +407,28 @@ class ExtendedDismaxQParser extends QParser {
     }
 
     return topQuery;
+  }
+
+  /**
+   * Extracts all the alised fields from the requests and adds them to up
+   * @param up
+   * @param tiebreaker
+   * @throws ParseException 
+   */
+  private void addAliasesFromRequest(ExtendedSolrQueryParser up, float tiebreaker) throws ParseException {
+    Iterator<String> it = solrParams.getParameterNamesIterator();
+    while(it.hasNext()) {
+      String param = it.next();
+      if(param.startsWith("f.") && param.endsWith(".qf")) {
+        // Add the alias
+        String fname = param.substring(2,param.length()-3);
+        String qfReplacement = solrParams.get(param);
+        Map<String,Float> parsedQf = SolrPluginUtils.parseFieldBoosts(qfReplacement);
+        if(parsedQf.size() == 0)
+          return;
+        up.addAlias(fname, tiebreaker, parsedQf);
+      }
+    }
   }
 
   /**
@@ -598,6 +636,7 @@ class ExtendedDismaxQParser extends QParser {
     int end=s.length();
     char ch=0;
     int start;
+    boolean disallowUserField = false;
     outer: while (pos < end) {
       ch = s.charAt(pos);
 
@@ -614,6 +653,10 @@ class ExtendedDismaxQParser extends QParser {
       }
 
       clause.field = getFieldName(s, pos, end);
+      if(clause.field != null && !userFields.isAllowed(clause.field)) {
+        disallowUserField = true;
+        clause.field = null;
+      }
       if (clause.field != null) {
         pos += clause.field.length(); // skip the field name
         pos++;  // skip the ':'
@@ -709,15 +752,31 @@ class ExtendedDismaxQParser extends QParser {
       }
 
       if (clause != null) {
-        clause.raw = s.substring(start, pos);
+        if(disallowUserField) {
+          clause.raw = clause.val;
+        } else {
+          clause.raw = s.substring(start, pos);
+          // Add default userField boost if no explicit boost exists
+          if(userFields.isAllowed(clause.field) && !clause.raw.contains("^")) {
+            Float boost = userFields.getBoost(clause.field);
+            if(boost != null)
+              clause.raw += "^" + boost;
+          }
+        }
         lst.add(clause);
       }
       clause = new Clause();
+      disallowUserField = false;
     }
 
     return lst;
   }
 
+  /** 
+   * returns a field name or legal field alias from the current 
+   * position of the string 
+   * @param solrParams 
+   */
   public String getFieldName(String s, int pos, int end) {
     if (pos >= end) return null;
     int p=pos;
@@ -731,9 +790,11 @@ class ExtendedDismaxQParser extends QParser {
       if (!(Character.isJavaIdentifierPart(ch) || ch=='-' || ch=='.')) return null;
     }
     String fname = s.substring(pos, p);
-    return getReq().getSchema().getFieldTypeNoEx(fname) == null ? null : fname;
+    boolean isInSchema = getReq().getSchema().getFieldTypeNoEx(fname) != null;
+    boolean isAlias = solrParams.get("f."+fname+".qf") != null;
+    
+    return (isInSchema || isAlias) ? fname : null;
   }
-
 
   public static List<String> split(String s, boolean ignoreQuote) {
     ArrayList<String> lst = new ArrayList<String>(4);
@@ -792,7 +853,7 @@ class ExtendedDismaxQParser extends QParser {
    * A subclass of SolrQueryParser that supports aliasing fields for
    * constructing DisjunctionMaxQueries.
    */
-  class ExtendedSolrQueryParser extends SolrQueryParser {
+  static class ExtendedSolrQueryParser extends SolrQueryParser {
 
 
     /** A simple container for storing alias info
@@ -869,6 +930,16 @@ class ExtendedDismaxQParser extends QParser {
       a.tie = tiebreaker;
       a.fields = fieldBoosts;
       aliases.put(field, a);
+    }
+    
+    /**
+     * Returns the aliases found for a field.
+     * Returns null if there are no aliases for the field
+     * @param field
+     * @return
+     */
+    public Alias getAlias(String field) {
+      return aliases.get(field);
     }
 
 
@@ -980,9 +1051,9 @@ class ExtendedDismaxQParser extends QParser {
      * DisjunctionMaxQuery.  (so yes: aliases which point at other
      * aliases should work)
      */
-    protected Query getAliasedQuery()
-      throws ParseException {
+    protected Query getAliasedQuery() throws ParseException {
       Alias a = aliases.get(field);
+      this.validateCyclicAliasing(field);
       if (a != null) {
         List<Query> lst = getQueries(a);
         if (lst == null || lst.size()==0)
@@ -1018,15 +1089,43 @@ class ExtendedDismaxQParser extends QParser {
       }
     }
 
+    /**
+     * Validate there is no cyclic referencing in the aliasing
+     */
+    private void validateCyclicAliasing(String field) throws ParseException {
+       Set<String> set = new HashSet<String>();
+       set.add(field);
+       if(validateField(field, set)) {
+         throw new ParseException("Field aliases lead to a cycle");
+       }
+    }
+    
+    private boolean validateField(String field, Set<String> set) {
+      if(this.getAlias(field) == null) {
+        return false;
+      }
+      boolean hascycle = false;
+      for(String referencedField:this.getAlias(field).fields.keySet()) {
+        if(!set.add(referencedField)) {
+          hascycle = true;
+        } else {
+          if(validateField(referencedField, set)) {
+            hascycle = true;
+          }
+          set.remove(referencedField);
+        }
+      }
+      return hascycle;
+    }
 
-     protected List<Query> getQueries(Alias a) throws ParseException {
+    protected List<Query> getQueries(Alias a) throws ParseException {
        if (a == null) return null;
        if (a.fields.size()==0) return null;
        List<Query> lst= new ArrayList<Query>(4);
 
        for (String f : a.fields.keySet()) {
          this.field = f;
-         Query sub = getQuery();
+         Query sub = getAliasedQuery();
          if (sub != null) {
            Float boost = a.fields.get(f);
            if (boost != null) {
@@ -1126,5 +1225,130 @@ class ExtendedDismaxQParser extends QParser {
     if (q==null) return true;
     if (q instanceof BooleanQuery && ((BooleanQuery)q).clauses().size()==0) return true;
     return false;
+  }
+  
+  /**
+   * Class that encapsulates the input from userFields parameter and can answer whether
+   * a field allowed or disallowed as fielded query in the query string
+   */
+  static class UserFields {
+    private Map<String,Float> userFieldsMap;
+    private DynamicField[] dynamicUserFields;
+    private DynamicField[] negativeDynamicUserFields;
+
+    UserFields(Map<String,Float> ufm) {
+      userFieldsMap = ufm;
+      if (0 == userFieldsMap.size()) {
+        userFieldsMap.put("*", null);
+      }
+      
+      // Process dynamic patterns in userFields
+      ArrayList<DynamicField> dynUserFields = new ArrayList<DynamicField>();
+      ArrayList<DynamicField> negDynUserFields = new ArrayList<DynamicField>();
+      for(String f : userFieldsMap.keySet()) {
+        if(f.contains("*")) {
+          if(f.startsWith("-"))
+            negDynUserFields.add(new DynamicField(f.substring(1)));
+          else
+            dynUserFields.add(new DynamicField(f));
+        }
+      }
+      Collections.sort(dynUserFields);
+      dynamicUserFields = dynUserFields.toArray(new DynamicField[dynUserFields.size()]);
+      Collections.sort(negDynUserFields);
+      negativeDynamicUserFields = negDynUserFields.toArray(new DynamicField[negDynUserFields.size()]);
+//      System.out.println("** userF="+userFieldsMap+", dynUF="+Arrays.toString(dynamicUserFields)+", negDynUF="+Arrays.toString(negativeDynamicUserFields));
+    }
+    
+    /**
+     * Is the given field name allowed according to UserFields spec given in the uf parameter?
+     * @param fname the field name to examine
+     * @return true if the fielded queries are allowed on this field
+     */
+    public boolean isAllowed(String fname) {
+      boolean res = ((userFieldsMap.containsKey(fname) || isDynField(fname, false)) && 
+          !userFieldsMap.containsKey("-"+fname) &&
+          !isDynField(fname, true));
+      return res;
+    }
+    
+    private boolean isDynField(String field, boolean neg) {
+      return getDynFieldForName(field, neg) == null ? false : true;
+    }
+    
+    private String getDynFieldForName(String f, boolean neg) {
+      for( DynamicField df : neg?negativeDynamicUserFields:dynamicUserFields ) {
+        if( df.matches( f ) ) return df.wildcard;
+      }
+      return null;
+    }
+    
+    /**
+     * Finds the default user field boost associated with the given field.
+     * This is parsed from the uf parameter, and may be specified as wildcards, e.g. *name^2.0 or *^3.0
+     * @param field the field to find boost for
+     * @return the float boost value associated with the given field or a wildcard matching the field
+     */
+    public Float getBoost(String field) {
+      return (userFieldsMap.containsKey(field)) ?
+          userFieldsMap.get(field) : // Exact field
+          userFieldsMap.get(getDynFieldForName(field, false)); // Dynamic field
+    }
+  }
+  
+  /* Represents a dynamic field, for easier matching, inspired by same class in IndexSchema */
+  static class DynamicField implements Comparable<DynamicField> {
+    final static int STARTS_WITH=1;
+    final static int ENDS_WITH=2;
+    final static int CATCHALL=3;
+
+    final String wildcard;
+    final int type;
+
+    final String str;
+
+    protected DynamicField(String wildcard) {
+      this.wildcard = wildcard;
+      if (wildcard.equals("*")) {
+        type=CATCHALL;
+        str=null;
+      }
+      else if (wildcard.startsWith("*")) {
+        type=ENDS_WITH;
+        str=wildcard.substring(1);
+      }
+      else if (wildcard.endsWith("*")) {
+        type=STARTS_WITH;
+        str=wildcard.substring(0,wildcard.length()-1);
+      }
+      else {
+        throw new RuntimeException("dynamic field name must start or end with *");
+      }
+    }
+
+    /*
+     * Returns true if the regex wildcard for this DynamicField would match the input field name
+     */
+    public boolean matches(String name) {
+      if (type==CATCHALL) return true;
+      else if (type==STARTS_WITH && name.startsWith(str)) return true;
+      else if (type==ENDS_WITH && name.endsWith(str)) return true;
+      else return false;
+    }
+
+    /**
+     * Sort order is based on length of regex.  Longest comes first.
+     * @param other The object to compare to.
+     * @return a negative integer, zero, or a positive integer
+     * as this object is less than, equal to, or greater than
+     * the specified object.
+     */
+    public int compareTo(DynamicField other) {
+      return other.wildcard.length() - wildcard.length();
+    }
+    
+    public String toString() {
+      return this.wildcard;
+    }
   }
 }

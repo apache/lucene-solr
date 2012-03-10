@@ -536,6 +536,9 @@ New Features
 * SOLR-2202: Currency FieldType, whith support for currencies and exchange rates
   (Greg Fodor & Andrew Morrison via janhoy, rmuir, Uwe Schindler)
 
+* SOLR-3026: eDismax: Locking down which fields can be explicitly queried (user fields aka uf)
+  (janhoy, hossmann, Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
