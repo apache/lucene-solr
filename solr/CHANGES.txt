@@ -234,9 +234,6 @@ New Features
 
 * SOLR-2898: Support grouped faceting. (Martijn van Groningen)
 
-* SOLR-2202: Currency FieldType, whith support for currencies and exchange rates
-  (Greg Fodor & Andrew Morrison via janhoy, rmuir, Uwe Schindler)
-
 Optimizations
 ----------------------
 
@@ -535,6 +532,9 @@ New Features
 
 * SOLR-3033: ReplicationHandler's backup command now supports a 'maxNumberOfBackups' 
   init param that can be used to delete all but the most recent N backups. (Torsten Krah, James Dyer)
+
+* SOLR-2202: Currency FieldType, whith support for currencies and exchange rates
+  (Greg Fodor & Andrew Morrison via janhoy, rmuir, Uwe Schindler)
 
 Optimizations
 ----------------------
