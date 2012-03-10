@@ -919,7 +919,13 @@ Bug fixes
   from the delegate DocIdSet.iterator(), which is allowed to return
   null by DocIdSet specification when no documents match.
   (Shay Banon via Uwe Schindler)
-
+  
+* LUCENE-3821: SloppyPhraseScorer missed documents that ExactPhraseScorer finds
+  When phrase queru had repeating terms (e.g. "yes ho yes")  
+  sloppy query missed documents that exact query matched. 
+  Fixed except when for repeating multiterms (e.g. "yes ho yes|no").
+  (Robert Muir, Doron Cohen)
+    
 Optimizations
 
 * LUCENE-3653: Improve concurrency in VirtualMethod and AttributeSource by

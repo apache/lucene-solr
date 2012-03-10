@@ -22,7 +22,6 @@ import java.util.*;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -238,7 +237,7 @@ public class MultiPhraseQuery extends Query {
           docFreq = termsEnum.docFreq();
         }
 
-        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue(), terms[0]);
+        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue(), terms);
       }
 
       // sort by increasing docFreq order
@@ -314,9 +313,21 @@ public class MultiPhraseQuery extends Query {
     }
 
     buffer.append("\"");
+    int k = 0;
     Iterator<Term[]> i = termArrays.iterator();
+    int lastPos = -1;
+    boolean first = true;
     while (i.hasNext()) {
       Term[] terms = i.next();
+      int position = positions.get(k);
+      if (first) {
+        first = false;
+      } else {
+        buffer.append(" ");
+        for (int j=1; j<(position-lastPos); j++) {
+          buffer.append("? ");
+        }
+      }
       if (terms.length > 1) {
         buffer.append("(");
         for (int j = 0; j < terms.length; j++) {
@@ -328,8 +339,8 @@ public class MultiPhraseQuery extends Query {
       } else {
         buffer.append(terms[0].text());
       }
-      if (i.hasNext())
-        buffer.append(" ");
+      lastPos = position;
+      ++k;
     }
     buffer.append("\"");
 
