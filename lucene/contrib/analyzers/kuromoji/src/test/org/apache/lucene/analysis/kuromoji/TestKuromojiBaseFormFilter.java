@@ -29,7 +29,7 @@ public class TestKuromojiBaseFormFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new ReusableAnalyzerBase() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new KuromojiTokenizer(reader);
+      Tokenizer tokenizer = new KuromojiTokenizer(reader, null, true, KuromojiTokenizer.DEFAULT_MODE);
       return new TokenStreamComponents(tokenizer, new KuromojiBaseFormFilter(tokenizer));
     }
   };

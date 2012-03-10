@@ -23,29 +23,17 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.kuromoji.SegmenterTest;
 import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
+import org.apache.lucene.analysis.kuromoji.TestKuromojiTokenizer;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class UserDictionaryTest extends LuceneTestCase {
 
-  private UserDictionary readDict() throws IOException {
-    InputStream is = SegmenterTest.class.getResourceAsStream("userdict.txt");
-    if (is == null)
-      throw new FileNotFoundException("Cannot find userdict.txt in test classpath!");
-    try {
-      Reader reader = new InputStreamReader(is, IOUtils.CHARSET_UTF_8);
-      return new UserDictionary(reader);
-    } finally {
-      is.close();
-    }
-  }
-  
   @Test
   public void testLookup() throws IOException {
-    UserDictionary dictionary = readDict();
+    UserDictionary dictionary = TestKuromojiTokenizer.readDict();
     String s = "関西国際空港に行った";
     int[][] dictionaryEntryResult = dictionary.lookup(s.toCharArray(), 0, s.length());
     // Length should be three 関西, 国際, 空港
@@ -69,7 +57,7 @@ public class UserDictionaryTest extends LuceneTestCase {
   
   @Test
   public void testReadings() throws IOException {
-    UserDictionary dictionary = readDict();
+    UserDictionary dictionary = TestKuromojiTokenizer.readDict();
     int[][] result = dictionary.lookup("日本経済新聞".toCharArray(), 0, 6);
     assertEquals(3, result.length);
     int wordIdNihon = result[0][0]; // wordId of 日本 in 日本経済新聞
@@ -83,7 +71,7 @@ public class UserDictionaryTest extends LuceneTestCase {
   
   @Test
   public void testPartOfSpeech() throws IOException {
-    UserDictionary dictionary = readDict();
+    UserDictionary dictionary = TestKuromojiTokenizer.readDict();
     int[][] result = dictionary.lookup("日本経済新聞".toCharArray(), 0, 6);
     assertEquals(3, result.length);
     int wordIdKeizai = result[1][0]; // wordId of 経済 in 日本経済新聞
@@ -92,7 +80,7 @@ public class UserDictionaryTest extends LuceneTestCase {
   
   @Test
   public void testRead() throws IOException {
-    UserDictionary dictionary = readDict();
+    UserDictionary dictionary = TestKuromojiTokenizer.readDict();
     assertNotNull(dictionary);		
   }
 }

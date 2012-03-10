@@ -54,9 +54,10 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
    * @param positionIncrement the distance from the prior term
    */
   public void setPositionIncrement(int positionIncrement) {
-    if (positionIncrement < 0)
+    if (positionIncrement < 0) {
       throw new IllegalArgumentException
-        ("Increment must be zero or greater: " + positionIncrement);
+        ("Increment must be zero or greater: got " + positionIncrement);
+    }
     this.positionIncrement = positionIncrement;
   }
 
@@ -79,7 +80,8 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
     }
     
     if (other instanceof PositionIncrementAttributeImpl) {
-      return positionIncrement == ((PositionIncrementAttributeImpl) other).positionIncrement;
+      PositionIncrementAttributeImpl _other = (PositionIncrementAttributeImpl) other;
+      return positionIncrement ==  _other.positionIncrement;
     }
  
     return false;
@@ -95,5 +97,4 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
     PositionIncrementAttribute t = (PositionIncrementAttribute) target;
     t.setPositionIncrement(positionIncrement);
   }  
-
 }

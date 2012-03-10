@@ -4,3 +4,7 @@
 
 # Custom reading for sumo wrestler
 朝青龍,朝青龍,アサショウリュウ,カスタム人名
+
+# Silly entry:
+abcd,a b cd,foo1 foo2 foo3,bar
+abcdefg,ab cd efg,foo1 foo2 foo4,bar

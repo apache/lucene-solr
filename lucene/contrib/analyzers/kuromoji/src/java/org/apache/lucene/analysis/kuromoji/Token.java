@@ -17,8 +17,8 @@ package org.apache.lucene.analysis.kuromoji;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Type;
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
-import org.apache.lucene.analysis.kuromoji.viterbi.ViterbiNode.Type;
 
 public class Token {
   private final Dictionary dictionary;
@@ -30,6 +30,7 @@ public class Token {
   private final int length;
   
   private final int position;
+  private int positionLength;
   
   private final Type type;
   
@@ -40,7 +41,13 @@ public class Token {
     this.length = length;
     this.type = type;
     this.position = position;
+    this.positionLength = positionLength;
     this.dictionary = dictionary;
+  }
+
+  @Override
+  public String toString() {
+    return "Token(\"" + new String(surfaceForm, offset, length) + "\" pos=" + position + " type=" + type + " wordId=" + wordId + " leftID=" + dictionary.getLeftId(wordId) + ")";
   }
   
   /**
@@ -143,5 +150,22 @@ public class Token {
    */
   public int getPosition() {
     return position;
+  }
+
+  /**
+   * Set the position length (in tokens) of this token.  For normal
+   * tokens this is 1; for compound tokens it's > 1.
+   */
+  public void setPositionLength(int positionLength) {
+    this.positionLength = positionLength;
+  }
+  
+  /**
+   * Get the length (in tokens) of this token.  For normal
+   * tokens this is 1; for compound tokens it's > 1.
+   * @return position length of token
+   */
+  public int getPositionLength() {
+    return positionLength;
   }
 }

@@ -29,23 +29,27 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Mode;
+import org.apache.lucene.analysis.kuromoji.dict.UserDictionary;
 import org.apache.lucene.util.Version;
 
 public class KuromojiAnalyzer extends StopwordAnalyzerBase {
-  private final Segmenter segmenter;
+  private final Mode mode;
   private final Set<String> stoptags;
+  private final UserDictionary userDict;
   
   public KuromojiAnalyzer(Version matchVersion) {
-    this(matchVersion, new Segmenter(), DefaultSetHolder.DEFAULT_STOP_SET, DefaultSetHolder.DEFAULT_STOP_TAGS);
+    this(matchVersion, null, KuromojiTokenizer.DEFAULT_MODE, DefaultSetHolder.DEFAULT_STOP_SET, DefaultSetHolder.DEFAULT_STOP_TAGS);
   }
   
-  public KuromojiAnalyzer(Version matchVersion, Segmenter segmenter, Set<?> stopwords, Set<String> stoptags) {
+  public KuromojiAnalyzer(Version matchVersion, UserDictionary userDict, Mode mode, CharArraySet stopwords, Set<String> stoptags) {
     super(matchVersion, stopwords);
-    this.segmenter = segmenter;
+    this.userDict = userDict;
+    this.mode = mode;
     this.stoptags = stoptags;
   }
   
-  public static Set<?> getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -58,7 +62,7 @@ public class KuromojiAnalyzer extends StopwordAnalyzerBase {
    * outer class accesses the static final set the first time.
    */
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET;
+    static final CharArraySet DEFAULT_STOP_SET;
     static final Set<String> DEFAULT_STOP_TAGS;
 
     static {
@@ -79,7 +83,7 @@ public class KuromojiAnalyzer extends StopwordAnalyzerBase {
   
   @Override
   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    Tokenizer tokenizer = new KuromojiTokenizer(this.segmenter, reader);
+    Tokenizer tokenizer = new KuromojiTokenizer(reader, userDict, true, mode);
     TokenStream stream = new KuromojiBaseFormFilter(tokenizer);
     stream = new KuromojiPartOfSpeechStopFilter(true, stream, stoptags);
     stream = new CJKWidthFilter(stream);
