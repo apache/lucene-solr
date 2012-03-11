@@ -73,7 +73,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
     
     @Override
     protected boolean canLoad(FieldInfo info) {
-      return info.normsPresent();
+      return info.hasNorms();
     }
     
     @Override
@@ -104,7 +104,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
     
     @Override
     protected boolean canMerge(FieldInfo info) {
-      return info.normsPresent();
+      return info.hasNorms();
     }
     
     @Override
@@ -129,7 +129,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
     public static void filesInternal(FieldInfos fieldInfos, String segmentName,
         Set<String> files, String segmentSuffix) {
       for (FieldInfo fieldInfo : fieldInfos) {
-        if (fieldInfo.normsPresent()) {
+        if (fieldInfo.hasNorms()) {
           String id = docValuesId(segmentName, fieldInfo.number);
           files.add(IndexFileNames.segmentFileName(id, "",
               segmentSuffix));

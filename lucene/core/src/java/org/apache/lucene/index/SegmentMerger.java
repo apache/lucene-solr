@@ -210,7 +210,7 @@ final class SegmentMerger {
           TypePromoter previous = docValuesTypes.get(merged);
           docValuesTypes.put(merged, mergeDocValuesType(previous, reader.docValues(fi.name))); 
         }
-        if (fi.normsPresent()) {
+        if (fi.hasNorms()) {
           TypePromoter previous = normValuesTypes.get(merged);
           normValuesTypes.put(merged, mergeDocValuesType(previous, reader.normValues(fi.name))); 
         }

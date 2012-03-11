@@ -91,7 +91,7 @@ public abstract class PerDocProducerBase extends PerDocProducer {
   }
   
   protected boolean anyDocValuesFields(FieldInfos infos) {
-    return infos.anyDocValuesFields();
+    return infos.hasDocValues();
   }
   
   public static String docValuesId(String segmentsName, int fieldId) {

@@ -122,14 +122,23 @@ public final class FieldInfo {
     }
   }
   
+  /**
+   * @return true if this field has any docValues.
+   */
   public boolean hasDocValues() {
     return docValueType != null;
   }
 
+  /**
+   * @return {@link DocValues.Type} of the docValues. this may be null if the field has no docvalues.
+   */
   public DocValues.Type getDocValuesType() {
     return docValueType;
   }
   
+  /**
+   * @return {@link DocValues.Type} of the norm. this may be null if the field has no norms.
+   */
   public DocValues.Type getNormType() {
     return normType;
   }
@@ -146,11 +155,17 @@ public final class FieldInfo {
     }
   }
   
+  /**
+   * @return true if norms are explicitly omitted for this field
+   */
   public boolean omitNorms() {
     return omitNorms;
   }
   
-  public boolean normsPresent() {
+  /**
+   * @return true if this field actually has any norms.
+   */
+  public boolean hasNorms() {
     return isIndexed && !omitNorms && normType != null;
   }
   

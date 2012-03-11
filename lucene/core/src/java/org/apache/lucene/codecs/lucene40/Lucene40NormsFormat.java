@@ -62,7 +62,7 @@ public class Lucene40NormsFormat extends NormsFormat {
 
     @Override
     protected boolean canLoad(FieldInfo info) {
-      return info.normsPresent();
+      return info.hasNorms();
     }
 
     @Override
@@ -92,7 +92,7 @@ public class Lucene40NormsFormat extends NormsFormat {
 
     @Override
     protected boolean canMerge(FieldInfo info) {
-      return info.normsPresent();
+      return info.hasNorms();
     }
 
     @Override
@@ -104,7 +104,7 @@ public class Lucene40NormsFormat extends NormsFormat {
       final String normsFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION);
       FieldInfos fieldInfos = segmentInfo.getFieldInfos();
       for (FieldInfo fieldInfo : fieldInfos) {
-        if (fieldInfo.normsPresent()) {
+        if (fieldInfo.hasNorms()) {
           final String normsEntriesFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
           files.add(normsFileName);
           files.add(normsEntriesFileName);

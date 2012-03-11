@@ -76,7 +76,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
     try {
       long nextNormSeek = NORMS_HEADER.length; //skip header (header unused for now)
       for (FieldInfo fi : fields) {
-        if (fi.normsPresent()) {
+        if (fi.hasNorms()) {
           String fileName = getNormFilename(segmentName, normGen, fi.number);
           Directory d = hasSeparateNorms(normGen, fi.number) ? separateNormsDir : dir;
         

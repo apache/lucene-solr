@@ -360,12 +360,6 @@ public class FilterAtomicReader extends AtomicReader {
   }
 
   @Override
-  public boolean hasNorms(String field) throws IOException {
-    ensureOpen();
-    return in.hasNorms(field);
-  }
-
-  @Override
   protected void doClose() throws IOException {
     in.close();
   }

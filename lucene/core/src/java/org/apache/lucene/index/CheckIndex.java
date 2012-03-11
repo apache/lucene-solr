@@ -652,16 +652,15 @@ public class CheckIndex {
         infoStream.print("    test: field norms.........");
       }
       for (FieldInfo info : fieldInfos) {
-        if (reader.hasNorms(info.name)) {
+        if (info.hasNorms()) {
+          assert reader.hasNorms(info.name); // deprecated path
           DocValues dv = reader.normValues(info.name);
           checkDocValues(dv, info.name, info.getNormType(), reader.maxDoc());
           ++status.totFields;
         } else {
+          assert !reader.hasNorms(info.name); // deprecated path
           if (reader.normValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
-          }
-          if (info.normsPresent()) {
-            throw new RuntimeException("field: " + info.name + " should have norms but omits them!");
           }
         }
       }

@@ -101,11 +101,6 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   }
 
   @Override
-  public boolean hasNorms(String field) throws IOException {
-    return hasField(field) ? super.hasNorms(field) : false;
-  }
-
-  @Override
   public Fields fields() throws IOException {
     final Fields f = super.fields();
     return (f == null) ? null : new FieldFilterFields(f);

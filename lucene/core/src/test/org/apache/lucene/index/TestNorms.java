@@ -128,9 +128,9 @@ public class TestNorms extends LuceneTestCase {
     assertFalse(fieldInfo.omitNorms);
     assertTrue(fieldInfo.isIndexed);
     if (secondWriteNorm) {
-      assertTrue(fieldInfo.normsPresent());
+      assertTrue(fieldInfo.hasNorms());
     } else {
-      assertFalse(fieldInfo.normsPresent());  
+      assertFalse(fieldInfo.hasNorms());  
     }
     
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -144,12 +144,12 @@ public class TestNorms extends LuceneTestCase {
       FieldInfo fi = mergedReader.getFieldInfos().fieldInfo(byteTestField);
       assertFalse(fi.omitNorms);
       assertTrue(fi.isIndexed);
-      assertFalse(fi.normsPresent());
+      assertFalse(fi.hasNorms());
     } else {
       FieldInfo fi = mergedReader.getFieldInfos().fieldInfo(byteTestField);
       assertFalse(fi.omitNorms);
       assertTrue(fi.isIndexed);
-      assertTrue(fi.normsPresent());
+      assertTrue(fi.hasNorms());
       
       DocValues normValues = mergedReader.normValues(byteTestField);
       assertNotNull(normValues);

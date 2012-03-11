@@ -150,13 +150,6 @@ public final class SegmentReader extends AtomicReader {
     return si.docCount;
   }
 
-  @Override
-  public boolean hasNorms(String field) {
-    ensureOpen();
-    FieldInfo fi = core.fieldInfos.fieldInfo(field);
-    return fi.normsPresent();
-  }
-
   /** @lucene.internal */
   public TermVectorsReader getTermVectorsReader() {
     ensureOpen();

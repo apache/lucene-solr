@@ -410,6 +410,10 @@ API Changes
   method maybeReopen has been deprecated in favor of maybeRefresh().
   (Shai Erera, Mike McCandless, Simon Willnauer)
 
+* LUCENE-3859: AtomicReader.hasNorms(field) is deprecated, instead you
+  can inspect the FieldInfo yourself to see if norms are present, which
+  also allows you to get the type.  (Robert Muir)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
