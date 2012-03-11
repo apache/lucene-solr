@@ -107,7 +107,7 @@ class Lucene3xFieldInfosReader extends FieldInfosReader {
         hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
         hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, null, isIndexed && !omitNorms? Type.BYTES_VAR_STRAIGHT : null);
+          omitNorms, storePayloads, indexOptions, null, isIndexed && !omitNorms? Type.FIXED_INTS_8 : null);
       }
 
       if (input.getFilePointer() != input.length()) {

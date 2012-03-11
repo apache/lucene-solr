@@ -652,10 +652,16 @@ public class CheckIndex {
         infoStream.print("    test: field norms.........");
       }
       DocValues dv;
+      // todo: factor out a shared checkValues(DocValues, Type (from fieldinfos), ...) and share this method
+      // between this and testDocValues
       for (FieldInfo info : fieldInfos) {
         if (reader.hasNorms(info.name)) {
           dv = reader.normValues(info.name);
           assert dv != null;
+          DocValues.Type type = dv.type();
+          if (type != info.getNormType()) {
+            throw new RuntimeException("field: " + info.name + " has type: " + type + " but fieldInfos says:" + info.getNormType());
+          }
           if (dv.getSource().hasArray()) {
             Object array = dv.getSource().getArray();
             if (Array.getLength(array) != reader.maxDoc()) {
