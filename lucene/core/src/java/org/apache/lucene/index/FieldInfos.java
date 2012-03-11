@@ -221,6 +221,12 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     return fi;
   }
 
+  /**
+   * lookup the number of a field by name.
+   * 
+   * @param fieldName field's name
+   * @return number of field, or -1 if it does not exist.
+   */
   public int fieldNumber(String fieldName) {
     FieldInfo fi = fieldInfo(fieldName);
     return (fi != null) ? fi.number : -1;
@@ -256,10 +262,16 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     return byNumber.iterator();
   }
 
+  /**
+   * @return number of fields
+   */
   public int size() {
     return byNumber.size();
   }
 
+  /**
+   * @return true if at least one field has any vectors
+   */
   public boolean hasVectors() {
     boolean hasVectors = false;
     for (int i = 0; i < size(); i++) {
