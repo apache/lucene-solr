@@ -114,17 +114,17 @@
 	<classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
 	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.4.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-continuation-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-deploy-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-http-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-io-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-jmx-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-security-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-server-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-servlet-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-util-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-webapp-8.1.1.v20120215.jar"/>
-  <classpathentry kind="lib" path="solr/example/lib/jetty-xml-8.1.1.v20120215.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-continuation-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-deploy-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-http-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-io-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-jmx-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-security-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-server-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-servlet-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-util-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-webapp-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-xml-8.1.2.v20120308.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/servlet-api-3.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/carrot2-core-3.5.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/hppc-0.3.3.jar"/>
