@@ -17,7 +17,6 @@
 
 package org.apache.lucene.spatial.util;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -72,20 +71,19 @@ public class CachingDoubleValueSource extends ValueSource {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (obj == null) { return false; }
-    if (obj == this) { return true; }
-    if (obj.getClass() != getClass()) {
-      return false;
-    }
-    CachingDoubleValueSource rhs = (CachingDoubleValueSource) obj;
-    return source.equals( rhs.source );
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    CachingDoubleValueSource that = (CachingDoubleValueSource) o;
+
+    if (source != null ? !source.equals(that.source) : that.source != null) return false;
+
+    return true;
   }
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder(61, 23).
-      append(source).
-      toHashCode();
+    return source != null ? source.hashCode() : 0;
   }
 }

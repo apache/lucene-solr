@@ -20,8 +20,6 @@ package org.apache.lucene.spatial.vector;
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.simple.PointImpl;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -101,30 +99,28 @@ public class DistanceValueSource extends ValueSource {
 
   /**
    * Determines if this ValueSource is equal to another.
-   * @param obj the ValueSource to compare
+   * @param o the ValueSource to compare
    * @return <code>true</code> if the two objects are based upon the same query envelope
    */
   @Override
-  public boolean equals(Object obj) {
-    if (obj == null) { return false; }
-    if (obj == this) { return true; }
-    if (obj.getClass() != getClass()) {
-      return false;
-    }
-    DistanceValueSource rhs = (DistanceValueSource) obj;
-    return new EqualsBuilder()
-                  .append(calculator, rhs.calculator)
-                  .append(from, rhs.from)
-                  .append(fields, rhs.fields)
-                  .isEquals();
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    DistanceValueSource that = (DistanceValueSource) o;
+
+    if (calculator != null ? !calculator.equals(that.calculator) : that.calculator != null) return false;
+    if (fields != null ? !fields.equals(that.fields) : that.fields != null) return false;
+    if (from != null ? !from.equals(that.from) : that.from != null) return false;
+
+    return true;
   }
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder(59, 7).
-        append(calculator).
-        append(from).
-        append(fields).
-        toHashCode();
+    int result = fields != null ? fields.hashCode() : 0;
+    result = 31 * result + (calculator != null ? calculator.hashCode() : 0);
+    result = 31 * result + (from != null ? from.hashCode() : 0);
+    return result;
   }
 }

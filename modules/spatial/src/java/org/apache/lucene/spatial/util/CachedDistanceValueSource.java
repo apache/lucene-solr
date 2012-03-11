@@ -19,8 +19,6 @@ package org.apache.lucene.spatial.util;
 
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -83,24 +81,22 @@ public class CachedDistanceValueSource extends ValueSource {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (obj == null) { return false; }
-    if (obj == this) { return true; }
-    if (obj.getClass() != getClass()) {
-      return false;
-    }
-    CachedDistanceValueSource rhs = (CachedDistanceValueSource) obj;
-    return new EqualsBuilder()
-                  .append(calculator, rhs.calculator)
-                  .append(from, rhs.from)
-                  .isEquals();
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    CachedDistanceValueSource that = (CachedDistanceValueSource) o;
+
+    if (calculator != null ? !calculator.equals(that.calculator) : that.calculator != null) return false;
+    if (from != null ? !from.equals(that.from) : that.from != null) return false;
+
+    return true;
   }
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder(31, 97).
-        append(calculator).
-        append(from).
-        toHashCode();
+    int result = calculator != null ? calculator.hashCode() : 0;
+    result = 31 * result + (from != null ? from.hashCode() : 0);
+    return result;
   }
 }
