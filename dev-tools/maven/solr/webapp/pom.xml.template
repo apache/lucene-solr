@@ -98,7 +98,7 @@
         </configuration>
       </plugin>
       <plugin>
-        <!-- http://docs.codehaus.org/display/JETTY/Maven+Jetty+Plugin -->
+        <!-- http://wiki.eclipse.org/Jetty/Feature/Jetty_Maven_Plugin -->
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
         <configuration>
