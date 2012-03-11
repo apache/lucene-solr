@@ -651,26 +651,10 @@ public class CheckIndex {
       if (infoStream != null) {
         infoStream.print("    test: field norms.........");
       }
-      DocValues dv;
-      // todo: factor out a shared checkValues(DocValues, Type (from fieldinfos), ...) and share this method
-      // between this and testDocValues
       for (FieldInfo info : fieldInfos) {
         if (reader.hasNorms(info.name)) {
-          dv = reader.normValues(info.name);
-          assert dv != null;
-          DocValues.Type type = dv.type();
-          if (type != info.getNormType()) {
-            throw new RuntimeException("field: " + info.name + " has type: " + type + " but fieldInfos says:" + info.getNormType());
-          }
-          if (dv.getSource().hasArray()) {
-            Object array = dv.getSource().getArray();
-            if (Array.getLength(array) != reader.maxDoc()) {
-              throw new RuntimeException("norms for field: " + info.name + " are of the wrong size");
-            }
-          }
-          if (!info.isIndexed || info.omitNorms) {
-            throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
-          }
+          DocValues dv = reader.normValues(info.name);
+          checkDocValues(dv, info.name, info.getNormType(), reader.maxDoc());
           ++status.totFields;
         } else {
           if (reader.normValues(info.name) != null) {
@@ -1177,6 +1161,92 @@ public class CheckIndex {
     return status;
   }
   
+  /** Helper method to verify values (either docvalues or norms), also checking
+   *  type and size against fieldinfos/segmentinfo
+   */
+  private void checkDocValues(DocValues docValues, String fieldName, DocValues.Type expectedType, int expectedDocs) throws IOException {
+    if (docValues == null) {
+      throw new RuntimeException("field: " + fieldName + " omits docvalues but should have them!");
+    }
+    DocValues.Type type = docValues.type();
+    if (type != expectedType) {
+      throw new RuntimeException("field: " + fieldName + " has type: " + type + " but fieldInfos says:" + expectedType);
+    }
+    final Source values = docValues.getDirectSource();
+    int size = docValues.getValueSize();
+    for (int i = 0; i < expectedDocs; i++) {
+      switch (type) {
+      case BYTES_FIXED_SORTED:
+      case BYTES_VAR_SORTED:
+      case BYTES_FIXED_DEREF:
+      case BYTES_FIXED_STRAIGHT:
+      case BYTES_VAR_DEREF:
+      case BYTES_VAR_STRAIGHT:
+        BytesRef bytes = new BytesRef();
+        values.getBytes(i, bytes);
+        if (size != -1 && size != bytes.length) {
+          throw new RuntimeException("field: " + fieldName + " returned wrongly sized bytes, was: " + bytes.length + " should be: " + size);
+        }
+        break;
+      case FLOAT_32:
+        assert size == 4;
+        values.getFloat(i);
+        break;
+      case FLOAT_64:
+        assert size == 8;
+        values.getFloat(i);
+        break;
+      case VAR_INTS:
+        assert size == -1;
+        values.getInt(i);
+        break;
+      case FIXED_INTS_16:
+        assert size == 2;
+        values.getInt(i);
+        break;
+      case FIXED_INTS_32:
+        assert size == 4;
+        values.getInt(i);
+        break;
+      case FIXED_INTS_64:
+        assert size == 8;
+        values.getInt(i);
+        break;
+      case FIXED_INTS_8:
+        assert size == 1;
+        values.getInt(i);
+        break;
+      default:
+        throw new IllegalArgumentException("Field: " + fieldName
+                    + " - no such DocValues type: " + type);
+      }
+    }
+    if (type == DocValues.Type.BYTES_FIXED_SORTED || type == DocValues.Type.BYTES_VAR_SORTED) {
+      // check sorted bytes
+      SortedSource sortedValues = values.asSortedSource();
+      Comparator<BytesRef> comparator = sortedValues.getComparator();
+      int lastOrd = -1;
+      BytesRef lastBytes = new BytesRef();
+      for (int i = 0; i < expectedDocs; i++) {
+        int ord = sortedValues.ord(i);
+        if (ord < 0 || ord > expectedDocs) {
+          throw new RuntimeException("field: " + fieldName + " ord is out of bounds: " + ord);
+        }
+        BytesRef bytes = new BytesRef();
+        sortedValues.getByOrd(ord, bytes);
+        if (lastOrd != -1) {
+          int ordComp = Integer.signum(new Integer(ord).compareTo(new Integer(lastOrd)));
+          int bytesComp = Integer.signum(comparator.compare(bytes, lastBytes));
+          if (ordComp != bytesComp) {
+            throw new RuntimeException("field: " + fieldName + " ord comparison is wrong: " + ordComp + " comparator claims: " + bytesComp);
+          }
+        }
+        lastOrd = ord;
+        lastBytes = bytes;
+      }
+    }
+  }
+  
   private Status.DocValuesStatus testDocValues(SegmentInfo info,
       SegmentReader reader) {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
@@ -1189,87 +1259,7 @@ public class CheckIndex {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
           final DocValues docValues = reader.docValues(fieldInfo.name);
-          if (docValues == null) {
-            throw new RuntimeException("field: " + fieldInfo.name + " omits docvalues but should have them!");
-          }
-          DocValues.Type type = docValues.type();
-          if (type != fieldInfo.getDocValuesType()) {
-            throw new RuntimeException("field: " + fieldInfo.name + " has type: " + type + " but fieldInfos says:" + fieldInfo.getDocValuesType());
-          }
-          final Source values = docValues.getDirectSource();
-          final int maxDoc = reader.maxDoc();
-          int size = docValues.getValueSize();
-          for (int i = 0; i < maxDoc; i++) {
-            switch (fieldInfo.getDocValuesType()) {
-            case BYTES_FIXED_SORTED:
-            case BYTES_VAR_SORTED:
-            case BYTES_FIXED_DEREF:
-            case BYTES_FIXED_STRAIGHT:
-            case BYTES_VAR_DEREF:
-            case BYTES_VAR_STRAIGHT:
-              BytesRef bytes = new BytesRef();
-              values.getBytes(i, bytes);
-              if (size != -1 && size != bytes.length) {
-                throw new RuntimeException("field: " + fieldInfo.name + " returned wrongly sized bytes, was: " + bytes.length + " should be: " + size);
-              }
-              break;
-            case FLOAT_32:
-              assert size == 4;
-              values.getFloat(i);
-              break;
-            case FLOAT_64:
-              assert size == 8;
-              values.getFloat(i);
-              break;
-            case VAR_INTS:
-              assert size == -1;
-              values.getInt(i);
-              break;
-            case FIXED_INTS_16:
-              assert size == 2;
-              values.getInt(i);
-              break;
-            case FIXED_INTS_32:
-              assert size == 4;
-              values.getInt(i);
-              break;
-            case FIXED_INTS_64:
-              assert size == 8;
-              values.getInt(i);
-              break;
-            case FIXED_INTS_8:
-              assert size == 1;
-              values.getInt(i);
-              break;
-            default:
-              throw new IllegalArgumentException("Field: " + fieldInfo.name
-                          + " - no such DocValues type: " + fieldInfo.getDocValuesType());
-            }
-          }
-          if (type == DocValues.Type.BYTES_FIXED_SORTED || type == DocValues.Type.BYTES_VAR_SORTED) {
-            // check sorted bytes
-            SortedSource sortedValues = values.asSortedSource();
-            Comparator<BytesRef> comparator = sortedValues.getComparator();
-            int lastOrd = -1;
-            BytesRef lastBytes = new BytesRef();
-            for (int i = 0; i < maxDoc; i++) {
-              int ord = sortedValues.ord(i);
-              if (ord < 0 || ord > maxDoc) {
-                throw new RuntimeException("field: " + fieldInfo.name + " ord is out of bounds: " + ord);
-              }
-              BytesRef bytes = new BytesRef();
-              sortedValues.getByOrd(ord, bytes);
-              if (lastOrd != -1) {
-                int ordComp = Integer.signum(new Integer(ord).compareTo(new Integer(lastOrd)));
-                int bytesComp = Integer.signum(comparator.compare(bytes, lastBytes));
-                if (ordComp != bytesComp) {
-                  throw new RuntimeException("field: " + fieldInfo.name + " ord comparison is wrong: " + ordComp + " comparator claims: " + bytesComp);
-                }
-              }
-              lastOrd = ord;
-              lastBytes = bytes;
-            }
-          }
+          checkDocValues(docValues, fieldInfo.name, fieldInfo.getDocValuesType(), reader.maxDoc());
         } else {
           if (reader.docValues(fieldInfo.name) != null) {
             throw new RuntimeException("field: " + fieldInfo.name + " has docvalues but should omit them!");
