@@ -532,10 +532,10 @@ public final class Util {
    * Dumps an {@link FST} to a GraphViz's <code>dot</code> language description
    * for visualization. Example of use:
    * 
-   * <pre>
-   * PrintStream ps = new PrintStream(&quot;out.dot&quot;);
-   * fst.toDot(ps);
-   * ps.close();
+   * <pre class="prettyprint">
+   * PrintWriter pw = new PrintWriter(&quot;out.dot&quot;);
+   * Util.toDot(fst, pw, true, true);
+   * pw.close();
    * </pre>
    * 
    * and then, from command line:
