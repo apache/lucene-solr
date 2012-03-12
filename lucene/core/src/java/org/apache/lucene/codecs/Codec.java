@@ -19,6 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.ServiceLoader; // javadocs
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriterConfig; // javadocs
@@ -26,7 +27,15 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.NamedSPILoader;
 
 /**
- * Encodes/decodes an inverted index segment
+ * Encodes/decodes an inverted index segment.
+ * <p>
+ * Note, when extending this class, the name ({@link #getName}) is 
+ * written into the index. In order for the segment to be read, the
+ * name must resolve to your implementation via {@link #forName(String)}.
+ * This method uses Java's 
+ * {@link ServiceLoader Service Provider Interface} to resolve codec names.
+ * <p>
+ * @see ServiceLoader
  */
 public abstract class Codec implements NamedSPILoader.NamedSPI {
 
