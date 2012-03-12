@@ -96,7 +96,7 @@ public class TestNorms extends LuceneTestCase {
     assertNotNull(normValues);
     Source source = normValues.getSource();
     assertTrue(source.hasArray());
-    assertEquals(Type.FIXED_INTS_8, normValues.type());
+    assertEquals(Type.FIXED_INTS_8, normValues.getType());
     byte[] norms = (byte[]) source.getArray();
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
@@ -155,7 +155,7 @@ public class TestNorms extends LuceneTestCase {
       assertNotNull(normValues);
       Source source = normValues.getSource();
       assertTrue(source.hasArray());
-      assertEquals(Type.FIXED_INTS_8, normValues.type());
+      assertEquals(Type.FIXED_INTS_8, normValues.getType());
       byte[] norms = (byte[]) source.getArray();
       for (int i = 0; i < mergedReader.maxDoc(); i++) {
         Document document = mergedReader.document(i);

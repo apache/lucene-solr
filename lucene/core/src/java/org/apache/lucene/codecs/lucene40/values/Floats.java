@@ -84,7 +84,7 @@ public class Floats {
     @Override
     protected boolean tryBulkMerge(DocValues docValues) {
       // only bulk merge if value type is the same otherwise size differs
-      return super.tryBulkMerge(docValues) && docValues.type() == template.type();
+      return super.tryBulkMerge(docValues) && docValues.getType() == template.getType();
     }
     
     @Override

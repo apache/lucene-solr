@@ -173,7 +173,7 @@ final class SegmentMerger {
   // returns an updated typepromoter (tracking type and size) given a previous one,
   // and a newly encountered docvalues
   private TypePromoter mergeDocValuesType(TypePromoter previous, DocValues docValues) {
-    TypePromoter incoming = TypePromoter.create(docValues.type(),  docValues.getValueSize());
+    TypePromoter incoming = TypePromoter.create(docValues.getType(),  docValues.getValueSize());
     if (previous == null) {
       previous = TypePromoter.getIdentityPromoter();
     }

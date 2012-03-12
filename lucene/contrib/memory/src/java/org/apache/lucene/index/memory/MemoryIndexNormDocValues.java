@@ -43,8 +43,8 @@ class MemoryIndexNormDocValues extends DocValues {
   }
 
   @Override
-  public Type type() {
-    return source.type();
+  public Type getType() {
+    return source.getType();
   }
   
   @Override

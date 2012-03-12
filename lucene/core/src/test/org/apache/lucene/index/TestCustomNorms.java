@@ -83,7 +83,7 @@ public class TestCustomNorms extends LuceneTestCase {
     assertNotNull(normValues);
     Source source = normValues.getSource();
     assertTrue(source.hasArray());
-    assertEquals(Type.FLOAT_32, normValues.type());
+    assertEquals(Type.FLOAT_32, normValues.getType());
     float[] norms = (float[]) source.getArray();
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);

@@ -1167,7 +1167,7 @@ public class CheckIndex {
     if (docValues == null) {
       throw new RuntimeException("field: " + fieldName + " omits docvalues but should have them!");
     }
-    DocValues.Type type = docValues.type();
+    DocValues.Type type = docValues.getType();
     if (type != expectedType) {
       throw new RuntimeException("field: " + fieldName + " has type: " + type + " but fieldInfos says:" + expectedType);
     }

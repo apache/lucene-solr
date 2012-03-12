@@ -105,7 +105,7 @@ class VarDerefBytesImpl {
     @Override
     public Source getDirectSource()
         throws IOException {
-      return new DirectVarDerefSource(cloneData(), cloneIndex(), type());
+      return new DirectVarDerefSource(cloneData(), cloneIndex(), getType());
     }
   }
   

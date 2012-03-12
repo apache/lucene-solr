@@ -363,7 +363,7 @@ public final class Bytes {
     }
 
     @Override
-    public Type type() {
+    public Type getType() {
       return type;
     }
     

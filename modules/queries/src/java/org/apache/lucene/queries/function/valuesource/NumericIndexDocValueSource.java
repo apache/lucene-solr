@@ -45,7 +45,7 @@ public class NumericIndexDocValueSource extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final Source source = readerContext.reader().docValues(field)
         .getSource();
-    Type type = source.type();
+    Type type = source.getType();
     switch (type) {
     case FLOAT_32:
     case FLOAT_64:

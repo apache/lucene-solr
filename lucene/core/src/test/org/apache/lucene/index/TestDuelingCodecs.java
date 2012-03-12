@@ -562,7 +562,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   public void assertDocValues(DocValues leftDocValues, DocValues rightDocValues) throws Exception {
     assertNotNull(info, leftDocValues);
     assertNotNull(info, rightDocValues);
-    assertEquals(info, leftDocValues.type(), rightDocValues.type());
+    assertEquals(info, leftDocValues.getType(), rightDocValues.getType());
     assertEquals(info, leftDocValues.getValueSize(), rightDocValues.getValueSize());
     assertDocValuesSource(leftDocValues.getDirectSource(), rightDocValues.getDirectSource());
     assertDocValuesSource(leftDocValues.getSource(), rightDocValues.getSource());
@@ -572,8 +572,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
    * checks source API
    */
   public void assertDocValuesSource(DocValues.Source left, DocValues.Source right) throws Exception {
-    DocValues.Type leftType = left.type();
-    assertEquals(info, leftType, right.type());
+    DocValues.Type leftType = left.getType();
+    assertEquals(info, leftType, right.getType());
     switch(leftType) {
       case VAR_INTS:
       case FIXED_INTS_8:

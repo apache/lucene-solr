@@ -90,7 +90,7 @@ public abstract class DocValues implements Closeable {
   /**
    * Returns the {@link Type} of this {@link DocValues} instance
    */
-  public abstract Type type();
+  public abstract Type getType();
 
   /**
    * Closes this {@link DocValues} instance. This method should only be called
@@ -191,7 +191,7 @@ public abstract class DocValues implements Closeable {
      * 
      * @return the {@link Type} of this source.
      */
-    public Type type() {
+    public Type getType() {
       return type;
     }
 

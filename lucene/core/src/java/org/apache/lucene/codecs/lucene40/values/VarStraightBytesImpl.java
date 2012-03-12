@@ -248,7 +248,7 @@ class VarStraightBytesImpl {
     @Override
     public Source getDirectSource()
         throws IOException {
-      return new DirectVarStraightSource(cloneData(), cloneIndex(), type());
+      return new DirectVarStraightSource(cloneData(), cloneIndex(), getType());
     }
   }
   

@@ -210,7 +210,7 @@ class PackedIntValues {
 
 
     @Override
-    public Type type() {
+    public Type getType() {
       return Type.VAR_INTS;
     }
 

@@ -200,7 +200,7 @@ public class SimpleTextPerDocProducer extends PerDocProducerBase {
     }
 
     @Override
-    public Type type() {
+    public Type getType() {
       return type;
     }
 

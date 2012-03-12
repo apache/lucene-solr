@@ -166,7 +166,7 @@ final class VarSortedBytesImpl {
 
     @Override
     public Source getDirectSource() throws IOException {
-      return new DirectSortedSource(cloneData(), cloneIndex(), comparator, type());
+      return new DirectSortedSource(cloneData(), cloneIndex(), comparator, getType());
     }
     
   }

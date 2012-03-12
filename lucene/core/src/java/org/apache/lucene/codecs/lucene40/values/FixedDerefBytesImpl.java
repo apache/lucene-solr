@@ -84,7 +84,7 @@ class FixedDerefBytesImpl {
     @Override
     public Source getDirectSource()
         throws IOException {
-      return new DirectFixedDerefSource(cloneData(), cloneIndex(), size, type());
+      return new DirectFixedDerefSource(cloneData(), cloneIndex(), size, getType());
     }
 
     @Override

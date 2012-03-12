@@ -235,7 +235,7 @@ class Lucene3xNormsProducer extends PerDocProducer {
     }
 
     @Override
-    public Type type() {
+    public Type getType() {
       return Type.FIXED_INTS_8;
     }
     

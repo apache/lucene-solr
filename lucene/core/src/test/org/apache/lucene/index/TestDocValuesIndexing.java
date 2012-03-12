@@ -432,7 +432,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       if (val == Type.VAR_INTS) {
       }
       Source source = docValues.getSource();
-      switch (source.type()) {
+      switch (source.getType()) {
       case FIXED_INTS_8:
       {
         assertTrue(source.hasArray());
@@ -492,7 +492,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       }
         break;
       default:
-        fail("unexpected value " + source.type());
+        fail("unexpected value " + source.getType());
       }
       r.close();
     }
@@ -515,7 +515,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     // getArray()
     Source source = docValues.getSource();
 
-    switch (source.type()) {
+    switch (source.getType()) {
     case BYTES_FIXED_STRAIGHT: {
       BytesRef ref = new BytesRef();
       if (source.hasArray()) {
@@ -529,7 +529,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     }
       break;
     default:
-      fail("unexpected value " + source.type());
+      fail("unexpected value " + source.getType());
     }
     r.close();
     w.close();
@@ -549,7 +549,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     case 2:
       return values.getDirectSource();
     case 1:
-      if(values.type() == Type.BYTES_VAR_SORTED || values.type() == Type.BYTES_FIXED_SORTED) {
+      if(values.getType() == Type.BYTES_VAR_SORTED || values.getType() == Type.BYTES_FIXED_SORTED) {
         return values.getSource().asSortedSource();
       }
     default:

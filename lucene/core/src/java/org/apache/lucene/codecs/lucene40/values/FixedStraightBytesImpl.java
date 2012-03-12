@@ -287,7 +287,7 @@ class FixedStraightBytesImpl {
    
     @Override
     public Source getDirectSource() throws IOException {
-      return new DirectFixedStraightSource(cloneData(), size, type());
+      return new DirectFixedStraightSource(cloneData(), size, getType());
     }
     
     @Override

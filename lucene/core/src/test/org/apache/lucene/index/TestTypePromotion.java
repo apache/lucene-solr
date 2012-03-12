@@ -349,7 +349,7 @@ public class TestTypePromotion extends LuceneTestCase {
     DocValues docValues = children[0].reader().docValues("promote");
     assertNotNull(docValues);
     assertValues(TestType.Byte, dir, values);
-    assertEquals(Type.BYTES_VAR_STRAIGHT, docValues.type());
+    assertEquals(Type.BYTES_VAR_STRAIGHT, docValues.getType());
     reader.close();
     dir.close();
   }
