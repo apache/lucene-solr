@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -392,260 +391,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return r;
   }
 
-  // This class inherits all sync from IW:
-  class ReadersAndLiveDocs {
-    // Not final because we replace (clone) when we need to
-    // change it and it's been shared:
-    public final SegmentInfo info;
-
-    // Set once (null, and then maybe set, and never set again):
-    private SegmentReader reader;
-
-    // TODO: it's sometimes wasteful that we hold open two
-    // separate SRs (one for merging one for
-    // reading)... maybe just use a single SR?  The gains of
-    // not loading the terms index (for merging in the
-    // non-NRT case) are far less now... and if the app has
-    // any deletes it'll open real readers anyway.
-
-    // Set once (null, and then maybe set, and never set again):
-    private SegmentReader mergeReader;
-
-    // Holds the current shared (readable and writable
-    // liveDocs).  This is null when there are no deleted
-    // docs, and it's copy-on-write (cloned whenever we need
-    // to change it but it's been shared to an external NRT
-    // reader).
-    public Bits liveDocs;
-
-    // How many further deletions we've done against
-    // liveDocs vs when we loaded it or last wrote it:
-    public int pendingDeleteCount;
-
-    // True if the current liveDocs is referenced by an
-    // external NRT reader:
-    public boolean shared;
-
-    public ReadersAndLiveDocs(SegmentInfo info) {
-      this.info = info;
-      shared = true;
-    }
-
-    // Returns false if we are the only remaining refs of
-    // this reader:
-    public synchronized boolean anyOutsideRefs(SegmentReader sr) {
-      int myRefCounts = 0;
-      if (sr == reader) {
-        myRefCounts++;
-      }
-      if (sr == mergeReader) {
-        myRefCounts++;
-      }
-      final int rc = sr.getRefCount();
-      assert rc >= myRefCounts;
-      return rc > myRefCounts;
-    }
-
-    // Call only from assert!
-    public synchronized boolean verifyDocCounts() {
-      int count;
-      if (liveDocs != null) {
-        count = 0;
-        for(int docID=0;docID<info.docCount;docID++) {
-          if (liveDocs.get(docID)) {
-            count++;
-          }
-        }
-      } else {
-        count = info.docCount;
-      }
-
-      assert info.docCount - info.getDelCount() - pendingDeleteCount == count: "info.docCount=" + info.docCount + " info.getDelCount()=" + info.getDelCount() + " pendingDeleteCount=" + pendingDeleteCount + " count=" + count;;
-      return true;
-    }
-
-    // Returns true if any reader remains
-    public synchronized boolean removeReader(SegmentReader sr, boolean drop) throws IOException {
-      if (sr == reader) {
-        //System.out.println(" non-merge reader");
-        reader.decRef();
-        reader = null;
-      }
-        
-      if (sr == mergeReader) {
-        //System.out.println(" merge reader");
-        mergeReader.decRef();
-        mergeReader = null;
-        if (drop && reader != null) {
-          //System.out.println(" also release normal reader rc=" + rld.reader.getRefCount());
-          reader.decRef();
-          reader = null;
-        }
-      }
-
-      return reader != null || mergeReader != null;
-    }
-
-    // Get reader for searching/deleting
-    public synchronized SegmentReader getReader(IOContext context) throws IOException {
-      //System.out.println("  livedocs=" + rld.liveDocs);
-
-      if (reader == null) {
-        reader = new SegmentReader(info, config.getReaderTermsIndexDivisor(), context);
-        if (liveDocs == null) {
-          liveDocs = reader.getLiveDocs();
-        }
-        //System.out.println("ADD seg=" + rld.info + " isMerge=" + isMerge + " " + readerMap.size() + " in pool");
-      }
-
-      // Ref for caller
-      reader.incRef();
-      return reader;
-    }
-
-    // Get reader for merging (does not load the terms
-    // index):
-    public synchronized SegmentReader getMergeReader(IOContext context) throws IOException {
-      //System.out.println("  livedocs=" + rld.liveDocs);
-
-      if (mergeReader == null) {
-
-        if (reader != null) {
-          // Just use the already opened non-merge reader
-          // for merging.  In the NRT case this saves us
-          // pointless double-open:
-          //System.out.println("PROMOTE non-merge reader seg=" + rld.info);
-          reader.incRef();
-          mergeReader = reader;
-        } else {
-          mergeReader = new SegmentReader(info, -1, context);
-          if (liveDocs == null) {
-            liveDocs = mergeReader.getLiveDocs();
-          }
-        }
-      }
-
-      // Ref for caller
-      mergeReader.incRef();
-      return mergeReader;
-    }
-
-    public synchronized boolean delete(int docID) {
-      assert liveDocs != null;
-      assert docID >= 0 && docID < liveDocs.length() : "out of bounds: docid=" + docID + ",liveDocsLength=" + liveDocs.length();
-      assert !shared;
-      final boolean didDelete = liveDocs.get(docID);
-      if (didDelete) {
-       ((MutableBits) liveDocs).clear(docID);
-        pendingDeleteCount++;
-        //System.out.println("  new del seg=" + info + " docID=" + docID + " pendingDelCount=" + pendingDeleteCount + " totDelCount=" + (info.docCount-liveDocs.count()));
-      }
-      return didDelete;
-    }
-
-    public synchronized void dropReaders() throws IOException {
-      if (reader != null) {
-        //System.out.println("  pool.drop info=" + info + " rc=" + reader.getRefCount());
-        reader.decRef();
-        reader = null;
-      }
-      if (mergeReader != null) {
-        //System.out.println("  pool.drop info=" + info + " merge rc=" + mergeReader.getRefCount());
-        mergeReader.decRef();
-        mergeReader = null;
-      }
-    }
-
-    /**
-     * Returns a ref to a clone.  NOTE: this clone is not
-     * enrolled in the pool, so you should simply close()
-     * it when you're done (ie, do not call release()).
-     */
-    public synchronized SegmentReader getReadOnlyClone(IOContext context) throws IOException {
-      if (reader == null) {
-        getReader(context).decRef();
-        assert reader != null;
-      }
-      shared = true;
-      if (liveDocs != null) {
-        return new SegmentReader(reader.getSegmentInfo(), reader.core, liveDocs, info.docCount - info.getDelCount() - pendingDeleteCount);
-      } else {
-        reader.incRef();
-        return reader;
-      }
-    }
-
-    public synchronized void initWritableLiveDocs() throws IOException {
-      assert Thread.holdsLock(IndexWriter.this);
-      assert info.docCount > 0;
-      //System.out.println("initWritableLivedocs seg=" + info + " liveDocs=" + liveDocs + " shared=" + shared);
-      if (shared) {
-        // Copy on write: this means we've cloned a
-        // SegmentReader sharing the current liveDocs
-        // instance; must now make a private clone so we can
-        // change it:
-        LiveDocsFormat liveDocsFormat = info.getCodec().liveDocsFormat();
-        if (liveDocs == null) {
-          //System.out.println("create BV seg=" + info);
-          liveDocs = liveDocsFormat.newLiveDocs(info.docCount);
-        } else {
-          liveDocs = liveDocsFormat.newLiveDocs(liveDocs);
-        }
-        shared = false;
-      } else {
-        assert liveDocs != null;
-      }
-    }
-
-    public synchronized Bits getReadOnlyLiveDocs() {
-      //System.out.println("getROLiveDocs seg=" + info);
-      assert Thread.holdsLock(IndexWriter.this);
-      shared = true;
-      //if (liveDocs != null) {
-      //System.out.println("  liveCount=" + liveDocs.count());
-      //}
-      return liveDocs;
-    }
-
-    // Commit live docs to the directory (writes new
-    // _X_N.del files); returns true if it wrote the file
-    // and false if there were no new deletes to write:
-    public synchronized boolean writeLiveDocs(Directory dir) throws IOException {
-      //System.out.println("rld.writeLiveDocs seg=" + info + " pendingDelCount=" + pendingDeleteCount);
-      if (pendingDeleteCount != 0) {
-        // We have new deletes
-        assert liveDocs.length() == info.docCount;
-
-        // Save in case we need to rollback on failure:
-        final SegmentInfo sav = (SegmentInfo) info.clone();
-        info.advanceDelGen();
-        info.setDelCount(info.getDelCount() + pendingDeleteCount);
-
-        // We can write directly to the actual name (vs to a
-        // .tmp & renaming it) because the file is not live
-        // until segments file is written:
-        boolean success = false;
-        try {
-          info.getCodec().liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, dir, info, IOContext.DEFAULT);
-          success = true;
-        } finally {
-          if (!success) {
-            info.reset(sav);
-          }
-        }
-        pendingDeleteCount = 0;
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    @Override
-    public String toString() {
-      return "SegmentLiveDocs(seg=" + info + " pendingDeleteCount=" + pendingDeleteCount + " shared=" + shared + ")";
-    }
-  }
-
   /** Holds shared SegmentReader instances. IndexWriter uses
    *  SegmentReaders for 1) applying deletes, 2) doing
    *  merges, 3) handing out a real-time reader.  This pool
@@ -665,44 +410,36 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return true;
     }
 
-    /**
-     * Release the segment reader (i.e. decRef it and close if there
-     * are no more references).  If drop is true then we
-     * remove this entry from the pool.
-     * @param sr
-     * @throws IOException
-     */
-    public synchronized void release(SegmentReader sr, boolean drop) throws IOException {
-      // Drop caller's ref; for an external reader (not
-      // pooled), this decRef will close it
-      //System.out.println("pool.release seg=" + sr.getSegmentInfo() + " rc=" + sr.getRefCount() + " drop=" + drop);
-      sr.decRef();
+    public synchronized void drop(SegmentInfo info) throws IOException {
+      final ReadersAndLiveDocs rld = readerMap.get(info);
+      if (rld != null) {
+        assert info == rld.info;
+        readerMap.remove(info);
+        rld.dropReaders();
+      }
+    }
 
-      final ReadersAndLiveDocs rld = readerMap.get(sr.getSegmentInfo());
+    public synchronized void release(ReadersAndLiveDocs rld) throws IOException {
 
-      if (rld != null && (drop || (!poolReaders && !rld.anyOutsideRefs(sr)))) {
+      // Matches incRef in get:
+      rld.decRef();
 
-        // Discard (don't save) changes when we are dropping
-        // the reader; this is used only on the sub-readers
-        // after a successful merge.  If deletes had
-        // accumulated on those sub-readers while the merge
-        // is running, by now we have carried forward those
-        // deletes onto the newly merged segment, so we can
-        // discard them on the sub-readers:
+      // Pool still holds a ref:
+      assert rld.refCount() >= 1;
 
-        if (!drop) {
-          if (rld.writeLiveDocs(directory)) {
-            assert infoIsLive(sr.getSegmentInfo());
-            // Must checkpoint w/ deleter, because we just
-            // created created new _X_N.del file.
-            deleter.checkpoint(segmentInfos, false);
-          }
+      if (!poolReaders && rld.refCount() == 1) {
+        // This is the last ref to this RLD, and we're not
+        // pooling, so remove it:
+        if (rld.writeLiveDocs(directory)) {
+          // Make sure we only write del docs for a live segment:
+          assert infoIsLive(rld.info);
+          // Must checkpoint w/ deleter, because we just
+          // created created new _X_N.del file.
+          deleter.checkpoint(segmentInfos, false);
         }
 
-        if (!rld.removeReader(sr, drop)) {
-          //System.out.println("DROP seg=" + rld.info + " " + readerMap.size() + " in pool");
-          readerMap.remove(sr.getSegmentInfo());
-        }
+        rld.dropReaders();
+        readerMap.remove(rld.info);
       }
     }
 
@@ -712,8 +449,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       final Iterator<Map.Entry<SegmentInfo,ReadersAndLiveDocs>> it = readerMap.entrySet().iterator();
       while(it.hasNext()) {
         final ReadersAndLiveDocs rld = it.next().getValue();
-        //System.out.println("pool.dropAll: seg=" + rld.info);
         if (doSave && rld.writeLiveDocs(directory)) {
+          // Make sure we only write del docs for a live segment:
           assert infoIsLive(rld.info);
           // Must checkpoint w/ deleter, because we just
           // created created new _X_N.del file.
@@ -735,13 +472,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       assert readerMap.size() == 0;
     }
 
-    public synchronized void drop(SegmentInfo info) throws IOException {
-      final ReadersAndLiveDocs rld = readerMap.remove(info);
-      if (rld != null) {
-        rld.dropReaders();
-      }
-    }
-
     /**
      * Commit live docs changes for the segment readers for
      * the provided infos.
@@ -751,19 +481,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     public synchronized void commit(SegmentInfos infos) throws IOException {
       for (SegmentInfo info : infos) {
         final ReadersAndLiveDocs rld = readerMap.get(info);
-        if (rld != null && rld.writeLiveDocs(directory)) {
-          assert infoIsLive(info);
-          // Must checkpoint w/ deleter, because we just
-          // created created new _X_N.del file.
-          deleter.checkpoint(segmentInfos, false);
+        if (rld != null) {
+          assert rld.info == info;
+          if (rld.writeLiveDocs(directory)) {
+            // Make sure we only write del docs for a live segment:
+            assert infoIsLive(info);
+            // Must checkpoint w/ deleter, because we just
+            // created created new _X_N.del file.
+            deleter.checkpoint(segmentInfos, false);
+          }
         }
       }
     }
 
     /**
      * Obtain a ReadersAndLiveDocs instance from the
-     * readerPool.  If getReader is true, you must later call
-     * {@link #release(SegmentReader)}.
+     * readerPool.  If create is true, you must later call
+     * {@link #release(ReadersAndLiveDocs)}.
      * @throws IOException
      */
     public synchronized ReadersAndLiveDocs get(SegmentInfo info, boolean create) {
@@ -771,15 +505,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       assert info.dir == directory;
 
       ReadersAndLiveDocs rld = readerMap.get(info);
-      //System.out.println("rld.get seg=" + info + " poolReaders=" + poolReaders);
       if (rld == null) {
-        //System.out.println("  new rld");
         if (!create) {
           return null;
         }
-        rld = new ReadersAndLiveDocs(info);
+        rld = new ReadersAndLiveDocs(IndexWriter.this, info);
+        // Steal initial reference:
         readerMap.put(info, rld);
+      } else {
+        assert rld.info == info: "rld.info=" + rld.info + " info=" + info + " isLive?=" + infoIsLive(rld.info) + " vs " + infoIsLive(info);
       }
+
+      if (create) {
+        // Return ref to caller:
+        rld.incRef();
+      }
+
       return rld;
     }
   }
@@ -795,7 +536,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final ReadersAndLiveDocs rld = readerPool.get(info, false);
     if (rld != null) {
-      delCount += rld.pendingDeleteCount;
+      delCount += rld.getPendingDeleteCount();
     }
     return delCount;
   }
@@ -1116,7 +857,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         finishMerges(waitForMerges);
         stopMerges = true;
       }
-
       mergeScheduler.close();
 
       if (infoStream.isEnabled("IW")) {
@@ -1160,8 +900,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
   }
-  
- 
 
   /** Returns the Directory used by this index. */
   public Directory getDirectory() {
@@ -2020,6 +1758,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           notifyAll();
         }
 
+        // Don't bother saving any changes in our segmentInfos
+        readerPool.dropAll(false);
+
         // Keep the same segmentInfos instance but replace all
         // of its SegmentInfo instances.  This is so the next
         // attempt to commit using this instance of IndexWriter
@@ -2038,9 +1779,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // them:
         deleter.checkpoint(segmentInfos, false);
         deleter.refresh();
-
-        // Don't bother saving any changes in our segmentInfos
-        readerPool.dropAll(false);
       }
 
       lastCommitChangeCount = changeCount;
@@ -3023,16 +2761,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       final int docCount = info.docCount;
       final Bits prevLiveDocs = merge.readerLiveDocs.get(i);
       final Bits currentLiveDocs;
-      ReadersAndLiveDocs rld = readerPool.get(info, false);
-      // We enrolled in mergeInit:
-      assert rld != null;
-      currentLiveDocs = rld.liveDocs;
+      final ReadersAndLiveDocs rld = readerPool.get(info, false);
+      // We hold a ref so it should still be in the pool:
+      assert rld != null: "seg=" + info.name;
+      currentLiveDocs = rld.getLiveDocs();
 
       if (prevLiveDocs != null) {
 
         // If we had deletions on starting the merge we must
         // still have deletions now:
         assert currentLiveDocs != null;
+        assert prevLiveDocs.length() == docCount;
+        assert currentLiveDocs.length() == docCount;
 
         // There were deletes on this segment when the merge
         // started.  The merge has collapsed away those
@@ -3066,9 +2806,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             }
           }
         } else {
-          docUpto += info.docCount - info.getDelCount() - rld.pendingDeleteCount;
+          docUpto += info.docCount - info.getDelCount() - rld.getPendingDeleteCount();
         }
       } else if (currentLiveDocs != null) {
+        assert currentLiveDocs.length() == docCount;
         // This segment had no deletes before but now it
         // does:
         for(int j=0; j<docCount; j++) {
@@ -3087,11 +2828,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
+    assert docUpto == merge.info.docCount;
+
     if (infoStream.isEnabled("IW")) {
       if (mergedDeletes == null) {
         infoStream.message("IW", "no new deletes since merge started");
       } else {
-        infoStream.message("IW", mergedDeletes.pendingDeleteCount + " new deletes since merge started");
+        infoStream.message("IW", mergedDeletes.getPendingDeleteCount() + " new deletes since merge started");
       }
     }
 
@@ -3136,7 +2879,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final ReadersAndLiveDocs mergedDeletes =  merge.info.docCount == 0 ? null : commitMergedDeletes(merge);
 
-    assert mergedDeletes == null || mergedDeletes.pendingDeleteCount != 0;
+    assert mergedDeletes == null || mergedDeletes.getPendingDeleteCount() != 0;
 
     // If the doc store we are using has been closed and
     // is in now compound format (but wasn't when we
@@ -3148,7 +2891,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final boolean allDeleted = merge.segments.size() == 0 ||
       merge.info.docCount == 0 ||
       (mergedDeletes != null &&
-       mergedDeletes.pendingDeleteCount == merge.info.docCount);
+       mergedDeletes.getPendingDeleteCount() == merge.info.docCount);
 
     if (infoStream.isEnabled("IW")) {
       if (allDeleted) {
@@ -3165,15 +2908,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     assert merge.info.docCount != 0 || keepFullyDeletedSegments || dropSegment;
 
     segmentInfos.applyMergeChanges(merge, dropSegment);
-    
-    if (dropSegment) {
-      readerPool.drop(merge.info);
-      deleter.deleteNewFiles(merge.info.files());
-      assert !segmentInfos.contains(merge.info);
-    } else {
-      if (mergedDeletes != null && !poolReaders) {
-        mergedDeletes.writeLiveDocs(directory);
-        readerPool.drop(merge.info);
+
+    if (mergedDeletes != null) {
+      if (dropSegment) {
+        mergedDeletes.dropChanges();
+      }
+      readerPool.release(mergedDeletes);
+      if (dropSegment) {
+        readerPool.drop(mergedDeletes.info);
       }
     }
 
@@ -3289,7 +3031,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         infoStream.message("IW", "merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.docCount + " docs");
       }
     }
-    //System.out.println(Thread.currentThread().getName() + ": merge end");
   }
 
   /** Hook that's called when the specified merge is complete. */
@@ -3524,9 +3265,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     boolean drop = !suppressExceptions;
     
     for (int i = 0; i < numSegments; i++) {
-      if (merge.readers.get(i) != null) {
+      final SegmentReader sr = merge.readers.get(i);
+      if (sr != null) {
         try {
-          readerPool.release(merge.readers.get(i), drop);
+          final ReadersAndLiveDocs rld = readerPool.get(sr.getSegmentInfo(), false);
+          // We still hold a ref so it should not have been removed:
+          assert rld != null;
+          if (drop) {
+            rld.dropChanges();
+          }
+          rld.release(sr);
+          readerPool.release(rld);
+          if (drop) {
+            readerPool.drop(rld.info);
+          }
         } catch (Throwable t) {
           if (th == null) {
             th = t;
@@ -3589,17 +3341,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
         // Carefully pull the most recent live docs:
         final Bits liveDocs;
+        final int delCount;
+
         synchronized(this) {
           // Must sync to ensure BufferedDeletesStream
           // cannot change liveDocs/pendingDeleteCount while
           // we pull a copy:
           liveDocs = rld.getReadOnlyLiveDocs();
+          delCount = rld.getPendingDeleteCount() + info.getDelCount();
 
           assert rld.verifyDocCounts();
 
           if (infoStream.isEnabled("IW")) {
-            if (rld.pendingDeleteCount != 0) {
-              infoStream.message("IW", "seg=" + info + " delCount=" + info.getDelCount() + " pendingDelCount=" + rld.pendingDeleteCount);
+            if (rld.getPendingDeleteCount() != 0) {
+              infoStream.message("IW", "seg=" + info + " delCount=" + info.getDelCount() + " pendingDelCount=" + rld.getPendingDeleteCount());
             } else if (info.getDelCount() != 0) {
               infoStream.message("IW", "seg=" + info + " delCount=" + info.getDelCount());
             } else {
@@ -3609,8 +3364,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
         merge.readerLiveDocs.add(liveDocs);
         merge.readers.add(reader);
-        final int delCount = rld.pendingDeleteCount + info.getDelCount();
-        assert delCount <= info.docCount;
+        assert delCount <= info.docCount: "delCount=" + delCount + " info.docCount=" + info.docCount + " rld.pendingDeleteCount=" + rld.getPendingDeleteCount() + " info.getDelCount()=" + info.getDelCount();
         if (delCount < info.docCount) {
           merger.add(reader, liveDocs);
         }
@@ -3708,7 +3462,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           mergedSegmentWarmer.warm(sr);
         } finally {
           synchronized(this) {
-            readerPool.release(sr, false);
+            rld.release(sr);
+            readerPool.release(rld);
           }
         }
       }
@@ -3762,11 +3517,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   /** @lucene.internal */
   public synchronized String segString(Iterable<SegmentInfo> infos) throws IOException {
     final StringBuilder buffer = new StringBuilder();
-    for(final SegmentInfo s : infos) {
+    for(final SegmentInfo info : infos) {
       if (buffer.length() > 0) {
         buffer.append(' ');
       }
-      buffer.append(segString(s));
+      buffer.append(segString(info));
     }
     return buffer.toString();
   }
@@ -3819,6 +3574,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return true;
   }
 
+  // For infoStream output
+  synchronized SegmentInfos toLiveInfos(SegmentInfos sis) {
+    final SegmentInfos newSIS = new SegmentInfos();
+    final Map<SegmentInfo,SegmentInfo> liveSIS = new HashMap<SegmentInfo,SegmentInfo>();        
+    for(SegmentInfo info : segmentInfos) {
+      liveSIS.put(info, info);
+    }
+    for(SegmentInfo info : sis) {
+      SegmentInfo liveInfo = liveSIS.get(info);
+      if (liveInfo != null) {
+        info = liveInfo;
+      }
+      newSIS.add(info);
+    }
+
+    return newSIS;
+  }
+
   /** Walk through all files referenced by the current
    *  segmentInfos and ask the Directory to sync each file,
    *  if it wasn't already.  If that succeeds, then we
@@ -3853,7 +3626,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
 
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "startCommit index=" + segString(toSync) + " changeCount=" + changeCount);
+          infoStream.message("IW", "startCommit index=" + segString(toLiveInfos(toSync)) + " changeCount=" + changeCount);
         }
 
         assert filesExist(toSync);
