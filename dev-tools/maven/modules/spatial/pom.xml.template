@@ -48,7 +48,6 @@
     <dependency>
       <groupId>com.spatial4j</groupId>
       <artifactId>spatial4j</artifactId>
-      <version>0.2</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
