@@ -61,14 +61,16 @@ import java.util.Map;
 public class CurrencyField extends FieldType implements SchemaAware, ResourceLoaderAware {
   protected static final String PARAM_DEFAULT_CURRENCY      = "defaultCurrency";
   protected static final String PARAM_RATE_PROVIDER_CLASS   = "providerClass";
+  protected static final Object PARAM_PRECISION_STEP        = "precisionStep";
   protected static final String DEFAULT_RATE_PROVIDER_CLASS = "org.apache.solr.schema.FileExchangeRateProvider";
   protected static final String DEFAULT_DEFAULT_CURRENCY    = "USD";
+  protected static final String DEFAULT_PRECISION_STEP      = "0";
   protected static final String FIELD_SUFFIX_AMOUNT_RAW     = "_amount_raw";
   protected static final String FIELD_SUFFIX_CURRENCY       = "_currency";
-  protected static final String FIELD_TYPE_CURRENCY         = "string";
-  protected static final String FIELD_TYPE_AMOUNT_RAW       = "tlong";
 
   private IndexSchema schema;
+  protected FieldType fieldTypeCurrency;
+  protected FieldType fieldTypeAmountRaw;
   private String exchangeRateProviderClass;
   private String defaultCurrency;
   private ExchangeRateProvider provider;
@@ -93,9 +95,27 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid currency code " + this.defaultCurrency);
     }
 
+    String precisionStepString = args.get(PARAM_PRECISION_STEP);
+    if (precisionStepString == null) {
+      precisionStepString = DEFAULT_PRECISION_STEP;
+    }
+
+    // Initialize field type for amount
+    fieldTypeAmountRaw = new TrieLongField();
+    fieldTypeAmountRaw.setTypeName("amount_raw_type_tint");
+    Map<String,String> map = new HashMap<String,String>(1);
+    map.put("precisionStep", precisionStepString);
+    fieldTypeAmountRaw.init(schema, map);
+    
+    // Initialize field type for currency string
+    fieldTypeCurrency = new StrField();
+    fieldTypeCurrency.setTypeName("currency_type_string");
+    fieldTypeCurrency.init(schema, new HashMap<String,String>());
+    
     args.remove(PARAM_RATE_PROVIDER_CLASS);
     args.remove(PARAM_DEFAULT_CURRENCY);
-    
+    args.remove(PARAM_PRECISION_STEP);
+
     try {
       // TODO: Are we using correct classloader?
       Class<?> c = Class.forName(exchangeRateProviderClass);
@@ -145,13 +165,13 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     return schema.getField(field.getName() + POLY_FIELD_SEPARATOR + FIELD_SUFFIX_CURRENCY);
   }
 
-  private void createDynamicCurrencyField(String suffix, String fieldType) {
+  private void createDynamicCurrencyField(String suffix, FieldType type) {
     String name = "*" + POLY_FIELD_SEPARATOR + suffix;
     Map<String, String> props = new HashMap<String, String>();
     props.put("indexed", "true");
     props.put("stored", "false");
     props.put("multiValued", "false");
-    org.apache.solr.schema.FieldType type = schema.getFieldTypeByName(fieldType);
+    props.put("omitNorms", "true");
     int p = SchemaField.calcProps(name, type, props);
     schema.registerDynamicField(SchemaField.create(name, type, p, null));
   }
@@ -162,9 +182,8 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    * @param indexSchema The index schema.
    */
   public void inform(IndexSchema indexSchema) {
-    // TODO: Should we allow configurable field-types or in another way not be dependent on static type names types in schema?
-    createDynamicCurrencyField(FIELD_SUFFIX_CURRENCY, FIELD_TYPE_CURRENCY);
-    createDynamicCurrencyField(FIELD_SUFFIX_AMOUNT_RAW, FIELD_TYPE_AMOUNT_RAW);
+    createDynamicCurrencyField(FIELD_SUFFIX_CURRENCY,   fieldTypeCurrency);
+    createDynamicCurrencyField(FIELD_SUFFIX_AMOUNT_RAW, fieldTypeAmountRaw);
   }
 
   /**

@@ -458,11 +458,12 @@
    <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
         Parameters:
           defaultCurrency: Specifies the default currency if none specified. Defaults to "USD"
+          precisionStep:   Specifies the precisionStep for the TrieLong field used for the amount
           providerClass:   Lets you plug in other exchange backend. Defaults to FileExchangeRateProvider
                            The FileExchangeRateProvider takes one parameter:
                              currencyConfig: name of an xml file holding exhange rates
    -->
-    <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" defaultCurrency="USD"/>
+    <fieldType name="currency" class="solr.CurrencyField" precisionStep="8" defaultCurrency="USD" currencyConfig="currency.xml" />
 
    <!-- some examples for different languages (generally ordered by ISO code) -->
 
