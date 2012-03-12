@@ -102,7 +102,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
 
     // Initialize field type for amount
     fieldTypeAmountRaw = new TrieLongField();
-    fieldTypeAmountRaw.setTypeName("amount_raw_type_tint");
+    fieldTypeAmountRaw.setTypeName("amount_raw_type_tlong");
     Map<String,String> map = new HashMap<String,String>(1);
     map.put("precisionStep", precisionStepString);
     fieldTypeAmountRaw.init(schema, map);
