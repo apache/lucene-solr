@@ -169,4 +169,23 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     q2.add(new Term[] { t2, t3 }, 2);
     assertSubsetOf(q1, q2);
   }
+  
+  /** "A B"~∞ = +A +B if A != B */
+  public void testSloppyPhraseVersusBooleanAnd() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = null;
+    // semantics differ from SpanNear: SloppyPhrase handles repeats,
+    // so we must ensure t1 != t2
+    do {
+      t2 = randomTerm();
+    } while (t1.equals(t2));
+    PhraseQuery q1 = new PhraseQuery();
+    q1.add(t1);
+    q1.add(t2);
+    q1.setSlop(Integer.MAX_VALUE);
+    BooleanQuery q2 = new BooleanQuery();
+    q2.add(new TermQuery(t1), Occur.MUST);
+    q2.add(new TermQuery(t2), Occur.MUST);
+    assertSameSet(q1, q2);
+  }
 }
