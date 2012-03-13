@@ -850,6 +850,12 @@
        when adding a document.
    -->
 
+   <!-- field names should consist of alphanumeric or underscore only and
+      not starting with a digit.  This is not currently strictly enforced,
+      but other field names will not have first class support from all components
+      and back compatibility is not guaranteed.
+   -->
+        
    <field name="id" type="string" indexed="true" stored="true" required="true" /> 
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text_general" indexed="true" stored="true"/>
