@@ -81,6 +81,9 @@ public abstract class CompositeReader extends IndexReader {
    *  If this method returns an empty array, that means this
    *  reader is a null reader (for example a MultiReader
    *  that has no sub readers).
+   *  <p><b>Warning:</b> Don't modify the returned array!
+   *  Doing so will corrupt the internal structure of this
+   *  {@code CompositeReader}.
    */
   public abstract IndexReader[] getSequentialSubReaders();
 

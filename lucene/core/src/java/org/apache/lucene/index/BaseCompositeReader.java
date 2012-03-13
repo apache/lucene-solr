@@ -53,6 +53,14 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   private final int numDocs;
   private final boolean hasDeletions;
   
+  /**
+   * Constructs a {@code BaseCompositeReader} on the given subReaders.
+   * @param subReaders the wrapped sub-readers. This array is returned by
+   * {@link #getSequentialSubReaders} and used to resolve the correct
+   * subreader for docID-based methods. <b>Please note:</b> This array is <b>not</b>
+   * cloned and not protected for modification, the subclass is responsible 
+   * to do this.
+   */
   protected BaseCompositeReader(R[] subReaders) throws IOException {
     this.subReaders = subReaders;
     starts = new int[subReaders.length + 1];    // build starts array

@@ -323,8 +323,17 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
     }
   }
 
-  protected DirectoryReader(Directory directory, AtomicReader[] readers) throws CorruptIndexException, IOException {
-    super(readers);
+  /**
+   * Expert: Constructs a {@code DirectoryReader} on the given subReaders.
+   * @param segmentReaders the wrapped atomic index segment readers. This array is
+   * returned by {@link #getSequentialSubReaders} and used to resolve the correct
+   * subreader for docID-based methods. <b>Please note:</b> This array is <b>not</b>
+   * cloned and not protected for modification outside of this reader.
+   * Subclasses of {@code DirectoryReader} should take care to not allow
+   * modification of this internal array, e.g. {@link #doOpenIfChanged()}.
+   */
+  protected DirectoryReader(Directory directory, AtomicReader[] segmentReaders) throws CorruptIndexException, IOException {
+    super(segmentReaders);
     this.directory = directory;
   }
   
