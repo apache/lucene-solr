@@ -21,15 +21,13 @@ import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.WeakHashMap;
-
+import java.util.logging.Logger;
 
 public abstract class ShapeFieldCacheProvider<T extends Shape> {
-  static final Logger log = LoggerFactory.getLogger(ShapeFieldCacheProvider.class);
+  private Logger log = Logger.getLogger(getClass().getName());
 
   // it may be a List<T> or T
   WeakHashMap<IndexReader, ShapeFieldCache<T>> sidx = new WeakHashMap<IndexReader, ShapeFieldCache<T>>();
@@ -51,7 +49,7 @@ public abstract class ShapeFieldCacheProvider<T extends Shape> {
     }
     long startTime = System.currentTimeMillis();
 
-    log.info("Building Cache [" + reader.maxDoc() + "]");
+    log.fine("Building Cache [" + reader.maxDoc() + "]");
     idx = new ShapeFieldCache<T>(reader.maxDoc(),defaultSize);
     int count = 0;
     DocsEnum docs = null;
@@ -76,7 +74,7 @@ public abstract class ShapeFieldCacheProvider<T extends Shape> {
     }
     sidx.put(reader, idx);
     long elapsed = System.currentTimeMillis() - startTime;
-    log.info("Cached: [" + count + " in " + elapsed + "ms] " + idx);
+    log.fine("Cached: [" + count + " in " + elapsed + "ms] " + idx);
     return idx;
   }
 }

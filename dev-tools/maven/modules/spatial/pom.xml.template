@@ -50,10 +50,6 @@
       <artifactId>spatial4j</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-core</artifactId>
       <version>${project.version}</version>
@@ -67,12 +63,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-analyzers-common</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-benchmark</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
     </dependency>
   </dependencies>
   <build>

@@ -28,12 +28,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.logging.Logger;
 
 public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends SpatialTestCase {
 
@@ -48,7 +47,7 @@ public abstract class StrategyTestCase<T extends SpatialFieldInfo> extends Spati
 
   public static final String QTEST_Cities_IsWithin_BBox = "cities-IsWithin-BBox.txt";
 
-  protected final Logger log = LoggerFactory.getLogger(getClass());
+  private Logger log = Logger.getLogger(getClass().getName());
 
   protected final SpatialArgsParser argsParser = new SpatialArgsParser();
 

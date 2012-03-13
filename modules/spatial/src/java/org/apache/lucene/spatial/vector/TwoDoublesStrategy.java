@@ -37,13 +37,8 @@ import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.util.CachingDoubleValueSource;
 import org.apache.lucene.spatial.util.NumericFieldInfo;
 import org.apache.lucene.spatial.util.ValueSourceFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 public class TwoDoublesStrategy extends SpatialStrategy<TwoDoublesFieldInfo> {
-
-  static final Logger log = LoggerFactory.getLogger(TwoDoublesStrategy.class);
 
   private final NumericFieldInfo finfo;
   private final DoubleParser parser;
