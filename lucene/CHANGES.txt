@@ -682,6 +682,10 @@ Optimizations
   should be rounded up for better performance. This option only applies for docvalues types bytes fixed sorted
   and bytes var sorted. (Simon Willnauer, Martijn van Groningen)
   
+* LUCENE-3795: Replace contrib/spatial with modules/spatial.  This includes 
+  a basic spatial strategy interface.  (David Smiley, Chris Male, ryan)
+    
+  
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader

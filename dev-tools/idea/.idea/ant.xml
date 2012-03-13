@@ -8,7 +8,6 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/memory/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/misc/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/sandbox/build.xml" />
-    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/spatial/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/core/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/tools/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/test-framework/build.xml" />
@@ -26,6 +25,7 @@
     <buildFile url="file://$PROJECT_DIR$/modules/join/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/queries/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/queryparser/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/modules/spatial/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/suggest/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/core/build.xml" />

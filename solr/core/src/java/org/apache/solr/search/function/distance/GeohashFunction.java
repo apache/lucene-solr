@@ -19,7 +19,7 @@ package org.apache.solr.search.function.distance;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.spatial.geohash.GeoHashUtils;
+import com.spatial4j.core.util.GeohashUtils;
 
 import java.util.Map;
 import java.io.IOException;
@@ -55,7 +55,7 @@ public class GeohashFunction extends ValueSource {
 
       @Override
       public String strVal(int doc) {
-        return GeoHashUtils.encode(latDV.doubleVal(doc), lonDV.doubleVal(doc));
+        return GeohashUtils.encodeLatLon(latDV.doubleVal(doc), lonDV.doubleVal(doc));
       }
 
       @Override

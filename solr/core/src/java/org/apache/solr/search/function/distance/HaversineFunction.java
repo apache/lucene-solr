@@ -22,7 +22,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.spatial.DistanceUtils;
+import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
@@ -81,17 +81,17 @@ public class HaversineFunction extends ValueSource {
     double y2;
     double x2;
     if (convertToRadians) {
-      y1 = p1D[0] * DistanceUtils.DEGREES_TO_RADIANS;
-      x1 = p1D[1] * DistanceUtils.DEGREES_TO_RADIANS;
-      y2 = p2D[0] * DistanceUtils.DEGREES_TO_RADIANS;
-      x2 = p2D[1] * DistanceUtils.DEGREES_TO_RADIANS;
+      y1 = Math.toRadians(p1D[0]);
+      x1 = Math.toRadians(p1D[1]);
+      y2 = Math.toRadians(p2D[0]);
+      x2 = Math.toRadians(p2D[1]);
     } else {
       y1 = p1D[0];
       x1 = p1D[1];
       y2 = p2D[0];
       x2 = p2D[1];
     }
-    return DistanceUtils.haversine(y1, x1, y2, x2, radius);
+    return DistanceUtils.distHaversineRAD(y1,x1,y2,x2)*radius;
   }
 
 

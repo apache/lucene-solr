@@ -25,8 +25,9 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.spatial.DistanceUtils;
-import org.apache.lucene.spatial.tier.InvalidGeoException;
+import com.spatial4j.core.context.ParseUtils;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.exception.InvalidShapeException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -72,8 +73,8 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     String externalVal = value.toString();
     String[] point = new String[0];
     try {
-      point = DistanceUtils.parsePoint(null, externalVal, dimension);
-    } catch (InvalidGeoException e) {
+      point = ParseUtils.parsePoint(null, externalVal, dimension);
+    } catch (InvalidShapeException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
@@ -137,9 +138,9 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     String[] p1;
     String[] p2;
     try {
-      p1 = DistanceUtils.parsePoint(null, part1, dimension);
-      p2 = DistanceUtils.parsePoint(null, part2, dimension);
-    } catch (InvalidGeoException e) {
+      p1 = ParseUtils.parsePoint(null, part1, dimension);
+      p2 = ParseUtils.parsePoint(null, part2, dimension);
+    } catch (InvalidShapeException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
     BooleanQuery result = new BooleanQuery(true);
@@ -155,8 +156,8 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     String[] p1 = new String[0];
     try {
-      p1 = DistanceUtils.parsePoint(null, externalVal, dimension);
-    } catch (InvalidGeoException e) {
+      p1 = ParseUtils.parsePoint(null, externalVal, dimension);
+    } catch (InvalidShapeException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
     //TODO: should we assert that p1.length == dimension?
@@ -179,8 +180,8 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     Query result = null;
     double [] point = new double[0];
     try {
-      point = DistanceUtils.parsePointDouble(null, options.pointStr, dimension);
-    } catch (InvalidGeoException e) {
+      point = ParseUtils.parsePointDouble(null, options.pointStr, dimension);
+    } catch (InvalidShapeException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
     if (dimension == 1){

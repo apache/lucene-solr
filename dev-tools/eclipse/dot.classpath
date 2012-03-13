@@ -14,10 +14,8 @@
 	<classpathentry kind="src" path="lucene/contrib/misc/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/sandbox/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/sandbox/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/spatial/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/spatial/src/test"/>
 	<classpathentry kind="src" path="lucene/test-framework/src/java"/>
-        <classpathentry kind="src" output="bin.tests-framework" path="lucene/test-framework/src/resources"/>
+  <classpathentry kind="src" output="bin.tests-framework" path="lucene/test-framework/src/resources"/>
 	<classpathentry kind="src" path="modules/analysis/common/src/java"/>
 	<classpathentry kind="src" path="modules/analysis/common/src/resources"/>
 	<classpathentry kind="src" path="modules/analysis/common/src/test"/>
@@ -55,6 +53,10 @@
 	<classpathentry kind="src" path="modules/queryparser/src/test"/>
 	<classpathentry kind="src" path="modules/suggest/src/java"/>
 	<classpathentry kind="src" path="modules/suggest/src/test"/>
+	<classpathentry kind="src" path="modules/spatial/src/java"/>
+	<classpathentry kind="src" path="modules/spatial/src/test"/>
+	<classpathentry kind="src" path="modules/spatial/src/test-files"/>
+	<classpathentry kind="lib" path="modules/spatial/lib/spatial4j-0.2.jar"/>
 	<classpathentry kind="src" path="solr/core/src/java"/>
 	<classpathentry kind="src" path="solr/core/src/test"/>
 	<classpathentry kind="src" path="solr/core/src/test-files"/>

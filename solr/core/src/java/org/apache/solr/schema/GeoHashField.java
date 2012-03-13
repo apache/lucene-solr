@@ -22,9 +22,12 @@ import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.spatial.geohash.GeoHashUtils;
-import org.apache.lucene.spatial.DistanceUtils;
-import org.apache.lucene.spatial.tier.InvalidGeoException;
+import com.spatial4j.core.context.ParseUtils;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.exception.InvalidShapeException;
+import com.spatial4j.core.util.GeohashUtils;
+import com.spatial4j.core.shape.Point;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -41,10 +44,12 @@ import java.io.IOException;
  * href="http://en.wikipedia.org/wiki/Geohash">Geohash</a> field. The field is
  * provided as a lat/lon pair and is internally represented as a string.
  *
- * @see org.apache.lucene.spatial.DistanceUtils#parseLatitudeLongitude(double[], String)
+ * @see com.spatial4j.core.context.ParseUtils#parseLatitudeLongitude(double[], String) 
  */
 public class GeoHashField extends FieldType implements SpatialQueryable {
 
+
+  private final SpatialContext ctx = SimpleSpatialContext.GEO_KM;
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
@@ -57,11 +62,11 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
     double [] point = new double[0];
     try {
-      point = DistanceUtils.parsePointDouble(null, options.pointStr, 2);
-    } catch (InvalidGeoException e) {
+      point = ParseUtils.parsePointDouble(null, options.pointStr, 2);
+    } catch (InvalidShapeException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
-    String geohash = GeoHashUtils.encode(point[0], point[1]);
+    String geohash = GeohashUtils.encodeLatLon(point[0], point[1]);
     //TODO: optimize this
     return new SolrConstantScoreQuery(new ValueSourceRangeFilter(new GeohashHaversineFunction(getValueSource(options.field, parser),
             new LiteralValueSource(geohash), options.radius), "0", String.valueOf(options.distance), true, true));
@@ -76,8 +81,8 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
 
   @Override
   public String toExternal(IndexableField f) {
-    double[] latLon = GeoHashUtils.decode(f.stringValue());
-    return latLon[0] + "," + latLon[1];
+    Point p = GeohashUtils.decode(f.stringValue(),ctx);
+    return p.getY() + "," + p.getX();
   }
 
 
@@ -87,11 +92,11 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
     // latitude, longitude
     double[] latLon = new double[0];
     try {
-      latLon = DistanceUtils.parseLatitudeLongitude(null, val);
-    } catch (InvalidGeoException e) {
+      latLon = ParseUtils.parseLatitudeLongitude(null, val);
+    } catch (InvalidShapeException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
-    return GeoHashUtils.encode(latLon[0], latLon[1]);
+    return GeohashUtils.encodeLatLon(latLon[0], latLon[1]);
   }
 
 

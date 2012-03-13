@@ -16,9 +16,8 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+import com.spatial4j.core.distance.DistanceUnits;
 import org.apache.solr.schema.SchemaField;
-import org.apache.lucene.spatial.geometry.DistanceUnits;
-
 
 /**
  *

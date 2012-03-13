@@ -344,6 +344,11 @@
         <artifactId>javax.servlet</artifactId>
         <version>3.0.0.v201112011016</version>
       </dependency>
+      <dependency>
+        <groupId>com.spatial4j</groupId>
+        <artifactId>spatial4j</artifactId>
+        <version>0.2</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <dependencies>

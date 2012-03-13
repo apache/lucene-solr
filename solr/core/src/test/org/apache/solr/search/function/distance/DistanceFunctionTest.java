@@ -16,8 +16,8 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
-import org.apache.lucene.spatial.DistanceUtils;
-import org.apache.lucene.spatial.geohash.GeoHashUtils;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.util.GeohashUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
@@ -36,12 +36,12 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void testHaversine() throws Exception {
     clearIndex();
-    assertU(adoc("id", "1", "x_td", "0", "y_td", "0", "gh_s1", GeoHashUtils.encode(32.7693246, -79.9289094)));
-    assertU(adoc("id", "2", "x_td", "0", "y_td", String.valueOf(Math.PI / 2), "gh_s1", GeoHashUtils.encode(32.7693246, -78.9289094)));
-    assertU(adoc("id", "3", "x_td", String.valueOf(Math.PI / 2), "y_td", String.valueOf(Math.PI / 2), "gh_s1", GeoHashUtils.encode(32.7693246, -80.9289094)));
-    assertU(adoc("id", "4", "x_td", String.valueOf(Math.PI / 4), "y_td", String.valueOf(Math.PI / 4), "gh_s1", GeoHashUtils.encode(32.7693246, -81.9289094)));
+    assertU(adoc("id", "1", "x_td", "0", "y_td", "0", "gh_s1", GeohashUtils.encodeLatLon(32.7693246, -79.9289094)));
+    assertU(adoc("id", "2", "x_td", "0", "y_td", String.valueOf(Math.PI / 2), "gh_s1", GeohashUtils.encodeLatLon(32.7693246, -78.9289094)));
+    assertU(adoc("id", "3", "x_td", String.valueOf(Math.PI / 2), "y_td", String.valueOf(Math.PI / 2), "gh_s1", GeohashUtils.encodeLatLon(32.7693246, -80.9289094)));
+    assertU(adoc("id", "4", "x_td", String.valueOf(Math.PI / 4), "y_td", String.valueOf(Math.PI / 4), "gh_s1", GeohashUtils.encodeLatLon(32.7693246, -81.9289094)));
     assertU(adoc("id", "5", "x_td", "45.0", "y_td", "45.0",
-            "gh_s1", GeoHashUtils.encode(32.7693246, -81.9289094)));
+            "gh_s1", GeohashUtils.encodeLatLon(32.7693246, -81.9289094)));
     assertU(adoc("id", "6", "point_hash", "32.5, -79.0", "point", "32.5, -79.0"));
     assertU(adoc("id", "7", "point_hash", "32.6, -78.0", "point", "32.6, -78.0"));
     assertU(commit());
@@ -56,17 +56,19 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
     
     //Geo Hash Haversine
     //Can verify here: http://www.movable-type.co.uk/scripts/latlong.html, but they use a slightly different radius for the earth, so just be close
-    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", gh_s1, \"" + GeoHashUtils.encode(32, -79) +
-            "\",)", "fq", "id:1"), "//float[@name='score']='122.171875'");
+    //note: using assertJQ because it supports numeric deltas, and by default too
+    assertJQ(req("fl", "*,score", "q", "{!func}ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", gh_s1, \"" + GeohashUtils.encodeLatLon(32, -79) + "\",)", "fq", "id:1"),
+        "/response/docs/[0]/score==122.171875");
 
-    assertQ(req("fl", "id,point_hash,score", "q", "{!func}recip(ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", point_hash, \"" + GeoHashUtils.encode(32, -79) + "\"), 1, 1, 0)"),
+    assertQ(req("fl", "id,point_hash,score", "q", "{!func}recip(ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", point_hash, \"" + GeohashUtils.encodeLatLon(32, -79) + "\"), 1, 1, 0)"),
             "//*[@numFound='7']", 
             "//result/doc[1]/str[@name='id'][.='6']",
             "//result/doc[2]/str[@name='id'][.='7']"//all the rest don't matter
             );
 
 
-    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", gh_s1, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.171875'");
+    assertJQ(req("fl", "*,score", "q", "{!func}ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", gh_s1, geohash(32, -79))", "fq", "id:1"),
+        "/response/docs/[0]/score==122.171875");
 
   }
 

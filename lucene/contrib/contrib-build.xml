@@ -228,12 +228,12 @@
     <property name="sandbox.uptodate" value="true"/>
   </target>
 
-  <property name="spatial.jar" value="${common.dir}/build/contrib/spatial/lucene-spatial-${version}.jar"/>
+  <property name="spatial.jar" value="${common.dir}/../modules/spatial/build/lucene-spatial-${version}.jar"/>
   <target name="check-spatial-uptodate" unless="spatial.uptodate">
-    <contrib-uptodate name="spatial" jarfile="${spatial.jar}" property="spatial.uptodate"/>
+    <module-uptodate name="spatial" jarfile="${spatial.jar}" property="spatial.uptodate"/>
   </target>
   <target name="jar-spatial" unless="spatial.uptodate" depends="check-spatial-uptodate">
-  	<ant dir="${common.dir}/contrib/spatial" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/../modules/spatial" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="spatial.uptodate" value="true"/>

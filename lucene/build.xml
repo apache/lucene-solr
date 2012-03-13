@@ -264,7 +264,6 @@
           <packageset dir="contrib/memory/src/java"/>
           <packageset dir="contrib/misc/src/java"/>
           <packageset dir="contrib/sandbox/src/java"/>
-          <packageset dir="contrib/spatial/src/java"/>
           <!-- end alpha sort -->
 
           <!-- If the main javadoc Group listing includes an "Other   -->
@@ -279,7 +278,6 @@
           <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
           <group title="contrib: Misc " packages="org.apache.lucene.misc*"/>
           <group title="contrib: Sandbox" packages="org.apache.lucene.sandbox*"/>
-          <group title="contrib: Spatial" packages="org.apache.lucene.spatial*"/>
           
         </sources>
       </invoke-javadoc>
