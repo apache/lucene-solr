@@ -160,22 +160,17 @@ public class TwoDoublesStrategy extends SpatialStrategy<TwoDoublesFieldInfo> {
       throw new UnsupportedSpatialOperation(args.getOperation());
     }
 
-    try {
-      if( valueSource != null ) {
-        valueSource = new CachingDoubleValueSource(valueSource);
-      }
-      else {
-        valueSource = makeValueSource(args, fieldInfo);
-      }
-      Query spatialRankingQuery = new FunctionQuery(valueSource);
-      BooleanQuery bq = new BooleanQuery();
-      bq.add(spatial,BooleanClause.Occur.MUST);
-      bq.add(spatialRankingQuery,BooleanClause.Occur.MUST);
-      return bq;
-    } catch(Exception ex) {
-      log.warn("error making score", ex);
+    if( valueSource != null ) {
+      valueSource = new CachingDoubleValueSource(valueSource);
     }
-    return spatial;
+    else {
+      valueSource = makeValueSource(args, fieldInfo);
+    }
+    Query spatialRankingQuery = new FunctionQuery(valueSource);
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(spatial,BooleanClause.Occur.MUST);
+    bq.add(spatialRankingQuery,BooleanClause.Occur.MUST);
+    return bq;
   }
 
   /**
