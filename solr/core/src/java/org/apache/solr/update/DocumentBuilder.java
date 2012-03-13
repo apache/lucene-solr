@@ -298,10 +298,13 @@ public class DocumentBuilder {
           boost = docBoost;
         }
       }
+      catch( SolrException ex ) {
+        throw ex;
+      }
       catch( Exception ex ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
             "ERROR: "+getID(doc, schema)+"Error adding field '" + 
-              field.getName() + "'='" +field.getValue()+"'", ex );
+              field.getName() + "'='" +field.getValue()+"' msg=" + ex.getMessage(), ex );
       }
       
       // make sure the field was used somehow...
