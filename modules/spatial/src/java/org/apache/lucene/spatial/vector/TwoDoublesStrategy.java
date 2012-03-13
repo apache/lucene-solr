@@ -114,7 +114,7 @@ public class TwoDoublesStrategy extends SpatialStrategy<TwoDoublesFieldInfo> {
     // For starters, just limit the bbox
     Shape shape = args.getShape();
     if (!(shape instanceof Rectangle)) {
-      throw new InvalidShapeException("A rectangle is the only supported at this time, not "+shape.getClass());//TODO
+      throw new InvalidShapeException("A rectangle is the only supported shape (so far), not "+shape.getClass());//TODO
     }
     Rectangle bbox = (Rectangle) shape;
     if (bbox.getCrossesDateLine()) {

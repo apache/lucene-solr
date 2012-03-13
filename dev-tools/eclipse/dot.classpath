@@ -56,7 +56,7 @@
 	<classpathentry kind="src" path="modules/spatial/src/java"/>
 	<classpathentry kind="src" path="modules/spatial/src/test"/>
 	<classpathentry kind="src" path="modules/spatial/src/test-files"/>
-	<classpathentry kind="lib" path="modules/spatial/lib/spatial4j-0.1.jar"/>
+	<classpathentry kind="lib" path="modules/spatial/lib/spatial4j-0.2.jar"/>
 	<classpathentry kind="src" path="solr/core/src/java"/>
 	<classpathentry kind="src" path="solr/core/src/test"/>
 	<classpathentry kind="src" path="solr/core/src/test-files"/>
