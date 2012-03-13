@@ -20,27 +20,31 @@ package org.apache.solr.search;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.response.transform.*;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- * See: https://issues.apache.org/jira/browse/SOLR-2719
- * 
- * This has tests for fields that should work, but are currently broken
- */
+
 public class ReturnFieldsTest extends SolrTestCaseJ4 {
+
+  // :TODO: datatypes produced by the functions used may change
+
+  /**
+   * values of the fl param that mean all real fields
+   */
+  private static String[] ALL_REAL_FIELDS = new String[] { "", "*" };
+
+  /**
+   * values of the fl param that mean all real fields and score
+   */
+  private static String[] SCORE_AND_REAL_FIELDS = new String[] {
+      "score", "score,*", "*,score"
+  };
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema12.xml");
-    createIndex();
-  }
-
-  private static void createIndex() {
-    String v;
-    v="how now brown cow";
-    assertU(adoc("id","1", "text",v,  "text_np",v));
-    v="now cow";
+    String v = "how now brown cow";
+    assertU(adoc("id","1", "text",v,  "text_np", v));
+    v = "now cow";
     assertU(adoc("id","2", "text",v,  "text_np",v));
     assertU(commit());
   }
@@ -164,6 +168,13 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse(rf.wantsAllFields());
     assertEquals( "[docid]", rf.getTransformer().getName() );
 
+    rf = new ReturnFields( req("fl", "mydocid:[docid]") );
+    assertFalse( rf.wantsScore() );
+    assertFalse( rf.wantsField( "id" ) );
+    assertFalse(rf.wantsField("xxx"));
+    assertFalse(rf.wantsAllFields());
+    assertEquals( "mydocid", rf.getTransformer().getName() );
+
     rf = new ReturnFields( req("fl", "[docid][shard]") );
     assertFalse( rf.wantsScore() );
     assertFalse(rf.wantsField("xxx"));
@@ -185,6 +196,10 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertTrue(rf.wantsField("name"));
     assertTrue(rf.wantsField("test"));
     assertTrue(rf.wantsField("subject"));
+    assertTrue(rf.wantsField("newId"));
+    assertTrue(rf.wantsField("newName"));
+    assertTrue(rf.wantsField("newTest"));
+    assertTrue(rf.wantsField("newSubject"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
     assertTrue( rf.getTransformer() instanceof RenameFieldsTransformer);
@@ -194,16 +209,20 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertTrue(rf.wantsField("name"));
     assertTrue(rf.wantsField("test"));
     assertTrue(rf.wantsField("subject"));
+    assertTrue(rf.wantsField("newId"));
+    assertTrue(rf.wantsField("newName"));
+    assertTrue(rf.wantsField("newTest"));
+    assertTrue(rf.wantsField("newSubject"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
     assertTrue( rf.getTransformer() instanceof DocTransformers);
     assertEquals(2, ((DocTransformers)rf.getTransformer()).size());
   }
 
-  @Ignore
+  // hyphens in field names are not supported in all contexts, but we wanted
+  // the simplest case of fl=foo-bar to work
   @Test
-  public void testTrailingHyphenInFieldName() {
-    //java.lang.NumberFormatException: For input string: "-"
+  public void testHyphenInFieldName() {
     ReturnFields rf = new ReturnFields(req("fl", "id-test"));
     assertFalse(rf.wantsScore());
     assertTrue(rf.wantsField("id-test"));
@@ -211,54 +230,32 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse(rf.wantsAllFields());
   }
 
-  @Ignore
   @Test
-  public void testLeadingHyphenInFieldName() {
-    //java.lang.NumberFormatException: For input string: "-"
-    ReturnFields rf = new ReturnFields(req("fl", "-idtest"));
+  public void testTrailingDotInFieldName() {
+    ReturnFields rf = new ReturnFields(req("fl", "id.test"));
     assertFalse(rf.wantsScore());
-    assertTrue(rf.wantsField("id-test"));
+    assertTrue(rf.wantsField("id.test"));
+    assertFalse(rf.wantsField("xxx"));
+    assertFalse(rf.wantsAllFields());
+
+    rf = new ReturnFields(req("fl", "test:id.test"));
+    assertFalse(rf.wantsScore());
+    assertTrue(rf.wantsField("id.test"));
+    assertTrue(rf.wantsField("test"));
+    assertFalse(rf.wantsField("xxx"));
+    assertFalse(rf.wantsAllFields());
+
+    rf = new ReturnFields(req("fl", "test.id:id.test"));
+    assertFalse(rf.wantsScore());
+    assertTrue(rf.wantsField("id.test"));
+    assertTrue(rf.wantsField("test.id"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
   }
 
-  @Ignore
   @Test
   public void testTrailingDollarInFieldName() {
     ReturnFields rf = new ReturnFields(req("fl", "id$test"));
-    assertFalse(rf.wantsScore());
-    assertTrue(rf.wantsField("id$test"));
-    assertFalse(rf.wantsField("xxx"));
-    assertFalse(rf.wantsAllFields());
-  }
-
-  @Ignore
-  @Test
-  public void testLeadingDollarInFieldName() {
-    //throws Missing param idtest while parsing function '$idtest'
-    ReturnFields rf = new ReturnFields(req("fl", "$idtest"));
-    assertFalse(rf.wantsScore());
-    assertTrue(rf.wantsField("id$test"));
-    assertFalse(rf.wantsField("xxx"));
-    assertFalse(rf.wantsAllFields());
-  }
-
-  @Ignore
-  @Test
-  public void testTrailingTildeInFieldName() {
-    //Error parsing fieldname: Expected identifier at pos 0 str='~test'
-    ReturnFields rf = new ReturnFields(req("fl", "id~test"));
-    assertFalse(rf.wantsScore());
-    assertTrue(rf.wantsField("id$test"));
-    assertFalse(rf.wantsField("xxx"));
-    assertFalse(rf.wantsAllFields());
-  }
-
-  @Ignore
-  @Test
-  public void testLeadingTildeInFieldName() {
-    //Error parsing fieldname: Expected identifier at pos 0 str='~idtest'
-    ReturnFields rf = new ReturnFields(req("fl", "~idtest"));
     assertFalse(rf.wantsScore());
     assertTrue(rf.wantsField("id$test"));
     assertFalse(rf.wantsField("xxx"));
