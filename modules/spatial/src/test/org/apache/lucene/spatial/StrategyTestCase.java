@@ -23,7 +23,7 @@ import com.spatial4j.core.io.sample.SampleData;
 import com.spatial4j.core.io.sample.SampleDataReader;
 import com.spatial4j.core.query.SpatialArgsParser;
 import com.spatial4j.core.shape.Shape;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
