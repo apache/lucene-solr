@@ -197,6 +197,7 @@ public class BlockTermsReader extends FieldsProducer {
 
   @Override
   public Terms terms(String field) throws IOException {
+    assert field != null;
     return fields.get(field);
   }
 

@@ -144,7 +144,7 @@ public class MultiDocValues extends DocValues {
           }
           final DocValues d = puller.pull(r, field);
           if (d != null) {
-            TypePromoter incoming = TypePromoter.create(d.type(), d.getValueSize());
+            TypePromoter incoming = TypePromoter.create(d.getType(), d.getValueSize());
             promotedType[0] = promotedType[0].promote(incoming);
           } else if (puller.stopLoadingOnNull(r, field)){
             promotedType[0] = TypePromoter.getIdentityPromoter(); // set to identity to return null
@@ -203,8 +203,8 @@ public class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Type type() {
-      return emptySource.type();
+    public Type getType() {
+      return emptySource.getType();
     }
 
     @Override
@@ -230,8 +230,8 @@ public class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Type type() {
-      return emptyFixedSource.type();
+    public Type getType() {
+      return emptyFixedSource.getType();
     }
 
     @Override
@@ -519,7 +519,7 @@ public class MultiDocValues extends DocValues {
 
     @Override
     public SortedSource asSortedSource() {
-      if (type() == Type.BYTES_FIXED_SORTED || type() == Type.BYTES_VAR_SORTED) {
+      if (getType() == Type.BYTES_FIXED_SORTED || getType() == Type.BYTES_VAR_SORTED) {
         
       }
       return super.asSortedSource();
@@ -586,7 +586,7 @@ public class MultiDocValues extends DocValues {
   }
 
   @Override
-  public Type type() {
+  public Type getType() {
     return type;
   }
 

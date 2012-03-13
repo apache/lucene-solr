@@ -42,8 +42,7 @@
     <base.specification.version>4.0.0</base.specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.6</java.compat.version>
-    <jetty.version>6.1.26</jetty.version>
-    <patched.jetty.version>6.1.26-patched-JETTY-1340</patched.jetty.version>
+    <jetty.version>8.1.2.v20120308</jetty.version>
     <slf4j.version>1.6.1</slf4j.version>
     <tika.version>1.0</tika.version>
   </properties>
@@ -296,14 +295,24 @@
         <version>2.2</version>
       </dependency>
       <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jetty</artifactId>
-        <version>${patched.jetty.version}</version>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>${jetty.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.mortbay.jetty</groupId>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-servlet</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
-        <version>${patched.jetty.version}</version>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-webapp</artifactId>
+        <version>${jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -331,9 +340,9 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>servlet-api</artifactId>
-        <version>2.4</version>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.servlet</artifactId>
+        <version>3.0.0.v201112011016</version>
       </dependency>
       <dependency>
         <groupId>com.spatial4j</groupId>
@@ -495,7 +504,7 @@
         </plugin>
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
-          <artifactId>maven-jetty-plugin</artifactId>
+          <artifactId>jetty-maven-plugin</artifactId>
           <version>${jetty.version}</version>
         </plugin>
         <plugin>
@@ -636,7 +645,7 @@
                   <artifactId>solr-commons-csv</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/lib/commons-csv-1.0-SNAPSHOT-r966014.jar</file>
+                  <file>solr/lib/apache-solr-commons-csv-1.0-SNAPSHOT-r966014.jar</file>
                 </configuration>  
               </execution>
               <execution>
@@ -652,34 +661,6 @@
                   <packaging>jar</packaging>
                   <file>solr/lib/apache-solr-noggit-r1211150.jar</file>
                 </configuration>  
-              </execution>
-              <execution>
-                <id>install-jetty</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.mortbay.jetty</groupId>
-                  <artifactId>jetty</artifactId>
-                  <version>${patched.jetty.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/example/lib/jetty-${patched.jetty.version}.jar</file>
-                </configuration>
-              </execution>
-              <execution>
-                <id>install-jetty-util</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.mortbay.jetty</groupId>
-                  <artifactId>jetty-util</artifactId>
-                  <version>${patched.jetty.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/example/lib/jetty-util-${patched.jetty.version}.jar</file>
-                </configuration>
               </execution>
               <execution>
                 <id>install-jsonic</id>

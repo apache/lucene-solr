@@ -40,6 +40,7 @@ import org.apache.lucene.util.Counter;
  */
 abstract class Writer extends DocValuesConsumer {
   protected final Counter bytesUsed;
+  protected Type type;
 
   /**
    * Creates a new {@link Writer}.
@@ -49,9 +50,19 @@ abstract class Writer extends DocValuesConsumer {
    *          internally allocated memory. All tracked bytes must be released
    *          once {@link #finish(int)} has been called.
    */
-  protected Writer(Counter bytesUsed) {
+  protected Writer(Counter bytesUsed, Type type) {
     this.bytesUsed = bytesUsed;
+    this.type = type;
   }
+  
+  
+
+  @Override
+  protected Type getType() {
+    return type;
+  }
+
+
 
   /**
    * Factory method to create a {@link Writer} instance for a given type. This

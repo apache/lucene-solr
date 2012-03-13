@@ -264,13 +264,6 @@ public final class ParallelAtomicReader extends AtomicReader {
   }
   
   @Override
-  public boolean hasNorms(String field) throws IOException {
-    ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
-    return reader==null ? false : reader.hasNorms(field);
-  }
-  
-  @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
     for (AtomicReader reader : completeReaderSet) {

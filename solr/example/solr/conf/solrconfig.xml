@@ -1051,7 +1051,7 @@
   <!-- Solr Replication
 
        The SolrReplicationHandler supports replicating indexes from a
-       "master" used for indexing and "salves" used for queries.
+       "master" used for indexing and "slaves" used for queries.
 
        http://wiki.apache.org/solr/SolrReplication 
 

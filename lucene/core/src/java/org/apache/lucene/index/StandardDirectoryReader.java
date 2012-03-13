@@ -91,21 +91,27 @@ final class StandardDirectoryReader extends DirectoryReader {
       try {
         final SegmentInfo info = infos.info(i);
         assert info.dir == dir;
-        final IndexWriter.ReadersAndLiveDocs rld = writer.readerPool.get(info, true);
-        final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
-        if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
-          readers.add(reader);
-          infosUpto++;
-        } else {
-          reader.close();
-          segmentInfos.remove(infosUpto);
+        final ReadersAndLiveDocs rld = writer.readerPool.get(info, true);
+        try {
+          final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
+          if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
+            // Steal the ref:
+            readers.add(reader);
+            infosUpto++;
+          } else {
+            reader.close();
+            segmentInfos.remove(infosUpto);
+          }
+        } finally {
+          writer.readerPool.release(rld);
         }
         success = true;
       } catch(IOException ex) {
         prior = ex;
       } finally {
-        if (!success)
+        if (!success) {
           IOUtils.closeWhileHandlingException(prior, readers);
+        }
       }
     }
     return new StandardDirectoryReader(dir, readers.toArray(new SegmentReader[readers.size()]),
@@ -219,12 +225,12 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   @Override
-  protected final DirectoryReader doOpenIfChanged() throws CorruptIndexException, IOException {
+  protected DirectoryReader doOpenIfChanged() throws CorruptIndexException, IOException {
     return doOpenIfChanged(null);
   }
 
   @Override
-  protected final DirectoryReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
+  protected DirectoryReader doOpenIfChanged(final IndexCommit commit) throws CorruptIndexException, IOException {
     ensureOpen();
 
     // If we were obtained by writer.getReader(), re-ask the
@@ -237,7 +243,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   @Override
-  protected final DirectoryReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+  protected DirectoryReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
     ensureOpen();
     if (writer == this.writer && applyAllDeletes == this.applyAllDeletes) {
       return doOpenFromWriter(null);
@@ -246,7 +252,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     }
   }
 
-  private final DirectoryReader doOpenFromWriter(IndexCommit commit) throws CorruptIndexException, IOException {
+  private DirectoryReader doOpenFromWriter(IndexCommit commit) throws CorruptIndexException, IOException {
     if (commit != null) {
       throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
     }

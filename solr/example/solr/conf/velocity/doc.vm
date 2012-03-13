@@ -2,7 +2,7 @@
 ##do we have a physical store for this product
 #set($store = $doc.getFieldValue('store'))
 #if($store)<div class="map"><img src="http://maps.google.com/maps/api/staticmap?&zoom=12&size=150x80&maptype=roadmap&markers=$doc.getFieldValue('store')&sensor=false" /><div><small><a target="_map" href="http://maps.google.com/?q=$store&amp;source=embed">Larger Map</a></small></div></div>#end
-<div>Price: $!number.currency($doc.getFieldValue('price'))</div>
+<div>Price: #field('price_c')</div>
 <div>Features: #field('features')</div>
 <div>In Stock: #field('inStock')</div>
 <div class="mlt">

@@ -81,7 +81,7 @@ class PreFlexRWNormsConsumer extends PerDocConsumer {
   
   @Override
   protected boolean canMerge(FieldInfo info) {
-    return info.normsPresent();
+    return info.hasNorms();
   }
 
   @Override
@@ -163,6 +163,11 @@ class PreFlexRWNormsConsumer extends PerDocConsumer {
       docIDs[upto] = docID;
       upto++;
     }
+
+    @Override
+    protected Type getType() {
+      return Type.FIXED_INTS_8;
+    }
     
     
   }
@@ -228,7 +233,7 @@ class PreFlexRWNormsConsumer extends PerDocConsumer {
     public void merge(MergeState mergeState) throws IOException {
       int numMergedDocs = 0;
       for (FieldInfo fi : mergeState.fieldInfos) {
-        if (fi.normsPresent()) {
+        if (fi.hasNorms()) {
           startField(fi);
           int numMergedDocsForField = 0;
           for (MergeState.IndexReaderAndLiveDocs reader : mergeState.readers) {

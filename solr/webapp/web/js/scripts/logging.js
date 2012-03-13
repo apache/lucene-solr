@@ -1,166 +1,236 @@
-// #/logging
-sammy.get
-(
-    /^#\/(logging)$/,
-    function( context )
+/*
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
+var loglevel_path = null;
+var logging_handler = function( response, text_status, xhr )
+{
+  var self = this;
+  var loggers = response.loggers;
+
+  var levels = '<div class="selector-holder"><div class="selector">' + "\n"
+             + '<a class="trigger"><span><em>null</em></span></a>' + "\n"
+             + '<ul>' + "\n";
+
+  for( var key in response.levels )
+  {
+    var level = response.levels[key].esc();
+    levels += '<li><a href="#" data-level="' + level + '">' + level + '</a></li>' + "\n";
+  }
+
+  levels += '<li class="unset"><a href="#" data-level="unset">UNSET</a></li>' + "\n"
+         + '</ul>' + "\n"
+         + '<a class="close"><span>[x]</span></a>' + "\n"
+         + '</div></div>';
+
+  var logger_tree = function( filter )
+  {
+    var logger_content = '';
+    var filter_regex = new RegExp( '^' + filter + '\\.\\w+$' );
+
+    for( var i in loggers )
     {
-        var content_element = $( '#content' );
-        
-        content_element
-            .html( '<div id="logging"></div>' );
+      var logger = loggers[i];
+      var continue_matcher = false;
+
+      if( !filter )
+      {
+        continue_matcher = logger.name.indexOf( '.' ) !== -1;
+      }
+      else
+      {
+        continue_matcher = !logger.name.match( filter_regex );
+      }
+
+      if( continue_matcher )
+      {
+        continue;
+      }
+
+      var logger_class = '';
+
+      if( logger.set )
+      {
+        logger_class = 'set';
+      }
+            
+      if( !logger.level )
+      {
+        logger_class = 'null';
+      }
+
+      var logger_name = logger.name.split( '.' );
+      var display_name = logger_name.pop();
+
+      logger_content += '<li class="jstree-leaf" data-logger="' + logger.name.esc() + '">';
+      logger_content += '<ins class="trigger jstree-icon">&nbsp;</ins>' + "\n";
+      logger_content += '<a href="#" class="trigger '+ logger_class + '"' ;
+
+      if( logger.level )
+      {
+        logger_content += 'rel="' + logger.level.esc() + '" ';
+      }
+            
+      logger_content += 'title="' + logger.name.esc() + '">' + "\n";
+
+      if( 0 !== logger_name.length )
+      {
+        logger_content += '<span class="ns">' + logger_name.join( '.' ).esc() + '.</span>';
+      }
+
+      logger_content += '<span class="name">' + display_name.esc() + '</span>' + "\n";
+      logger_content += '</a>';
+
+      logger_content += levels;
+
+      var child_logger_content = logger_tree( logger.name );
+      if( child_logger_content )
+      {
+        logger_content += '<ul>';
+        logger_content += child_logger_content;
+        logger_content += '</ul>';
+      }
+
+      logger_content += '</li>';
+    }
+
+    return logger_content;
+  };
+
+  var logger_content = logger_tree( null );
+
+  self
+    .html( '<ul class="tree jstree">' + logger_content + '</ul>' );
+
+  $( 'li:last-child', this )
+    .addClass( 'jstree-last' );
+
+  $( 'li.jstree-leaf > a', this )
+    .each
+    (
+      function( index, element )
+      {
+        element = $( element );
+        var level = element.attr( 'rel' );
+
+        if( level )
+        {
+          var selector = $( '.selector-holder', element.closest( 'li' ) );
+
+          $( 'a.trigger', selector )
+            .text( level.esc() );
+
+          $( 'ul a[data-level="' + level + '"]', selector ).first()
+            .addClass( 'level' );
+        }
+      }
+    )
+
+  $( '.trigger, .selector .close', this )
+    .die( 'click' )
+    .live
+    (
+      'click',
+      function( event )
+      {
+        $( '.selector-holder', $( this ).parents( 'li' ).first() ).first()
+          .trigger( 'toggle' );
+
+        return false;
+      }
+    );
+    
+  $( '.selector-holder', this )
+    .die( 'toggle')
+    .live
+    (
+      'toggle',
+      function( event )
+      {
+        var row = $( this ).closest( 'li' );
+
+        $( 'a:first', row )
+          .toggleClass( 'open' );
+
+        $( '.selector-holder:first', row )
+          .toggleClass( 'open' );
+      }
+    );
+
+  $( '.selector ul a', this )
+    .die( 'click' )
+    .live
+    (
+      'click',
+      function( event )
+      {
+        var element = $( this );
 
         $.ajax
         (
+          {
+            url : loglevel_path,
+            dataType : 'json',
+            data : {
+              'wt' : 'json',
+              'set' : $( this ).parents( 'li[data-logger]' ).data( 'logger' ) + ':' + element.data( 'level' )
+            },
+            type : 'POST',
+            context : self,
+            beforeSend : function( xhr, settings )
             {
-                url : 'logging.json',
-                dataType : 'json',
-                context : $( '#logging', content_element ),
-                beforeSend : function( xhr, settings )
-                {
-                    this
-                        .html( '<div class="loader">Loading ...</div>' );
-                },
-                success : function( response, text_status, xhr )
-                {
-                    var logger = response.logger;
-
-                    var loglevel = '<div class="loglevel %class%">' + "\n";
-                    loglevel += '<a class="effective_level trigger"><span>%effective_level%</span></a>' + "\n";
-                    loglevel += '<ul>' + "\n";
-
-                    for( var key in response.levels )
-                    {
-                        var level = response.levels[key].esc();
-                        loglevel += '<li class="' + level + '"><a>' + level + '</a></li>' + "\n";
-                    }
-
-                    loglevel += '<li class="UNSET"><a>UNSET</a></li>' + "\n";
-                    loglevel += '</ul>' + "\n";
-                    loglevel += '</div>';
-
-                    var logger_tree = function( filter )
-                    {
-                        var logger_content = '';
-                        var filter_regex = new RegExp( '^' + filter + '\\.\\w+$' );
-
-                        for( var logger_name in logger )
-                        {
-                            var continue_matcher = false;
-
-                            if( !filter )
-                            {
-                                continue_matcher = logger_name.indexOf( '.' ) !== -1;
-                            }
-                            else
-                            {
-                                continue_matcher = !logger_name.match( filter_regex );
-                            }
-
-                            if( continue_matcher )
-                            {
-                                continue;
-                            }
-
-                            var has_logger_instance = !!logger[logger_name];
-
-                            var classes = [];
-
-                            has_logger_instance
-                                ? classes.push( 'active' )
-                                : classes.push( 'inactive' );
-
-                            logger_content += '<li class="jstree-leaf">';
-                            logger_content += '<ins class="jstree-icon">&nbsp;</ins>';
-                            logger_content += '<a class="trigger ' + classes.join( ' ' ) + '" ' + "\n" +
-                                                 'title="' + logger_name.esc() + '"><span>' + "\n" +
-                                                logger_name.split( '.' ).pop().esc() + "\n" +
-                                              '</span></a>';
-
-                            logger_content += loglevel
-                                                .replace
-                                                (
-                                                    /%class%/g,
-                                                    classes.join( ' ' )
-                                                )
-                                                .replace
-                                                (
-                                                    /%effective_level%/g,
-                                                    has_logger_instance
-                                                        ? logger[logger_name].effective_level
-                                                        : 'null'
-                                                );
-
-                            var child_logger_content = logger_tree( logger_name );
-                            if( child_logger_content )
-                            {
-                                logger_content += '<ul>';
-                                logger_content += child_logger_content;
-                                logger_content += '</ul>';
-                            }
-
-                            logger_content += '</li>';
-                        }
-
-                        return logger_content;
-                    }
-
-                    var logger_content = logger_tree( null );
-                    
-                    var warn = '<div>TODO, this is not yet implemented.  For now, use <a href="logging" style="color:00AA00;">the old logging UI</a></div><br/>'
-
-
-                    this.html( warn + '<ul class="tree jstree">' + logger_content + '</ul>' );
-
-                    $( 'li:last-child', this )
-                        .addClass( 'jstree-last' );
-                    
-                    $( '.loglevel', this )
-                        .each
-                        (
-                            function( index, element )
-                            {
-                                var element = $( element );
-                                var effective_level = $( '.effective_level span', element ).text();
-
-                                element
-                                    .css( 'z-index', 800 - index );
-                                
-                                $( 'ul .' + effective_level, element )
-                                    .addClass( 'selected' );
-                            }
-                        );
-
-                    $( '.trigger', this )
-                        .die( 'click' )
-                        .live
-                        (
-                            'click',
-                            function( event )
-                            {
-                                $( '.loglevel', $( this ).parents( 'li' ).first() ).first()
-                                    .trigger( 'toggle' );
-                            }
-                        );
-                    
-                    $( '.loglevel', this )
-                        .die( 'toggle')
-                        .live
-                        (
-                            'toggle',
-                            function( event )
-                            {
-                                $( this )
-                                    .toggleClass( 'open' );
-                            }
-                        );
-                },
-                error : function( xhr, text_status, error_thrown)
-                {
-                },
-                complete : function( xhr, text_status )
-                {
-                }
-            }
+              element
+                .addClass( 'loader' );
+            },
+            success : logging_handler
+          }
         );
-    }
+
+        return false;
+      }
+    );
+
+};
+
+// #/logging
+sammy.get
+(
+  /^#\/(logging)$/,
+  function( context )
+  {
+    var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );
+    loglevel_path = core_basepath + '/admin/loglevel';
+    var content_element = $( '#content' );
+        
+    content_element
+      .html( '<div id="logging"></div>' );
+
+    $.ajax
+    (
+      {
+        url : loglevel_path + '?wt=json',
+        dataType : 'json',
+        context : $( '#logging', content_element ),
+        beforeSend : function( xhr, settings )
+        {
+          this
+            .html( '<div class="loader">Loading ...</div>' );
+        },
+        success : logging_handler
+      }
+    );
+  }
 );

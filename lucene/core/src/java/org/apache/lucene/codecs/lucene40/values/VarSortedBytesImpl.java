@@ -59,7 +59,7 @@ final class VarSortedBytesImpl {
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         Counter bytesUsed, IOContext context, boolean fasterButMoreRam) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, fasterButMoreRam, Type.BYTES_VAR_SORTED);
       this.comp = comp;
       size = 0;
     }
@@ -166,7 +166,7 @@ final class VarSortedBytesImpl {
 
     @Override
     public Source getDirectSource() throws IOException {
-      return new DirectSortedSource(cloneData(), cloneIndex(), comparator, type());
+      return new DirectSortedSource(cloneData(), cloneIndex(), comparator, getType());
     }
     
   }

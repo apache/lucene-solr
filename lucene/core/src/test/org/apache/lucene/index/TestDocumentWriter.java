@@ -97,7 +97,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     // omitNorms is true
     for (FieldInfo fi : reader.getFieldInfos()) {
       if (fi.isIndexed) {
-        assertTrue(fi.omitNorms == !reader.hasNorms(fi.name));
+        assertTrue(fi.omitNorms == (reader.normValues(fi.name) == null));
       }
     }
     reader.close();
@@ -330,10 +330,10 @@ public class TestDocumentWriter extends LuceneTestCase {
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir));
     FieldInfos fi = reader.getFieldInfos();
     // f1
-    assertFalse("f1 should have no norms", reader.hasNorms("f1"));
+    assertFalse("f1 should have no norms", fi.fieldInfo("f1").hasNorms());
     assertEquals("omitTermFreqAndPositions field bit should not be set for f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").indexOptions);
     // f2
-    assertTrue("f2 should have norms", reader.hasNorms("f2"));
+    assertTrue("f2 should have norms", fi.fieldInfo("f2").hasNorms());
     assertEquals("omitTermFreqAndPositions field bit should be set for f2", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
     reader.close();
   }

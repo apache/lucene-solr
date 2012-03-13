@@ -642,6 +642,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       addVal(slave, SnapPuller.REPLICATION_FAILED_AT, props, Date.class);
       addVal(slave, SnapPuller.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
 
+      slave.add("currentDate", new Date().toString());
       slave.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
       boolean isReplicating = isReplicating();
       slave.add("isReplicating", String.valueOf(isReplicating));

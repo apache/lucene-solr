@@ -172,13 +172,18 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jetty</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
       <optional>true</optional> <!-- Only used for tests and one command-line utility: JettySolrRunner -->
     </dependency>
     <dependency>
-      <groupId>org.mortbay.jetty</groupId>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
+      <optional>true</optional> <!-- Only used for tests and one command-line utility: JettySolrRunner -->
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
       <optional>true</optional> <!-- Only used for tests and one command-line utility: JettySolrRunner -->
     </dependency>
     <dependency>
@@ -193,8 +198,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
       <!-- compile scope; solr-core is a jar not a war -->
     </dependency>
     <dependency>

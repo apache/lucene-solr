@@ -232,6 +232,7 @@ New Features
 * SOLR-3134: Include shard info in distributed response when shards.info=true 
   (Russell Black, ryan)
 
+* SOLR-2898: Support grouped faceting. (Martijn van Groningen)
 
 Optimizations
 ----------------------
@@ -440,6 +441,8 @@ Other Changes
 
 * SOLR-3202: Dropping Support for JSP.  New Admin UI is all client side (ryan)
 
+* SOLR-3159: Upgrade example and tests to run with Jetty 8 (ryan)
+
 
 Documentation
 ----------------------
@@ -529,6 +532,14 @@ New Features
 
 * SOLR-3033: ReplicationHandler's backup command now supports a 'maxNumberOfBackups' 
   init param that can be used to delete all but the most recent N backups. (Torsten Krah, James Dyer)
+
+* SOLR-2202: Currency FieldType, whith support for currencies and exchange rates
+  (Greg Fodor & Andrew Morrison via janhoy, rmuir, Uwe Schindler)
+
+* SOLR-3026: eDismax: Locking down which fields can be explicitly queried (user fields aka uf)
+  (janhoy, hossmann, Tomás Fernández Löbbe)
+
+* SOLR-2826: URLClassify Update Processor (janhoy)
 
 Optimizations
 ----------------------
@@ -640,6 +651,12 @@ Bug Fixes
 * SOLR-3195: timeAllowed is ignored for grouping queries
   (Russell Black via Martijn van Groningen)
 
+* SOLR-3204: The packaged pre-release artifact of Commons CSV used the original
+  package name (org.apache.commons.csv). This created a compatibility issue as
+  the Apache Commons team works toward an official release of Commons CSV.
+  JARJAR (http://code.google.com/p/jarjar/) was used to change the package name
+  to org.apache.solr.internal.csv.  (Uwe Schindler, Emmanuel Bourg)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
@@ -661,6 +678,13 @@ Other Changes
 
 * SOLR-3097, SOLR-3105: Add analysis configurations for different languages to 
   the example.  (Christian Moen, Robert Muir)
+
+* SOLR-3140: Upgrade schema version to 1.5, where omitNorms defaults to "true" for all
+  primitive (non-analyzed) field types such as int, float, date, bool, string.. (janhoy)
+
+* SOLR-3077: Better error messages when attempting to use "blank" field names 
+  (Antony Stubbs via hossman)
+
 
 Build
 ----------------------

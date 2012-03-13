@@ -17,11 +17,11 @@
 
 package org.apache.solr.servlet;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONWriter;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Date;
 import java.util.List;
@@ -72,11 +71,16 @@ public final class ZookeeperInfoServlet extends HttpServlet {
 
     String detailS = request.getParameter("detail");
     boolean detail = detailS != null && detailS.equals("true");
+
+    String dumpS = request.getParameter("dump");
+    boolean dump = dumpS != null && dumpS.equals("true");
+
     PrintWriter out = response.getWriter();
 
 
     ZKPrinter printer = new ZKPrinter(response, out, cores.getZkController(), addr);
     printer.detail = detail;
+    printer.dump = dump;
 
     try {
       printer.print(path);
@@ -103,6 +107,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     boolean indent = true;
     boolean fullpath = FULLPATH_DEFAULT;
     boolean detail = false;
+    boolean dump = false;
 
     String addr; // the address passed to us
     String keeperAddr; // the address we're connected to
@@ -260,11 +265,17 @@ public final class ZookeeperInfoServlet extends HttpServlet {
 
       Stat stat = new Stat();
       try {
+        // Trickily, the call to zkClient.getData fills in the stat variable
         byte[] data = zkClient.getData(path, null, stat, true);
 
         if (stat.getEphemeralOwner() != 0) {
           writeKeyValue(json, "ephemeral", true, false);
           writeKeyValue(json, "version", stat.getVersion(), false);
+        }
+
+        if (dump) {
+          json.writeValueSeparator();
+          printZnode(json, path);
         }
 
         /*
@@ -275,32 +286,12 @@ public final class ZookeeperInfoServlet extends HttpServlet {
         }
         */
 
-        //if (data != null)
-        if (stat.getDataLength() != 0) {
-          String str;
-          try {
-            str = new String(data, "UTF-8");
-            str = str.replaceAll("\\\"", "\\\\\"");
-
-            //writeKeyValue(json, "content", str, false );
-          } catch (UnsupportedEncodingException e) {
-            // not UTF8
-            StringBuilder sb = new StringBuilder("BIN(");
-            sb.append("len=" + data.length);
-            sb.append("hex=");
-            int limit = Math.min(data.length, maxData / 2);
-            for (int i = 0; i < limit; i++) {
-              byte b = data[i];
-              sb.append(StrUtils.HEX_DIGITS[(b >> 4) & 0xf]);
-              sb.append(StrUtils.HEX_DIGITS[b & 0xf]);
-            }
-            if (limit != data.length) {
-              sb.append("...");
-            }
-            sb.append(")");
-            str = sb.toString();
-            //?? writeKeyValue(json, "content", str, false );
-          }
+        //if (stat.getDataLength() != 0)
+        if (data != null) {
+          String str = new BytesRef(data).utf8ToString();
+          //?? writeKeyValue(json, "content", str, false );
+          // Does nothing now, but on the assumption this will be used later we'll leave it in. If it comes out
+          // the catches below need to be restructured.
         }
       } catch (IllegalArgumentException e) {
         // path doesn't exist (must have been removed)
@@ -375,6 +366,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     boolean printZnode(JSONWriter json, String path) throws IOException {
       try {
         Stat stat = new Stat();
+        // Trickily, the call to zkClient.getData fills in the stat variable
         byte[] data = zkClient.getData(path, null, stat, true);
 
         json.writeString("znode");
@@ -400,28 +392,8 @@ public final class ZookeeperInfoServlet extends HttpServlet {
         writeKeyValue(json, "pzxid", stat.getPzxid(), false);
         json.endObject();
 
-        if (stat.getDataLength() != 0) {
-          String str;
-          try {
-            str = new String(data, "UTF-8");
-          } catch (UnsupportedEncodingException e) {
-            // The results are unspecified
-            // when the bytes are not properly encoded.
-
-            // not UTF8
-            StringBuilder sb = new StringBuilder(data.length * 2);
-            for (int i = 0; i < data.length; i++) {
-              byte b = data[i];
-              sb.append(StrUtils.HEX_DIGITS[(b >> 4) & 0xf]);
-              sb.append(StrUtils.HEX_DIGITS[b & 0xf]);
-              if ((i & 0x3f) == 0x3f) {
-                sb.append("\n");
-              }
-            }
-            str = sb.toString();
-          }
-          str = str.replaceAll("\\\"", "\\\\\"");
-          writeKeyValue(json, "data", str, false);
+        if (data != null) {
+          writeKeyValue(json, "data", new BytesRef(data).utf8ToString(), false);
         }
         json.endObject();
       } catch (KeeperException e) {

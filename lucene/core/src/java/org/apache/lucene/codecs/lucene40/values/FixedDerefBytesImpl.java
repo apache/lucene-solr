@@ -46,7 +46,7 @@ class FixedDerefBytesImpl {
   public static class Writer extends DerefBytesWriterBase {
     public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, Type.BYTES_FIXED_DEREF);
     }
 
     @Override
@@ -84,7 +84,7 @@ class FixedDerefBytesImpl {
     @Override
     public Source getDirectSource()
         throws IOException {
-      return new DirectFixedDerefSource(cloneData(), cloneIndex(), size, type());
+      return new DirectFixedDerefSource(cloneData(), cloneIndex(), size, getType());
     }
 
     @Override

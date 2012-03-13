@@ -1,219 +1,219 @@
 #menu-wrapper
 {
-    float: left;
-    width: 20%;
+  float: left;
+  width: 20%;
 }
 
 #menu p.loader
 {
-    background-position: 5px 50%;
-    color: #c0c0c0;
-    margin-top: 5px;
-    padding-left: 26px;
+  background-position: 5px 50%;
+  color: #c0c0c0;
+  margin-top: 5px;
+  padding-left: 26px;
 }
 
 #menu a
 {
-    display: block;
-    padding: 4px 2px;
+  display: block;
+  padding: 4px 2px;
 }
 
 #menu .active
 {
-    background-color: #fafafa;
+  background-color: #fafafa;
 }
 
 #menu p a
 {
-    background-position: 97% 50%;
-    background-image: url( ../../img/ico/status-offline.png );
-    padding-left: 5px;
-    padding-top: 5px;
-    padding-bottom: 5px;
+  background-position: 97% 50%;
+  background-image: url( ../../img/ico/status-offline.png );
+  padding-left: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 #menu p a:hover
 {
-    background-color: #f0f0f0;
+  background-color: #f0f0f0;
 }
 
 #menu .active p a
 {
-    background-color: #c0c0c0; /* #a5a5a6 */
-    font-weight: bold;
+  background-color: #c0c0c0; /* #a5a5a6 */
+  font-weight: bold;
 }
 
 #menu p a small
 {
-    color: #b5b5b5;
-    font-weight: normal;
+  color: #b5b5b5;
+  font-weight: normal;
 }
 
 #menu p a small span.txt
 {
-    display: none;
+  display: none;
 }
 
 #menu p a small:hover span.txt
 {
-    display: inline;
+  display: inline;
 }
 
 #menu .busy
 {
-    border-right-color: #f6f5d9;
+  border-right-color: #f6f5d9;
 }
 
 #menu .busy p a
 {
-    background-color: #f6f5d9;
-    background-image: url( ../../img/ico/status-away.png );
+  background-color: #f6f5d9;
+  background-image: url( ../../img/ico/status-away.png );
 }
 
 #menu .offline
 {
-    border-right-color: #eccfcf;
+  border-right-color: #eccfcf;
 }
 
 #menu .offline p a
 {
-    background-color: #eccfcf;
-    background-image: url( ../../img/ico/status-busy.png );
+  background-color: #eccfcf;
+  background-image: url( ../../img/ico/status-busy.png );
 }
 
 #menu .online
 {
-    border-right-color: #cfecd3;
+  border-right-color: #cfecd3;
 }
 
 #menu .online p a
 {
-    background-color: #cfecd3;
-    background-image: url( ../../img/ico/status.png );
+  background-color: #cfecd3;
+  background-image: url( ../../img/ico/status.png );
 }
 
 #menu .ping small
 {
-    color: #000
+  color: #000
 }
 
 #menu li
 {
-    border-bottom: 1px solid #c0c0c0;
+  border-bottom: 1px solid #c0c0c0;
 }
 
 #menu li p
 {
-    border-right: 1px solid #c0c0c0;
+  border-right: 1px solid #c0c0c0;
 }
 
 #menu li.optional
 {
-    display: none;
+  display: none;
 }
 
 #menu li.active:last-child
 {
-    border-bottom: 0;
+  border-bottom: 0;
 }
 
 #menu ul ul
 {
-    background-image: url( ../../img/div.gif );
-    background-position: 100% 0;
-    background-repeat: repeat-y;
-    display: none;
-    padding-top: 5px;
-    padding-bottom: 10px;
+  background-image: url( ../../img/div.gif );
+  background-position: 100% 0;
+  background-repeat: repeat-y;
+  display: none;
+  padding-top: 5px;
+  padding-bottom: 10px;
 }
 
 #menu ul .active ul
 {
-    display: block;
+  display: block;
 }
 
 #menu ul li.active:last-child ul
 {
-    border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 #menu ul ul li
 {
-    border-bottom: 0;
-    /*border-right: 0;*/
-    border-right: 1px solid #f0f0f0;
+  border-bottom: 0;
+  /*border-right: 0;*/
+  border-right: 1px solid #f0f0f0;
 }
 
 #menu ul ul li a
 {
-    background-position: 7px 50%;
-    border-bottom: 1px solid #f0f0f0;
-    color: #bbb;
-    margin-left: 15px;
-    padding-left: 26px;
+  background-position: 7px 50%;
+  border-bottom: 1px solid #f0f0f0;
+  color: #bbb;
+  margin-left: 15px;
+  padding-left: 26px;
 }
 
 #menu ul ul li:last-child a
 {
-    border-bottom: 0;
+  border-bottom: 0;
 }
 
 #menu ul ul li a:hover
 {
-    background-color: #f0f0f0;
-    color: #333;
+  background-color: #f0f0f0;
+  color: #333;
 }
 
 #menu ul ul li.active
 {
-    background-color: #fff;
-    border-right-color: #fff;
+  background-color: #fff;
+  border-right-color: #fff;
 }
 
 #menu ul ul li.active a
 {
-    color: #333;
+  color: #333;
 }
 
 #menu ul ul li.active a:hover
 {
-    background-color: transparent;
+  background-color: transparent;
 }
 
 #menu .global p a
 {
-    background-position: 5px 50%;
-    padding-left: 26px;
+  background-position: 5px 50%;
+  padding-left: 26px;
 }
 
 #menu #index p a
 {
-    background-image: url( ../../img/ico/dashboard.png );
+  background-image: url( ../../img/ico/dashboard.png );
 }
 
 #menu #logging p a
 {
-    background-image: url( ../../img/ico/inbox-document-text.png );
+  background-image: url( ../../img/ico/inbox-document-text.png );
 }
 
 #menu #java-properties p a
 {
-    background-image: url( ../../img/ico/jar.png );
+  background-image: url( ../../img/ico/jar.png );
 }
 
 #menu #threads p a
 {
-    background-image: url( ../../img/ico/ui-accordion.png );
+  background-image: url( ../../img/ico/ui-accordion.png );
 }
 
 #menu #cores p a
 {
-    background-image: url( ../../img/ico/databases.png );
+  background-image: url( ../../img/ico/databases.png );
 }
 
 #menu #cloud p a
 {
-    background-image: url( ../../img/ico/network-cloud.png );
+  background-image: url( ../../img/ico/network-cloud.png );
 }
 
 #menu .query a { background-image: url( ../../img/ico/magnifier.png ); }
@@ -230,13 +230,13 @@
 
 #menu .ping.error
 {
-    background-color: #f7f7e9;
-    background-color: #ffcccc;
+  background-color: #f7f7e9;
+  background-color: #ffcccc;
 }
 
 #menu .ping.error a
 {
-    background-color: transparent;
-    background-image: url( ../../img/ico/system-monitor--exclamation.png );
-    cursor: help;
+  background-color: transparent;
+  background-image: url( ../../img/ico/system-monitor--exclamation.png );
+  cursor: help;
 }

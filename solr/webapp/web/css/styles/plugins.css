@@ -1,19 +1,19 @@
 #content #plugins #navigation
 {
-    background-image: url( ../../img/div.gif );
-    background-position: 100% 0;
-    background-repeat: repeat-y;
-    width: 20%;
+  background-image: url( ../../img/div.gif );
+  background-position: 100% 0;
+  background-repeat: repeat-y;
+  width: 20%;
 }
 
 #content #plugins #navigation a
 {
-    background-position: 0 50%;
-    border-right: 1px solid #f0f0f0;
-    display: block;
-    margin-left: 1px;
-    padding: 3px 0;
-    padding-left: 21px;
+  background-position: 0 50%;
+  border-right: 1px solid #f0f0f0;
+  display: block;
+  margin-left: 1px;
+  padding: 3px 0;
+  padding-left: 21px;
 }
 
 #content #plugins #navigation .cache a { background-image: url( ../../img/ico/disk-black.png ); }
@@ -25,104 +25,104 @@
 
 #content #plugins #navigation a:hover
 {
-    background-color: #fafafa;
+  background-color: #fafafa;
 }
 
 #content #plugins #navigation .current a
 {
-    background-color: #fff;
-    border-right-color: #fff;
-    border-top: 1px solid #f0f0f0;
-    border-bottom: 1px solid #f0f0f0;
-    font-weight: bold;
+  background-color: #fff;
+  border-right-color: #fff;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: bold;
 }
 
 #content #plugins #frame
 {
-    float: right;
-    width: 78%;
+  float: right;
+  width: 78%;
 }
 
 #content #plugins #frame .entry
 {
-    margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 #content #plugins #frame .entry:last-child
 {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 #content #plugins #frame .entry a
 {
-    background-image: url( ../../img/ico/chevron-small-expand.png );
-    background-position: 0 50%;
-    display: block;
-    font-weight: bold;
-    padding-left: 21px;
+  background-image: url( ../../img/ico/chevron-small-expand.png );
+  background-position: 0 50%;
+  display: block;
+  font-weight: bold;
+  padding-left: 21px;
 }
 
 #content #plugins #frame .entry.expanded a
 {
-    background-image: url( ../../img/ico/chevron-small.png );
+  background-image: url( ../../img/ico/chevron-small.png );
 }
 
 #content #plugins #frame .entry.expanded ul
 {
-    display: block;
+  display: block;
 }
 
 #content #plugins #frame .entry ul
 {
-    display: none;
-    padding-top: 5px;
-    margin-left: 21px;
+  display: none;
+  padding-top: 5px;
+  margin-left: 21px;
 }
 
 #content #plugins #frame .entry li
 {
-    padding-top: 2px;
-    padding-bottom: 2px;
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 
 #content #plugins #frame .entry li.stats
 {
-    border-top: 1px solid #c0c0c0;
-    margin-top: 5px;
-    padding-top: 5px;
+  border-top: 1px solid #c0c0c0;
+  margin-top: 5px;
+  padding-top: 5px;
 }
 
 #content #plugins #frame .entry li.odd
 {
-    background-color: #f8f8f8;
+  background-color: #f8f8f8;
 }
 
 #content #plugins #frame .entry dt,
 #content #plugins #frame .entry .stats span
 {
-    float: left;
-    width: 11%;
+  float: left;
+  width: 11%;
 }
 
 #content #plugins #frame .entry dd,
 #content #plugins #frame .entry .stats ul
 {
-    float: right;
-    width: 88%;
+  float: right;
+  width: 88%;
 }
 
 #content #plugins #frame .entry .stats ul
 {
-    margin: 0;
-    padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
 #content #plugins #frame .entry .stats dt
 {
-    width: 27%;
+  width: 27%;
 }
 
 #content #plugins #frame .entry .stats dd
 {
-    width: 72%;
+  width: 72%;
 }

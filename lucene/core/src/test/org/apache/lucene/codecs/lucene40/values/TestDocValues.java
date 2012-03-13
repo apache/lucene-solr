@@ -188,7 +188,7 @@ public class TestDocValues extends LuceneTestCase {
       DocValues r = Ints.getValues(dir, "test", 2,  Type.VAR_INTS, newIOContext(random));
       Source source = getSource(r);
       assertEquals(i + " with min: " + minMax[i][0] + " max: " + minMax[i][1],
-          expectedTypes[i], source.type());
+          expectedTypes[i], source.getType());
       assertEquals(minMax[i][0], source.getInt(0));
       assertEquals(minMax[i][1], source.getInt(1));
 
@@ -368,7 +368,7 @@ public class TestDocValues extends LuceneTestCase {
       DocValues r = Ints.getValues(dir, "test", NUM_VALUES + additionalDocs, type, newIOContext(random));
       for (int iter = 0; iter < 2; iter++) {
         Source s = getSource(r);
-        assertEquals(type, s.type());
+        assertEquals(type, s.getType());
         for (int i = 0; i < NUM_VALUES; i++) {
           final long v = s.getInt(i);
           assertEquals("index " + i, values[i], v);

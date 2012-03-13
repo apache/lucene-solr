@@ -19,9 +19,11 @@ package org.apache.lucene.search.grouping.dv;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Type; // javadocs
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.util.BytesRef;
 
@@ -37,7 +39,7 @@ import java.util.Map;
  * @lucene.experimental
  */
 //TODO - (MvG): Add more optimized implementations
-public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsCollector.GroupHead> extends AbstractAllGroupHeadsCollector<GH> {
+public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsCollector.GroupHead<?>> extends AbstractAllGroupHeadsCollector<GH> {
 
   final String groupField;
   final boolean diskResident;
@@ -65,40 +67,42 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
    * @throws IOException If I/O related errors occur
    */
-  public static AbstractAllGroupHeadsCollector create(String groupField, Sort sortWithinGroup, DocValues.Type type, boolean diskResident) throws IOException {
+  @SuppressWarnings("unchecked")
+  public static <T extends AbstractAllGroupHeadsCollector.GroupHead<?>> DVAllGroupHeadsCollector<T> create(String groupField, Sort sortWithinGroup, DocValues.Type type, boolean diskResident) throws IOException {
     switch (type) {
       case VAR_INTS:
       case FIXED_INTS_8:
       case FIXED_INTS_16:
       case FIXED_INTS_32:
       case FIXED_INTS_64:
-        return new GeneralAllGroupHeadsCollector.Lng(groupField, type, sortWithinGroup, diskResident);
+        // Type erasure b/c otherwise we have inconvertible types...
+        return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.Lng(groupField, type, sortWithinGroup, diskResident);
       case FLOAT_32:
       case FLOAT_64:
-        return new GeneralAllGroupHeadsCollector.Dbl(groupField, type, sortWithinGroup, diskResident);
+        return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.Dbl(groupField, type, sortWithinGroup, diskResident);
       case BYTES_FIXED_STRAIGHT:
       case BYTES_FIXED_DEREF:
       case BYTES_VAR_STRAIGHT:
       case BYTES_VAR_DEREF:
-        return new GeneralAllGroupHeadsCollector.BR(groupField, type, sortWithinGroup, diskResident);
+        return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.BR(groupField, type, sortWithinGroup, diskResident);
       case BYTES_VAR_SORTED:
       case BYTES_FIXED_SORTED:
-        return new GeneralAllGroupHeadsCollector.SortedBR(groupField, type, sortWithinGroup, diskResident);
+        return (DVAllGroupHeadsCollector) new GeneralAllGroupHeadsCollector.SortedBR(groupField, type, sortWithinGroup, diskResident);
       default:
         throw new IllegalArgumentException(String.format("ValueType %s not supported", type));
     }
   }
 
-  static class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<Comparable> {
+  static class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<Comparable<?>> {
 
-    final FieldComparator[] comparators;
+    final FieldComparator<?>[] comparators;
     AtomicReaderContext readerContext;
     Scorer scorer;
 
-    GroupHead(Comparable groupValue, Sort sort, int doc, AtomicReaderContext readerContext, Scorer scorer) throws IOException {
+    GroupHead(Comparable<?> groupValue, Sort sort, int doc, AtomicReaderContext readerContext, Scorer scorer) throws IOException {
       super(groupValue, doc + readerContext.docBase);
       final SortField[] sortFields = sort.getSort();
-      comparators = new FieldComparator[sortFields.length];
+      comparators = new FieldComparator<?>[sortFields.length];
       for (int i = 0; i < sortFields.length; i++) {
         comparators[i] = sortFields[i].getComparator(1, i).setNextReader(readerContext);
         comparators[i].setScorer(scorer);
@@ -115,7 +119,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
     }
 
     public void updateDocHead(int doc) throws IOException {
-      for (FieldComparator comparator : comparators) {
+      for (FieldComparator<?> comparator : comparators) {
         comparator.copy(0, doc);
         comparator.setBottom(0);
       }
@@ -156,12 +160,12 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
   static abstract class GeneralAllGroupHeadsCollector extends DVAllGroupHeadsCollector<DVAllGroupHeadsCollector.GroupHead> {
 
     private final Sort sortWithinGroup;
-    private final Map<Comparable, GroupHead> groups;
+    private final Map<Comparable<?>, GroupHead> groups;
 
     GeneralAllGroupHeadsCollector(String groupField, DocValues.Type valueType, Sort sortWithinGroup, boolean diskResident) throws IOException {
       super(groupField, valueType, sortWithinGroup.getSort().length, diskResident);
       this.sortWithinGroup = sortWithinGroup;
-      groups = new HashMap<Comparable, GroupHead>();
+      groups = new HashMap<Comparable<?>, GroupHead>();
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       for (int i = 0; i < sortFields.length; i++) {
@@ -170,7 +174,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
     }
 
     protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
-      final Comparable groupValue = getGroupValue(doc);
+      final Comparable<?> groupValue = getGroupValue(doc);
       GroupHead groupHead = groups.get(groupValue);
       if (groupHead == null) {
         groupHead = new GroupHead(groupValue, sortWithinGroup, doc, readerContext, scorer);
@@ -182,9 +186,9 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       temporalResult.groupHead = groupHead;
     }
 
-    protected abstract Comparable getGroupValue(int doc);
+    protected abstract Comparable<?> getGroupValue(int doc);
 
-    protected abstract Comparable duplicate(Comparable value);
+    protected abstract Comparable<?> duplicate(Comparable<?> value);
 
     protected Collection<GroupHead> getCollectedGroupHeads() {
       return groups.values();
@@ -204,7 +208,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       this.scorer = scorer;
       for (GroupHead groupHead : groups.values()) {
         groupHead.scorer = scorer;
-        for (FieldComparator comparator : groupHead.comparators) {
+        for (FieldComparator<?> comparator : groupHead.comparators) {
           comparator.setScorer(scorer);
         }
       }
@@ -218,11 +222,11 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
-      protected Comparable getGroupValue(int doc) {
+      protected Comparable<?> getGroupValue(int doc) {
         return source.getBytes(doc, scratchBytesRef);
       }
 
-      protected Comparable duplicate(Comparable value) {
+      protected Comparable<?> duplicate(Comparable<?> value) {
         return BytesRef.deepCopyOf((BytesRef) value);
       }
 
@@ -244,11 +248,11 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
-      protected Comparable getGroupValue(int doc) {
+      protected Comparable<?> getGroupValue(int doc) {
         return source.getBytes(doc, scratchBytesRef);
       }
 
-      protected Comparable duplicate(Comparable value) {
+      protected Comparable<?> duplicate(Comparable<?> value) {
         return BytesRef.deepCopyOf((BytesRef) value);
       }
 
@@ -266,11 +270,11 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
-      protected Comparable getGroupValue(int doc) {
+      protected Comparable<?> getGroupValue(int doc) {
         return source.getInt(doc);
       }
 
-      protected Comparable duplicate(Comparable value) {
+      protected Comparable<?> duplicate(Comparable<?> value) {
         return value;
       }
 
@@ -287,11 +291,11 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
-      protected Comparable getGroupValue(int doc) {
+      protected Comparable<?> getGroupValue(int doc) {
         return source.getFloat(doc);
       }
 
-      protected Comparable duplicate(Comparable value) {
+      protected Comparable<?> duplicate(Comparable<?> value) {
         return value;
       }
 

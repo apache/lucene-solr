@@ -41,25 +41,27 @@ public abstract class IndexReaderContext {
     this.isTopLevel = parent==null;
   }
   
+  /** Returns the {@link IndexReader}, this context represents. */
   public abstract IndexReader reader();
   
   /**
    * Returns the context's leaves if this context is a top-level context
    * otherwise <code>null</code>. For convenience, if this is an
    * {@link AtomicReaderContext} this returns itsself as the only leaf.
-   * <p>
-   * Note: this is convenience method since leaves can always be obtained by
+   * <p>Note: this is convenience method since leaves can always be obtained by
    * walking the context tree.
+   * <p><b>Warning:</b> Don't modify the returned array!
+   * Doing so will corrupt the internal structure of this
+   * {@code IndexReaderContext}.
    */
   public abstract AtomicReaderContext[] leaves();
   
   /**
    * Returns the context's children iff this context is a composite context
    * otherwise <code>null</code>.
-   * <p>
-   * Note: this method is a convenience method to prevent
-   * <code>instanceof</code> checks and type-casts to
-   * {@link CompositeReaderContext}.
+   * <p><b>Warning:</b> Don't modify the returned array!
+   * Doing so will corrupt the internal structure of this
+   * {@code IndexReaderContext}.
    */
   public abstract IndexReaderContext[] children();
 }

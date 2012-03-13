@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -43,6 +44,8 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
+// TODO: we really need to test indexingoffsets, but then getting only docs / docs + freqs.
+// not all codecs store prx separate...
 public class TestPostingsOffsets extends LuceneTestCase {
   IndexWriterConfig iwc;
   
@@ -54,7 +57,11 @@ public class TestPostingsOffsets extends LuceneTestCase {
     
     if (Codec.getDefault().getName().equals("Lucene40")) {
       // pulsing etc are not implemented
-      iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
+      if (random.nextBoolean()) {
+        iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
+      } else {
+        iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
+      }
     }
   }
 
@@ -126,7 +133,11 @@ public class TestPostingsOffsets extends LuceneTestCase {
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     if (Codec.getDefault().getName().equals("Lucene40")) {
       // pulsing etc are not implemented
-      iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
+      if (random.nextBoolean()) {
+        iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
+      } else {
+        iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
+      }
     }
     iwc.setMergePolicy(newLogMergePolicy()); // will rely on docids a bit for skipping
     RandomIndexWriter w = new RandomIndexWriter(random, dir, iwc);

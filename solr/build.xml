@@ -180,8 +180,10 @@
         <exclude name="example/work/**" />
       </additional-excludes>
       <additional-filters>
-        <replaceregex pattern="/jetty-util([^/]+)$" replace="/jetty-util" flags="gi" />
-        <replaceregex pattern="/jetty-6([^/]+)$" replace="/jetty" flags="gi" />
+        <replaceregex pattern="/jetty([^/]+)$" replace="/jetty" flags="gi" />
+        <replaceregex pattern="/apache-solr-commons-csv-([^/]+)$" replace="/apache-solr-commons-csv" flags="gi" />
+        <replaceregex pattern="/slf4j-([^/]+)$" replace="/slf4j" flags="gi" />
+        <replaceregex pattern="/(bcmail|bcprov)-([^/]+)$" replace="/\1" flags="gi" />
       </additional-filters>
     </license-check-macro>
   </target>
@@ -359,7 +361,7 @@
                   excludes="build ${package.dir}/** ${dist}/**
                             example/webapps/*.war example/exampledocs/post.jar
                             lib/README.committers.txt **/data/ **/logs/*
-                            **/*.sh **/bin/ scripts/ site-src/build/
+                            **/*.sh **/bin/ scripts/ 
                             .idea/ **/*.iml **/pom.xml" />
       <tarfileset dir="." prefix="${fullnamever}/solr"
                   includes="core/src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
@@ -451,9 +453,7 @@
   </target>
  
   <target name="javadocs-dep">
-    <copy failonerror="false" todir="${dest}/docs">
-      <fileset dir="${common-solr.dir}/site" />
-    </copy>
+    <!-- NOOP -->
   </target>
 
   <target name="javadocs-all"
@@ -619,16 +619,6 @@
     </exec>
   </target>
  
-  <target name="build-site" depends="svn-up"
-          description="Committers' Helper: build the site and copy to site/.">
-    <delete dir="site-src/build"/>
-    <exec executable="forrest" dir="site-src"/>
-    <copy todir="site">
-      <fileset dir="site-src/build/site"/>
-    </copy>
-    <antcall target="svn-up"/>
-  </target>
-  
   <target name="svn-up">
     <exec executable="${svn.exe}">
       <arg value="update"/>

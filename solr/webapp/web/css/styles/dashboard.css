@@ -1,108 +1,108 @@
 #content #dashboard .block
 {
-    background-image: none;
-    width: 49%;
+  background-image: none;
+  width: 49%;
 }
 
 #content #dashboard #statistics
 {
-    float: left;
+  float: left;
 }
 
 #content #dashboard #statistics dt,
 #content #dashboard #statistics dd
 {
-    display: block;
-    float: left;
+  display: block;
+  float: left;
 }
 
 #content #dashboard #statistics dt
 {
-    clear: left;
-    margin-right: 2%;
-    text-align: right;
-    width: 23%;
+  clear: left;
+  margin-right: 2%;
+  text-align: right;
+  width: 23%;
 }
 
 #content #dashboard #statistics dd
 {
-    width: 74%;
+  width: 74%;
 }
 
 #content #dashboard #statistics .index_optimized
 {
-    margin-top: 10px;
+  margin-top: 10px;
 }
 
 #content #dashboard #statistics .ico
 {
-    background-image: url( ../../img/ico/slash.png );
-    height: 20px;
+  background-image: url( ../../img/ico/slash.png );
+  height: 20px;
 }
 
 #content #dashboard #statistics .ico.ico-1
 {
-    background-image: url( ../../img/ico/tick.png );
+  background-image: url( ../../img/ico/tick.png );
 }
 
 #content #dashboard #statistics .ico span
 {
-    display: none;
+  display: none;
 }
 
 #content #dashboard #statistics .index_optimized.value a
 {
-    display: none;
+  display: none;
 }
 
 #content #dashboard #statistics .index_optimized.value.ico-0 a
 {
-    background-color: #f0f0f0;
-    background-image: url( ../../img/ico/hammer-screwdriver.png );
-    background-position: 5px 50%;
-    border: 1px solid #c0c0c0;
-    display: block;
-    float: left;
-    margin-left: 50px;
-    padding: 1px 5px;
-    padding-left: 26px;
+  background-color: #f0f0f0;
+  background-image: url( ../../img/ico/hammer-screwdriver.png );
+  background-position: 5px 50%;
+  border: 1px solid #c0c0c0;
+  display: block;
+  float: left;
+  margin-left: 50px;
+  padding: 1px 5px;
+  padding-left: 26px;
 }
 
 #content #dashboard #statistics .index_has-deletions
 {
-    display: none;
+  display: none;
 }
 
 #content #dashboard #statistics .index_has-deletions.value.ico-0
 {
-    background-image: url( ../../img/ico/tick-red.png );
+  background-image: url( ../../img/ico/tick-red.png );
 }
 
 #content #dashboard #replication
 {
-    float: left;
+  float: left;
 }
 
 #content #dashboard #replication .is-replicating
 {
-    background-position: 99% 50%;
-    display: block;
+  background-position: 99% 50%;
+  display: block;
 }
 
 #content #dashboard #replication #details table thead td span
 {
-    display: none;
+  display: none;
 }
 
 #content #dashboard #dataimport
 {
-    float: right;
+  float: right;
 }
 
 
 #content #dashboard #admin-extra
 {
-    float: right;
+  float: right;
 }
 
 #content #dashboard #system h2 { background-image: url( ../../img/ico/server.png ); }

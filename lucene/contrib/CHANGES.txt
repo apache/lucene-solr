@@ -72,6 +72,8 @@ New Features
    start/endOffset, if offsets are indexed. (Alan Woodward via Mike
    McCandless)
 
+ * LUCENE-3802: Support for grouped faceting. (Martijn van Groningen)
+
 API Changes
 
  * LUCENE-2606: Changed RegexCapabilities interface to fix thread 
@@ -241,6 +243,10 @@ Bug Fixes
  * LUCENE-3765: As of Version.LUCENE_36, DutchAnalyzer's two ctors
    that take stopwords and stem exclusion tables also initialize
    the default stem overrides (e.g. kind/kinder, fiets).  (Robert Muir)
+
+ * LUCENE-3831: avoid NPE if the SpanQuery has a null field (eg a
+   SpanOrQuery with no clauses added).  (Alan Woodward via Mike
+   McCandless).
 
 Documentation
 

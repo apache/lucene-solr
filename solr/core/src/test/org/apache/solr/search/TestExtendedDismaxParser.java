@@ -17,6 +17,9 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+
+import org.apache.solr.common.SolrException;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 public class TestExtendedDismaxParser extends AbstractSolrTestCase {
@@ -31,16 +34,6 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
-  }
-  @Override
-  public void tearDown() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.tearDown();
-  }
-
-  // test the edismax query parser based on the dismax parser
-  public void testFocusQueryParser() {
     assertU(adoc("id", "42", "trait_ss", "Tool", "trait_ss", "Obnoxious",
             "name", "Zapp Brannigan"));
     assertU(adoc("id", "43" ,
@@ -63,6 +56,16 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     assertU(adoc("id", "50", "text_sw", "start new big city end"));
 
     assertU(commit());
+  }
+  @Override
+  public void tearDown() throws Exception {
+    // if you override setUp or tearDown, you better call
+    // the super classes version
+    super.tearDown();
+  }
+  
+  // test the edismax query parser based on the dismax parser
+  public void testFocusQueryParser() {
     String allq = "id:[42 TO 50]";
     String allr = "*[count(//doc)=9]";
     String oner = "*[count(//doc)=1]";
@@ -249,4 +252,155 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
 
   }
 
+  public void testUserFields() {
+    String oner = "*[count(//doc)=1]";
+    String nor = "*[count(//doc)=0]";
+    
+    // User fields
+    // Default is allow all "*"
+    // If a list of fields are given, only those are allowed "foo bar"
+    // Possible to invert with "-" syntax:
+    //   Disallow all: "-*"
+    //   Allow all but id: "* -id"
+    // Also supports "dynamic" field name wildcarding
+    assertQ(req("defType","edismax", "q","id:42"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","*", "q","id:42"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","id", "q","id:42"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","-*", "q","id:42"),
+        nor);
+    
+    assertQ(req("defType","edismax", "uf","loremipsum", "q","id:42"),
+        nor);
+    
+    assertQ(req("defType","edismax", "uf","* -id", "q","id:42"),
+        nor);
+    
+    assertQ(req("defType","edismax", "uf","* -loremipsum", "q","id:42"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","id^5.0", "q","id:42"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","*^5.0", "q","id:42"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","id^5.0", "q","id:42^10.0"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","na*", "q","name:Zapp"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","*me", "q","name:Zapp"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","* -na*", "q","name:Zapp"),
+        nor);
+    
+    assertQ(req("defType","edismax", "uf","*me -name", "q","name:Zapp"),
+        nor);
+    
+    assertQ(req("defType","edismax", "uf","*ame -*e", "q","name:Zapp"),
+        nor);
+    
+    // Boosts from user fields
+    assertQ(req("defType","edismax", "debugQuery","true", "rows","0", "q","id:42"),
+        "//str[@name='parsedquery_toString'][.='+id:42']");
+    
+    assertQ(req("defType","edismax", "debugQuery","true", "rows","0", "uf","*^5.0", "q","id:42"),
+        "//str[@name='parsedquery_toString'][.='+id:42^5.0']");
+    
+    assertQ(req("defType","edismax", "debugQuery","true", "rows","0", "uf","*^2.0 id^5.0 -xyz", "q","name:foo"),
+        "//str[@name='parsedquery_toString'][.='+name:foo^2.0']");
+    
+    assertQ(req("defType","edismax", "debugQuery","true", "rows","0", "uf","i*^5.0", "q","id:42"),
+        "//str[@name='parsedquery_toString'][.='+id:42^5.0']");
+    
+    
+    assertQ(req("defType","edismax", "uf","-*", "q","cannons"),
+        oner);
+    
+    assertQ(req("defType","edismax", "uf","* -id", "q","42", "qf", "id"), oner);
+    
+  }
+  
+  public void testAliasing() throws IOException, Exception {
+    String oner = "*[count(//doc)=1]";
+    String twor = "*[count(//doc)=2]";
+    String nor = "*[count(//doc)=0]";
+    
+ // Aliasing
+    // Single field
+    assertQ(req("defType","edismax", "q","myalias:Zapp"),
+        nor);
+    
+    assertQ(req("defType","edismax", "q","myalias:Zapp", "f.myalias.qf","name"),
+        oner);
+    
+    // Multi field
+    assertQ(req("defType","edismax", "uf", "myalias", "q","myalias:(Zapp Obnoxious)", "f.myalias.qf","name^2.0 mytrait_ss^5.0", "mm", "50%"),
+        oner);
+    
+    // Multi field
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "f.myalias.qf","name^2.0 mytrait_ss^5.0"),
+        nor);
+    
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 mytrait_ss^5.0"), oner);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0"), twor);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0", "mm", "100%"), oner);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","who^10.0 where^3.0", "f.who.qf","name^2.0", "f.where.qf", "mytrait_ss^5.0"), oner);
+    
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias", "f.myalias.qf","name mytrait_ss", "uf", "myalias"), oner);
+    
+    assertQ(req("defType","edismax", "uf","who", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0", "qf", "id"), twor);
+    assertQ(req("defType","edismax", "uf","* -name", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0"), twor);
+    
+  }
+  
+  public void testAliasingBoost() throws IOException, Exception {
+    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias", "f.myalias.qf","name trait_ss^0.5"), "//result/doc[1]/str[@name='id']=42", "//result/doc[2]/str[@name='id']=47");//doc 42 should score higher than 46
+    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.5"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
+  }
+  
+  public void testCyclicAliasing() throws IOException, Exception {
+    try {
+      h.query(req("defType","edismax", "q","Zapp Pig", "qf","who", "f.who.qf","name","f.name.qf","who"));
+      fail("Simple cyclic alising");
+    } catch (SolrException e) {
+      assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+    }
+    
+    try {
+      h.query(req("defType","edismax", "q","Zapp Pig", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
+      fail();
+    } catch (SolrException e) {
+      assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+    }
+    
+    try {
+      h.query(req("defType","edismax", "q","Zapp Pig", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6"));
+    } catch (SolrException e) {
+      fail("This is not cyclic alising");
+    }
+    
+    try {
+      h.query(req("defType","edismax", "q","Zapp Pig", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4"));
+      fail();
+    } catch (SolrException e) {
+      assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+    }
+    
+    try {
+      h.query(req("defType","edismax", "q","who:(Zapp Pig)", "qf","field1", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
+      fail();
+    } catch (SolrException e) {
+      assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+    }
+  }
+  
 }

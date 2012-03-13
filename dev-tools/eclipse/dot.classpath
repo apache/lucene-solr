@@ -102,7 +102,7 @@
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-compress-1.2.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
 	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1211150.jar"/>
-	<classpathentry kind="lib" path="solr/lib/commons-csv-1.0-SNAPSHOT-r966014.jar"/>
+	<classpathentry kind="lib" path="solr/lib/apache-solr-commons-csv-1.0-SNAPSHOT-r966014.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-httpclient-3.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-io-2.1.jar"/>
@@ -112,14 +112,22 @@
 	<classpathentry kind="lib" path="solr/lib/jcl-over-slf4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/junit-4.10.jar"/>
 	<classpathentry kind="lib" path="solr/lib/log4j-over-slf4j-1.6.1.jar"/>
-	<classpathentry kind="lib" path="solr/lib/servlet-api-2.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/slf4j-api-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
 	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.4.jar"/>
-	<classpathentry kind="lib" path="solr/example/lib/jetty-6.1.26-patched-JETTY-1340.jar"/>
-	<classpathentry kind="lib" path="solr/example/lib/jetty-util-6.1.26-patched-JETTY-1340.jar"/>
-	<classpathentry kind="lib" path="solr/example/lib/servlet-api-2.5-20081211.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-continuation-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-deploy-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-http-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-io-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-jmx-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-security-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-server-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-servlet-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-util-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-webapp-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/jetty-xml-8.1.2.v20120308.jar"/>
+  <classpathentry kind="lib" path="solr/example/lib/servlet-api-3.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/carrot2-core-3.5.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/hppc-0.3.3.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-core-asl-1.5.2.jar"/>

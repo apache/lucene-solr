@@ -118,11 +118,6 @@ public class ReturnFields
       augmenters.addTransformer( new RenameFieldsTransformer( rename ) );
     }
 
-    // Legacy behavior: "score" == "*,score"  
-    if( fields.size() == 1 && _wantsScore && augmenters.size() == 1 && globs.isEmpty() ) {
-      _wantsAllFields = true;
-    }
-
     if( !_wantsAllFields ) {
       if( !globs.isEmpty() ) {
         // TODO??? need to fill up the fields with matching field names in the index

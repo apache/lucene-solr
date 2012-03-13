@@ -150,21 +150,4 @@ public abstract class Lookup {
    */
   public abstract boolean load(InputStream input) throws IOException;
   
-  /**
-   * Persist the constructed lookup data to a directory. Optional operation.
-   * @param storeDir directory where data can be stored.
-   * @return true if successful, false if unsuccessful or not supported.
-   * @throws IOException when fatal IO error occurs.
-   */
-  public abstract boolean store(File storeDir) throws IOException;
-
-  /**
-   * Discard current lookup data and load it from a previously saved copy.
-   * Optional operation.
-   * @param storeDir directory where lookup data was stored.
-   * @return true if completed successfully, false if unsuccessful or not supported.
-   * @throws IOException when fatal IO error occurs.
-   */
-  public abstract boolean load(File storeDir) throws IOException;
-  
 }

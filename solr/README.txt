@@ -30,10 +30,10 @@ Getting Started
 
 See the "example" directory for an example Solr setup.  A tutorial
 using the example setup can be found at
-http://lucene.apache.org/solr/tutorial.html
-or in in "docs/tutorial.html" in a binary distribution.
+   http://lucene.apache.org/solr/tutorial.html
+or linked from "docs/api/index.html" in a binary distribution.
 Also, there are Solr clients for many programming languages, see 
-http://wiki.apache.org/solr/IntegratingSolr
+   http://wiki.apache.org/solr/IntegratingSolr
 
 
 Files included in an Apache Solr binary distribution
@@ -54,12 +54,8 @@ dist/apache-solr-XX.jar
   Apache Solr Plugins (see http://wiki.apache.org/solr/SolrPlugins for
   more information).
 
-docs/index.html
-  The contents of the Apache Solr website.
-  
 docs/api/index.html
-  The Apache Solr Javadoc API documentation.
-
+  The Apache Solr Javadoc API documentation and Tutorial
 
 
 Instructions for Building Apache Solr from Source

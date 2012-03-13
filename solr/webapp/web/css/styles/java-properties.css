@@ -1,33 +1,33 @@
 #content #java-properties .loader
 {
-    background-position: 0 50%;
-    padding-left: 21px;   
+  background-position: 0 50%;
+  padding-left: 21px;   
 }
 
 #content #java-properties li
 {
-    padding-top: 3px;
-    padding-bottom: 3px;
+  padding-top: 3px;
+  padding-bottom: 3px;
 }
 
 #content #java-properties li.odd
 {
-    background-color: #f8f8f8;
+  background-color: #f8f8f8;
 }
 
 #content #java-properties li dt
 {
-    float: left;
-    width: 29%;
+  float: left;
+  width: 29%;
 }
 
 #content #java-properties li dd
 {
-    float: right;
-    width: 70%
+  float: right;
+  width: 70%
 }
 
 #content #java-properties li dd.odd
 {
-    color: #999;
+  color: #999;
 }

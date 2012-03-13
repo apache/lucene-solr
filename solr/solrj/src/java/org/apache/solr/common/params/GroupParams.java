@@ -54,5 +54,8 @@ public interface GroupParams {
 
   /** Whether the group count should be included in the response. */
   public static final String GROUP_TOTAL_COUNT = GROUP + ".ngroups";
+
+  /** Whether to compute grouped facets based on the first specified group. */
+  public static final String GROUP_FACET = GROUP + ".facet";
 }
 

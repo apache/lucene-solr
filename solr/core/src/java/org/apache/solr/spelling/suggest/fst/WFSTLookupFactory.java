@@ -17,6 +17,8 @@ package org.apache.solr.spelling.suggest.fst;
  * limitations under the License.
  */
 
+import java.io.File;
+
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.*;
 import org.apache.solr.common.util.NamedList;
@@ -33,6 +35,12 @@ public class WFSTLookupFactory extends LookupFactory {
    * of other strings in the automaton (possibly with larger weights). 
    */
   public static final String EXACT_MATCH_FIRST = "exactMatchFirst";
+  
+  /**
+   * File name for the automaton.
+   * 
+   */
+  private static final String FILENAME = "wfst.bin";
 
   @Override
   public Lookup create(NamedList params, SolrCore core) {
@@ -41,5 +49,10 @@ public class WFSTLookupFactory extends LookupFactory {
     : true;
 
     return new WFSTCompletionLookup(exactMatchFirst);
+  }
+
+  @Override
+  public String storeFileName() {
+    return FILENAME;
   }
 }

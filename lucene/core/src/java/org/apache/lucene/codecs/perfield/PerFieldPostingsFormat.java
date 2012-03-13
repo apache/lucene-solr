@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.ServiceLoader; // javadocs
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -47,7 +48,14 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * Enables per field format support.
- * 
+ * <p>
+ * Note, when extending this class, the name ({@link #getName}) is 
+ * written into the index. In order for the field to be read, the
+ * name must resolve to your implementation via {@link #forName(String)}.
+ * This method uses Java's 
+ * {@link ServiceLoader Service Provider Interface} to resolve format names.
+ * <p>
+ * @see ServiceLoader
  * @lucene.experimental
  */
 

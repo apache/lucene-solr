@@ -1,0 +1,9 @@
+Apache Commons CSV
+Copyright 2005-2006 The Apache Software Foundation
+
+This product includes software developed by
+The Apache Software Foundation (http://www.apache.org/).
+
+This JAR artifact contains a pre-release version of
+Apache Commons CSV, that was jarjar'ed to have a Solr
+private package name. Don't use it outside of Solr.

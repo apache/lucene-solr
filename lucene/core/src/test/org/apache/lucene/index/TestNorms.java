@@ -96,7 +96,7 @@ public class TestNorms extends LuceneTestCase {
     assertNotNull(normValues);
     Source source = normValues.getSource();
     assertTrue(source.hasArray());
-    assertEquals(Type.FIXED_INTS_8, normValues.type());
+    assertEquals(Type.FIXED_INTS_8, normValues.getType());
     byte[] norms = (byte[]) source.getArray();
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
@@ -128,9 +128,9 @@ public class TestNorms extends LuceneTestCase {
     assertFalse(fieldInfo.omitNorms);
     assertTrue(fieldInfo.isIndexed);
     if (secondWriteNorm) {
-      assertTrue(fieldInfo.normsPresent());
+      assertTrue(fieldInfo.hasNorms());
     } else {
-      assertFalse(fieldInfo.normsPresent());  
+      assertFalse(fieldInfo.hasNorms());  
     }
     
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -144,18 +144,18 @@ public class TestNorms extends LuceneTestCase {
       FieldInfo fi = mergedReader.getFieldInfos().fieldInfo(byteTestField);
       assertFalse(fi.omitNorms);
       assertTrue(fi.isIndexed);
-      assertFalse(fi.normsPresent());
+      assertFalse(fi.hasNorms());
     } else {
       FieldInfo fi = mergedReader.getFieldInfos().fieldInfo(byteTestField);
       assertFalse(fi.omitNorms);
       assertTrue(fi.isIndexed);
-      assertTrue(fi.normsPresent());
+      assertTrue(fi.hasNorms());
       
       DocValues normValues = mergedReader.normValues(byteTestField);
       assertNotNull(normValues);
       Source source = normValues.getSource();
       assertTrue(source.hasArray());
-      assertEquals(Type.FIXED_INTS_8, normValues.type());
+      assertEquals(Type.FIXED_INTS_8, normValues.getType());
       byte[] norms = (byte[]) source.getArray();
       for (int i = 0; i < mergedReader.maxDoc(); i++) {
         Document document = mergedReader.document(i);

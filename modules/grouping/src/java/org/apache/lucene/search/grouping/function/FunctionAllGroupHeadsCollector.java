@@ -41,7 +41,7 @@ import java.util.Map;
 public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollector<FunctionAllGroupHeadsCollector.GroupHead> {
 
   private final ValueSource groupBy;
-  private final Map vsContext;
+  private final Map<?, ?> vsContext;
   private final Map<MutableValue, GroupHead> groups;
   private final Sort sortWithinGroup;
 
@@ -57,7 +57,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
    * @param vsContext The ValueSource context
    * @param sortWithinGroup The sort within a group
    */
-  public FunctionAllGroupHeadsCollector(ValueSource groupBy, Map vsContext, Sort sortWithinGroup) {
+  public FunctionAllGroupHeadsCollector(ValueSource groupBy, Map<?, ?> vsContext, Sort sortWithinGroup) {
     super(sortWithinGroup.getSort().length);
     groups = new HashMap<MutableValue, GroupHead>();
     this.sortWithinGroup = sortWithinGroup;
@@ -120,6 +120,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
 
     final FieldComparator<?>[] comparators;
 
+    @SuppressWarnings({"unchecked","rawtypes"})
     private GroupHead(MutableValue groupValue, Sort sort, int doc) throws IOException {
       super(groupValue, doc + readerContext.docBase);
       final SortField[] sortFields = sort.getSort();

@@ -41,9 +41,10 @@ import java.util.Map;
  * 
  * @see TrieDoubleField
  */
-public class DoubleField extends FieldType {
+public class DoubleField extends PrimitiveFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
+    super.init(schema, args);
     restrictProps(SORT_MISSING_FIRST | SORT_MISSING_LAST);
   }
 

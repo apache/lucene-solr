@@ -1,158 +1,195 @@
+#content #index .bar-desc
+{
+  color: #c0c0c0;
+  font-weight: normal;
+  margin-left: 10px;
+  white-space: pre;
+}
+
+#content #index .bar-holder
+{
+  box-shadow: 5px 5px 10px #c0c0c0;
+  -moz-box-shadow: 5px 5px 10px #c0c0c0;
+  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+  height: 35px;
+}
+
+#content #index .bar-holder .bar
+{
+  height: 100%;
+  position: relative;
+}
+
+#content #index .bar-holder div .val
+{
+  border-right: 1px solid #f00;
+  display: block;
+  padding-right: 5px;
+  position: absolute;
+  right: 0;
+  top: 35px;
+  white-space: nowrap;
+}
+
+#content #index .bar-holder .bar-max.bar
+{
+  background-color: #f0f0f0;
+}
+
+#content #index .bar-holder .bar-max.val
+{
+  border-color: #f0f0f0;
+  color: #d6d6d6;
+}
+
+#content #index .bar-holder .bar-total.bar
+{
+  background-color: #c0c0c0;
+}
+
+#content #index .bar-holder .bar-total.val
+{
+  border-color: #c0c0c0;
+  color: #c0c0c0;
+}
+
+#content #index .bar-holder .bar-used.bar
+{
+  background-color: #969696;
+}
+
+#content #index .bar-holder .bar-used.val
+{
+  border-color: #969696;
+  color: #969696;
+}
+
+#content #index .bar-holder.bar-lvl-2 .bar-max.val { padding-top: 25px; }
+#content #index .bar-holder.bar-lvl-2 .bar-total.val { padding-top: 5px; }
+#content #index .bar-holder.bar-lvl-2 { margin-bottom: 45px; }
+
+#content #index .bar-holder.bar-lvl-3 .bar-max.val { padding-top: 45px; }
+#content #index .bar-holder.bar-lvl-3 .bar-total.val { padding-top: 25px; }
+#content #index .bar-holder.bar-lvl-3 .bar-used.val { padding-top: 5px; }
+#content #index .bar-holder.bar-lvl-3 { margin-bottom: 65px; }
+
 #content #index .loader
 {
-    background-position: 0 50%;
-    padding-left: 21px;
+  background-position: 0 50%;
+  padding-left: 21px;
 }
 
-#content #index #data
+#content #index .index-left
 {
-    float: left;
-    width: 74%;
+  float: left;
+  width: 55%;
 }
 
-#content #index #memory
+#content #index .index-right
 {
-    float: right;
-    width: 24%;
+  float: right;
+  width: 40%;
 }
 
-#content #index #data h2 { background-image: url( ../../img/ico/server.png ); }
-#content #index #memory h2 { background-image: url( ../../img/ico/battery.png ); }
-
-#content #index #data li
+#content #index .data li
 {
-    display: none;
-    padding-top: 3px;
-    padding-bottom: 3px;
+  display: none;
+  padding-top: 3px;
+  padding-bottom: 3px;
 }
 
-#content #index #data li.odd
+#content #index .data li.odd
 {
-    background-color: #f8f8f8;
+  color: #c0c0c0;
 }
 
-#content #index #data li dt
+#content #index .data li dt
 {
-    float: left;
-    width: 27%;
+  float: left;
+  white-space: nowrap;
+  width: 20%;
 }
 
-#content #index #data li dd
+#content #index .data li dd
 {
-    float: right;
-    width: 72%
+  float: right;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  width: 80%
 }
 
-#content #index #data li dd.odd
+#content #index .data li dd.odd
 {
-    color: #999;
+  color: #999;
 }
 
-#content #index #data dt span
+#content #index .data dt span
 {
-    background-position: 0 50%;
-    display: block;
-    padding-left: 21px;
+  background-position: 1px 50%;
+  display: block;
+  padding-left: 22px;
 }
 
-#content #index #data .start_time dt span
+#content #index #instance h2 { background-image: url( ../../img/ico/server.png ); }
+#content #index #instance .start_time dt span { background-image: url( ../../img/ico/clock-select.png ); }
+#content #index #instance .host dt span { background-image: url( ../../img/ico/globe.png ); }
+#content #index #instance .dir dt span { background-image: url( ../../img/ico/folder.png ); }
+
+#content #index #versions h2 { background-image: url( ../../img/ico/property.png ); }
+#content #index #versions .solr span { background-image: url( ../../img/solr-ico.png ); }
+#content #index #versions .lucene span { background-image: url( ../../img/lucene-ico.png ); }
+
+#content #index #jvm h2 { background-image: url( ../../img/ico/jar.png ); }
+#content #index #jvm .jvm_version dt span { background-image: url( ../../img/ico/jar.png ); }
+#content #index #jvm .processors dt span { background-image: url( ../../img/ico/processor.png ); }
+#content #index #jvm .command_line_args dt span { background-image: url( ../../img/ico/terminal.png ); }
+
+#content #index #system h2 { background-image: url( ../../img/ico/system-monitor.png ); }
+
+#content #index #system
 {
-    background-image: url( ../../img/ico/clock-select.png );
+  position: relative;
 }
 
-#content #index #data .host dt span
+#content #index #system .reload
 {
-    background-image: url( ../../img/ico/globe.png );
+  background-image: url( ../../img/ico/arrow-circle.png );
+  background-position: 50% 50%;
+  display: block;
+  height: 30px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 30px;
 }
 
-#content #index #data .cwd dt span
+#content #index #system .reload.loader
 {
-    background-image: url( ../../img/ico/folder-export.png );
+  padding-left: 0;
 }
 
-#content #index #data .jvm dt span
+#content #index #system .reload span
 {
-    background-image: url( ../../img/ico/jar.png );
+  display: none;
 }
 
-#content #index #data .command_line_args dt span
+#content #index #system .content p
 {
-    background-image: url( ../../img/ico/terminal.png );
+  margin-top: 10px;
+  margin-bottom: 5px;
 }
 
-#content #index #data .lucene dt span
+#content #index #system .content .no-info
 {
-    background-image: url( ../../img/lucene-ico.png );
+  color: #c0c0c0;
+  display: none;
+  font-style: italic;
 }
 
-#content #index #memory #memory-bar
-{
-    background-color: #00f;
-    box-shadow: 5px 5px 10px #c0c0c0;
-    -moz-box-shadow: 5px 5px 10px #c0c0c0;
-    -webkit-box-shadow: 5px 5px 10px #c0c0c0;
-    margin-top: 20px;
-    width: 100px;
-}
+#content #index #jvm-memory h2 { background-image: url( ../../img/ico/memory.png ); }
 
-#content #index #memory .bar
+#content #index #jvm-memory-bar
 {
-    bottom: 0;
-    position: absolute;
-    width: 100%;
-}
-
-#content #index #memory div .value
-{
-    border-top: 1px solid #f00;
-    display: block;
-    font-size: 10px;
-    line-height: 12px;
-    padding-left: 10px;
-    padding-right: 2px;
-    position: absolute;
-    margin-left: 100px;
-    white-space: nowrap;
-}
-
-#content #index #memory div .value.upper
-{
-    border-top-width: 0;
-    border-bottom-width: 1px;
-    border-bottom-style: solid;
-}
-
-#content #index #memory #memory-bar-max
-{
-    background-color: #f0f0f0;
-    height: 200px;
-    position: relative;
-}
-
-#content #index #memory #memory-bar-max .value
-{
-    border-color: #f0f0f0;
-    color: #d6d6d6;
-}
-
-#content #index #memory #memory-bar-total
-{
-    background-color: #c0c0c0;
-}
-
-#content #index #memory #memory-bar-total .value
-{
-    border-color: #c0c0c0;
-    color: #c0c0c0;
-}
-
-#content #index #memory #memory-bar-used
-{
-    background-color: #969696;
-}
-
-#content #index #memory #memory-bar-used .value
-{
-    border-color: #969696;
-    color: #969696;
+  margin-top: 20px;
 }

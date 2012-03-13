@@ -36,7 +36,7 @@ import java.util.Map;
 public class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupingCollector<MutableValue> {
 
   private final ValueSource groupByVS;
-  private final Map vsContext;
+  private final Map<?, ?> vsContext;
 
   private FunctionValues docValues;
   private FunctionValues.ValueFiller filler;
@@ -56,7 +56,7 @@ public class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupin
    * @param topNGroups How many top groups to keep.
    * @throws IOException When I/O related errors occur
    */
-  public FunctionFirstPassGroupingCollector(ValueSource groupByVS, Map vsContext, Sort groupSort, int topNGroups) throws IOException {
+  public FunctionFirstPassGroupingCollector(ValueSource groupByVS, Map<?, ?> vsContext, Sort groupSort, int topNGroups) throws IOException {
     super(groupSort, topNGroups);
     this.groupByVS = groupByVS;
     this.vsContext = vsContext;

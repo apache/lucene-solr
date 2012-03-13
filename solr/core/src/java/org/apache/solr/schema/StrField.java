@@ -24,17 +24,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 
-import java.util.Map;
 import java.io.IOException;
 /**
  *
  */
-public class StrField extends FieldType {
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-    super.init(schema, args);    
-  }
-
+public class StrField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);

@@ -52,11 +52,7 @@ import java.io.IOException;
  * @deprecated use {@link DoubleField} or {@link TrieDoubleField} - will be removed in 5.x
  */
 @Deprecated
-public class SortableDoubleField extends FieldType {
-  @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
-  }
-
+public class SortableDoubleField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);

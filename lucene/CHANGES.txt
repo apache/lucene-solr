@@ -410,6 +410,10 @@ API Changes
   method maybeReopen has been deprecated in favor of maybeRefresh().
   (Shai Erera, Mike McCandless, Simon Willnauer)
 
+* LUCENE-3859: AtomicReader.hasNorms(field) is deprecated, instead you
+  can inspect the FieldInfo yourself to see if norms are present, which
+  also allows you to get the type.  (Robert Muir)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
@@ -919,7 +923,13 @@ Bug fixes
   from the delegate DocIdSet.iterator(), which is allowed to return
   null by DocIdSet specification when no documents match.
   (Shay Banon via Uwe Schindler)
-
+  
+* LUCENE-3821: SloppyPhraseScorer missed documents that ExactPhraseScorer finds
+  When phrase queru had repeating terms (e.g. "yes ho yes")  
+  sloppy query missed documents that exact query matched. 
+  Fixed except when for repeating multiterms (e.g. "yes ho yes|no").
+  (Robert Muir, Doron Cohen)
+    
 Optimizations
 
 * LUCENE-3653: Improve concurrency in VirtualMethod and AttributeSource by
@@ -931,6 +941,9 @@ Documentation
 * LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)
 
 Build
+
+* LUCENE-3857: exceptions from other threads in beforeclass/etc do not fail 
+  the test (Dawid Weiss)
 
 * LUCENE-3847: LuceneTestCase will now check for modifications of System 
   properties before and after each test (and suite). If changes are detected,

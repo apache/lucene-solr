@@ -304,9 +304,8 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
  */
 class DateStatsValues extends AbstractStatsValues<Date> {
 
-  private static final DateField DATE_FIELD = new DateField();
-
-  private long sum;
+  private long sum = -1;
+  double sumOfSquares = 0;
 
   public DateStatsValues(SchemaField sf) {
     super(sf);
@@ -317,22 +316,27 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    */
   protected void updateTypeSpecificStats(NamedList stv) {
     sum += ((Date) stv.get("sum")).getTime();
+    sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void updateTypeSpecificStats(Date value) {
-    sum += value.getTime();
+  public void updateTypeSpecificStats(Date v) {
+    long value = v.getTime();
+    sumOfSquares += (value * value); // for std deviation
+    sum += value;
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void updateTypeSpecificStats(Date value, int count) {
-    sum += value.getTime() * count;
+  public void updateTypeSpecificStats(Date v, int count) {
+    long value = v.getTime();
+    sumOfSquares += (value * value * count); // for std deviation
+    sum += value * count;
   }
 
    /**
@@ -353,10 +357,29 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    * @param res NamedList to add the type specific statistics too
    */
   protected void addTypeSpecificStats(NamedList<Object> res) {
+    if(sum<=0) {
+      return; // date==0 is meaningless
+    }
     res.add("sum", new Date(sum));
     if (count > 0) {
       res.add("mean", new Date(sum / count));
     }
+    res.add("sumOfSquares", sumOfSquares);
+    res.add("stddev", getStandardDeviation());
+  }
+  
+
+  
+  /**
+   * Calculates the standard deviation.  For dates, this is really the MS deviation
+   *
+   * @return Standard deviation statistic
+   */
+  private double getStandardDeviation() {
+    if (count <= 1) {
+      return 0.0D;
+    }
+    return Math.sqrt(((count * sumOfSquares) - (sum * sum)) / (count * (count - 1.0D)));
   }
 }
 

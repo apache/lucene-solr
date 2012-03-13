@@ -1,100 +1,208 @@
 #content #cloud .loader
 {
-    background-position: 0 50%;
-    padding-left: 21px;
+  background-position: 0 50%;
+  padding-left: 21px;
 }
 
 #content #cloud #error
 {
-    background-color: #f00;
-    background-image: url( ../../img/ico/construction.png );
-    background-position: 10px 50%;
-    color: #fff;
-    font-weight: bold;
-    margin-bottom: 20px;
-    padding: 10px;
-    padding-left: 35px;
+  background-color: #f00;
+  background-image: url( ../../img/ico/construction.png );
+  background-position: 10px 50%;
+  color: #fff;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 10px;
+  padding-left: 35px;
 }
 
 #content #cloud h2 { background-image: url( ../../img/ico/sitemap.png ); }
 
+#content #cloud
+{
+  position: relative;
+}
+
+#content #cloud a.debug
+{
+  background-color: #c0c0c0;
+  background-image: url( ../../img/ico/exclamation-button.png );
+  background-position: 5px 50%;
+  border-radius: 5px;
+  display: block;
+  padding: 2px 5px;
+  padding-left: 26px;
+  position: absolute;
+  left: 150px;
+  top: 3px;
+}
+
+#content #cloud a.debug:hover
+{
+  background-color: #fff;
+  color: #00f;
+}
+
+#content #cloud #debug
+{
+  background-color: #fff;
+  box-shadow: 5px 5px 10px #c0c0c0;
+  -moz-box-shadow: 5px 5px 10px #c0c0c0;
+  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+  display: none;
+  padding: 20px;
+  position: absolute;
+  left: 50px;
+  top: 50px;
+}
+
+#content #cloud #debug ul
+{
+  margin-bottom: 5px;
+}
+
+#content #cloud #debug ul a
+{
+  background-position: 4px 50%;
+  display: block;
+  padding: 2px 4px;
+  padding-left: 25px;
+}
+
+#content #cloud #debug ul a:hover,
+#content #cloud #debug ul a.hover
+{
+  background-color: #f0f0f0;
+}
+
+#content #cloud #debug .clipboard
+{
+  float: left;
+  position: relative;
+}
+
+#content #cloud #debug .clipboard a
+{
+  background-image: url( ../../img/ico/clipboard-paste.png );
+  z-index: 98;
+}
+
+#content #cloud #debug .clipboard a:hover,
+#content #cloud #debug .clipboard a.hover,
+#content #cloud #debug .clipboard.copied a
+{
+  background-image: url( ../../img/ico/clipboard-paste-document-text.png );
+}
+
+#content #cloud #debug .close
+{
+  float: right;
+}
+
+#content #cloud #debug .close a
+{
+  background-image: url( ../../img/ico/cross-0.png );
+  padding-left: 21px;
+}
+
+#content #cloud #debug .close a:hover
+{
+  background-image: url( ../../img/ico/cross-1.png );
+}
+
+#content #cloud #debug .debug
+{
+  border: 1px solid #f0f0f0;
+  max-height: 400px;
+  overflow: auto;
+  padding: 5px;
+  width: 500px;
+}
+
+#content #cloud #debug .debug .loader
+{
+  background-position: 5px 50%;
+  display: block;
+  padding: 10px 26px;
+}
+
 #content #cloud .content
 {
-    padding-left: 0;
-    padding-right: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 #content #cloud .content.show
 {
-    background-image: url( ../../img/div.gif );
-    background-repeat: repeat-y;
-    background-position: 31% 0;
+  background-image: url( ../../img/div.gif );
+  background-repeat: repeat-y;
+  background-position: 31% 0;
 }
 
 #content #cloud #tree
 {
-    float: left;
-    width: 30%;
+  float: left;
+  width: 30%;
 }
 
 #content #cloud .show #tree
 {
-    overflow: hidden;
+  overflow: hidden;
 }
 
 #content #cloud #file-content
 {
-    display: none;
-    float: right;
-    position: relative;
-    width: 68%;
-    min-height: 100px
+  display: none;
+  float: right;
+  position: relative;
+  width: 68%;
+  min-height: 100px
 }
 
 #content #cloud .show #file-content
 {
-    display: block;
+  display: block;
 }
 
 #content #cloud #file-content .close
 {
-    background-image: url( ../../img/ico/cross-0.png );
-    background-position: 50% 50%;
-    display: block;
-    height: 20px;
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 20px;
+  background-image: url( ../../img/ico/cross-0.png );
+  background-position: 50% 50%;
+  display: block;
+  height: 20px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 20px;
 }
 
 #content #cloud #file-content .close:hover
 {
-    background-image: url( ../../img/ico/cross-1.png );
+  background-image: url( ../../img/ico/cross-1.png );
 }
 
 #content #cloud #file-content .close span
 {
-    display: none;
+  display: none;
 }
 
 #content #cloud #file-content #data
 {
-    border-top: 1px solid #c0c0c0;
-    margin-top: 10px;
-    padding-top: 10px;
+  border-top: 1px solid #c0c0c0;
+  margin-top: 10px;
+  padding-top: 10px;
 }
 
 #content #cloud #file-content #data pre
 {
-    display: block;
-    max-height: 600px;
-    overflow: auto;
+  display: block;
+  max-height: 600px;
+  overflow: auto;
 }
 
 #content #cloud #file-content #data em
 {
-    color: #c0c0c0;
+  color: #c0c0c0;
 }
 
 #content #cloud #file-content #prop
@@ -103,31 +211,31 @@
 
 #content #cloud #file-content li
 {
-    padding-top: 3px;
-    padding-bottom: 3px;
+  padding-top: 3px;
+  padding-bottom: 3px;
 }
 
 #content #cloud #file-content li.odd
 {
-    background-color: #F8F8F8;
+  background-color: #F8F8F8;
 }
 
 #content #cloud #file-content li dt
 {
-    float: left;
-    width: 19%;
+  float: left;
+  width: 19%;
 }
 
 #content #cloud #file-content li dd
 {
-    float: right;
-    width: 80%;
+  float: right;
+  width: 80%;
 }
 
 /* tree */
 
 #content #cloud .tree a.active
 {
-    background-color: #f0f0f0;
-    color: #00f;
+  background-color: #f0f0f0;
+  color: #00f;
 }

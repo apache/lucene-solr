@@ -33,12 +33,12 @@ import java.util.Map;
 public class FieldStatsInfo implements Serializable {
   final String name;
   
-  Double min;
-  Double max;
-  Double sum;
+  Object min;
+  Object max;
+  Object sum;
   Long count;
   Long missing;
-  Double mean = null;
+  Object mean = null;
   Double sumOfSquares = null;
   Double stddev = null;
   
@@ -50,13 +50,13 @@ public class FieldStatsInfo implements Serializable {
     
     for( Map.Entry<String, Object> entry : nl ) {
       if( "min".equals( entry.getKey() ) ) {
-        min = (Double)entry.getValue();
+        min = entry.getValue();
       }
       else if( "max".equals( entry.getKey() ) ) {
-        max = (Double)entry.getValue();
+        max = entry.getValue();
       }
       else if( "sum".equals( entry.getKey() ) ) {
-        sum = (Double)entry.getValue();
+        sum = entry.getValue();
       }
       else if( "count".equals( entry.getKey() ) ) {
         count = (Long)entry.getValue();
@@ -65,7 +65,7 @@ public class FieldStatsInfo implements Serializable {
         missing = (Long)entry.getValue();
       }
       else if( "mean".equals( entry.getKey() ) ) {
-        mean = (Double)entry.getValue();
+        mean = entry.getValue();
       }
       else if( "sumOfSquares".equals( entry.getKey() ) ) {
         sumOfSquares = (Double)entry.getValue();
@@ -129,15 +129,15 @@ public class FieldStatsInfo implements Serializable {
     return name;
   }
 
-  public Double getMin() {
+  public Object getMin() {
     return min;
   }
 
-  public Double getMax() {
+  public Object getMax() {
     return max;
   }
 
-  public Double getSum() {
+  public Object getSum() {
     return sum;
   }
 
@@ -149,7 +149,7 @@ public class FieldStatsInfo implements Serializable {
     return missing;
   }
 
-  public Double getMean() {
+  public Object getMean() {
     return mean;
   }
 

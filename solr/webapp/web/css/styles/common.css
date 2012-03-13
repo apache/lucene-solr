@@ -1,52 +1,52 @@
 *
 {
-    background-repeat: no-repeat;
-    margin: 0;
-    padding: 0;
+  background-repeat: no-repeat;
+  margin: 0;
+  padding: 0;
 }
 
 body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td
 {
-    color: #333;
-    font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+  color: #333;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
 }
 
 body
 {
-    padding: 30px;
-    text-align: center;
+  padding: 30px;
+  text-align: center;
 }
 
 a, button
 {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 button, input, select, textarea
 {
-    border: 1px solid #c0c0c0;
-    padding: 2px;
+  border: 1px solid #c0c0c0;
+  padding: 2px;
 }
 
 a
 {
-    text-decoration: none;
+  text-decoration: none;
 }
 
 pre
 {
-    color: #333;
-    text-align: left;
+  color: #333;
+  text-align: left;
 }
 
 abbr
 {
-    cursor: help;
+  cursor: help;
 }
 
 ul
 {
-    list-style: none;
+  list-style: none;
 }
 
 .clearfix:after { clear: both; content: "."; display: block; font-size: 0; height: 0; visibility: hidden; }
@@ -54,96 +54,121 @@ ul
 
 .loader
 {
-    background-image: url( ../../img/loader.gif ) !important;
+  background-image: url( ../../img/loader.gif ) !important;
 }
 
 .loader-light
 {
-    background-image: url( ../../img/loader-light.gif ) !important;
+  background-image: url( ../../img/loader-light.gif ) !important;
 }
 
 #wrapper
 {
-    margin: 0 auto;
-    margin-bottom: 30px;
-    text-align: left;
+  margin: 0 auto;
+  margin-bottom: 30px;
+  text-align: left;
 }
 
 #header
 {
-    padding-bottom: 10px;
-    position: relative;
+  padding-bottom: 10px;
+  position: relative;
 }
 
 #header #solr
 {
-    background-image: url( ../../img/solr.png );
-    display: block;
-    height: 78px;
-    width: 200px;
+  background-image: url( ../../img/solr.png );
+  display: block;
+  height: 78px;
+  width: 200px;
 }
 
 #header #solr span
 {
-    display: none;
+  display: none;
 }
 
 #header #wip-notice
 {
-    background-color: #eceffa;
-    background-image: url( ../../img/ico/information-button.png );
-    background-position: 8px 7px;
-    border: 1px solid #4465cb;
-    padding: 5px 10px;
-    padding-left: 31px;
-    left: 212px;
-    position: absolute;
-    top: 0;
+  background-color: #eceffa;
+  background-image: url( ../../img/ico/information-button.png );
+  background-position: 8px 7px;
+  border: 1px solid #4465cb;
+  padding: 5px 10px;
+  padding-left: 31px;
+  left: 212px;
+  position: absolute;
+  top: 0;
 }
 
 #header #wip-notice a
 {
-    display: block;
+  display: block;
 }
 
 #header #wip-notice span
 {
-    border-bottom: 1px solid #c0c0c0;
+  border-bottom: 1px solid #c0c0c0;
 }
 
 #main
 {
-    border: 1px solid #c0c0c0;
-    min-height: 600px;
-    min-width: 750px;
-    position: relative;
+  border: 1px solid #c0c0c0;
+  min-height: 600px;
+  min-width: 750px;
+  position: relative;
+}
+
+#main.error
+{
+  border: 0;
+  min-height: 0;
+  padding-top: 20px;
+}
+
+#main.error .message
+{
+  background-color: #f00;
+  background-image: url( ../../img/ico/construction.png );
+  background-position: 10px 50%;
+  color: #fff;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 10px;
+  padding-left: 35px;
+}
+
+#main.error .code
+{
+  border: 1px solid #c0c0c0;
+  padding: 5px;
 }
 
 #meta
 {
-    position: absolute;
-    bottom: -26px;
-    right: 0;
+  position: absolute;
+  bottom: -26px;
+  right: 0;
 }
 
 #meta li
 {
-    float: left;
+  float: left;
 }
 
 #meta li a
 {
-    background-position: 10px 50%;
-    display: block;
-    height: 25px;
-    line-height: 25px;
-    padding-left: 31px;
-    padding-right: 10px;
+  background-position: 10px 50%;
+  display: block;
+  height: 25px;
+  line-height: 25px;
+  padding-left: 31px;
+  padding-right: 10px;
 }
 
 #meta li a:hover
 {
-    background-color: #f0f0f0;
+  background-color: #f0f0f0;
 }
 
 #meta .documentation a { background-image: url( ../../img/ico/document-text.png ); }
@@ -154,112 +179,112 @@ ul
 
 #environment
 {
-    background-image: url( ../../img/ico/box.png );
-    background-position: 10px 50%;
-    border: 1px solid #c0c0c0;
-    display: none;
-    font-weight: bold;
-    padding: 5px 10px;
-    padding-left: 31px;
-    position: absolute;
-    top: 0;
-    right: 0;
+  background-image: url( ../../img/ico/box.png );
+  background-position: 10px 50%;
+  border: 1px solid #c0c0c0;
+  display: none;
+  font-weight: bold;
+  padding: 5px 10px;
+  padding-left: 31px;
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 #environment.prod
 {
-    background-color: #c37f7f;
-    border-color: #b15757;
-    color: #fff;
+  background-color: #c37f7f;
+  border-color: #b15757;
+  color: #fff;
 }
 
 #environment.test
 {
-    background-color: #f5f5b2;
-    border-color: #e4e433;
+  background-color: #f5f5b2;
+  border-color: #e4e433;
 }
 
 #environment.dev
 {
-    background-color: #cce7cc;
-    border-color: #66b866;
+  background-color: #cce7cc;
+  border-color: #66b866;
 }
 
 
 #content-wrapper
 {
-    float: right;
-    width: 80%;
+  float: right;
+  width: 80%;
 }
 
 #content
 {
-    padding: 10px;
+  padding: 10px;
 }
 
 #content > .loader
 {
-    background-position: 0 50%;
-    padding-left: 21px;
+  background-position: 0 50%;
+  padding-left: 21px;
 }
 
 #content iframe
 {
-    border: 0;
-    display: block;
-    min-height: 400px;
-    width: 100%;
+  border: 0;
+  display: block;
+  min-height: 400px;
+  width: 100%;
 }
 
 #content > pre
 {
-    max-height: 600px;
-    overflow: auto;
+  max-height: 600px;
+  overflow: auto;
 }
 
 #content .block
 {
-    margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 #content .block h2
 {
-    background-color: #fafafa;
-    background-position: 5px 50%;
-    border-bottom: 1px solid #f0f0f0;
-    font-weight: bold;
-    padding: 5px;
-    padding-left: 26px;
+  background-color: #fafafa;
+  background-position: 5px 50%;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: bold;
+  padding: 5px;
+  padding-left: 26px;
 }
 
 #content .block.disabled,
 #content .block.disabled h2
 {
-    color: #c0c0c0;
+  color: #c0c0c0;
 }
 
 #content .block .message,
 #content .block .content
 {
-    padding: 5px;
+  padding: 5px;
 }
 
 #content .block .message
 {
-    display: none;
+  display: none;
 }
 
 /* syntax */
 
 pre.syntax
 {
-    overflow: auto;
+  overflow: auto;
 }
 
 pre.syntax code
 {
-    display: block;
-    color: #000;
+  display: block;
+  color: #000;
 }
 
 pre.syntax .comment,
@@ -267,8 +292,8 @@ pre.syntax .template_comment,
 pre.syntax .diff .header,
 pre.syntax .javadoc
 {
-    color: #998;
-    font-style: italic;
+  color: #998;
+  font-style: italic;
 }
 
 pre.syntax .keyword,
@@ -278,14 +303,14 @@ pre.syntax .javascript .title,
 pre.syntax .lisp .title,
 pre.syntax .subst
 {
-    color: #000;
-    font-weight: bold;
+  color: #000;
+  font-weight: bold;
 }
 
 pre.syntax .number,
 pre.syntax .hexcolor
 {
-    color: #40a070;
+  color: #40a070;
 }
 
 pre.syntax .string,
@@ -293,28 +318,28 @@ pre.syntax .tag .value,
 pre.syntax .phpdoc,
 pre.syntax .tex .formula
 {
-    color: #d14;
+  color: #d14;
 }
 
 pre.syntax .title,
 pre.syntax .id
 {
-    color: #900;
-    font-weight: bold;
+  color: #900;
+  font-weight: bold;
 }
 
 pre.syntax .javascript .title,
 pre.syntax .lisp .title,
 pre.syntax .subst
 {
-    font-weight: normal;
+  font-weight: normal;
 }
 
 pre.syntax .class .title,
 pre.syntax .tex .command
 {
-    color: #458;
-    font-weight: bold;
+  color: #458;
+  font-weight: bold;
 }
 
 pre.syntax .tag,
@@ -323,8 +348,8 @@ pre.syntax .html .keyword,
 pre.syntax .tag .title,
 pre.syntax .django .tag .keyword
 {
-    color: #000080;
-    font-weight: normal;
+  color: #000080;
+  font-weight: normal;
 }
 
 pre.syntax .attribute,
@@ -332,18 +357,18 @@ pre.syntax .variable,
 pre.syntax .instancevar,
 pre.syntax .lisp .body
 {
-    color: #008080;
+  color: #008080;
 }
 
 pre.syntax .regexp
 {
-    color: #009926;
+  color: #009926;
 }
 
 pre.syntax .class
 {
-    color: #458;
-    font-weight: bold;
+  color: #458;
+  font-weight: bold;
 }
 
 pre.syntax .symbol,
@@ -353,14 +378,14 @@ pre.syntax .ruby .symbol .keymethods,
 pre.syntax .lisp .keyword,
 pre.syntax .tex .special
 {
-    color: #990073;
+  color: #990073;
 }
 
 pre.syntax .builtin,
 pre.syntax .built_in,
 pre.syntax .lisp .title
 {
-    color: #0086b3;
+  color: #0086b3;
 }
 
 pre.syntax .preprocessor,
@@ -369,96 +394,96 @@ pre.syntax .doctype,
 pre.syntax .shebang,
 pre.syntax .cdata
 {
-    color: #999;
-    font-weight: bold;
+  color: #999;
+  font-weight: bold;
 }
 
 pre.syntax .deletion
 {
-    background: #fdd;
+  background: #fdd;
 }
 
 pre.syntax .addition
 {
-    background: #dfd;
+  background: #dfd;
 }
 
 pre.syntax .diff .change
 {
-    background: #0086b3;
+  background: #0086b3;
 }
 
 pre.syntax .chunk
 {
-    color: #aaa;
+  color: #aaa;
 }
 
 pre.syntax .tex .formula
 {
-    opacity: 0.5;
+  opacity: 0.5;
 }
 
 #content .tree li, 
 #content .tree ins
 {
-    background-color: transparent;
-    background-image: url( ../../img/tree.png );
-    background-repeat: no-repeat; 
+  background-color: transparent;
+  background-image: url( ../../img/tree.png );
+  background-repeat: no-repeat; 
 }
 
 #content .tree li
 {
-    background-position: -54px 0;
-    background-repeat: repeat-y;
-    line-height: 22px;
+  background-position: -54px 0;
+  background-repeat: repeat-y;
+  line-height: 22px;
 }
 
 #content .tree li.jstree-last
 {
-    background:transparent;
+  background:transparent;
 }
 
 #content .tree .jstree-open > ins
 {
-    background-position: -36px 0;
+  background-position: -36px 0;
 }
 
 #content .tree .jstree-closed > ins
 {
-    background-position: -18px 0;
+  background-position: -18px 0;
 }
 
 #content .tree .jstree-leaf > ins
 {
-    background-position: 0 0;
+  background-position: 0 0;
 }
 
 #content .tree .jstree-hovered
 {
-    background:#e7f4f9; border:1px solid #d8f0fa; padding:0 2px 0 1px;
+  background:#e7f4f9; border:1px solid #d8f0fa; padding:0 2px 0 1px;
 }
 
 #content .tree .jstree-clicked
 {
-    background:#beebff; border:1px solid #99defd; padding:0 2px 0 1px;
+  background:#beebff; border:1px solid #99defd; padding:0 2px 0 1px;
 }
 
 #content .tree a .jstree-icon
 {
-    background-image: url( ../../img/ico/folder.png );
+  background-image: url( ../../img/ico/folder.png );
 }
 
 #content .tree .jstree-leaf a .jstree-icon
 {
-    background-image: url( ../../img/ico/document-text.png );
+  background-image: url( ../../img/ico/document-text.png );
 }
 
 #content .tree .jstree-search
 {
-    font-style:italic;
+  font-style:italic;
 }
 
 #content .tree a.jstree-search
 {
-    color:aqua;
+  color:aqua;
 }

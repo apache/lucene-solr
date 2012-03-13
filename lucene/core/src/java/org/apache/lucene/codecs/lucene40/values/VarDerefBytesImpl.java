@@ -57,7 +57,7 @@ class VarDerefBytesImpl {
   static class Writer extends DerefBytesWriterBase {
     public Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context, Type.BYTES_VAR_DEREF);
       size = 0;
     }
     
@@ -105,7 +105,7 @@ class VarDerefBytesImpl {
     @Override
     public Source getDirectSource()
         throws IOException {
-      return new DirectVarDerefSource(cloneData(), cloneIndex(), type());
+      return new DirectVarDerefSource(cloneData(), cloneIndex(), getType());
     }
   }
   

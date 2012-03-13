@@ -44,9 +44,10 @@ import java.util.Map;
  *
  * @see Byte
  */
-public class ByteField extends FieldType {
+public class ByteField extends PrimitiveFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
+    super.init(schema, args);
     restrictProps(SORT_MISSING_FIRST | SORT_MISSING_LAST);
   }
 

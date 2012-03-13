@@ -65,7 +65,7 @@ import org.apache.solr.search.function.*;
  * @see org.apache.lucene.search.NumericRangeQuery
  * @since solr 1.4
  */
-public class TrieField extends org.apache.solr.schema.FieldType {
+public class TrieField extends PrimitiveFieldType {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
   protected int precisionStepArg = TrieField.DEFAULT_PRECISION_STEP;  // the one passed in or defaulted
@@ -81,6 +81,7 @@ public class TrieField extends org.apache.solr.schema.FieldType {
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
+    super.init(schema, args);
     String p = args.remove("precisionStep");
     if (p != null) {
        precisionStepArg = Integer.parseInt(p);

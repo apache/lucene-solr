@@ -60,6 +60,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
    *  @param topNGroups How many top groups to keep.
    *  @throws IOException If I/O related errors occur
    */
+  @SuppressWarnings({"unchecked","rawtypes"})
   public AbstractFirstPassGroupingCollector(Sort groupSort, int topNGroups) throws IOException {
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");
@@ -284,7 +285,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
     if (orderedGroups != null) {
       orderedGroups.add(group);
       assert orderedGroups.size() == topNGroups;
-      final CollectedSearchGroup newLast = orderedGroups.last();
+      final CollectedSearchGroup<?> newLast = orderedGroups.last();
       // If we changed the value of the last group, or changed which group was last, then update bottom:
       if (group == newLast || prevLast != newLast) {
         for (FieldComparator<?> fc : comparators) {
@@ -295,8 +296,8 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
   }
 
   private void buildSortedSet() {
-    final Comparator<CollectedSearchGroup> comparator = new Comparator<CollectedSearchGroup>() {
-      public int compare(CollectedSearchGroup o1, CollectedSearchGroup o2) {
+    final Comparator<CollectedSearchGroup<?>> comparator = new Comparator<CollectedSearchGroup<?>>() {
+      public int compare(CollectedSearchGroup<?> o1, CollectedSearchGroup<?> o2) {
         for (int compIDX = 0;; compIDX++) {
           FieldComparator<?> fc = comparators[compIDX];
           final int c = reversed[compIDX] * fc.compare(o1.comparatorSlot, o2.comparatorSlot);

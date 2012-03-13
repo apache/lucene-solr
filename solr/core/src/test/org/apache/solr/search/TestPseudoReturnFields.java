@@ -42,7 +42,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
    * values of the fl param that mean all real fields and score
    */
   private static String[] SCORE_AND_REAL_FIELDS = new String[] { 
-    "score", "score,*", "*,score"
+    "score,*", "*,score"
   };
 
   @BeforeClass

@@ -1640,7 +1640,7 @@ public abstract class FieldComparator<T> {
           // This means segment has doc values, but they are
           // not able to provide a sorted source; consider
           // this a hard error:
-          throw new IllegalStateException("DocValues exist for field \"" + field + "\", but not as a sorted source: type=" + dv.getSource().type() + " reader=" + context.reader());
+          throw new IllegalStateException("DocValues exist for field \"" + field + "\", but not as a sorted source: type=" + dv.getSource().getType() + " reader=" + context.reader());
         }
       }
 

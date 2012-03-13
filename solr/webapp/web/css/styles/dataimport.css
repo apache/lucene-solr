@@ -1,232 +1,232 @@
 #content #dataimport
 {
-    background-image: url( ../../img/div.gif );
-    background-position: 21% 0;
-    background-repeat: repeat-y;
+  background-image: url( ../../img/div.gif );
+  background-position: 21% 0;
+  background-repeat: repeat-y;
 }
 
 #content #dataimport #frame
 {
-    float: right;
-    width: 78%;
+  float: right;
+  width: 78%;
 }
 
 #content #dataimport #form
 {
-    float: left;
-    width: 20%;
+  float: left;
+  width: 20%;
 }
 
 #content #dataimport.error #form form
 {
-    display: none !important;
+  display: none !important;
 }
 
 #content #dataimport #form label
 {
-    cursor: pointer;
-    display: block;
-    margin-top: 5px;
+  cursor: pointer;
+  display: block;
+  margin-top: 5px;
 }
 
 #content #dataimport #form input,
 #content #dataimport #form select,
 #content #dataimport #form textarea
 {
-    margin-bottom: 2px;
-    width: 100%;
+  margin-bottom: 2px;
+  width: 100%;
 }
 
 #content #dataimport #form #start
 {
-    float: left;
-    margin-right: 2%;
-    width: 49%;
+  float: left;
+  margin-right: 2%;
+  width: 49%;
 }
 
 #content #dataimport #form #rows
 {
-    width: 49%;
+  width: 49%;
 }
 
 #content #dataimport #form .checkbox input
 {
-    margin-bottom: 0;
-    width: auto;
+  margin-bottom: 0;
+  width: auto;
 }
 
 #content #dataimport #form fieldset,
 #content #dataimport #form .optional.expanded
 {
-    border: 1px solid #fff;
-    border-top: 1px solid #c0c0c0;
-    margin-bottom: 10px;
+  border: 1px solid #fff;
+  border-top: 1px solid #c0c0c0;
+  margin-bottom: 10px;
 }
 
 #content #dataimport #form fieldset legend,
 #content #dataimport #form .optional.expanded legend
 {
-    display: block;
-    margin-left: 10px;
-    padding: 0px 5px;
+  display: block;
+  margin-left: 10px;
+  padding: 0px 5px;
 }
 
 #content #dataimport #form fieldset legend label
 {
-    margin-top: 0;
+  margin-top: 0;
 }
 
 #content #dataimport #form .handler
 {
-    display: none;
+  display: none;
 }
 
 #content #dataimport #form .handler ul
 {
-    list-style: disc;
-    margin-left: 0.7em;
-    padding-left: 0.7em;
+  list-style: disc;
+  margin-left: 0.7em;
+  padding-left: 0.7em;
 }
 
 #content #dataimport #form .handler ul li a
 {
-    color: #c0c0c0;
-    display: block;
+  color: #c0c0c0;
+  display: block;
 }
 
 #content #dataimport #form .handler ul li.active a
 {
-    color: #333;
+  color: #333;
 }
 
 #content #dataimport #current_state
 {
-    display: none;
-    padding: 10px;
-    margin-bottom: 20px;
+  display: none;
+  padding: 10px;
+  margin-bottom: 20px;
 }
 
 #content #dataimport.error #current_state
 {
-    display: none !important;
+  display: none !important;
 }
 
 #content #dataimport #current_state .time,
 #content #dataimport #current_state .info
 {
-    display: block;
-    padding-left: 21px;
+  display: block;
+  padding-left: 21px;
 }
 
 #content #dataimport #current_state .time
 {
-    color: #c0c0c0;
-    font-size: 11px;
+  color: #c0c0c0;
+  font-size: 11px;
 }
 
 #content #dataimport #current_state .info
 {
-    background-position: 0 1px;
+  background-position: 0 1px;
 }
 
 #content #dataimport #current_state.indexing
 {
-    background-color: #f9f9f9;
+  background-color: #f9f9f9;
 }
 
 #content #dataimport #current_state.success
 {
-    background-color: #e6f3e6;
+  background-color: #e6f3e6;
 }
 
 #content #dataimport #current_state.success .info
 {
-    background-image: url( ../../img/ico/tick-circle.png );
+  background-image: url( ../../img/ico/tick-circle.png );
 }
 
 #content #dataimport #current_state.success .info strong
 {
-    color: #080;
+  color: #080;
 }
 
 #content #dataimport #current_state.failure
 {
-    background-color: #f3e6e6;
+  background-color: #f3e6e6;
 }
 
 #content #dataimport #current_state.failure .info
 {
-    background-image: url( ../../img/ico/slash.png );
+  background-image: url( ../../img/ico/slash.png );
 }
 
 #content #dataimport #current_state.failure .info strong
 {
-    color: #800;
+  color: #800;
 }
 
 #content #dataimport #config-error
 {
-    background-color: #f00;
-    background-image: url( ../../img/ico/construction.png );
-    background-position: 10px 50%;
-    color: #fff;
-    display: none;
-    font-weight: bold;
-    margin-bottom: 20px;
-    padding: 10px;
-    padding-left: 35px;
+  background-color: #f00;
+  background-image: url( ../../img/ico/construction.png );
+  background-position: 10px 50%;
+  color: #fff;
+  display: none;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 10px;
+  padding-left: 35px;
 }
 
 #content #dataimport #config h2
 {
-    border-color: #c0c0c0;
-    padding-left: 5px;
-    position: relative;
+  border-color: #c0c0c0;
+  padding-left: 5px;
+  position: relative;
 }
 
 #content #dataimport #config.hidden h2
 {
-    border-color: #fafafa;
+  border-color: #fafafa;
 }
 
 #content #dataimport #config h2 a.toggle
 {
-    background-image: url( ../../img/ico/toggle-small.png );
-    background-position: 0 50%;
-    padding-left: 21px;
+  background-image: url( ../../img/ico/toggle-small.png );
+  background-position: 0 50%;
+  padding-left: 21px;
 }
 
 #content #dataimport #config.hidden h2 a.toggle
 {
-    background-image: url( ../../img/ico/toggle-small-expand.png );
+  background-image: url( ../../img/ico/toggle-small-expand.png );
 }
 
 #content #dataimport #config h2 a.reload_config
 {
-    background-image: url( ../../img/ico/arrow-circle.png );
-    padding-left: 21px;
-    position: absolute;
-    right: 5px;
-    top: 5px;
+  background-image: url( ../../img/ico/arrow-circle.png );
+  padding-left: 21px;
+  position: absolute;
+  right: 5px;
+  top: 5px;
 }
 
 #content #dataimport #config h2 a.reload_config.success
 {
-    background-image: url( ../../img/ico/tick.png );
+  background-image: url( ../../img/ico/tick.png );
 }
 
 #content #dataimport #config h2 a.reload_config.error
 {
-    background-image: url( ../../img/ico/slash.png );
+  background-image: url( ../../img/ico/slash.png );
 }
 
 #content #dataimport #config.hidden .content
 {
-    display: none;
+  display: none;
 }
 
 #content #dataimport #dataimport_config .loader
 {
-    background-position: 0 50%;
-    padding-left: 21px;
+  background-position: 0 50%;
+  padding-left: 21px;
 }

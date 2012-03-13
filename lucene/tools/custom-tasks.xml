@@ -45,9 +45,6 @@
             <!-- Non-typical version patterns. -->
             <additional-filters />
             <replaceregex pattern="/xercesImpl([^/]+)$" replace="/xercesImpl" flags="gi" />
-            <replaceregex pattern="/commons-csv-([^/]+)$" replace="/commons-csv" flags="gi" />
-            <replaceregex pattern="/(bcmail|bcprov)-([^/]+)$" replace="/\1" flags="gi" />
-            <replaceregex pattern="/slf4j-([^/]+)$" replace="/slf4j" flags="gi" />
     
             <!-- Typical version patterns. -->
             <replaceregex pattern="\-(r)?([0-9\-\_\.])+(b(eta)?([0-9\-\.])*)?$" replace="" flags="gi" />

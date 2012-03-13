@@ -27,9 +27,15 @@ import org.apache.solr.spelling.suggest.LookupFactory;
  * Factory for {@link TSTLookup}
  */
 public class TSTLookupFactory extends LookupFactory {
+  private static final String FILENAME = "tst.dat";
 
   @Override
   public Lookup create(NamedList params, SolrCore core) {
     return new TSTLookup();
+  }
+
+  @Override
+  public String storeFileName() {
+    return FILENAME;
   }
 }

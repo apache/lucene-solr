@@ -124,6 +124,7 @@
         <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant>
+      <delete dir="dist" failonerror="false" />
     </sequential>
   </target>
 
