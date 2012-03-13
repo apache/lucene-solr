@@ -176,7 +176,6 @@ sammy.get
                 array.push( { name: 'analysis.showmatch', value: 'true' } );
                                 
                 var type_or_name = $( '#type_or_name', form ).val().split( '=' );
-                                
                 array.push( { name: 'analysis.' + type_or_name[0], value: type_or_name[1] } );
               },
               success : function( response, status_text, xhr, form )
@@ -213,24 +212,21 @@ sammy.get
                 }
                 else
                 {
-                  var error_message = error_thrown.match( /^(.+Exception):\s+(.*)$/ );
-
                   $( '#analysis-error', analysis_element )
                     .show();
 
-                  if( error_message )
+                  var response = null;
+                  try
                   {
-                    $( '#analysis-error .head a span', analysis_element )
-                      .text( error_message[1] );
+                    eval( 'response = ' + xhr.responseText + ';' );
+                  }
+                  catch( e )
+                  {
+                    console.error( e );
+                  }
 
-                    $( '#analysis-error .body', analysis_element )
-                      .text( error_message[2].replace( /(\s+at\s+)/g, " at\n" ) );
-                  }
-                  else
-                  {
-                    $( '#analysis-error .head a span', analysis_element )
-                      .text( error_thrown );
-                  }
+                  $( '#analysis-error .body', analysis_element )
+                    .text( response ? response.error.msg : xhr.responseText );
                 }
               },
               complete : function()
@@ -276,7 +272,7 @@ sammy.get
                   var colspan = 1;
                   var elements = analysis_data[type][i+1];
                   var elements_count = global_elements_count;
-                                    
+                  
                   if( !elements[0] || !elements[0].positionHistory )
                   {
                     colspan = elements_count;
@@ -312,8 +308,7 @@ sammy.get
                   content += '<tr class="step">' + "\n";
 
                     // analyzer
-                    var analyzer_name = analysis_data[type][i]
-                                                                .replace( /(\$1)+$/g, '' );
+                    var analyzer_name = analysis_data[type][i].replace( /(\$1)+$/g, '' );
 
                     var analyzer_short = -1 !== analyzer_name.indexOf( '$' )
                                        ? analyzer_name.split( '$' )[1]
@@ -321,8 +316,8 @@ sammy.get
                     analyzer_short = analyzer_short.match( /[A-Z]/g ).join( '' );
 
                     content += '<td class="part analyzer"><div>' + "\n";
-                    content += '<abbr title="' + analysis_data[type][i] + '">' + "\n";
-                    content += analyzer_short + '</abbr></div></td>' + "\n";
+                    content += '<abbr title="' + analysis_data[type][i].esc() + '">' + "\n";
+                    content += analyzer_short.esc() + '</abbr></div></td>' + "\n";
 
                     // legend
                     content += '<td class="part legend"><div class="holder">' + "\n";
