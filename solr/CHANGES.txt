@@ -111,7 +111,7 @@ New Features
   for more complex results in responses and open the door for function queries
   as results. 
   (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl, 
-  Arul Kalaipandian, hossman)
+  Arul Kalaipandian, Luca Cavanna, hossman)
   SOLR-2037: Thanks to SOLR-1566, documents boosted by the QueryElevationComponent
   can be marked as boosted.  (gsingers, ryan, yonik)
 
