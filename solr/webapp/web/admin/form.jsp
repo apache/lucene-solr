@@ -16,9 +16,23 @@
  limitations under the License.
 --%>
 <%@include file="header.jsp" %>
-
+<script>
+function onQueryFormSubmit() {
+  if (queryForm.q.value.length==0) {
+      alert('no empty queries, please');
+      return false;
+  }
+  var qtDom = queryForm.qt;
+  var qt = qtDom.value;
+  if (qt[0] == "/") {
+    queryForm.action = ".."+qt;
+    qtDom.setAttribute("name","");//prevent submission (kind of a hack)
+  }
+  return true;
+}
+</script>
 <br clear="all">
-<form name="queryForm" method="GET" action="../select" accept-charset="UTF-8">
+<form name="queryForm" method="GET" action="../select" accept-charset="UTF-8" onSubmit="return onQueryFormSubmit()">
 <!-- these are good defaults to have if people bookmark the resulting
      URLs, but they should not show up in the form since they are very
      output type specific.
@@ -29,7 +43,16 @@
 <table>
 <tr>
   <td>
-	<strong>Solr/Lucene Statement</strong>
+	<strong>Request Handler</strong>
+  </td>
+  <td>
+  <!-- Note: look at the onSubmit handler which treats this input specially -->
+	<input name="qt" type="text" value="/select">
+  </td>
+</tr>
+<tr>
+  <td>
+	<strong>Query String</strong>
   </td>
   <td>
 	<textarea rows="5" cols="60" name="q"><%= defaultSearch %></textarea>
@@ -65,14 +88,6 @@
   </td>
   <td>
 	<input name="fl" type="text" value="*,score">
-  </td>
-</tr>
-<tr>
-  <td>
-	<strong>Query Type</strong>
-  </td>
-  <td>
-	<input name="qt" type="text">
   </td>
 </tr>
 <tr>
@@ -121,7 +136,7 @@
   <td>
   </td>
   <td>
-    <input class="stdbutton" type="submit" value="search" onclick="if (queryForm.q.value.length==0) { alert('no empty queries, please'); return false; } else { queryForm.submit(); return false;} ">
+    <input class="stdbutton" type="submit" value="search">
   </td>
 </tr>
 </table>

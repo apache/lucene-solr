@@ -597,17 +597,13 @@
        This section contains instructions for how the SolrDispatchFilter
        should behave when processing requests for this SolrCore.
 
-       handleSelect affects the behavior of requests such as /select?qt=XXX
-
-       handleSelect="true" will cause the SolrDispatchFilter to process
-       the request and will result in consistent error handling and
-       formatting for all types of requests.
-
-       handleSelect="false" will cause the SolrDispatchFilter to
-       ignore "/select" requests and fallback to using the legacy
-       SolrServlet and it's Solr 1.1 style error formatting
-    -->
-  <requestDispatcher handleSelect="true" >
+       If you wish to regain use of /select?qt=... style request handler
+       dispatching, then first add handleSelect="true" to
+       <requestDispatcher>. Then change the name of the request handler
+       named "/select" to something else without a leading "/", such as
+       simply "select" and add default="true" to it.
+   -->
+  <requestDispatcher>
     <!-- Request Parsing
 
          These settings indicate how Solr Requests may be parsed, and
@@ -689,17 +685,9 @@
 
        http://wiki.apache.org/solr/SolrRequestHandler
 
-       incoming queries will be dispatched to the correct handler
-       based on the path or the qt (query type) param.
+       Incoming queries will be dispatched to the correct handler
+       based on the matching request path piece.
 
-       Names starting with a '/' are accessed with the a path equal to
-       the registered name.  Names without a leading '/' are accessed
-       with: http://host/app/[core/]select?qt=name
-
-       If a /select request is processed with out a qt param
-       specified, the requestHandler that declares default="true" will
-       be used.
-       
        If a Request Handler is declared with startup="lazy", then it will
        not be initialized until the first request that uses it.
 
@@ -713,7 +701,7 @@
        of SearchComponents (see below) and supports distributed
        queries across multiple shards
     -->
-  <requestHandler name="search" class="solr.SearchHandler" default="true">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <!-- default values for query parameters can be specified, these
          will be overridden by parameters in the request
       -->
@@ -773,7 +761,7 @@
          <str>nameOfCustomComponent2</str>
        </arr>
       -->
-    </requestHandler>
+  </requestHandler>
 
   <!-- A Robust Example
 
@@ -1008,7 +996,7 @@
   <!-- ping/healthcheck -->
   <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
     <lst name="invariants">
-      <str name="qt">search</str>
+      <str name="qt">/select</str>
       <str name="q">solrpingquery</str>
     </lst>
     <lst name="defaults">
@@ -1023,7 +1011,7 @@
      <str name="echoHandler">true</str>
     </lst>
   </requestHandler>
-  
+
   <!-- Solr Replication
 
        The SolrReplicationHandler supports replicating indexes from a
