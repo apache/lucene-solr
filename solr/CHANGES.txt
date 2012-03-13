@@ -539,6 +539,8 @@ New Features
 * SOLR-3026: eDismax: Locking down which fields can be explicitly queried (user fields aka uf)
   (janhoy, hossmann, Tomás Fernández Löbbe)
 
+* SOLR-2826: URLClassify Update Processor (janhoy)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
