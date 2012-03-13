@@ -49,10 +49,10 @@ import org.slf4j.LoggerFactory;
  * {@link StreamingUpdateSolrServer} buffers all added documents and writes them
  * into open HTTP connections. This class is thread safe.
  * 
- * Although any SolrServer request can be made with this implementation, 
- * it is only recommended to use the {@link StreamingUpdateSolrServer} with
- * /update requests.  The query interface is better suited for 
- * 
+ * Although any SolrServer request can be made with this implementation,
+ * it is only recommended to use {@link StreamingUpdateSolrServer} with
+ * /update requests.  The base class {&link CommonsHttpSolrServer} is
+ * better suited for the query interface.
  *
  * @since solr 1.4
  */
