@@ -248,6 +248,10 @@ Bug Fixes
    SpanOrQuery with no clauses added).  (Alan Woodward via Mike
    McCandless).
 
+ * SOLR-3076: ToParent/ChildBlockJoinQuery was not handling an incoming
+   filter nor deleted docs correctly (Mikhail Khludnev via Mike
+   McCandless).
+  
 Documentation
 
  * LUCENE-3599: Javadocs for DistanceUtils.haversine() were incorrectly

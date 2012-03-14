@@ -183,6 +183,7 @@ public class ToChildBlockJoinQuery extends Query {
       //System.out.println("Q.nextDoc() parentDoc=" + parentDoc + " childDoc=" + childDoc);
 
       // Loop until we hit a childDoc that's accepted
+      nextChildDoc:
       while (true) {
         if (childDoc+1 == parentDoc) {
           // OK, we are done iterating through all children
@@ -192,6 +193,7 @@ public class ToChildBlockJoinQuery extends Query {
           // children:
           while (true) {
             parentDoc = parentScorer.nextDoc();
+
             if (parentDoc == 0) {
               // Degenerate but allowed: parent has no children
               // TODO: would be nice to pull initial parent
@@ -210,7 +212,7 @@ public class ToChildBlockJoinQuery extends Query {
             childDoc = 1 + parentBits.prevSetBit(parentDoc-1);
 
             if (acceptDocs != null && !acceptDocs.get(childDoc)) {
-              continue;
+              continue nextChildDoc;
             }
 
             if (childDoc < parentDoc) {
@@ -247,15 +249,16 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public int advance(int childTarget) throws IOException {
-
+      assert childTarget >= parentBits.length() || !parentBits.get(childTarget);
+      
       //System.out.println("Q.advance childTarget=" + childTarget);
       if (childTarget == NO_MORE_DOCS) {
         //System.out.println("  END");
         return childDoc = parentDoc = NO_MORE_DOCS;
       }
 
-      assert childTarget != parentDoc;
-      if (childTarget > parentDoc) {
+      assert childDoc == -1 || childTarget != parentDoc: "childTarget=" + childTarget;
+      if (childDoc == -1 || childTarget > parentDoc) {
         // Advance to new parent:
         parentDoc = parentScorer.advance(childTarget);
         //System.out.println("  advance to parentDoc=" + parentDoc);
@@ -277,6 +280,9 @@ public class ToChildBlockJoinQuery extends Query {
       // Advance within children of current parent:
       childDoc = childTarget;
       //System.out.println("  " + childDoc);
+      if (acceptDocs != null && !acceptDocs.get(childDoc)) {
+        nextDoc();
+      }
       return childDoc;
     }
   }
