@@ -17,6 +17,7 @@
 
 package org.apache.lucene.spatial.prefix;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -26,7 +27,7 @@ import java.util.List;
 /**
  * This is just a quick idea for *simple* tests
  */
-public class TestSpatialPrefixField {
+public class TestSpatialPrefixField extends LuceneTestCase {
 
   @Test
   public void testRawTokens() {

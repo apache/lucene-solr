@@ -22,6 +22,8 @@ import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import com.spatial4j.core.query.SpatialArgsParser;
 import com.spatial4j.core.query.SpatialOperation;
 import com.spatial4j.core.shape.Rectangle;
+
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,7 +37,7 @@ import java.util.List;
 /**
  * Make sure we are reading the tests as expected
  */
-public class TestTestFramework {
+public class TestTestFramework extends LuceneTestCase {
 
   @Test
   public void testQueries() throws IOException {
