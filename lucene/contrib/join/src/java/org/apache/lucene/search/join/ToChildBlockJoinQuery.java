@@ -245,15 +245,16 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public int advance(int childTarget) throws IOException {
-
+      assert childTarget >= parentBits.length() || !parentBits.get(childTarget);
+      
       //System.out.println("Q.advance childTarget=" + childTarget);
       if (childTarget == NO_MORE_DOCS) {
         //System.out.println("  END");
         return childDoc = parentDoc = NO_MORE_DOCS;
       }
 
-      assert childTarget != parentDoc;
-      if (childTarget > parentDoc) {
+      assert childDoc == -1 || childTarget != parentDoc: "childTarget=" + childTarget;
+      if (childDoc == -1 || childTarget > parentDoc) {
         // Advance to new parent:
         parentDoc = parentScorer.advance(childTarget);
         //System.out.println("  advance to parentDoc=" + parentDoc);

@@ -307,6 +307,7 @@ public class ToParentBlockJoinQuery extends Query {
 
       childDocUpto = 0;
       do {
+
         //System.out.println("  c=" + nextChildDoc);
         if (pendingChildDocs.length == childDocUpto) {
           pendingChildDocs = ArrayUtil.grow(pendingChildDocs);
