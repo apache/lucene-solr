@@ -19,9 +19,10 @@ package org.apache.lucene.util;
 
 import java.io.Closeable;
 import java.lang.ref.WeakReference;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Java's builtin ThreadLocal has a serious flaw:
  *  it can take an arbitrarily long amount of time to
@@ -56,8 +57,19 @@ public class CloseableThreadLocal<T> implements Closeable {
 
   private ThreadLocal<WeakReference<T>> t = new ThreadLocal<WeakReference<T>>();
 
-  private Map<Thread,T> hardRefs = new HashMap<Thread,T>();
+  // Use a WeakHashMap so that if a Thread exits and is
+  // GC'able, its entry may be removed:
+  private Map<Thread,T> hardRefs = new WeakHashMap<Thread,T>();
   
+  // Increase this to decrease frequency of purging in get:
+  private static int PURGE_MULTIPLIER = 20;
+
+  // On each get or set we decrement this; when it hits 0 we
+  // purge.  After purge, we set this to
+  // PURGE_MULTIPLIER * stillAliveCount.  This keeps
+  // amortized cost of purging linear.
+  private final AtomicInteger countUntilPurge = new AtomicInteger(PURGE_MULTIPLIER);
+
   protected T initialValue() {
     return null;
   }
@@ -69,9 +81,11 @@ public class CloseableThreadLocal<T> implements Closeable {
       if (iv != null) {
         set(iv);
         return iv;
-      } else
+      } else {
         return null;
+      }
     } else {
+      maybePurge();
       return weakRef.get();
     }
   }
@@ -82,13 +96,35 @@ public class CloseableThreadLocal<T> implements Closeable {
 
     synchronized(hardRefs) {
       hardRefs.put(Thread.currentThread(), object);
+      maybePurge();
+    }
+  }
 
-      // Purge dead threads
+  private void maybePurge() {
+    if (countUntilPurge.getAndDecrement() == 0) {
+      purge();
+    }
+  }
+
+  // Purge dead threads
+  private void purge() {
+    synchronized(hardRefs) {
+      int stillAliveCount = 0;
       for (Iterator<Thread> it = hardRefs.keySet().iterator(); it.hasNext();) {
         final Thread t = it.next();
-        if (!t.isAlive())
+        if (!t.isAlive()) {
           it.remove();
+        } else {
+          stillAliveCount++;
+        }
       }
+      int nextCount = (1+stillAliveCount) * PURGE_MULTIPLIER;
+      if (nextCount <= 0) {
+        // defensive: int overflow!
+        nextCount = 1000000;
+      }
+      
+      countUntilPurge.set(nextCount);
     }
   }
 

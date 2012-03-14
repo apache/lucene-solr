@@ -393,9 +393,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     if (in != null && !indexLoaded) {
       in.close();
     }
-    if (termBytesReader != null) {
-      termBytesReader.close();
-    }
   }
 
   protected void seekDir(IndexInput input, long dirOffset) throws IOException {
