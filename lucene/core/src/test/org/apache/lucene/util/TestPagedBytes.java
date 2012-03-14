@@ -107,4 +107,27 @@ public class TestPagedBytes extends LuceneTestCase {
       }
     }
   }
+
+  // LUCENE-3841: even though
+  // copyUsingLengthPrefix will never span two blocks, make
+  // sure if caller writes their own prefix followed by the
+  // bytes, it still works:
+  public void testLengthPrefixAcrossTwoBlocks() throws Exception {
+    final PagedBytes p = new PagedBytes(10);
+    final DataOutput out = p.getDataOutput();
+    final byte[] bytes1 = new byte[1000];
+    random.nextBytes(bytes1);
+    out.writeBytes(bytes1, 0, bytes1.length);
+    out.writeByte((byte) 40);
+    final byte[] bytes2 = new byte[40];
+    random.nextBytes(bytes2);
+    out.writeBytes(bytes2, 0, bytes2.length);
+
+    final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
+    BytesRef answer = reader.fillSliceWithPrefix(new BytesRef(), 1000);
+    assertEquals(40, answer.length);
+    for(int i=0;i<40;i++) {
+      assertEquals(bytes2[i], answer.bytes[answer.offset + i]);
+    }
+  }
 }

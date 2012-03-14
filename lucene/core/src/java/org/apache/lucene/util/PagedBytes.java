@@ -214,8 +214,6 @@ public final class PagedBytes {
       // VarDerefBytesImpl.finishInternal does its own
       // prefix + byte[] writing which can span two blocks,
       // so we support that here on decode:
-      // we could some day relax that and span two blocks:
-      
       if (blockSize - offset >= length) {
         // Within block
         b.offset = offset;
