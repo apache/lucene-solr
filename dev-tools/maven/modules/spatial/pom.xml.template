@@ -24,7 +24,7 @@
     <groupId>org.apache.lucene</groupId>
     <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
-    <relativePath>../../../lucene/pom.xml</relativePath>
+    <relativePath>../../lucene/pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
   <artifactId>lucene-spatial</artifactId>
@@ -35,7 +35,7 @@
   </description>
   <properties>
     <module-directory>modules/spatial</module-directory>
-    <build-directory>../build</build-directory>
+    <build-directory>build</build-directory>
   </properties>
   <dependencies>
     <dependency> 
@@ -57,11 +57,6 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-queries</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-analyzers-common</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
