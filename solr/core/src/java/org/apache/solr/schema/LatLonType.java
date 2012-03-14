@@ -69,10 +69,12 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
       //latitude
-      f[i] = subField(field, i).createField(String.valueOf(latLon[LAT]), boost);
+      SchemaField lat = subField(field, i);
+      f[i] = lat.createField(String.valueOf(latLon[LAT]), lat.omitNorms() ? 1F : boost);
       i++;
       //longitude
-      f[i] = subField(field, i).createField(String.valueOf(latLon[LONG]), boost);
+      SchemaField lon = subField(field, i);
+      f[i] = lon.createField(String.valueOf(latLon[LONG]), lon.omitNorms() ? 1F : boost);
 
     }
 

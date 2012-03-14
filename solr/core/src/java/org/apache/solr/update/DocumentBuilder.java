@@ -313,6 +313,10 @@ public class DocumentBuilder {
             }
             if (fields != null) { // null fields are not added
               for (Fieldable f : fields) {
+                if (f.getBoost() != 1.0F && f.getOmitNorms()) {
+                  // the field wasnt explicitly boosted, null out the boost
+                  f.setBoost(1.0F);
+                }
                 out.add(f);
               }
             }

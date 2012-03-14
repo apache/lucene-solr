@@ -144,10 +144,13 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     CurrencyValue value = CurrencyValue.parse(externalVal, defaultCurrency);
 
     Fieldable[] f = new Fieldable[field.stored() ? 3 : 2];
-    f[0] = getAmountField(field).createField(String.valueOf(value.getAmount()), boost);
-    f[1] = getCurrencyField(field).createField(value.getCurrencyCode(), boost);
+    SchemaField amountField = getAmountField(field);
+    f[0] = amountField.createField(String.valueOf(value.getAmount()), amountField.omitNorms() ? 1F : boost);
+    SchemaField currencyField = getCurrencyField(field);
+    f[1] = currencyField.createField(value.getCurrencyCode(), currencyField.omitNorms() ? 1F : boost);
 
     if (field.stored()) {
+      // TODO: funky to omit norms on a stored-only field here!
       String storedValue = externalVal.toString().trim();
       if (storedValue.indexOf(",") < 0) {
         storedValue += "," + defaultCurrency;
