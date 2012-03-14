@@ -17,7 +17,9 @@
 
 package org.apache.lucene.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -26,7 +28,9 @@ public class TestPagedBytes extends LuceneTestCase {
 
   public void testDataInputOutput() throws Exception {
     for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
-      final PagedBytes p = new PagedBytes(_TestUtil.nextInt(random, 1, 20));
+      final int blockBits = _TestUtil.nextInt(random, 1, 20);
+      final int blockSize = 1 << blockBits;
+      final PagedBytes p = new PagedBytes(blockBits);
       final DataOutput out = p.getDataOutput();
       final int numBytes = random.nextInt(10000000);
 
@@ -43,7 +47,7 @@ public class TestPagedBytes extends LuceneTestCase {
         }
       }
 
-      p.freeze(random.nextBoolean());
+      final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
 
       final DataInput in = p.getDataInput();
 
@@ -59,6 +63,48 @@ public class TestPagedBytes extends LuceneTestCase {
         }
       }
       assertTrue(Arrays.equals(answer, verify));
+
+      final BytesRef slice = new BytesRef();
+      for(int iter2=0;iter2<100;iter2++) {
+        final int pos = random.nextInt(numBytes-1);
+        final int len = random.nextInt(Math.min(blockSize+1, numBytes - pos));
+        reader.fillSlice(slice, pos, len);
+        for(int byteUpto=0;byteUpto<len;byteUpto++) {
+          assertEquals(answer[pos + byteUpto], slice.bytes[slice.offset + byteUpto]);
+        }
+      }
+    }
+  }
+
+  public void testLengthPrefix() throws Exception {
+    for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
+      final int blockBits = _TestUtil.nextInt(random, 2, 20);
+      final int blockSize = 1 << blockBits;
+      final PagedBytes p = new PagedBytes(blockBits);
+      final List<Integer> addresses = new ArrayList<Integer>();
+      final List<BytesRef> answers = new ArrayList<BytesRef>();
+      int totBytes = 0;
+      while(totBytes < 10000000 && answers.size() < 100000) {
+        final int len = random.nextInt(Math.min(blockSize-2, 32768));
+        final BytesRef b = new BytesRef();
+        b.bytes = new byte[len];
+        b.length = len;
+        b.offset = 0;
+        random.nextBytes(b.bytes);
+        answers.add(b);
+        addresses.add((int) p.copyUsingLengthPrefix(b));
+
+        totBytes += len;
+      }
+
+      final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
+
+      final BytesRef slice = new BytesRef();
+
+      for(int idx=0;idx<answers.size();idx++) {
+        reader.fillSliceWithPrefix(slice, addresses.get(idx));
+        assertEquals(answers.get(idx), slice);
+      }
     }
   }
 }
