@@ -17,8 +17,7 @@
 
 package org.apache.solr.servlet;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -29,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.solr.core.CoreContainer;
 
 
@@ -47,25 +47,28 @@ public final class LoadAdminUiServlet extends HttpServlet {
     response.setContentType("text/html");
 
     PrintWriter out = response.getWriter();
-    File f = new File(getServletContext().getRealPath("admin.html"));
-    if(f.exists()) {
-      // This attribute is set by the SolrDispatchFilter
-      CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
+    InputStream in = getServletContext().getResourceAsStream("/admin.html");
+    if(in != null) {
+      try {
+        // This attribute is set by the SolrDispatchFilter
+        CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
 
-      String html = IOUtils.toString(new FileInputStream(f), "UTF-8");
-      
-      String[] search = new String[] { 
-          "${contextPath}", 
-          "${adminPath}" 
-      };
-      String[] replace = new String[] {
-          request.getContextPath(),
-          cores.getAdminPath()
-      };
-      
-      out.println( StringUtils.replaceEach(html, search, replace) );
-    }
-    else {
+        String html = IOUtils.toString(in, "UTF-8");
+
+        String[] search = new String[] { 
+            "${contextPath}", 
+            "${adminPath}" 
+        };
+        String[] replace = new String[] {
+            StringEscapeUtils.escapeJavaScript(request.getContextPath()),
+            StringEscapeUtils.escapeJavaScript(cores.getAdminPath())
+        };
+        
+        out.println( StringUtils.replaceEach(html, search, replace) );
+      } finally {
+        IOUtils.closeQuietly(in);
+      }
+    } else {
       out.println("solr");
     }
   }

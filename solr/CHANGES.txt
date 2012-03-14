@@ -439,7 +439,8 @@ Other Changes
 
 * SOLR-2607: Removed obsolete client/ folder (ehatcher, Eric Pugh, janhoy)
 
-* SOLR-3202: Dropping Support for JSP.  New Admin UI is all client side (ryan)
+* SOLR-3202, SOLR-3244: Dropping Support for JSP.  New Admin UI is all client side
+  (ryan, Aliaksandr Zhuhrou, Uwe Schindler)
 
 * SOLR-3159: Upgrade example and tests to run with Jetty 8 (ryan)
 
