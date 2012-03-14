@@ -11,7 +11,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module-library" exported="">
+    <orderEntry type="module-library">
       <library>
         <CLASSES>
           <root url="file://$MODULE_DIR$/lib" />
@@ -22,9 +22,9 @@
       </library>
     </orderEntry>
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
-    <orderEntry type="module" module-name="lucene" exported="" />
+    <orderEntry type="module" module-name="lucene" />
     <orderEntry type="module" module-name="queries" />
-    <orderEntry type="module" module-name="analysis-common" />
+    <orderEntry type="module" module-name="analysis-common" scope="TEST"/>
   </component>
 </module>
 
