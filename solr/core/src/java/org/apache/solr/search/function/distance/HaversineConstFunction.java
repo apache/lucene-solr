@@ -44,6 +44,9 @@ import java.util.Map;
  * Haversine function with one point constant
  */
 public class HaversineConstFunction extends ValueSource {
+  // TODO: these could go in spatial4j somewhere
+  public static final double DEGREES_TO_RADIANS = Math.PI / 180.0;
+  public static final double RADIANS_TO_DEGREES =  180.0 / Math.PI;
 
   public static ValueSourceParser parser = new ValueSourceParser() {
     @Override
@@ -190,7 +193,7 @@ public class HaversineConstFunction extends ValueSource {
     this.p2 = vs;
     this.latSource = p2.getSources().get(0);
     this.lonSource = p2.getSources().get(1);
-    this.latCenterRad_cos = Math.cos(Math.toRadians(latCenter));
+    this.latCenterRad_cos = Math.cos(latCenter * DEGREES_TO_RADIANS);
   }
 
   protected String name() {
@@ -201,15 +204,15 @@ public class HaversineConstFunction extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final FunctionValues latVals = latSource.getValues(context, readerContext);
     final FunctionValues lonVals = lonSource.getValues(context, readerContext);
-    final double latCenterRad = Math.toRadians(this.latCenter);
-    final double lonCenterRad = Math.toRadians(this.lonCenter);
+    final double latCenterRad = this.latCenter * DEGREES_TO_RADIANS;
+    final double lonCenterRad = this.lonCenter * DEGREES_TO_RADIANS;
     final double latCenterRad_cos = this.latCenterRad_cos;
 
     return new DoubleDocValues(this) {
       @Override
       public double doubleVal(int doc) {
-        double latRad = Math.toRadians(latVals.doubleVal(doc));
-        double lonRad = Math.toRadians(lonVals.doubleVal(doc));
+        double latRad = latVals.doubleVal(doc) * DEGREES_TO_RADIANS;
+        double lonRad = lonVals.doubleVal(doc) * DEGREES_TO_RADIANS;
         double diffX = latCenterRad - latRad;
         double diffY = lonCenterRad - lonRad;
         double hsinX = Math.sin(diffX * 0.5);

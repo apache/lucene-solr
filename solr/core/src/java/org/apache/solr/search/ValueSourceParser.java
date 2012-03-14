@@ -362,13 +362,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser(new DoubleParser("rad") {
       @Override
       public double func(int doc, FunctionValues vals) {
-        return Math.toRadians(vals.doubleVal(doc));
+        return vals.doubleVal(doc) * HaversineConstFunction.DEGREES_TO_RADIANS;
       }
     });
     addParser(new DoubleParser("deg") {
       @Override
       public double func(int doc, FunctionValues vals) {
-        return Math.toDegrees(vals.doubleVal(doc));
+        return vals.doubleVal(doc) * HaversineConstFunction.RADIANS_TO_DEGREES;
       }
     });
     addParser(new DoubleParser("sqrt") {

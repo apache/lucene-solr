@@ -36,6 +36,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.*;
+import org.apache.solr.search.function.distance.HaversineConstFunction;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ import java.util.Set;
  */
 public class LatLonType extends AbstractSubTypeFieldType implements SpatialQueryable {
   protected static final int LAT = 0;
-  protected static final int LONG = 1;
+  protected static final int LON = 1;
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -75,7 +76,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
       f[i] = subField(field, i).createField(String.valueOf(latLon[LAT]), boost);
       i++;
       //longitude
-      f[i] = subField(field, i).createField(String.valueOf(latLon[LONG]), boost);
+      f[i] = subField(field, i).createField(String.valueOf(latLon[LON]), boost);
 
     }
 
@@ -142,7 +143,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
     // lat & lon in degrees
     double latCenter = point[LAT];
-    double lonCenter = point[LONG];
+    double lonCenter = point[LON];
     
     DistanceCalculator distCalc = new GeodesicSphereDistCalc.Haversine(options.units.earthRadius());
     SpatialContext ctx = new SimpleSpatialContext(options.units,distCalc,null);
@@ -164,7 +165,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     
     // Now that we've figured out the ranges, build them!
     SchemaField latField = subField(options.field, LAT);
-    SchemaField lonField = subField(options.field, LONG);
+    SchemaField lonField = subField(options.field, LON);
 
     SpatialDistanceQuery spatial = new SpatialDistanceQuery();
 
@@ -398,8 +399,8 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       this.lon2 = SpatialDistanceQuery.this.lon2;
       this.calcDist = SpatialDistanceQuery.this.calcDist;
 
-      this.latCenterRad = Math.toRadians(SpatialDistanceQuery.this.latCenter);
-      this.lonCenterRad = Math.toRadians(SpatialDistanceQuery.this.lonCenter);
+      this.latCenterRad = SpatialDistanceQuery.this.latCenter * HaversineConstFunction.DEGREES_TO_RADIANS;
+      this.lonCenterRad = SpatialDistanceQuery.this.lonCenter * HaversineConstFunction.DEGREES_TO_RADIANS;
       this.latCenterRad_cos = this.calcDist ? Math.cos(latCenterRad) : 0;
       this.dist = SpatialDistanceQuery.this.dist;
       this.planetRadius = SpatialDistanceQuery.this.planetRadius;
@@ -428,8 +429,8 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     double dist(double lat, double lon) {
-      double latRad = Math.toRadians(lat);
-      double lonRad = Math.toRadians(lon);
+      double latRad = lat * HaversineConstFunction.DEGREES_TO_RADIANS;
+      double lonRad = lon * HaversineConstFunction.DEGREES_TO_RADIANS;
       
       // haversine, specialized to avoid a cos() call on latCenterRad
       double diffX = latCenterRad - latRad;

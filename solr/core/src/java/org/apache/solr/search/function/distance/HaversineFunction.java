@@ -81,10 +81,10 @@ public class HaversineFunction extends ValueSource {
     double y2;
     double x2;
     if (convertToRadians) {
-      y1 = Math.toRadians(p1D[0]);
-      x1 = Math.toRadians(p1D[1]);
-      y2 = Math.toRadians(p2D[0]);
-      x2 = Math.toRadians(p2D[1]);
+      y1 = p1D[0] * HaversineConstFunction.DEGREES_TO_RADIANS;
+      x1 = p1D[1] * HaversineConstFunction.DEGREES_TO_RADIANS;
+      y2 = p2D[0] * HaversineConstFunction.DEGREES_TO_RADIANS;
+      x2 = p2D[1] * HaversineConstFunction.DEGREES_TO_RADIANS;
     } else {
       y1 = p1D[0];
       x1 = p1D[1];

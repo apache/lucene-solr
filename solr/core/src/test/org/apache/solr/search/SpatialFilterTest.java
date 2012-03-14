@@ -169,7 +169,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     assertQ(req("fl", "id", "q","*:* OR foo_i:" + random.nextInt(100)+100, "rows", "1000", "fq", "{!"+method+" sfield=" +fieldName + " cache=false cost=150" + "}",
         "pt", pt, "d", String.valueOf(distance)),
         tests);
-    assertEquals(postFilterCount + 1, DelegatingCollector.setLastDelegateCount);      // post filtering shouldn't be used
+    assertEquals(postFilterCount + 1, DelegatingCollector.setLastDelegateCount);      // post filtering *should* have been used
 
     }
   }
