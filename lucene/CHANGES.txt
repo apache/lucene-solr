@@ -780,10 +780,10 @@ Changes in backwards compatibility policy
   
 Changes in Runtime Behavior
 
-* LUCENE-3796: Throw an exception if you try to set an index-time
+* LUCENE-3796, SOLR-3241: Throw an exception if you try to set an index-time
   boost on a field that omits norms. Because the index-time boost
   is multiplied into the norm, previously your boost would be 
-  silently discarded.  (Robert Muir)
+  silently discarded.  (Tomás Fernández Löbbe, Hoss Man, Robert Muir)
   
 Security fixes
 

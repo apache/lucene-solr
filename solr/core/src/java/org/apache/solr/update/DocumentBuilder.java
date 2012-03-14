@@ -282,13 +282,7 @@ public class DocumentBuilder {
             if( val instanceof String && cf.getMaxChars() > 0 ) {
               val = cf.getLimitedValue((String)val);
             }
-            
-            IndexableField [] fields = destinationField.createFields(val, omitNorms ? 1F : docBoost*boost);
-            if (fields != null) { // null fields are not added
-              for (IndexableField f : fields) {
-                if(f != null) out.add(f);
-              }
-            }
+            addField(out, destinationField, val, destinationField.omitNorms() ? 1F : docBoost*boost);
           }
           
           // In lucene, the boost for a given field is the product of the 

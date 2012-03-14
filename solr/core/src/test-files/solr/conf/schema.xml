@@ -431,6 +431,9 @@
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
   </fieldType>
+  
+  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
+  
  </types>
 
 
@@ -573,6 +576,10 @@
    <field name="tlong" type="tlong" indexed="true" stored="true" />
    
    <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
+   
+   <field name="title_stringNoNorms" type="string" omitNorms="true" indexed="true" stored="true"/>
+   
+   <field name="store" type="location" indexed="true" stored="true" omitNorms="false"/>
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
@@ -659,6 +666,9 @@
    <dynamicField name="*_sim1" type="sim1" indexed="true" stored="true"/>
    <dynamicField name="*_sim2" type="sim2" indexed="true" stored="true"/>
    <dynamicField name="*_sim3" type="sim3" indexed="true" stored="true"/>
+   
+   <!-- Type used to index the lat and lon components for the "location" FieldType -->
+   <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false" omitNorms="true" />
  </fields>
 
  <defaultSearchField>text</defaultSearchField>
@@ -670,6 +680,7 @@
    -->
    <copyField source="title" dest="title_stemmed"/>
    <copyField source="title" dest="title_lettertok"/>
+   <copyField source="title" dest="title_stringNoNorms"/>
 
    <copyField source="title" dest="text"/>
 	 <copyField source="subject" dest="text"/>
