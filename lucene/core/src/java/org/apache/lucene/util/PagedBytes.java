@@ -207,12 +207,26 @@ public final class PagedBytes {
       }
       assert length >= 0: "length=" + length;
       b.length = length;
-      // We always alloc a new block when writing w/ prefix;
+
+      // NOTE: even though copyUsingLengthPrefix always
+      // allocs a new block if the byte[] to be added won't
+      // fit in current block,
+      // VarDerefBytesImpl.finishInternal does its own
+      // prefix + byte[] writing which can span two blocks,
+      // so we support that here on decode:
       // we could some day relax that and span two blocks:
-      assert blockSize - offset >= length;
-      // Within block
-      b.offset = offset;
-      b.bytes = blocks[index];
+      
+      if (blockSize - offset >= length) {
+        // Within block
+        b.offset = offset;
+        b.bytes = blocks[index];
+      } else {
+        // Split
+        b.bytes = new byte[length];
+        b.offset = 0;
+        System.arraycopy(blocks[index], offset, b.bytes, 0, blockSize-offset);
+        System.arraycopy(blocks[1+index], 0, b.bytes, blockSize-offset, length-(blockSize-offset));
+      }
       return b;
     }
 
