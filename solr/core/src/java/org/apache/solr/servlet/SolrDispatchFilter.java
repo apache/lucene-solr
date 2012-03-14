@@ -308,7 +308,9 @@ public class SolrDispatchFilter implements Filter
     for (Entry<String,Slice> entry : entries) {
       // first see if we have the leader
       ZkNodeProps leaderProps = cloudState.getLeader(collection, entry.getKey());
-      core = checkProps(cores, path, leaderProps);
+      if (leaderProps != null) {
+        core = checkProps(cores, path, leaderProps);
+      }
       if (core != null) {
         break done;
       }
