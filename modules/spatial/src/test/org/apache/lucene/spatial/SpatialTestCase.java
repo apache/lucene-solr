@@ -17,7 +17,7 @@
 
 package org.apache.lucene.spatial;
 
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -49,7 +49,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
     directory = newDirectory();
 
-    IndexWriterConfig writerConfig = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    IndexWriterConfig writerConfig = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(random));
     indexWriter = new IndexWriter(directory, writerConfig);
   }
 

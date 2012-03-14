@@ -28,7 +28,6 @@
   <path id="test.classpath">
     <path refid="test.base.classpath" />
     <path refid="base.classpath"/>
-    <pathelement path="${analyzers-common.jar}" />
     <pathelement path="src/test-files" />
   </path>
 
@@ -36,6 +35,6 @@
   <target name="init" depends="contrib-build.init"/>
   <target name="dist-maven" depends="jar-core,javadocs,common.dist-maven"/>
   <target name="compile" depends="jar-queries,common.compile-core" />
-  <target name="test" depends="jar-analyzers-common,compile-test,validate,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
+  <target name="test" depends="compile-test,validate,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
 
 </project>
