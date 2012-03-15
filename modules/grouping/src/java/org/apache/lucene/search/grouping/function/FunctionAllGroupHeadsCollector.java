@@ -105,8 +105,8 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
 
   public void setNextReader(AtomicReaderContext context) throws IOException {
     this.readerContext = context;
-    FunctionValues docValues = groupBy.getValues(vsContext, context);
-    filler = docValues.getValueFiller();
+    FunctionValues values = groupBy.getValues(vsContext, context);
+    filler = values.getValueFiller();
     mval = filler.getValue();
 
     for (GroupHead groupHead : groups.values()) {
