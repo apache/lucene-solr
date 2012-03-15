@@ -75,7 +75,7 @@ public class TwoDoublesStrategy extends SpatialStrategy<TwoDoublesFieldInfo> {
     if( !ignoreIncompatibleGeometry ) {
       throw new IllegalArgumentException( "TwoDoublesStrategy can not index: "+shape );
     }
-    return null;
+    return new IndexableField[0]; // nothing (solr does not support null)
   }
 
   @Override
