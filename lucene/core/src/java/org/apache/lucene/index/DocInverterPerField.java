@@ -109,10 +109,16 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
             if (!hasMoreTokens) break;
 
             final int posIncr = posIncrAttribute.getPositionIncrement();
-            fieldState.position += posIncr;
-            if (fieldState.position > 0) {
-              fieldState.position--;
+            int position = fieldState.position + posIncr;
+            if (position > 0) {
+              position--;
+            } else if (position < 0) {
+              throw new IllegalArgumentException("position overflow for field '" + field.name() + "'");
             }
+            
+            // position is legal, we can safely place it in fieldState now.
+            // not sure if anything will use fieldState after non-aborting exc...
+            fieldState.position = position;
 
             if (posIncr == 0)
               fieldState.numOverlap++;

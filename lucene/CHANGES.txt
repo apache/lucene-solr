@@ -937,6 +937,12 @@ Bug fixes
 * LUCENE-3872: IndexWriter.close() now throws IllegalStateException if
   you call it after calling prepareCommit() without calling commit()
   first.  (Tim Bogaert via Mike McCandless)
+
+* LUCENE-3874: Throw IllegalArgumentException from IndexWriter (rather
+  than producing a corrupt index), if a positionIncrement would cause
+  integer overflow. This can happen, for example when using a buggy
+  TokenStream that forgets to call clearAttributes() in combination
+  with a StopFilter. (Robert Muir)
     
 Optimizations
 
