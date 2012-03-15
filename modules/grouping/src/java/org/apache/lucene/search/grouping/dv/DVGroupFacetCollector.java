@@ -20,9 +20,9 @@ package org.apache.lucene.search.grouping.dv;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.grouping.AbstractGroupFacetCollector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -37,9 +37,9 @@ import java.util.List;
  */
 public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector {
 
-  final DocValues.Type groupDvType;
+  final Type groupDvType;
   final boolean groupDiskResident;
-  final DocValues.Type facetFieldDvType;
+  final Type facetFieldDvType;
   final boolean facetDiskResident;
 
   final List<GroupedFacetHit> groupedFacetHits;
@@ -49,7 +49,7 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
    * Factory method for creating the right implementation based on the group docvalues type and the facet docvalues
    * type.
    *
-   * Currently only the {@link DocValues.Type#BYTES_VAR_SORTED} and the {@link DocValues.Type#BYTES_FIXED_SORTED} are
+   * Currently only the {@link Type#BYTES_VAR_SORTED} and the {@link Type#BYTES_FIXED_SORTED} are
    * the only docvalues type supported for both the group and facet field.
    *
    * @param groupField        The group field
@@ -65,10 +65,10 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
    * @return a <code>DVGroupFacetCollector</code> implementation
    */
   public static DVGroupFacetCollector createDvGroupFacetCollector(String groupField,
-                                                                  DocValues.Type groupDvType,
+                                                                  Type groupDvType,
                                                                   boolean groupDiskResident,
                                                                   String facetField,
-                                                                  DocValues.Type facetDvType,
+                                                                  Type facetDvType,
                                                                   boolean facetDiskResident,
                                                                   BytesRef facetPrefix,
                                                                   int initialSize) {
@@ -93,7 +93,7 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
     }
   }
 
-  DVGroupFacetCollector(String groupField, DocValues.Type groupDvType, boolean groupDiskResident, String facetField, DocValues.Type facetFieldDvType, boolean facetDiskResident, BytesRef facetPrefix, int initialSize) {
+  DVGroupFacetCollector(String groupField, Type groupDvType, boolean groupDiskResident, String facetField, Type facetFieldDvType, boolean facetDiskResident, BytesRef facetPrefix, int initialSize) {
     super(groupField, facetField, facetPrefix);
     this.groupDvType = groupDvType;
     this.groupDiskResident = groupDiskResident;
@@ -109,15 +109,15 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
     final BytesRef groupSpare = new BytesRef();
     DocValues.SortedSource groupFieldSource;
 
-    GroupSortedBR(String groupField, DocValues.Type groupDvType, boolean groupDiskResident, String facetField, DocValues.Type facetFieldDvType, boolean facetDiskResident, BytesRef facetPrefix, int initialSize) {
+    GroupSortedBR(String groupField, Type groupDvType, boolean groupDiskResident, String facetField, Type facetFieldDvType, boolean facetDiskResident, BytesRef facetPrefix, int initialSize) {
       super(groupField, groupDvType, groupDiskResident, facetField, facetFieldDvType, facetDiskResident, facetPrefix, initialSize);
     }
 
     static DVGroupFacetCollector createGroupSortedFacetCollector(String groupField,
-                                                                 DocValues.Type groupDvType,
+                                                                 Type groupDvType,
                                                                  boolean groupDiskResident,
                                                                  String facetField,
-                                                                 DocValues.Type facetDvType,
+                                                                 Type facetDvType,
                                                                  boolean facetDiskResident,
                                                                  BytesRef facetPrefix,
                                                                  int initialSize) {
@@ -147,7 +147,7 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
 
       private DocValues.SortedSource facetFieldSource;
 
-      FacetSortedBR(String groupField, DocValues.Type groupDvType, boolean groupDiskResident, String facetField, DocValues.Type facetDvType, boolean diskResident, BytesRef facetPrefix, int initialSize) {
+      FacetSortedBR(String groupField, Type groupDvType, boolean groupDiskResident, String facetField, Type facetDvType, boolean diskResident, BytesRef facetPrefix, int initialSize) {
         super(groupField, groupDvType, groupDiskResident, facetField, facetDvType, diskResident, facetPrefix, initialSize);
       }
 
@@ -227,7 +227,7 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
         }
       }
 
-      private DocValues.SortedSource getDocValuesSortedSource(String field, DocValues.Type dvType, boolean diskResident, AtomicReader reader) throws IOException {
+      private DocValues.SortedSource getDocValuesSortedSource(String field, Type dvType, boolean diskResident, AtomicReader reader) throws IOException {
         DocValues dv = reader.docValues(field);
         DocValues.Source dvSource;
         if (dv != null) {
