@@ -79,8 +79,8 @@ public class FunctionAllGroupsCollector extends AbstractAllGroupsCollector<Mutab
    * {@inheritDoc}
    */
   public void setNextReader(AtomicReaderContext context) throws IOException {
-    FunctionValues docValues = groupBy.getValues(vsContext, context);
-    filler = docValues.getValueFiller();
+    FunctionValues values = groupBy.getValues(vsContext, context);
+    filler = values.getValueFiller();
     mval = filler.getValue();
   }
 }
