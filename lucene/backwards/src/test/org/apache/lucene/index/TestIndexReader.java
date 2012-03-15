@@ -1196,6 +1196,7 @@ public class TestIndexReader extends LuceneTestCase {
     writer.addDocument(new Document());
     writer.prepareCommit();
     assertFalse(IndexReader.indexExists(dir));
+    writer.commit();
     writer.close();
     assertTrue(IndexReader.indexExists(dir));
     dir.close();
