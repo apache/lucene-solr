@@ -38,7 +38,6 @@ public class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupin
   private final ValueSource groupByVS;
   private final Map<?, ?> vsContext;
 
-  private FunctionValues docValues;
   private FunctionValues.ValueFiller filler;
   private MutableValue mval;
 
@@ -80,8 +79,8 @@ public class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupin
   @Override
   public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     super.setNextReader(readerContext);
-    docValues = groupByVS.getValues(vsContext, readerContext);
-    filler = docValues.getValueFiller();
+    FunctionValues values = groupByVS.getValues(vsContext, readerContext);
+    filler = values.getValueFiller();
     mval = filler.getValue();
   }
 
