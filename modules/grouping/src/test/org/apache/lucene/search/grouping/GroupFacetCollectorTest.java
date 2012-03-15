@@ -26,6 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.grouping.dv.DVGroupFacetCollector;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -34,7 +35,7 @@ import org.apache.lucene.util._TestUtil;
 import java.io.IOException;
 import java.util.*;
 
-public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
+public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
   public void testSimple() throws Exception {
     final String groupField = "hotel";
@@ -47,47 +48,47 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    boolean canUseIDV = false;// Enable later... !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean canUseDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
+    boolean useDv = canUseDV && random.nextBoolean();
 
     // 0
     Document doc = new Document();
-    addGroupField(doc, groupField, "a", canUseIDV);
-    doc.add(new Field("airport", "ams", TextField.TYPE_UNSTORED));
-    doc.add(new Field("duration", "5", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "a", canUseDV);
+    addField(doc, "airport", "ams", canUseDV);
+    addField(doc, "duration", "5", canUseDV);
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    addGroupField(doc, groupField, "a", canUseIDV);
-    doc.add(new Field("airport", "dus", TextField.TYPE_STORED));
-    doc.add(new Field("duration", "10", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "a", canUseDV);
+    addField(doc, "airport", "dus", canUseDV);
+    addField(doc, "duration", "10", canUseDV);
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    addGroupField(doc, groupField, "b", canUseIDV);
-    doc.add(new Field("airport", "ams", TextField.TYPE_UNSTORED));
-    doc.add(new Field("duration", "10", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "b", canUseDV);
+    addField(doc, "airport", "ams", canUseDV);
+    addField(doc, "duration", "10", canUseDV);
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
     doc = new Document();
-    addGroupField(doc, groupField, "b", canUseIDV);
-    doc.add(new Field("airport", "ams", TextField.TYPE_UNSTORED));
-    doc.add(new Field("duration", "5", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "b", canUseDV);
+    addField(doc, "airport", "ams", canUseDV);
+    addField(doc, "duration", "5", canUseDV);
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    addGroupField(doc, groupField, "b", canUseIDV);
-    doc.add(new Field("airport", "ams", TextField.TYPE_UNSTORED));
-    doc.add(new Field("duration", "5", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "b", canUseDV);
+    addField(doc, "airport", "ams", canUseDV);
+    addField(doc, "duration", "5", canUseDV);
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
-    TermGroupFacetCollector groupedAirportFacetCollector =
-        TermGroupFacetCollector.createTermGroupFacetCollector(groupField, "airport", false, null, 128);
+    AbstractGroupFacetCollector groupedAirportFacetCollector = createRandomCollector(groupField, "airport", null, false, useDv);
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
     TermGroupFacetCollector.GroupedFacetResult airportResult = groupedAirportFacetCollector.mergeSegmentResults(10, 0, false);
     assertEquals(3, airportResult.getTotalCount());
@@ -101,8 +102,7 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
     assertEquals(1, entries.get(1).getCount());
 
 
-    TermGroupFacetCollector groupedDurationFacetCollector =
-        TermGroupFacetCollector.createTermGroupFacetCollector(groupField, "duration", false, null, 128);
+    AbstractGroupFacetCollector groupedDurationFacetCollector = createRandomCollector(groupField, "duration", null, false, useDv);
     indexSearcher.search(new MatchAllDocsQuery(), groupedDurationFacetCollector);
     TermGroupFacetCollector.GroupedFacetResult durationResult = groupedDurationFacetCollector.mergeSegmentResults(10, 0, false);
     assertEquals(4, durationResult.getTotalCount());
@@ -117,34 +117,34 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
 
     // 5
     doc = new Document();
-    addGroupField(doc, groupField, "b", canUseIDV);
-    doc.add(new Field("duration", "5", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "b", canUseDV);
+    addField(doc, "duration", "5", canUseDV);
     w.addDocument(doc);
 
     // 6
     doc = new Document();
-    addGroupField(doc, groupField, "b", canUseIDV);
-    doc.add(new Field("airport", "bru", TextField.TYPE_UNSTORED));
-    doc.add(new Field("duration", "10", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "b", canUseDV);
+    addField(doc, "airport", "bru", canUseDV);
+    addField(doc, "duration", "10", canUseDV);
     w.addDocument(doc);
 
     // 7
     doc = new Document();
-    addGroupField(doc, groupField, "b", canUseIDV);
-    doc.add(new Field("airport", "bru", TextField.TYPE_UNSTORED));
-    doc.add(new Field("duration", "15", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "b", canUseDV);
+    addField(doc, "airport", "bru", canUseDV);
+    addField(doc, "duration", "15", canUseDV);
     w.addDocument(doc);
 
     // 8
     doc = new Document();
-    addGroupField(doc, groupField, "a", canUseIDV);
-    doc.add(new Field("airport", "bru", TextField.TYPE_UNSTORED));
-    doc.add(new Field("duration", "10", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "a", canUseDV);
+    addField(doc, "airport", "bru", canUseDV);
+    addField(doc, "duration", "10", canUseDV);
     w.addDocument(doc);
 
     indexSearcher.getIndexReader().close();
     indexSearcher = new IndexSearcher(w.getReader());
-    groupedAirportFacetCollector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, "airport", true, null, 128);
+    groupedAirportFacetCollector = createRandomCollector(groupField, "airport", null, true, useDv);
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
     airportResult = groupedAirportFacetCollector.mergeSegmentResults(3, 0, true);
     assertEquals(5, airportResult.getTotalCount());
@@ -157,7 +157,7 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
     assertEquals("dus", entries.get(1).getValue().utf8ToString());
     assertEquals(1, entries.get(1).getCount());
 
-    groupedDurationFacetCollector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, "duration", false, null, 128);
+    groupedDurationFacetCollector = createRandomCollector(groupField, "duration", null, false, useDv);
     indexSearcher.search(new MatchAllDocsQuery(), groupedDurationFacetCollector);
     durationResult = groupedDurationFacetCollector.mergeSegmentResults(10, 2, true);
     assertEquals(5, durationResult.getTotalCount());
@@ -170,21 +170,21 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
 
     // 9
     doc = new Document();
-    addGroupField(doc, groupField, "c", canUseIDV);
-    doc.add(new Field("airport", "bru", TextField.TYPE_UNSTORED));
-    doc.add(new Field("duration", "15", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "c", canUseDV);
+    addField(doc, "airport", "bru", canUseDV);
+    addField(doc, "duration", "15", canUseDV);
     w.addDocument(doc);
 
     // 10
     doc = new Document();
-    addGroupField(doc, groupField, "c", canUseIDV);
-    doc.add(new Field("airport", "dus", TextField.TYPE_UNSTORED));
-    doc.add(new Field("duration", "10", TextField.TYPE_UNSTORED));
+    addField(doc, groupField, "c", canUseDV);
+    addField(doc, "airport", "dus", canUseDV);
+    addField(doc, "duration", "10", canUseDV);
     w.addDocument(doc);
 
     indexSearcher.getIndexReader().close();
     indexSearcher = new IndexSearcher(w.getReader());
-    groupedAirportFacetCollector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, "airport", false, null, 128);
+    groupedAirportFacetCollector = createRandomCollector(groupField, "airport", null, false, useDv);
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
     airportResult = groupedAirportFacetCollector.mergeSegmentResults(10, 0, false);
     assertEquals(7, airportResult.getTotalCount());
@@ -199,7 +199,7 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
     assertEquals("dus", entries.get(2).getValue().utf8ToString());
     assertEquals(2, entries.get(2).getCount());
 
-    groupedDurationFacetCollector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, "duration", false, new BytesRef("1"), 128);
+    groupedDurationFacetCollector = createRandomCollector(groupField, "duration", "1", false, useDv);
     indexSearcher.search(new MatchAllDocsQuery(), groupedDurationFacetCollector);
     durationResult = groupedDurationFacetCollector.mergeSegmentResults(10, 0, true);
     assertEquals(5, durationResult.getTotalCount());
@@ -217,10 +217,10 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
     dir.close();
   }
 
-  private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
-    doc.add(new Field(groupField, value, TextField.TYPE_UNSTORED));
+  private void addField(Document doc, String field, String value, boolean canUseIDV) {
+    doc.add(new Field(field, value, StringField.TYPE_UNSTORED));
     if (canUseIDV) {
-      doc.add(new DocValuesField(groupField, new BytesRef(value), DocValues.Type.BYTES_VAR_SORTED));
+      doc.add(new DocValuesField(field, new BytesRef(value), DocValues.Type.BYTES_VAR_SORTED));
     }
   }
 
@@ -232,6 +232,7 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
       final IndexSearcher searcher = newSearcher(context.indexReader);
 
       for (int searchIter = 0; searchIter < 100; searchIter++) {
+        boolean useDv = context.useDV && random.nextBoolean();
         String searchTerm = context.contentStrings[random.nextInt(context.contentStrings.length)];
         int limit = random.nextInt(context.facetValues.size());
         int offset = random.nextInt(context.facetValues.size() - limit);
@@ -254,7 +255,7 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
         }
 
         GroupedFacetResult expectedFacetResult = createExpectedFacetResult(searchTerm, context, offset, limit, minCount, orderByCount, facetPrefix);
-        TermGroupFacetCollector groupFacetCollector = createRandomCollector("group", "facet", facetPrefix, multipleFacetsPerDocument);
+        AbstractGroupFacetCollector groupFacetCollector = createRandomCollector("group", "facet", facetPrefix, multipleFacetsPerDocument, useDv);
         searcher.search(new TermQuery(new Term("content", searchTerm)), groupFacetCollector);
         TermGroupFacetCollector.GroupedFacetResult actualFacetResult = groupFacetCollector.mergeSegmentResults(size, minCount, orderByCount);
 
@@ -357,19 +358,37 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
             new MockAnalyzer(random)
         )
     );
+    boolean canUseDV = !"Lucene3x".equals(writer.w.getConfig().getCodec().getName());
+    boolean useDv = canUseDV && random.nextBoolean();
 
     Document doc = new Document();
     Document docNoGroup = new Document();
     Document docNoFacet = new Document();
     Document docNoGroupNoFacet = new Document();
     Field group = newField("group", "", StringField.TYPE_UNSTORED);
+    DocValuesField groupDc = new DocValuesField("group", new BytesRef(), DocValues.Type.BYTES_VAR_SORTED);
+    if (useDv) {
+      doc.add(groupDc);
+      docNoFacet.add(groupDc);
+    }
     doc.add(group);
     docNoFacet.add(group);
-    Field[] facetFields = multipleFacetValuesPerDocument? new Field[2 + random.nextInt(6)] : new Field[1];
-    for (int i = 0; i < facetFields.length; i++) {
-      facetFields[i] = newField("facet", "", StringField.TYPE_UNSTORED);
-      doc.add(facetFields[i]);
-      docNoGroup.add(facetFields[i]);
+    Field[] facetFields;
+    if (useDv) {
+      facetFields = new Field[2];
+      facetFields[0] = newField("facet", "", StringField.TYPE_UNSTORED);
+      doc.add(facetFields[0]);
+      docNoGroup.add(facetFields[0]);
+      facetFields[1] = new DocValuesField("facet", new BytesRef(), DocValues.Type.BYTES_VAR_SORTED);
+      doc.add(facetFields[1]);
+      docNoGroup.add(facetFields[1]);
+    } else {
+      facetFields = multipleFacetValuesPerDocument ? new Field[2 + random.nextInt(6)] : new Field[1];
+      for (int i = 0; i < facetFields.length; i++) {
+        facetFields[i] = newField("facet", "", StringField.TYPE_UNSTORED);
+        doc.add(facetFields[i]);
+        docNoGroup.add(facetFields[i]);
+      }
     }
     Field content = newField("content", "", StringField.TYPE_UNSTORED);
     doc.add(content);
@@ -412,7 +431,7 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
 
       List<String> facetVals = new ArrayList<String>();
       if (random.nextInt(24) != 18) {
-        for (Field facetField : facetFields) {
+        if (useDv) {
           String facetValue = facetValues.get(random.nextInt(facetValues.size()));
           uniqueFacetValues.add(facetValue);
           if (!facetToGroups.containsKey(facetValue)) {
@@ -423,8 +442,24 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
           if (groupsInFacet.size() > facetWithMostGroups) {
             facetWithMostGroups = groupsInFacet.size();
           }
-          facetField.setStringValue(facetValue);
+          facetFields[0].setStringValue(facetValue);
+          facetFields[1].setBytesValue(new BytesRef(facetValue));
           facetVals.add(facetValue);
+        } else {
+          for (Field facetField : facetFields) {
+            String facetValue = facetValues.get(random.nextInt(facetValues.size()));
+            uniqueFacetValues.add(facetValue);
+            if (!facetToGroups.containsKey(facetValue)) {
+              facetToGroups.put(facetValue, new HashSet<String>());
+            }
+            Set<String> groupsInFacet = facetToGroups.get(facetValue);
+            groupsInFacet.add(groupValue);
+            if (groupsInFacet.size() > facetWithMostGroups) {
+              facetWithMostGroups = groupsInFacet.size();
+            }
+            facetField.setStringValue(facetValue);
+            facetVals.add(facetValue);
+          }
         }
       } else {
         uniqueFacetValues.add(null);
@@ -443,6 +478,9 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
       }
 
       if (groupValue != null) {
+        if (useDv) {
+          groupDc.setBytesValue(new BytesRef(groupValue));
+        }
         group.setStringValue(groupValue);
       }
       content.setStringValue(contentStr);
@@ -460,7 +498,7 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
     DirectoryReader reader = writer.getReader();
     writer.close();
 
-    return new IndexContext(searchTermToFacetToGroups, reader, numDocs, dir, facetWithMostGroups, numGroups, contentBrs, uniqueFacetValues);
+    return new IndexContext(searchTermToFacetToGroups, reader, numDocs, dir, facetWithMostGroups, numGroups, contentBrs, uniqueFacetValues, useDv);
   }
 
   private GroupedFacetResult createExpectedFacetResult(String searchTerm, IndexContext context, int offset, int limit, int minCount, final boolean orderByCount, String facetPrefix) {
@@ -532,9 +570,14 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
     return new GroupedFacetResult(totalCount, totalMissCount, entriesResult);
   }
 
-  private TermGroupFacetCollector createRandomCollector(String groupField, String facetField, String facetPrefix, boolean multipleFacetsPerDocument) {
+  private AbstractGroupFacetCollector createRandomCollector(String groupField, String facetField, String facetPrefix, boolean multipleFacetsPerDocument, boolean useDv) {
     BytesRef facetPrefixBR = facetPrefix == null ? null : new BytesRef(facetPrefix);
-    return TermGroupFacetCollector.createTermGroupFacetCollector(groupField, facetField, multipleFacetsPerDocument, facetPrefixBR, random.nextInt(1024));
+    if (useDv) {
+      return DVGroupFacetCollector.createDvGroupFacetCollector(groupField, DocValues.Type.BYTES_VAR_SORTED,
+          random.nextBoolean(), facetField, DocValues.Type.BYTES_VAR_SORTED, random.nextBoolean(), facetPrefixBR, random.nextInt(1024));
+    } else {
+      return TermGroupFacetCollector.createTermGroupFacetCollector(groupField, facetField, multipleFacetsPerDocument, facetPrefixBR, random.nextInt(1024));
+    }
   }
 
   private String getFromSet(Set<String> set, int index) {
@@ -558,9 +601,10 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
     final int facetWithMostGroups;
     final int numGroups;
     final String[] contentStrings;
+    final boolean useDV;
 
     public IndexContext(Map<String, Map<String, Set<String>>> searchTermToFacetGroups, DirectoryReader r,
-                        int numDocs, Directory dir, int facetWithMostGroups, int numGroups, String[] contentStrings, NavigableSet<String> facetValues) {
+                        int numDocs, Directory dir, int facetWithMostGroups, int numGroups, String[] contentStrings, NavigableSet<String> facetValues, boolean useDV) {
       this.searchTermToFacetGroups = searchTermToFacetGroups;
       this.indexReader = r;
       this.numDocs = numDocs;
@@ -569,6 +613,7 @@ public class TermGroupFacetCollectorTest extends AbstractGroupingTestCase {
       this.numGroups = numGroups;
       this.contentStrings = contentStrings;
       this.facetValues = facetValues;
+      this.useDV = useDV;
     }
   }
 

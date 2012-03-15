@@ -38,14 +38,9 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
   final List<GroupedFacetHit> groupedFacetHits;
   final SentinelIntSet segmentGroupedFacetHits;
-  final List<SegmentResult> segmentResults;
   final BytesRef spare = new BytesRef();
 
   FieldCache.DocTermsIndex groupFieldTermsIndex;
-  int[] segmentFacetCounts;
-  int segmentTotalCount;
-  int startFacetOrd;
-  int endFacetOrd;
 
   /**
    * Factory method for creating the right implementation based on the fact whether the facet field contains
@@ -76,56 +71,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
     super(groupField, facetField, facetPrefix);
     groupedFacetHits = new ArrayList<GroupedFacetHit>(initialSize);
     segmentGroupedFacetHits = new SentinelIntSet(initialSize, -1);
-    segmentResults = new ArrayList<SegmentResult>();
   }
-
-  /**
-   * {@inheritDoc}
-   */
-  public GroupedFacetResult mergeSegmentResults(int size, int minCount, boolean orderByCount) throws IOException {
-    if (segmentFacetCounts != null) {
-      segmentResults.add(createSegmentResult());
-      segmentFacetCounts = null; // reset
-    }
-
-    int totalCount = 0;
-    int missingCount = 0;
-    SegmentResultPriorityQueue segments = new SegmentResultPriorityQueue(segmentResults.size());
-    for (SegmentResult segmentResult : segmentResults) {
-      missingCount += segmentResult.missing;
-      if (segmentResult.mergePos >= segmentResult.maxTermPos) {
-        continue;
-      }
-      totalCount += segmentResult.total;
-      segmentResult.initializeForMerge();
-      segments.add(segmentResult);
-    }
-
-    GroupedFacetResult facetResult = new GroupedFacetResult(size, minCount, orderByCount, totalCount, missingCount);
-    while (segments.size() > 0) {
-      SegmentResult segmentResult = segments.top();
-      BytesRef currentFacetValue = BytesRef.deepCopyOf(segmentResult.mergeTerm);
-      int count = 0;
-
-      do {
-        count += segmentResult.counts[segmentResult.mergePos++];
-        if (segmentResult.mergePos < segmentResult.maxTermPos) {
-          segmentResult.nextTerm();
-          segmentResult = segments.updateTop();
-        } else {
-          segments.pop();
-          segmentResult = segments.top();
-          if (segmentResult == null) {
-            break;
-          }
-        }
-      } while (currentFacetValue.equals(segmentResult.mergeTerm));
-      facetResult.addFacetCount(currentFacetValue, count);
-    }
-    return facetResult;
-  }
-
-  protected abstract SegmentResult createSegmentResult();
 
   // Implementation for single valued facet fields.
   static class SV extends TermGroupFacetCollector {
@@ -202,9 +148,30 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       }
     }
 
-    protected SegmentResult createSegmentResult() {
+    protected SegmentResult createSegmentResult() throws IOException {
       return new SegmentResult(segmentFacetCounts, segmentTotalCount, facetFieldTermsIndex.getTermsEnum(), startFacetOrd, endFacetOrd);
     }
+
+    private static class SegmentResult extends AbstractGroupFacetCollector.SegmentResult {
+
+      final TermsEnum tenum;
+
+      SegmentResult(int[] counts, int total, TermsEnum tenum, int startFacetOrd, int endFacetOrd) throws IOException {
+        super(counts, total - counts[0], counts[0], endFacetOrd);
+        this.tenum = tenum;
+        this.mergePos = startFacetOrd == 0 ? 1 : startFacetOrd;
+        if (mergePos < maxTermPos) {
+          tenum.seekExact(mergePos);
+          mergeTerm = tenum.term();
+        }
+      }
+
+      protected void nextTerm() throws IOException {
+        mergeTerm = tenum.next();
+      }
+
+    }
+
   }
 
   // Implementation for multi valued facet fields.
@@ -316,54 +283,28 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       }
     }
 
-    protected SegmentResult createSegmentResult() {
+    protected SegmentResult createSegmentResult() throws IOException {
       return new SegmentResult(segmentFacetCounts, segmentTotalCount, facetFieldDocTermOrds.numTerms(), facetOrdTermsEnum, startFacetOrd, endFacetOrd);
     }
-  }
 
-}
+    private static class SegmentResult extends AbstractGroupFacetCollector.SegmentResult {
 
-class SegmentResult {
+      final TermsEnum tenum;
 
-  final int[] counts;
-  final int total;
-  final int missing;
+      SegmentResult(int[] counts, int total, int missingCountIndex, TermsEnum tenum, int startFacetOrd, int endFacetOrd) throws IOException {
+        super(counts, total - counts[missingCountIndex], counts[missingCountIndex],
+            endFacetOrd == missingCountIndex + 1 ?  missingCountIndex : endFacetOrd);
+        this.tenum = tenum;
+        this.mergePos = startFacetOrd;
+        tenum.seekExact(mergePos);
+        mergeTerm = tenum.term();
+      }
 
-  // Used for merging the segment results
-  BytesRef mergeTerm;
-  int mergePos;
-  final int maxTermPos;
-  final TermsEnum tenum;
+      protected void nextTerm() throws IOException {
+        mergeTerm = tenum.next();
+      }
 
-  SegmentResult(int[] counts, int total, TermsEnum tenum, int startFacetOrd, int endFacetOrd) {
-    this.counts = counts;
-    this.missing = counts[0];
-    this.total = total - missing;
-    this.tenum = tenum;
-    this.mergePos = startFacetOrd == 0 ? 1 : startFacetOrd;
-    this.maxTermPos = endFacetOrd;
-  }
-
-  SegmentResult(int[] counts, int total, int missingCountIndex, TermsEnum tenum, int startFacetOrd, int endFacetOrd) {
-    this.counts = counts;
-    this.missing = counts[missingCountIndex];
-    this.total = total - missing;
-    this.tenum = tenum;
-    this.mergePos = startFacetOrd;
-    if (endFacetOrd == missingCountIndex + 1) {
-      this.maxTermPos = missingCountIndex;
-    } else {
-      this.maxTermPos = endFacetOrd;
     }
-  }
-
-  void initializeForMerge() throws IOException {
-    tenum.seekExact(mergePos);
-    mergeTerm = tenum.term();
-  }
-
-  void nextTerm() throws IOException {
-    mergeTerm = tenum.next();
   }
 
 }
@@ -376,16 +317,5 @@ class GroupedFacetHit {
   GroupedFacetHit(BytesRef groupValue, BytesRef facetValue) {
     this.groupValue = groupValue;
     this.facetValue = facetValue;
-  }
-}
-
-class SegmentResultPriorityQueue extends PriorityQueue<SegmentResult> {
-
-  SegmentResultPriorityQueue(int maxSize) {
-    super(maxSize);
-  }
-
-  protected boolean lessThan(SegmentResult a, SegmentResult b) {
-    return a.mergeTerm.compareTo(b.mergeTerm) < 0;
   }
 }

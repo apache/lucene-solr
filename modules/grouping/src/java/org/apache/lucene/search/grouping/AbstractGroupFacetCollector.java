@@ -20,6 +20,7 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
 import java.util.*;
@@ -34,11 +35,18 @@ public abstract class AbstractGroupFacetCollector extends Collector {
   protected final String groupField;
   protected final String facetField;
   protected final BytesRef facetPrefix;
+  protected final List<SegmentResult> segmentResults;
+
+  protected int[] segmentFacetCounts;
+  protected int segmentTotalCount;
+  protected int startFacetOrd;
+  protected int endFacetOrd;
 
   protected AbstractGroupFacetCollector(String groupField, String facetField, BytesRef facetPrefix) {
     this.groupField = groupField;
     this.facetField = facetField;
     this.facetPrefix = facetPrefix;
+    segmentResults = new ArrayList<SegmentResult>();
   }
 
   /**
@@ -52,7 +60,49 @@ public abstract class AbstractGroupFacetCollector extends Collector {
    * @return grouped facet results
    * @throws IOException If I/O related errors occur during merging segment grouped facet counts.
    */
-  public abstract GroupedFacetResult mergeSegmentResults(int size, int minCount, boolean orderByCount) throws IOException;
+  public GroupedFacetResult mergeSegmentResults(int size, int minCount, boolean orderByCount) throws IOException {
+    if (segmentFacetCounts != null) {
+      segmentResults.add(createSegmentResult());
+      segmentFacetCounts = null; // reset
+    }
+
+    int totalCount = 0;
+    int missingCount = 0;
+    SegmentResultPriorityQueue segments = new SegmentResultPriorityQueue(segmentResults.size());
+    for (SegmentResult segmentResult : segmentResults) {
+      missingCount += segmentResult.missing;
+      if (segmentResult.mergePos >= segmentResult.maxTermPos) {
+        continue;
+      }
+      totalCount += segmentResult.total;
+      segments.add(segmentResult);
+    }
+
+    GroupedFacetResult facetResult = new GroupedFacetResult(size, minCount, orderByCount, totalCount, missingCount);
+    while (segments.size() > 0) {
+      SegmentResult segmentResult = segments.top();
+      BytesRef currentFacetValue = BytesRef.deepCopyOf(segmentResult.mergeTerm);
+      int count = 0;
+
+      do {
+        count += segmentResult.counts[segmentResult.mergePos++];
+        if (segmentResult.mergePos < segmentResult.maxTermPos) {
+          segmentResult.nextTerm();
+          segmentResult = segments.updateTop();
+        } else {
+          segments.pop();
+          segmentResult = segments.top();
+          if (segmentResult == null) {
+            break;
+          }
+        }
+      } while (currentFacetValue.equals(segmentResult.mergeTerm));
+      facetResult.addFacetCount(currentFacetValue, count);
+    }
+    return facetResult;
+  }
+
+  protected abstract SegmentResult createSegmentResult() throws IOException;
 
   public void setScorer(Scorer scorer) throws IOException {
   }
@@ -218,6 +268,47 @@ public abstract class AbstractGroupFacetCollector extends Collector {
      */
     public int getCount() {
       return count;
+    }
+  }
+
+  /**
+   * Contains the local grouped segment counts for a particular segment.
+   * Each <code>SegmentResult</code> must be added together.
+   */
+  protected abstract static class SegmentResult {
+
+    protected final int[] counts;
+    protected final int total;
+    protected final int missing;
+    protected final int maxTermPos;
+
+    protected BytesRef mergeTerm;
+    protected int mergePos;
+
+    protected SegmentResult(int[] counts, int total, int missing, int maxTermPos) {
+      this.counts = counts;
+      this.total = total;
+      this.missing = missing;
+      this.maxTermPos = maxTermPos;
+    }
+
+    /**
+     * Go to next term in this <code>SegmentResult</code> in order to retrieve the grouped facet counts.
+     *
+     * @throws IOException If I/O related errors occur
+     */
+    protected abstract void nextTerm() throws IOException;
+
+  }
+
+  private static class SegmentResultPriorityQueue extends PriorityQueue<SegmentResult> {
+
+    SegmentResultPriorityQueue(int maxSize) {
+      super(maxSize);
+    }
+
+    protected boolean lessThan(SegmentResult a, SegmentResult b) {
+      return a.mergeTerm.compareTo(b.mergeTerm) < 0;
     }
   }
 

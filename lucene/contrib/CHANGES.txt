@@ -72,7 +72,7 @@ New Features
    start/endOffset, if offsets are indexed. (Alan Woodward via Mike
    McCandless)
 
- * LUCENE-3802: Support for grouped faceting. (Martijn van Groningen)
+ * LUCENE-3802, LUCENE-3856: Support for grouped faceting. (Martijn van Groningen)
 
 API Changes
 
