@@ -27,8 +27,10 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
@@ -1327,5 +1329,28 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
     uoe.doFail = false;
     d.close();
+  }
+  
+  public void testIllegalPositions() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    Document doc = new Document();
+    Token t1 = new Token("foo", 0, 3);
+    t1.setPositionIncrement(Integer.MAX_VALUE);
+    Token t2 = new Token("bar", 4, 7);
+    t2.setPositionIncrement(200);
+    TokenStream overflowingTokenStream = new CannedTokenStream(
+        new Token[] { t1, t2 }
+    );
+    Field field = new Field("foo", overflowingTokenStream);
+    doc.add(field);
+    try {
+      iw.addDocument(doc);
+      fail();
+    } catch (IllegalArgumentException expected) {
+      // expected exception
+    }
+    iw.close();
+    dir.close();
   }
 }
