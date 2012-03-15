@@ -3892,7 +3892,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           mergeInit(merge);
 
           if (infoStream != null)
-            message("now merge\n  merge=" + merge.segString(directory) + "\n  merge=" + merge + "\n  index=" + segString());
+            message("now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
 
           mergeMiddle(merge);
           mergeSuccess(merge);
