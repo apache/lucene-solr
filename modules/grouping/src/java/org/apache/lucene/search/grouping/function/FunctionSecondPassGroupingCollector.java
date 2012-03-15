@@ -77,8 +77,8 @@ public class FunctionSecondPassGroupingCollector extends AbstractSecondPassGroup
    */
   public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     super.setNextReader(readerContext);
-    FunctionValues docValues = groupByVS.getValues(vsContext, readerContext);
-    filler = docValues.getValueFiller();
+    FunctionValues values = groupByVS.getValues(vsContext, readerContext);
+    filler = values.getValueFiller();
     mval = filler.getValue();
   }
 
