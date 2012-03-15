@@ -296,6 +296,12 @@
 /modules/grouping/pom.xml
 
 
+# ./modules/spatial
+/modules/spatial/build
+/modules/spatial/pom.xml
+/modules/spatial/*.iml
+
+
 # ./modules/analysis
 /modules/analysis/build
 /modules/analysis/pom.xml
@@ -304,6 +310,11 @@
 # ./modules/analysis/icu
 /modules/analysis/icu/*.iml
 /modules/analysis/icu/pom.xml
+
+
+# ./modules/analysis/uima
+/modules/analysis/uima/*.iml
+/modules/analysis/uima/pom.xml
 
 
 # ./modules/analysis/morfologik
@@ -365,7 +376,7 @@
 
 
 # ./modules/suggest
+/modules/suggest/build
 /modules/suggest/*.iml
 /modules/suggest/pom.xml
-/modules/suggest/build
 /modules/suggest/dist
