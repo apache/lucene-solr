@@ -780,6 +780,7 @@ public class QueryComponent extends SearchComponent
       
       long numFound = 0;
       Float maxScore=null;
+      boolean partialResults = false;
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
 
@@ -814,6 +815,11 @@ public class QueryComponent extends SearchComponent
 
         if (docs == null) { // could have been initialized in the shards info block above
           docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
+        }
+        
+        NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
+        if (responseHeader != null && Boolean.TRUE.equals(responseHeader.get("partialResults"))) {
+          partialResults = true;
         }
         
         // calculate global maxScore and numDocsFound
@@ -894,6 +900,9 @@ public class QueryComponent extends SearchComponent
       // TODO: use ResponseBuilder (w/ comments) or the request context?
       rb.resultIds = resultIds;
       rb._responseDocs = responseDocs;
+      if (partialResults) {
+        rb.rsp.getResponseHeader().add( "partialResults", Boolean.TRUE );
+      }
   }
 
   private void createRetrieveDocs(ResponseBuilder rb) {
