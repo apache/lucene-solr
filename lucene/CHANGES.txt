@@ -933,6 +933,10 @@ Bug fixes
 * LUCENE-3841: Fix CloseableThreadLocal to also purge stale entries on
   get(); this fixes certain cases where we were holding onto objects
   for dead threads for too long (Matthew Bellew, Mike McCandless)
+
+* LUCENE-3872: IndexWriter.close() now throws IllegalStateException if
+  you call it after calling prepareCommit() without calling commit()
+  first.  (Tim Bogaert via Mike McCandless)
     
 Optimizations
 

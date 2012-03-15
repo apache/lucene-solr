@@ -924,6 +924,7 @@ public void testFilesOpenClose() throws IOException {
     writer.addDocument(new Document());
     writer.prepareCommit();
     assertFalse(DirectoryReader.indexExists(dir));
+    writer.commit();
     writer.close();
     assertTrue(DirectoryReader.indexExists(dir));
     dir.close();

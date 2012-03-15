@@ -834,6 +834,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private void closeInternal(boolean waitForMerges) throws CorruptIndexException, IOException {
 
     try {
+
+      if (pendingCommit != null) {
+        throw new IllegalStateException("cannot close: prepareCommit was already called with no corresponding call to commit");
+      }
+
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "now flush at close waitForMerges=" + waitForMerges);
       }
@@ -2358,7 +2363,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  #rollback()} to revert the commit and undo all changes
    *  done since the writer was opened.</p>
    *
-   *  You can also just call {@link #commit(Map)} directly
+   *  <p>You can also just call {@link #commit(Map)} directly
    *  without prepareCommit first in which case that method
    *  will internally call prepareCommit.
    *

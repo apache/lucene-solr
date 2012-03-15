@@ -1801,4 +1801,54 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  // LUCENE-3872
+  public void testPrepareCommitThenClose() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir,
+                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+
+    w.prepareCommit();
+    try {
+      w.close();
+      fail("should have hit exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+    w.commit();
+    w.close();
+    IndexReader r = IndexReader.open(dir);
+    assertEquals(0, r.maxDoc());
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-3872
+  public void testPrepareCommitThenRollback() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir,
+                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+
+    w.prepareCommit();
+    w.rollback();
+    assertFalse(DirectoryReader.indexExists(dir));
+    dir.close();
+  }
+
+  // LUCENE-3872
+  public void testPrepareCommitThenRollback2() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir,
+                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+
+    w.commit();
+    w.addDocument(new Document());
+    w.prepareCommit();
+    w.rollback();
+    assertTrue(DirectoryReader.indexExists(dir));
+    IndexReader r = IndexReader.open(dir);
+    assertEquals(0, r.maxDoc());
+    r.close();
+    dir.close();
+  }
 }
