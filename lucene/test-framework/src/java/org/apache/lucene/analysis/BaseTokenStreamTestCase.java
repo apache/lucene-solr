@@ -157,7 +157,11 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         }
       }
       if (posIncrAtt != null) {
-        assertTrue("posIncrement must be >= 0", posIncrAtt.getPositionIncrement() >= 0);
+        if (i == 0) {
+          assertTrue("first posIncrement must be >= 1", posIncrAtt.getPositionIncrement() >= 1);
+        } else {
+          assertTrue("posIncrement must be >= 0", posIncrAtt.getPositionIncrement() >= 0);
+        }
       }
       if (posLengthAtt != null) {
         assertTrue("posLength must be >= 1", posLengthAtt.getPositionLength() >= 1);
