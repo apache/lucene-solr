@@ -1353,4 +1353,20 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     iw.close();
     dir.close();
   }
+  
+  public void testLegalbutVeryLargePositions() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    Document doc = new Document();
+    Token t1 = new Token("foo", 0, 3);
+    t1.setPositionIncrement(Integer.MAX_VALUE-500);
+    TokenStream overflowingTokenStream = new CannedTokenStream(
+        new Token[] { t1 }
+    );
+    Field field = new Field("foo", overflowingTokenStream);
+    doc.add(field);
+    iw.addDocument(doc);
+    iw.close();
+    dir.close();
+  }
 }

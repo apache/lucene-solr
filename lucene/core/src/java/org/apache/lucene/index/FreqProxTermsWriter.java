@@ -265,7 +265,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
                 int position = 0;
                 for(int j=0;j<termDocFreq;j++) {
                   final int code = prox.readVInt();
-                  position += code >> 1;
+                  position += code >>> 1;
                 
                 final int payloadLength;
                 if ((code & 1) != 0) {
