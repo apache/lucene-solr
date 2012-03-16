@@ -1158,9 +1158,9 @@ public class CheckIndex {
       // Scan stored fields for all documents
       final Bits liveDocs = reader.getLiveDocs();
       for (int j = 0; j < info.docCount; ++j) {
+        Document doc = reader.document(j);
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
-          Document doc = reader.document(j);
           status.totFields += doc.getFields().size();
         }
       }      
