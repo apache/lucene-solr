@@ -65,7 +65,6 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
     hash = new BytesRefHash();
     ords = new int[0];
     this.segmentSuffix = segmentSuffix;
-
   }
 
   @Override
@@ -84,11 +83,7 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
     case BYTES_VAR_SORTED:
     case BYTES_VAR_STRAIGHT:
       vSize = -1;
-      try {
       ord = hash.add(value.binaryValue());
-      } catch (NullPointerException e) {
-        System.err.println();
-      }
       break;
     case FIXED_INTS_16:
       vSize = 2;

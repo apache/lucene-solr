@@ -476,9 +476,6 @@ public class MultiDocValues extends DocValues {
         offset =  ordToOffset[ord];
         size = (int) (ordToOffset[1 + ord] - offset);
       }
-      if (size < 0) {
-        System.out.println();
-      }
       assert size >=0;
       return data.fillSlice(bytesRef, offset, size);
      }
