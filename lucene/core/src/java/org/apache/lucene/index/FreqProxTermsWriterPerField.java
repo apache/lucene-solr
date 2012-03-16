@@ -486,7 +486,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
             if (readPositions) {
               final int code = prox.readVInt();
-              position += code >> 1;
+              position += code >>> 1;
 
               if ((code & 1) != 0) {
 

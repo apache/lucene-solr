@@ -943,6 +943,10 @@ Bug fixes
   integer overflow. This can happen, for example when using a buggy
   TokenStream that forgets to call clearAttributes() in combination
   with a StopFilter. (Robert Muir)
+
+* LUCENE-3876: Fix bug where positions for a document exceeding
+  Integer.MAX_VALUE/2 would produce a corrupt index.  
+  (Simon Willnauer, Mike Mccandless, Robert Muir)
     
 Optimizations
 
