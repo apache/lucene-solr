@@ -198,8 +198,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
       <!-- compile scope; solr-core is a jar not a war -->
     </dependency>
     <dependency>
