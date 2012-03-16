@@ -837,9 +837,9 @@ public class CheckIndex {
 
       // Scan stored fields for all documents
       for (int j = 0; j < info.docCount; ++j) {
+        Document doc = reader.document(j);
         if (!reader.isDeleted(j)) {
           status.docCount++;
-          Document doc = reader.document(j);
           status.totFields += doc.getFields().size();
         }
       }      
