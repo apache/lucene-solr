@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.reflect.Array;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -553,11 +552,35 @@ public class CheckIndex {
           if (info.docCount - numDocs != info.getDelCount()) {
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
           }
+          Bits liveDocs = reader.getLiveDocs();
+          if (liveDocs == null) {
+            throw new RuntimeException("segment should have deletions, but liveDocs is null");
+          } else {
+            int numLive = 0;
+            for (int j = 0; j < liveDocs.length(); j++) {
+              if (liveDocs.get(j)) {
+                numLive++;
+              }
+            }
+            if (numLive != numDocs) {
+              throw new RuntimeException("liveDocs count mismatch: info=" + numDocs + ", vs bits=" + numLive);
+            }
+          }
+          
           segInfoStat.numDeleted = info.docCount - numDocs;
           msg("OK [" + (segInfoStat.numDeleted) + " deleted docs]");
         } else {
           if (info.getDelCount() != 0) {
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
+          }
+          Bits liveDocs = reader.getLiveDocs();
+          if (liveDocs != null) {
+            // its ok for it to be non-null here, as long as none are set right?
+            for (int j = 0; j < liveDocs.length(); j++) {
+              if (!liveDocs.get(j)) {
+                throw new RuntimeException("liveDocs mismatch: info says no deletions but doc " + j + " is deleted.");
+              }
+            }
           }
           msg("OK");
         }
