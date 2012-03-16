@@ -470,7 +470,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       }
       break;
       case VAR_INTS:
-        System.out.println(source.hasArray());
         assertFalse(source.hasArray());
         break;
       case FLOAT_32:
@@ -930,5 +929,35 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     r.close();
     dir.close();
+  }
+
+  // LUCENE-3870
+  public void testLengthPrefixAcrossTwoPages() throws Exception {
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    Document doc = new Document();
+    byte[] bytes = new byte[32764];
+    BytesRef b = new BytesRef();
+    b.bytes = bytes;
+    b.length = bytes.length;
+    doc.add(new DocValuesField("field", b, DocValues.Type.BYTES_VAR_DEREF));
+    w.addDocument(doc);
+    bytes[0] = 1;
+    w.addDocument(doc);
+    DirectoryReader r = w.getReader();
+    Source s = r.getSequentialSubReaders()[0].docValues("field").getSource();
+
+    BytesRef bytes1 = s.getBytes(0, new BytesRef());
+    assertEquals(bytes.length, bytes1.length);
+    bytes[0] = 0;
+    assertEquals(b, bytes1);
+    
+    bytes1 = s.getBytes(1, new BytesRef());
+    assertEquals(bytes.length, bytes1.length);
+    bytes[0] = 1;
+    assertEquals(b, bytes1);
+    r.close();
+    w.close();
+    d.close();
   }
 }

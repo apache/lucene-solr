@@ -193,17 +193,27 @@ public final class PagedBytes {
      * @lucene.internal
      **/
     public BytesRef fillSliceWithPrefix(BytesRef b, long start) {
-      final int index = (int) (start >> blockBits);
+      int index = (int) (start >> blockBits);
       int offset = (int) (start & blockMask);
-      final byte[] block = blocks[index];
+      byte[] block = blocks[index];
       final int length;
+      assert offset <= block.length-1;
       if ((block[offset] & 128) == 0) {
         length = block[offset];
         offset = offset+1;
       } else {
-        length = ((block[offset] & 0x7f) << 8) | (block[1+offset] & 0xff);
-        offset = offset+2;
-        assert length > 0;
+        if (offset==block.length-1) {
+          final byte[] nextBlock = blocks[++index];
+          length = ((block[offset] & 0x7f) << 8) | (nextBlock[0] & 0xff);
+          offset = 1;
+          block = nextBlock;
+          assert length > 0; 
+        } else {
+          assert offset < block.length-1;
+          length = ((block[offset] & 0x7f) << 8) | (block[1+offset] & 0xff);
+          offset = offset+2;
+          assert length > 0;
+        }
       }
       assert length >= 0: "length=" + length;
       b.length = length;
