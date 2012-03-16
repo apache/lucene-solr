@@ -783,7 +783,7 @@ Changes in Runtime Behavior
 
 * LUCENE-3848: Fix tokenstreams to not produce a stream with an initial
   position increment of 0: which is out of bounds (overlapping with a
-  non-existant previous term). Consumers such as IndexWriter and QueryParser
+  non-existent previous term). Consumers such as IndexWriter and QueryParser
   still check for and silently correct this situation today, but at some point 
   in the future they may throw an exception.  (Mike McCandless, Robert Muir)
   
