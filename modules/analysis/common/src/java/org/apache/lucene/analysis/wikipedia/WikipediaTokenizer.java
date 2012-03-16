@@ -121,6 +121,8 @@ public final class WikipediaTokenizer extends Tokenizer {
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
+  
+  private boolean first;
 
   /**
    * Creates a new instance of the {@link WikipediaTokenizer}. Attaches the
@@ -209,8 +211,13 @@ public final class WikipediaTokenizer extends Tokenizer {
       //output the untokenized Token first
       collapseAndSaveTokens(tokenType, type);
     }
-    posIncrAtt.setPositionIncrement(scanner.getPositionIncrement());
+    int posinc = scanner.getPositionIncrement();
+    if (first && posinc == 0) {
+      posinc = 1; // don't emit posinc=0 for the first token!
+    }
+    posIncrAtt.setPositionIncrement(posinc);
     typeAtt.setType(type);
+    first = false;
     return true;
   }
 
@@ -308,6 +315,7 @@ public final class WikipediaTokenizer extends Tokenizer {
     super.reset();
     tokens = null;
     scanner.reset();
+    first = true;
   }
 
   @Override

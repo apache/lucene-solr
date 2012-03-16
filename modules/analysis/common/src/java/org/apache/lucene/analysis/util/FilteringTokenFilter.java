@@ -33,6 +33,7 @@ public abstract class FilteringTokenFilter extends TokenFilter {
 
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   private boolean enablePositionIncrements; // no init needed, as ctor enforces setting value!
+  private boolean first = true; // only used when not preserving gaps
 
   public FilteringTokenFilter(boolean enablePositionIncrements, TokenStream input){
     super(input);
@@ -58,12 +59,25 @@ public abstract class FilteringTokenFilter extends TokenFilter {
     } else {
       while (input.incrementToken()) {
         if (accept()) {
+          if (first) {
+            // first token having posinc=0 is illegal.
+            if (posIncrAtt.getPositionIncrement() == 0) {
+              posIncrAtt.setPositionIncrement(1);
+            }
+            first = false;
+          }
           return true;
         }
       }
     }
     // reached EOS -- return false
     return false;
+  }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    first = true;
   }
 
   /**

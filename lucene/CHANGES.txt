@@ -780,6 +780,12 @@ Changes in Runtime Behavior
   boost on a field that omits norms. Because the index-time boost
   is multiplied into the norm, previously your boost would be 
   silently discarded.  (Tomás Fernández Löbbe, Hoss Man, Robert Muir)
+
+* LUCENE-3848: Fix tokenstreams to not produce a stream with an initial
+  position increment of 0: which is out of bounds (overlapping with a
+  non-existant previous term). Consumers such as IndexWriter and QueryParser
+  still check for and silently correct this situation today, but at some point 
+  in the future they may throw an exception.  (Mike McCandless, Robert Muir)
   
 Security fixes
 

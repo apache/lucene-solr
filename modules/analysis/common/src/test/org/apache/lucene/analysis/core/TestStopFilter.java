@@ -17,13 +17,17 @@ package org.apache.lucene.analysis.core;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -119,5 +123,57 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     if (VERBOSE) {
       System.out.println(s);
     }
+  }
+  
+  // stupid filter that inserts synonym of 'hte' for 'the'
+  private class MockSynonymFilter extends TokenFilter {
+    State bufferedState;
+    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+
+    MockSynonymFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (bufferedState != null) {
+        restoreState(bufferedState);
+        posIncAtt.setPositionIncrement(0);
+        termAtt.setEmpty().append("hte");
+        bufferedState = null;
+        return true;
+      } else if (input.incrementToken()) {
+        if (termAtt.toString().equals("the")) {
+          bufferedState = captureState();
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      bufferedState = null;
+    }
+  }
+  
+  public void testFirstPosInc() throws Exception {
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        TokenFilter filter = new MockSynonymFilter(tokenizer);
+        StopFilter stopfilter = new StopFilter(TEST_VERSION_CURRENT, filter, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+        stopfilter.setEnablePositionIncrements(false);
+        return new TokenStreamComponents(tokenizer, stopfilter);
+      }
+    };
+    
+    assertAnalyzesTo(analyzer, "the quick brown fox",
+        new String[] { "hte", "quick", "brown", "fox" },
+        new int[] { 1, 1, 1, 1} );
   }
 }
