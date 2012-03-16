@@ -475,7 +475,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
           payloadLength = postings.readVInt();
           //System.out.println("PR     new payload len=" + payloadLength);
         }
-        position += code >> 1;
+        position += code >>> 1;
         payloadRetrieved = false;
       } else {
         position += postings.readVInt();

@@ -705,14 +705,14 @@ public class SepPostingsReader extends PostingsReaderBase {
       }
 
       final int code = posReader.next();
-      assert code >= 0;
+
       if (storePayloads) {
         if ((code & 1) != 0) {
           // Payload length has changed
           payloadLength = posReader.next();
           assert payloadLength >= 0;
         }
-        position += code >> 1;
+        position += code >>> 1;
         pendingPayloadBytes += payloadLength;
         payloadPending = payloadLength > 0;
       } else {

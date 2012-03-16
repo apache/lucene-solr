@@ -117,7 +117,6 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
           
           @Override
           protected int add(int value) throws IOException {
-            assert value >= 0;
             buffer[pendingCount++] = value;
             // silly variable block length int encoder: if
             // first value <= 3, we write N vints at once;

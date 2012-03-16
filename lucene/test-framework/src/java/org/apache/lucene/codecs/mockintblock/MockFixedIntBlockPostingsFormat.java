@@ -109,7 +109,6 @@ public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
           @Override
           protected void flushBlock() throws IOException {
             for(int i=0;i<buffer.length;i++) {
-              assert buffer[i] >= 0;
               out.writeVInt(buffer[i]);
             }
           }
