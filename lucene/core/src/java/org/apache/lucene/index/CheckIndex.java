@@ -536,11 +536,27 @@ public class CheckIndex {
           if (info.docCount - numDocs != info.getDelCount()){
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
           }
+
+          int numLive = 0;    
+          for (int j = 0; j < reader.maxDoc(); j++) {
+            if (!reader.isDeleted(j)) {
+              numLive++;
+            }
+          }
+          if (numLive != numDocs) {
+            throw new RuntimeException("liveDocs count mismatch: info=" + numDocs + ", vs bits=" + numLive);
+          }
           segInfoStat.numDeleted = info.docCount - numDocs;
           msg("OK [" + (segInfoStat.numDeleted) + " deleted docs]");
         } else {
           if (info.getDelCount() != 0) {
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
+          }
+
+          for (int j = 0; j < reader.maxDoc(); j++) {
+            if (reader.isDeleted(j)) {
+              throw new RuntimeException("liveDocs mismatch: info says no deletions but doc " + j + " is deleted.");
+            }
           }
           msg("OK");
         }
