@@ -21,8 +21,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.HashSet;
-
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -38,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * a canonical representation of the URL (e.g. stripping index.html), the domain
  * and path parts of the URL etc.
  * <p>
- * This processor is intended used in connection with processing web resuources,
+ * This processor is intended used in connection with processing web resources,
  * and helping to produce values which may be used for boosting or filtering later.
  */
 public class URLClassifyProcessor extends UpdateRequestProcessor {
@@ -64,7 +62,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
   private String landingpageFieldname = DEFAULT_LANDINGPAGE_FIELDNAME;
   private String domainFieldname = null;
   private String canonicalUrlFieldname = null;
-  private String[] landingPageSuffixes = {
+  private static final String[] landingPageSuffixes = {
       "/",
       "index.html",
       "index.htm",
@@ -90,10 +88,6 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
       UpdateRequestProcessor nextProcessor) {
     super(nextProcessor);
     
-    HashSet<String> landingPageSuffixesSet = new HashSet<String>();
-    for(String s : landingPageSuffixes) {
-      landingPageSuffixesSet.add(s);
-    }
     this.initParameters(parameters);
   }
   
