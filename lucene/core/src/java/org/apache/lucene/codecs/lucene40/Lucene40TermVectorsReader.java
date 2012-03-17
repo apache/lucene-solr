@@ -406,9 +406,14 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     @Override
     public SeekStatus seekCeil(BytesRef text, boolean useCache)
       throws IOException {
-      if (nextTerm != 0 && text.compareTo(term) < 0) {
-        nextTerm = 0;
-        tvf.seek(tvfFP);
+      if (nextTerm != 0) {
+        final int cmp = text.compareTo(term);
+        if (cmp < 0) {
+          nextTerm = 0;
+          tvf.seek(tvfFP);
+        } else if (cmp == 0) {
+          return SeekStatus.FOUND;
+        }
       }
 
       while (next() != null) {

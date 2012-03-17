@@ -605,7 +605,7 @@ public class CheckIndex {
         segInfoStat.storedFieldStatus = testStoredFields(info, reader, nf);
 
         // Test Term Vectors
-        segInfoStat.termVectorStatus = testTermVectors(info, reader, nf);
+        segInfoStat.termVectorStatus = testTermVectors(fieldInfos, info, reader, nf);
         
         segInfoStat.docValuesStatus = testDocValues(info, reader);
 
@@ -867,6 +867,13 @@ public class CheckIndex {
           if (hasPositions) {
             for(int j=0;j<freq;j++) {
               final int pos = postings.nextPosition();
+              // NOTE: pos=-1 is allowed because of ancient bug
+              // (LUCENE-1542) whereby IndexWriter could
+              // write pos=-1 when first token's posInc is 0
+              // (separately: analyzers should not give
+              // posInc=0 to first token); also, term
+              // vectors are allowed to return pos=-1 if
+              // they indexed offset but not positions:
               if (pos < -1) {
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
               }
@@ -938,7 +945,14 @@ public class CheckIndex {
               int lastPosition = -1;
               for(int posUpto=0;posUpto<freq;posUpto++) {
                 final int pos = postings.nextPosition();
-                if (pos < 0) {
+                // NOTE: pos=-1 is allowed because of ancient bug
+                // (LUCENE-1542) whereby IndexWriter could
+                // write pos=-1 when first token's posInc is 0
+                // (separately: analyzers should not give
+                // posInc=0 to first token); also, term
+                // vectors are allowed to return pos=-1 if
+                // they indexed offset but not positions:
+                if (pos < -1) {
                   throw new RuntimeException("position " + pos + " is out of bounds");
                 }
                 if (pos < lastPosition) {
@@ -1181,6 +1195,8 @@ public class CheckIndex {
       // Scan stored fields for all documents
       final Bits liveDocs = reader.getLiveDocs();
       for (int j = 0; j < info.docCount; ++j) {
+        // Intentionally pull even deleted documents to
+        // make sure they too are not corrupt:
         Document doc = reader.document(j);
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
@@ -1327,19 +1343,16 @@ public class CheckIndex {
   /**
    * Test term vectors for a segment.
    */
-  private Status.TermVectorStatus testTermVectors(SegmentInfo info, SegmentReader reader, NumberFormat format) {
+  private Status.TermVectorStatus testTermVectors(FieldInfos fieldInfos, SegmentInfo info, SegmentReader reader, NumberFormat format) {
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
-    
-    // TODO: in theory we could test that term vectors have
-    // same terms/pos/offsets as the postings, but it'd be
-    // very slow...
 
+    final Bits onlyDocIsDeleted = new FixedBitSet(1);
+    
     try {
       if (infoStream != null) {
         infoStream.print("    test: term vectors........");
       }
 
-      // TODO: maybe we can factor out testTermIndex and reuse here?
       DocsEnum docs = null;
       DocsAndPositionsEnum postings = null;
 
@@ -1361,69 +1374,53 @@ public class CheckIndex {
       TermsEnum postingsTermsEnum = null;
 
       for (int j = 0; j < info.docCount; ++j) {
-        if (liveDocs == null || liveDocs.get(j)) {
-          status.docCount++;
-          Fields tfv = reader.getTermVectors(j);
-          if (tfv != null) {
-            int tfvComputedFieldCount = 0;
-            long tfvComputedTermCount = 0;
+        // Intentionally pull/visit (but don't count in
+        // stats) deleted documents to make sure they too
+        // are not corrupt:
+        Fields tfv = reader.getTermVectors(j);
 
-            FieldsEnum fieldsEnum = tfv.iterator();
-            String field = null;
-            String lastField = null;
-            while((field = fieldsEnum.next()) != null) {
+        // TODO: can we make a IS(FIR) that searches just
+        // this term vector... to pass for searcher?
+
+        if (tfv != null) {
+          // First run with no deletions:
+          checkFields(tfv, null, 1, fieldInfos, null);
+
+          // Again, with the one doc deleted:
+          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, null);
+
+          // Only agg stats if the doc is live:
+          final boolean doStats = liveDocs == null || liveDocs.get(j);
+          if (doStats) {
+            status.docCount++;
+          }
+
+          FieldsEnum fieldsEnum = tfv.iterator();
+          String field = null;
+          while((field = fieldsEnum.next()) != null) {
+            if (doStats) {
               status.totVectors++;
-              tfvComputedFieldCount++;
+            }
 
-              if (lastField == null) {
-                lastField = field;
-              } else if (lastField.compareTo(field) > 0) {
-                throw new RuntimeException("vector fields are out of order: lastField=" + lastField + " field=" + field + " doc=" + j);
-              }
-              
+            // Make sure FieldInfo thinks this field is vector'd:
+            final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+            if (!fieldInfo.storeTermVector) {
+              throw new RuntimeException("docID=" + j + " has term vectors for field=" + field + " but FieldInfo has storeTermVector=false");
+            }
+
+            if (crossCheckTermVectors) {
               Terms terms = tfv.terms(field);
               termsEnum = terms.iterator(termsEnum);
 
-              if (crossCheckTermVectors) {
-                Terms postingsTerms = postingsFields.terms(field);
-                if (postingsTerms == null) {
-                  throw new RuntimeException("vector field=" + field + " does not exist in postings; doc=" + j);
-                }
-                postingsTermsEnum = postingsTerms.iterator(postingsTermsEnum);
-              } else {
-                postingsTermsEnum = null;
+              Terms postingsTerms = postingsFields.terms(field);
+              if (postingsTerms == null) {
+                throw new RuntimeException("vector field=" + field + " does not exist in postings; doc=" + j);
               }
+              postingsTermsEnum = postingsTerms.iterator(postingsTermsEnum);
               
-              long tfvComputedTermCountForField = 0;
-              long tfvComputedSumTotalTermFreq = 0;
-              
-              BytesRef lastTerm = null;
-              Comparator<BytesRef> termComp = terms.getComparator();
               BytesRef term = null;
               while ((term = termsEnum.next()) != null) {
-                tfvComputedTermCountForField++;
                 
-                // make sure terms arrive in order according to
-                // the comp
-                if (lastTerm == null) {
-                  lastTerm = BytesRef.deepCopyOf(term);
-                } else {
-                  if (termComp.compare(lastTerm, term) >= 0) {
-                    throw new RuntimeException("vector terms out of order for doc " + j + ": lastTerm=" + lastTerm + " term=" + term);
-                  }
-                  lastTerm.copyBytes(term);
-                }
-                
-                if (termsEnum.docFreq() != 1) {
-                  throw new RuntimeException("vector docFreq for doc " + j + ", field " + field + ", term" + term + " != 1");
-                }
-                
-                long totalTermFreq = termsEnum.totalTermFreq();
-                
-                if (totalTermFreq != -1 && totalTermFreq <= 0) {
-                  throw new RuntimeException("totalTermFreq: " + totalTermFreq + " is out of bounds");
-                }
-
                 final boolean hasPositions;
                 final boolean hasOffsets;
                 final boolean hasFreqs;
@@ -1455,7 +1452,7 @@ public class CheckIndex {
                   }
                 } else {
                   hasOffsets = true;
-                  // NOTE: may be a lie... but we accept -1 below
+                  // NOTE: may be a lie... but we accept -1
                   hasPositions = true;
                   hasFreqs = true;
                 }
@@ -1471,24 +1468,20 @@ public class CheckIndex {
 
                 final DocsEnum postingsDocs2;
                 final boolean postingsHasFreq;
-                if (crossCheckTermVectors) {
-                  if (!postingsTermsEnum.seekExact(term, true)) {
-                    throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
-                  }
-                  postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings, true);
+                if (!postingsTermsEnum.seekExact(term, true)) {
+                  throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
+                }
+                postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings, true);
+                if (postingsPostings == null) {
+                  // Term vectors were indexed w/ offsets but postings were not
+                  postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings, false);
                   if (postingsPostings == null) {
-                    // Term vectors were indexed w/ offsets but postings were not
-                    postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings, false);
-                    if (postingsPostings == null) {
-                      postingsDocs = postingsTermsEnum.docs(null, postingsDocs, true);
+                    postingsDocs = postingsTermsEnum.docs(null, postingsDocs, true);
+                    if (postingsDocs == null) {
+                      postingsHasFreq = false;
+                      postingsDocs = postingsTermsEnum.docs(null, postingsDocs, false);
                       if (postingsDocs == null) {
-                        postingsHasFreq = false;
-                        postingsDocs = postingsTermsEnum.docs(null, postingsDocs, false);
-                        if (postingsDocs == null) {
-                          throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
-                        }
-                      } else {
-                        postingsHasFreq = true;
+                        throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                       }
                     } else {
                       postingsHasFreq = true;
@@ -1496,20 +1489,19 @@ public class CheckIndex {
                   } else {
                     postingsHasFreq = true;
                   }
-
-                  if (postingsPostings != null) {
-                    postingsDocs2 = postingsPostings;
-                  } else {
-                    postingsDocs2 = postingsDocs;
-                  }
-                  
-                  final int advanceDoc = postingsDocs2.advance(j);
-                  if (advanceDoc != j) {
-                    throw new RuntimeException("vector term=" + term + " field=" + field + ": doc=" + j + " was not found in postings (got: " + advanceDoc + ")");
-                  }
                 } else {
-                  postingsDocs2 = null;
-                  postingsHasFreq = false;
+                  postingsHasFreq = true;
+                }
+
+                if (postingsPostings != null) {
+                  postingsDocs2 = postingsPostings;
+                } else {
+                  postingsDocs2 = postingsDocs;
+                }
+                  
+                final int advanceDoc = postingsDocs2.advance(j);
+                if (advanceDoc != j) {
+                  throw new RuntimeException("vector term=" + term + " field=" + field + ": doc=" + j + " was not found in postings (got: " + advanceDoc + ")");
                 }
 
                 final int doc = docs2.nextDoc();
@@ -1520,36 +1512,14 @@ public class CheckIndex {
 
                 if (hasFreqs) {
                   final int tf = docs2.freq();
-                  if (tf <= 0) {
-                    throw new RuntimeException("vector freq " + tf + " is out of bounds");
+                  if (postingsHasFreq && postingsDocs2.freq() != tf) {
+                    throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());
                   }
-                  if (totalTermFreq != -1 && totalTermFreq != tf) {
-                    throw new RuntimeException("vector totalTermFreq " + totalTermFreq + " != tf " + tf);
-                  }
-                  if (crossCheckTermVectors && postingsHasFreq) {
-                    if (postingsDocs2.freq() != tf) {
-                      throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());
-                    }
-                  }
-                  tfvComputedSumTotalTermFreq += tf;
                 
                   if (hasPositions || hasOffsets) {
-                    int lastPosition = -1;
-                    //int lastStartOffset = -1;
                     for (int i = 0; i < tf; i++) {
                       int pos = postings.nextPosition();
-                      if (hasPositions) {
-                        if (pos != -1 && pos < 0) {
-                          throw new RuntimeException("vector position " + pos + " is out of bounds");
-                        }
-                        if (pos < lastPosition) {
-                          throw new RuntimeException("vector position " + pos + " < lastPos " + lastPosition);
-                        }
-                    
-                        lastPosition = pos;
-                      }
-
-                      if (crossCheckTermVectors && postingsPostings != null) {
+                      if (postingsPostings != null) {
                         int postingsPos = postingsPostings.nextPosition();
                         if (pos != -1 && postingsPos != -1 && pos != postingsPos) {
                           throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": pos=" + pos + " differs from postings pos=" + postingsPos);
@@ -1563,16 +1533,16 @@ public class CheckIndex {
                         final int endOffset = postings.endOffset();
                         // TODO: these are too anal...?
                         /*
-                        if (endOffset < startOffset) {
+                          if (endOffset < startOffset) {
                           throw new RuntimeException("vector startOffset=" + startOffset + " is > endOffset=" + endOffset);
-                        }
-                        if (startOffset < lastStartOffset) {
+                          }
+                          if (startOffset < lastStartOffset) {
                           throw new RuntimeException("vector startOffset=" + startOffset + " is < prior startOffset=" + lastStartOffset);
-                        }
-                        lastStartOffset = startOffset;
+                          }
+                          lastStartOffset = startOffset;
                         */
 
-                        if (crossCheckTermVectors && postingsPostings != null) {
+                        if (postingsPostings != null) {
                           final int postingsStartOffset = postingsPostings.startOffset();
 
                           final int postingsEndOffset = postingsPostings.endOffset();
@@ -1587,48 +1557,11 @@ public class CheckIndex {
                     }
                   }
                 }
-                  
-                if (docs2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-                  throw new RuntimeException("vector for doc " + j + " references multiple documents!");
-                }
               }
-              
-              long uniqueTermCount = terms.getUniqueTermCount();
-              if (uniqueTermCount != -1 && uniqueTermCount != tfvComputedTermCountForField) {
-                throw new RuntimeException("vector term count for doc " + j + ", field " + field + " = " + uniqueTermCount + " != recomputed term count=" + tfvComputedTermCountForField);
-              }
-              
-              int docCount = terms.getDocCount();
-              if (docCount != -1 && docCount != 1) {
-                throw new RuntimeException("vector doc count for doc " + j + ", field " + field + " = " + docCount + " != 1");
-              }
-              
-              long sumDocFreq = terms.getSumDocFreq();
-              if (sumDocFreq != -1 && sumDocFreq != tfvComputedTermCountForField) {
-                throw new RuntimeException("vector postings count for doc " + j + ", field " + field + " = " + sumDocFreq + " != recomputed postings count=" + tfvComputedTermCountForField);
-              }
-              
-              long sumTotalTermFreq = terms.getSumTotalTermFreq();
-              if (sumTotalTermFreq != -1 && sumTotalTermFreq != tfvComputedSumTotalTermFreq) {
-                throw new RuntimeException("vector sumTotalTermFreq for doc " + j + ", field " + field + " = " + sumTotalTermFreq + " != recomputed sumTotalTermFreq=" + tfvComputedSumTotalTermFreq);
-              }
-              
-              tfvComputedTermCount += tfvComputedTermCountForField;
-            }
-            
-            int tfvUniqueFieldCount = tfv.getUniqueFieldCount();
-            if (tfvUniqueFieldCount != -1 && tfvUniqueFieldCount != tfvComputedFieldCount) {
-              throw new RuntimeException("vector field count for doc " + j + "=" + tfvUniqueFieldCount + " != recomputed uniqueFieldCount=" + tfvComputedFieldCount);
-            }
-            
-            long tfvUniqueTermCount = tfv.getUniqueTermCount();
-            if (tfvUniqueTermCount != -1 && tfvUniqueTermCount != tfvComputedTermCount) {
-              throw new RuntimeException("vector term count for doc " + j + "=" + tfvUniqueTermCount + " != recomputed uniqueTermCount=" + tfvComputedTermCount);
             }
           }
         }
       }
-      
       msg("OK [" + status.totVectors + " total vector count; avg " + 
           format.format((((float) status.totVectors) / status.docCount)) + " term/freq vector fields per doc]");
     } catch (Throwable e) {
