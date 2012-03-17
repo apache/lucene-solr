@@ -130,9 +130,9 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
           }
           log.debug(document.toString());
         } catch (MalformedURLException e) {
-          e.printStackTrace();
+          log.warn("cannot get the normalized url for \"" + url + "\" due to " + e.getMessage());
         } catch (URISyntaxException e) {
-          e.printStackTrace();
+          log.warn("cannot get the normalized url for \"" + url + "\" due to " + e.getMessage());
         }
       }
     }
