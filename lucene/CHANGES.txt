@@ -783,6 +783,10 @@ Changes in backwards compatibility policy
   now count to memory usage as any other Java object.
   (Dawid Weiss, Uwe Schindler, Shai Erera)
   
+* LUCENE-3738: All readXxx methods in BufferedIndexInput were made
+  final. Subclasses should only override protected readInternal /
+  seekInternal.  (Uwe Schindler)
+  
 Changes in Runtime Behavior
 
 * LUCENE-3796, SOLR-3241: Throw an exception if you try to set an index-time
