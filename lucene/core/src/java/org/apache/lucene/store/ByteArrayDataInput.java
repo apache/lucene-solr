@@ -17,6 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.BytesRef;
 
 /** @lucene.experimental */
@@ -103,25 +105,66 @@ public final class ByteArrayDataInput extends DataInput {
     assert checkBounds();
     byte b = bytes[pos++];
     int i = b & 0x7F;
-    for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-      assert checkBounds();
-      b = bytes[pos++];
-      i |= (b & 0x7F) << shift;
-    }
-    return i;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7F) << 7;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7F) << 14;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7F) << 21;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
+    i |= (b & 0x0F) << 28;
+    if ((b & 0xF0) == 0) return i;
+    throw new RuntimeException("Invalid vInt detected (too many bits)");
   }
  
   @Override
   public long readVLong() {
     assert checkBounds();
     byte b = bytes[pos++];
-    long i = b & 0x7F;
-    for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-      assert checkBounds();
-      b = bytes[pos++];
-      i |= (b & 0x7FL) << shift;
-    }
-    return i;
+    long i = b & 0x7FL;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7FL) << 7;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7FL) << 14;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7FL) << 21;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7FL) << 28;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7FL) << 35;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7FL) << 42;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7FL) << 49;
+    if ((b & 0x80) == 0) return i;
+    assert checkBounds();
+    b = bytes[pos++];
+    i |= (b & 0x7FL) << 56;
+    if ((b & 0x80) == 0) return i;
+    throw new RuntimeException("Invalid vLong detected (negative values disallowed)");
   }
 
   // NOTE: AIOOBE not EOF if you read too much

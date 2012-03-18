@@ -106,8 +106,10 @@ public abstract class DataInput implements Cloneable {
     i |= (b & 0x7F) << 21;
     if ((b & 0x80) == 0) return i;
     b = readByte();
-    assert (b & 0x80) == 0;
-    return i | ((b & 0x7F) << 28);
+    // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
+    i |= (b & 0x0F) << 28;
+    if ((b & 0xF0) == 0) return i;
+    throw new IOException("Invalid vInt detected (too many bits)");
   }
 
   /** Reads eight bytes and returns a long.
@@ -157,8 +159,9 @@ public abstract class DataInput implements Cloneable {
     i |= (b & 0x7FL) << 49;
     if ((b & 0x80) == 0) return i;
     b = readByte();
-    assert (b & 0x80) == 0;
-    return i | ((b & 0x7FL) << 56);
+    i |= (b & 0x7FL) << 56;
+    if ((b & 0x80) == 0) return i;
+    throw new IOException("Invalid vLong detected (negative values disallowed)");
   }
 
   /** Reads a string.

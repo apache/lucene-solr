@@ -796,6 +796,12 @@ Changes in Runtime Behavior
   still check for and silently correct this situation today, but at some point 
   in the future they may throw an exception.  (Mike McCandless, Robert Muir)
   
+* LUCENE-3738: DataInput/DataOutput no longer allow negative vLongs.
+  vInts are still supported (for index backwards compatibility), but
+  should not be used in new code. The read method for negative vLongs
+  was already broken since Lucene 3.1.
+  (Uwe Schindler, Mike McCandless, Robert Muir)
+  
 Security fixes
 
 * LUCENE-3588: Try harder to prevent SIGSEGV on cloned MMapIndexInputs:

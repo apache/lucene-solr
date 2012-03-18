@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
@@ -32,6 +34,7 @@ public class TestIndexInput extends LuceneTestCase {
     (byte) 0x80, (byte) 0x80, 0x01,
     (byte) 0x81, (byte) 0x80, 0x01,
     (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0x07,
+    (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0x0F,
     (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0x07,
     (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0x7F,
     0x06, 'L', 'u', 'c', 'e', 'n', 'e',
@@ -63,14 +66,21 @@ public class TestIndexInput extends LuceneTestCase {
     // null bytes
     0x01, 0x00,
     0x08, 'L', 'u', 0x00, 'c', 'e', 0x00, 'n', 'e',
+    
+    // tests for Exceptions on invalid values
+    (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0x17,
+    (byte) 0x01, // guard value
+    (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
+    (byte) 0x01, // guard value
   };
   
-  private void checkReads(IndexInput is) throws IOException {
+  private void checkReads(DataInput is, Class<? extends Exception> expectedEx) throws IOException {
     assertEquals(128,is.readVInt());
     assertEquals(16383,is.readVInt());
     assertEquals(16384,is.readVInt());
     assertEquals(16385,is.readVInt());
     assertEquals(Integer.MAX_VALUE, is.readVInt());
+    assertEquals(-1, is.readVInt());
     assertEquals((long) Integer.MAX_VALUE, is.readVLong());
     assertEquals(Long.MAX_VALUE, is.readVLong());
     assertEquals("Lucene",is.readString());
@@ -87,12 +97,30 @@ public class TestIndexInput extends LuceneTestCase {
     
     assertEquals("\u0000",is.readString());
     assertEquals("Lu\u0000ce\u0000ne",is.readString());
+    
+    try {
+      is.readVInt();
+      fail("Should throw " + expectedEx.getName());
+    } catch (Exception e) {
+      assertTrue(e.getMessage().startsWith("Invalid vInt"));
+      assertTrue(expectedEx.isInstance(e));
+    }
+    assertEquals(1, is.readVInt()); // guard value
+    
+    try {
+      is.readVLong();
+      fail("Should throw " + expectedEx.getName());
+    } catch (Exception e) {
+      assertTrue(e.getMessage().startsWith("Invalid vLong"));
+      assertTrue(expectedEx.isInstance(e));
+    }
+    assertEquals(1L, is.readVLong()); // guard value
   }
 
   // this test only checks BufferedIndexInput because MockIndexInput extends BufferedIndexInput
   public void testBufferedIndexInputRead() throws IOException {
     final IndexInput is = new MockIndexInput(READ_TEST_BYTES);
-    checkReads(is);
+    checkReads(is, IOException.class);
     is.close();
   }
 
@@ -103,9 +131,14 @@ public class TestIndexInput extends LuceneTestCase {
     os.writeBytes(READ_TEST_BYTES, READ_TEST_BYTES.length);
     os.close();
     final IndexInput is = dir.openInput("foo", newIOContext(random));
-    checkReads(is);
+    checkReads(is, IOException.class);
     is.close();
     dir.close();
+  }
+
+  public void testByteArrayDataInput() throws IOException {
+    final ByteArrayDataInput is = new ByteArrayDataInput(READ_TEST_BYTES);
+    checkReads(is, RuntimeException.class);
   }
 
 }

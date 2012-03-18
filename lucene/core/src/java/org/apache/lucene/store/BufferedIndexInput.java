@@ -46,7 +46,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   private int bufferPosition = 0;		  // next byte to read
 
   @Override
-  public byte readByte() throws IOException {
+  public final byte readByte() throws IOException {
     if (bufferPosition >= bufferLength)
       refill();
     return buffer[bufferPosition++];
@@ -68,7 +68,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
 
   /** Change the buffer size used by this IndexInput */
-  public void setBufferSize(int newSize) {
+  public final void setBufferSize(int newSize) {
     assert buffer == null || bufferSize == buffer.length: "buffer=" + buffer + " bufferSize=" + bufferSize + " buffer.length=" + (buffer != null ? buffer.length : 0);
     if (newSize != bufferSize) {
       checkBufferSize(newSize);
@@ -99,7 +99,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
 
   /** Returns buffer size.  @see #setBufferSize */
-  public int getBufferSize() {
+  public final int getBufferSize() {
     return bufferSize;
   }
 
@@ -109,12 +109,12 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
 
   @Override
-  public void readBytes(byte[] b, int offset, int len) throws IOException {
+  public final void readBytes(byte[] b, int offset, int len) throws IOException {
     readBytes(b, offset, len, true);
   }
 
   @Override
-  public void readBytes(byte[] b, int offset, int len, boolean useBuffer) throws IOException {
+  public final void readBytes(byte[] b, int offset, int len, boolean useBuffer) throws IOException {
 
     if(len <= (bufferLength-bufferPosition)){
       // the buffer contains enough data to satisfy this request
@@ -164,7 +164,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
 
   @Override
-  public short readShort() throws IOException {
+  public final short readShort() throws IOException {
     if (2 <= (bufferLength-bufferPosition)) {
       return (short) (((buffer[bufferPosition++] & 0xFF) <<  8) |  (buffer[bufferPosition++] & 0xFF));
     } else {
@@ -173,7 +173,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
   
   @Override
-  public int readInt() throws IOException {
+  public final int readInt() throws IOException {
     if (4 <= (bufferLength-bufferPosition)) {
       return ((buffer[bufferPosition++] & 0xFF) << 24) | ((buffer[bufferPosition++] & 0xFF) << 16)
         | ((buffer[bufferPosition++] & 0xFF) <<  8) |  (buffer[bufferPosition++] & 0xFF);
@@ -183,7 +183,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
   
   @Override
-  public long readLong() throws IOException {
+  public final long readLong() throws IOException {
     if (8 <= (bufferLength-bufferPosition)) {
       final int i1 = ((buffer[bufferPosition++] & 0xff) << 24) | ((buffer[bufferPosition++] & 0xff) << 16) |
         ((buffer[bufferPosition++] & 0xff) << 8) | (buffer[bufferPosition++] & 0xff);
@@ -196,30 +196,61 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
 
   @Override
-  public int readVInt() throws IOException {
+  public final int readVInt() throws IOException {
     if (5 <= (bufferLength-bufferPosition)) {
       byte b = buffer[bufferPosition++];
       int i = b & 0x7F;
-      for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-        b = buffer[bufferPosition++];
-        i |= (b & 0x7F) << shift;
-      }
-      return i;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7F) << 7;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7F) << 14;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7F) << 21;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
+      i |= (b & 0x0F) << 28;
+      if ((b & 0xF0) == 0) return i;
+      throw new IOException("Invalid vInt detected (too many bits)");
     } else {
       return super.readVInt();
     }
   }
   
   @Override
-  public long readVLong() throws IOException {
+  public final long readVLong() throws IOException {
     if (9 <= bufferLength-bufferPosition) {
       byte b = buffer[bufferPosition++];
-      long i = b & 0x7F;
-      for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-        b = buffer[bufferPosition++];
-        i |= (b & 0x7FL) << shift;
-      }
-      return i;
+      long i = b & 0x7FL;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 7;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 14;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 21;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 28;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 35;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 42;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 49;
+      if ((b & 0x80) == 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 56;
+      if ((b & 0x80) == 0) return i;
+      throw new IOException("Invalid vLong detected (negative values disallowed)");
     } else {
       return super.readVLong();
     }
@@ -254,10 +285,10 @@ public abstract class BufferedIndexInput extends IndexInput {
           throws IOException;
 
   @Override
-  public long getFilePointer() { return bufferStart + bufferPosition; }
+  public final long getFilePointer() { return bufferStart + bufferPosition; }
 
   @Override
-  public void seek(long pos) throws IOException {
+  public final void seek(long pos) throws IOException {
     if (pos >= bufferStart && pos < (bufferStart + bufferLength))
       bufferPosition = (int)(pos - bufferStart);  // seek within buffer
     else {
@@ -295,7 +326,7 @@ public abstract class BufferedIndexInput extends IndexInput {
    * 
    * @return the number of bytes actually flushed from the in-memory buffer.
    */
-  protected int flushBuffer(IndexOutput out, long numBytes) throws IOException {
+  protected final int flushBuffer(IndexOutput out, long numBytes) throws IOException {
     int toCopy = bufferLength - bufferPosition;
     if (toCopy > numBytes) {
       toCopy = (int) numBytes;
