@@ -631,22 +631,16 @@ public interface FieldCache {
     protected final void setEstimatedSize(String size) {
       this.size = size;
     }
-    /** 
-     * @see #estimateSize(RamUsageEstimator)
-     */
-    public void estimateSize() {
-      estimateSize(new RamUsageEstimator(false)); // doesn't check for interned
-    }
+
     /** 
      * Computes (and stores) the estimated size of the cache Value 
      * @see #getEstimatedSize
      */
-    public void estimateSize(RamUsageEstimator ramCalc) {
-      long size = ramCalc.estimateRamUsage(getValue());
-      setEstimatedSize(RamUsageEstimator.humanReadableUnits
-                       (size, new DecimalFormat("0.#")));
-                        
+    public void estimateSize() {
+      long size = RamUsageEstimator.sizeOf(getValue());
+      setEstimatedSize(RamUsageEstimator.humanReadableUnits(size));
     }
+
     /**
      * The most recently estimated size of the value, null unless 
      * estimateSize has been called.

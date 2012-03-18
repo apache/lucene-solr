@@ -207,8 +207,7 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
   }
 
   public long ramBytesUsed() {
-    return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
-            + blocks.length * RamUsageEstimator.NUM_BYTES_LONG;
+    return RamUsageEstimator.sizeOf(blocks);
   }
 
   public void clear() {

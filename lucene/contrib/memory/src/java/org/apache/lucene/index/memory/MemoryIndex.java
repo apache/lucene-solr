@@ -59,6 +59,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants; // for javadocs
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -473,39 +474,12 @@ public class MemoryIndex {
   
   /**
    * Returns a reasonable approximation of the main memory [bytes] consumed by
-   * this instance. Useful for smart memory sensititive caches/pools. Assumes
-   * fieldNames are interned, whereas tokenized terms are memory-overlaid.
-   * 
+   * this instance. Useful for smart memory sensititive caches/pools.
    * @return the main memory consumption
    */
-  public int getMemorySize() {
-    // for example usage in a smart cache see nux.xom.pool.Pool    
-    int PTR = VM.PTR;
-    int INT = VM.INT;
-    int size = 0;
-    size += VM.sizeOfObject(2*PTR + INT); // memory index
-    if (sortedFields != null) size += VM.sizeOfObjectArray(sortedFields.length);
-    
-    size += VM.sizeOfHashMap(fields.size());
-    for (Map.Entry<String, Info> entry : fields.entrySet()) { // for each Field Info
-      Info info = entry.getValue();
-      size += VM.sizeOfObject(2*INT + 3*PTR); // Info instance vars
-      if (info.sortedTerms != null) size += VM.sizeOfObjectArray(info.sortedTerms.length);
-      
-      int len = info.terms.size();
-      size += VM.sizeOfHashMap(len);
-      Iterator<Map.Entry<BytesRef,ArrayIntList>> iter2 = info.terms.entrySet().iterator();
-      while (--len >= 0) { // for each term
-        Map.Entry<BytesRef,ArrayIntList> e = iter2.next();
-        // FIXME: this calculation is probably not correct since we use bytes now.
-        size += VM.sizeOfObject(PTR + 3*INT); // assumes substring() memory overlay
-//        size += STR + 2 * ((String) e.getKey()).length();
-        ArrayIntList positions = e.getValue();
-        size += VM.sizeOfArrayIntList(positions.size());
-      }
-    }
-    return size;
-  } 
+  public long getMemorySize() {
+    return RamUsageEstimator.sizeOf(this);
+  }
 
   private int numPositions(ArrayIntList positions) {
     return positions.size() / stride;
@@ -1126,61 +1100,4 @@ public class MemoryIndex {
       return norms;
     }
   }
-
-  
-  ///////////////////////////////////////////////////////////////////////////////
-  // Nested classes:
-  ///////////////////////////////////////////////////////////////////////////////
-  private static final class VM {
-        
-    public static final int PTR = Constants.JRE_IS_64BIT ? 8 : 4;    
-
-    public static final int INT = 4;
-    private static final int LOG_PTR = (int) Math.round(log2(PTR));
-    
-    /**
-     * Object header of any heap allocated Java object. 
-     * ptr to class, info for monitor, gc, hash, etc.
-     */
-    private static final int OBJECT_HEADER = 2*PTR; 
-
-    private VM() {} // not instantiable
-
-    //  assumes n > 0
-    //  64 bit VM:
-    //    0     --> 0*PTR
-    //    1..8  --> 1*PTR
-    //    9..16 --> 2*PTR
-    private static int sizeOf(int n) {
-        return (((n-1) >> LOG_PTR) + 1) << LOG_PTR;
-    }
-    
-    public static int sizeOfObject(int n) {
-        return sizeOf(OBJECT_HEADER + n);        
-    }
-    
-    public static int sizeOfObjectArray(int len) {
-        return sizeOfObject(INT + PTR*len);        
-    }
-    
-    public static int sizeOfIntArray(int len) {
-        return sizeOfObject(INT + INT*len);        
-    }
-    
-    public static int sizeOfHashMap(int len) {
-        return sizeOfObject(4*PTR + 4*INT) + sizeOfObjectArray(len) 
-            + len * sizeOfObject(3*PTR + INT); // entries
-    }
-    
-    public static int sizeOfArrayIntList(int len) {
-        return sizeOfObject(PTR + INT) + sizeOfIntArray(len);
-    }
-    
-    /** logarithm to the base 2. Example: log2(4) == 2, log2(8) == 3 */
-    private static double log2(double value) {
-      return Math.log(value) / Math.log(2);
-    }
-        
-  }
-
 }

@@ -52,16 +52,17 @@ import org.apache.lucene.search.FieldCache.CacheEntry;
  */
 public final class FieldCacheSanityChecker {
 
-  private RamUsageEstimator ramCalc = null;
+  private boolean estimateRam;
+
   public FieldCacheSanityChecker() {
     /* NOOP */
   }
+
   /**
-   * If set, will be used to estimate size for all CacheEntry objects 
-   * dealt with.
+   * If set, estimate size for all CacheEntry objects will be calculateed.
    */
-  public void setRamUsageEstimator(RamUsageEstimator r) {
-    ramCalc = r;
+  public void setRamUsageEstimator(boolean flag) {
+    estimateRam = flag;
   }
 
 
@@ -80,8 +81,7 @@ public final class FieldCacheSanityChecker {
    */
   public static Insanity[] checkSanity(CacheEntry... cacheEntries) {
     FieldCacheSanityChecker sanityChecker = new FieldCacheSanityChecker();
-    // doesn't check for interned
-    sanityChecker.setRamUsageEstimator(new RamUsageEstimator(false));
+    sanityChecker.setRamUsageEstimator(true);
     return sanityChecker.check(cacheEntries);
   }
 
@@ -97,9 +97,9 @@ public final class FieldCacheSanityChecker {
     if (null == cacheEntries || 0 == cacheEntries.length) 
       return new Insanity[0];
 
-    if (null != ramCalc) {
+    if (estimateRam) {
       for (int i = 0; i < cacheEntries.length; i++) {
-        cacheEntries[i].estimateSize(ramCalc);
+        cacheEntries[i].estimateSize();
       }
     }
 
