@@ -222,7 +222,6 @@ class Packed32 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
   }
 
   public long ramBytesUsed() {
-    return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
-            + blocks.length * RamUsageEstimator.NUM_BYTES_INT;
+    return RamUsageEstimator.sizeOf(blocks);
   }
 }

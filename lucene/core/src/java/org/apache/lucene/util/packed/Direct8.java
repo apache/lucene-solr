@@ -79,7 +79,7 @@ class Direct8 extends PackedInts.ReaderImpl
   }
 
   public long ramBytesUsed() {
-    return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + values.length;
+    return RamUsageEstimator.sizeOf(values);
   }
 
   public void clear() {

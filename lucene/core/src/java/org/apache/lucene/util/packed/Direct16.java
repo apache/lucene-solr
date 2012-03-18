@@ -78,8 +78,7 @@ class Direct16 extends PackedInts.ReaderImpl
   }
 
   public long ramBytesUsed() {
-    return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER +
-            values.length * RamUsageEstimator.NUM_BYTES_SHORT;
+    return RamUsageEstimator.sizeOf(values);
   }
 
   public void clear() {
