@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.standard;
+package org.apache.lucene.analysis.standard.std34;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,33 +17,25 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
+import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
- * This class implements Word Break rules from the Unicode Text Segmentation 
- * algorithm, as specified in 
- * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a> 
- * URLs and email addresses are also tokenized according to the relevant RFCs.
- * <p/>
- * Tokens produced are of the following types:
- * <ul>
- *   <li>&lt;ALPHANUM&gt;: A sequence of alphabetic and numeric characters</li>
- *   <li>&lt;NUM&gt;: A number</li>
- *   <li>&lt;URL&gt;: A URL</li>
- *   <li>&lt;EMAIL&gt;: An email address</li>
- *   <li>&lt;SOUTHEAST_ASIAN&gt;: A sequence of characters from South and Southeast
- *       Asian languages, including Thai, Lao, Myanmar, and Khmer</li>
- *   <li>&lt;IDEOGRAPHIC&gt;: A single CJKV ideographic character</li>
- *   <li>&lt;HIRAGANA&gt;: A single hiragana character</li>
- * </ul>
+ * This class implements UAX29URLEmailTokenizer, except with a bug
+ * (https://issues.apache.org/jira/browse/LUCENE-3880) where "mailto:"
+ * URI scheme prepended to an email address will disrupt recognition
+ * of the email address.
+ * @deprecated This class is only for exact backwards compatibility
  */
+ @Deprecated
 %%
 
 %unicode 6.0
 %integer
 %final
 %public
-%class UAX29URLEmailTokenizerImpl
+%class UAX29URLEmailTokenizerImpl34
 %implements StandardTokenizerInterface
 %function getNextToken
 %char
@@ -205,10 +197,6 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 <<EOF>> { return StandardTokenizerInterface.YYEOF; }
 
 {URL}   { return URL_TYPE; }
-
-// LUCENE-3880: Disrupt recognition of "mailto:test" as <ALPHANUM> from "mailto:test@example.org"
-[mM][aA][iI][lL][tT][oO] / ":" {EMAIL} { return WORD_TYPE; }
-
 {EMAIL} { return EMAIL_TYPE; }
 
 // UAX#29 WB8.   Numeric × Numeric
