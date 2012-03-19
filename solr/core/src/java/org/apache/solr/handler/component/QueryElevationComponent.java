@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -234,9 +233,17 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
               "QueryElevationComponent must specify argument: " + CONFIG_FILE);
         }
         log.info("Loading QueryElevation from data dir: " + f);
-
-        InputStream is = VersionedFile.getLatestFile(core.getDataDir(), f);
-        Config cfg = new Config(core.getResourceLoader(), f, new InputSource(is), null);
+        
+        Config cfg;
+        
+        ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
+        if (zkController != null) {
+          cfg = new Config(core.getResourceLoader(), f, null, null);
+        } else {
+          InputStream is = VersionedFile.getLatestFile(core.getDataDir(), f);
+          cfg = new Config(core.getResourceLoader(), f, new InputSource(is), null);
+        }
+  
         map = loadElevationMap(cfg);
         elevationCache.put(reader, map);
       }
@@ -392,7 +399,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       SortSpec sortSpec = rb.getSortSpec();
       if (sortSpec.getSort() == null) {
         sortSpec.setSort(new Sort(new SortField[]{
-            new SortField(idField, comparator, false),
+            new SortField("_elevate_", comparator, true),
             new SortField(null, SortField.Type.SCORE, false)
         }));
       } else {
@@ -402,12 +409,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         ArrayList<SortField> sorts = new ArrayList<SortField>(current.length + 1);
         // Perhaps force it to always sort by score
         if (force && current[0].getType() != SortField.Type.SCORE) {
-          sorts.add(new SortField(idField, comparator, false));
+          sorts.add(new SortField("_elevate_", comparator, true));
           modify = true;
         }
         for (SortField sf : current) {
           if (sf.getType() == SortField.Type.SCORE) {
-            sorts.add(new SortField(idField, comparator, sf.getReverse()));
+            sorts.add(new SortField("_elevate_", comparator, !sf.getReverse()));
             modify = true;
           }
           sorts.add(sf);
@@ -491,7 +498,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   @Override
-  public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
+  public FieldComparator<Integer> newComparator(String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
     return new FieldComparator<Integer>() {
       private final int[] values = new int[numHits];
       private int bottomVal;
@@ -501,7 +508,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
       @Override
       public int compare(int slot1, int slot2) {
-        return values[slot2] - values[slot1];  // values will be small enough that there is no overflow concern
+        return values[slot1] - values[slot2];  // values will be small enough that there is no overflow concern
       }
 
       @Override
@@ -523,7 +530,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
       @Override
       public int compareBottom(int doc) throws IOException {
-        return docVal(doc) - bottomVal;
+        return bottomVal - docVal(doc);
       }
 
       @Override
@@ -537,7 +544,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         ordSet.clear();
         Fields fields = context.reader().fields();
         if (fields == null) return this;
-        Terms terms = fields.terms(fieldname);
+        Terms terms = fields.terms(idField);
         if (terms == null) return this;
         termsEnum = terms.iterator(termsEnum);
         BytesRef term = new BytesRef();

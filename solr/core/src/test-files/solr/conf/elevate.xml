@@ -42,5 +42,8 @@
   <doc id="6" exclude="true" />
  </query>
 
+ <query text="solr">
+  <doc id="7" />
+ </query>
 
 </elevate>

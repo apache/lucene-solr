@@ -157,7 +157,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       req.close();
 
       // Make sure the boosts loaded properly
-      assertEquals(5, map.size());
+      assertEquals(6, map.size());
       assertEquals(1, map.get("XXXX").priority.size());
       assertEquals(2, map.get("YYYY").priority.size());
       assertEquals(3, map.get("ZZZZ").priority.size());
@@ -174,7 +174,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       comp.init(args);
       comp.inform(core);
       map = comp.getElevationMap(reader, core);
-      assertEquals(5, map.size());
+      assertEquals(6, map.size());
       assertEquals(null, map.get("XXXX"));
       assertEquals(null, map.get("YYYY"));
       assertEquals(null, map.get("ZZZZ"));
