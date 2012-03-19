@@ -234,6 +234,10 @@ New Features
 
 * SOLR-2898: Support grouped faceting. (Martijn van Groningen)
 
+* SOLR-2949: QueryElevationComponent is now supported with distributed search.
+  (Mark Miller, yonik)
+
+
 Optimizations
 ----------------------
 
