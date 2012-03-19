@@ -512,7 +512,6 @@ public class MemoryIndex implements Serializable {
   public String toString() {
     StringBuilder result = new StringBuilder(256);    
     sortFields();   
-    int sumChars = 0;
     int sumPositions = 0;
     int sumTerms = 0;
     
@@ -523,7 +522,6 @@ public class MemoryIndex implements Serializable {
       info.sortTerms();
       result.append(fieldName + ":\n");
       
-      int numChars = 0;
       int numPositions = 0;
       for (int j=0; j < info.sortedTerms.length; j++) {
         Map.Entry<String,ArrayIntList> e = info.sortedTerms[j];
@@ -533,22 +531,20 @@ public class MemoryIndex implements Serializable {
         result.append(positions.toString(stride)); // ignore offsets
         result.append("\n");
         numPositions += numPositions(positions);
-        numChars += term.length();
       }
       
       result.append("\tterms=" + info.sortedTerms.length);
       result.append(", positions=" + numPositions);
-      result.append(", Kchars=" + (numChars/1000.0f));
+      result.append(", memory=" + RamUsageEstimator.humanReadableUnits(RamUsageEstimator.sizeOf(info)));
       result.append("\n");
       sumPositions += numPositions;
-      sumChars += numChars;
       sumTerms += info.sortedTerms.length;
     }
     
     result.append("\nfields=" + sortedFields.length);
     result.append(", terms=" + sumTerms);
     result.append(", positions=" + sumPositions);
-    result.append(", Kchars=" + (sumChars/1000.0f));
+    result.append(", memory=" + RamUsageEstimator.humanReadableUnits(getMemorySize()));
     return result.toString();
   }
   
