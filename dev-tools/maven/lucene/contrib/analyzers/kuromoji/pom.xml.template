@@ -27,7 +27,7 @@
     <relativePath>../../../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-analyzers-kuromoji</artifactId>
+  <artifactId>lucene-kuromoji</artifactId>
   <packaging>jar</packaging>
   <name>Lucene Kuromoji Japanese Morphological Analyzer</name>
   <description>
