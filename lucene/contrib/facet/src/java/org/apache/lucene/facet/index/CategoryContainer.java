@@ -11,7 +11,6 @@ import java.util.Set;
 
 import org.apache.lucene.util.Attribute;
 
-import org.apache.lucene.facet.FacetException;
 import org.apache.lucene.facet.index.attributes.CategoryAttribute;
 import org.apache.lucene.facet.index.attributes.CategoryAttributeImpl;
 import org.apache.lucene.facet.index.attributes.CategoryProperty;
@@ -93,13 +92,9 @@ public class CategoryContainer implements Iterable<CategoryAttribute>, Serializa
    * @param properties
    *            The properties to associate to the category.
    * @return The {@link CategoryAttribute} of the category.
-   * @throws FacetException
-   *             When the category already has a property of the same type as
-   *             one of the new properties, and merging for this property type
-   *             is prohibited.
    */
   public CategoryAttribute addCategory(CategoryPath categoryPath,
-      CategoryProperty... properties) throws FacetException {
+      CategoryProperty... properties) {
     CategoryAttribute ca = mapCategoryAttribute(categoryPath);
     for (CategoryProperty attribute : properties) {
       ca.addProperty(attribute);
@@ -114,10 +109,8 @@ public class CategoryContainer implements Iterable<CategoryAttribute>, Serializa
    *            The {@link CategoryAttribute} to add.
    * @return The {@link CategoryAttribute} of the category (could be different
    *         from the one provided).
-   * @throws FacetException
    */
-  public CategoryAttribute addCategory(CategoryAttribute categoryAttribute)
-  throws FacetException {
+  public CategoryAttribute addCategory(CategoryAttribute categoryAttribute) {
     CategoryAttribute ca = mapCategoryAttribute(categoryAttribute
         .getCategoryPath());
     Set<Class<? extends CategoryProperty>> propertyClasses = categoryAttribute
@@ -166,15 +159,8 @@ public class CategoryContainer implements Iterable<CategoryAttribute>, Serializa
     map.clear();
   }
 
-  /**
-   * Add the categories from another {@link CategoryContainer} to this one.
-   * 
-   * @param other
-   *            The {@link CategoryContainer} to take categories from.
-   * @throws FacetException
-   *             If any prohibited merge of category properties is attempted.
-   */
-  public void merge(CategoryContainer other) throws FacetException {
+  /** Add the categories from another {@link CategoryContainer} to this one. */
+  public void merge(CategoryContainer other) {
     for (CategoryAttribute categoryAttribute : other.map.values()) {
       addCategory(categoryAttribute);
     }
