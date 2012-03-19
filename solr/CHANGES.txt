@@ -473,8 +473,18 @@ Upgrading from Solr 3.5
 * SOLR-3040: The DIH's admin UI (dataimport.jsp) now requires DIH request handlers to start with
   a '/'. (dsmiley)
 
+* SOLR-3161: <requestDispatcher handleSelect="false"> is now the default. An existing config will
+  probably work as-is because handleSelect was explicitly enabled in default configs. HandleSelect
+  makes /select work as well as enables the 'qt' parameter. Instead, consider explicitly
+  configuring /select as is done in the example solrconfig.xml, and register your other search
+  handlers with a leading '/' which is a recommended practice.  (David Smiley, Erik Hatcher)
+
 New Features
 ----------------------
+* SOLR-2854: Now load URL content stream data (via stream.url) when called for during request handling,
+  rather than loading URL content streams automatically regardless of use.
+  (David Smiley and Ryan McKinley via ehatcher)
+
 * SOLR-2904: BinaryUpdateRequestHandler should be able to accept multiple update requests from
   a stream (shalin)
 
@@ -564,6 +574,12 @@ Bug Fixes
 ----------------------
 * SOLR-3187 SystemInfoHandler leaks filehandles (siren)
 
+* LUCENE-3820: Fixed invalid position indexes by reimplementing PatternReplaceCharFilter.
+  This change also drops real support for boundary characters -- all input is prebuffered
+  for pattern matching. (Dawid Weiss)
+
+* SOLR-3068: Fixed NPE in ThreadDumpHandler (siren)
+
 * SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
 
 * SOLR-2819: Improved speed of parsing hex entities in HTMLStripCharFilter
@@ -577,6 +593,11 @@ Bug Fixes
 
 * SOLR-2956: Fixed inconsistencies in the flags (and flag key) reported by 
   the LukeRequestHandler (hossman)
+
+* SOLR-1730: Made it clearer when a core failed to load as well as better logging when the
+  QueryElevationComponent fails to properly initialize (gsingers)
+
+* SOLR-1520: QueryElevationComponent now supports non-string ids (gsingers)
 
 * SOLR-3024: Fixed JSONTestUtil.matchObj, in previous releases it was not 
   respecting the 'delta' arg (David Smiley via hossman)
@@ -653,6 +674,8 @@ Bug Fixes
 * SOLR-3168: ReplicationHandler "numberToKeep" & "maxNumberOfBackups" parameters
   would keep only 1 backup, even if more than 1 was specified (Neil Hooey, James Dyer)
 
+* SOLR-3009: hitGrouped.vm isn't shipped with 3.x (ehatcher, janhoy)
+
 * SOLR-3195: timeAllowed is ignored for grouping queries
   (Russell Black via Martijn van Groningen)
 
@@ -684,11 +707,17 @@ Other Changes
 * SOLR-3097, SOLR-3105: Add analysis configurations for different languages to 
   the example.  (Christian Moen, Robert Muir)
 
+* SOLR-3005: Default QueryResponseWriters are now initialized via init() with an empty
+  NamedList. (Gasol Wu, Chris Male)
+
 * SOLR-3140: Upgrade schema version to 1.5, where omitNorms defaults to "true" for all
   primitive (non-analyzed) field types such as int, float, date, bool, string.. (janhoy)
 
 * SOLR-3077: Better error messages when attempting to use "blank" field names 
   (Antony Stubbs via hossman)
+
+* SOLR-2712: expecting fl=score to return all fields is now deprecated.
+  In solr 4.0, this will only return the score.  (ryan)
 
 
 Build
