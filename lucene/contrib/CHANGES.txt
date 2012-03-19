@@ -129,6 +129,10 @@ Changes in Runtime Behavior
 
  * LUCENE-3698: FastVectorHighlighter no longer adds a multi value separator
    to the end of the highlighted text. (Shay Banon via Koji Sekiguchi)
+   
+ * LUCENE-3867, LUCENE-3886: Use RAMUsageEstimator for memory estimations
+   in MemoryIndex. Because of more precise calculations, results may differ.
+   (Uwe Schindler)
 
 New Features
 

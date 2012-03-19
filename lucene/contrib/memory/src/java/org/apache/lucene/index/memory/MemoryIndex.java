@@ -514,7 +514,6 @@ public class MemoryIndex {
   public String toString() {
     StringBuilder result = new StringBuilder(256);    
     sortFields();   
-    int sumBytes = 0;
     int sumPositions = 0;
     int sumTerms = 0;
     
@@ -525,7 +524,6 @@ public class MemoryIndex {
       info.sortTerms();
       result.append(fieldName + ":\n");
       
-      int numBytes = 0;
       int numPositions = 0;
       for (int j=0; j < info.sortedTerms.length; j++) {
         Map.Entry<BytesRef,ArrayIntList> e = info.sortedTerms[j];
@@ -535,22 +533,20 @@ public class MemoryIndex {
         result.append(positions.toString(stride)); // ignore offsets
         result.append("\n");
         numPositions += numPositions(positions);
-        numBytes += term.length;
       }
       
       result.append("\tterms=" + info.sortedTerms.length);
       result.append(", positions=" + numPositions);
-      result.append(", Kbytes=" + (numBytes/1000.0f));
+      result.append(", memory=" + RamUsageEstimator.humanReadableUnits(RamUsageEstimator.sizeOf(info)));
       result.append("\n");
       sumPositions += numPositions;
-      sumBytes += numBytes;
       sumTerms += info.sortedTerms.length;
     }
     
     result.append("\nfields=" + sortedFields.length);
     result.append(", terms=" + sumTerms);
     result.append(", positions=" + sumPositions);
-    result.append(", Kbytes=" + (sumBytes/1000.0f));
+    result.append(", memory=" + RamUsageEstimator.humanReadableUnits(getMemorySize()));
     return result.toString();
   }
   

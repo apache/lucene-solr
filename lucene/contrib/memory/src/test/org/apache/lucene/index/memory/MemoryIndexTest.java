@@ -52,7 +52,9 @@ import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -119,7 +121,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       termField.append(randomTerm());
     }
     
-    Directory ramdir = newDirectory();
+    Directory ramdir = new RAMDirectory();
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
                                          new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())));
@@ -134,8 +136,18 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     MemoryIndex memory = new MemoryIndex();
     memory.addField("foo", fooField.toString(), analyzer);
     memory.addField("term", termField.toString(), analyzer);
+    
+    if (VERBOSE) {
+      System.out.println("Random MemoryIndex:\n" + memory.toString());
+      System.out.println("Same index as RAMDirectory: " +
+        RamUsageEstimator.humanReadableUnits(RamUsageEstimator.sizeOf(ramdir)));
+      System.out.println();
+    } else {
+      assertTrue(memory.getMemorySize() > 0L);
+    }
+
     assertAllQueries(memory, ramdir, analyzer);  
-    ramdir.close();
+    ramdir.close();    
   }
   
   /**
