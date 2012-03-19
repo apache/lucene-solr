@@ -114,10 +114,8 @@ public class CategoryContainer implements Iterable<CategoryAttribute>, Serializa
    *            The {@link CategoryAttribute} to add.
    * @return The {@link CategoryAttribute} of the category (could be different
    *         from the one provided).
-   * @throws FacetException
    */
-  public CategoryAttribute addCategory(CategoryAttribute categoryAttribute)
-  throws FacetException {
+  public CategoryAttribute addCategory(CategoryAttribute categoryAttribute) {
     CategoryAttribute ca = mapCategoryAttribute(categoryAttribute
         .getCategoryPath());
     Set<Class<? extends CategoryProperty>> propertyClasses = categoryAttribute
@@ -166,15 +164,8 @@ public class CategoryContainer implements Iterable<CategoryAttribute>, Serializa
     map.clear();
   }
 
-  /**
-   * Add the categories from another {@link CategoryContainer} to this one.
-   * 
-   * @param other
-   *            The {@link CategoryContainer} to take categories from.
-   * @throws FacetException
-   *             If any prohibited merge of category properties is attempted.
-   */
-  public void merge(CategoryContainer other) throws FacetException {
+  /** Add the categories from another {@link CategoryContainer} to this one. */
+  public void merge(CategoryContainer other) {
     for (CategoryAttribute categoryAttribute : other.map.values()) {
       addCategory(categoryAttribute);
     }
