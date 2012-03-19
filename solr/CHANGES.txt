@@ -140,15 +140,15 @@ Bug Fixes
 * SOLR-3187 SystemInfoHandler leaks filehandles (siren)
 
 * LUCENE-3820: Fixed invalid position indexes by reimplementing PatternReplaceCharFilter.
-             This change also drops real support for boundary characters -- all input is prebuffered
-             for pattern matching. (Dawid Weiss)
+  This change also drops real support for boundary characters -- all input is prebuffered
+  for pattern matching. (Dawid Weiss)
 
 * SOLR-3068: Fixed NPE in ThreadDumpHandler (siren)
 
 * SOLR-2912: Fixed File descriptor leak in ShowFileRequestHandler (Michael Ryan, shalin)
 
 * SOLR-2819: Improved speed of parsing hex entities in HTMLStripCharFilter
-	 	   (Bernhard Berger, hossman)
+  (Bernhard Berger, hossman)
 	 	   
 * SOLR-2509: StringIndexOutOfBoundsException in the spellchecker collate when the term contains
   a hyphen. (Thomas Gambier caught the bug, Steffen Godskesen did the patch, via Erick Erickson)
@@ -156,13 +156,13 @@ Bug Fixes
 * SOLR-2955: Fixed IllegalStateException when querying with group.sort=score desc in sharded
              environment. (Steffen Elberg Godskesen, Martijn van Groningen)
 
+* SOLR-2956: Fixed inconsistencies in the flags (and flag key) reported by 
+  the LukeRequestHandler (hossman)
+
 * SOLR-1730: Made it clearer when a core failed to load as well as better logging when the
   QueryElevationComponent fails to properly initialize (gsingers)
 
 * SOLR-1520: QueryElevationComponent now supports non-string ids (gsingers)
-
-* SOLR-2956: Fixed inconsistencies in the flags (and flag key) reported by 
-  the LukeRequestHandler (hossman)
 
 * SOLR-3024: Fixed JSONTestUtil.matchObj, in previous releases it was not 
   respecting the 'delta' arg (David Smiley via hossman)
@@ -241,6 +241,9 @@ Bug Fixes
   would keep only 1 backup, even if more than 1 was specified (Neil Hooey, James Dyer)
 
 * SOLR-3009: hitGrouped.vm isn't shipped with 3.x (ehatcher, janhoy)
+
+* SOLR-3195: timeAllowed is ignored for grouping queries
+  (Russell Black via Martijn van Groningen)
 
 * SOLR-3204: The packaged pre-release artifact of Commons CSV used the original
   package name (org.apache.commons.csv). This created a compatibility issue as
