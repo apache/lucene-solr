@@ -11,7 +11,6 @@ import java.util.Set;
 
 import org.apache.lucene.util.Attribute;
 
-import org.apache.lucene.facet.FacetException;
 import org.apache.lucene.facet.index.attributes.CategoryAttribute;
 import org.apache.lucene.facet.index.attributes.CategoryAttributeImpl;
 import org.apache.lucene.facet.index.attributes.CategoryProperty;
@@ -93,13 +92,9 @@ public class CategoryContainer implements Iterable<CategoryAttribute>, Serializa
    * @param properties
    *            The properties to associate to the category.
    * @return The {@link CategoryAttribute} of the category.
-   * @throws FacetException
-   *             When the category already has a property of the same type as
-   *             one of the new properties, and merging for this property type
-   *             is prohibited.
    */
   public CategoryAttribute addCategory(CategoryPath categoryPath,
-      CategoryProperty... properties) throws FacetException {
+      CategoryProperty... properties) {
     CategoryAttribute ca = mapCategoryAttribute(categoryPath);
     for (CategoryProperty attribute : properties) {
       ca.addProperty(attribute);
