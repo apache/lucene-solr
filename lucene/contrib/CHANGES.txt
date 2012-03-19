@@ -164,6 +164,9 @@ New Features
    joins in both parent to child and child to parent directions.
    (Mike McCandless)
 
+ * LUCENE-1812: Added static index pruning contrib module.
+   (Andrzej Bialecki, Doron Cohen)
+
  * LUCENE-3602: Added query time joining under the join module. (Martijn van Groningen, Michael McCandless)
 
  * LUCENE-3714: Add WFSTCompletionLookup suggester that supports more fine-grained
@@ -214,6 +217,7 @@ Bug Fixes
    children (such docs will never match, but BJQ was tripping an
    assert if such a parent doc was the first doc in the segment).
    (Shay Banon, Mike McCandless)
+
  * LUCENE-3609: Fix regression in BooleanFilter, introduced in Lucene 3.5,
    to correctly handle minShouldMatch behaviour of previous versions.
    (Shay Banon, Uwe Schindler)
@@ -237,19 +241,33 @@ Bug Fixes
  * LUCENE-3697: SimpleBoundaryScanner does not work well when highlighting
    at the beginning of the text. (Shay Banon via Koji Sekiguchi)
 
+ * LUCENE-3703: Calling DirectoryTaxonomyReader.refresh() could mess up
+   reference counting (e.g. if application called incRef/decRef). Also,
+   getRefCount() no longer checks if the taxonomy reader is already closed.
+   (Doron Cohen, Shai Erera)
+
  * LUCENE-3719: FVH: slow performance on very large queries.
    (Igor Motov via Koji Sekiguchi)
+
+ * LUCENE-3746: Spell checker's sort could fail on low JVM free-heap-memory
+   even though max-memory settings allowed to allocate more.
+   (Doron Cohen)
 
  * LUCENE-3765: As of Version.LUCENE_36, DutchAnalyzer's two ctors
    that take stopwords and stem exclusion tables also initialize
    the default stem overrides (e.g. kind/kinder, fiets).  (Robert Muir)
 
- * LUCENE-3831: avoid NPE if the SpanQuery has a null field (eg a
-   SpanOrQuery with no clauses added).  (Alan Woodward via Mike
-   McCandless).
-
  * SOLR-3076: ToParent/ChildBlockJoinQuery was not handling an incoming
    filter nor deleted docs correctly (Mikhail Khludnev via Mike
+   McCandless).
+
+ * LUCENE-3794: DirectoryTaxonomyWriter could lose the INDEX_CREATE_TIME
+   property if multiple commits with userData were done. It now always records
+   the creation time in the taxonomy index commitData, and reads it from the
+   index in the constructor. (Shai Erera)
+
+ * LUCENE-3831: avoid NPE if the SpanQuery has a null field (eg a
+   SpanOrQuery with no clauses added).  (Alan Woodward via Mike
    McCandless).
   
 Documentation
