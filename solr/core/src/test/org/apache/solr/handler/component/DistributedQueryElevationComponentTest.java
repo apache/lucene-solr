@@ -24,6 +24,8 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.FileUtils;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -41,14 +43,22 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     schemaString = "schema11.xml";
   }
   
+  private static String elevateFilename = "elevate-data-distrib.xml";
+  
   @BeforeClass
   public static void beforeClass() throws IOException {
+    System.setProperty("elevate.data.file", elevateFilename);
     File parent = new File(TEST_HOME(), "conf");
     File elevateFile = new File(parent, "elevate.xml");
-    File elevateDataFile = new File(parent, "elevate-data.xml");
+    File elevateDataFile = new File(parent, elevateFilename);
     FileUtils.copyFile(elevateFile, elevateDataFile);
   }
   
+  @AfterClass
+  public static void afterClass() throws IOException {
+    System.clearProperty("elevate.data.file");
+  }
+
   @Override
   public void doTest() throws Exception {
     
