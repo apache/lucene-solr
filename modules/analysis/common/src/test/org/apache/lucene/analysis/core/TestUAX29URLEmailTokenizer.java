@@ -352,6 +352,31 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
       (emailAnalyzer, randomTextWithEmails, emails);
   }
 
+  public void testMailtoSchemeEmails () throws Exception {
+    // See LUCENE-3880
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "mailto:test@example.org",
+        new String[] {"mailto", "test@example.org"},
+        new String[] { "<ALPHANUM>", "<EMAIL>" });
+
+    // TODO: Support full mailto: scheme URIs. See RFC 6068: http://tools.ietf.org/html/rfc6068
+    BaseTokenStreamTestCase.assertAnalyzesTo
+        (a,  "mailto:personA@example.com,personB@example.com?cc=personC@example.com"
+           + "&subject=Subjectivity&body=Corpusivity%20or%20something%20like%20that",
+         new String[] { "mailto",
+                        "personA@example.com",
+                        // TODO: recognize ',' address delimiter. Also, see examples of ';' delimiter use at: http://www.mailto.co.uk/
+                        ",personB@example.com",
+                        "?cc=personC@example.com", // TODO: split field keys/values
+                        "subject", "Subjectivity",
+                        "body", "Corpusivity", "20or", "20something","20like", "20that" }, // TODO: Hex decoding + re-tokenization
+         new String[] { "<ALPHANUM>",
+                        "<EMAIL>",
+                        "<EMAIL>",
+                        "<EMAIL>",
+                        "<ALPHANUM>", "<ALPHANUM>",
+                        "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>" });
+  }
+
   public void testURLs() throws Exception {
     Reader reader = null;
     String randomTextWithURLs;

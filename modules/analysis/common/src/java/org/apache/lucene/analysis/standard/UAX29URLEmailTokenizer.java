@@ -23,8 +23,8 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.standard.std31.StandardTokenizerImpl31;
 import org.apache.lucene.analysis.standard.std31.UAX29URLEmailTokenizerImpl31;
+import org.apache.lucene.analysis.standard.std34.UAX29URLEmailTokenizerImpl34;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -128,8 +128,10 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   }
 
   private static StandardTokenizerInterface getScannerFor(Version matchVersion, Reader input) {
-    if (matchVersion.onOrAfter(Version.LUCENE_34)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
       return new UAX29URLEmailTokenizerImpl(input);
+    } else if (matchVersion.onOrAfter(Version.LUCENE_34)) {
+      return new UAX29URLEmailTokenizerImpl34(input);
     } else {
       return new UAX29URLEmailTokenizerImpl31(input);
     }

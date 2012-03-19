@@ -972,6 +972,9 @@ Bug fixes
 * LUCENE-3876: Fix bug where positions for a document exceeding
   Integer.MAX_VALUE/2 would produce a corrupt index.  
   (Simon Willnauer, Mike Mccandless, Robert Muir)
+
+* LUCENE-3880: UAX29URLEmailTokenizer now recognizes emails when the mailto:
+  scheme is prepended. (Kai Gülzau, Steve Rowe)
     
 Optimizations
 
