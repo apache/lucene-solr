@@ -765,9 +765,10 @@ Changes in backwards compatibility policy
 * LUCENE-3712: Removed unused and untested ReaderUtil#subReader methods.
   (Uwe Schindler)
 
-* LUCENE-3672: Deprecate Directory.fileModified and
-  IndexCommit.getTimestamp and .getVersion. (Andrzej Bialecki, Robert
-  Muir, Mike McCandless)
+* LUCENE-3672: Deprecate Directory.fileModified,
+  IndexCommit.getTimestamp and .getVersion and
+  IndexReader.lastModified and getCurrentVersion (Andrzej Bialecki,
+  Robert Muir, Mike McCandless)
 
 * LUCENE-3760: In IndexReader/DirectoryReader, deprecate static
   methods getCurrentVersion and getCommitUserData, and non-static
@@ -851,10 +852,14 @@ API Changes
   create two NRTManagers (one always applying deletes and the other
   never applying deletes).  (MJB, Shai Erera, Mike McCandless)
 
+* LUCENE-3761: Generalize SearcherManager into an abstract ReferenceManager.
+  SearcherManager remains a concrete class, but due to the refactoring, the
+  method maybeReopen has been deprecated in favor of maybeRefresh().
+  (Shai Erera, Mike McCandless, Simon Willnauer)
+
 * LUCENE-3776: You now acquire/release the IndexSearcher directly from
   NRTManager.  (Mike McCandless)
   
-
 New Features
 
 * LUCENE-3593: Added a FieldValueFilter that accepts all documents that either
@@ -893,7 +898,6 @@ New Features
 
 * LUCENE-3789: Expose MTQ TermsEnum via RewriteMethod for non package private
   access (Simon Willnauer)
-
 
 Bug fixes
 
