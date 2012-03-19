@@ -774,7 +774,7 @@ Changes in backwards compatibility policy
   method getCommitUserData (use getIndexCommit().getUserData()
   instead).  (Ryan McKinley, Robert Muir, Mike McCandless)
   
-* LUCENE-3672: Deprecate instance creation of RamUsageEstimator, instead
+* LUCENE-3867: Deprecate instance creation of RamUsageEstimator, instead
   the new static method sizeOf(Object) should be used. As the algorithm
   is now using Hotspot(TM) internals (reference size, header sizes,
   object alignment), the abstract o.a.l.util.MemoryModel class was
