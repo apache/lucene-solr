@@ -361,7 +361,7 @@ def verifyUnpacked(project, artifact, unpackPath, version):
   if project == 'lucene':
     extras = ('lib', 'docs', 'contrib')
     if isSrc:
-      extras += ('build.xml', 'index.html', 'common-build.xml', 'src', 'backwards')
+      extras += ('build.xml', 'index.html', 'common-build.xml', 'core', 'backwards', 'test-framework', 'tools', 'site')
   else:
     extras = ()
 
@@ -427,11 +427,11 @@ def testDemo(isSrc, version):
   if isSrc:
     # allow lucene dev version to be either 3.3 or 3.3.0:
     if version.endswith('.0'):
-      cp = 'build/lucene-core-{0}-SNAPSHOT.jar{1}build/contrib/demo/lucene-demo-{0}-SNAPSHOT.jar'.format(version, sep)
-      cp += '{1}build/lucene-core-{0}-SNAPSHOT.jar{1}build/contrib/demo/lucene-demo-{0}-SNAPSHOT.jar'.format(version[:-2], sep)
+      cp = 'build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/contrib/demo/classes/java'.format(version, sep)
+      cp += '{1}build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/contrib/demo/classes/java'.format(version[:-2], sep)
     else:
-      cp = 'build/lucene-core-{0}-SNAPSHOT.jar{1}build/contrib/demo/lucene-demo-{0}-SNAPSHOT.jar'.format(version, sep)
-    docsDir = 'src'
+      cp = 'build/core/lucene-core-{0}-SNAPSHOT.jar{1}build/contrib/demo/classes/java'.format(version, sep)
+    docsDir = 'core/src'
   else:
     cp = 'lucene-core-{0}.jar{1}contrib/demo/lucene-demo-{0}.jar'.format(version, sep)
     docsDir = 'docs'
