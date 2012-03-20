@@ -139,7 +139,7 @@
               <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
                 <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps</Set>
                 <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
-                <Set name="scanInterval">1</Set>
+                <Set name="scanInterval">0</Set>
                 <Set name="contextXmlDir"><Property name="jetty.home" default="." />/contexts</Set>
 		<Set name="extractWars">true</Set>
               </New>
