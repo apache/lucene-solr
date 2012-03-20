@@ -124,6 +124,8 @@ New Features
 
 * SOLR-2826: URLClassify Update Processor (janhoy)
 
+* SOLR-2764: Create a NorwegianLightStemmer and NorwegianMinimalStemmer (janhoy)
+
 Optimizations
 ----------------------
 * SOLR-1931: Speedup for LukeRequestHandler and admin/schema browser. New parameter
