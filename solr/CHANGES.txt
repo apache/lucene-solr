@@ -664,7 +664,7 @@ Bug Fixes
 * SOLR-3073: Fixed 'Invalid UUID string' error when having an UUID field as
   the unique key and executing a distributed grouping request. (Devon Krisman, Martijn van Groningen)
 
-* SOLR-3084: Fixed initialiazation error when using 
+* SOLR-3084: Fixed initialization error when using 
   <queryResponseWriter default="true" ... /> (Bernd Fehling and hossman)
 
 * SOLR-3109: Fixed numerous redundant shard requests when using distributed grouping.

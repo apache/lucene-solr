@@ -957,9 +957,9 @@ Bug fixes
   (Shay Banon via Uwe Schindler)
   
 * LUCENE-3821: SloppyPhraseScorer missed documents that ExactPhraseScorer finds
-  When phrase queru had repeating terms (e.g. "yes ho yes")  
+  When phrase query had repeating terms (e.g. "yes no yes")  
   sloppy query missed documents that exact query matched. 
-  Fixed except when for repeating multiterms (e.g. "yes ho yes|no").
+  Fixed except when for repeating multiterms (e.g. "yes no yes|no").
   (Robert Muir, Doron Cohen)
 
 * LUCENE-3841: Fix CloseableThreadLocal to also purge stale entries on
