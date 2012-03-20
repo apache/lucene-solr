@@ -690,7 +690,10 @@ Bug Fixes
   package name (org.apache.commons.csv). This created a compatibility issue as
   the Apache Commons team works toward an official release of Commons CSV.
   JARJAR (http://code.google.com/p/jarjar/) was used to change the package name
-  to org.apache.solr.internal.csv.  (Uwe Schindler, Emmanuel Bourg)
+  to org.apache.solr.internal.csv.  (Uwe Schindler, Emmanuel Bourg)  
+ 
+* SOLR-2124: Do not log stack traces for "Service Disabled" / 503 Exceptions (PingRequestHandler, etc)
+  (James Dyer, others)
 
 Other Changes
 ----------------------
