@@ -12,6 +12,12 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
+    <!-- Increase the maximum POST size to 1 MB to be able to handle large shard requests -->
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.server.Request.maxFormContentSize</Arg>
+      <Arg>200000</Arg>
+    </Call>
+
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
@@ -34,7 +40,7 @@
           <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
             <Set name="host"><SystemProperty name="jetty.host" /></Set>
             <Set name="port"><SystemProperty name="jetty.port" default="8983"/></Set>
-            <Set name="maxIdleTime">30000</Set>
+            <Set name="maxIdleTime">50000</Set>
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>
             <Set name="confidentialPort">8443</Set>
@@ -86,8 +92,8 @@
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
-    <Set name="sendServerVersion">true</Set>
-    <Set name="sendDateHeader">true</Set>
+    <Set name="sendServerVersion">false</Set>
+    <Set name="sendDateHeader">false</Set>
     <Set name="gracefulShutdown">1000</Set>
     <Set name="dumpAfterStart">false</Set>
     <Set name="dumpBeforeStop">false</Set>
