@@ -258,6 +258,8 @@ public class TieredMergePolicy extends MergePolicy {
 
   private final Comparator<SegmentInfo> segmentByteSizeDescending = new SegmentByteSizeDescending();
 
+  /** Holds score and explanation for a single candidate
+   *  merge. */
   protected static abstract class MergeScore {
     abstract double getScore();
     abstract String getExplanation();
