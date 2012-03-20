@@ -55,4 +55,14 @@ public interface GroupParams {
   /** Whether the group count should be included in the response. */
   public static final String GROUP_TOTAL_COUNT = GROUP + ".ngroups";
 
+  /** Retrieve the top search groups (top group values) from the shards being queried.  */
+  public static final String GROUP_DISTRIBUTED_FIRST = GROUP + ".distributed.first";
+
+  /** Retrieve the top groups from the shards being queries based on the specified search groups in
+   * the {@link #GROUP_DISTRIBUTED_TOPGROUPS_PREFIX} parameters.
+   */
+  public static final String GROUP_DISTRIBUTED_SECOND = GROUP + ".distributed.second";
+
+  public static final String GROUP_DISTRIBUTED_TOPGROUPS_PREFIX = GROUP + ".topgroups.";
+
 }
