@@ -136,10 +136,10 @@ public class TextField extends FieldType {
     TokenStream source;
     if (analyzerIn == null) analyzerIn = multiTermAnalyzer;
     try {
-      source = analyzerIn.tokenStream(field, new StringReader(part));
+      source = analyzerIn.reusableTokenStream(field, new StringReader(part));
       source.reset();
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to initialize TokenStream to analyze multiTerm term: " + part, e);
+      source = analyzerIn.tokenStream(field, new StringReader(part));
     }
     CharTermAttribute termAtt = source.getAttribute(CharTermAttribute.class);
     String termRet = "";
