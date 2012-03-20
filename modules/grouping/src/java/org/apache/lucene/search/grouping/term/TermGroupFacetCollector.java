@@ -187,12 +187,14 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
     public void collect(int doc) throws IOException {
       int groupOrd = groupFieldTermsIndex.getOrd(doc);
-      reuse = facetFieldDocTermOrds.lookup(doc, reuse);
+      if (facetOrdTermsEnum != null) {
+        reuse = facetFieldDocTermOrds.lookup(doc, reuse);
+      }
       int chunk;
       boolean first = true;
       int[] buffer = new int[5];
       do {
-        chunk = reuse.read(buffer);
+        chunk = reuse != null ? reuse.read(buffer) : 0;
         if (first && chunk == 0) {
           chunk = 1;
           buffer[0] = facetFieldDocTermOrds.numTerms(); // this facet ord is reserved for docs not containing facet field.
@@ -246,7 +248,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
         int facetOrd;
         if (groupedFacetHit.facetValue != null) {
-          if (!facetOrdTermsEnum.seekExact(groupedFacetHit.facetValue, true)) {
+          if (facetOrdTermsEnum == null || !facetOrdTermsEnum.seekExact(groupedFacetHit.facetValue, true)) {
             continue;
           }
           facetOrd = (int) facetOrdTermsEnum.ord();
@@ -260,7 +262,13 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       }
 
       if (facetPrefix != null) {
-        TermsEnum.SeekStatus seekStatus = facetOrdTermsEnum.seekCeil(facetPrefix, true);
+        TermsEnum.SeekStatus seekStatus;
+        if (facetOrdTermsEnum != null) {
+          seekStatus = facetOrdTermsEnum.seekCeil(facetPrefix, true);
+        } else {
+          seekStatus = TermsEnum.SeekStatus.END;
+        }
+
         if (seekStatus != TermsEnum.SeekStatus.END) {
           startFacetOrd = (int) facetOrdTermsEnum.ord();
         } else {
@@ -296,8 +304,10 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
             endFacetOrd == missingCountIndex + 1 ?  missingCountIndex : endFacetOrd);
         this.tenum = tenum;
         this.mergePos = startFacetOrd;
-        tenum.seekExact(mergePos);
-        mergeTerm = tenum.term();
+        if (tenum != null) {
+          tenum.seekExact(mergePos);
+          mergeTerm = tenum.term();
+        }
       }
 
       protected void nextTerm() throws IOException {

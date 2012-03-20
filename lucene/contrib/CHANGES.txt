@@ -105,6 +105,9 @@ Bug Fixes
  * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
    not lowercasing the key before checking for the tag (Adriano Crestani)
 
+ * LUCENE-3890: Fixed NPE for grouped faceting on multi-valued fields.
+   (Michael McCandless, Martijn van Groningen)
+
 Optimizations
 
 * LUCENE-3468: Replaced last() and remove() with pollLast() in
