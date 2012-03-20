@@ -189,11 +189,6 @@ API Changes
    not take position overlaps into account while recalculating norms.
    (Uwe Schindler, Robert Muir)
 
- * LUCENE-3305: Added SegmentingTokenizerBase, which breaks text into sentences
-   with BreakIterator and allows subclasses to decompose sentences into words, or
-   use the sentence boundary information for other reasons (e.g. attribute/position increment)
-   (Robert Muir)
-
 Changes in runtime behavior
 
  * LUCENE-3626: PKIndexSplitter and MultiPassIndexSplitter now work
