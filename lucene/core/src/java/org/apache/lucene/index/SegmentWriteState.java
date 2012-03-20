@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 
 /**
+ * Holder class for common parameters used during write.
  * @lucene.experimental
  */
 public class SegmentWriteState {

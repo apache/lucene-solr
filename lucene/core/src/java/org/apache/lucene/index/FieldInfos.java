@@ -28,11 +28,8 @@ import org.apache.lucene.util.StringHelper;
 import java.io.IOException;
 import java.util.*;
 
-/** Access to the Fieldable Info file that describes document fields and whether or
- *  not they are indexed. Each segment has a separate Fieldable Info file. Objects
- *  of this class are thread-safe for multiple readers, but only one thread can
- *  be adding documents at a time, with no other reader or writer threads
- *  accessing this object.
+/** 
+ * Collection of {@link FieldInfo}s (accessible by number or by name).
  *
  * @lucene.experimental
  */

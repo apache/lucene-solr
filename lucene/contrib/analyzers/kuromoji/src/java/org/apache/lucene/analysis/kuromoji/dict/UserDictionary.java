@@ -34,6 +34,10 @@ import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
+/**
+ * Class for building a User Dictionary.
+ * This class allows for custom segmentation of phrases.
+ */
 public final class UserDictionary implements Dictionary {
   
   // phrase text -> phrase ID

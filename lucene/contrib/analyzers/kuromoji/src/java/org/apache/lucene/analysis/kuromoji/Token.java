@@ -20,6 +20,9 @@ package org.apache.lucene.analysis.kuromoji;
 import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Type;
 import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
 
+/**
+ * Analyzed token with morphological data from its dictionary.
+ */
 public class Token {
   private final Dictionary dictionary;
   

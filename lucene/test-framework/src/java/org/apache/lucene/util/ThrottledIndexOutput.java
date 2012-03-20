@@ -21,6 +21,9 @@ import java.io.IOException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexOutput;
 
+/**
+ * Intentionally slow IndexOutput for testing.
+ */
 public class ThrottledIndexOutput extends IndexOutput {
   public static final int DEFAULT_MIN_WRITTEN_BYTES = 1024;
   private final int bytesPerSecond;

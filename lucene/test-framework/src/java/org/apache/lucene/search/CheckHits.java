@@ -28,6 +28,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
+/**
+ * Utility class for asserting expected hits in tests.
+ */
 public class CheckHits {
   
   /**
@@ -117,6 +120,9 @@ public class CheckHits {
     }
   }
 
+  /**
+   * Just collects document ids into a set.
+   */
   public static class SetCollector extends Collector {
     final Set<Integer> bag;
     public SetCollector(Set<Integer> bag) {

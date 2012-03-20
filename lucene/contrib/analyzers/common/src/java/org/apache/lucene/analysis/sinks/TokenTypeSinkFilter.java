@@ -21,6 +21,9 @@ import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkFilter;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
+/**
+ * Adds a token to the sink if it has a specific type.
+ */
 public class TokenTypeSinkFilter extends SinkFilter {
   private String typeToMatch;
   private TypeAttribute typeAtt;

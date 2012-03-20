@@ -19,6 +19,10 @@ package org.apache.lucene.analysis.kuromoji.util;
 
 import java.util.HashMap;
 
+/**
+ * Utility class for english translations of morphological data,
+ * used only for debugging.
+ */
 public class ToStringUtil {
   // a translation map for parts of speech, only used for reflectWith
   private static final HashMap<String,String> posTranslations = new HashMap<String,String>();

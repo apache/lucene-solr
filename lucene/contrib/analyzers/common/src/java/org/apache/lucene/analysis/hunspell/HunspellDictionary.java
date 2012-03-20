@@ -29,6 +29,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * In-memory structure for the dictionary (.dic) and affix (.aff)
+ * data of a hunspell dictionary.
+ */
 public class HunspellDictionary {
 
   static final HunspellWord NOFLAGS = new HunspellWord();

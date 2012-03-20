@@ -23,6 +23,9 @@ import java.util.Random;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
 
+/**
+ * TokenFilter that adds random fixed-length payloads.
+ */
 public final class MockFixedLengthPayloadFilter extends TokenFilter {
   private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
   private final Random random;

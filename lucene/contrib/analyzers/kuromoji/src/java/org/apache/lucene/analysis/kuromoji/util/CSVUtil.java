@@ -21,6 +21,9 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Utility class for parsing CSV text
+ */
 public final class CSVUtil {
   private static final char QUOTE = '"';
   

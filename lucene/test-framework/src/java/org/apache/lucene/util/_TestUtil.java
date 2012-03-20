@@ -51,6 +51,9 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 
+/**
+ * General utility methods for Lucene unit tests. 
+ */
 public class _TestUtil {
 
   /** Returns temp dir, based on String arg in its name;

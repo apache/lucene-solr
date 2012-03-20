@@ -19,6 +19,10 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
+/**
+ * Used by MockDirectoryWrapper to wrap another factory
+ * and track open locks.
+ */
 public class MockLockFactoryWrapper extends LockFactory {
   MockDirectoryWrapper dir;
   LockFactory delegate;

@@ -26,6 +26,10 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
+/**
+ * Binary dictionary implementation for a known-word dictionary model:
+ * Words are encoded into an FST mapping to a list of wordIDs.
+ */
 public final class TokenInfoDictionary extends BinaryDictionary {
 
   public static final String FST_FILENAME_SUFFIX = "$fst.dat";

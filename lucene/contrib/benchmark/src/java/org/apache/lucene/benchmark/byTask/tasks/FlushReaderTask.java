@@ -24,6 +24,9 @@ import java.util.Map;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexReader;
 
+/**
+ * Commits via IndexReader.
+ */
 public class FlushReaderTask extends PerfTask {
   String userData = null;
   

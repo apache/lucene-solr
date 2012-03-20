@@ -38,6 +38,10 @@ import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.StringHelper;
 
 /**
+ * IndexReader implementation over a single segment. 
+ * <p>
+ * Instances pointing to the same segment (but with different deletes, etc)
+ * may share the same core data.
  * @lucene.experimental
  */
 public class SegmentReader extends IndexReader implements Cloneable {

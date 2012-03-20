@@ -25,7 +25,7 @@ import org.apache.lucene.index.FieldInvertState;  // for javadocs
 
 
 /**
- *
+ * Base class for Field implementations
  *
  **/
 public abstract class AbstractField implements Fieldable {

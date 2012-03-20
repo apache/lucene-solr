@@ -180,6 +180,9 @@ public final class TeeSinkTokenFilter extends TokenFilter {
     }
   }
   
+  /**
+   * TokenStream output from a tee with optional filtering.
+   */
   public static final class SinkTokenStream extends TokenStream {
     private final List<AttributeSource.State> cachedStates = new LinkedList<AttributeSource.State>();
     private AttributeSource.State finalState;

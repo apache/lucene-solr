@@ -73,14 +73,14 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
+  /**
+   * Filter which discards the token 'stop' and which expands the
+   * token 'phrase' into 'phrase1 phrase2'
+   */
   public static final class QPTestFilter extends TokenFilter {
     CharTermAttribute termAtt;
     OffsetAttribute offsetAtt;
         
-    /**
-     * Filter which discards the token 'stop' and which expands the
-     * token 'phrase' into 'phrase1 phrase2'
-     */
     public QPTestFilter(TokenStream in) {
       super(in);
       termAtt = addAttribute(CharTermAttribute.class);
@@ -114,16 +114,19 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
   }
 
-  
+
+  /** Filters LowerCaseTokenizer with QPTestFilter. */
   public static final class QPTestAnalyzer extends Analyzer {
 
-    /** Filters LowerCaseTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
       return new QPTestFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader));
     }
   }
 
+  /**
+   * Test QueryParser that does not allow fuzzy or wildcard queries.
+   */
   public static class QPTestParser extends QueryParser {
     public QPTestParser(String f, Analyzer a) {
       super(TEST_VERSION_CURRENT, f, a);

@@ -24,6 +24,9 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
+/**
+ * TokenStream from a canned list of Tokens.
+ */
 public final class CannedTokenStream extends TokenStream {
   private final Token[] tokens;
   private int upto = 0;

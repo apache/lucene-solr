@@ -32,6 +32,9 @@ import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IOUtils;
 
+/**
+ * Base class for a binary-encoded in-memory dictionary.
+ */
 public abstract class BinaryDictionary implements Dictionary {
   
   public static final String DICT_FILENAME_SUFFIX = "$buffer.dat";

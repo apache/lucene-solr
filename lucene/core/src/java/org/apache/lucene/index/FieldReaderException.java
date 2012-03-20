@@ -16,8 +16,7 @@ package org.apache.lucene.index;
  */
 
 /**
- *
- *
+ * Exception thrown when stored fields have an unexpected format.
  **/
 public class FieldReaderException extends RuntimeException{
   /**

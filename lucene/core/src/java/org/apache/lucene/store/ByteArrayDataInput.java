@@ -21,7 +21,12 @@ import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
 
-/** @lucene.experimental */
+/** 
+ * DataInput backed by a byte array.
+ * <b>WARNING:</b> This class omits most low-level checks,
+ * so be sure to test heavily with assertions enabled.
+ * @lucene.experimental 
+ */
 public final class ByteArrayDataInput extends DataInput {
 
   private byte[] bytes;

@@ -21,6 +21,9 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
+/**
+ * Opens a reader and prints basic statistics.
+ */
 public class PrintReaderTask extends PerfTask {
   private String userData = null;
   

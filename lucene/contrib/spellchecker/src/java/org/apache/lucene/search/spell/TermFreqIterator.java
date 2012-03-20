@@ -23,10 +23,17 @@ import java.util.Comparator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
+/**
+ * Interface for enumerating term,weight pairs.
+ */
 public interface TermFreqIterator extends BytesRefIterator {
 
   public long weight();
   
+  /**
+   * Wraps a BytesRefIterator as a TermFreqIterator, with all weights
+   * set to <code>1</code>
+   */
   public static class TermFreqIteratorWrapper implements TermFreqIterator {
     private BytesRefIterator wrapped;
     
