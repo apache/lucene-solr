@@ -151,8 +151,8 @@ public final class ICUTokenizer extends Tokenizer {
     int leftover = length - usableLength;
     System.arraycopy(buffer, usableLength, buffer, 0, leftover);
     int requested = buffer.length - leftover;
-    int returned = input.read(buffer, leftover, requested);
-    length = returned < 0 ? leftover : returned + leftover;
+    int returned = read(input, buffer, leftover, requested);
+    length = returned + leftover;
     if (returned < requested) /* reader has been emptied, process the rest */
       usableLength = length;
     else { /* still more data to be read, find a safe-stopping place */
@@ -165,6 +165,24 @@ public final class ICUTokenizer extends Tokenizer {
     }
 
     breaker.setText(buffer, 0, Math.max(0, usableLength));
+  }
+
+  // TODO: refactor to a shared readFully somewhere
+  // (NGramTokenizer does this too):
+  /** commons-io's readFully, but without bugs if offset != 0 */
+  private static int read(Reader input, char[] buffer, int offset, int length) throws IOException {
+    assert length >= 0 : "length must not be negative: " + length;
+ 
+    int remaining = length;
+    while ( remaining > 0 ) {
+      int location = length - remaining;
+      int count = input.read( buffer, offset + location, remaining );
+      if ( -1 == count ) { // EOF
+        break;
+      }
+      remaining -= count;
+    }
+    return length - remaining;
   }
 
   /*

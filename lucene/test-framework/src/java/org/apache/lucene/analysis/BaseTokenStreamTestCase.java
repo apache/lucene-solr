@@ -177,8 +177,9 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
     assertFalse("TokenStream has more tokens than expected", ts.incrementToken());
     ts.end();
-    if (finalOffset != null)
+    if (finalOffset != null) {
       assertEquals("finalOffset ", finalOffset.intValue(), offsetAtt.endOffset());
+    }
     if (offsetAtt != null) {
       assertTrue("finalOffset must be >= 0", offsetAtt.endOffset() >= 0);
     }
@@ -391,6 +392,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       List<Integer> startOffsets = new ArrayList<Integer>();
       List<Integer> endOffsets = new ArrayList<Integer>();
       ts.reset();
+
+      // First pass: save away "correct" tokens
       while (ts.incrementToken()) {
         tokens.add(termAtt.toString());
         if (typeAtt != null) types.add(typeAtt.type());
@@ -403,12 +406,98 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       }
       ts.end();
       ts.close();
+
       // verify reusing is "reproducable" and also get the normal tokenstream sanity checks
       if (!tokens.isEmpty()) {
+
+        // KWTokenizer (for example) can produce a token
+        // even when input is length 0:
+        if (text.length() != 0) {
+
+          // (Optional) second pass: do something evil:
+          final int evilness = random.nextInt(50);
+          if (evilness == 17) {
+            if (VERBOSE) {
+              System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis w/ exception");
+            }
+            // Throw an errant exception from the Reader:
+
+            MockReaderWrapper evilReader = new MockReaderWrapper(random, new StringReader(text));
+            evilReader.throwExcAfterChar(random.nextInt(text.length()+1));
+            reader = evilReader;
+
+            try {
+              // NOTE: some Tokenizers go and read characters
+              // when you call .setReader(Reader), eg
+              // PatternTokenizer.  This is a bit
+              // iffy... (really, they should only
+              // pull from the Reader when you call
+              // .incremenToken(), I think?), but we
+              // currently allow it, so, we must call
+              // a.tokenStream inside the try since we may
+              // hit the exc on init:
+              ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(evilReader, remainder) : evilReader);
+              ts.reset();
+              while (ts.incrementToken());
+              fail("did not hit exception");
+            } catch (RuntimeException re) {
+              assertTrue(MockReaderWrapper.isMyEvilException(re));
+            }
+            try {
+              ts.end();
+            } catch (AssertionError ae) {
+              // Catch & ignore MockTokenizer's
+              // anger...
+              if ("end() called before incrementToken() returned false!".equals(ae.getMessage())) {
+                // OK
+              } else {
+                throw ae;
+              }
+            }
+            ts.close();
+          } else if (evilness == 7) {
+            // Only consume a subset of the tokens:
+            final int numTokensToRead = random.nextInt(tokens.size());
+            if (VERBOSE) {
+              System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis, only consuming " + numTokensToRead + " of " + tokens.size() + " tokens");
+            }
+
+            reader = new StringReader(text);
+            ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
+            ts.reset();
+            for(int tokenCount=0;tokenCount<numTokensToRead;tokenCount++) {
+              assertTrue(ts.incrementToken());
+            }
+            try {
+              ts.end();
+            } catch (AssertionError ae) {
+              // Catch & ignore MockTokenizer's
+              // anger...
+              if ("end() called before incrementToken() returned false!".equals(ae.getMessage())) {
+                // OK
+              } else {
+                throw ae;
+              }
+            }
+            ts.close();
+          }
+        }
+
+        // Final pass: verify clean tokenization matches
+        // results from first pass:
         if (VERBOSE) {
           System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis; " + tokens.size() + " tokens");
         }
         reader = new StringReader(text);
+
+        if (random.nextInt(30) == 7) {
+          if (VERBOSE) {
+            System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: using spoon-feed reader");
+          }
+
+          reader = new MockReaderWrapper(random, reader);
+        }
+        
         ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
         if (typeAtt != null && posIncAtt != null && posLengthAtt != null && offsetAtt != null) {
           // offset + pos + posLength + type

@@ -199,8 +199,11 @@ public class MockTokenizer extends Tokenizer {
     offsetAtt.setOffset(finalOffset, finalOffset);
     // some tokenizers, such as limiting tokenizers, call end() before incrementToken() returns false.
     // these tests should disable this check (in general you should consume the entire stream)
-    assert !enableChecks || streamState == State.INCREMENT_FALSE : "end() called before incrementToken() returned false!";
-    streamState = State.END;
+    try {
+      assert !enableChecks || streamState == State.INCREMENT_FALSE : "end() called before incrementToken() returned false!";
+    } finally {
+      streamState = State.END;
+    }
   }
 
   /** 

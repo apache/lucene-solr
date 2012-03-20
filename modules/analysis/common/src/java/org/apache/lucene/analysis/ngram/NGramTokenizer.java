@@ -105,13 +105,20 @@ public final class NGramTokenizer extends Tokenizer {
       started = true;
       gramSize = minGram;
       char[] chars = new char[1024];
-      charsRead = input.read(chars);
-      if (charsRead < 0) {
-        charsRead = inLen = 0;
+      charsRead = 0;
+      // TODO: refactor to a shared readFully somewhere:
+      while (charsRead < chars.length) {
+        int inc = input.read(chars, charsRead, chars.length-charsRead);
+        if (inc == -1) {
+          break;
+        }
+        charsRead += inc;
+      }
+      inStr = new String(chars, 0, charsRead).trim();  // remove any trailing empty strings 
+      inLen = inStr.length();
+      if (inLen == 0) {
         return false;
       }
-      inStr = new String(chars).trim();  // remove any trailing empty strings 
-      inLen = inStr.length();
     }
 
     if (pos+gramSize > inLen) {            // if we hit the end of the string
@@ -140,7 +147,6 @@ public final class NGramTokenizer extends Tokenizer {
   @Override
   public void reset(Reader input) throws IOException {
     super.reset(input);
-    reset();
   }
 
   @Override

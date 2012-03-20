@@ -183,15 +183,22 @@ public final class EdgeNGramTokenizer extends Tokenizer {
     // if we are just starting, read the whole input
     if (!started) {
       started = true;
+      gramSize = minGram;
       char[] chars = new char[1024];
-      charsRead = input.read(chars);
-      if (charsRead < 0) {
-        charsRead = inLen = 0;
+      charsRead = 0;
+      // TODO: refactor to a shared readFully somewhere:
+      while (charsRead < chars.length) {
+        int inc = input.read(chars, charsRead, chars.length-charsRead);
+        if (inc == -1) {
+          break;
+        }
+        charsRead += inc;
+      }
+      inStr = new String(chars, 0, charsRead).trim();  // remove any trailing empty strings 
+      inLen = inStr.length();
+      if (inLen == 0) {
         return false;
       }
-      inStr = new String(chars, 0, charsRead).trim();  // remove any leading or trailing spaces
-      inLen = inStr.length();
-      gramSize = minGram;
     }
 
     // if the remaining input is too short, we can't generate any n-grams
@@ -223,7 +230,6 @@ public final class EdgeNGramTokenizer extends Tokenizer {
   @Override
   public void reset(Reader input) throws IOException {
     super.reset(input);
-    reset();
   }
 
   @Override
