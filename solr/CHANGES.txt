@@ -694,6 +694,9 @@ Bug Fixes
  
 * SOLR-2124: Do not log stack traces for "Service Disabled" / 503 Exceptions (PingRequestHandler, etc)
   (James Dyer, others)
+  
+* SOLR-3260: DataImportHandler: ScriptTransformer gives better error messages when 
+  problems arise on initalization (no Script Engine, invalid script, etc). (James Dyer)
 
 Other Changes
 ----------------------

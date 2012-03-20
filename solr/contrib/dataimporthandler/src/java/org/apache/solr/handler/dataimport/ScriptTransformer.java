@@ -72,25 +72,35 @@ public class ScriptTransformer extends Transformer {
   }
 
   private void initEngine(Context context) {
+    String scriptText = context.getScript();
+    String scriptLang = context.getScriptLanguage();
+    if (scriptText == null) {
+      throw new DataImportHandlerException(SEVERE,
+          "<script> tag is not present under <dataConfig>");
+    }
+    Object scriptEngineMgr = null;
     try {
-      String scriptText = context.getScript();
-      String scriptLang = context.getScriptLanguage();
-      if(scriptText == null ){
-        throw new DataImportHandlerException(SEVERE,
-              "<script> tag is not present under <dataConfig>");
-      }
-      Object scriptEngineMgr = Class
-              .forName("javax.script.ScriptEngineManager").newInstance();
-      // create a Script engine
+      scriptEngineMgr = Class.forName("javax.script.ScriptEngineManager")
+          .newInstance();
+    } catch (Exception e) {
+      wrapAndThrow(SEVERE, e, "<script> can be used only in java 6 or above");
+    }
+    try {
       Method getEngineMethod = scriptEngineMgr.getClass().getMethod(
-              "getEngineByName", String.class);
+          "getEngineByName", String.class);
       engine = getEngineMethod.invoke(scriptEngineMgr, scriptLang);
+    } catch (Exception e) {
+      wrapAndThrow(SEVERE, e, "Cannot load Script Engine for language: "
+          + scriptLang);
+    }
+    try {
       Method evalMethod = engine.getClass().getMethod("eval", String.class);
       invokeFunctionMethod = engine.getClass().getMethod("invokeFunction",
-              String.class, Object[].class);
+          String.class, Object[].class);
       evalMethod.invoke(engine, scriptText);
     } catch (Exception e) {
-      wrapAndThrow(SEVERE,e, "<script> can be used only in java 6 or above");
+      wrapAndThrow(SEVERE, e, "'eval' failed with language: " + scriptLang
+          + " and script: \n" + scriptText);
     }
   }
 
