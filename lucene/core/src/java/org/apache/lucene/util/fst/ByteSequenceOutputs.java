@@ -24,7 +24,8 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Output is a sequence of bytes, for each input term.
+ * An FST {@link Outputs} implementation where each output
+ * is a sequence of bytes.
  *
  * @lucene.experimental
  */

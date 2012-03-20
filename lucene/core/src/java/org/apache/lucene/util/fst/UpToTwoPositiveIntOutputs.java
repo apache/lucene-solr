@@ -23,7 +23,8 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 
 /**
- * Holds one or two longs for each input term.  If it's a
+ * An FST {@link Outputs} implementation where each output
+ * is one or two non-negative long values.  If it's a
  * single output, Long is returned; else, TwoLongs.  Order
  * is preserved in the TwoLongs case, ie .first is the first
  * input/output added to Builder, and .second is the
@@ -38,6 +39,7 @@ import org.apache.lucene.store.DataOutput;
 
 public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
 
+  /** Holds two long outputs. */
   public final static class TwoLongs {
     public final long first;
     public final long second;

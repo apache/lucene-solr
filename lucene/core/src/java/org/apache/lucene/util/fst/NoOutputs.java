@@ -21,7 +21,8 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 
 /**
- * Use this if you just want to build an FSA.
+ * A null FST {@link Outputs} implementation; use this if
+ * you just want to build an FSA.
  *
  * @lucene.experimental
  */

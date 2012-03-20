@@ -21,7 +21,8 @@ import org.apache.lucene.util.IntsRef;
 
 import java.io.IOException;
 
-/** Can next() and advance() through the terms in an FST
+/** Enumerates all input (IntsRef) + output pairs in an
+ *  FST.
  *
   * @lucene.experimental
 */
@@ -31,6 +32,7 @@ public final class IntsRefFSTEnum<T> extends FSTEnum<T> {
   private final InputOutput<T> result = new InputOutput<T>();
   private IntsRef target;
 
+  /** Holds a single input (IntsRef) + output pair. */
   public static class InputOutput<T> {
     public IntsRef input;
     public T output;

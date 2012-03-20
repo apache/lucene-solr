@@ -56,7 +56,8 @@ import org.apache.lucene.util.fst.Builder.UnCompiledNode;
 // dead-end state (NON_FINAL_END_NODE=0), the layers above
 // (FSTEnum, Util) have problems with this!!
 
-/** Represents an FST using a compact byte[] format.
+/** Represents an finite state machine (FST), using a
+ *  compact byte[] format.
  *  <p> The format is similar to what's used by Morfologik
  *  (http://sourceforge.net/projects/morfologik).
  *
@@ -66,6 +67,8 @@ import org.apache.lucene.util.fst.Builder.UnCompiledNode;
  * @lucene.experimental
  */
 public final class FST<T> {
+  /** Specifies allowed range of each int input label for
+   *  this FST. */
   public static enum INPUT_TYPE {BYTE1, BYTE2, BYTE4};
   public final INPUT_TYPE inputType;
 
@@ -159,6 +162,7 @@ public final class FST<T> {
 
   private Arc<T> cachedRootArcs[];
 
+  /** Represents a single arc. */
   public final static class Arc<T> {
     public int label;
     public T output;
@@ -1226,7 +1230,10 @@ public final class FST<T> {
     }
   }
 
-  /** Expert */
+  /** Reads the bytes from this FST.  Use {@link
+   *  #getBytesReader(int)} to obtain an instance for this
+   *  FST; re-use across calls (but only within a single
+   *  thread) for better performance. */
   public static abstract class BytesReader extends DataInput {
     protected int pos;
     protected final byte[] bytes;
