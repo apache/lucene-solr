@@ -106,3 +106,6 @@ New Features
    All analyzers in contrib/analyzers and contrib/icu were moved to the
    analysis module.  The 'smartcn' and 'stempel' components now depend on 'common'.
    (Chris Male, Robert Muir)
+
+ * SOLR-2764: Create a NorwegianLightStemmer and NorwegianMinimalStemmer (janhoy)
+   

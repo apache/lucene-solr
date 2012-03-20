@@ -753,6 +753,8 @@
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_no.txt" format="snowball" enablePositionIncrements="true"/>
         <filter class="solr.SnowballPorterFilterFactory" language="Norwegian"/>
+        <!-- less aggressive: <filter class="solr.NorwegianLightStemFilterFactory"/> -->
+        <!-- singular/plural: <filter class="solr.NorwegianMinimalStemFilterFactory"/> -->
       </analyzer>
     </fieldType>
     

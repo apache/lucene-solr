@@ -18,7 +18,7 @@ servlet container in the directory named "example".
 See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 
-$Id$
+$Id: CHANGES.txt 1302809 2012-03-20 09:19:55Z rmuir $
 
 ==================  4.0.0-dev ==================
 More information about this release, including any errata related to the 
@@ -560,8 +560,6 @@ New Features
   (janhoy, hossmann, Tomás Fernández Löbbe)
 
 * SOLR-2826: URLClassify Update Processor (janhoy)
-
-* SOLR-2764: Create a NorwegianLightStemmer and NorwegianMinimalStemmer (janhoy)
 
 Optimizations
 ----------------------
