@@ -21,7 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
 
-/** Can next() and advance() through the terms in an FST
+/** Enumerates all input (BytesRef) + output pairs in an
+ *  FST.
  *
   * @lucene.experimental
 */
@@ -31,6 +32,7 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
   private final InputOutput<T> result = new InputOutput<T>();
   private BytesRef target;
 
+  /** Holds a single input (BytesRef) + output pair. */
   public static class InputOutput<T> {
     public BytesRef input;
     public T output;

@@ -24,7 +24,7 @@ import org.apache.lucene.store.DataOutput;
 
 /**
  * Represents the outputs for an FST, providing the basic
- * algebra needed for the FST.
+ * algebra required for building and traversing the FST.
  *
  * <p>Note that any operation that returns NO_OUTPUT must
  * return the same singleton object from {@link

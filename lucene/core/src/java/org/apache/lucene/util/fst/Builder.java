@@ -26,8 +26,8 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
 
 /**
  * Builds a minimal FST (maps an IntsRef term to an arbitrary
- * output) from pre-sorted terms with outputs (the FST
- * becomes an FSA if you use NoOutputs).  The FST is written
+ * output) from pre-sorted terms with outputs.  The FST
+ * becomes an FSA if you use NoOutputs.  The FST is written
  * on-the-fly into a compact serialized format byte array, which can
  * be saved to / loaded from a Directory or used directly
  * for traversal.  The FST is always finite (no cycles).
@@ -68,8 +68,8 @@ public class Builder<T> {
   // current "frontier"
   private UnCompiledNode<T>[] frontier;
 
-  // Expert: you pass an instance of this if you want to do
-  // something "custom" as suffixes are "frozen":
+  /** Expert: this is invoked by Builder whenever a suffix
+   *  is serialized. */
   public static abstract class FreezeTail<T> {
     public abstract void freeze(final UnCompiledNode<T>[] frontier, int prefixLenPlus1, IntsRef prevInput) throws IOException;
   }
@@ -470,6 +470,7 @@ public class Builder<T> {
     }
   }
 
+  /** Expert: holds a pending (seen but not yet serialized) arc. */
   public static class Arc<T> {
     public int label;                             // really an "unsigned" byte
     public Node target;
@@ -493,6 +494,7 @@ public class Builder<T> {
     }
   }
 
+  /** Expert: holds a pending (seen but not yet serialized) Node. */
   public static final class UnCompiledNode<T> implements Node {
     final Builder<T> owner;
     public int numArcs;

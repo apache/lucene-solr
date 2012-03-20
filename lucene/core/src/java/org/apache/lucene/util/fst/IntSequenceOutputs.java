@@ -24,7 +24,8 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.IntsRef;
 
 /**
- * Output is a sequence of ints, for each input term.
+ * An FST {@link Outputs} implementation where each output
+ * is a sequence of ints.
  *
  * @lucene.experimental
  */

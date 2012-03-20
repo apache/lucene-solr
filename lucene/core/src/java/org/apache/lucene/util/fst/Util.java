@@ -23,7 +23,7 @@ import java.util.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 
-/** Static helper methods
+/** Static helper methods.
  *
  * @lucene.experimental */
 public final class Util {
@@ -496,6 +496,8 @@ public final class Util {
     }
   }
 
+  /** Holds a single input (IntsRef) + output, returned by
+   *  {@link #shortestPaths}. */
   public final static class MinResult<T> implements Comparable<MinResult<T>> {
     public final IntsRef input;
     public final T output;

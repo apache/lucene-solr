@@ -23,9 +23,8 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 
 /**
- * Output is a long, for each input term.  NOTE: the
- * resulting FST is not guaranteed to be minimal!  See
- * {@link Builder}.
+ * An FST {@link Outputs} implementation where each output
+ * is a non-negative long value.
  *
  * @lucene.experimental
  */
