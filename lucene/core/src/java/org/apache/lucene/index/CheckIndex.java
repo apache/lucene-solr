@@ -733,10 +733,17 @@ public class CheckIndex {
           status.totPos += freq;
           for(int j=0;j<freq;j++) {
             final int pos = termPositions.nextPosition();
-            if (pos < -1)
+            // NOTE: -1 is allowed because of ancient bug
+            // (LUCENE-1542) whereby IndexWriter could
+            // write pos=-1 when first token's posInc is 0
+            // (separately: analyzers should not give
+            // posInc=0 to first token):
+            if (pos < -1) {
               throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
-            if (pos < lastPos)
+            }
+            if (pos < lastPos) {
               throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
+            }
             lastPos = pos;
           }
         }
@@ -760,7 +767,12 @@ public class CheckIndex {
             int lastPosition = -1;
             for(int posUpto=0;posUpto<freq;posUpto++) {
               final int pos = termPositions.nextPosition();
-              if (pos < 0) {
+              // NOTE: -1 is allowed because of ancient bug
+              // (LUCENE-1542) whereby IndexWriter could
+              // write pos=-1 when first token's posInc is 0
+              // (separately: analyzers should not give
+              // posInc=0 to first token):
+              if (pos < -1) {
                 throw new RuntimeException("position " + pos + " is out of bounds");
               }
               // TODO: we should assert when all pos == 0 that positions are actually omitted
