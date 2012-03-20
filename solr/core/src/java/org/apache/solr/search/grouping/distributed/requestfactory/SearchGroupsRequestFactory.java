@@ -18,6 +18,7 @@ package org.apache.solr.search.grouping.distributed.requestfactory;
  */
 
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -71,7 +72,7 @@ public class SearchGroupsRequestFactory implements ShardRequestFactory {
 
     // in this first phase, request only the unique key field
     // and any fields needed for merging.
-    sreq.params.set("group.distributed.first","true");
+    sreq.params.set(GroupParams.GROUP_DISTRIBUTED_FIRST, "true");
 
     if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");

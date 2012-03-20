@@ -57,5 +57,15 @@ public interface GroupParams {
 
   /** Whether to compute grouped facets based on the first specified group. */
   public static final String GROUP_FACET = GROUP + ".facet";
+
+  /** Retrieve the top search groups (top group values) from the shards being queried.  */
+  public static final String GROUP_DISTRIBUTED_FIRST = GROUP + ".distributed.first";
+
+  /** Retrieve the top groups from the shards being queries based on the specified search groups in
+   * the {@link #GROUP_DISTRIBUTED_TOPGROUPS_PREFIX} parameters.
+   */
+  public static final String GROUP_DISTRIBUTED_SECOND = GROUP + ".distributed.second";
+
+  public static final String GROUP_DISTRIBUTED_TOPGROUPS_PREFIX = GROUP + ".topgroups.";
 }
 

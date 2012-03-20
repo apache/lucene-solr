@@ -110,7 +110,7 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
     }
 
-    sreq.params.set("group.distributed.second", "true");
+    sreq.params.set(GroupParams.GROUP_DISTRIBUTED_SECOND, "true");
     for (Map.Entry<String, Collection<SearchGroup<BytesRef>>> entry : rb.mergedSearchGroups.entrySet()) {
       for (SearchGroup<BytesRef> searchGroup : entry.getValue()) {
         String groupValue;
@@ -121,7 +121,7 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
         } else {
           groupValue = GROUP_NULL_VALUE;
         }
-        sreq.params.add("group.topgroups." + entry.getKey(), groupValue);
+        sreq.params.add(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + entry.getKey(), groupValue);
       }
     }
 

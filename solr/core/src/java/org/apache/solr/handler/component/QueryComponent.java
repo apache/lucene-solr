@@ -276,7 +276,7 @@ public class QueryComponent extends SearchComponent
     if (groupingSpec != null) {
       try {
         boolean needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
-        if (params.getBool("group.distributed.first", false)) {
+        if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
           CommandHandler.Builder topsGroupsActionBuilder = new CommandHandler.Builder()
               .setQueryCommand(cmd)
               .setNeedDocSet(false) // Order matters here
@@ -297,14 +297,14 @@ public class QueryComponent extends SearchComponent
           rsp.add("firstPhase", commandHandler.processResult(result, serializer));
           rb.setResult(result);
           return;
-        } else if (params.getBool("group.distributed.second", false)) {
+        } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
           CommandHandler.Builder secondPhaseBuilder = new CommandHandler.Builder()
               .setQueryCommand(cmd)
               .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
               .setSearcher(searcher);
 
           for (String field : groupingSpec.getFields()) {
-            String[] topGroupsParam = params.getParams("group.topgroups." + field);
+            String[] topGroupsParam = params.getParams(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + field);
             if (topGroupsParam == null) {
               continue;
             }
