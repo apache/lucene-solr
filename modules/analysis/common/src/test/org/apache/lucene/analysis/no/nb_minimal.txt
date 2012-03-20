@@ -95,5 +95,5 @@ hemmelig	hemmelig
 hemmelighet	hemmeligh
 hemmeligheten	hemmelighet
 kjærlig	kjærlig
-kjærlighet	kjærlig
-kjærligheten	kjærlig
+kjærlighet	kjærligh
+kjærligheten	kjærlighet
