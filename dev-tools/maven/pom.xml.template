@@ -347,7 +347,7 @@
       <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>servlet-api</artifactId>
-        <version>2.5</version>
+        <version>2.4</version>
       </dependency>
       <dependency>
         <groupId>com.spatial4j</groupId>
