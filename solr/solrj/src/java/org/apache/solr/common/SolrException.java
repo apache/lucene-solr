@@ -150,6 +150,7 @@ public class SolrException extends RuntimeException {
   public static void log(Logger log, Throwable e) {
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
+      if (((SolrException) e).code() == ErrorCode.SERVICE_UNAVAILABLE.code)  return;
     }
     String stackTrace = toStr(e);
     String ignore = doIgnore(stackTrace);
@@ -164,6 +165,7 @@ public class SolrException extends RuntimeException {
   public static void log(Logger log, String msg, Throwable e) {
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
+      if (((SolrException) e).code() == ErrorCode.SERVICE_UNAVAILABLE.code)  return;
     }
     String stackTrace = msg + ':' + toStr(e);
     String ignore = doIgnore(stackTrace);
@@ -180,6 +182,7 @@ public class SolrException extends RuntimeException {
   public static void logOnce(Logger log, String msg, Throwable e) {
     if (e instanceof SolrException) {
       if(((SolrException)e).logged) return;
+      if (((SolrException) e).code() == ErrorCode.SERVICE_UNAVAILABLE.code) return;
     }
     if (msg!=null) log(log,msg,e);
     else log(log,e);
