@@ -23,6 +23,9 @@ import java.util.Random;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
 
+/**
+ * TokenFilter that adds random variable-length payloads.
+ */
 public final class MockVariableLengthPayloadFilter extends TokenFilter {
   private static final int MAXLENGTH = 129;
 

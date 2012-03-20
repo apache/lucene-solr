@@ -25,7 +25,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- *
+ * Tokenizer for path-like hierarchies.
+ * <p>
  * Take something like:
  *
  * <pre>

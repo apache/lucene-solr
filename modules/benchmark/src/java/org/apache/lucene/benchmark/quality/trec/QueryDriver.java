@@ -33,8 +33,7 @@ import java.util.Set;
 
 
 /**
- *
- *
+ * Command-line tool for doing a TREC evaluation run.
  **/
 public class QueryDriver {
   public static void main(String[] args) throws Exception {

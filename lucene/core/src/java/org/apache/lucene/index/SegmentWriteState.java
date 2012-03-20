@@ -24,6 +24,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.MutableBits;
 
 /**
+ * Holder class for common parameters used during write.
  * @lucene.experimental
  */
 public class SegmentWriteState {

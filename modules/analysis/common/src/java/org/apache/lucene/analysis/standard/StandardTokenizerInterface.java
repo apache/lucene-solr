@@ -22,7 +22,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import java.io.Reader;
 import java.io.IOException;
 
-/** @lucene.internal */
+/** 
+ * Internal interface for supporting versioned grammars.
+ * @lucene.internal 
+ */
 public interface StandardTokenizerInterface {
 
   /** This character denotes the end of file */

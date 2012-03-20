@@ -28,6 +28,10 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 
 /**
+ * IndexReader implementation over a single segment. 
+ * <p>
+ * Instances pointing to the same segment (but with different deletes, etc)
+ * may share the same core data.
  * @lucene.experimental
  */
 public final class SegmentReader extends AtomicReader {

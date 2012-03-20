@@ -37,6 +37,9 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CommandLineUtil;
 
+/**
+ * Command-line tool for extracting sub-files out of a compound file.
+ */
 public class CompoundFileExtractor {
 
   public static void main(String [] args) {
@@ -63,7 +66,7 @@ public class CompoundFileExtractor {
     }
 
     if (filename == null) {
-      System.out.println("Usage: org.apache.lucene.index.IndexReader [-extract] [-dir-impl X] <cfsfile>");
+      System.out.println("Usage: org.apache.lucene.index.CompoundFileExtractor [-extract] [-dir-impl X] <cfsfile>");
       return;
     }
 

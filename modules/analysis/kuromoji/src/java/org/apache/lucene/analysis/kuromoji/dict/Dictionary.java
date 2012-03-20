@@ -17,6 +17,10 @@ package org.apache.lucene.analysis.kuromoji.dict;
  * limitations under the License.
  */
 
+/**
+ * Dictionary interface for retrieving morphological data
+ * by id.
+ */
 public interface Dictionary {
   
   public static final String INTERNAL_SEPARATOR = "\u0000";

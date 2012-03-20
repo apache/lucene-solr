@@ -55,6 +55,9 @@ import org.apache.lucene.util.fst.FST;
  * penalties to the long tokens.  If so, and the Mode is
  * SEARCH_WITH_COMPOUND, we output the alternate
  * segmentation as well. */
+/**
+ * Tokenizer for Japanese that uses morphological analysis.
+ */
 public final class KuromojiTokenizer extends Tokenizer {
 
   public static enum Mode {

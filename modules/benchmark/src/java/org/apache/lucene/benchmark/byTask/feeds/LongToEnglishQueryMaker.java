@@ -29,9 +29,9 @@ import org.apache.lucene.util.Version;
 import com.ibm.icu.text.RuleBasedNumberFormat;
 
 /**
- *
- *
- **/
+ * Creates queries whose content is a spelled-out <code>long</code> number 
+ * starting from <code>{@link Long#MIN_VALUE} + 10</code>.
+ */
 public class LongToEnglishQueryMaker implements QueryMaker {
   long counter = Long.MIN_VALUE + 10;
   protected QueryParser parser;

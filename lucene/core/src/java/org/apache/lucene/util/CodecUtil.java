@@ -27,6 +27,9 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 
 /**
+ * Utility class for reading and writing versioned headers.
+ * This is useful to ensure that a file is in the format
+ * you think it is.
  * @lucene.experimental
  */
 

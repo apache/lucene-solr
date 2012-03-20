@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- * emits a canned set of {@link Token}
+ * TokenStream from a canned list of Tokens.
  */
 public final class CannedTokenStream extends TokenStream {
   private final Token[] tokens;

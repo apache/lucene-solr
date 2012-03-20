@@ -25,6 +25,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
+/**
+ * Filter for DoubleMetaphone (supporting secondary codes)
+ */
 public final class DoubleMetaphoneFilter extends TokenFilter {
 
   private static final String TOKEN_TYPE = "DoubleMetaphone";

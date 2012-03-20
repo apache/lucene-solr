@@ -22,6 +22,13 @@ import java.io.IOException;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 
+/**
+ * Thin wrapper around an FST with root-arc caching for Japanese.
+ * <p>
+ * Depending upon fasterButMoreRam, either just kana (191 arcs),
+ * or kana and han (28,607 arcs) are cached. The latter offers
+ * additional performance at the cost of more RAM.
+ */
 public final class TokenInfoFST {
   private final FST<Long> fst;
 

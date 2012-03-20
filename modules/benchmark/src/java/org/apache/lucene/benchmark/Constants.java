@@ -18,8 +18,7 @@ package org.apache.lucene.benchmark;
 
 
 /**
- *
- *
+ * Various benchmarking constants (mostly defaults)
  **/
 public class Constants
 {

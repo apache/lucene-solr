@@ -41,9 +41,9 @@ import org.apache.lucene.util._TestUtil;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
-
-
-
+/**
+ * Utility class for sanity-checking queries.
+ */
 public class QueryUtils {
 
   /** Check the types of things query objects should be able to do. */

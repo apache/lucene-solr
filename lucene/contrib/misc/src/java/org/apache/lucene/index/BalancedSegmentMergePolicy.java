@@ -353,6 +353,9 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   }
   
 
+  /**
+   * Specifies configuration parameters for BalancedSegmentMergePolicy.
+   */
   public static class MergePolicyParams {
     private int _numLargeSegments;
     private int _maxSmallSegments;

@@ -31,6 +31,9 @@ import org.apache.lucene.analysis.kuromoji.dict.Dictionary;
 // TODO: would be nice to show 2nd best path in a diff't
 // color...
 
+/**
+ * Outputs the dot (graphviz) string for the viterbi lattice.
+ */
 public class GraphvizFormatter {
   
   private final static String BOS_LABEL = "BOS";

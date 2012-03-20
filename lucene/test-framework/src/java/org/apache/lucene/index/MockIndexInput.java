@@ -19,6 +19,11 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.BufferedIndexInput;
 
+// TODO: what is this used for? just testing BufferedIndexInput?
+// if so it should be pkg-private. otherwise its a dup of ByteArrayIndexInput?
+/**
+ * IndexInput backed by a byte[] for testing.
+ */
 public class MockIndexInput extends BufferedIndexInput {
     private byte[] buffer;
     private int pointer = 0;

@@ -23,7 +23,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.IndexReader;
 
-/*
+/**
  * Utility to get document frequency and total number of occurrences (sum of the tf for each doc)  of a term. 
  */
 public class GetTermInfo {

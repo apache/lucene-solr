@@ -49,10 +49,18 @@ import org.apache.lucene.util._TestUtil;
 public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   // some helpers to test Analyzers and TokenStreams:
   
+  /**
+   * Attribute that records if it was cleared or not.  This is used 
+   * for testing that clearAttributes() was called correctly.
+   */
   public static interface CheckClearAttributesAttribute extends Attribute {
     boolean getAndResetClearCalled();
   }
 
+  /**
+   * Attribute that records if it was cleared or not.  This is used 
+   * for testing that clearAttributes() was called correctly.
+   */
   public static final class CheckClearAttributesAttributeImpl extends AttributeImpl implements CheckClearAttributesAttribute {
     private boolean clearCalled = false;
     

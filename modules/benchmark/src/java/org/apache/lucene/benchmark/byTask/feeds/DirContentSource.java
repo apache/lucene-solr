@@ -49,6 +49,9 @@ public class DirContentSource extends ContentSource {
     ParsePosition pos;
   }
   
+  /**
+   * Iterator over the files in the directory
+   */
   public static class Iterator implements java.util.Iterator<File> {
 
     static class Comparator implements java.util.Comparator<File> {

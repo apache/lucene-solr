@@ -26,6 +26,9 @@ import java.util.Map;
 
 import org.apache.lucene.util._TestUtil;
 
+/**
+ * MergePolicy that makes random decisions for testing.
+ */
 public class MockRandomMergePolicy extends MergePolicy {
   private final Random random;
 

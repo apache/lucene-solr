@@ -19,6 +19,9 @@ package org.apache.lucene.analysis.kuromoji.dict;
 
 import java.io.IOException;
 
+/**
+ * Dictionary for unknown-word handling.
+ */
 public final class UnknownDictionary extends BinaryDictionary {
 
   private final CharacterDefinition characterDefinition = CharacterDefinition.getInstance();

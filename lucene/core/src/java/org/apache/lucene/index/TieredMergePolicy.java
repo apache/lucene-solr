@@ -35,7 +35,7 @@ import java.util.ArrayList;
  *  separates how many segments are merged at once ({@link
  *  #setMaxMergeAtOnce}) from how many segments are allowed
  *  per tier ({@link #setSegmentsPerTier}).  This merge
- *  policy also does not over-merge (ie, cascade merges). 
+ *  policy also does not over-merge (i.e. cascade merges). 
  *
  *  <p>For normal merging, this policy first computes a
  *  "budget" of how many segments are allowed by be in the
@@ -43,8 +43,8 @@ import java.util.ArrayList;
  *  sorts segments by decreasing size (pro-rating by percent
  *  deletes), and then finds the least-cost merge.  Merge
  *  cost is measured by a combination of the "skew" of the
- *  merge (size of largest seg divided by smallest seg),
- *  total merge size and pct deletes reclaimed,
+ *  merge (size of largest segment divided by smallest segment),
+ *  total merge size and percent deletes reclaimed,
  *  so that merges with lower skew, smaller size
  *  and those reclaiming more deletes, are
  *  favored.

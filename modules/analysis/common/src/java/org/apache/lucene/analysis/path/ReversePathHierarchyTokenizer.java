@@ -27,7 +27,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- *
+ * Tokenizer for domain-like hierarchies.
+ * <p>
  * Take something like:
  *
  * <pre>

@@ -26,6 +26,9 @@ import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
+/**
+ * n-gram connection cost data
+ */
 public final class ConnectionCosts {
   
   public static final String FILENAME_SUFFIX = ".dat";

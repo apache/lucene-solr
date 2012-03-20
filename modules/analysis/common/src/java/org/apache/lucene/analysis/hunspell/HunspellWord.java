@@ -19,6 +19,9 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.util.Arrays;
 
+/**
+ * A dictionary (.dic) entry with its associated flags.
+ */
 public class HunspellWord {
   
   private final char flags[]; // sorted, can we represent more concisely?

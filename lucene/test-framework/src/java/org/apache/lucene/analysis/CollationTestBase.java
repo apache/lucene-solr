@@ -48,6 +48,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Base test class for testing Unicode collation.
+ */
 public abstract class CollationTestBase extends LuceneTestCase {
 
   protected String firstRangeBeginningOriginal = "\u062F";
