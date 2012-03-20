@@ -55,7 +55,10 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       sep.applyTransformer(map);
       assertEquals(map.get("name"), "Hello Scott");
     } catch (DataImportHandlerException e) {
-      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)", e.getMessage().startsWith("<script> can be used only in java 6 or above"));
+      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)",
+          e.getMessage().startsWith("<script> can be used only in java 6 or above")
+              || e.getMessage().startsWith("Cannot load Script Engine for language:")
+              || e.getMessage().startsWith("'eval' failed with language:"));
       throw e;
     }
   }
@@ -87,7 +90,10 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       sep.applyTransformer(map);
       assertEquals(map.get("name"), "Hello Scott");
     } catch (DataImportHandlerException e) {
-      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)", e.getMessage().startsWith("<script> can be used only in java 6 or above"));
+      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)",
+          e.getMessage().startsWith("<script> can be used only in java 6 or above")
+              || e.getMessage().startsWith("Cannot load Script Engine for language:")
+              || e.getMessage().startsWith("'eval' failed with language:"));
       throw e;
     }
   }
@@ -103,7 +109,10 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
               .item(0));
       assertTrue(config.script.text.indexOf("checkNextToken") > -1);
     } catch (DataImportHandlerException e) {
-      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)", e.getMessage().startsWith("<script> can be used only in java 6 or above"));
+      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)",
+          e.getMessage().startsWith("<script> can be used only in java 6 or above")
+              || e.getMessage().startsWith("Cannot load Script Engine for language:")
+              || e.getMessage().startsWith("'eval' failed with language:"));
       throw e;
     }
   }
@@ -131,7 +140,10 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       sep.applyTransformer(map);
       assertNull(map.get("$hasMore"));
     } catch (DataImportHandlerException e) {
-      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)", e.getMessage().startsWith("<script> can be used only in java 6 or above"));
+      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)",
+          e.getMessage().startsWith("<script> can be used only in java 6 or above")
+              || e.getMessage().startsWith("Cannot load Script Engine for language:")
+              || e.getMessage().startsWith("'eval' failed with language:"));
       throw e;
     }
   }
