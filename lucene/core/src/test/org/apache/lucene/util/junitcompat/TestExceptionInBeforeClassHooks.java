@@ -33,7 +33,7 @@ import org.junit.runner.notification.Failure;
 
 public class TestExceptionInBeforeClassHooks extends WithNestedTests {
   public TestExceptionInBeforeClassHooks() {
-    super(false);
+    super(true);
   }
 
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
