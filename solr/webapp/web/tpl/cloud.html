@@ -14,39 +14,48 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<div id="cloud">
+<div id="cloud" class="clearfix">
 
-  <div class="block">
+  <div id="frame">
 
-      <h2><span>Zookeeper-Data</span></h2>
-      
-      <div class="message-container">
-          <div class="message"></div>
-      </div>
+    <div id="tree-content" class="content clearfix">
 
-      <div class="content clearfix">
-  <div id="tree" class="tree">#tree</div>
-  <div id="file-content" class="clearfix">
+      <div id="tree" class="tree">#tree</div>
+      <div id="file-content" class="clearfix">
 
-  <div id="prop">
+        <div id="prop">
           <ul></ul>
-  </div>
+        </div>
 
-  <div id="data"></div>
+        <div id="data"></div>
 
-  <a class="close"><span>[x]</span></a>
-  </div>
+        <a class="close"><span>[x]</span></a>
 
       </div>
 
-      <a class="debug"><span>Generate Dump</span></a>
-      <div id="debug">
-        <ul class="clearfix">
-          <li class="clipboard"><a href="#" data-copied="Copied to Clipboard!">Copy to Clipboard (BUGGY!)</a></li>
-          <li class="close"><a href="#">Close</a></li>
-        </ul>
-        <pre class="debug"></pre>
-        
+    </div>
+
+    <div id="graph-content" class="content clearfix">
+
+      <div id="canvas"></div>
+
+    </div>
+
+  </div>
+
+  <div id="navigation" class="clearfix">
+
+    <ul>
+      <li class="tree"><a href="#/~cloud">Tree</a></li>
+      <li class="dump"><a href="#/~cloud">Dump</a></li>
+    </ul>
+
+    <div id="debug">
+      <ul class="clearfix">
+        <li class="clipboard"><a href="#" data-copied="Copied to Clipboard!">Copy to Clipboard (BUGGY!)</a></li>
+        <li class="close"><a href="#">Close</a></li>
+      </ul>
+      <pre class="debug"></pre>
     </div>
 
   </div>

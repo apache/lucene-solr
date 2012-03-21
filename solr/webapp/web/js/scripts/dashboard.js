@@ -26,8 +26,8 @@ sammy.get
         
     content_element
       .removeClass( 'single' );
-        
-    var core_menu = $( 'ul', this.active_core );
+    
+    var core_menu = this.active_core.closest( 'ul' );
     if( !core_menu.data( 'admin-extra-loaded' ) )
     {
       core_menu.data( 'admin-extra-loaded', new Date() );

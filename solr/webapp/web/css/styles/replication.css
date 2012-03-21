@@ -13,6 +13,7 @@
 
 #content #replication #navigation
 {
+  border-right: 0;
   float: left;
   width: 20%;
 }

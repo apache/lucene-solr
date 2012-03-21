@@ -15,10 +15,10 @@
  limitations under the License.
 */
 
-// #/java-properties
+// #/~java-properties
 sammy.get
 (
-  /^#\/(java-properties)$/,
+  /^#\/~(java-properties)$/,
   function( context )
   {
     var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );
@@ -44,6 +44,12 @@ sammy.get
           var properties_data = {};
           var properties_content = [];
           var properties_order = [];
+
+          var workaround = xhr.responseText.match( /"(line\.separator)"\s*:\s*"(.+?)"/ );
+          if( workaround && workaround[2] )
+          {
+            system_properties[workaround[1]] = workaround[2];
+          }
 
           for( var key in system_properties )
           {

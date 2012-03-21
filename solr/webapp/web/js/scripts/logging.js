@@ -75,7 +75,13 @@ var logging_handler = function( response, text_status, xhr )
       var logger_name = logger.name.split( '.' );
       var display_name = logger_name.pop();
 
-      logger_content += '<li class="jstree-leaf" data-logger="' + logger.name.esc() + '">';
+      var leaf_class = 'jstree-leaf';
+      if( logger.level )
+      {
+        leaf_class += ' level-' + logger.level.esc().toLowerCase();
+      }
+
+      logger_content += '<li class="' + leaf_class + '" data-logger="' + logger.name.esc() + '">';
       logger_content += '<ins class="trigger jstree-icon">&nbsp;</ins>' + "\n";
       logger_content += '<a href="#" class="trigger '+ logger_class + '"' ;
 
@@ -205,10 +211,10 @@ var logging_handler = function( response, text_status, xhr )
 
 };
 
-// #/logging
+// #/~logging
 sammy.get
 (
-  /^#\/(logging)$/,
+  /^#\/~(logging)$/,
   function( context )
   {
     var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );

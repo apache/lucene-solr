@@ -17,6 +17,29 @@
   width: 20%;
 }
 
+#content #dataimport #form #navigation
+{
+  border-right: 0;
+}
+
+#content #dataimport #form #navigation a
+{
+  background-image: url( ../../img/ico/status-offline.png );
+}
+
+#content #dataimport #form #navigation .current a
+{
+  background-image: url( ../../img/ico/document-import.png );
+}
+
+#content #dataimport #form form
+{
+  display: none;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 10px;
+  padding-top: 5px;
+}
+
 #content #dataimport.error #form form
 {
   display: none !important;
@@ -37,6 +60,17 @@
   width: 100%;
 }
 
+#content #dataimport #form button
+{
+  margin-top: 10px;
+}
+
+#content #dataimport #form button.loader
+{
+  background-position: 2px 50%;
+  padding-left: 23px;
+}
+
 #content #dataimport #form #start
 {
   float: left;
@@ -53,50 +87,6 @@
 {
   margin-bottom: 0;
   width: auto;
-}
-
-#content #dataimport #form fieldset,
-#content #dataimport #form .optional.expanded
-{
-  border: 1px solid #fff;
-  border-top: 1px solid #c0c0c0;
-  margin-bottom: 10px;
-}
-
-#content #dataimport #form fieldset legend,
-#content #dataimport #form .optional.expanded legend
-{
-  display: block;
-  margin-left: 10px;
-  padding: 0px 5px;
-}
-
-#content #dataimport #form fieldset legend label
-{
-  margin-top: 0;
-}
-
-#content #dataimport #form .handler
-{
-  display: none;
-}
-
-#content #dataimport #form .handler ul
-{
-  list-style: disc;
-  margin-left: 0.7em;
-  padding-left: 0.7em;
-}
-
-#content #dataimport #form .handler ul li a
-{
-  color: #c0c0c0;
-  display: block;
-}
-
-#content #dataimport #form .handler ul li.active a
-{
-  color: #333;
 }
 
 #content #dataimport #current_state

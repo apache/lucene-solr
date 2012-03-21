@@ -59,7 +59,12 @@ sammy.bind
 
     for( var core in params.cores )
     {
-      navigation_content.push( '<li><a href="' + params.basepath + core + '">' + core + '</a></li>' );
+      var core_name = core;
+      if( !core_name )
+      {
+        core_name = '<em>(empty)</em>';
+      }
+      navigation_content.push( '<li><a href="' + params.basepath + core + '">' + core_name + '</a></li>' );
     }
 
     params.navigation_element
@@ -96,10 +101,10 @@ sammy.bind
   }
 );
 
-// #/cores
+// #/~cores
 sammy.get
 (
-  /^#\/(cores)$/,
+  /^#\/~(cores)$/,
   function( context )
   {
     delete app.cores_template;
@@ -126,15 +131,15 @@ sammy.get
   }
 );
 
-// #/cores
+// #/~cores
 sammy.get
 (
-  /^#\/(cores)\//,
+  /^#\/~(cores)\//,
   function( context )
   {
     var content_element = $( '#content' );
 
-    var path_parts = this.path.match( /^(.+\/cores\/)(.*)$/ );
+    var path_parts = this.path.match( /^(.+\/~cores\/)(.*)$/ );
     var current_core = path_parts[2];
 
     sammy.trigger

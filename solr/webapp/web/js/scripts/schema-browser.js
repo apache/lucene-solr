@@ -15,6 +15,7 @@
  limitations under the License.
 */
 
+var current_core = null;
 var cookie_name = 'schema-browser_autoload';
 
 var luke_array_to_struct = function( array )
@@ -110,11 +111,12 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
 
             topterms_frq_last = topterms[i+1];
             topterms_content += '<li class="clearfix">'
-                                             +  '<p><span>' + topterms_frq_last.esc() + '</span></p>' + "\n"
-                                             +  '<ul>' + "\n";
+                             +  '<p><span>' + topterms_frq_last.esc() + '</span></p>' + "\n"
+                             +  '<ul>' + "\n";
             }
 
-            topterms_content += '<li><span>' + topterms[i].esc() + '</span></li>' + "\n";
+            var target = '#/' + current_core + '/query?q=' + field.esc() + ':' + encodeURIComponent( topterms[i] );
+            topterms_content += '<li><a href="' + target + '">' + topterms[i].esc() + '</a></li>' + "\n";
           }
 
           topterms_content += '</li>';
@@ -171,20 +173,20 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
           histogram_element
             .sparkline
             (
-            histogram_values,
-            {
-              type : 'bar',
-              barColor : '#c0c0c0',
-              zeroColor : '#000000',
-              height : histogram_element.height(),
-              barWidth : 46,
-              barSpacing : 3
-            }
+              histogram_values,
+              {
+                type : 'bar',
+                barColor : '#c0c0c0',
+                zeroColor : '#000000',
+                height : histogram_element.height(),
+                barWidth : 46,
+                barSpacing : 3
+              }
             );
 
           1 === histogram_values.length
             ? histogram_element.addClass( 'single' )
-            : histogram_element.removClass( 'single' );
+            : histogram_element.removeClass( 'single' );
         }
 
       },
@@ -255,6 +257,9 @@ sammy.bind
 
       $( 'option[value="' + params.route_params.path + '"]', related_select_element )
         .attr( 'selected', 'selected' );
+
+      related_select_element
+        .trigger( 'liszt:updated' );
 
       if( 'field' === type )
       {
@@ -605,7 +610,8 @@ sammy.bind
 
                     related_select_element
                       .attr( 'rel', '#/' + $( 'p a', params.active_core ).html() + '/schema-browser' )
-                      .append( related_options );
+                      .append( related_options )
+                      .chosen();
                                             
                     related_select_element
                       .die( 'change' )
@@ -660,6 +666,7 @@ sammy.get
   function( context )
   {
     var core_basepath = this.active_core.attr( 'data-basepath' );
+    current_core = context.params.splat[0];
 
     var trigger_params = {
       active_core : this.active_core
@@ -1142,9 +1149,9 @@ sammy.get
         data_element
           .hide();
       };
-
-      delete app.schema_browser_data;
     }
+
+    delete app.schema_browser_data;
 
     sammy.trigger
     (

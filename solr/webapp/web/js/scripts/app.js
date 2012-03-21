@@ -66,6 +66,15 @@ var sammy = $.sammy
         }
       }
     );
+
+    this.bind
+    (
+      'error',
+      function( message, original_error )
+      {
+        alert( original_error.message );
+      }
+    );
         
     // activate_core
     this.before
@@ -73,22 +82,21 @@ var sammy = $.sammy
       {},
       function( context )
       {
-        $( 'li[id].active', app.menu_element )
+        var menu_wrapper = $( '#menu-wrapper' );
+
+        $( 'li[id].active', menu_wrapper )
           .removeClass( 'active' );
                 
-        $( 'ul li.active', app.menu_element )
+        $( 'li.active', menu_wrapper )
           .removeClass( 'active' );
 
         if( this.params.splat )
         {
-          var active_element = $( '#' + this.params.splat[0], app.menu_element );
+          var active_element = $( '#' + this.params.splat[0], menu_wrapper );
                     
           if( 0 === active_element.size() )
           {
-            var first_core = $( 'li[data-basepath]', app.menu_element ).attr( 'id' );
-            var first_core_url = context.path.replace( new RegExp( '/' + this.params.splat[0] + '/' ), '/' + first_core + '/' );
-
-            context.redirect( first_core_url );
+            this.app.error( 'There exists no core with name "' + this.params.splat[0] + '"' );
             return false;
           }
 
@@ -129,7 +137,7 @@ var solr_admin = function( app_config )
 
   plugin_data = null,
     
-  this.menu_element = $( '#menu ul' );
+  this.menu_element = $( '#menu-selector' );
   this.config = config;
 
   this.run = function()
@@ -147,7 +155,9 @@ var solr_admin = function( app_config )
         success : function( response )
         {
           self.cores_data = response.status;
-          is_multicore = 'undefined' === typeof response.status[''];
+
+          var core_count = 0; for( var i in response.status ) { core_count++; }
+          is_multicore = core_count > 1;
 
           if( is_multicore )
           {

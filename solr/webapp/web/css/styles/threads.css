@@ -14,13 +14,11 @@
 #content #threads #thread-dump tbody .state
 {
   background-color: #fff;
-  border: 0;
 }
 
 #content #threads #thread-dump table th,
 #content #threads #thread-dump table td
 {
-  border: 1px solid #c0c0c0;
   padding: 5px 3px;
   vertical-align: top;
 }
@@ -63,18 +61,6 @@
 #content #threads #thread-dump tbody .TIMED_WAITING.lock a
 {
   background-image: url( ../../img/ico/hourglass--exclamation.png );
-}
-
-#content #threads #thread-dump thead th:first-child,
-#content #threads #thread-dump tbody td:first-child
-{
-  border-left: 0;
-}
-
-#content #threads #thread-dump thead th:last-child,
-#content #threads #thread-dump tbody td:last-child
-{
-  border-right: 0;
 }
 
 #content #threads #thread-dump tbody .name a

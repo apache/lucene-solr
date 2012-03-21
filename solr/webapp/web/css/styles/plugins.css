@@ -1,41 +1,14 @@
 #content #plugins #navigation
 {
-  background-image: url( ../../img/div.gif );
-  background-position: 100% 0;
-  background-repeat: repeat-y;
   width: 20%;
 }
 
-#content #plugins #navigation a
-{
-  background-position: 0 50%;
-  border-right: 1px solid #f0f0f0;
-  display: block;
-  margin-left: 1px;
-  padding: 3px 0;
-  padding-left: 21px;
-}
-
 #content #plugins #navigation .cache a { background-image: url( ../../img/ico/disk-black.png ); }
-#content #plugins #navigation .core a { background-image: url( ../../img/ico/toolbox.png ); }
+#content #plugins #navigation .core a { background-image: url( ../../img/ico/wooden-box.png ); }
 #content #plugins #navigation .other a { background-image: url( ../../img/ico/zone.png ); }
 #content #plugins #navigation .highlighting a { background-image: url( ../../img/ico/highlighter-text.png ); }
 #content #plugins #navigation .updatehandler a{ background-image: url( ../../img/ico/arrow-circle.png ); }
 #content #plugins #navigation .queryhandler a { background-image: url( ../../img/ico/magnifier.png ); }
-
-#content #plugins #navigation a:hover
-{
-  background-color: #fafafa;
-}
-
-#content #plugins #navigation .current a
-{
-  background-color: #fff;
-  border-right-color: #fff;
-  border-top: 1px solid #f0f0f0;
-  border-bottom: 1px solid #f0f0f0;
-  font-weight: bold;
-}
 
 #content #plugins #frame
 {
@@ -74,9 +47,11 @@
 
 #content #plugins #frame .entry ul
 {
+  border-left: 9px solid #f0f3ff;
   display: none;
+  margin-left: 3px;
   padding-top: 5px;
-  margin-left: 21px;
+  padding-left: 10px;
 }
 
 #content #plugins #frame .entry li
@@ -113,6 +88,7 @@
 
 #content #plugins #frame .entry .stats ul
 {
+  border-left: 0;
   margin: 0;
   padding: 0;
 }

@@ -371,10 +371,16 @@
   background-color: #f0f0f0;
 }
 
-#content #schema-browser .topterms-holder li li span
+#content #schema-browser .topterms-holder li li a
 {
+  display: block;
   padding-left: 2px;
   padding-right: 2px;
+}
+
+#content #schema-browser .topterms-holder li li a:hover
+{
+  background-color: #c0c0c0;
 }
 
 #content #schema-browser #data #field .histogram-holder

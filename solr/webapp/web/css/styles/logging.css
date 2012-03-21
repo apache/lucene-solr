@@ -4,34 +4,30 @@
   padding-left: 21px;
 }
 
+#content #logging .jstree > li
+{
+  margin-left: 0;
+}
+
 #content #logging .jstree li
 {
   position: relative;
 }
 
+#content #logging .jstree .level-finest  { background-color: #d5e5fc; }
+#content #logging .jstree .level-fine    { background-color: #d5fafc; }
+#content #logging .jstree .level-config  { background-color: #e6fded; }
+#content #logging .jstree .level-info    { background-color: #fafcd7; }
+#content #logging .jstree .level-warning { background-color: #fcecd5; }
+#content #logging .jstree .level-severe  { background-color: #fcdcda; }
+#content #logging .jstree .level-off     { background-color: #ffffff; }
+
 #content #logging .jstree a
 {
-  color: #c0c0c0;
   height: 17px;
   line-height: 17px;
   padding: 0;
   width: 90%;
-}
-
-#content #logging .jstree a.set
-{
-  color: #333;
-}
-
-#content #logging .jstree a.null
-{
-  color: #f0f0f0;
-}
-
-#content #logging .jstree a:hover,
-#content #logging .jstree a.open
-{
-  background-color: #f0f0f0;
 }
 
 #content #logging .jstree a:hover
@@ -81,10 +77,11 @@
 #content #logging .jstree li li li li .selector-holder { left: 386px; }
 #content #logging .jstree li li li li li .selector-holder { left: 368px; }
 #content #logging .jstree li li li li li li .selector-holder { left: 350px; }
+#content #logging .jstree li li li li li li li .selector-holder { left: 332px; }
 
 #content #logging .jstree .selector
 {
-  border: 1px solid #fff;
+  border: 1px solid transparent;
   position: relative;
 }
 

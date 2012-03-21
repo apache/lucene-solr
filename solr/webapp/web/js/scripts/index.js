@@ -210,7 +210,7 @@ sammy.get
   {
     var content_element = $( '#content' );
 
-    $( '#index', app.menu_element )
+    $( '#menu-wrapper #index' )
       .addClass( 'active' );
 
     content_element
