@@ -23,6 +23,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.MultipleFailureException;
@@ -84,7 +85,7 @@ public class UncaughtExceptionsRule implements TestRule {
           uncaughtExceptions.clear();
         }
 
-        if (!errors.isEmpty()) {
+        if (hasNonAssumptionErrors(errors)) {
           if (ltc == null) {
             // class level failure (e.g. afterclass)
             LuceneTestCase.reportPartialFailureInfo();
@@ -97,7 +98,16 @@ public class UncaughtExceptionsRule implements TestRule {
       }
     };
   }
- 
+
+  private boolean hasNonAssumptionErrors(ArrayList<Throwable> errors) {
+    for (Throwable t : errors) {
+      if (!(t instanceof AssumptionViolatedException)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * Just a check if anything's been caught.
    */
