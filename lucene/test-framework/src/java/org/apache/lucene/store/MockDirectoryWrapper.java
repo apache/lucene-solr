@@ -559,7 +559,7 @@ public class MockDirectoryWrapper extends Directory {
     }
     open = false;
     if (checkIndexOnClose) {
-      if (DirectoryReader.indexExists(this)) {
+      if (indexPossiblyExists(this)) {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now crash");
         }
@@ -594,6 +594,26 @@ public class MockDirectoryWrapper extends Directory {
       }
     }
     delegate.close();
+  }
+  
+  /** don't rely upon DirectoryReader.fileExists to determine if we should
+   *  checkIndex() or not. It might mask real problems, where we silently
+   *  don't checkindex at all. instead we look for a segments file.
+   */
+  private boolean indexPossiblyExists(Directory d) throws IOException {
+    String files[];
+    try {
+      files = d.listAll();
+    } catch (IOException ex) {
+      // this means directory doesn't exist, which is ok. return false
+      return false;
+    }
+    for (String f : files) {
+      if (f.startsWith("segments_")) {
+        return true;
+      }
+    }
+    return false;
   }
 
   synchronized void removeOpenFile(Closeable c, String name) {
