@@ -304,11 +304,42 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
    */
   public static void checkRandomData(Random random, Analyzer a, int iterations, boolean simple) throws IOException {
     checkRandomData(random, a, iterations, 20, simple);
+  }
+  
+  static class AnalysisThread extends Thread {
+    final int iterations;
+    final int maxWordLength;
+    final Random random;
+    final Analyzer a;
+    final boolean simple;
+    
+    AnalysisThread(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple) {
+      this.random = random;
+      this.a = a;
+      this.iterations = iterations;
+      this.maxWordLength = maxWordLength;
+      this.simple = simple;
+    }
+    
+    @Override
+    public void run() {
+      try {
+        // see the part in checkRandomData where it replays the same text again
+        // to verify reproducability/reuse: hopefully this would catch thread hazards.
+        checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean(), simple);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  };
+  
+  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple) throws IOException {
+    checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean(), simple);
     // now test with multiple threads
     int numThreads = _TestUtil.nextInt(random, 4, 8);
     Thread threads[] = new Thread[numThreads];
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new AnalysisThread(new Random(random.nextLong()), a, iterations, simple);
+      threads[i] = new AnalysisThread(new Random(random.nextLong()), a, iterations, maxWordLength, simple);
     }
     for (int i = 0; i < threads.length; i++) {
       threads[i].start();
@@ -321,45 +352,16 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       }
     }
   }
-  
-  static class AnalysisThread extends Thread {
-    final int iterations;
-    final Random random;
-    final Analyzer a;
-    final boolean simple;
-    
-    AnalysisThread(Random random, Analyzer a, int iterations, boolean simple) {
-      this.random = random;
-      this.a = a;
-      this.iterations = iterations;
-      this.simple = simple;
-    }
-    
-    @Override
-    public void run() {
-      try {
-        // see the part in checkRandomData where it replays the same text again
-        // to verify reproducability/reuse: hopefully this would catch thread hazards.
-        checkRandomData(random, a, iterations, 20, simple);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  };
-  
-  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple) throws IOException {
-    checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean(), simple);
-  }
 
-  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple) throws IOException {
+  private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple) throws IOException {
     for (int i = 0; i < iterations; i++) {
       String text;
       if (simple) { 
-        text = random.nextBoolean() ? _TestUtil.randomSimpleString(random) : _TestUtil.randomHtmlishString(random, maxWordLength);
+        text = random.nextBoolean() ? _TestUtil.randomSimpleString(random, maxWordLength) : _TestUtil.randomHtmlishString(random, maxWordLength);
       } else {
         switch(_TestUtil.nextInt(random, 0, 4)) {
           case 0: 
-            text = _TestUtil.randomSimpleString(random);
+            text = _TestUtil.randomSimpleString(random, maxWordLength);
             break;
           case 1:
             text = _TestUtil.randomRealisticUnicodeString(random, maxWordLength);
