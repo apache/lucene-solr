@@ -80,6 +80,7 @@ public class ScriptTransformer extends Transformer {
           "<script> tag is not present under <dataConfig>");
     }
     Object scriptEngineMgr = null;
+    Method evalMethod = null;
     try {
       scriptEngineMgr = Class.forName("javax.script.ScriptEngineManager")
           .newInstance();
@@ -90,14 +91,14 @@ public class ScriptTransformer extends Transformer {
       Method getEngineMethod = scriptEngineMgr.getClass().getMethod(
           "getEngineByName", String.class);
       engine = getEngineMethod.invoke(scriptEngineMgr, scriptLang);
+      evalMethod = engine.getClass().getMethod("eval", String.class);
+      invokeFunctionMethod = engine.getClass().getMethod("invokeFunction",
+          String.class, Object[].class);
     } catch (Exception e) {
       wrapAndThrow(SEVERE, e, "Cannot load Script Engine for language: "
           + scriptLang);
     }
-    try {
-      Method evalMethod = engine.getClass().getMethod("eval", String.class);
-      invokeFunctionMethod = engine.getClass().getMethod("invokeFunction",
-          String.class, Object[].class);
+    try {      
       evalMethod.invoke(engine, scriptText);
     } catch (Exception e) {
       wrapAndThrow(SEVERE, e, "'eval' failed with language: " + scriptLang

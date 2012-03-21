@@ -57,8 +57,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
     } catch (DataImportHandlerException e) {
       assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)",
           e.getMessage().startsWith("<script> can be used only in java 6 or above")
-              || e.getMessage().startsWith("Cannot load Script Engine for language:")
-              || e.getMessage().startsWith("'eval' failed with language:"));
+              || e.getMessage().startsWith("Cannot load Script Engine for language:"));
       throw e;
     }
   }
@@ -92,8 +91,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
     } catch (DataImportHandlerException e) {
       assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)",
           e.getMessage().startsWith("<script> can be used only in java 6 or above")
-              || e.getMessage().startsWith("Cannot load Script Engine for language:")
-              || e.getMessage().startsWith("'eval' failed with language:"));
+              || e.getMessage().startsWith("Cannot load Script Engine for language:"));
       throw e;
     }
   }
@@ -111,8 +109,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
     } catch (DataImportHandlerException e) {
       assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)",
           e.getMessage().startsWith("<script> can be used only in java 6 or above")
-              || e.getMessage().startsWith("Cannot load Script Engine for language:")
-              || e.getMessage().startsWith("'eval' failed with language:"));
+              || e.getMessage().startsWith("Cannot load Script Engine for language:"));
       throw e;
     }
   }
@@ -142,8 +139,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
     } catch (DataImportHandlerException e) {
       assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)",
           e.getMessage().startsWith("<script> can be used only in java 6 or above")
-              || e.getMessage().startsWith("Cannot load Script Engine for language:")
-              || e.getMessage().startsWith("'eval' failed with language:"));
+              || e.getMessage().startsWith("Cannot load Script Engine for language:"));
       throw e;
     }
   }
