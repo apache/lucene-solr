@@ -295,7 +295,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   
   /** utility method for blasting tokenstreams with data to make sure they don't do anything crazy */
   public static void checkRandomData(Random random, Analyzer a, int iterations) throws IOException {
-    checkRandomData(random, a, iterations, false);
+    checkRandomData(random, a, iterations, 20, false);
+  }
+  
+  /** utility method for blasting tokenstreams with data to make sure they don't do anything crazy */
+  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength) throws IOException {
+    checkRandomData(random, a, iterations, maxWordLength, false);
   }
   
   /** 
