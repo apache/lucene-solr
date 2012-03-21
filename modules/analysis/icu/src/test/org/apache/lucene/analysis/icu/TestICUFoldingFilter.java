@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Tests ICUFoldingFilter
@@ -30,7 +29,7 @@ public class TestICUFoldingFilter extends BaseTokenStreamTestCase {
   Analyzer a = new Analyzer() {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
       return new TokenStreamComponents(tokenizer, new ICUFoldingFilter(tokenizer));
     }
   };

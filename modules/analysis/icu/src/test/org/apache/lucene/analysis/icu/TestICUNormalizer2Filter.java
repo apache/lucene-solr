@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 import com.ibm.icu.text.Normalizer2;
 
@@ -32,7 +31,7 @@ public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
   Analyzer a = new Analyzer() {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
       return new TokenStreamComponents(tokenizer, new ICUNormalizer2Filter(tokenizer));
     }
   };
@@ -62,7 +61,7 @@ public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new ICUNormalizer2Filter(
             tokenizer,
             /* specify nfc with decompose to get nfd */
