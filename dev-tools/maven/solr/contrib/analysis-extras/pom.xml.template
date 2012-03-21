@@ -82,6 +82,12 @@
       <artifactId>lucene-analyzers-stempel</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <!-- SOLR-3263: Test scope dep is required to avoid jar signing conflicts -->
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <directory>${build-directory}</directory>

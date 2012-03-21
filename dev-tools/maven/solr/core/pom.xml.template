@@ -200,7 +200,8 @@
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
-      <!-- compile scope; solr-core is a jar not a war -->
+      <!-- SOLR-3263: Provided scope is required to avoid jar signing conflicts -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.easymock</groupId>
