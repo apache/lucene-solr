@@ -52,7 +52,9 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       sep.init(context);
       sep.applyTransformer(map);
       assertEquals(map.get("name"), "Hello Scott");
-    } catch (DataImportHandlerException e) {           
+    } catch (DataImportHandlerException e) {    
+      assumeFalse("This JVM does not have Rhino installed.  Test Skipped.", e
+          .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
   }
@@ -98,7 +100,9 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       config.readFromXml((Element) document.getElementsByTagName("dataConfig")
               .item(0));
       assertTrue(config.script.text.indexOf("checkNextToken") > -1);
-    } catch (DataImportHandlerException e) {
+    } catch (DataImportHandlerException e) {    
+      assumeFalse("This JVM does not have Rhino installed.  Test Skipped.", e
+          .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
   }
@@ -125,7 +129,9 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       map.put("nextToken", "");
       sep.applyTransformer(map);
       assertNull(map.get("$hasMore"));
-    } catch (DataImportHandlerException e) {
+    } catch (DataImportHandlerException e) {    
+      assumeFalse("This JVM does not have Rhino installed.  Test Skipped.", e
+          .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
   }
