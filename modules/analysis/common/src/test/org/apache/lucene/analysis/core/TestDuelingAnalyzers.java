@@ -22,6 +22,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockReaderWrapper;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -73,8 +74,63 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     };
     for (int i = 0; i < 10000; i++) {
       String s = _TestUtil.randomSimpleString(random);
-      assertEquals(s, left.tokenStream("foo", new StringReader(s)), 
-                   right.tokenStream("foo", new StringReader(s)));
+      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
+                   right.tokenStream("foo", newStringReader(s)));
+    }
+  }
+  
+  // not so useful since its all one token?!
+  public void testLetterAsciiHuge() throws Exception {
+    int maxLength = 8192; // CharTokenizer.IO_BUFFER_SIZE*2
+    MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
+    left.setMaxTokenLength(255); // match CharTokenizer's max token length
+    Analyzer right = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    int numIterations = atLeast(100);
+    for (int i = 0; i < numIterations; i++) {
+      String s = _TestUtil.randomSimpleString(random, maxLength);
+      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
+                   right.tokenStream("foo", newStringReader(s)));
+    }
+  }
+  
+  public void testLetterHtmlish() throws Exception {
+    Analyzer left = new MockAnalyzer(random, jvmLetter, false);
+    Analyzer right = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    for (int i = 0; i < 10000; i++) {
+      String s = _TestUtil.randomHtmlishString(random, 20);
+      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
+                   right.tokenStream("foo", newStringReader(s)));
+    }
+  }
+  
+  public void testLetterHtmlishHuge() throws Exception {
+    int maxLength = 2048; // this is number of elements, not chars!
+    MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
+    left.setMaxTokenLength(255); // match CharTokenizer's max token length
+    Analyzer right = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    int numIterations = atLeast(100);
+    for (int i = 0; i < numIterations; i++) {
+      String s = _TestUtil.randomHtmlishString(random, maxLength);
+      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
+                   right.tokenStream("foo", newStringReader(s)));
     }
   }
   
@@ -89,8 +145,27 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     };
     for (int i = 0; i < 10000; i++) {
       String s = _TestUtil.randomUnicodeString(random);
-      assertEquals(s, left.tokenStream("foo", new StringReader(s)), 
-                   right.tokenStream("foo", new StringReader(s)));
+      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
+                   right.tokenStream("foo", newStringReader(s)));
+    }
+  }
+  
+  public void testLetterUnicodeHuge() throws Exception {
+    int maxLength = 8192; // CharTokenizer.IO_BUFFER_SIZE*2
+    MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
+    left.setMaxTokenLength(255); // match CharTokenizer's max token length
+    Analyzer right = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    int numIterations = atLeast(100);
+    for (int i = 0; i < numIterations; i++) {
+      String s = _TestUtil.randomUnicodeString(random, maxLength);
+      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
+                   right.tokenStream("foo", newStringReader(s)));
     }
   }
   
@@ -119,5 +194,14 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     assertEquals("wrong final offset for input: " + s, leftOffset.endOffset(), rightOffset.endOffset());
     left.close();
     right.close();
+  }
+  
+  // TODO: maybe push this out to _TestUtil or LuceneTestCase and always use it instead?
+  private static Reader newStringReader(String s) {
+    Reader r = new StringReader(s);
+    if (random.nextBoolean()) {
+      r = new MockReaderWrapper(random, r);
+    }
+    return r;
   }
 }
