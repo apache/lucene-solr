@@ -609,11 +609,14 @@ public final class SynonymFilter extends TokenFilter {
     super.reset();
     captureCount = 0;
     finished = false;
+    inputSkipCount = 0;
+    nextRead = nextWrite = 0;
 
     // In normal usage these resets would not be needed,
     // since they reset-as-they-are-consumed, but the app
-    // may not consume all input tokens in which case we
-    // have leftover state here:
+    // may not consume all input tokens (or we might hit an
+    // exception), in which case we have leftover state
+    // here:
     for (PendingInput input : futureInputs) {
       input.reset();
     }
