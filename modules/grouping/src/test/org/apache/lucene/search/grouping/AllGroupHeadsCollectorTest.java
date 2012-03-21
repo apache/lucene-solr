@@ -506,6 +506,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     };
   }
 
+  @SuppressWarnings({"unchecked","rawtypes"})
   private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, Type valueType) throws IOException {
     AbstractAllGroupHeadsCollector<? extends AbstractAllGroupHeadsCollector.GroupHead> collector;
     if (random.nextBoolean()) {

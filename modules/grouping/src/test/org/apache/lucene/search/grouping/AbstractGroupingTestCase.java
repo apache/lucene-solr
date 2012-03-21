@@ -25,6 +25,7 @@ import org.apache.lucene.util._TestUtil;
  */
 // TODO (MvG) : The grouping tests contain a lot of code duplication. Try to move the common code to this class..
 public abstract class AbstractGroupingTestCase extends LuceneTestCase {
+
   protected String generateRandomNonEmptyString() {
     String randomValue;
     do {
@@ -34,4 +35,5 @@ public abstract class AbstractGroupingTestCase extends LuceneTestCase {
     } while ("".equals(randomValue));
     return randomValue;
   }
+
 }
