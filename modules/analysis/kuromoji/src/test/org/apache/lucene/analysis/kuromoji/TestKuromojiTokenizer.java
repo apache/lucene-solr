@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Ignore;
 
 public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
 
@@ -188,6 +189,13 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
     checkRandomData(random, analyzerNoPunct, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  /** blast some random large strings through the analyzer */
+  @Ignore("FIXME: see LUCENE-3897")
+  public void testRandomHugeStrings() throws Exception {
+    checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerNoPunct, 200*RANDOM_MULTIPLIER, 8192);
   }
   
   public void testLargeDocReliability() throws Exception {

@@ -127,6 +127,14 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
                                             KuromojiAnalyzer.getDefaultStopTags());
     checkRandomData(random, a, atLeast(10000));
   }
+  
+  /** blast some random large strings through the analyzer */
+  public void testRandomHugeStrings() throws Exception {
+    final Analyzer a = new KuromojiAnalyzer(TEST_VERSION_CURRENT, null, Mode.SEARCH,
+        KuromojiAnalyzer.getDefaultStopSet(),
+        KuromojiAnalyzer.getDefaultStopTags());
+    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+  }
 
   // Copied from TestKuromojiTokenizer, to make sure passing
   // user dict to analyzer works:

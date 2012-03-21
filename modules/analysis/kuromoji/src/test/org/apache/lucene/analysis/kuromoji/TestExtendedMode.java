@@ -59,4 +59,14 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
       }
     }
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  /** blast some random large strings through the analyzer */
+  public void testRandomHugeStrings() throws Exception {
+    checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER, 8192);
+  }
 }
