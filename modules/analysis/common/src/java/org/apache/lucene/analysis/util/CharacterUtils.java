@@ -1,10 +1,5 @@
 package org.apache.lucene.analysis.util;
 
-import java.io.IOException;
-import java.io.Reader;
-
-import org.apache.lucene.util.Version;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +16,11 @@ import org.apache.lucene.util.Version;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+import java.io.Reader;
+
+import org.apache.lucene.util.Version;
 
 /**
  * {@link CharacterUtils} provides a unified interface to Character-related
@@ -121,8 +121,9 @@ public abstract class CharacterUtils {
    * @return a new {@link CharacterBuffer} instance.
    */
   public static CharacterBuffer newCharacterBuffer(final int bufferSize) {
-    if(bufferSize < 2)
+    if (bufferSize < 2) {
       throw new IllegalArgumentException("buffersize must be >= 2");
+    }
     return new CharacterBuffer(new char[bufferSize], 0, 0);
   }
 
@@ -159,7 +160,7 @@ public abstract class CharacterUtils {
     }
 
     @Override
-    public final int codePointAt(final char[] chars, final int offset) {
+    public int codePointAt(final char[] chars, final int offset) {
       return Character.codePointAt(chars, offset);
     }
 
@@ -177,21 +178,51 @@ public abstract class CharacterUtils {
     public boolean fill(final CharacterBuffer buffer, final Reader reader) throws IOException {
       final char[] charBuffer = buffer.buffer;
       buffer.offset = 0;
-      charBuffer[0] = buffer.lastTrailingHighSurrogate;
-      final int offset = buffer.lastTrailingHighSurrogate == 0 ? 0 : 1;
-      buffer.lastTrailingHighSurrogate = 0;
-      final int read = reader.read(charBuffer, offset, charBuffer.length
-          - offset);
+      final int offset;
+
+      // Install the previously saved ending high surrogate:
+      if (buffer.lastTrailingHighSurrogate != 0) {
+        charBuffer[0] = buffer.lastTrailingHighSurrogate;
+        offset = 1;
+      } else {
+        offset = 0;
+      }
+
+      final int read = reader.read(charBuffer,
+                                   offset,
+                                   charBuffer.length - offset);
       if (read == -1) {
         buffer.length = offset;
+        buffer.lastTrailingHighSurrogate = 0;
         return offset != 0;
       }
+      assert read > 0;
       buffer.length = read + offset;
-      // special case if the read returns 0 and the lastTrailingHighSurrogate was set
+
+      // If we read only a single char, and that char was a
+      // high surrogate, read again:
+      if (buffer.length == 1
+          && Character.isHighSurrogate(charBuffer[buffer.length - 1])) {
+        final int read2 = reader.read(charBuffer,
+                                      1,
+                                      charBuffer.length - 1);
+        if (read2 == -1) {
+          // NOTE: mal-formed input (ended on a high
+          // surrogate)!  Consumer must deal with it...
+          return true;
+        }
+        assert read2 > 0;
+
+        buffer.length += read2;
+      }
+
       if (buffer.length > 1
           && Character.isHighSurrogate(charBuffer[buffer.length - 1])) {
         buffer.lastTrailingHighSurrogate = charBuffer[--buffer.length];
+      } else {
+        buffer.lastTrailingHighSurrogate = 0;
       }
+
       return true;
     }
   }
@@ -201,7 +232,7 @@ public abstract class CharacterUtils {
     }
 
     @Override
-    public final int codePointAt(final char[] chars, final int offset) {
+    public int codePointAt(final char[] chars, final int offset) {
       return chars[offset];
     }
 
@@ -238,7 +269,9 @@ public abstract class CharacterUtils {
     private final char[] buffer;
     private int offset;
     private int length;
-    private char lastTrailingHighSurrogate = 0;
+    // NOTE: not private so outer class can access without
+    // $access methods:
+    char lastTrailingHighSurrogate;
     
     CharacterBuffer(char[] buffer, int offset, int length) {
       this.buffer = buffer;
