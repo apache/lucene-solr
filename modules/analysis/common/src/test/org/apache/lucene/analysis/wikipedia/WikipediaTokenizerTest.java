@@ -185,4 +185,17 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
     };
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
+  
+  /** blast some random large strings through the analyzer */
+  public void testRandomHugeStrings() throws Exception {
+    Analyzer a = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new WikipediaTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      } 
+    };
+    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+  }
 }

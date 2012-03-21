@@ -214,6 +214,13 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     checkRandomData(random, new SimpleAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
     checkRandomData(random, new StopAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
   }
+  
+  /** blast some random large strings through the analyzer */
+  public void testRandomHugeStrings() throws Exception {
+    checkRandomData(random, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new SimpleAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, new StopAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+  } 
 }
 
 final class PayloadSetter extends TokenFilter {

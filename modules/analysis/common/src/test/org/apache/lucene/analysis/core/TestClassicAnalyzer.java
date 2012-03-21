@@ -316,4 +316,9 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     checkRandomData(random, new ClassicAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
   }
+  
+  /** blast some random large strings through the analyzer */
+  public void testRandomHugeStrings() throws Exception {
+    checkRandomData(random, new ClassicAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+  }
 }

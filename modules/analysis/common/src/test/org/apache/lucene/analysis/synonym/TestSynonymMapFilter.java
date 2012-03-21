@@ -428,6 +428,31 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     }
   }
   
+  /** simple random test like testRandom2, but for large docs
+   */
+  public void testRandomHuge() throws Exception {
+    final int numIters = atLeast(10);
+    for (int i = 0; i < numIters; i++) {
+      b = new SynonymMap.Builder(random.nextBoolean());
+      final int numEntries = atLeast(10);
+      for (int j = 0; j < numEntries; j++) {
+        add(randomNonEmptyString(), randomNonEmptyString(), random.nextBoolean());
+      }
+      final SynonymMap map = b.build();
+      final boolean ignoreCase = random.nextBoolean();
+      
+      final Analyzer analyzer = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+          return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, ignoreCase));
+        }
+      };
+
+      checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER, 8192);
+    }
+  }
+  
   // LUCENE-3375
   public void testVanishingTerms() throws Exception {
     String testFile = 
