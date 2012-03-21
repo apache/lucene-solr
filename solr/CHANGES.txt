@@ -698,6 +698,9 @@ Bug Fixes
 * SOLR-3260: DataImportHandler: ScriptTransformer gives better error messages when 
   problems arise on initalization (no Script Engine, invalid script, etc). (James Dyer)
 
+* SOLR-2959: edismax now respects the magic fields '_val_' and '_query_'
+  (Michael Watts, hossman)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)

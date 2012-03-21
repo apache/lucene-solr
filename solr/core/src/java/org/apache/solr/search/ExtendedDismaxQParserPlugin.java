@@ -40,6 +40,7 @@ import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
+import org.apache.solr.search.SolrQueryParser.MagicFieldName;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -792,8 +793,9 @@ class ExtendedDismaxQParser extends QParser {
     String fname = s.substring(pos, p);
     boolean isInSchema = getReq().getSchema().getFieldTypeNoEx(fname) != null;
     boolean isAlias = solrParams.get("f."+fname+".qf") != null;
+    boolean isMagic = (null != MagicFieldName.get(fname));
     
-    return (isInSchema || isAlias) ? fname : null;
+    return (isInSchema || isAlias || isMagic) ? fname : null;
   }
 
   public static List<String> split(String s, boolean ignoreQuote) {
@@ -1082,7 +1084,9 @@ class ExtendedDismaxQParser extends QParser {
         // literal when we try the escape+re-parse.
         if (exceptions) {
           FieldType ft = schema.getFieldTypeNoEx(field);
-          if (ft == null) throw unknownField;
+          if (ft == null && null == MagicFieldName.get(field)) {
+            throw unknownField;
+          }
         }
 
         return getQuery();

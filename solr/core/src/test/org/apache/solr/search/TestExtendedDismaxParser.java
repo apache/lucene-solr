@@ -54,7 +54,7 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     assertU(adoc("id", "48", "text_sw", "this has gigabyte potential", "foo_i","100"));
     assertU(adoc("id", "49", "text_sw", "start the big apple end", "foo_i","-100"));
     assertU(adoc("id", "50", "text_sw", "start new big city end"));
-
+    assertU(adoc("id", "51", "store",   "12.34,-56.78"));
     assertU(commit());
   }
   @Override
@@ -66,8 +66,8 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
   
   // test the edismax query parser based on the dismax parser
   public void testFocusQueryParser() {
-    String allq = "id:[42 TO 50]";
-    String allr = "*[count(//doc)=9]";
+    String allq = "id:[42 TO 51]";
+    String allr = "*[count(//doc)=10]";
     String oner = "*[count(//doc)=1]";
     String twor = "*[count(//doc)=2]";
     String nor = "*[count(//doc)=0]";
@@ -227,6 +227,43 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
 
     assertQ(req("defType","edismax", "mm","0", "q","movies_t:Terminator 100", "qf","movies_t foo_i"),
             twor);
+    
+    // special psuedo-fields like _query_ and _val_
+
+    // special fields (and real field id) should be included by default
+    assertQ(req("defType", "edismax", 
+                "mm", "100%",
+                "fq", "id:51",
+                "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
+            oner);
+    // should also work when explicitly allowed
+    assertQ(req("defType", "edismax", 
+                "mm", "100%",
+                "fq", "id:51",
+                "uf", "id _query_",
+                "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
+            oner);
+    assertQ(req("defType", "edismax", 
+                "mm", "100%",
+                "fq", "id:51",
+                "uf", "id",
+                "uf", "_query_",
+                "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
+            oner);
+
+    // should fail when prohibited
+    assertQ(req("defType", "edismax", 
+                "mm", "100%",
+                "fq", "id:51",
+                "uf", "* -_query_", // explicitly excluded
+                "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
+            nor);
+    assertQ(req("defType", "edismax", 
+                "mm", "100%",
+                "fq", "id:51",
+                "uf", "id", // excluded by ommision
+                "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
+            nor);
 
 
     /** stopword removal in conjunction with multi-word synonyms at query time
