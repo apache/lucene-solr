@@ -274,7 +274,7 @@ public abstract class LuceneTestCase extends Assert {
    * Catch any uncaught exceptions on threads within the suite scope and fail the test/
    * suite if they happen.
    */
-  private static final UncaughtExceptionsRule uncaughtExceptionsRule = new UncaughtExceptionsRule(); 
+  private static final UncaughtExceptionsRule uncaughtExceptionsRule = new UncaughtExceptionsRule(null); 
 
   /**
    * This controls how suite-level rules are nested. It is important that _all_ rules declared
@@ -295,7 +295,7 @@ public abstract class LuceneTestCase extends Assert {
   @Rule
   public final TestRule ruleChain = RuleChain
     .outerRule(new RememberThreadRule())
-    .around(new UncaughtExceptionsRule())
+    .around(new UncaughtExceptionsRule(this))
     .around(new TestResultInterceptorRule())
     .around(new SystemPropertiesInvariantRule())
     .around(new InternalSetupTeardownRule())
