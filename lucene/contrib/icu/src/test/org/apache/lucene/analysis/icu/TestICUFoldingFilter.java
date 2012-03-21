@@ -20,20 +20,17 @@ package org.apache.lucene.analysis.icu;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.*;
 
 /**
  * Tests ICUFoldingFilter
  */
 public class TestICUFoldingFilter extends BaseTokenStreamTestCase {
-  Analyzer a = new Analyzer() {
+  Analyzer a = new ReusableAnalyzerBase() {
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new ICUFoldingFilter(
-          new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader));
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      return new TokenStreamComponents(tokenizer, new ICUFoldingFilter(tokenizer));
     }
   };
   public void testDefaults() throws IOException {

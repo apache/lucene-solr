@@ -23,9 +23,9 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.KeywordTokenizer;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 
@@ -95,7 +95,7 @@ public class TestICUTransformFilter extends BaseTokenStreamTestCase {
     Analyzer a = new ReusableAnalyzerBase() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new ICUTransformFilter(tokenizer, transform));
       }
     };
