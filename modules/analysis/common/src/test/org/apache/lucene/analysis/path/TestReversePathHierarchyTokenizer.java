@@ -180,6 +180,6 @@ public class TestReversePathHierarchyTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 1027);
   }
 }
