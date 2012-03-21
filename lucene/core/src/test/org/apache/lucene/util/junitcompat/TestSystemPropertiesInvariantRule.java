@@ -25,9 +25,13 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
-public class TestSystemPropertiesInvariantRule {
+public class TestSystemPropertiesInvariantRule extends WithNestedTests {
   public static final String PROP_KEY1 = "new-property-1";
   public static final String VALUE1 = "new-value-1";
+  
+  public TestSystemPropertiesInvariantRule() {
+    super(true);
+  }
   
   public static class Base extends LuceneTestCase {
     public void testEmpty() {}
