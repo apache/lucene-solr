@@ -50,6 +50,7 @@ public final class MockAnalyzer extends Analyzer {
   private final Random random;
   private Map<String,Integer> previousMappings = new HashMap<String,Integer>();
   private boolean enableChecks = true;
+  private int maxTokenLength = MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH;
 
   /**
    * Creates a new MockAnalyzer.
@@ -88,7 +89,7 @@ public final class MockAnalyzer extends Analyzer {
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    MockTokenizer tokenizer = new MockTokenizer(reader, pattern, lowerCase);
+    MockTokenizer tokenizer = new MockTokenizer(reader, pattern, lowerCase, maxTokenLength);
     tokenizer.setEnableChecks(enableChecks);
     StopFilter filt = new StopFilter(LuceneTestCase.TEST_VERSION_CURRENT, tokenizer, filter);
     filt.setEnablePositionIncrements(enablePositionIncrements);
@@ -112,7 +113,7 @@ public final class MockAnalyzer extends Analyzer {
     SavedStreams saved = map.get(fieldName);
     if (saved == null) {
       saved = new SavedStreams();
-      saved.tokenizer = new MockTokenizer(reader, pattern, lowerCase);
+      saved.tokenizer = new MockTokenizer(reader, pattern, lowerCase, maxTokenLength);
       saved.tokenizer.setEnableChecks(enableChecks);
       StopFilter filt = new StopFilter(LuceneTestCase.TEST_VERSION_CURRENT, saved.tokenizer, filter);
       filt.setEnablePositionIncrements(enablePositionIncrements);
@@ -166,5 +167,12 @@ public final class MockAnalyzer extends Analyzer {
    */
   public void setEnableChecks(boolean enableChecks) {
     this.enableChecks = enableChecks;
+  }
+  
+  /** 
+   * Toggle maxTokenLength for MockTokenizer
+   */
+  public void setMaxTokenLength(int length) {
+    this.maxTokenLength = length;
   }
 }
