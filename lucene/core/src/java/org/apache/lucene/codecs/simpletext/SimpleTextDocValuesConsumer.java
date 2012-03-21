@@ -70,8 +70,7 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
   @Override
   public void add(int docID, IndexableField value) throws IOException {
     assert docID >= 0;
-    int ord = -1;
-    int vSize = -1;
+    final int ord, vSize;
     switch (type) {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_SORTED:
@@ -106,7 +105,12 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
       break;
     case FIXED_INTS_64:
       vSize = 8;
+      scratch.grow(8);
+      DocValuesArraySource.copyLong(scratch, value.numericValue().longValue());
+      ord = hash.add(scratch);
+      break;
     case VAR_INTS:
+      vSize = -1;
       scratch.grow(8);
       DocValuesArraySource.copyLong(scratch, value.numericValue().longValue());
       ord = hash.add(scratch);
@@ -125,7 +129,8 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
           Double.doubleToRawLongBits(value.numericValue().doubleValue()));
       ord = hash.add(scratch);
       break;
-
+    default:
+      throw new RuntimeException("should not reach this line");
     }
     
     if (fixedSize == Integer.MIN_VALUE) {
