@@ -242,6 +242,13 @@ New Features
 * SOLR-2949: QueryElevationComponent is now supported with distributed search.
   (Mark Miller, yonik)
 
+* SOLR-3221: Added the ability to directly configure aspects of the concurrency
+ and thread-pooling used within distributed search in solr. This allows for finer
+ grained controlled and can be tuned by end users to target their own specific
+ requirements. This builds on the work of the HttpCommComponent and uses the same configuration
+ block to configure the thread pool. The default configuration has
+ the same behaviour as solr 3.5, favouring throughput over latency. More
+ information can be found on the wiki (http://wiki.apache.org/solr/SolrConfigXml) (Greg Bowyer)
 
 Optimizations
 ----------------------
@@ -562,6 +569,14 @@ New Features
 * SOLR-2826: URLClassify Update Processor (janhoy)
 
 * SOLR-2764: Create a NorwegianLightStemmer and NorwegianMinimalStemmer (janhoy)
+
+* SOLR-3221: Added the ability to directly configure aspects of the concurrency
+ and thread-pooling used within distributed search in solr. This allows for finer
+ grained controlled and can be tuned by end users to target their own specific
+ requirements. This builds on the work of the HttpCommComponent and uses the same configuration
+ block to configure the thread pool. The default configuration has
+ the same behaviour as solr 3.5, favouring throughput over latency. More
+ information can be found on the wiki (http://wiki.apache.org/solr/SolrConfigXml) (Greg Bowyer)
 
 Optimizations
 ----------------------
