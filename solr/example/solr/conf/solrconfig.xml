@@ -1184,7 +1184,7 @@
        In reality you will likely want to add the component to your 
        already specified request handlers. 
     -->
-  <requestHandler name="tvrh" class="solr.SearchHandler" startup="lazy">
+  <requestHandler name="/tvrh" class="solr.SearchHandler" startup="lazy">
     <lst name="defaults">
       <bool name="tv">true</bool>
     </lst>
