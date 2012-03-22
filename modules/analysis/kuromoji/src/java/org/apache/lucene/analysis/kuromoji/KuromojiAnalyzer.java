@@ -35,6 +35,7 @@ import org.apache.lucene.util.Version;
 
 /**
  * Analyzer for Japanese that uses morphological analysis.
+ * @see KuromojiTokenizer
  */
 public class KuromojiAnalyzer extends StopwordAnalyzerBase {
   private final Mode mode;

@@ -47,23 +47,57 @@ import org.apache.lucene.util.fst.FST;
 // TODO: somehow factor out a reusable viterbi search here,
 // so other decompounders/tokenizers can reuse...
 
-/* Uses a rolling Viterbi search to find the least cost
- * segmentation (path) of the incoming characters.  For
- * tokens that appear to be compound (> length 2 for all
+/**
+ * Tokenizer for Japanese that uses morphological analysis.
+ * <p>
+ * This tokenizer sets a number of additional attributes:
+ * <ul>
+ *   <li>{@link BaseFormAttribute} containing base form for inflected
+ *       adjectives and verbs.
+ *   <li>{@link PartOfSpeechAttribute} containing part-of-speech.
+ *   <li>{@link ReadingAttribute} containing reading and pronunciation.
+ *   <li>{@link InflectionAttribute} containing additional part-of-speech
+ *       information for inflected forms.
+ * </ul>
+ * <p>
+ * This tokenizer uses a rolling Viterbi search to find the 
+ * least cost segmentation (path) of the incoming characters.  
+ * For tokens that appear to be compound (> length 2 for all
  * Kanji, or > length 7 for non-Kanji), we see if there is a
  * 2nd best segmentation of that token after applying
  * penalties to the long tokens.  If so, and the Mode is
- * SEARCH_WITH_COMPOUND, we output the alternate
- * segmentation as well. */
-/**
- * Tokenizer for Japanese that uses morphological analysis.
+ * {@link Mode#SEARCH}, we output the alternate segmentation 
+ * as well.
  */
 public final class KuromojiTokenizer extends Tokenizer {
 
+  /**
+   * Tokenization mode: this determines how the tokenizer handles
+   * compound and unknown words.
+   */
   public static enum Mode {
-    NORMAL, SEARCH, EXTENDED
+    /**
+     * Ordinary segmentation: no decomposition for compounds,
+     */
+    NORMAL, 
+
+    /**
+     * Segmentation geared towards search: this includes a 
+     * decompounding process for long nouns, also including
+     * the full compound token as a synonym.
+     */
+    SEARCH, 
+
+    /**
+     * Extended mode outputs unigrams for unknown words.
+     * @lucene.experimental
+     */
+    EXTENDED
   }
 
+  /**
+   * Default tokenization mode. Currently this is {@link Mode#SEARCH}.
+   */
   public static final Mode DEFAULT_MODE = Mode.SEARCH;
 
   enum Type {
@@ -139,6 +173,14 @@ public final class KuromojiTokenizer extends Tokenizer {
   private final ReadingAttribute readingAtt = addAttribute(ReadingAttribute.class);
   private final InflectionAttribute inflectionAtt = addAttribute(InflectionAttribute.class);
 
+  /**
+   * Create a new KuromojiTokenizer.
+   * 
+   * @param input Reader containing text
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   * @param mode tokenization mode.
+   */
   public KuromojiTokenizer(Reader input, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
     super(input);
     dictionary = TokenInfoDictionary.getInstance();
