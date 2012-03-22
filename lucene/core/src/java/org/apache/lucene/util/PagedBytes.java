@@ -45,6 +45,10 @@ public final class PagedBytes {
 
   private static final byte[] EMPTY_BYTES = new byte[0];
 
+  /** Provides methods to read BytesRefs from a frozen
+   *  PagedBytes.
+   *
+   * @see #freeze */
   public final static class Reader {
     private final byte[][] blocks;
     private final int[] blockEnds;

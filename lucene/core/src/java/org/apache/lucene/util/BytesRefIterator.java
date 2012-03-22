@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.Comparator;
 
 /**
- * A simple iterator interface for {@link BytesRef} iteration
- * 
+ * A simple iterator interface for {@link BytesRef} iteration.
  */
 public interface BytesRefIterator {
-  
+
+  /** Singleton BytesRefIterator that iterates over 0 BytesRefs. */
   public static final BytesRefIterator EMPTY_ITERATOR = new EmptyBytesRefIterator();
   
   /**
@@ -48,7 +48,9 @@ public interface BytesRefIterator {
    * single instance & reuse it.
    */
   public Comparator<BytesRef> getComparator();
-  
+
+  // TODO: private?
+  /** Iterates over 0 BytesRefs. */
   public final static class EmptyBytesRefIterator implements BytesRefIterator {
 
     @Override
@@ -59,7 +61,5 @@ public interface BytesRefIterator {
     public Comparator<BytesRef> getComparator() {
       return null;
     }
-    
   }
-  
 }

@@ -48,6 +48,8 @@ public final class ByteBlockPool {
   public final static int BYTE_BLOCK_SIZE = 1 << BYTE_BLOCK_SHIFT;
   public final static int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;
 
+  /** Abstract class for allocating and freeing byte
+   *  blocks. */
   public abstract static class Allocator {
     protected final int blockSize;
 
@@ -67,6 +69,7 @@ public final class ByteBlockPool {
     }
   }
   
+  /** A simple {@link Allocator} that never recycles. */
   public static final class DirectAllocator extends Allocator {
     
     public DirectAllocator() {
@@ -80,9 +83,10 @@ public final class ByteBlockPool {
     @Override
     public void recycleByteBlocks(byte[][] blocks, int start, int end) {
     }
-    
   }
   
+  /** A simple {@link Allocator} that never recycles, but
+   *  tracks how much total RAM is in use. */
   public static class DirectTrackingAllocator extends Allocator {
     private final Counter bytesUsed;
     
@@ -99,6 +103,7 @@ public final class ByteBlockPool {
       bytesUsed.addAndGet(blockSize);
       return new byte[blockSize];
     }
+
     @Override
     public void recycleByteBlocks(byte[][] blocks, int start, int end) {
       bytesUsed.addAndGet(-((end-start)* blockSize));
@@ -106,7 +111,6 @@ public final class ByteBlockPool {
         blocks[i] = null;
       }
     }
-    
   };
 
 

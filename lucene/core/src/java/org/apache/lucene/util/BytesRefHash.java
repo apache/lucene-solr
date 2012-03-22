@@ -500,6 +500,7 @@ public final class BytesRefHash {
     }
   }
 
+  /** Manages allocation of the per-term addresses. */
   public abstract static class BytesStartArray {
     /**
      * Initializes the BytesStartArray. This call will allocate memory
@@ -533,9 +534,9 @@ public final class BytesRefHash {
     public abstract Counter bytesUsed();
   }
   
-  /**
-   * A direct {@link BytesStartArray} that tracks all memory allocation using an {@link Counter} instance.
-   */
+  /** A simple {@link BytesStartArray} that tracks all
+   *  memory allocation using a shared {@link Counter}
+   *  instance.  */
   public static class TrackingDirectBytesStartArray extends BytesStartArray {
     protected final int initSize;
     private int[] bytesStart;
@@ -577,7 +578,14 @@ public final class BytesRefHash {
     }
   }
 
+  /** A simple {@link BytesStartArray} that tracks
+   *  memory allocation using a private {@link AtomicLong}
+   *  instance.  */
   public static class DirectBytesStartArray extends BytesStartArray {
+    // TODO: can't we just merge this w/
+    // TrackingDirectBytesStartArray...?  Just add a ctor
+    // that makes a private bytesUsed?
+
     protected final int initSize;
     private int[] bytesStart;
     private final Counter bytesUsed;
@@ -586,7 +594,6 @@ public final class BytesRefHash {
       this.bytesUsed = Counter.newCounter();
       this.initSize = initSize;
     }
-
 
     @Override
     public int[] clear() {
