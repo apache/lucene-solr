@@ -21,7 +21,7 @@ import java.util.Set;
 import org.apache.solr.common.SolrInputDocument;
 
 /**
- * @solr.experimental
+ * @lucene.experimental
  *
  */
 public interface DIHWriter {
