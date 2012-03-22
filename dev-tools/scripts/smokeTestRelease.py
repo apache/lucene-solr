@@ -26,6 +26,7 @@ from collections import defaultdict
 import xml.etree.ElementTree as ET
 import filecmp
 import platform
+import checkJavaDocs
 
 # This tool expects to find /lucene and /solr off the base URL.  You
 # must have a working gpg, tar, unzip in your path.  This has been
@@ -243,7 +244,7 @@ def testChangesText(dir, version, project):
     # NOTE: O(N) but N should be smallish:
     if 'CHANGES.txt' in files:
       fullPath = '%s/CHANGES.txt' % root
-      print 'CHECK %s' % fullPath
+      #print 'CHECK %s' % fullPath
       checkChangesContent(open(fullPath).read(), version, fullPath, project, False)
       
 def checkChangesContent(s, version, name, project, isHTML):
@@ -383,6 +384,9 @@ def verifyUnpacked(project, artifact, unpackPath, version):
       # test javadocs
       print '    generate javadocs w/ Java 5...'
       run('export JAVA_HOME=%s; ant javadocs' % JAVA5_HOME, '%s/javadocs.log' % unpackPath)
+      if checkJavaDocs.checkPackageSummaries('build/docs/api'):
+        raise RuntimeError('javadoc summaries failed')
+      
     else:
       print '    run tests w/ Java 6...'
       run('export JAVA_HOME=%s; ant test' % JAVA6_HOME, '%s/test.log' % unpackPath)
@@ -420,6 +424,21 @@ def verifyUnpacked(project, artifact, unpackPath, version):
       testDemo(isSrc, version)
 
   testChangesText('.', version, project)
+
+  if project == 'lucene' and not isSrc:
+    print '    check Lucene\'s javadoc JAR'
+    unpackJavadocsJar('%s/lucene-core-%s-javadoc.jar' % (unpackPath, version), unpackPath)
+
+def unpackJavadocsJar(jarPath, unpackPath):
+  destDir = '%s/javadocs' % unpackPath
+  if os.path.exists(destDir):
+    shutil.rmtree(destDir)
+  os.makedirs(destDir)
+  os.chdir(destDir)
+  run('unzip %s' % jarPath, '%s/unzip.log' % destDir)
+  if checkJavaDocs.checkPackageSummaries('.'):
+    raise RuntimeError('javadoc problems')
+  os.chdir(unpackPath)
 
 def testDemo(isSrc, version):
   print '    test demo...'
