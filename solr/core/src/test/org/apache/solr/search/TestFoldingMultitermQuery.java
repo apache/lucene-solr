@@ -67,6 +67,30 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
           "content_keyword", docs[i]
       ));
     }
+    // Mixing and matching amongst various languages is probalby a bad thing, so add some tests for various
+    // special filters
+    int idx = docs.length;
+    // Greek
+    assertU(adoc("id", Integer.toString(idx++), "content_greek", "Μάϊος"));
+    assertU(adoc("id", Integer.toString(idx++), "content_greek", "ΜΆΪΟΣ"));
+
+    // Turkish
+
+    assertU(adoc("id", Integer.toString(idx++), "content_turkish", "\u0130STANBUL"));
+    assertU(adoc("id", Integer.toString(idx++), "content_turkish", "ISPARTA"));
+    assertU(adoc("id", Integer.toString(idx++), "content_turkish", "izmir"));
+
+
+    // Russian normalization
+    assertU(adoc("id", Integer.toString(idx++), "content_russian", "электромагнитной"));
+    assertU(adoc("id", Integer.toString(idx++), "content_russian", "Вместе"));
+    assertU(adoc("id", Integer.toString(idx++), "content_russian", "силе"));
+
+    // ISOLatin
+    assertU(adoc("id", Integer.toString(idx++), "content_isolatin", "iKnowHowÁtotest"));
+    assertU(adoc("id", Integer.toString(idx++), "content_isolatin", "YppÉÉÉ all is well"));
+    assertU(adoc("id", Integer.toString(idx++), "content_isolatin", "that's äll"));
+
     assertU(optimize());
   }
 
@@ -252,5 +276,27 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
     } finally {
       resetExceptionIgnores();
     }
+  }
+  @Test
+  public void testGreek() {
+    assertQ(req("q", "content_greek:μαιο*"), "//result[@numFound='2']");
+    assertQ(req("q", "content_greek:ΜΆΪΟ*"), "//result[@numFound='2']");
+    assertQ(req("q", "content_greek:Μάϊο*"), "//result[@numFound='2']");
+  }
+  @Test
+  public void testRussian() {
+    assertQ(req("q", "content_russian:элЕктРомагн*тной"), "//result[@numFound='1']");
+    assertQ(req("q", "content_russian:Вме*те"), "//result[@numFound='1']");
+    assertQ(req("q", "content_russian:Си*е"), "//result[@numFound='1']");
+    assertQ(req("q", "content_russian:эЛектромагнИт*"), "//result[@numFound='1']");
+  }
+
+  @Test
+  public void testISOLatin() {
+    assertQ(req("q", "content_isolatin:iKnowHowÁto*st"), "//result[@numFound='1']");
+    assertQ(req("q", "content_isolatin:iKn*HowÁto*"), "//result[@numFound='1']");
+    assertQ(req("q", "content_isolatin:YppE*"), "//result[@numFound='1']");
+    assertQ(req("q", "content_isolatin:äl*"), "//result[@numFound='2']");
+    assertQ(req("q", "content_isolatin:ál*"), "//result[@numFound='2']");
   }
 }

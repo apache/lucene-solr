@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.TokenStream;
  *  $Id$ 
  */
 @Deprecated
-public class ISOLatin1AccentFilterFactory extends BaseTokenFilterFactory {
+public class ISOLatin1AccentFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
   @Override
   public void init(Map<String,String> args) {
     super.init(args);
@@ -36,5 +36,9 @@ public class ISOLatin1AccentFilterFactory extends BaseTokenFilterFactory {
   
   public ISOLatin1AccentFilter create(TokenStream input) {
     return new ISOLatin1AccentFilter(input);
+  }
+
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

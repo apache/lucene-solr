@@ -21,9 +21,13 @@ import org.apache.lucene.analysis.icu.ICUFoldingFilter;
  */
 
 /** Factory for {@link ICUFoldingFilter} */
-public class ICUFoldingFilterFactory extends BaseTokenFilterFactory {
+public class ICUFoldingFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
 
   public TokenStream create(TokenStream input) {
     return new ICUFoldingFilter(input);
+  }
+
+  public Object getMultiTermComponent() {
+    return this;
   }
 }
