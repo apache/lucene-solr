@@ -129,6 +129,7 @@ public class CoreContainer
         cores.defaultAbortOnConfigError = false;
         cores.load(solrHome, fconf);
       } else {
+        log.info("no solr.xml file found - using default");
         cores.defaultAbortOnConfigError = abortOnConfigurationError;
         cores.load(solrHome, new InputSource(new ByteArrayInputStream(DEF_SOLR_XML.getBytes("UTF-8"))));
         cores.configFile = fconf;
