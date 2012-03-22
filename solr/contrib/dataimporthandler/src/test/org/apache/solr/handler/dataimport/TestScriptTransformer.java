@@ -85,7 +85,9 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       sep.init(context);
       sep.applyTransformer(map);
       assertEquals(map.get("name"), "Hello Scott");
-    } catch (DataImportHandlerException e) {
+    } catch (DataImportHandlerException e) {   
+      assumeFalse("This JVM does not have Rhino installed.  Test Skipped.", e
+          .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
   }
