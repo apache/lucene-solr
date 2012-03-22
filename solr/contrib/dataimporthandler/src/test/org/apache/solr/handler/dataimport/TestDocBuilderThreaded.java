@@ -73,16 +73,6 @@ public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  public void testProcessor2EntitiesNoThreads() throws Exception {
-    runFullImport(twoEntitiesWithProcessor);
-    assertEquals("EntityProcessor.init() for child entity was called less times than the number of rows",
-        4, DemoProcessor.entitiesInitied);
-  }
-
-  /*
-  * This test fails in TestEnviroment, but works in real Live
-  */
-  @Test
   public void testEvaluator() throws Exception {
     runFullImport(twoEntitiesWithEvaluatorProcessor);
     assertEquals("Evaluator was invoked less times than the number of rows",
@@ -135,28 +125,7 @@ public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
           "</entity>" +
           "</document>" +
           "</dataConfig>";
-	private final String twoEntitiesWithProcessor =
-
-      "<dataConfig> <dataSource type=\"MockDataSource\"/>\n" +
-          "<document>" +
-          "<entity name=\"job\" query=\"select * from y\"" +
-          " pk=\"id\" \n" +
-          ">" +
-          "<field column=\"id\" />\n" +
-          "<entity name=\"details\" processor=\"TestDocBuilderThreaded$DemoProcessor\" \n" +
-          "worker=\"${job.worker}\" \n" +
-          "query=\"${job.worker}\" \n" +
-          "transformer=\"TemplateTransformer\" " +
-          " >" +
-          "<field column=\"author_s\" />" +
-          "<field column=\"title_s\" />" +
-          " <field column=\"text_s\" />" +
-          " <field column=\"generated_id_s\" template=\"generated_${job.id}\" />" +
-          "</entity>" +
-          "</entity>" +
-          "</document>" +
-          "</dataConfig>";
-          
+	
   private final String twoEntitiesWithEvaluatorProcessor =
 
       "<dataConfig> <dataSource type=\"MockDataSource\"/>\n" +

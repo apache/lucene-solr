@@ -24,11 +24,9 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestEphemeralCache extends AbstractDataImportHandlerTestCase {
-  
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -51,12 +49,11 @@ public class TestEphemeralCache extends AbstractDataImportHandlerTestCase {
     assertFullImport(getDataConfigDotXml(1));
   }
   
-  @Ignore("TODO: fix included in SOLR-3011")
   @Test
   public void testMultiThreaded() throws Exception {
     // Try between 2 and 6 threads
     int numThreads = random.nextInt(4) + 2;
-    System.out.println("TRYING " + numThreads);
+    //System.out.println("TRYING " + numThreads);
     assertFullImport(getDataConfigDotXml(numThreads));
   }
   

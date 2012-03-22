@@ -31,6 +31,7 @@ import org.apache.solr.common.util.XMLErrorLogger;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -242,6 +243,7 @@ public class DataImporter {
     }
     if (e.allAttributes.get("threads") != null) {
       if(docRootFound) throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "'threads' not allowed below rootEntity ");
+      LOG.warn("The DataImportHandler 'threads' parameter is deprecated and will be removed in a future release.");
       config.isMultiThreaded = true;      
     }
 
@@ -380,6 +382,7 @@ public class DataImporter {
       setStatus(Status.IDLE);
       config.clearCaches();
       DocBuilder.INSTANCE.set(null);
+      docBuilder.destroy();
     }
 
   }
@@ -411,6 +414,7 @@ public class DataImporter {
       setStatus(Status.IDLE);
       config.clearCaches();
       DocBuilder.INSTANCE.set(null);
+      docBuilder.destroy();
     }
 
   }

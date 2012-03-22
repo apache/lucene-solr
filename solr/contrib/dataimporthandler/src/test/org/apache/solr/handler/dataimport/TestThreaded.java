@@ -16,54 +16,105 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 
-
 public class TestThreaded extends AbstractDataImportHandlerTestCase {
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
   }
   
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_FullImport() throws Exception {
-    List parentRow = new ArrayList();
-//    parentRow.add(createMap("id", "1"));
+  @Before
+  public void setupData(){
+      List parentRow = new ArrayList();
+  //  parentRow.add(createMap("id", "1"));
     parentRow.add(createMap("id", "2"));
     parentRow.add(createMap("id", "3"));
     parentRow.add(createMap("id", "4"));
     parentRow.add(createMap("id", "1"));
-    MockDataSource.setIterator("select * from x", parentRow.iterator());
-
-    List childRow = new ArrayList();
-    Map map = createMap("desc", "hello");
-    childRow.add(map);
-
-    MockDataSource.setIterator("select * from y where y.A=1", childRow.iterator());
-    MockDataSource.setIterator("select * from y where y.A=2", childRow.iterator());
-    MockDataSource.setIterator("select * from y where y.A=3", childRow.iterator());
-    MockDataSource.setIterator("select * from y where y.A=4", childRow.iterator());
-
-    runFullImport(dataConfig);
-
-    assertQ(req("id:1"), "//*[@numFound='1']");
+    MockDataSource.setCollection("select * from x", parentRow);
+    // for every x we have four linked y-s
+    List childRow = Arrays.asList(
+            createMap("desc", "hello"),
+            createMap("desc", "bye"),
+            createMap("desc", "hi"),
+            createMap("desc", "aurevoir"));
+    // for N+1 scenario
+    MockDataSource.setCollection("select * from y where y.A=1", shuffled(childRow));
+    MockDataSource.setCollection("select * from y where y.A=2", shuffled(childRow));
+    MockDataSource.setCollection("select * from y where y.A=3", shuffled(childRow));
+    MockDataSource.setCollection("select * from y where y.A=4", shuffled(childRow));
+    // for cached scenario
+    
+    List cartesianProduct = new ArrayList();
+    for(Map parent : (List<Map>)parentRow){
+      for(Iterator<Map> child = shuffled(childRow).iterator(); child.hasNext();){
+         Map tuple = createMap("xid", parent.get("id"));
+         tuple.putAll(child.next());
+         cartesianProduct.add(tuple);
+      }
+    }
+    MockDataSource.setCollection("select * from y", cartesianProduct);
+  }
+  
+  @After
+  public void verify() {
+    assertQ(req("id:"+ new String[]{"1","2","3","4"}[random.nextInt(4)]),
+                      "//*[@numFound='1']");
     assertQ(req("*:*"), "//*[@numFound='4']");
     assertQ(req("desc:hello"), "//*[@numFound='4']");
+    assertQ(req("desc:bye"), "//*[@numFound='4']");
+    assertQ(req("desc:hi"), "//*[@numFound='4']");
+    assertQ(req("desc:aurevoir"), "//*[@numFound='4']");
   }
-
-  private static String dataConfig = "<dataConfig>\n"
-          +"<dataSource  type=\"MockDataSource\"/>\n"
-          + "       <document>\n"
-          + "               <entity name=\"x\" threads=\"2\" query=\"select * from x\" deletedPkQuery=\"select id from x where last_modified > NOW AND deleted='true'\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
-          + "                       <field column=\"id\" />\n"
-          + "                       <entity name=\"y\" query=\"select * from y where y.A=${x.id}\">\n"
-          + "                               <field column=\"desc\" />\n"
-          + "                       </entity>\n" + "               </entity>\n"
-          + "       </document>\n" + "</dataConfig>";
+  
+  private <T> List<T> shuffled(List<T> rows){
+    ArrayList<T> shuffle = new ArrayList<T>(rows);
+    Collections.shuffle(shuffle, random);
+    return shuffle;
+  }
+  
+  @Test
+  public void testCachedThreadless_FullImport() throws Exception {
+    runFullImport(getCachedConfig(random.nextBoolean(), random.nextBoolean(), 0));
+  }
+  
+  @Test
+  public void testCachedSingleThread_FullImport() throws Exception {
+    runFullImport(getCachedConfig(random.nextBoolean(), random.nextBoolean(), 1));
+  }
+  
+  @Test
+  public void testCachedThread_FullImport() throws Exception {
+    int numThreads = random.nextInt(9) + 1; // between one and 10
+    String config = getCachedConfig(random.nextBoolean(), random.nextBoolean(), numThreads);
+    runFullImport(config);
+  }
+    
+  private String getCachedConfig(boolean parentCached, boolean childCached, int numThreads) {
+    return "<dataConfig>\n"
+      +"<dataSource  type=\"MockDataSource\"/>\n"
+      + "       <document>\n"
+      + "               <entity name=\"x\" "+(numThreads==0 ? "" : "threads=\"" + numThreads + "\"")
+      + "                 query=\"select * from x\" " 
+      + "                 processor=\""+(parentCached ? "Cached":"")+"SqlEntityProcessor\">\n"
+      + "                       <field column=\"id\" />\n"
+      + "                       <entity name=\"y\" query=\"select * from y\" where=\"xid=x.id\" " 
+      + "                         processor=\""+(childCached ? "Cached":"")+"SqlEntityProcessor\">\n"
+      + "                               <field column=\"desc\" />\n"
+      + "                       </entity>\n" + "               </entity>\n"
+      + "       </document>\n" + "</dataConfig>";
+  }
+  
 }

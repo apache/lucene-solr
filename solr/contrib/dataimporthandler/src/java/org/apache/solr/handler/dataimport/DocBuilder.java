@@ -20,6 +20,8 @@ package org.apache.solr.handler.dataimport;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.dataimport.DataConfig.Entity;
+
 import static org.apache.solr.handler.dataimport.SolrWriter.LAST_INDEX_KEY;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
 import org.apache.solr.schema.SchemaField;
@@ -304,8 +306,8 @@ public class DocBuilder {
       EntityRunner entityRunner = null;
       try {
         LOG.info("running multithreaded full-import");
-        entityRunner =  new EntityRunner(root, null);
-        entityRunner.run(null, Context.FULL_DUMP, null);
+        entityRunner = new EntityRunner(root,null,  createProcessor(root));
+        entityRunner.run(null,Context.FULL_DUMP,null, 0);
       } catch (Exception e) {
         throw new RuntimeException("Error in multi-threaded import", e);
       } finally {
@@ -389,7 +391,7 @@ public class DocBuilder {
       iter.remove();
     }
   }
-  Executor executorSvc = new ThreadPoolExecutor(
+  ThreadPoolExecutor executorSvc = new ThreadPoolExecutor(
           0,
           Integer.MAX_VALUE,
           5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
@@ -400,8 +402,8 @@ public class DocBuilder {
   public void addStatusMessage(String msg) {
     statusMessages.put(msg, DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
   }
-  EntityRunner createRunner(DataConfig.Entity entity, EntityRunner parent){
-    return new EntityRunner(entity, parent);
+  EntityRunner createRunner(DataConfig.Entity entity, EntityRunner parent, EntityProcessor processor){
+    return new EntityRunner(entity, parent,  processor);
   }
 
   /**This class is a just a structure to hold runtime information of one entity
@@ -411,58 +413,62 @@ public class DocBuilder {
     final DataConfig.Entity entity;
     private EntityProcessor entityProcessor;
     private final List<ThreadedEntityProcessorWrapper> entityProcessorWrapper = new ArrayList<ThreadedEntityProcessorWrapper>();
-    private DocWrapper docWrapper;
+   
     private volatile boolean entityInitialized ;
     String currentProcess;
     final ThreadLocal<ThreadedEntityProcessorWrapper> currentEntityProcWrapper = new ThreadLocal<ThreadedEntityProcessorWrapper>();
 
     private ContextImpl context;
     final EntityRunner parent;
-    final AtomicBoolean entityEnded = new AtomicBoolean(false);
     private Exception exception;
 
-    public EntityRunner(DataConfig.Entity entity, EntityRunner parent) {
+    public EntityRunner(DataConfig.Entity entity, EntityRunner parent, EntityProcessor processor) {
       this.parent = parent;
       this.entity = entity;
-      if (entity.proc == null) {
-        entityProcessor = new SqlEntityProcessor();
-      } else {
-        try {
-          entityProcessor = (EntityProcessor) loadClass(entity.proc, dataImporter.getCore())
-                  .newInstance();
-        } catch (Exception e) {
-          wrapAndThrow(SEVERE, e,
-                  "Unable to load EntityProcessor implementation for entity:" + entity.name);
-        } 
-      }
+      this.entityProcessor = processor;
       int threads = 1;
-      if (entity.allAttributes.get("threads") != null) {
-        threads = Integer.parseInt(entity.allAttributes.get("threads"));
+      String rootEntityThreads = DocBuilder.this.root.allAttributes.get("threads");
+      if (rootEntityThreads != null) {
+        threads = Integer.parseInt(rootEntityThreads);
       }
+      
+      List<Entity> childrenEntities = entity.entities == null 
+          ? Collections.<Entity>emptyList() : entity.entities;
+          
+      Map<DataConfig.Entity ,DocBuilder.EntityRunner> childrenRunners = new LinkedHashMap<DataConfig.Entity ,DocBuilder.EntityRunner>(childrenEntities.size()); 
+      
+      for (DataConfig.Entity child :childrenEntities) {
+          childrenRunners.put(child,
+                  DocBuilder.this.createRunner(child, this, createProcessor(child) ));
+      }
+      
       for (int i = 0; i < threads; i++) {
-        entityProcessorWrapper.add(new ThreadedEntityProcessorWrapper(entityProcessor, DocBuilder.this, this, getVariableResolver()));
+        ThreadedEntityProcessorWrapper thepw = new ThreadedEntityProcessorWrapper(
+                entityProcessor, DocBuilder.this, this, getVariableResolver(),
+                childrenRunners, i);
+        entityProcessorWrapper.add(thepw);
       }
       context = new ThreadedContext(this, DocBuilder.this, getVariableResolver());
     }
 
 
-    public void run(DocWrapper docWrapper, final String currProcess, final EntityRow rows) throws Exception {
+    public void run(final DocWrapper docWrapper, final String currProcess, final EntityRow rows, int threadedWrapperNumber) throws Exception {
       entityInitialized =  false;
-      this.docWrapper = docWrapper;
       this.currentProcess = currProcess;
-      entityEnded.set(false);
-      try {
-        if(entityProcessorWrapper.size() <= 1){
-          runAThread(entityProcessorWrapper.get(0), rows, currProcess);
+      
+      boolean singleWrapperOnly = entityProcessorWrapper.size() == 1;
+      if(singleWrapperOnly || !entity.isDocRoot){ // children are running in current thread 
+          ThreadedEntityProcessorWrapper currentWrapper
+            = entityProcessorWrapper.get(threadedWrapperNumber); 
+          runAThread(currentWrapper, docWrapper, rows, currProcess);
         } else {
           final CountDownLatch latch = new CountDownLatch(entityProcessorWrapper.size());
-          for (final ThreadedEntityProcessorWrapper processorWrapper : entityProcessorWrapper) {
+        for (final ThreadedEntityProcessorWrapper processorWrapper : entityProcessorWrapper) {
             Runnable runnable = new Runnable() {
               public void run() {
                 try {
-                  runAThread(processorWrapper, rows, currProcess);
+                  runAThread(processorWrapper, docWrapper, rows, currProcess);
                 }catch(Exception e) {
-                  entityEnded.set(true);
                   exception = e;
                 } finally {
                   latch.countDown();
@@ -482,20 +488,15 @@ public class DocBuilder {
             throw copy;
           }
         }
-      } finally {
-      }
+      } 
 
-
-    }
-
-    private void runAThread(ThreadedEntityProcessorWrapper epw, EntityRow rows, String currProcess) throws Exception {
+  private void runAThread(ThreadedEntityProcessorWrapper epw, final DocWrapper parentDocWrapper, EntityRow rows, String currProcess) throws Exception {
       currentEntityProcWrapper.set(epw);
       epw.threadedInit(context);
       try {
         Context.CURRENT_CONTEXT.set(context);
         epw.init(rows);
-        initEntity();
-        DocWrapper docWrapper = this.docWrapper;
+       DocWrapper docWrapper = parentDocWrapper;
         for (; ;) {
           if(DocBuilder.this.stop.get()) break;
           try {
@@ -519,7 +520,7 @@ public class DocBuilder {
               if (entity.entities != null) {
                 EntityRow nextRow = new EntityRow(arow, rows, entity.name);
                 for (DataConfig.Entity e : entity.entities) {
-                  epw.children.get(e).run(docWrapper,currProcess,nextRow);
+                  epw.children.get(e).run(docWrapper,currProcess,nextRow, epw.getNumber());
                 }
               }
             }
@@ -561,17 +562,16 @@ public class DocBuilder {
               if (dihe.getErrCode() == DataImportHandlerException.SEVERE)
                 throw dihe;
             } else {
-              //if this is not the docRoot then the execution has happened in the same thread. so propogate up,
-              // it will be handled at the docroot
-              entityEnded.set(true); 
+              
               throw dihe;
             }
-            entityEnded.set(true);
           }
         }
+      } catch(RuntimeException r) {
+          throw r;
       } finally {
-        currentEntityProcWrapper.remove();
-        Context.CURRENT_CONTEXT.remove();
+          currentEntityProcWrapper.remove();
+          Context.CURRENT_CONTEXT.remove();
       }
     }
 
@@ -997,6 +997,7 @@ public class DocBuilder {
         return new HashSet();
     }
     //get the deleted rows for this entity
+    entityProcessor.init(context1);
     Set<Map<String, Object>> deletedSet = new HashSet<Map<String, Object>>();
     while (true) {
       Map<String, Object> row = entityProcessor.nextDeletedRowKey();
@@ -1032,7 +1033,7 @@ public class DocBuilder {
     //propogate up the changes in the chain
     if (entity.parentEntity != null) {
       // identifying deleted rows with deltas
-
+      entityProcessor.init(context1);
       for (Map<String, Object> row : myModifiedPks) {
         getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, entityProcessor, parentKeyList);
         // check for abort
@@ -1040,6 +1041,7 @@ public class DocBuilder {
           return new HashSet();
       }
       // running the same for deletedrows
+      entityProcessor.init(context1);
       for (Map<String, Object> row : deletedSet) {
         getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, entityProcessor, parentKeyList);
         // check for abort
@@ -1156,6 +1158,25 @@ public class DocBuilder {
     }
   }
 
+  protected EntityProcessor createProcessor(DataConfig.Entity entity) {
+    EntityProcessor processor = null;
+      if (entity.proc == null) {
+        processor = new SqlEntityProcessor();
+      } else {
+        try {
+          processor = (EntityProcessor) loadClass(entity.proc, dataImporter.getCore())
+                  .newInstance();
+        } catch (Exception e) {
+          wrapAndThrow(SEVERE, e,
+                  "Unable to load EntityProcessor implementation for entity:" + entity.name);
+        } 
+      }
+    return processor;
+  }
   public static final String LAST_INDEX_TIME = "last_index_time";
   public static final String INDEX_START_TIME = "index_start_time";
+  
+  public void destroy(){
+    executorSvc.shutdown();
+  }
 }
