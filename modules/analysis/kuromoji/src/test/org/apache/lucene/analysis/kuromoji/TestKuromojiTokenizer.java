@@ -192,7 +192,6 @@ public class TestKuromojiTokenizer extends BaseTokenStreamTestCase {
   }
   
   /** blast some random large strings through the analyzer */
-  @Ignore("FIXME: see LUCENE-3897")
   public void testRandomHugeStrings() throws Exception {
     checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER, 8192);
     checkRandomData(random, analyzerNoPunct, 200*RANDOM_MULTIPLIER, 8192);
