@@ -77,6 +77,9 @@ New Features
  * LUCENE-3444: Added a second pass grouping collector that keeps track of distinct
    values for a specified field for the top N group. (Martijn van Groningen)
 
+ * LUCENE-3778: Added a grouping utility class that makes it easier to use result
+   grouping for pure Lucene apps. (Martijn van Groningen)
+
 API Changes
 
  * LUCENE-2606: Changed RegexCapabilities interface to fix thread 

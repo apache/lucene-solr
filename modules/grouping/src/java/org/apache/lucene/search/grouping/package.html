@@ -63,7 +63,7 @@ field fall into a single group.</p>
 
 <p>Known limitations:</p>
 <ul>
-  <li> For the two-pass grouping collector, the group field must be a
+  <li> For the two-pass grouping search, the group field must be a
     single-valued indexed field.
     {@link org.apache.lucene.search.FieldCache} is used to load the {@link org.apache.lucene.search.FieldCache.DocTermsIndex} for this field.
   <li> Although Solr support grouping by function and this module has abstraction of what a group is, there are currently only
@@ -73,50 +73,30 @@ field fall into a single group.</p>
     group yourself.
 </ul>
 
-<p>Typical usage for the generic two-pass collector looks like this
-  (using the {@link org.apache.lucene.search.CachingCollector}):</p>
+<p>Typical usage for the generic two-pass grouping search looks like this using the grouping convenience utility
+  (optionally using caching for the second pass search):</p>
 
 <pre class="prettyprint">
-  TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector("author", groupSort, groupOffset+topNGroups);
+  GroupingSearch groupingSearch = new GroupingSearch("author");
+  groupingSearch.setGroupSort(groupSort);
+  groupingSearch.setFillSortFields(fillFields);
 
-  boolean cacheScores = true;
-  double maxCacheRAMMB = 4.0;
-  CachingCollector cachedCollector = CachingCollector.create(c1, cacheScores, maxCacheRAMMB);
-  s.search(new TermQuery(new Term("content", searchTerm)), cachedCollector);
-
-  Collection&lt;SearchGroup&lt;BytesRef&gt;&gt; topGroups = c1.getTopGroups(groupOffset, fillFields);
-
-  if (topGroups == null) {
-    // No groups matched
-    return;
+  if (useCache) {
+    // Sets cache in MB
+    groupingSearch.setCachingInMB(4.0, true);
   }
 
-  boolean getScores = true;
-  boolean getMaxScores = true;
-  boolean fillFields = true;
-  TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset+docsPerGroup, getScores, getMaxScores, fillFields);
-
-  //Optionally compute total group count
-  TermAllGroupsCollector allGroupsCollector = null;
   if (requiredTotalGroupCount) {
-    allGroupsCollector = new TermAllGroupsCollector("author");
-    c2 = MultiCollector.wrap(c2, allGroupsCollector);
+    groupingSearch.setAllGroups(true);
   }
 
-  if (cachedCollector.isCached()) {
-    // Cache fit within maxCacheRAMMB, so we can replay it:
-    cachedCollector.replay(c2);
-  } else {
-    // Cache was too large; must re-execute query:
-    s.search(new TermQuery(new Term("content", searchTerm)), c2);
-  }
-        
-  TopGroups&lt;BytesRef&gt; groupsResult = c2.getTopGroups(docOffset);
-  if (requiredTotalGroupCount) {
-    groupsResult = new TopGroups&lt;BytesRef&gt;(groupsResult, allGroupsCollector.getGroupCount());
-  }
+  TermQuery query = new TermQuery(new Term("content", searchTerm));
+  TopGroups&lt;BytesRef&gt; result = groupingSearch.search(indexSearcher, query, groupOffset, groupLimit);
 
   // Render groupsResult...
+  if (requiredTotalGroupCount) {
+    int totalGroupCount = result.totalGroupCount;
+  }
 </pre>
 
 <p>To use the single-pass <code>BlockGroupingCollector</code>,
@@ -159,6 +139,19 @@ Finally, do this per search:
   // Render groupsResult...
 </pre>
 
+Or alternatively use the <code>GroupingSearch</code> convenience utility:
+
+<pre class="prettyprint">
+  // Per search:
+  GroupingSearch groupingSearch = new GroupingSearch(groupEndDocs);
+  groupingSearch.setGroupSort(groupSort);
+  groupingSearch.setIncludeScores(needsScores);
+  TermQuery query = new TermQuery(new Term("content", searchTerm));
+  TopGroups groupsResult = groupingSearch.search(indexSearcher, query, groupOffset, groupLimit);
+
+  // Render groupsResult...
+</pre>
+
 Note that the <code>groupValue</code> of each <code>GroupDocs</code>
 will be <code>null</code>, so if you need to present this value you'll
 have to separately retrieve it (for example using stored
@@ -167,7 +160,8 @@ fields, <code>FieldCache</code>, etc.).
 <p>Another collector is the <code>TermAllGroupHeadsCollector</code> that can be used to retrieve all most relevant
    documents per group. Also known as group heads. This can be useful in situations when one wants to compute group
    based facets / statistics on the complete query result. The collector can be executed during the first or second
-   phase.</p>
+   phase. This collector can also be used with the <code>GroupingSearch</code> convenience utility, but when if one only
+   wants to compute the most relevant documents per group it is better to just use the collector as done here below.</p>
 
 <pre class="prettyprint">
   AbstractAllGroupHeadsCollector c = TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
@@ -182,39 +176,27 @@ fields, <code>FieldCache</code>, etc.).
 <p>For each of the above collector types there is also a variant that works with <code>ValueSource</code> instead of
    of fields. Concretely this means that these variants can work with functions. These variants are slower than
    there term based counter parts. These implementations are located in the
-   <code>org.apache.lucene.search.grouping.function</code> package.
+   <code>org.apache.lucene.search.grouping.function</code> package, but can also be used with the
+  <code>GroupingSearch</code> convenience utility
 </p>
 
 <p>
   There are also DocValues based implementations available for the group collectors. There are factory methods
-  available for creating dv based instances. A typical example using dv based grouping collectors:
+  available for creating dv based instances. A typical example using dv based grouping with the
+  <code>GroupingSearch</code> convenience utility:
 </p>
 
 <pre class="prettyprint">
   boolean diskResident = true; // Whether values should fetched directly from disk by passing the Java heap space.
-  AbstractFirstPassGroupingCollector c1 = DVFirstPassGroupingCollector.create(
-        groupSort, groupOffset+topNGroups, "author", DocValues.Type.BYTES_VAR_SORTED, diskResident
-  );
+  DocValues.Type docValuesType = DocValues.Type.BYTES_VAR_SORTED;
+  GroupingSearch groupingSearch = new GroupingSearch("author", docValuesType, diskResident);
+  groupingSearch.setGroupSort(groupSort);
+  groupingSearch.setFillSortFields(fillFields);
 
-  s.search(new TermQuery(new Term("content", searchTerm)), c1);
+  TermQuery query = new TermQuery(new Term("content", searchTerm));
+  // The docValuesType variable decides the generic type. When float is used this Double and in case of int this is Long
+  TopGroups&lt;BytesRef&gt; result = groupingSearch.search(indexSearcher, query, groupOffset, groupLimit);
 
-  Collection&lt;SearchGroup&lt;BytesRef&gt;&gt; topGroups = c1.getTopGroups(groupOffset, fillFields);
-
-  if (topGroups == null) {
-    // No groups matched
-    return;
-  }
-
-  boolean getScores = true;
-  boolean getMaxScores = true;
-  boolean fillFields = true;
-  AbstractSecondPassGroupingCollector&lt;BytesRef&gt; c2 = DVSecondPassGroupingCollector.create(
-        "author", diskResident, DocValues.Type.BYTES_VAR_SORTED, topGroups, groupSort, docSort,
-        docOffset+docsPerGroup, getScores, getMaxScores, fillFields
-  );
-
-  s.search(new TermQuery(new Term("content", searchTerm)), c2);
-  TopGroups&lt;BytesRef&gt; groupsResult = c2.getTopGroups(docOffset);
   // Render groupsResult...
 </pre>
 
