@@ -277,13 +277,23 @@ public abstract class LuceneTestCase extends Assert {
   private static final UncaughtExceptionsRule uncaughtExceptionsRule = new UncaughtExceptionsRule(null); 
 
   /**
+   * These property keys will be ignored in verification of altered properties.
+   * @see SystemPropertiesInvariantRule
+   * @see #ruleChain
+   * @see #classRules
+   */
+  private static final String [] ignoredInvariantProperties = {
+    "user.timezone"
+  };
+  
+  /**
    * This controls how suite-level rules are nested. It is important that _all_ rules declared
    * in {@link LuceneTestCase} are executed in proper order if they depend on each 
    * other.
    */
   @ClassRule
   public static TestRule classRules = RuleChain
-    .outerRule(new SystemPropertiesInvariantRule())
+    .outerRule(new SystemPropertiesInvariantRule(ignoredInvariantProperties))
     .around(classNameRule)
     .around(uncaughtExceptionsRule);
 
@@ -297,7 +307,7 @@ public abstract class LuceneTestCase extends Assert {
     .outerRule(new RememberThreadRule())
     .around(new UncaughtExceptionsRule(this))
     .around(new TestResultInterceptorRule())
-    .around(new SystemPropertiesInvariantRule())
+    .around(new SystemPropertiesInvariantRule(ignoredInvariantProperties))
     .around(new InternalSetupTeardownRule())
     .around(new SubclassSetupTeardownRule());
 

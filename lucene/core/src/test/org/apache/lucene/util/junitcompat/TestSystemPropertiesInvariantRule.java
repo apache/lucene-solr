@@ -20,11 +20,18 @@ package org.apache.lucene.util.junitcompat;
 import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SystemPropertiesInvariantRule;
+import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.junit.*;
+import org.junit.rules.TestRule;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
+/**
+ * @see SystemPropertiesRestoreRule
+ * @see SystemPropertiesInvariantRule
+ */
 public class TestSystemPropertiesInvariantRule extends WithNestedTests {
   public static final String PROP_KEY1 = "new-property-1";
   public static final String VALUE1 = "new-value-1";
@@ -85,6 +92,16 @@ public class TestSystemPropertiesInvariantRule extends WithNestedTests {
     }
   }
 
+  public static class IgnoredProperty {
+    @Rule
+    public TestRule invariant = new SystemPropertiesInvariantRule(PROP_KEY1);
+
+    @Test
+    public void testMethod1() {
+      System.setProperty(PROP_KEY1, VALUE1);
+    }
+  }
+
   @Test
   public void testRuleInvariantBeforeClass() {
     Result runClasses = JUnitCore.runClasses(InBeforeClass.class);
@@ -119,5 +136,17 @@ public class TestSystemPropertiesInvariantRule extends WithNestedTests {
     Assert.assertEquals(1, runClasses.getFailureCount());
     Assert.assertTrue(runClasses.getFailures().get(0).getMessage().contains("Will pass"));
     Assert.assertEquals(3, runClasses.getRunCount());
+  }
+  
+  @Test
+  public void testIgnoredProperty() {
+    System.clearProperty(PROP_KEY1);
+    try {
+      Result runClasses = JUnitCore.runClasses(IgnoredProperty.class);
+      Assert.assertEquals(0, runClasses.getFailureCount());
+      Assert.assertEquals(VALUE1, System.getProperty(PROP_KEY1));
+    } finally {
+      System.clearProperty(PROP_KEY1);
+    }
   }
 }

@@ -18,7 +18,11 @@ package org.apache.lucene.util;
  */
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -28,6 +32,32 @@ import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 
 public class SystemPropertiesInvariantRule implements TestRule {
+  /**
+   * Ignored property keys.
+   */
+  private final HashSet<String> ignoredProperties;
+
+  /**
+   * Cares about all properties. 
+   */
+  public SystemPropertiesInvariantRule() {
+    this(Collections.<String>emptySet());
+  }
+
+  /**
+   * Don't care about the given set of properties. 
+   */
+  public SystemPropertiesInvariantRule(String... ignoredProperties) {
+    this.ignoredProperties = new HashSet<String>(Arrays.asList(ignoredProperties));
+  }
+
+  /**
+   * Don't care about the given set of properties. 
+   */
+  public SystemPropertiesInvariantRule(Set<String> ignoredProperties) {
+    this.ignoredProperties = new HashSet<String>(ignoredProperties);
+  }
+
   @Override
   public Statement apply(final Statement s, Description d) {
     return new Statement() {
@@ -40,7 +70,12 @@ public class SystemPropertiesInvariantRule implements TestRule {
         } catch (Throwable t) {
           errors.add(t);
         } finally {
-          TreeMap<String,String> after = SystemPropertiesRestoreRule.cloneAsMap(System.getProperties());
+          final TreeMap<String,String> after = SystemPropertiesRestoreRule.cloneAsMap(System.getProperties());
+
+          // Remove ignored if they exist.
+          before.keySet().removeAll(ignoredProperties);
+          after.keySet().removeAll(ignoredProperties);
+
           if (!after.equals(before)) {
             errors.add(
                 new AssertionError("System properties invariant violated.\n" + 
@@ -48,7 +83,7 @@ public class SystemPropertiesInvariantRule implements TestRule {
           }
 
           // Restore original properties.
-          SystemPropertiesRestoreRule.restore(before, after);
+          SystemPropertiesRestoreRule.restore(before, after, ignoredProperties);
         }
 
         MultipleFailureException.assertEmpty(errors);
