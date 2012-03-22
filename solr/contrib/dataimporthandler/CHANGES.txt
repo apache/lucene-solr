@@ -22,6 +22,12 @@ New Features
              SOLR-3190: Minor improvements to SolrEntityProcessor. Add more consistency between solr parameters
              and parameters used in SolrEntityProcessor and ability to specify a custom HttpClient instance.
              (Luca Cavanna via Martijn van Groningen)
+* SOLR-2382: Added pluggable cache support so that any Entity can be made cache-able by adding the "cacheImpl" parameter.
+             Include "SortedMapBackedCache" to provide in-memory caching (as previously this was the only option when
+             using CachedSqlEntityProcessor).  Users can provide their own implementations of DIHCache for other
+             caching strategies.  Deprecate CachedSqlEntityProcessor in favor of specifing "cacheImpl" with
+             SqlEntityProcessor.  Make SolrWriter implement DIHWriter and allow the possibility of pluggable Writers
+             (DIH writing to something other than Solr).  (James Dyer, Noble Paul)
 
 Changes in Runtime Behavior
 ----------------------
