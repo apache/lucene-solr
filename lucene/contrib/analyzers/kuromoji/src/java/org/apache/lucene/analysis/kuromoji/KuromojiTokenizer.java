@@ -588,27 +588,71 @@ public final class KuromojiTokenizer extends Tokenizer {
 
       if (pos - lastBackTracePos >= MAX_BACKTRACE_GAP) {
         // Safety: if we've buffered too much, force a
-        // backtrace now:
+        // backtrace now.  We find the least-cost partial
+        // path, across all paths, backtrace from it, and
+        // then prune all others.  Note that this, in
+        // general, can produce the wrong result, if the
+        // total bast path did not in fact back trace
+        // through this partial best path.  But it's the
+        // best we can do... (short of not having a
+        // safety!).
+
+        // First pass: find least cost parital path so far,
+        // including ending at future positions:
         int leastIDX = -1;
         int leastCost = Integer.MAX_VALUE;
-        for(int idx=0;idx<posData.count;idx++) {
-          //System.out.println("    idx=" + idx + " cost=" + cost);
-          final int cost = posData.costs[idx];
-          if (cost < leastCost) {
-            leastCost = cost;
-            leastIDX = idx;
+        Position leastPosData = null;
+        for(int pos2=pos;pos2<positions.getNextPos();pos2++) {
+          final Position posData2 = positions.get(pos2);
+          for(int idx=0;idx<posData2.count;idx++) {
+            //System.out.println("    idx=" + idx + " cost=" + cost);
+            final int cost = posData.costs[idx];
+            if (cost < leastCost) {
+              leastCost = cost;
+              leastIDX = idx;
+              leastPosData = posData2;
+            }
           }
         }
-        backtrace(posData, leastIDX);
+
+        // We will always have at least one live path:
+        assert leastIDX != -1;
+
+        // Second pass: prune all but the best path:
+        for(int pos2=pos;pos2<positions.getNextPos();pos2++) {
+          final Position posData2 = positions.get(pos2);
+          if (posData2 != leastPosData) {
+            posData2.reset();
+          } else {
+            if (leastIDX != 0) {
+              posData2.costs[0] = posData2.costs[leastIDX];
+              posData2.lastRightID[0] = posData2.lastRightID[leastIDX];
+              posData2.backPos[0] = posData2.backPos[leastIDX];
+              posData2.backIndex[0] = posData2.backIndex[leastIDX];
+              posData2.backID[0] = posData2.backID[leastIDX];
+              posData2.backType[0] = posData2.backType[leastIDX];
+            }
+            posData2.count = 1;
+          }
+        }
+
+        backtrace(leastPosData, 0);
 
         // Re-base cost so we don't risk int overflow:
-        Arrays.fill(posData.costs, 0, posData.count, 0);
+        Arrays.fill(leastPosData.costs, 0, leastPosData.count, 0);
 
         if (pending.size() != 0) {
           return;
         } else {
           // This means the backtrace only produced
           // punctuation tokens, so we must keep parsing.
+          if (pos != leastPosData.pos) {
+            // We jumped into a future position; continue to
+            // the top of the loop to skip until we get
+            // there:
+            assert pos < leastPosData.pos;
+            continue;
+          }
         }
       }
 
