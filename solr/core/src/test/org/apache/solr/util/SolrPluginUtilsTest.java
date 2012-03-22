@@ -58,28 +58,48 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDocListConversion() throws Exception {
-    assertU("", adoc("id", "3234", "val_t", "quick red fox"));
-    assertU("", adoc("id", "3235", "val_t", "quick green fox"));
-    assertU("", adoc("id", "3236", "val_t", "quick brown fox"));
-    commit();
+    assertU("", adoc("id", "3234", "val_i", "1", 
+                     "val_dynamic", "quick red fox"));
+    assertU("", adoc("id", "3235", "val_i", "1", 
+                     "val_dynamic", "quick green fox"));
+    assertU("", adoc("id", "3236", "val_i", "1", 
+                     "val_dynamic", "quick brown fox"));
+    assertU("", commit());
+
     RefCounted<SolrIndexSearcher> holder = h.getCore().getSearcher();
-    SolrIndexSearcher srchr = holder.get();
-    SolrIndexSearcher.QueryResult qr = new SolrIndexSearcher.QueryResult();
-    SolrIndexSearcher.QueryCommand cmd = new SolrIndexSearcher.QueryCommand();
-    cmd.setQuery(new MatchAllDocsQuery());
-    qr = srchr.search(qr, cmd);
+    try {
+      SolrIndexSearcher srchr = holder.get();
+      SolrIndexSearcher.QueryResult qr = new SolrIndexSearcher.QueryResult();
+      SolrIndexSearcher.QueryCommand cmd = new SolrIndexSearcher.QueryCommand();
+      cmd.setQuery(new MatchAllDocsQuery());
+      cmd.setLen(10);
+      qr = srchr.search(qr, cmd);
+      
+      DocList docs = qr.getDocList();
+      assertEquals("wrong docs size", 3, docs.size());
+      Set<String> fields = new HashSet<String>();
+      fields.add("val_dynamic");
+      fields.add("dynamic_val");
+      fields.add("range_facet_l"); // copied from id
+      
+      SolrDocumentList list = SolrPluginUtils.docListToSolrDocumentList(docs, srchr, fields, null);
+      assertEquals("wrong list Size", docs.size(), list.size());
+      for (SolrDocument document : list) {
+        
+        assertTrue("unexpected field", ! document.containsKey("val_i"));
+        assertTrue("unexpected id field", ! document.containsKey("id"));
 
-    DocList docs = qr.getDocList();
-    Set<String> fields = new HashSet<String>();
-    fields.add("val_t");
-
-
-    SolrDocumentList list = SolrPluginUtils.docListToSolrDocumentList(docs, srchr, fields, null);
-    assertTrue("list Size: " + list.size() + " is not: " + docs.size(), list.size() == docs.size());
-    for (SolrDocument document : list) {
-      assertNotNull(document.get("val_t"));
+        assertTrue("original field", document.containsKey("val_dynamic"));
+        assertTrue("dyn copy field", document.containsKey("dynamic_val"));
+        assertTrue("copy field", document.containsKey("range_facet_l"));
+        
+        assertNotNull("original field null", document.get("val_dynamic"));
+        assertNotNull("dyn copy field null", document.get("dynamic_val"));
+        assertNotNull("copy field null", document.get("range_facet_l"));
+      }
+    } finally {
+      if (null != holder) holder.decref();
     }
-    holder.decref();
   }
 
   @Test

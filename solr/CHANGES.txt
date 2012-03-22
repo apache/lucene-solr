@@ -716,6 +716,12 @@ Bug Fixes
 * SOLR-2959: edismax now respects the magic fields '_val_' and '_query_'
   (Michael Watts, hossman)
 
+* SOLR-3074: fix SolrPluginUtils.docListToSolrDocumentList to respect the 
+  list of fields specified.  This fix also deprecates 
+  DocumentBuilder.loadStoredFields which is not used anywhere in Solr, 
+  and was fundamentally broken/bizarre.
+  (hossman, Ahmet Arslan)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)

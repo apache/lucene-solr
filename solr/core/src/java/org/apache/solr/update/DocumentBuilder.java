@@ -324,28 +324,4 @@ public class DocumentBuilder {
     }
     return out;
   }
-
-  
-  /**
-   * Add fields from the solr document
-   * 
-   * TODO: /!\ NOTE /!\ This semantics of this function are still in flux.  
-   * Something somewhere needs to be able to fill up a SolrDocument from
-   * a lucene document - this is one place that may happen.  It may also be
-   * moved to an independent function
-   * 
-   * @since solr 1.3
-   */
-  public SolrDocument loadStoredFields( SolrDocument doc, Document luceneDoc  )
-  {
-    for( IndexableField field : luceneDoc) {
-      if( field.fieldType().stored() ) {
-        SchemaField sf = schema.getField( field.name() );
-        if( !schema.isCopyFieldTarget( sf ) ) {
-          doc.addField( field.name(), sf.getType().toObject( field ) );
-        }
-      }
-    }
-    return doc;
-  }
 }

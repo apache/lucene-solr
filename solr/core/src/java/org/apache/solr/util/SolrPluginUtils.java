@@ -18,6 +18,7 @@
 package org.apache.solr.util;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
@@ -789,7 +790,8 @@ public class SolrPluginUtils {
       Set<String> fields,
       Map<SolrDocument, Integer> ids ) throws IOException
   {
-    DocumentBuilder db = new DocumentBuilder(searcher.getSchema());
+    IndexSchema schema = searcher.getSchema();
+
     SolrDocumentList list = new SolrDocumentList();
     list.setNumFound(docs.matches());
     list.setMaxScore(docs.maxScore());
@@ -802,14 +804,15 @@ public class SolrPluginUtils {
 
       Document luceneDoc = searcher.doc(docid, fields);
       SolrDocument doc = new SolrDocument();
-      db.loadStoredFields(doc, luceneDoc);
-
-      // this may be removed if XMLWriter gets patched to
-      // include score from doc iterator in solrdoclist
-      if (docs.hasScores()) {
+      
+      for( IndexableField field : luceneDoc) {
+        if (null == fields || fields.contains(field.name())) {
+          SchemaField sf = schema.getField( field.name() );
+          doc.addField( field.name(), sf.getType().toObject( field ) );
+        }
+      }
+      if (docs.hasScores() && (null == fields || fields.contains("score"))) {
         doc.addField("score", dit.score());
-      } else {
-        doc.addField("score", 0.0f);
       }
 
       list.add( doc );
