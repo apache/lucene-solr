@@ -1,4 +1,5 @@
 package org.apache.solr.handler.dataimport;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,19 +16,17 @@ package org.apache.solr.handler.dataimport;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.util.Properties;
 
-/**
- * @since solr 3.2
- */
 public interface DIHPropertiesWriter {
-
-    public void init(DataImporter dataImporter);
-
-    public boolean isWritable();
-
-	public void persist(Properties props);
-	
-	public Properties readIndexerProperties();
-	
+  
+  public void init(DataImporter dataImporter);
+  
+  public boolean isWritable();
+  
+  public void persist(Properties props);
+  
+  public Properties readIndexerProperties();
+  
 }
