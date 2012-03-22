@@ -467,6 +467,11 @@
         <fileset dir="contrib/analysis-extras" includes="build.xml"/>
       </subant>
 
+      <!-- TODO: optimize this, thats stupid here: -->
+      <subant target="module-jars-to-solr">
+        <fileset dir="contrib/uima" includes="build.xml"/>
+      </subant>
+
       <path id="javadoc.classpath">
         <path refid="classpath"/>
         <fileset dir="${dest}/contrib">
