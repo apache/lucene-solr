@@ -114,6 +114,8 @@ public final class UnicodeUtil {
     (UNI_SUR_HIGH_START << HALF_SHIFT) - UNI_SUR_LOW_START;
 
   /**
+   * Holds decoded UTF8 code units.
+   *
    * @lucene.internal
    */
   public static final class UTF8Result {
@@ -129,6 +131,8 @@ public final class UnicodeUtil {
   }
 
   /**
+   * Holds decoded UTF16 code units.
+   *
    * @lucene.internal
    */
   public static final class UTF16Result {
