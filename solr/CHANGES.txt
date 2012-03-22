@@ -471,6 +471,10 @@ Documentation
 
 Upgrading from Solr 3.5
 ----------------------
+* SOLR-2983: As a consequence of moving the code which sets a MergePolicy from SolrIndexWriter to SolrIndexConfig,
+  (custom) MergePolicies should now have an empty constructor; thus an IndexWriter should not be passed as constructor
+  parameter but instead set using the setIndexWriter() method.
+
 * As doGet() methods in SimplePostTool was changed to static, the client applications of this
   class need to be recompiled.
 

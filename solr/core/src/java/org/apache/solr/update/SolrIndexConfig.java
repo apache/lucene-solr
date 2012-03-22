@@ -160,14 +160,9 @@ public class SolrIndexConfig {
   }
 
   private MergePolicy buildMergePolicy(IndexSchema schema) {
-    MergePolicy policy;
     String mpClassName = mergePolicyInfo == null ? defaultMergePolicyClassName : mergePolicyInfo.className;
 
-    try {
-      policy = (MergePolicy) schema.getResourceLoader().newInstance(mpClassName, null, new Class[]{IndexWriter.class}, new Object[]{this});
-    } catch (Exception e) {
-      policy = (MergePolicy) schema.getResourceLoader().newInstance(mpClassName);
-    }
+    MergePolicy policy = (MergePolicy) schema.getResourceLoader().newInstance(mpClassName);
 
     if (policy instanceof LogMergePolicy) {
       LogMergePolicy logMergePolicy = (LogMergePolicy) policy;
