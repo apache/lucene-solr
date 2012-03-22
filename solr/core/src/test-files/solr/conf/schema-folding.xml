@@ -149,6 +149,28 @@
     </fieldType>
 
 
+    <fieldType name="text_greek" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.GreekLowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_turkish" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.TurkishLowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="text_russian" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+
     <fieldType name="int" class="solr.TrieIntField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
@@ -178,6 +200,9 @@
     <field name="content_oldstyle" type="text_oldstyle" indexed="true" stored="true"/>
     <field name="content_charfilter" type="text_charfilter" indexed="true" stored="true"/>
     <field name="content_multi_bad" type="text_multi_bad" indexed="true" stored="true"/>
+    <field name="content_greek" type="text_greek" indexed="true" stored="true"/>
+    <field name="content_turkish" type="text_turkish" indexed="true" stored="true"/>
+    <field name="content_russian" type="text_russian" indexed="true" stored="true"/>
 
     <dynamicField name="*_straight" type="text_straight" indexed="true" stored="true"/>
     <dynamicField name="*_lower" type="text_lower" indexed="true" stored="true"/>

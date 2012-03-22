@@ -31,8 +31,13 @@ import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class TurkishLowerCaseFilterFactory extends BaseTokenFilterFactory {
+public class TurkishLowerCaseFilterFactory extends BaseTokenFilterFactory  implements MultiTermAwareComponent {
   public TokenStream create(TokenStream input) {
     return new TurkishLowerCaseFilter(input);
+  }
+
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

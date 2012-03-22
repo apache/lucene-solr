@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -37,7 +36,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory 
+public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent
 {
  
   @Override
@@ -52,6 +51,10 @@ public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory
 
   public GreekLowerCaseFilter create(TokenStream in) {
     return new GreekLowerCaseFilter(luceneMatchVersion, in);
+  }
+
+  public Object getMultiTermComponent() {
+    return this;
   }
 }
 
