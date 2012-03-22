@@ -161,9 +161,8 @@ public class EntityProcessorWrapper extends EntityProcessor {
   /**
    * handles null-on-null invocation
    * 
-   * call transformers via {@link transformRow}, then assigns the result into {@link rowcache}, and delegates to {@link getFromRowCache}
+   * call transformers via {@link #transformRow}, then assigns the result into row cache, and delegates to {@link #getFromRowCache}
    * */
-  @SuppressWarnings("unchecked")
   protected Map<String, Object> applyTransformer(Map<String, Object> row) {
     if(row == null) return null;
     
@@ -264,17 +263,11 @@ public class EntityProcessorWrapper extends EntityProcessor {
    *    and loop until transfomer passes the first row
    *    
    * for child entities whole page is pulled. where the page is non-null children entity rows.
-   * then the whole page is transformed and emitted to a {@link rowcache}
+   * then the whole page is transformed and emitted to the row cache.
    * 
    * the rationale is avoid stealing child rows by parent entity threads. For every parent row 
-   * the linked children rows (page) is pulled under lock obtained on {@link delegate} 
-   *  
-   *  Note: this code initially was amended in the threaded descendant, but the I need the same paging logic in 
-   *  the threadless mode too, I pulled it here. it has a synchronise(delegate){} section, which could be
-   *  considered as overhead for threadless mode, but IIRC acquiring lock without a concurrency cost roughly 
-   *  nothing. Also if you are cocerned by synch section you can extract it in template method and synh in 
-   *  descendant     
-   * */
+   * the linked children rows (page) is pulled under lock obtained on delegate EntityProcessor   
+   **/
   @Override
   public Map<String, Object> nextRow() {
     if (rowcache != null) {
@@ -327,8 +320,8 @@ public class EntityProcessorWrapper extends EntityProcessor {
   }
   
   /**
-   * pulls single row from {@link delegate}, checks and sets {@link entityRunner.entityEnded}.
-   * it expect to be called in synchronised(delegate) section
+   * pulls single row from the delegate EntityProcessor.
+   * it expect to be called in synchronized(delegate) section
    * @return row from delegate
    * */
   protected Map<String,Object> pullRow() {

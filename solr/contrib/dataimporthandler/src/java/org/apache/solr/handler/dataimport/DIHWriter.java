@@ -79,7 +79,7 @@ public interface DIHWriter {
 	 *  Add a document to this writer's underlying data store.
 	 * </p>
 	 * @param doc
-	 * @return
+	 * @return true if success
 	 */
 	public boolean upload(SolrInputDocument doc);
 
