@@ -16,27 +16,22 @@
  */
 package org.apache.solr.handler.dataimport;
 
-/**
- * This class enables caching of data obtained from the DB to avoid too many sql
- * queries
- * <p/>
- * <p>
- * Refer to <a
- * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache
- * .org/solr/DataImportHandler</a> for more details.
- * </p>
- * <p/>
- * <b>This API is experimental and subject to change</b>
- * 
- * @version $Id$
- * @since solr 1.3
- * @deprecated - Use SqlEntityProcessor with cacheImpl parameter.
- */
-@Deprecated
-public class CachedSqlEntityProcessor extends SqlEntityProcessor {
-    @Override
-    protected void initCache(Context context) {
-      cacheSupport = new DIHCacheSupport(context, "SortedMapBackedCache");
-    }
+import static org.hamcrest.CoreMatchers.nullValue;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
+
+import org.junit.Assert;
+
+public class DestroyCountCache extends SortedMapBackedCache {
+  static Map<DIHCache,DIHCache> destroyed = new IdentityHashMap<DIHCache,DIHCache>();
+  
+  @Override
+  public void destroy() {
+    super.destroy();
+    Assert.assertThat(destroyed.put(this, this), nullValue());
+  }
+  
+  public DestroyCountCache() {}
+  
 }

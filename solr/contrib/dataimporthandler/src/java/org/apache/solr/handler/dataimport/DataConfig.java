@@ -110,6 +110,8 @@ public class DataConfig {
     public DataSource dataSrc;
 
     public Map<String, List<Field>> colNameVsField = new HashMap<String, List<Field>>();
+    
+    public boolean initalized = false;
 
     public Entity() {
     }

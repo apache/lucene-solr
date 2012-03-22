@@ -1,3 +1,4 @@
+package org.apache.solr.handler.dataimport;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,29 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.dataimport;
+import java.io.File;
+import java.util.Properties;
 
 /**
- * This class enables caching of data obtained from the DB to avoid too many sql
- * queries
- * <p/>
- * <p>
- * Refer to <a
- * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache
- * .org/solr/DataImportHandler</a> for more details.
- * </p>
- * <p/>
- * <b>This API is experimental and subject to change</b>
- * 
- * @version $Id$
- * @since solr 1.3
- * @deprecated - Use SqlEntityProcessor with cacheImpl parameter.
+ *
  */
-@Deprecated
-public class CachedSqlEntityProcessor extends SqlEntityProcessor {
-    @Override
-    protected void initCache(Context context) {
-      cacheSupport = new DIHCacheSupport(context, "SortedMapBackedCache");
-    }
+public interface DIHPropertiesWriter {
 
+    public void init(DataImporter dataImporter);
+
+    public boolean isWritable();
+
+	public void persist(Properties props);
+	
+	public Properties readIndexerProperties();
+	
 }

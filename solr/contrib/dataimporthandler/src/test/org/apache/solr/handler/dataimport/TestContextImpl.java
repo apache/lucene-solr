@@ -38,7 +38,7 @@ public class TestContextImpl extends AbstractDataImportHandlerTestCase {
   public void testCoreScope() {
     DataImporter di = new DataImporter();
     di.loadAndInit("<dataConfig><document /></dataConfig>");
-    DocBuilder db = new DocBuilder(di, new SolrWriter(null, null), new RequestParams());
+    DocBuilder db = new DocBuilder(di, new SolrWriter(null),new SimplePropertiesWriter(), new RequestParams());   
     ContextImpl ctx = new ContextImpl(new Entity(), new VariableResolverImpl(), null, "something", new HashMap<String,Object>(), null, db);
     String lala = new String("lala");
     ctx.setSessionAttribute("huhu", lala, Context.SCOPE_SOLR_CORE);

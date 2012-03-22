@@ -188,17 +188,12 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     Boolean commitCalled;
 
     public SolrWriterImpl() {
-      super(null, ".");
+      super(null);
     }
 
     @Override
     public boolean upload(SolrInputDocument doc) {
       return docs.add(doc);
-    }
-
-    @Override
-    public void log(int event, String name, Object row) {
-      // Do nothing
     }
 
     @Override

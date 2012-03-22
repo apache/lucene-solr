@@ -22,7 +22,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ContentStream;
@@ -115,7 +114,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           final InputSource is = new InputSource(core.getResourceLoader().openConfig(configLoc));
           is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(configLoc));
           importer = new DataImporter(is, core,
-                  dataSources, coreScopeSession);
+                  dataSources, coreScopeSession, myName);
         }
       }
     } catch (Throwable e) {
@@ -167,7 +166,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         try {
           processConfiguration((NamedList) initArgs.get("defaults"));
           importer = new DataImporter(new InputSource(new StringReader(requestParams.dataConfig)), req.getCore()
-                  , dataSources, coreScopeSession);
+                  , dataSources, coreScopeSession, myName);
         } catch (RuntimeException e) {
           rsp.add("exception", DebugLogger.getStacktraceString(e));
           importer = null;
@@ -199,16 +198,18 @@ public class DataImportHandler extends RequestHandlerBase implements
         UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
         SolrResourceLoader loader = req.getCore().getResourceLoader();
         SolrWriter sw = getSolrWriter(processor, loader, requestParams);
-
+        
         if (requestParams.debug) {
           if (debugEnabled) {
             // Synchronous request for the debug mode
             importer.runCmd(requestParams, sw);
             rsp.add("mode", "debug");
             rsp.add("documents", debugDocuments);
-            if (sw.debugLogger != null)
-              rsp.add("verbose-output", sw.debugLogger.output);
+            if (requestParams.debugVerboseOutput != null) {
+              rsp.add("verbose-output", requestParams.debugVerboseOutput);
+            }
             debugDocuments.clear();
+            requestParams.debugVerboseOutput = null;
           } else {
             message = DataImporter.MSG.DEBUG_NOT_ENABLED;
           }
@@ -217,7 +218,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           if(requestParams.contentStream == null && !requestParams.syncMode){
             importer.runAsync(requestParams, sw);
           } else {
-              importer.runCmd(requestParams, sw);
+            importer.runCmd(requestParams, sw);
           }
         }
       } else if (DataImporter.RELOAD_CONF_CMD.equals(command)) {
@@ -282,9 +283,8 @@ public class DataImportHandler extends RequestHandlerBase implements
   private SolrWriter getSolrWriter(final UpdateRequestProcessor processor,
                                    final SolrResourceLoader loader, final DataImporter.RequestParams requestParams) {
 
-    return new SolrWriter(processor, loader.getConfigDir(), myName) {
+    return new SolrWriter(processor) {
 
-      @Override
       public boolean upload(SolrInputDocument document) {
         try {
           if (requestParams.debug) {

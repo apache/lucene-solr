@@ -190,7 +190,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
     fields.add(createMap("column", "desc"));
     String q = "select * from x";
     Map<String, String> entityAttrs = createMap(
-            "query", q, EntityProcessorBase.CACHE_KEY,"id", EntityProcessorBase.CACHE_LOOKUP ,"x.id");
+        "query", q, DIHCacheSupport.CACHE_PRIMARY_KEY,"id", DIHCacheSupport.CACHE_FOREIGN_KEY ,"x.id");
     MockDataSource ds = new MockDataSource();
     VariableResolverImpl vr = new VariableResolverImpl();
     Map xNamespace = createMap("id", 0);
