@@ -43,7 +43,7 @@ public class SystemPropertiesRestoreRule implements TestRule {
    * @param ignoredProperties Properties that will be ignored (and will not be restored).
    */
   public SystemPropertiesRestoreRule(Set<String> ignoredProperties) {
-    this.ignoredProperties = new HashSet<String>(this.ignoredProperties);
+    this.ignoredProperties = new HashSet<String>(ignoredProperties);
   }
 
   /**
