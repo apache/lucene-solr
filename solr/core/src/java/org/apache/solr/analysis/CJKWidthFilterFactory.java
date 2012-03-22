@@ -33,10 +33,15 @@ import org.apache.lucene.analysis.cjk.CJKWidthFilter;
  * &lt;/fieldType&gt;</pre>
  */
 
-public class CJKWidthFilterFactory extends BaseTokenFilterFactory {
+public class CJKWidthFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
   
   @Override
   public TokenStream create(TokenStream input) {
     return new CJKWidthFilter(input);
+  }
+  
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

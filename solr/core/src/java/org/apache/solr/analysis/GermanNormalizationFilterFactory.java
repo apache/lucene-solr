@@ -31,9 +31,14 @@ import org.apache.lucene.analysis.de.GermanNormalizationFilter;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
  */
-public class GermanNormalizationFilterFactory extends BaseTokenFilterFactory {
+public class GermanNormalizationFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
 
   public TokenStream create(TokenStream input) {
     return new GermanNormalizationFilter(input);
+  }
+  
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

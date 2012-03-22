@@ -31,8 +31,13 @@ import org.apache.lucene.analysis.hi.HindiNormalizationFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class HindiNormalizationFilterFactory extends BaseTokenFilterFactory {
+public class HindiNormalizationFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
   public TokenStream create(TokenStream input) {
     return new HindiNormalizationFilter(input);
+  }
+  
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

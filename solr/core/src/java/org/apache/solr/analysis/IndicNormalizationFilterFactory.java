@@ -31,8 +31,13 @@ import org.apache.lucene.analysis.in.IndicNormalizationFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class IndicNormalizationFilterFactory extends BaseTokenFilterFactory {
+public class IndicNormalizationFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
   public TokenStream create(TokenStream input) {
     return new IndicNormalizationFilter(input);
+  }
+  
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

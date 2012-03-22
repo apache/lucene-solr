@@ -17,7 +17,6 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,7 +30,6 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig-icucollate.xml","schema-folding-extra.xml", "analysis-extras/solr");
-    IndexWriter iw;
 
     int idx = 1;
     // ICUFoldingFilterFactory
@@ -55,7 +53,10 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", Integer.toString(idx++), "content_icunormalizer2", "ELİF"));
     assertU(adoc("id", Integer.toString(idx++), "content_icunormalizer2", "eli\u0307f"));
 
-    assertU(optimize());
+    // ICUTransformFilterFactory
+    assertU(adoc("id", Integer.toString(idx++), "content_icutransform", "Российская"));
+
+    assertU(commit());
   }
 
   @Test
@@ -73,5 +74,9 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
     assertQ(req("q", "content_icunormalizer2:Μάϊ*"), "//result[@numFound='2']");
     assertQ(req("q", "content_icunormalizer2:re\u0301Su*"), "//result[@numFound='2']");
     assertQ(req("q", "content_icunormalizer2:eL*"), "//result[@numFound='2']");
+  }
+  
+  public void testICUTransform() {
+    assertQ(req("q", "content_icutransform:Росс*"), "//result[@numFound='1']");
   }
 }

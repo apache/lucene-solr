@@ -169,6 +169,42 @@
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
     </fieldType>
+    
+    <fieldType name="text_persian" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.PersianNormalizationFilterFactory"/>
+      </analyzer>
+    </fieldType>
+    
+    <fieldType name="text_arabic" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.ArabicNormalizationFilterFactory"/>
+      </analyzer>
+    </fieldType>
+    
+    <fieldType name="text_hindi" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.IndicNormalizationFilterFactory"/>
+        <filter class="solr.HindiNormalizationFilterFactory"/>
+      </analyzer>
+    </fieldType>
+    
+    <fieldType name="text_german" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.GermanNormalizationFilterFactory"/>
+      </analyzer>
+    </fieldType>
+    
+    <fieldType name="text_width" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.CJKWidthFilterFactory"/>
+      </analyzer>
+    </fieldType>
 
 
     <fieldType name="int" class="solr.TrieIntField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
@@ -203,6 +239,11 @@
     <field name="content_greek" type="text_greek" indexed="true" stored="true"/>
     <field name="content_turkish" type="text_turkish" indexed="true" stored="true"/>
     <field name="content_russian" type="text_russian" indexed="true" stored="true"/>
+    <field name="content_persian" type="text_persian" indexed="true" stored="true"/>
+    <field name="content_arabic" type="text_arabic" indexed="true" stored="true"/>
+    <field name="content_hindi" type="text_hindi" indexed="true" stored="true"/>
+    <field name="content_german" type="text_german" indexed="true" stored="true"/>
+    <field name="content_width" type="text_width" indexed="true" stored="true"/>
 
     <dynamicField name="*_straight" type="text_straight" indexed="true" stored="true"/>
     <dynamicField name="*_lower" type="text_lower" indexed="true" stored="true"/>

@@ -31,9 +31,14 @@ import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class ArabicNormalizationFilterFactory extends BaseTokenFilterFactory{
+public class ArabicNormalizationFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
 
   public ArabicNormalizationFilter create(TokenStream input) {
     return new ArabicNormalizationFilter(input);
+  }
+
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }
