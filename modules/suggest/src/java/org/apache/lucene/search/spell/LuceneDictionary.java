@@ -30,9 +30,6 @@ import java.io.*;
  *
  * When using IndexReader.terms(Term) the code must not call next() on TermEnum
  * as the first call to TermEnum, see: http://issues.apache.org/jira/browse/LUCENE-6
- *
- *
- *
  */
 public class LuceneDictionary implements Dictionary {
   private IndexReader reader;
@@ -48,8 +45,7 @@ public class LuceneDictionary implements Dictionary {
     if (terms != null) {
       return terms.iterator(null);
     } else {
-      return BytesRefIterator.EMPTY_ITERATOR;
+      return BytesRefIterator.EMPTY;
     }
   }
-  
 }
