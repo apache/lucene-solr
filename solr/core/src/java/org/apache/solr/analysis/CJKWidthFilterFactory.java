@@ -39,7 +39,7 @@ public class CJKWidthFilterFactory extends BaseTokenFilterFactory implements Mul
     return new CJKWidthFilter(input);
   }
   
-  @Override
+  //@Override
   public Object getMultiTermComponent() {
     return this;
   }

@@ -41,7 +41,7 @@ public class ICUTransformFilterFactory extends BaseTokenFilterFactory implements
   private Transliterator transliterator;
   
   // TODO: add support for custom rules
-  @Override
+  //@Override
   public void init(Map<String,String> args) {
     super.init(args);
     String id = args.get("id");
@@ -65,7 +65,7 @@ public class ICUTransformFilterFactory extends BaseTokenFilterFactory implements
     return new ICUTransformFilter(input, transliterator);
   }
   
-  @Override
+  //@Override
   public Object getMultiTermComponent() {
     return this;
   }

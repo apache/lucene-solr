@@ -37,7 +37,7 @@ public class ArabicNormalizationFilterFactory extends BaseTokenFilterFactory imp
     return new ArabicNormalizationFilter(input);
   }
 
-  @Override
+  //@Override
   public Object getMultiTermComponent() {
     return this;
   }

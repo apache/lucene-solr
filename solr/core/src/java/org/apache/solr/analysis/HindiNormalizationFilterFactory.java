@@ -36,7 +36,7 @@ public class HindiNormalizationFilterFactory extends BaseTokenFilterFactory impl
     return new HindiNormalizationFilter(input);
   }
   
-  @Override
+  //@Override
   public Object getMultiTermComponent() {
     return this;
   }

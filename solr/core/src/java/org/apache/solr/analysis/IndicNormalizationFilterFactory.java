@@ -36,7 +36,7 @@ public class IndicNormalizationFilterFactory extends BaseTokenFilterFactory impl
     return new IndicNormalizationFilter(input);
   }
   
-  @Override
+  //@Override
   public Object getMultiTermComponent() {
     return this;
   }

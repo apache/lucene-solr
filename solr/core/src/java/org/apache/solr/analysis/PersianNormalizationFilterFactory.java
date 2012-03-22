@@ -39,7 +39,7 @@ public class PersianNormalizationFilterFactory extends BaseTokenFilterFactory im
     return new PersianNormalizationFilter(input);
   }
   
-  @Override
+  //@Override
   public Object getMultiTermComponent() {
     return this;
   }

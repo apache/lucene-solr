@@ -37,7 +37,7 @@ public class GermanNormalizationFilterFactory extends BaseTokenFilterFactory imp
     return new GermanNormalizationFilter(input);
   }
   
-  @Override
+  //@Override
   public Object getMultiTermComponent() {
     return this;
   }
