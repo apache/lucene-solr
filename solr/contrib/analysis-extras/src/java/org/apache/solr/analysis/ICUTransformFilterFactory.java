@@ -37,7 +37,7 @@ import com.ibm.icu.text.Transliterator;
  * </ul>
  * @see Transliterator
  */
-public class ICUTransformFilterFactory extends BaseTokenFilterFactory {
+public class ICUTransformFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
   private Transliterator transliterator;
   
   // TODO: add support for custom rules
@@ -63,5 +63,10 @@ public class ICUTransformFilterFactory extends BaseTokenFilterFactory {
 
   public TokenStream create(TokenStream input) {
     return new ICUTransformFilter(input, transliterator);
+  }
+  
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }

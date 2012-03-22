@@ -17,7 +17,6 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,7 +30,6 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml", "schema-folding.xml");
-    IndexWriter iw;
 
     String docs[] = {
         "abcdefg1 finger",
@@ -91,7 +89,22 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", Integer.toString(idx++), "content_isolatin", "YppÉÉÉ all is well"));
     assertU(adoc("id", Integer.toString(idx++), "content_isolatin", "that's äll"));
 
-    assertU(optimize());
+    // persian normalization
+    assertU(adoc("id", Integer.toString(idx++), "content_persian", "هاي"));
+    
+    // arabic normalization
+    assertU(adoc("id", Integer.toString(idx++), "content_arabic", "روبرت"));
+
+    // hindi normalization
+    assertU(adoc("id", Integer.toString(idx++), "content_hindi", "हिंदी"));
+    assertU(adoc("id", Integer.toString(idx++), "content_hindi", "अाअा"));
+    
+    // german normalization
+    assertU(adoc("id", Integer.toString(idx++), "content_german", "weissbier"));
+    
+    // cjk width normalization
+    assertU(adoc("id", Integer.toString(idx++), "content_width", "ｳﾞｨｯﾂ"));
+    assertU(commit());
   }
 
   @Test
@@ -298,5 +311,26 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
     assertQ(req("q", "content_isolatin:YppE*"), "//result[@numFound='1']");
     assertQ(req("q", "content_isolatin:äl*"), "//result[@numFound='2']");
     assertQ(req("q", "content_isolatin:ál*"), "//result[@numFound='2']");
+  }
+  
+  public void testPersian() {
+    assertQ(req("q", "content_persian:های*"), "//result[@numFound='1']");
+  }
+  
+  public void testArabic() {
+    assertQ(req("q", "content_arabic:روبرـــــــــــــــــــــــــــــــــت*"), "//result[@numFound='1']");
+  }
+  
+  public void testHindi() {
+    assertQ(req("q", "content_hindi:हिन्दी*"), "//result[@numFound='1']");
+    assertQ(req("q", "content_hindi:आआ*"), "//result[@numFound='1']");
+  }
+  
+  public void testGerman() {
+    assertQ(req("q", "content_german:weiß*"), "//result[@numFound='1']");
+  }
+  
+  public void testCJKWidth() {
+    assertQ(req("q", "content_width:ヴィ*"), "//result[@numFound='1']");
   }
 }

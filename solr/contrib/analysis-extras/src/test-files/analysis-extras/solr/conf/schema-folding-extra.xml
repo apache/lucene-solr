@@ -33,6 +33,13 @@
         <filter class="solr.ICUNormalizer2FilterFactory" name="nfkc_cf" mode="compose"/>
       </analyzer>
     </fieldType>
+    
+    <fieldType name="text_icutransform" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.ICUTransformFilterFactory" id="Cyrillic-Latin"/>
+      </analyzer>
+    </fieldType>
 
    </types>
 
@@ -40,6 +47,7 @@
     <field name="id" type="string" indexed="true" stored="true" required="true"/>
     <field name="content_icufolding" type="text_icufolding" indexed="true" stored="true"/>
     <field name="content_icunormalizer2" type="text_icunormalizer2" indexed="true" stored="true"/>
+    <field name="content_icutransform" type="text_icutransform" indexed="true" stored="true"/>
 
   </fields>
 
