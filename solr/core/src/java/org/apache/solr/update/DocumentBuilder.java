@@ -358,18 +358,13 @@ public class DocumentBuilder {
     }
     return out;
   }
-
   
   /**
-   * Add fields from the solr document
-   * 
-   * TODO: /!\ NOTE /!\ This semantics of this function are still in flux.  
-   * Something somewhere needs to be able to fill up a SolrDocument from
-   * a lucene document - this is one place that may happen.  It may also be
-   * moved to an independent function
-   * 
-   * @since solr 1.3
+   * Deprecated, do not use: The semantics of this method make no sense, and have never made sense, this method will be removed in Solr 4.0
+   * @deprecated Do Not Use, see SolrPluginUtils.docListToSolrDocumentList instead
+   * @see org.apache.solr.util.SolrPluginUtils#docListToSolrDocumentList
    */
+  @Deprecated
   public SolrDocument loadStoredFields( SolrDocument doc, Document luceneDoc  )
   {
     for( Object f : luceneDoc.getFields() ) {
