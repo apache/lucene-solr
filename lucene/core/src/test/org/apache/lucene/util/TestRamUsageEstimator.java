@@ -89,10 +89,16 @@ public class TestRamUsageEstimator extends LuceneTestCase {
   public void testReferenceSize() {
     if (!isSupportedJVM()) {
       System.err.println("WARN: Your JVM does not support certain Oracle/Sun extensions.");
-      System.err.println("      Memory estimates may be inaccurate.");
-      System.err.println("      Please report this to the Lucene mailing list. JVM version: " + RamUsageEstimator.JVM_INFO_STRING);
+      System.err.println(" Memory estimates may be inaccurate.");
+      System.err.println(" Please report this to the Lucene mailing list.");
+      System.err.println("JVM version: " + RamUsageEstimator.JVM_INFO_STRING);
+      System.err.println("UnsupportedFeatures:");
       for (JvmFeature f : RamUsageEstimator.getUnsupportedFeatures()) {
-        System.err.println("      - " + f.toString());
+        System.err.print(" - " + f.toString());
+        if (f == RamUsageEstimator.JvmFeature.OBJECT_ALIGNMENT) {
+          System.err.print("; Please note: 32bit Oracle/Sun VMs don't allow exact OBJECT_ALIGNMENT retrieval, this is a known issue.");
+        }
+        System.err.println();
       }
     }
 

@@ -37,10 +37,10 @@ public final class RamUsageEstimator {
    * JVM diagnostic features.
    */
   public static enum JvmFeature {
-    OBJECT_REFERENCE_SIZE("Object reference size estimated using array index scale."),
-    ARRAY_HEADER_SIZE("Array header size estimated using array based offset."),
-    FIELD_OFFSETS("Shallow instance size based on field offsets."),
-    OBJECT_ALIGNMENT("Object alignment retrieved from HotSpotDiagnostic MX bean.");
+    OBJECT_REFERENCE_SIZE("Object reference size estimated using array index scale"),
+    ARRAY_HEADER_SIZE("Array header size estimated using array based offset"),
+    FIELD_OFFSETS("Shallow instance size based on field offsets"),
+    OBJECT_ALIGNMENT("Object alignment retrieved from HotSpotDiagnostic MX bean");
 
     public final String description;
 
@@ -219,17 +219,11 @@ public final class RamUsageEstimator {
         beanClazz
       );
       final Method getVMOptionMethod = beanClazz.getMethod("getVMOption", String.class);
-      try {
-        final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
-        objectAlignment = Integer.parseInt(
-            vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
-        );
-        supportedFeatures.add(JvmFeature.OBJECT_ALIGNMENT);
-      } catch (InvocationTargetException ite) {
-        if (!(ite.getCause() instanceof IllegalArgumentException))
-          throw ite;
-        // ignore the error completely and use default of 8 (32 bit JVMs).
-      }
+      final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
+      objectAlignment = Integer.parseInt(
+          vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
+      );
+      supportedFeatures.add(JvmFeature.OBJECT_ALIGNMENT);
     } catch (Exception e) {
       // Ignore.
     }
