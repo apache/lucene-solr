@@ -760,6 +760,9 @@ Other Changes
 * SOLR-2712: expecting fl=score to return all fields is now deprecated.
   In solr 4.0, this will only return the score.  (ryan)
 
+* SOLR-3156: Check for Lucene directory locks at startup. In previous versions
+  this check was only performed during modifying (e.g. adding and deleting
+  documents) the index. (Luca Cavanna via Martijn van Groningen)
 
 Build
 ----------------------

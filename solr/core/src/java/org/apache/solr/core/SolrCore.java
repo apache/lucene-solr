@@ -17,12 +17,14 @@
 
 package org.apache.solr.core;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
@@ -31,7 +33,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.*;
-import org.apache.solr.request.*;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.*;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.schema.IndexSchema;
@@ -45,23 +48,20 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.processor.*;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.apache.commons.io.IOUtils;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
-
 import java.io.*;
+import java.lang.reflect.Constructor;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.net.URL;
-import java.lang.reflect.Constructor;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -366,14 +366,19 @@ public final class SolrCore implements SolrInfoMBean {
 
       initIndexReaderFactory();
 
-      if (indexExists && firstTime && removeLocks) {
+      if (indexExists && firstTime) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
         Directory dir = directoryFactory.get(indexDir, getSolrConfig().mainIndexConfig.lockType);
         if (dir != null)  {
           if (IndexWriter.isLocked(dir)) {
-            log.warn(logid+"WARNING: Solr index directory '" + indexDir+ "' is locked.  Unlocking...");
-            IndexWriter.unlock(dir);
+            if (removeLocks) {
+              log.warn(logid + "WARNING: Solr index directory '{}' is locked.  Unlocking...", indexDir);
+              IndexWriter.unlock(dir);
+            } else {
+              log.error(logid + "Solr index directory '{}' is locked.  Throwing exception", indexDir);
+              throw new LockObtainFailedException("Index locked for write for core " + name);
+            }
           }
           directoryFactory.release(dir);
         }
