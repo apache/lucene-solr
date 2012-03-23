@@ -27,6 +27,11 @@ import org.apache.lucene.LucenePackage;
 public final class Constants {
   private Constants() {}			  // can't construct
 
+  /** JVM vendor info. */
+  public static final String JVM_VENDOR = System.getProperty("java.vm.vendor");
+  public static final String JVM_VERSION = System.getProperty("java.vm.version");
+  public static final String JVM_NAME = System.getProperty("java.vm.name");
+
   /** The value of <tt>System.getProperty("java.version")<tt>. **/
   public static final String JAVA_VERSION = System.getProperty("java.version");
  
