@@ -30,7 +30,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTest {
+public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
 
   @Rule
   public TestRule solrTestRules = 

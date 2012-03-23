@@ -52,7 +52,7 @@ import java.io.FileInputStream;
  *
  * @since solr 1.3
  */
-public class TestSolrProperties extends AbstractEmbeddedSolrServerTest {
+public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   protected static Logger log = LoggerFactory.getLogger(TestSolrProperties.class);
 
   private static final String SOLR_XML = "solr.xml";

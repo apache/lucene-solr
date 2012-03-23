@@ -29,9 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
-public abstract class AbstractEmbeddedSolrServerTest extends LuceneTestCase {
+public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase {
 
-  protected static Logger log = LoggerFactory.getLogger(AbstractEmbeddedSolrServerTest.class);
+  protected static Logger log = LoggerFactory.getLogger(AbstractEmbeddedSolrServerTestCase.class);
 
   protected static final File SOLR_HOME = SolrTestCaseJ4.getFile("solrj/solr/shared");
 
