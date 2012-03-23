@@ -267,7 +267,7 @@ public class ToParentBlockJoinQuery extends Query {
 
     float[] swapChildScores(float[] other) {
       if (scoreMode == ScoreMode.None) {
-        throw new IllegalStateException("ScoreMode is None");
+        throw new IllegalStateException("ScoreMode is None; you must pass trackScores=false to ToParentBlockJoinCollector");
       }
       final float[] ret = pendingChildScores;
       if (other == null) {
