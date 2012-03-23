@@ -43,15 +43,10 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     schemaString = "schema11.xml";
   }
   
-  private static String elevateFilename = "elevate-data-distrib.xml";
-  
   @BeforeClass
   public static void beforeClass() throws IOException {
-    System.setProperty("elevate.data.file", elevateFilename);
+    System.setProperty("elevate.data.file", "elevate.xml");
     File parent = new File(TEST_HOME(), "conf");
-    File elevateFile = new File(parent, "elevate.xml");
-    File elevateDataFile = new File(parent, elevateFilename);
-    FileUtils.copyFile(elevateFile, elevateDataFile);
   }
   
   @AfterClass

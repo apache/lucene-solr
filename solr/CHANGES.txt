@@ -768,6 +768,8 @@ Build
 ----------------------
 * SOLR-2487: Add build target to package war without slf4j jars (janhoy)
 
+* SOLR-3112: Fix tests not to write to src/test-files (Luca Cavanna via Robert Muir)
+
 ==================  3.5.0  ==================
 
 New Features
