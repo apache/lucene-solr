@@ -112,7 +112,9 @@ public class ToParentBlockJoinCollector extends Collector {
   private float maxScore = Float.NaN;
 
   /*  Creates a ToParentBlockJoinCollector.  The provided sort must
-   *  not be null. */
+   *  not be null.  If you pass true trackScores, all
+   *  ToParentBlockQuery instances must not use
+   *  ScoreMode.None. */
   public ToParentBlockJoinCollector(Sort sort, int numParentHits, boolean trackScores, boolean trackMaxScore) throws IOException {
     // TODO: allow null sort to be specialized to relevance
     // only collector
