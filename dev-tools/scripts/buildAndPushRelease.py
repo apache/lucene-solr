@@ -159,7 +159,7 @@ def main():
   doPush = '-push' in sys.argv
   if doPush:
     sys.argv.remove('-push')
-  root = sys.argv[1]
+  root = os.path.abspath(sys.argv[1])
   version = sys.argv[2]
   gpgKeyID = sys.argv[3]
   rcNum = int(sys.argv[4])
