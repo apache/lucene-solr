@@ -1,9 +1,5 @@
 package org.apache.lucene.util;
 
-import static org.apache.lucene.util.RamUsageEstimator.*;
-
-import java.util.Random;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +16,10 @@ import java.util.Random;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import static org.apache.lucene.util.RamUsageEstimator.*;
+
+import java.util.Random;
 
 public class TestRamUsageEstimator extends LuceneTestCase {
   public void testSanity() {
