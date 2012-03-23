@@ -571,7 +571,10 @@ def checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts,
   for project in ('lucene', 'solr'):
     distFilenames = dict()
     for file in distributionFiles[project]:
-      distFilenames[os.path.basename(file)] = file
+      baseName = os.path.basename(file)
+      if project == 'solr': # Remove 'apache-' prefix to allow comparison to Maven artifacts
+        baseName = baseName.replace('apache-', '')
+      distFilenames[baseName] = file
     for artifact in artifacts[project]:
       if reJarWar.search(artifact):
         if artifact not in nonMavenizedDeps.keys():
