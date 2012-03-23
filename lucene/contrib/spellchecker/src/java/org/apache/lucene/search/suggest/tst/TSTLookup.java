@@ -19,9 +19,6 @@ package org.apache.lucene.search.suggest.tst;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -104,6 +101,7 @@ public class TSTLookup extends Lookup {
     int maxCnt = Math.min(num, list.size());
     if (onlyMorePopular) {
       LookupPriorityQueue queue = new LookupPriorityQueue(num);
+      
       for (TernaryTreeNode ttn : list) {
         queue.insertWithOverflow(new LookupResult(ttn.token, ((Number)ttn.val).longValue()));
       }
@@ -198,4 +196,5 @@ public class TSTLookup extends Lookup {
     }
     return true;
   }
+  
 }
