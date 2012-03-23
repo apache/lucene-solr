@@ -26,6 +26,18 @@ import java.util.*;
 /**
  * Estimates the size (memory representation) of Java objects.
  * 
+ * <p>NOTE: Starting with Lucene 3.6, creating instances of this class
+ * is deprecated. If you still do this, please note, that instances of
+ * {@code RamUsageEstimator} are not thread-safe!
+ * It is also deprecated to enable checking of String intern-ness,
+ * the new static method no longer allow to do this. Interned strings
+ * will be counted as any other object and count for memory usage.
+ * 
+ * <p>In Lucene 3.6, custom {@code MemoryModel}s were completely
+ * removed. The new implementation is now using Hotspot&trade; internals
+ * to get the correct scale factors and offsets for calculating
+ * memory usage.
+ * 
  * @see #sizeOf(Object)
  * @see #shallowSizeOf(Object)
  * @see #shallowSizeOfInstance(Class)
