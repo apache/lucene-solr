@@ -22,86 +22,86 @@ import java.util.Random;
  */
 
 public class TestRamUsageEstimator extends LuceneTestCase {
+  public void testSanity() {
+    assertTrue(sizeOf(new String("test string")) > shallowSizeOfInstance(String.class));
 
-  public void testBasic() {
-    assertTrue(sizeOf(new String("test strin")) > shallowSizeOfInstance(String.class));
-    
     Holder holder = new Holder();
     holder.holder = new Holder("string2", 5000L);
     assertTrue(sizeOf(holder) > shallowSizeOfInstance(Holder.class));
     assertTrue(sizeOf(holder) > sizeOf(holder.holder));
     
-    assertTrue(shallowSizeOfInstance(HolderSubclass.class) >= shallowSizeOfInstance(Holder.class));
-    assertEquals(shallowSizeOfInstance(Holder.class), shallowSizeOfInstance(HolderSubclass2.class));
+    assertTrue(
+        shallowSizeOfInstance(HolderSubclass.class) >= shallowSizeOfInstance(Holder.class));
+    assertTrue(
+        shallowSizeOfInstance(Holder.class)         == shallowSizeOfInstance(HolderSubclass2.class));
 
-    String[] strings = new String[]{new String("test strin"), new String("hollow"), new String("catchmaster")};
+    String[] strings = new String[] {
+        new String("test string"),
+        new String("hollow"), 
+        new String("catchmaster")
+    };
     assertTrue(sizeOf(strings) > shallowSizeOf(strings));
   }
 
   public void testStaticOverloads() {
     Random rnd = random;
-
     {
-      byte[] array = new byte [rnd.nextInt(1024)];
+      byte[] array = new byte[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));
     }
-
+    
     {
-      boolean[] array = new boolean [rnd.nextInt(1024)];
+      boolean[] array = new boolean[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));
     }
-
+    
     {
-      char[] array = new char [rnd.nextInt(1024)];
+      char[] array = new char[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));
     }
-
+    
     {
-      short[] array = new short [rnd.nextInt(1024)];
+      short[] array = new short[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));
     }
-
+    
     {
-      int[] array = new int [rnd.nextInt(1024)];
+      int[] array = new int[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));
     }
-
+    
     {
-      float[] array = new float [rnd.nextInt(1024)];
+      float[] array = new float[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));
     }
-
+    
     {
-      long[] array = new long [rnd.nextInt(1024)];
+      long[] array = new long[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));
     }
-
+    
     {
-      double[] array = new double [rnd.nextInt(1024)];
+      double[] array = new double[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));
-    }
-  }
-
-  public void testReferenceSize() {
-    if (!isSupportedJVM()) {
-      System.err.println("WARN: Your JVM does not support the Oracle/Sun extensions (Hotspot diagnostics, sun.misc.Unsafe),");
-      System.err.println("so the memory estimates may be inprecise.");
-      System.err.println("Please report this to the Lucene mailing list, noting your JVM version: " +
-        Constants.JAVA_VENDOR + " " + Constants.JAVA_VERSION);
-    }
-    if (VERBOSE) {
-      System.out.println("This JVM is 64bit: " + Constants.JRE_IS_64BIT);    
-      System.out.println("Reference size in this JVM: " + NUM_BYTES_OBJECT_REF);
-      System.out.println("Object header size in this JVM: " + NUM_BYTES_OBJECT_HEADER);
-      System.out.println("Array header size in this JVM: " + NUM_BYTES_ARRAY_HEADER);
-      System.out.println("Object alignment in this JVM: " + NUM_BYTES_OBJECT_ALIGNMENT);
-    }
-    assertTrue(NUM_BYTES_OBJECT_REF == 4 || NUM_BYTES_OBJECT_REF == 8);
-    if (!Constants.JRE_IS_64BIT) {
-      assertEquals("For 32bit JVMs, reference size must always be 4", 4, NUM_BYTES_OBJECT_REF);
     }
   }
   
+  public void testReferenceSize() {
+    if (!isSupportedJVM()) {
+      System.err.println("WARN: Your JVM does not support certain Oracle/Sun extensions.");
+      System.err.println("      Memory estimates may be inaccurate.");
+      System.err.println("      Please report this to the Lucene mailing list. JVM version: " + RamUsageEstimator.JVM_INFO_STRING);
+      for (JvmFeature f : RamUsageEstimator.getUnsupportedFeatures()) {
+        System.err.println("      - " + f.toString());
+      }
+    }
+
+    assertTrue(NUM_BYTES_OBJECT_REF == 4 || NUM_BYTES_OBJECT_REF == 8);
+    if (!Constants.JRE_IS_64BIT) {
+      assertEquals("For 32bit JVMs, reference size must always be 4?", 4, NUM_BYTES_OBJECT_REF);
+    }
+  }
+
   @SuppressWarnings("unused")
   private static class Holder {
     long field1 = 5000L;
@@ -109,8 +109,7 @@ public class TestRamUsageEstimator extends LuceneTestCase {
     Holder holder;
     long field2, field3, field4;
     
-    Holder() {
-    }
+    Holder() {}
     
     Holder(String name, long field1) {
       this.name = name;
@@ -123,7 +122,7 @@ public class TestRamUsageEstimator extends LuceneTestCase {
     byte foo;
     int bar;
   }
-
+  
   private static class HolderSubclass2 extends Holder {
     // empty, only inherits all fields -> size should be identical to superclass
   }
