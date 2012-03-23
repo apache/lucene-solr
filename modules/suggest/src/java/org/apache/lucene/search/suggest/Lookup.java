@@ -17,7 +17,6 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -57,6 +56,9 @@ public abstract class Lookup {
     }
   }
   
+  /**
+   * A simple char-by-char comparator for {@link CharSequence}
+   */
   public static final Comparator<CharSequence> CHARSEQUENCE_COMPARATOR = new CharSequenceComparator();
   
   private static class CharSequenceComparator implements Comparator<CharSequence> {
@@ -79,8 +81,11 @@ public abstract class Lookup {
     
   }
   
+  /**
+   * A {@link PriorityQueue} collecting a fixed size of high priority {@link LookupResult}
+   */
   public static final class LookupPriorityQueue extends PriorityQueue<LookupResult> {
-    
+  // TODO: should we move this out of the interface into a utility class?
     public LookupPriorityQueue(int size) {
       super(size);
     }
@@ -90,6 +95,10 @@ public abstract class Lookup {
       return a.value < b.value;
     }
     
+    /**
+     * Returns the top N results in descending order.
+     * @return the top N results in descending order.
+     */
     public LookupResult[] getResults() {
       int size = size();
       LookupResult[] res = new LookupResult[size];
