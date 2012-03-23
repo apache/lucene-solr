@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util._TestUtil;
 
 /** 
@@ -359,12 +360,22 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple) throws IOException {
+
+    final LineFileDocs docs = new LineFileDocs(random);
+
     for (int i = 0; i < iterations; i++) {
       String text;
-      if (simple) { 
-        text = random.nextBoolean() ? _TestUtil.randomSimpleString(random, maxWordLength) : _TestUtil.randomHtmlishString(random, maxWordLength);
+
+      if (random.nextInt(10) == 7) {
+        text = docs.nextDoc().get("body");
+        if (text.length() > maxWordLength) {
+          text = text.substring(0, maxWordLength);
+        }
       } else {
-        switch(_TestUtil.nextInt(random, 0, 4)) {
+        if (simple) { 
+          text = random.nextBoolean() ? _TestUtil.randomSimpleString(random, maxWordLength) : _TestUtil.randomHtmlishString(random, maxWordLength);
+        } else {
+          switch(_TestUtil.nextInt(random, 0, 4)) {
           case 0: 
             text = _TestUtil.randomSimpleString(random, maxWordLength);
             break;
@@ -376,6 +387,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
             break;
           default:
             text = _TestUtil.randomUnicodeString(random, maxWordLength);
+          }
         }
       }
 
