@@ -614,3 +614,11 @@ you can now do this:
 * LUCENE-3687: Similarity#computeNorm() now expects a Norm object to set the computed 
   norm value instead of returning a fixed single byte value. Custom similarities can now
   set integer, float and byte values if a single byte is not sufficient.
+
+* LUCENE-2621: Term vectors are now accessed via flexible indexing API.
+
+  If you used IndexReader.getTermFreqVector/s before, you should now
+  use IndexReader.getTermVectors.  The new method returns a Fields
+  instance exposing the inverted index of the one document.  From
+  Fields you can enumerate all fields, terms, positions, offsets.
+
