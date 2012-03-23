@@ -279,6 +279,9 @@ Bug Fixes
   and was fundamentally broken/bizarre.
   (hossman, Ahmet Arslan)
 
+* SOLR-2291: fix JSONWriter to respect field list when writing SolrDocuments
+  (Ahmet Arslan via hossman)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)

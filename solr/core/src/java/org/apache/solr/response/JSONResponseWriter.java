@@ -408,6 +408,9 @@ class JSONWriter extends TextResponseWriter {
 
     boolean first=true;
     for (String fname : doc.getFieldNames()) {
+      if (returnFields!=null && !returnFields.contains(fname)) {
+        continue;
+      }
       if (first) {
         first=false;
       }

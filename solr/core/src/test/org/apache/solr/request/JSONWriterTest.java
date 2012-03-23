@@ -19,8 +19,13 @@ package org.apache.solr.request;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.PHPSerializedResponseWriter;
@@ -78,6 +83,47 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
     w.write(buf, req, rsp);
     assertEquals("{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]]}", buf.toString());
+    req.close();
+  }
+
+  @Test
+  public void testJSONSolrDocument() throws IOException {
+    SolrQueryRequest req = req(CommonParams.WT,"json");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    JSONResponseWriter w = new JSONResponseWriter();
+
+    Set<String> returnFields = new HashSet<String>(1);
+    returnFields.add("id");
+    returnFields.add("score");
+    rsp.setReturnFields(returnFields);
+
+    StringWriter buf = new StringWriter();
+
+    SolrDocument solrDoc = new SolrDocument();
+    solrDoc.addField("id", "1");
+    solrDoc.addField("subject", "hello2");
+    solrDoc.addField("title", "hello3");
+    solrDoc.addField("score", "0.7");
+
+    SolrDocumentList list = new SolrDocumentList();
+    list.setNumFound(1);
+    list.setStart(0);
+    list.setMaxScore(0.7f);
+    list.add(solrDoc);
+
+    rsp.add("response", list);
+
+    w.write(buf, req, rsp);
+    String result = buf.toString();
+    assertFalse("response contains unexpected fields: " + result, 
+                result.contains("hello") || 
+                result.contains("\"subject\"") || 
+                result.contains("\"title\""));
+    assertTrue("response doesn't contain expected fields: " + result, 
+               result.contains("\"id\"") &&
+               result.contains("\"score\""));
+
+
     req.close();
   }
   
