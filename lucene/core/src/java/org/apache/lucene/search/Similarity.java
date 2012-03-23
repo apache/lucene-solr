@@ -78,7 +78,7 @@ import java.util.Collection;
  * of the weighted query vectors <i>V(q)</i> and <i>V(d)</i>:
  *
  *  <br>&nbsp;<br>
- *  <table cellpadding="2" cellspacing="2" border="0" align="center">
+ *  <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
  *    <tr><td>
  *    <table cellpadding="1" cellspacing="0" border="1" align="center">
  *      <tr><td>
@@ -89,9 +89,9 @@ import java.util.Collection;
  *          </td>
  *          <td valign="middle" align="center">
  *            <table>
- *               <tr><td align="center"><small>V(q)&nbsp;&middot;&nbsp;V(d)</small></td></tr>
- *               <tr><td align="center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
- *               <tr><td align="center"><small>|V(q)|&nbsp;|V(d)|</small></td></tr>
+ *               <tr><td align="center" style="text-align: center"><small>V(q)&nbsp;&middot;&nbsp;V(d)</small></td></tr>
+ *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
+ *               <tr><td align="center" style="text-align: center"><small>|V(q)|&nbsp;|V(d)|</small></td></tr>
  *            </table>
  *          </td>
  *        </tr>
@@ -163,7 +163,7 @@ import java.util.Collection;
  * we get <i>Lucene's Conceptual scoring formula</i>:
  *
  *  <br>&nbsp;<br>
- *  <table cellpadding="2" cellspacing="2" border="0" align="center">
+ *  <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
  *    <tr><td>
  *    <table cellpadding="1" cellspacing="0" border="1" align="center">
  *      <tr><td>
@@ -176,9 +176,9 @@ import java.util.Collection;
  *          </td>
  *          <td valign="middle" align="center">
  *            <table>
- *               <tr><td align="center"><small><font color="#993399">V(q)&nbsp;&middot;&nbsp;V(d)</font></small></td></tr>
- *               <tr><td align="center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
- *               <tr><td align="center"><small><font color="#FF33CC">|V(q)|</font></small></td></tr>
+ *               <tr><td align="center" style="text-align: center"><small><font color="#993399">V(q)&nbsp;&middot;&nbsp;V(d)</font></small></td></tr>
+ *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
+ *               <tr><td align="center" style="text-align: center"><small><font color="#FF33CC">|V(q)|</font></small></td></tr>
  *            </table>
  *          </td>
  *          <td valign="middle" align="right" rowspan="1">
@@ -255,7 +255,7 @@ import java.util.Collection;
  * to those of the <i>conceptual</i> formula:
  *
  * <P>
- * <table cellpadding="2" cellspacing="2" border="0" align="center">
+ * <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
  *  <tr><td>
  *  <table cellpadding="" cellspacing="2" border="2" align="center">
  *  <tr><td>
@@ -266,7 +266,7 @@ import java.util.Collection;
  *       <A HREF="#formula_coord"><font color="#FF9933">coord(q,d)</font></A> &nbsp;&middot;&nbsp;
  *       <A HREF="#formula_queryNorm"><font color="#FF33CC">queryNorm(q)</font></A> &nbsp;&middot;&nbsp;
  *     </td>
- *     <td valign="bottom" align="center" rowspan="1">
+ *     <td valign="bottom" align="center" rowspan="1" style="text-align: center">
  *       <big><big><big>&sum;</big></big></big>
  *     </td>
  *     <td valign="middle" align="right" rowspan="1">
@@ -280,7 +280,7 @@ import java.util.Collection;
  *   </tr>
  *   <tr valigh="top">
  *    <td></td>
- *    <td align="center"><small>t in q</small></td>
+ *    <td align="center" style="text-align: center"><small>t in q</small></td>
  *    <td></td>
  *   </tr>
  *   </table>
@@ -308,7 +308,7 @@ import java.util.Collection;
  *      {@link org.apache.lucene.search.DefaultSimilarity#tf(float) DefaultSimilarity} is:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="2" cellspacing="2" border="0" align="center">
+ *      <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            {@link org.apache.lucene.search.DefaultSimilarity#tf(float) tf(t in d)} &nbsp; = &nbsp;
@@ -333,7 +333,7 @@ import java.util.Collection;
  *      {@link org.apache.lucene.search.DefaultSimilarity#idf(int, int) DefaultSimilarity} is:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="2" cellspacing="2" border="0" align="center">
+ *      <table cellpadding="2" cellspacing="2" border="0" align="center" style="width:auto">
  *        <tr>
  *          <td valign="middle" align="right">
  *            {@link org.apache.lucene.search.DefaultSimilarity#idf(int, int) idf(t)}&nbsp; = &nbsp;
@@ -343,9 +343,9 @@ import java.util.Collection;
  *          </td>
  *          <td valign="middle" align="center">
  *            <table>
- *               <tr><td align="center"><small>numDocs</small></td></tr>
- *               <tr><td align="center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
- *               <tr><td align="center"><small>docFreq+1</small></td></tr>
+ *               <tr><td align="center" style="text-align: center"><small>numDocs</small></td></tr>
+ *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
+ *               <tr><td align="center" style="text-align: center"><small>docFreq+1</small></td></tr>
  *            </table>
  *          </td>
  *          <td valign="middle" align="center">
@@ -381,7 +381,7 @@ import java.util.Collection;
  *      {@link org.apache.lucene.search.DefaultSimilarity#queryNorm(float) DefaultSimilarity}
  *      produces a <a href="http://en.wikipedia.org/wiki/Euclidean_norm#Euclidean_norm">Euclidean norm</a>:
  *      <br>&nbsp;<br>
- *      <table cellpadding="1" cellspacing="0" border="0" align="center">
+ *      <table cellpadding="1" cellspacing="0" border="0" align="center" style="width:auto">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            queryNorm(q)  &nbsp; = &nbsp;
@@ -390,11 +390,11 @@ import java.util.Collection;
  *          </td>
  *          <td valign="middle" align="center" rowspan="1">
  *            <table>
- *               <tr><td align="center"><big>1</big></td></tr>
- *               <tr><td align="center"><big>
+ *               <tr><td align="center" style="text-align: center"><big>1</big></td></tr>
+ *               <tr><td align="center" style="text-align: center"><big>
  *                  &ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;
  *               </big></td></tr>
- *               <tr><td align="center">sumOfSquaredWeights<sup><big>&frac12;</big></sup></td></tr>
+ *               <tr><td align="center" style="text-align: center">sumOfSquaredWeights<sup><big>&frac12;</big></sup></td></tr>
  *            </table>
  *          </td>
  *        </tr>
@@ -407,14 +407,14 @@ import java.util.Collection;
  *      computes this value as:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="1" cellspacing="0" border="0"n align="center">
+ *      <table cellpadding="1" cellspacing="0" border="0"n align="center" style="width:auto">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            {@link org.apache.lucene.search.Weight#sumOfSquaredWeights() sumOfSquaredWeights} &nbsp; = &nbsp;
  *            {@link org.apache.lucene.search.Query#getBoost() q.getBoost()} <sup><big>2</big></sup>
  *            &nbsp;&middot;&nbsp;
  *          </td>
- *          <td valign="bottom" align="center" rowspan="1">
+ *          <td valign="bottom" align="center" rowspan="1" style="text-align: center">
  *            <big><big><big>&sum;</big></big></big>
  *          </td>
  *          <td valign="middle" align="right" rowspan="1">
@@ -426,7 +426,7 @@ import java.util.Collection;
  *        </tr>
  *        <tr valigh="top">
  *          <td></td>
- *          <td align="center"><small>t in q</small></td>
+ *          <td align="center" style="text-align: center"><small>t in q</small></td>
  *          <td></td>
  *        </tr>
  *      </table>
@@ -477,7 +477,7 @@ import java.util.Collection;
  *      If the document has multiple fields with the same name, all their boosts are multiplied together:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="1" cellspacing="0" border="0"n align="center">
+ *      <table cellpadding="1" cellspacing="0" border="0"n align="center" style="width:auto">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            norm(t,d) &nbsp; = &nbsp;
@@ -486,7 +486,7 @@ import java.util.Collection;
  *            lengthNorm
  *            &nbsp;&middot;&nbsp;
  *          </td>
- *          <td valign="bottom" align="center" rowspan="1">
+ *          <td valign="bottom" align="center" rowspan="1" style="text-align: center">
  *            <big><big><big>&prod;</big></big></big>
  *          </td>
  *          <td valign="middle" align="right" rowspan="1">
@@ -495,7 +495,7 @@ import java.util.Collection;
  *        </tr>
  *        <tr valigh="top">
  *          <td></td>
- *          <td align="center"><small>field <i><b>f</b></i> in <i>d</i> named as <i><b>t</b></i></small></td>
+ *          <td align="center" style="text-align: center"><small>field <i><b>f</b></i> in <i>d</i> named as <i><b>t</b></i></small></td>
  *          <td></td>
  *        </tr>
  *      </table>
