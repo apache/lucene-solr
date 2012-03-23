@@ -108,7 +108,7 @@ public class RandomIndexWriter implements Closeable {
      * this might change if I use r.nextInt(x)
      * maybe we can peek at the existing files here? 
      */
-    fixedBytesLength = 37; 
+    fixedBytesLength = 17; 
     docValuesFieldPrefix = r.nextLong();
     switchDoDocValues();
   } 
@@ -196,7 +196,7 @@ public class RandomIndexWriter implements Closeable {
     case BYTES_VAR_DEREF:
     case BYTES_VAR_STRAIGHT:
     case BYTES_VAR_SORTED:
-      f = new DocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(random, 200)), type);
+      f = new DocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(random, 20)), type);
       break;
     case FLOAT_32:
       f = new DocValuesField(name, random.nextFloat(), type);
