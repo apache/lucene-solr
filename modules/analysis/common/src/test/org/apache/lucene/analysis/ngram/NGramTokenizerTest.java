@@ -99,5 +99,6 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
       }    
     };
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
   }
 }

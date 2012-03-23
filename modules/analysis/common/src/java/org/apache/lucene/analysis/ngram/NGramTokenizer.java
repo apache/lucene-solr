@@ -34,11 +34,11 @@ public final class NGramTokenizer extends Tokenizer {
 
   private int minGram, maxGram;
   private int gramSize;
-  private int pos = 0;
+  private int pos;
   private int inLen; // length of the input AFTER trim()
   private int charsRead; // length of the input
   private String inStr;
-  private boolean started = false;
+  private boolean started;
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -99,7 +99,7 @@ public final class NGramTokenizer extends Tokenizer {
 
   /** Returns the next token in the stream, or null at EOS. */
   @Override
-  public final boolean incrementToken() throws IOException {
+  public boolean incrementToken() throws IOException {
     clearAttributes();
     if (!started) {
       started = true;
@@ -115,6 +115,20 @@ public final class NGramTokenizer extends Tokenizer {
         charsRead += inc;
       }
       inStr = new String(chars, 0, charsRead).trim();  // remove any trailing empty strings 
+
+      if (charsRead == chars.length) {
+        // Read extra throwaway chars so that on end() we
+        // report the correct offset:
+        char[] throwaway = new char[1024];
+        while(true) {
+          final int inc = input.read(throwaway, 0, throwaway.length);
+          if (inc == -1) {
+            break;
+          }
+          charsRead += inc;
+        }
+      }
+
       inLen = inStr.length();
       if (inLen == 0) {
         return false;
@@ -138,22 +152,16 @@ public final class NGramTokenizer extends Tokenizer {
   }
   
   @Override
-  public final void end() {
+  public void end() {
     // set final offset
     final int finalOffset = correctOffset(charsRead);
     this.offsetAtt.setOffset(finalOffset, finalOffset);
   }    
   
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
-  }
-
-  @Override
   public void reset() throws IOException {
     super.reset();
     started = false;
     pos = 0;
-    charsRead = 0;
   }
 }
