@@ -250,7 +250,7 @@ public abstract class LuceneTestCase extends Assert {
    */
   @Rule
   public final TestRule ruleChain = RuleChain
-    .outerRule(new RememberThreadRule())
+    .outerRule(new SaveThreadAndTestNameRule())
     .around(new UncaughtExceptionsRule(this))
     .around(new TestResultInterceptorRule())
     .around(new SystemPropertiesInvariantRule(ignoredInvariantProperties))
@@ -453,7 +453,6 @@ public abstract class LuceneTestCase extends Assert {
       return new Statement() {
         @Override
         public void evaluate() throws Throwable {
-          starting(description);
           try {
             base.evaluate();
           } catch (AssumptionViolatedException e) {
@@ -462,8 +461,6 @@ public abstract class LuceneTestCase extends Assert {
           } catch (Throwable t) {
             failed(t, description);
             throw t;
-          } finally {
-            ending(description);
           }
         }
       };
@@ -485,16 +482,6 @@ public abstract class LuceneTestCase extends Assert {
       reportAdditionalFailureInfo();
       assert !(e instanceof AssumptionViolatedException);
     }
-
-    private void starting(Description description) {
-      // set current method name for logging
-      LuceneTestCase.this.name = description.getMethodName();
-    }
-
-    private void ending(Description description) {
-      // clear the current method name.
-      LuceneTestCase.this.name = null;
-    }
   };
 
   /** 
@@ -506,16 +493,23 @@ public abstract class LuceneTestCase extends Assert {
   /** 
    * @see LuceneTestCase#testCaseThread 
    */
-  private class RememberThreadRule implements TestRule {
+  private class SaveThreadAndTestNameRule implements TestRule {
+    private String previousName;
+
     // @Override
-    public Statement apply(final Statement base, Description description) {
+    public Statement apply(final Statement base, final Description description) {
       return new Statement() {
         public void evaluate() throws Throwable {
           try {
-            LuceneTestCase.this.testCaseThread = Thread.currentThread();
+            Thread current = Thread.currentThread();
+            previousName = current.getName();
+            LuceneTestCase.this.testCaseThread = current;
+            LuceneTestCase.this.name = description.getMethodName();
             base.evaluate();
           } finally {
+            LuceneTestCase.this.testCaseThread.setName(previousName);
             LuceneTestCase.this.testCaseThread = null;
+            LuceneTestCase.this.name = null;
           }
         }
       };
@@ -1380,9 +1374,16 @@ public abstract class LuceneTestCase extends Assert {
   
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
-    System.err.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
-        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new ThreeLongs(staticSeed, seed, LuceneTestCaseRunner.runnerSeed)
-        + reproduceWithExtraParams());
+    StringBuilder b = new StringBuilder();
+    b.append("NOTE: reproduce with: ant test -Dtestcase=")
+     .append(getClass().getSimpleName());
+    if (getName() != null) {
+      b.append(" -Dtestmethod=").append(getName());
+    }
+    b.append(" -Dtests.seed=")
+     .append(new ThreeLongs(staticSeed, seed, LuceneTestCaseRunner.runnerSeed))
+     .append(reproduceWithExtraParams());
+    System.err.println(b.toString());
   }
   
   // extra params that were overridden needed to reproduce the command

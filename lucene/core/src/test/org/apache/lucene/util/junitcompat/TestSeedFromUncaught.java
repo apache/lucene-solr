@@ -55,6 +55,7 @@ public class TestSeedFromUncaught extends WithNestedTests {
     Assert.assertEquals(1, result.getFailureCount());
     String consoleOut = super.getSysErr() + "\n\n" + super.getSysOut();
     Assert.assertTrue(consoleOut.contains("-Dtests.seed="));
+    Assert.assertTrue(consoleOut.contains("-Dtestmethod=testFoo"));
     Assert.assertTrue(consoleOut.contains("foobar"));
   }
 }
