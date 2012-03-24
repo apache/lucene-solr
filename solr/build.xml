@@ -672,6 +672,9 @@
   	<!-- french -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/french_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_fr.txt"/>
+        <!-- irish -->
+    <copy verbose="true" file="${analysis-common.res.dir}/ga/stopwords.txt"
+                         tofile="${analysis.conf.dest}/stopwords_ga.txt"/>
   	<!-- galician -->
     <copy verbose="true" file="${analysis-common.res.dir}/gl/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_gl.txt"/>

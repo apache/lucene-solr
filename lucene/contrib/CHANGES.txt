@@ -189,6 +189,8 @@ New Features
  * LUCENE-3714: Add WFSTCompletionLookup suggester that supports more fine-grained
    ranking for suggestions.  (Mike McCandless, Dawid Weiss, Robert Muir)
 
+ * LUCENE-3883: Add Analyzer for Irish. (Jim Regan via Robert Muir)
+
 API Changes
 
  * LUCENE-3596: DirectoryTaxonomyWriter.openIndexWriter() now takes an
