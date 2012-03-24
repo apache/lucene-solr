@@ -611,9 +611,13 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         if (evilness < 10) {
           sb.append(_TestUtil.randomSimpleString(random, wordLength));
         } else if (evilness < 15) {
-          sb.append(_TestUtil.randomRealisticUnicodeString(random, wordLength));
+          assert sb.length() == 0; // we should always get wordLength back!
+          sb.append(_TestUtil.randomRealisticUnicodeString(random, wordLength, wordLength));
         } else if (evilness == 16) {
           sb.append(_TestUtil.randomHtmlishString(random, wordLength));
+        } else if (evilness == 17) {
+          // gives a lot of punctuation
+          sb.append(_TestUtil.randomRegexpishString(random, wordLength));
         } else {
           sb.append(_TestUtil.randomUnicodeString(random, wordLength));
         }
