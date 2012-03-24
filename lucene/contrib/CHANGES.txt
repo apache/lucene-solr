@@ -172,6 +172,10 @@ New Features
  * LUCENE-3767: Kuromoji tokenizer/analyzer produces both compound words 
    and the segmentation of that compound in Mode.SEARCH. (Robert Muir, Mike McCandless via Christian Moen)
 
+ * LUCENE-3901: Added katakana stem filter to normalize common spelling variants
+   with/without trailing long vowel marks. The filter is used in both KuromojiAnalyzer
+   and the "text_ja" field type in schema.xml. (Christian Moen)
+
  * LUCENE-3685: Add ToChildBlockJoinQuery and renamed previous
    BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
    joins in both parent to child and child to parent directions.

@@ -24,6 +24,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.kuromoji.KuromojiTokenizer.Mode;
 
+/**
+ * Test Kuromoji Japanese morphological analyzer
+ */
 public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
@@ -54,25 +57,24 @@ public class TestKuromojiAnalyzer extends BaseTokenStreamTestCase {
                                             KuromojiAnalyzer.getDefaultStopSet(),
                                             KuromojiAnalyzer.getDefaultStopTags());
 
-    /*
-    //TokenStream ts = a.tokenStream("foo", new StringReader("妹の咲子です。俺と年子で、今受験生です。"));
-    TokenStream ts = a.tokenStream("foo", new StringReader("&#x250cdf66<!--\"<!--#<!--;?><!--#<!--#><!---->?>-->;"));
-    ts.reset();
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-    while(ts.incrementToken()) {
-      System.out.println("  " + termAtt.toString());
-    }
-    System.out.println("DONE PARSE\n\n");
-    */
-
     // Senior software engineer:
     assertAnalyzesToPositions(a, "シニアソフトウェアエンジニア",
                               new String[] { "シニア",
-                                             "シニアソフトウェアエンジニア",
+                                             "シニアソフトウェアエンジニア", // zero pos inc
                                              "ソフトウェア",
                                              "エンジニア" },
                               new int[] { 1, 0, 1, 1},
                               new int[] { 1, 3, 1, 1}
+                              );
+
+    // Senior project manager: also tests katakana spelling variation stemming
+    assertAnalyzesToPositions(a, "シニアプロジェクトマネージャー",
+                              new String[] { "シニア",
+                                              "シニアプロジェクトマネージャ", // trailing ー removed by stemming, zero pos inc
+                                              "プロジェクト",
+                                              "マネージャ"}, // trailing ー removed by stemming
+                              new int[]{1, 0, 1, 1},
+                              new int[]{1, 3, 1, 1}
                               );
 
     // Kansai International Airport:

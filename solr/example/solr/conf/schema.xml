@@ -504,13 +504,13 @@
     
     <!-- CJK bigram (see text_ja for a Japanese configuration using morphological analysis) -->
     <fieldType name="text_cjk" class="solr.TextField" positionIncrementGap="100">
-      <analyzer> 
+      <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <!-- normalize width before bigram, as e.g. half-width dakuten combine  -->
         <filter class="solr.CJKWidthFilterFactory"/>
         <!-- for any non-CJK -->
         <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.CJKBigramFilterFactory"/>     
+        <filter class="solr.CJKBigramFilterFactory"/>
       </analyzer>
     </fieldType>
 
@@ -720,7 +720,9 @@
         <filter class="solr.CJKWidthFilterFactory"/>
         <!-- Removes common tokens typically not useful for search, but have a negative effect on ranking -->
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_ja.txt" enablePositionIncrements="true" />
-        <!-- Lower-case romaji characters -->
+        <!-- Normalizes common katakana spelling variations by removing any last long sound character (U+30FC) -->
+        <filter class="solr.KuromojiKatakanaStemFilterFactory" minimumLength="4"/>
+        <!-- Lower-cases romaji characters -->
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
     </fieldType>

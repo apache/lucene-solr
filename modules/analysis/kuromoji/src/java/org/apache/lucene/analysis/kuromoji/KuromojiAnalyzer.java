@@ -92,6 +92,7 @@ public class KuromojiAnalyzer extends StopwordAnalyzerBase {
     stream = new KuromojiPartOfSpeechStopFilter(true, stream, stoptags);
     stream = new CJKWidthFilter(stream);
     stream = new StopFilter(matchVersion, stream, stopwords);
+    stream = new KuromojiKatakanaStemFilter(stream);
     stream = new LowerCaseFilter(matchVersion, stream);
     return new TokenStreamComponents(tokenizer, stream);
   }
