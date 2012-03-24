@@ -370,12 +370,19 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         // real data from linedocs
         text = docs.nextDoc().get("body");
         if (text.length() > maxWordLength) {
-          // Take care not to split up a surrogate pair:
-          if (Character.isHighSurrogate(text.charAt(maxWordLength-1))) {
-            text = text.substring(0, maxWordLength-1);
-          } else {
-            text = text.substring(0, maxWordLength);
+
+          // Take a random slice from the text...:
+          int startPos = random.nextInt(text.length() - maxWordLength);
+          if (startPos > 0 && Character.isLowSurrogate(text.charAt(startPos))) {
+            // Take care not to split up a surrogate pair:
+            startPos--;
           }
+          int endPos = startPos + maxWordLength - 1;
+          if (Character.isHighSurrogate(text.charAt(endPos))) {
+            // Take care not to split up a surrogate pair:
+            endPos--;
+          }
+          text = text.substring(startPos, 1+endPos);
         }
       } else {
         // synthetic
