@@ -890,8 +890,8 @@ New Features
 * LUCENE-3671: Add TypeTokenFilter that filters tokens based on
   their TypeAttribute.  (Tommaso Teofili via Uwe Schindler)
 
-* LUCENE-3690: Added HTMLStripCharFilter, a CharFilter that strips HTML
-  markup. (Steve Rowe)
+* LUCENE-3690,LUCENE-3913: Added HTMLStripCharFilter, a CharFilter that strips
+  HTML markup. (Steve Rowe)
 
 * LUCENE-3725: Added optional packing to FST building; this uses extra
   RAM during building but results in a smaller FST.  (Mike McCandless)
