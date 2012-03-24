@@ -264,7 +264,15 @@ public class _TestUtil {
    * If you call this enough times, you might get a valid regex!
    */
   public static String randomRegexpishString(Random r) {
-    final int end = r.nextInt(20);
+    return randomRegexpishString(r, 20);
+  }
+  
+  /**
+   * Returns a String thats "regexpish" (contains lots of operators typically found in regular expressions)
+   * If you call this enough times, you might get a valid regex!
+   */
+  public static String randomRegexpishString(Random r, int maxLength) {
+    final int end = nextInt(r, 0, maxLength);
     if (end == 0) {
       // allow 0 length
       return "";
