@@ -369,7 +369,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (random.nextInt(10) == 7) {
         text = docs.nextDoc().get("body");
         if (text.length() > maxWordLength) {
-          text = text.substring(0, maxWordLength);
+          // Take care not to split up a surrogate pair:
+          if (Character.isHighSurrogate(text.charAt(maxWordLength-1))) {
+            text = text.substring(0, maxWordLength-1);
+          } else {
+            text = text.substring(0, maxWordLength);
+          }
         }
       } else {
         if (simple) { 
