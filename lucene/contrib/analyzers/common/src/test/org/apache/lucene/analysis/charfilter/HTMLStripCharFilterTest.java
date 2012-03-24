@@ -32,11 +32,25 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util._TestUtil;
 
 public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
+
+  static private Analyzer newTestAnalyzer() {
+    return new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+
+      @Override
+      protected Reader initReader(Reader reader) {
+        return new HTMLStripCharFilter(CharReader.get(reader));
+      }
+    };
+  }
 
   //this is some text  here is a  link  and another  link . This is an entity: & plus a <.  Here is an &
   //
@@ -495,41 +509,17 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testRandom() throws Exception {
-    Analyzer analyzer = new ReusableAnalyzerBase() {
-
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-
-      @Override
-      protected Reader initReader(Reader reader) {
-        return new HTMLStripCharFilter(CharReader.get(reader));
-      }
-    };
-    
     int numRounds = RANDOM_MULTIPLIER * 10000;
-    checkRandomData(random, analyzer, numRounds);
+    checkRandomData(random, newTestAnalyzer(), numRounds);
   }
   
   public void testRandomHugeStrings() throws Exception {
-    Analyzer analyzer = new ReusableAnalyzerBase() {
-
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-
-      @Override
-      protected Reader initReader(Reader reader) {
-        return new HTMLStripCharFilter(CharReader.get(reader));
-      }
-    };
-    
     int numRounds = RANDOM_MULTIPLIER * 200;
-    checkRandomData(random, analyzer, numRounds, 8192);
+    checkRandomData(random, newTestAnalyzer(), numRounds, 8192);
+  }
+
+  public void testCloseBR() throws Exception {
+    checkAnalysisConsistency(random, newTestAnalyzer(), random.nextBoolean(), " Secretary)</br> [[M");
   }
   
   public void testServerSideIncludes() throws Exception {
@@ -799,9 +789,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testRandomBrokenHTML() throws Exception {
     int maxNumElements = 10000;
     String text = _TestUtil.randomHtmlishString(random, maxNumElements);
-    Reader reader = new HTMLStripCharFilter
-        (CharReader.get(new StringReader(text)));
-    while (reader.read() != -1);
+    checkAnalysisConsistency(random, newTestAnalyzer(), random.nextBoolean(), text);
   }
 
   public void testRandomText() throws Exception {
@@ -840,18 +828,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testUTF16Surrogates() throws Exception {
-    Analyzer analyzer = new ReusableAnalyzerBase() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-
-      @Override
-      protected Reader initReader(Reader reader) {
-        return new HTMLStripCharFilter(CharReader.get(new BufferedReader(reader)));
-      }
-    };
+    Analyzer analyzer = newTestAnalyzer();
     // Paired surrogates
     assertAnalyzesTo(analyzer, " one two &#xD86C;&#XdC01;three",
         new String[] { "one", "two", "\uD86C\uDC01three" } );

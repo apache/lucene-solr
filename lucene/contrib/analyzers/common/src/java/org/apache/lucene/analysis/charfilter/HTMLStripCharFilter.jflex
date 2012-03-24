@@ -294,7 +294,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     case START_TAG_TAIL_EXCLUDE:
     case SERVER_SIDE_INCLUDE:
     case START_TAG_TAIL_SUBSTITUTE: { // Exclude
+      // add (length of input that won't be output) [ - (substitution length) = 0 ]
       cumulativeDiff += yychar - inputStart;
+      // position the correction at (already output length) [ + (substitution length) = 0 ]
       addOffCorrectMap(outputCharCount, cumulativeDiff);
       outputSegment.clear();
       eofReturnValue = -1;
@@ -302,7 +304,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     }
     case CHARACTER_REFERENCE_TAIL: {        // Substitute
       // At end of file, allow char refs without semicolons
+      // add (length of input that won't be output) - (substitution length)
       cumulativeDiff += inputSegment.length() - outputSegment.length();
+      // position the correction at (already output length) + (substitution length)
       addOffCorrectMap(outputCharCount + outputSegment.length(), cumulativeDiff);
       eofReturnValue = outputSegment.nextChar();
       break;
@@ -375,7 +379,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
       assert false: "Exception parsing low surrogate '"
                   + surrogatePair.substring(10, 14) + "'";
     }
+    // add (previously matched input length) + (this match length) - (substitution length)
     cumulativeDiff += inputSegment.length() + yylength() - 2;
+    // position the correction at (already output length) + (substitution length)
     addOffCorrectMap(outputCharCount + 2, cumulativeDiff);
     inputSegment.clear();
     yybegin(YYINITIAL);
@@ -404,7 +410,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
         assert false: "Exception parsing low surrogate '"
                     + surrogatePair.substring(10, 14) + "'";
       }
+      // add (previously matched input length) + (this match length) - (substitution length)
       cumulativeDiff += inputSegment.length() + yylength() - 2;
+      // position the correction at (already output length) + (substitution length)
       addOffCorrectMap(outputCharCount + 2, cumulativeDiff);
       inputSegment.clear();
       yybegin(YYINITIAL);
@@ -438,7 +446,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
       outputSegment = entitySegment;
       outputSegment.clear();
       outputSegment.unsafeWrite(lowSurrogate);
+      // add (previously matched input length) + (this match length) - (substitution length)
       cumulativeDiff += inputSegment.length() + yylength() - 2;
+      // position the correction at (already output length) + (substitution length)
       addOffCorrectMap(outputCharCount + 2, cumulativeDiff);
       inputSegment.clear();
       yybegin(YYINITIAL);
@@ -473,7 +483,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
         outputSegment = entitySegment;
         outputSegment.clear();
         outputSegment.unsafeWrite(lowSurrogate);
+        // add (previously matched input length) + (this match length) - (substitution length)
         cumulativeDiff += inputSegment.length() + yylength() - 2;
+        // position the correction at (already output length) + (substitution length)
         addOffCorrectMap(outputCharCount + 2, cumulativeDiff);
         inputSegment.clear();
         yybegin(YYINITIAL);
@@ -558,8 +570,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 
 <CHARACTER_REFERENCE_TAIL> {
   ";" {
-    cumulativeDiff
-        += inputSegment.length() + yylength() - outputSegment.length();
+    // add (previously matched input length) + (this match length) - (substitution length)
+    cumulativeDiff += inputSegment.length() + yylength() - outputSegment.length();
+    // position the correction at (already output length) + (substitution length)
     addOffCorrectMap(outputCharCount + outputSegment.length(), cumulativeDiff);
     yybegin(YYINITIAL);
     return outputSegment.nextChar();
@@ -575,9 +588,10 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
       outputSegment = inputSegment;
       return outputSegment.nextChar();
     } else {
-      cumulativeDiff
-          += inputSegment.length() + yylength() - outputSegment.length();
-      addOffCorrectMap(outputCharCount + outputSegment.length(), cumulativeDiff);
+      // add (previously matched input length) + (this match length) - (substitution length)
+      cumulativeDiff += inputSegment.length() + yylength() - 1;
+      // position the correction at (already output length) + (substitution length)
+      addOffCorrectMap(outputCharCount + 1, cumulativeDiff);
       inputSegment.reset();
       return BR_END_TAG_REPLACEMENT;
     }
@@ -613,7 +627,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 
 <END_TAG_TAIL_EXCLUDE> {
   \s* ">" {
+    // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
     cumulativeDiff += inputSegment.length() + yylength();
+    // position the correction at (already output length) [ + (substitution length) = 0 ]
     addOffCorrectMap(outputCharCount, cumulativeDiff);
     inputSegment.clear();
     yybegin(YYINITIAL);
@@ -622,7 +638,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 
 <END_TAG_TAIL_SUBSTITUTE> {
   \s* ">" {
+    // add (previously matched input length) + (this match length) - (substitution length)
     cumulativeDiff += inputSegment.length() + yylength() - 1;
+    // position the correction at (already output length) + (substitution length)
     addOffCorrectMap(outputCharCount + 1, cumulativeDiff);
     inputSegment.clear();
     yybegin(YYINITIAL);
@@ -638,7 +656,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
     yybegin(LEFT_ANGLE_BRACKET_SPACE);
   }
   "?" [^>]* [/?] ">" {
+    // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
     cumulativeDiff += inputSegment.length() + yylength();
+    // position the correction at (already output length) [ + (substitution length) = 0 ]
     addOffCorrectMap(outputCharCount, cumulativeDiff);
     inputSegment.clear();
     yybegin(YYINITIAL);
@@ -650,8 +670,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
       outputSegment = inputSegment;
       return outputSegment.nextChar();
     } else {
-      cumulativeDiff
-          += inputSegment.length() + yylength() - outputSegment.length();
+      // add (previously matched input length) + (this match length) - (substitution length)
+      cumulativeDiff += inputSegment.length() + yylength() - 1;
+      // position the correction at (already output length) + (substitution length)
       addOffCorrectMap(outputCharCount + 1, cumulativeDiff);
       inputSegment.reset();
       return BR_START_TAG_REPLACEMENT;
@@ -709,7 +730,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 
 <START_TAG_TAIL_EXCLUDE> {
    ( ( "="\s* | \s+ ) {OpenTagContent} )? \s* "/"? ">" {
+    // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
     cumulativeDiff += inputSegment.length() + yylength();
+    // position the correction at (already output length) [ + (substitution length) = 0 ]
     addOffCorrectMap(outputCharCount, cumulativeDiff);
     inputSegment.clear();
     outputSegment = inputSegment;
@@ -719,7 +742,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 
 <START_TAG_TAIL_SUBSTITUTE> {
   ( ( "="\s* | \s+ ) {OpenTagContent} )? \s*  "/"? ">" {
+    // add (previously matched input length) + (this match length) - (substitution length)
     cumulativeDiff += inputSegment.length() + yylength() - 1;
+    // position the correction at (already output length) + (substitution length)
     addOffCorrectMap(outputCharCount + 1, cumulativeDiff);
     inputSegment.clear();
     yybegin(YYINITIAL);
@@ -730,7 +755,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 <BANG> {
   "--" { yybegin(COMMENT); }
   ">" {
+    // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
     cumulativeDiff += inputSegment.length() + yylength();
+    // position the correction at (already output length) [ + (substitution length) = 0 ]
     addOffCorrectMap(outputCharCount, cumulativeDiff);
     inputSegment.clear();
     yybegin(YYINITIAL);
@@ -743,7 +770,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
   // [21] CDEnd   ::= ']]>'
   //
   "[CDATA[" {
+    // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
     cumulativeDiff += inputSegment.length() + yylength();
+    // position the correction at (already output length) [ + (substitution length) = 0 ]
     addOffCorrectMap(outputCharCount, cumulativeDiff);
     inputSegment.clear();
     yybegin(CDATA);
@@ -755,7 +784,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 
 <CDATA> {
   "]]>" {
+    // add (this match length) [ - (substitution length) = 0 ]
     cumulativeDiff += yylength();
+    // position the correction at (already output length) [ + (substitution length) = 0 ]
     addOffCorrectMap(outputCharCount, cumulativeDiff);
     yybegin(YYINITIAL);
   }
@@ -765,7 +796,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
 <COMMENT> {
   "<!--#" { restoreState = COMMENT; yybegin(SERVER_SIDE_INCLUDE); }
   "-->" {
+    // add (previously matched input length) + (this match length) [ - (substitution length) = 0]
     cumulativeDiff += yychar - inputStart + yylength();
+    // position the correction at (already output length) [ + (substitution length) = 0]
     addOffCorrectMap(outputCharCount, cumulativeDiff);
     inputSegment.clear();
     yybegin(YYINITIAL);
@@ -821,19 +854,23 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
   "</" \s* [sS][cC][rR][iI][pP][tT] \s* ">" {
     inputSegment.clear();
     yybegin(YYINITIAL);
+    // add (previously matched input length) -- current match and substitution handled below
     cumulativeDiff += yychar - inputStart;
-    int outputEnd = outputCharCount;
+    // position at (already output length) -- substitution handled below
+    int offsetCorrectionPos = outputCharCount;
     int returnValue;
     if (escapeSCRIPT) {
       inputSegment.write(zzBuffer, zzStartRead, yylength());
       outputSegment = inputSegment;
       returnValue = outputSegment.nextChar();
     } else {
+      // add (this match length) - (substitution length)
       cumulativeDiff += yylength() - 1;
-      ++outputEnd;
+      // add (substitution length)
+      ++offsetCorrectionPos;
       returnValue = SCRIPT_REPLACEMENT;
     }
-    addOffCorrectMap(outputEnd, cumulativeDiff);
+    addOffCorrectMap(offsetCorrectionPos, cumulativeDiff);
     return returnValue;
   }
   [^] { }
@@ -844,19 +881,23 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
   "</" \s* [sS][tT][yY][lL][eE] \s* ">" {
     inputSegment.clear();
     yybegin(YYINITIAL);
+    // add (previously matched input length) -- current match and substitution handled below
     cumulativeDiff += yychar - inputStart;
-    int outputEnd = outputCharCount;
+    // position the offset correction at (already output length) -- substitution handled below
+    int offsetCorrectionPos = outputCharCount;
     int returnValue;
     if (escapeSTYLE) {
       inputSegment.write(zzBuffer, zzStartRead, yylength());
       outputSegment = inputSegment;
       returnValue = outputSegment.nextChar();
     } else {
+      // add (this match length) - (substitution length)
       cumulativeDiff += yylength() - 1;
-      ++outputEnd;
+      // add (substitution length)
+      ++offsetCorrectionPos;
       returnValue = STYLE_REPLACEMENT;
     }
-    addOffCorrectMap(outputEnd, cumulativeDiff);
+    addOffCorrectMap(offsetCorrectionPos, cumulativeDiff);
     return returnValue;
   }
   [^] { }
