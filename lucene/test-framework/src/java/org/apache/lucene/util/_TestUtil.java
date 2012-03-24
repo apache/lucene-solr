@@ -27,10 +27,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.nio.CharBuffer;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -414,10 +411,49 @@ public class _TestUtil {
         case 20: sb.append(nextInt(random, 0, Integer.MAX_VALUE - 1)); break;
         case 21: sb.append("\n"); break;
         case 22: sb.append("          ".substring(nextInt(random, 0, 10))); break;
+        case 23: {
+          sb.append("<");
+          if (0 == nextInt(random, 0, 3)) {
+            sb.append("          ".substring(nextInt(random, 1, 10)));
+          }
+          if (0 == nextInt(random, 0, 1)) {
+            sb.append("/");
+            if (0 == nextInt(random, 0, 3)) {
+              sb.append("          ".substring(nextInt(random, 1, 10)));
+            }
+          }
+          switch (nextInt(random, 0, 3)) {
+            case 0: sb.append(randomlyRecaseCodePoints(random, "script")); break;
+            case 1: sb.append(randomlyRecaseCodePoints(random, "style")); break;
+            case 2: sb.append(randomlyRecaseCodePoints(random, "br")); break;
+            // default: append nothing
+          }
+          sb.append(">".substring(nextInt(random, 0, 1)));
+          break;
+        }
         default: sb.append(randomSimpleString(random));
       }
     }
     return sb.toString();
+  }
+
+  /**
+   * Randomly upcases, downcases, or leaves intact each code point in the given string
+   */
+  public static String randomlyRecaseCodePoints(Random random, String str) {
+    StringBuilder builder = new StringBuilder();
+    int pos = 0;
+    while (pos < str.length()) {
+      int codePoint = str.codePointAt(pos);
+      pos += Character.charCount(codePoint);
+      String codePointSubstring = new String(new int[] { codePoint }, 0, 1);
+      switch (nextInt(random, 0, 2)) {
+        case 0: builder.append(codePointSubstring.toUpperCase()); break;
+        case 1: builder.append(codePointSubstring.toLowerCase()); break;
+        case 2: builder.append(codePointSubstring); // leave intact
+      }
+    }
+    return builder.toString();
   }
 
   private static final int[] blockStarts = {

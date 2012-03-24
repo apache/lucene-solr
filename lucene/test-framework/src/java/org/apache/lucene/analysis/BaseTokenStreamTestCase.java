@@ -391,188 +391,194 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       }
 
 
-      if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
+      checkAnalysisConsistency(random, a, useCharFilter, text);
+    }
+  }
+
+  public static void checkAnalysisConsistency(Random random, Analyzer a, boolean useCharFilter, String text) throws IOException {
+
+    if (VERBOSE) {
+      System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
+    }
+
+    int remainder = random.nextInt(10);
+    Reader reader = new StringReader(text);
+    TokenStream ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
+    assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
+    CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = ts.hasAttribute(OffsetAttribute.class) ? ts.getAttribute(OffsetAttribute.class) : null;
+    PositionIncrementAttribute posIncAtt = ts.hasAttribute(PositionIncrementAttribute.class) ? ts.getAttribute(PositionIncrementAttribute.class) : null;
+    PositionLengthAttribute posLengthAtt = ts.hasAttribute(PositionLengthAttribute.class) ? ts.getAttribute(PositionLengthAttribute.class) : null;
+    TypeAttribute typeAtt = ts.hasAttribute(TypeAttribute.class) ? ts.getAttribute(TypeAttribute.class) : null;
+    List<String> tokens = new ArrayList<String>();
+    List<String> types = new ArrayList<String>();
+    List<Integer> positions = new ArrayList<Integer>();
+    List<Integer> positionLengths = new ArrayList<Integer>();
+    List<Integer> startOffsets = new ArrayList<Integer>();
+    List<Integer> endOffsets = new ArrayList<Integer>();
+    ts.reset();
+
+    // First pass: save away "correct" tokens
+    while (ts.incrementToken()) {
+      tokens.add(termAtt.toString());
+      if (typeAtt != null) types.add(typeAtt.type());
+      if (posIncAtt != null) positions.add(posIncAtt.getPositionIncrement());
+      if (posLengthAtt != null) positionLengths.add(posLengthAtt.getPositionLength());
+      if (offsetAtt != null) {
+        startOffsets.add(offsetAtt.startOffset());
+        endOffsets.add(offsetAtt.endOffset());
       }
+    }
+    ts.end();
+    ts.close();
 
-      int remainder = random.nextInt(10);
-      Reader reader = new StringReader(text);
-      TokenStream ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
-      assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
-      CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
-      OffsetAttribute offsetAtt = ts.hasAttribute(OffsetAttribute.class) ? ts.getAttribute(OffsetAttribute.class) : null;
-      PositionIncrementAttribute posIncAtt = ts.hasAttribute(PositionIncrementAttribute.class) ? ts.getAttribute(PositionIncrementAttribute.class) : null;
-      PositionLengthAttribute posLengthAtt = ts.hasAttribute(PositionLengthAttribute.class) ? ts.getAttribute(PositionLengthAttribute.class) : null;
-      TypeAttribute typeAtt = ts.hasAttribute(TypeAttribute.class) ? ts.getAttribute(TypeAttribute.class) : null;
-      List<String> tokens = new ArrayList<String>();
-      List<String> types = new ArrayList<String>();
-      List<Integer> positions = new ArrayList<Integer>();
-      List<Integer> positionLengths = new ArrayList<Integer>();
-      List<Integer> startOffsets = new ArrayList<Integer>();
-      List<Integer> endOffsets = new ArrayList<Integer>();
-      ts.reset();
+    // verify reusing is "reproducable" and also get the normal tokenstream sanity checks
+    if (!tokens.isEmpty()) {
 
-      // First pass: save away "correct" tokens
-      while (ts.incrementToken()) {
-        tokens.add(termAtt.toString());
-        if (typeAtt != null) types.add(typeAtt.type());
-        if (posIncAtt != null) positions.add(posIncAtt.getPositionIncrement());
-        if (posLengthAtt != null) positionLengths.add(posLengthAtt.getPositionLength());
-        if (offsetAtt != null) {
-          startOffsets.add(offsetAtt.startOffset());
-          endOffsets.add(offsetAtt.endOffset());
-        }
-      }
-      ts.end();
-      ts.close();
+      // KWTokenizer (for example) can produce a token
+      // even when input is length 0:
+      if (text.length() != 0) {
 
-      // verify reusing is "reproducable" and also get the normal tokenstream sanity checks
-      if (!tokens.isEmpty()) {
-
-        // KWTokenizer (for example) can produce a token
-        // even when input is length 0:
-        if (text.length() != 0) {
-
-          // (Optional) second pass: do something evil:
-          final int evilness = random.nextInt(50);
-          if (evilness == 17) {
-            if (VERBOSE) {
-              System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis w/ exception");
-            }
-            // Throw an errant exception from the Reader:
-
-            MockReaderWrapper evilReader = new MockReaderWrapper(random, new StringReader(text));
-            evilReader.throwExcAfterChar(random.nextInt(text.length()+1));
-            reader = evilReader;
-
-            try {
-              // NOTE: some Tokenizers go and read characters
-              // when you call .setReader(Reader), eg
-              // PatternTokenizer.  This is a bit
-              // iffy... (really, they should only
-              // pull from the Reader when you call
-              // .incremenToken(), I think?), but we
-              // currently allow it, so, we must call
-              // a.tokenStream inside the try since we may
-              // hit the exc on init:
-              ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(evilReader, remainder) : evilReader);
-              ts.reset();
-              while (ts.incrementToken());
-              fail("did not hit exception");
-            } catch (RuntimeException re) {
-              assertTrue(MockReaderWrapper.isMyEvilException(re));
-            }
-            try {
-              ts.end();
-            } catch (AssertionError ae) {
-              // Catch & ignore MockTokenizer's
-              // anger...
-              if ("end() called before incrementToken() returned false!".equals(ae.getMessage())) {
-                // OK
-              } else {
-                throw ae;
-              }
-            }
-            ts.close();
-          } else if (evilness == 7) {
-            // Only consume a subset of the tokens:
-            final int numTokensToRead = random.nextInt(tokens.size());
-            if (VERBOSE) {
-              System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis, only consuming " + numTokensToRead + " of " + tokens.size() + " tokens");
-            }
-
-            reader = new StringReader(text);
-            ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
-            ts.reset();
-            for(int tokenCount=0;tokenCount<numTokensToRead;tokenCount++) {
-              assertTrue(ts.incrementToken());
-            }
-            try {
-              ts.end();
-            } catch (AssertionError ae) {
-              // Catch & ignore MockTokenizer's
-              // anger...
-              if ("end() called before incrementToken() returned false!".equals(ae.getMessage())) {
-                // OK
-              } else {
-                throw ae;
-              }
-            }
-            ts.close();
-          }
-        }
-
-        // Final pass: verify clean tokenization matches
-        // results from first pass:
-        if (VERBOSE) {
-          System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis; " + tokens.size() + " tokens");
-        }
-        reader = new StringReader(text);
-
-        if (random.nextInt(30) == 7) {
+        // (Optional) second pass: do something evil:
+        final int evilness = random.nextInt(50);
+        if (evilness == 17) {
           if (VERBOSE) {
-            System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: using spoon-feed reader");
+            System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis w/ exception");
+          }
+          // Throw an errant exception from the Reader:
+
+          MockReaderWrapper evilReader = new MockReaderWrapper(random, new StringReader(text));
+          evilReader.throwExcAfterChar(random.nextInt(text.length()+1));
+          reader = evilReader;
+
+          try {
+            // NOTE: some Tokenizers go and read characters
+            // when you call .setReader(Reader), eg
+            // PatternTokenizer.  This is a bit
+            // iffy... (really, they should only
+            // pull from the Reader when you call
+            // .incremenToken(), I think?), but we
+            // currently allow it, so, we must call
+            // a.tokenStream inside the try since we may
+            // hit the exc on init:
+            ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(evilReader, remainder) : evilReader);
+            ts.reset();
+            while (ts.incrementToken());
+            fail("did not hit exception");
+          } catch (RuntimeException re) {
+            assertTrue(MockReaderWrapper.isMyEvilException(re));
+          }
+          try {
+            ts.end();
+          } catch (AssertionError ae) {
+            // Catch & ignore MockTokenizer's
+            // anger...
+            if ("end() called before incrementToken() returned false!".equals(ae.getMessage())) {
+              // OK
+            } else {
+              throw ae;
+            }
+          }
+          ts.close();
+        } else if (evilness == 7) {
+          // Only consume a subset of the tokens:
+          final int numTokensToRead = random.nextInt(tokens.size());
+          if (VERBOSE) {
+            System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis, only consuming " + numTokensToRead + " of " + tokens.size() + " tokens");
           }
 
-          reader = new MockReaderWrapper(random, reader);
+          reader = new StringReader(text);
+          ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
+          ts.reset();
+          for(int tokenCount=0;tokenCount<numTokensToRead;tokenCount++) {
+            assertTrue(ts.incrementToken());
+          }
+          try {
+            ts.end();
+          } catch (AssertionError ae) {
+            // Catch & ignore MockTokenizer's
+            // anger...
+            if ("end() called before incrementToken() returned false!".equals(ae.getMessage())) {
+              // OK
+            } else {
+              throw ae;
+            }
+          }
+          ts.close();
         }
-        
-        ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
-        if (typeAtt != null && posIncAtt != null && posLengthAtt != null && offsetAtt != null) {
-          // offset + pos + posLength + type
-          assertTokenStreamContents(ts, 
-            tokens.toArray(new String[tokens.size()]),
-            toIntArray(startOffsets),
-            toIntArray(endOffsets),
-            types.toArray(new String[types.size()]),
-            toIntArray(positions),
-            toIntArray(positionLengths),
-            text.length());
-        } else if (typeAtt != null && posIncAtt != null && offsetAtt != null) {
-          // offset + pos + type
-          assertTokenStreamContents(ts, 
-            tokens.toArray(new String[tokens.size()]),
-            toIntArray(startOffsets),
-            toIntArray(endOffsets),
-            types.toArray(new String[types.size()]),
-            toIntArray(positions),
-            null,
-            text.length());
-        } else if (posIncAtt != null && posLengthAtt != null && offsetAtt != null) {
-          // offset + pos + posLength
-          assertTokenStreamContents(ts, 
-              tokens.toArray(new String[tokens.size()]),
-              toIntArray(startOffsets),
-              toIntArray(endOffsets),
-              null,
-              toIntArray(positions),
-              toIntArray(positionLengths),
-              text.length());
-        } else if (posIncAtt != null && offsetAtt != null) {
-          // offset + pos
-          assertTokenStreamContents(ts, 
-              tokens.toArray(new String[tokens.size()]),
-              toIntArray(startOffsets),
-              toIntArray(endOffsets),
-              null,
-              toIntArray(positions),
-              null,
-              text.length());
-        } else if (offsetAtt != null) {
-          // offset
-          assertTokenStreamContents(ts, 
-              tokens.toArray(new String[tokens.size()]),
-              toIntArray(startOffsets),
-              toIntArray(endOffsets),
-              null,
-              null,
-              null,
-              text.length());
-        } else {
-          // terms only
-          assertTokenStreamContents(ts, 
-              tokens.toArray(new String[tokens.size()]));
+      }
+
+      // Final pass: verify clean tokenization matches
+      // results from first pass:
+
+      if (VERBOSE) {
+        System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis; " + tokens.size() + " tokens");
+      }
+      reader = new StringReader(text);
+
+      if (random.nextInt(30) == 7) {
+        if (VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: using spoon-feed reader");
         }
+
+        reader = new MockReaderWrapper(random, reader);
+      }
+
+      ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
+      if (typeAtt != null && posIncAtt != null && posLengthAtt != null && offsetAtt != null) {
+        // offset + pos + posLength + type
+        assertTokenStreamContents(ts, 
+                                  tokens.toArray(new String[tokens.size()]),
+                                  toIntArray(startOffsets),
+                                  toIntArray(endOffsets),
+                                  types.toArray(new String[types.size()]),
+                                  toIntArray(positions),
+                                  toIntArray(positionLengths),
+                                  text.length());
+      } else if (typeAtt != null && posIncAtt != null && offsetAtt != null) {
+        // offset + pos + type
+        assertTokenStreamContents(ts, 
+                                  tokens.toArray(new String[tokens.size()]),
+                                  toIntArray(startOffsets),
+                                  toIntArray(endOffsets),
+                                  types.toArray(new String[types.size()]),
+                                  toIntArray(positions),
+                                  null,
+                                  text.length());
+      } else if (posIncAtt != null && posLengthAtt != null && offsetAtt != null) {
+        // offset + pos + posLength
+        assertTokenStreamContents(ts, 
+                                  tokens.toArray(new String[tokens.size()]),
+                                  toIntArray(startOffsets),
+                                  toIntArray(endOffsets),
+                                  null,
+                                  toIntArray(positions),
+                                  toIntArray(positionLengths),
+                                  text.length());
+      } else if (posIncAtt != null && offsetAtt != null) {
+        // offset + pos
+        assertTokenStreamContents(ts, 
+                                  tokens.toArray(new String[tokens.size()]),
+                                  toIntArray(startOffsets),
+                                  toIntArray(endOffsets),
+                                  null,
+                                  toIntArray(positions),
+                                  null,
+                                  text.length());
+      } else if (offsetAtt != null) {
+        // offset
+        assertTokenStreamContents(ts, 
+                                  tokens.toArray(new String[tokens.size()]),
+                                  toIntArray(startOffsets),
+                                  toIntArray(endOffsets),
+                                  null,
+                                  null,
+                                  null,
+                                  text.length());
+      } else {
+        // terms only
+        assertTokenStreamContents(ts, 
+                                  tokens.toArray(new String[tokens.size()]));
       }
     }
   }
