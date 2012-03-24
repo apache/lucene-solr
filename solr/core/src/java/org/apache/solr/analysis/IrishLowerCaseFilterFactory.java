@@ -31,10 +31,16 @@ import org.apache.lucene.analysis.ga.IrishLowerCaseFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class IrishLowerCaseFilterFactory extends BaseTokenFilterFactory {
+public class IrishLowerCaseFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
 
   @Override
   public TokenStream create(TokenStream input) {
     return new IrishLowerCaseFilter(input);
+  }
+
+  // this will 'mostly work', except for special cases, just like most other filters
+  @Override
+  public Object getMultiTermComponent() {
+    return this;
   }
 }
