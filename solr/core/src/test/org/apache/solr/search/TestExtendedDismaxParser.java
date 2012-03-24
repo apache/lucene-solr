@@ -71,8 +71,14 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     String oner = "*[count(//doc)=1]";
     String twor = "*[count(//doc)=2]";
     String nor = "*[count(//doc)=0]";
-
-  assertQ("expected doc is missing (using un-escaped edismax w/qf)",
+    
+    assertQ("blank q",
+        req("q"," ",
+            "q.alt",allq,
+            "defType","edismax")
+        ,allr);
+    
+    assertQ("expected doc is missing (using un-escaped edismax w/qf)",
           req("q", "literal:colon", 
               "qf", "t_special",
               "defType", "edismax"),

@@ -163,7 +163,7 @@ class ExtendedDismaxQParser extends QParser {
     parsedUserQuery = null;
     String userQuery = getString();
     altUserQuery = null;
-    if( userQuery == null || userQuery.length() < 1 ) {
+    if( userQuery == null || userQuery.trim().length() == 0 ) {
       // If no query is specified, we may have an alternate
       String altQ = solrParams.get( DisMaxParams.ALTQ );
       if (altQ != null) {
