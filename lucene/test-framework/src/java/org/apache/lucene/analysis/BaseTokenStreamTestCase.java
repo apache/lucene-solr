@@ -365,8 +365,9 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
     for (int i = 0; i < iterations; i++) {
       String text;
-
+      
       if (random.nextInt(10) == 7) {
+        // real data from linedocs
         text = docs.nextDoc().get("body");
         if (text.length() > maxWordLength) {
           // Take care not to split up a surrogate pair:
@@ -377,24 +378,10 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           }
         }
       } else {
-        if (simple) { 
-          text = random.nextBoolean() ? _TestUtil.randomSimpleString(random, maxWordLength) : _TestUtil.randomHtmlishString(random, maxWordLength);
-        } else {
-          switch(_TestUtil.nextInt(random, 0, 4)) {
-          case 0: 
-            text = _TestUtil.randomSimpleString(random, maxWordLength);
-            break;
-          case 1:
-            text = _TestUtil.randomRealisticUnicodeString(random, maxWordLength);
-            break;
-          case 2:
-            text = _TestUtil.randomHtmlishString(random, maxWordLength);
-            break;
-          default:
-            text = _TestUtil.randomUnicodeString(random, maxWordLength);
-          }
-        }
+        // synthetic
+        text = randomAnalysisString(random, maxWordLength, simple);
       }
+
 
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
@@ -580,6 +567,65 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         }
       }
     }
+  }
+  
+  private static String randomAnalysisString(Random random, int maxLength, boolean simple) {
+    assert maxLength >= 0;
+    
+    // sometimes just a purely random string
+    if (random.nextInt(31) == 0) {
+      return randomSubString(random, random.nextInt(maxLength), simple);
+    }
+    
+    // otherwise, try to make it more realistic with 'words' since most tests use MockTokenizer
+    // first decide how big the string will really be: 0..n
+    maxLength = random.nextInt(maxLength);
+    int avgWordLength = _TestUtil.nextInt(random, 3, 8);
+    StringBuilder sb = new StringBuilder();
+    while (sb.length() < maxLength) {
+      if (sb.length() > 0) {
+        sb.append(' ');
+      }
+      int wordLength = -1;
+      while (wordLength < 0) {
+        wordLength = (int) (random.nextGaussian() * 3 + avgWordLength);
+      }
+      wordLength = Math.min(wordLength, maxLength - sb.length());
+      sb.append(randomSubString(random, wordLength, simple));
+    }
+    return sb.toString();
+  }
+  
+  private static String randomSubString(Random random, int wordLength, boolean simple) {
+    if (wordLength == 0) {
+      return "";
+    }
+    
+    int evilness = _TestUtil.nextInt(random, 0, 20);
+    
+    StringBuilder sb = new StringBuilder();
+    while (sb.length() < wordLength) {;
+      if (simple) { 
+        sb.append(random.nextBoolean() ? _TestUtil.randomSimpleString(random, wordLength) : _TestUtil.randomHtmlishString(random, wordLength));
+      } else {
+        if (evilness < 10) {
+          sb.append(_TestUtil.randomSimpleString(random, wordLength));
+        } else if (evilness < 15) {
+          sb.append(_TestUtil.randomRealisticUnicodeString(random, wordLength));
+        } else if (evilness == 16) {
+          sb.append(_TestUtil.randomHtmlishString(random, wordLength));
+        } else {
+          sb.append(_TestUtil.randomUnicodeString(random, wordLength));
+        }
+      }
+    }
+    if (sb.length() > wordLength) {
+      sb.setLength(wordLength);
+      if (Character.isHighSurrogate(sb.charAt(wordLength-1))) {
+        sb.setLength(wordLength-1);
+      }
+    }
+    return sb.toString();
   }
 
   protected String toDot(Analyzer a, String inputText) throws IOException {

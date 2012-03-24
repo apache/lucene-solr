@@ -197,7 +197,7 @@ public class _TestUtil {
   }
 
   public static String randomSimpleString(Random r, int maxLength) {
-    final int end = r.nextInt(maxLength);
+    final int end = nextInt(r, 0, maxLength);
     if (end == 0) {
       // allow 0 length
       return "";
@@ -222,7 +222,7 @@ public class _TestUtil {
    * Returns a random string up to a certain length.
    */
   public static String randomUnicodeString(Random r, int maxLength) {
-    final int end = r.nextInt(maxLength);
+    final int end = nextInt(r, 0, maxLength);
     if (end == 0) {
       // allow 0 length
       return "";
@@ -326,7 +326,7 @@ public class _TestUtil {
   };
   
   public static String randomHtmlishString(Random random, int numElements) {
-    final int end = random.nextInt(numElements);
+    final int end = nextInt(random, 0, numElements);
     if (end == 0) {
       // allow 0 length
       return "";
@@ -471,12 +471,12 @@ public class _TestUtil {
   
   /** Returns random string of length up to maxLength codepoints , all codepoints within the same unicode block. */
   public static String randomRealisticUnicodeString(Random r, int maxLength) {
-    return randomRealisticUnicodeString(r, 0, 20);
+    return randomRealisticUnicodeString(r, 0, maxLength);
   }
 
   /** Returns random string of length between min and max codepoints, all codepoints within the same unicode block. */
   public static String randomRealisticUnicodeString(Random r, int minLength, int maxLength) {
-    final int end = minLength + r.nextInt(maxLength);
+    final int end = nextInt(r, minLength, maxLength);
     final int block = r.nextInt(blockStarts.length);
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < end; i++)
