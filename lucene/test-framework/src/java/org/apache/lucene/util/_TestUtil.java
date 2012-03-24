@@ -448,8 +448,8 @@ public class _TestUtil {
       pos += Character.charCount(codePoint);
       String codePointSubstring = new String(new int[] { codePoint }, 0, 1);
       switch (nextInt(random, 0, 2)) {
-        case 0: builder.append(codePointSubstring.toUpperCase()); break;
-        case 1: builder.append(codePointSubstring.toLowerCase()); break;
+        case 0: builder.append(codePointSubstring.toUpperCase(Locale.ENGLISH)); break;
+        case 1: builder.append(codePointSubstring.toLowerCase(Locale.ENGLISH)); break;
         case 2: builder.append(codePointSubstring); // leave intact
       }
     }
