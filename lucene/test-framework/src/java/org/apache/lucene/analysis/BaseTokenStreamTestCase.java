@@ -376,6 +376,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           if (startPos > 0 && Character.isLowSurrogate(text.charAt(startPos))) {
             // Take care not to split up a surrogate pair:
             startPos--;
+            assert Character.isHighSurrogate(text.charAt(startPos));
           }
           int endPos = startPos + maxWordLength - 1;
           if (Character.isHighSurrogate(text.charAt(endPos))) {
