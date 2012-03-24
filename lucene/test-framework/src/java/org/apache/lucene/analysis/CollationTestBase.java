@@ -18,31 +18,31 @@ package org.apache.lucene.analysis;
  */
 
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermRangeFilter;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.util.IndexableBinaryStringTools;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeFilter;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IndexableBinaryStringTools;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Base test class for testing Unicode collation.
@@ -74,8 +74,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
   public void testFarsiRangeFilterCollating(Analyzer analyzer, String firstBeg, 
                                             String firstEnd, String secondBeg,
                                             String secondEnd) throws Exception {
-    RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", 
@@ -84,7 +84,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                       Field.Store.YES, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
     writer.close();
-    IndexReader reader = IndexReader.open(ramDir);
+    IndexReader reader = IndexReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     Query query = new TermQuery(new Term("body","body"));
 
@@ -103,13 +103,14 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
     searcher.close();
     reader.close();
+    dir.close();
   }
  
   public void testFarsiRangeQueryCollating(Analyzer analyzer, String firstBeg, 
                                             String firstEnd, String secondBeg,
                                             String secondEnd) throws Exception {
-    RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
 
@@ -121,7 +122,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                       Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
-    IndexReader reader = IndexReader.open(ramDir);
+    IndexReader reader = IndexReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     Query query = new TermRangeQuery("content", firstBeg, firstEnd, true, true);
@@ -133,12 +134,13 @@ public abstract class CollationTestBase extends LuceneTestCase {
     assertEquals("The index Term should be included.", 1, hits.length);
     searcher.close();
     reader.close();
+    dir.close();
   }
 
   public void testFarsiTermRangeQuery(Analyzer analyzer, String firstBeg,
       String firstEnd, String secondBeg, String secondEnd) throws Exception {
 
-    RAMDirectory farsiIndex = new RAMDirectory();
+    Directory farsiIndex = newDirectory();
     IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -167,6 +169,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     result = search.search(csrq, null, 1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, result.length);
     search.close();
+    reader.close();
+    farsiIndex.close();
   }
   
   // Test using various international locales with accented characters (which
@@ -185,7 +189,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                    String frResult,
                                    String svResult,
                                    String dkResult) throws Exception {
-    RAMDirectory indexStore = new RAMDirectory();
+    Directory indexStore = newDirectory();
     PerFieldAnalyzerWrapper analyzer
       = new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     analyzer.addAnalyzer("US", usAnalyzer);
@@ -253,6 +257,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     assertMatches(searcher, queryY, sort, dkResult);
     searcher.close();
     reader.close();
+    indexStore.close();
   }
     
   // Make sure the documents returned by the search match the expected list
