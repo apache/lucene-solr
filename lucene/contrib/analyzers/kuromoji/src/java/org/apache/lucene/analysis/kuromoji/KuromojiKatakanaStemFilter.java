@@ -34,10 +34,9 @@ import java.io.IOException;
  * katakana to full-width before using this filter.
  * </p>
  * <p>
- * In order to prevent terms from being stemmed, use an instance of
- * {@link org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter}
- * or a custom {@link TokenFilter} that sets the {@link KeywordAttribute}
- * before this {@link TokenStream}.
+ * In order to prevent terms from being stemmed, use an instance of {@link
+ * org.apache.lucene.analysis.KeywordMarkerFilter} or a custom {@link TokenFilter}
+ * that sets the {@link　KeywordAttribute}　before this {@link TokenStream}.
  * </p>
  */
 
