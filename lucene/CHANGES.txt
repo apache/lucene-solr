@@ -902,6 +902,9 @@ New Features
 * LUCENE-3789: Expose MTQ TermsEnum via RewriteMethod for non package private
   access (Simon Willnauer)
 
+* LUCENE-3881: Added UAX29URLEmailAnalyzer: a standard analyzer that recognizes
+  URLs and emails. (Steve Rowe)
+
 Bug fixes
 
 * LUCENE-3595: Fixed FieldCacheRangeFilter and FieldCacheTermsFilter
