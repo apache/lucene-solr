@@ -176,6 +176,9 @@ New Features
    with/without trailing long vowel marks. The filter is used in both KuromojiAnalyzer
    and the "text_ja" field type in schema.xml. (Christian Moen)
 
+ * LUCENE-3915: Add Japanese filter to replace a term attribute with its reading.
+   (Koji Sekiguchi, Robert Muir, Christian Moen)
+
  * LUCENE-3685: Add ToChildBlockJoinQuery and renamed previous
    BlockJoinQuery to ToParentBlockJoinQuery, so that you can now do
    joins in both parent to child and child to parent directions.

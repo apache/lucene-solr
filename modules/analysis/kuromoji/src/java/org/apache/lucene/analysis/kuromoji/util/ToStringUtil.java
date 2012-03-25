@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.kuromoji.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.HashMap;
 
 /**
@@ -239,7 +240,19 @@ public class ToStringUtil {
    * Romanize katakana with modified hepburn
    */
   public static String getRomanization(String s) {
-    StringBuilder builder = new StringBuilder();
+    StringBuilder out = new StringBuilder();
+    try {
+      getRomanization(out, s);
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
+    return out.toString();
+  }
+  
+  /**
+   * Romanize katakana with modified hepburn
+   */
+  public static void getRomanization(Appendable builder, CharSequence s) throws IOException {
     final int len = s.length();
     for (int i = 0; i < len; i++) {
       // maximum lookahead: 3
@@ -1022,6 +1035,5 @@ public class ToStringUtil {
           builder.append(ch);
       }
     }
-    return builder.toString();
   }
 }
