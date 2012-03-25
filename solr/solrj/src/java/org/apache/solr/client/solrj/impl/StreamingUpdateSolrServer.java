@@ -52,7 +52,9 @@ import org.slf4j.LoggerFactory;
  * 
  * @version $Id: CommonsHttpSolrServer.java 724175 2008-12-07 19:07:11Z ryan $
  * @since solr 1.4
+ * @deprecated use {@link ConcurrentUpdateSolrServer} instead.
  */
+@Deprecated
 public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
 {
   static final Logger log = LoggerFactory.getLogger( StreamingUpdateSolrServer.class );

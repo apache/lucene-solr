@@ -55,6 +55,24 @@
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <scope>runtime</scope>
+      <optional>true</optional>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
     <!-- Technically, this is optional in SolrJ; but it's fast. SOLR-2852 -->
     <dependency>
       <groupId>org.codehaus.woodstox</groupId>

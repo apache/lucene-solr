@@ -313,6 +313,7 @@
           description="Creates the Solr WAR Distribution file.">
     <ant dir="webapp" target="dist" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
+      <property name="exclude.from.war" value="httpclient-*,httpcore-*,httpmime-*" />
     </ant>
   </target>
   
@@ -320,7 +321,7 @@
           description="Creates a Solr WAR Distribution file, excluding slf4j bindings.">
     <ant dir="webapp" target="dist" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
-      <property name="exclude.from.war" value="*over-slf4j*,slf4j-jdk14*" />
+      <property name="exclude.from.war" value="*over-slf4j*,slf4j-jdk14*,httpclient-*,httpcore-*,httpmime-*" />
       <property name="solr.war.suffix" value="-excl-slf4j" />
     </ant>
   </target>

@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @version $Id$
  * @since solr 1.3
+ * @deprecated Use {@link HttpSolrServer} instead.
  */
 public class CommonsHttpSolrServer extends SolrServer 
 {
