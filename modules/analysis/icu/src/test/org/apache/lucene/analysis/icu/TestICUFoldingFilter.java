@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 /**
  * Tests ICUFoldingFilter
@@ -76,5 +77,16 @@ public class TestICUFoldingFilter extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new ICUFoldingFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

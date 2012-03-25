@@ -18,7 +18,10 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.cz.CzechStemFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -320,6 +323,28 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         }
       };
       checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    }
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    for (int i = 0; i < 512; i++) {
+      final int flags = i;
+      final CharArraySet protectedWords;
+      if (random.nextBoolean()) {
+        protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("a", "b", "cd")), false);
+      } else {
+        protectedWords = null;
+      }
+    
+      Analyzer a = new Analyzer() { 
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new KeywordTokenizer(reader);
+          return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, protectedWords));
+        }
+      };
+      // depending upon options, this thing may or may not preserve the empty term
+      checkAnalysisConsistency(random, a, random.nextBoolean(), "");
     }
   }
 }

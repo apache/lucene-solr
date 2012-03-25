@@ -132,4 +132,15 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "bukukah", "buku");
     checkOneTermReuse(a, "gigi", "gigi");
   }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
+  }
 }

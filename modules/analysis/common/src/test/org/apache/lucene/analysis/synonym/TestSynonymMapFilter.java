@@ -17,6 +17,7 @@
 
 package org.apache.lucene.analysis.synonym;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util._TestUtil;
@@ -425,6 +427,29 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       };
 
       checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
+    }
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    final int numIters = atLeast(10);
+    for (int i = 0; i < numIters; i++) {
+      b = new SynonymMap.Builder(random.nextBoolean());
+      final int numEntries = atLeast(10);
+      for (int j = 0; j < numEntries; j++) {
+        add(randomNonEmptyString(), randomNonEmptyString(), random.nextBoolean());
+      }
+      final SynonymMap map = b.build();
+      final boolean ignoreCase = random.nextBoolean();
+      
+      final Analyzer analyzer = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new KeywordTokenizer(reader);
+          return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, ignoreCase));
+        }
+      };
+
+      checkAnalysisConsistency(random, analyzer, random.nextBoolean(), "");
     }
   }
   

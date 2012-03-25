@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 
@@ -1155,5 +1156,16 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       }
     };
     checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

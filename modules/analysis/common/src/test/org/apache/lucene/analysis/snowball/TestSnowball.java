@@ -17,10 +17,15 @@ package org.apache.lucene.analysis.snowball;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -134,6 +139,25 @@ public class TestSnowball extends BaseTokenStreamTestCase {
       payloadAtt.setPayload(new Payload(new byte[]{0,1,2,3}));
       flagsAtt.setFlags(77);
       return true;
+    }
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    String langs[] = { 
+        "Armenian", "Basque", "Catalan", "Danish", "Dutch", "English",
+        "Finnish", "French", "German2", "German", "Hungarian", "Irish",
+        "Italian", "Kp", "Lovins", "Norwegian", "Porter", "Portuguese",
+        "Romanian", "Russian", "Spanish", "Swedish", "Turkish"
+    };
+    for (final String lang : langs) {
+      Analyzer a = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new KeywordTokenizer(reader);
+          return new TokenStreamComponents(tokenizer, new SnowballFilter(tokenizer, lang));
+        }
+      };
+      checkOneTermReuse(a, "", "");
     }
   }
 }

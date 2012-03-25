@@ -18,9 +18,13 @@ package org.apache.lucene.analysis.ar;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 /**
  * Test the Arabic Normalization Filter
@@ -87,6 +91,17 @@ public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
     ArabicLetterTokenizer tokenStream = new ArabicLetterTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
     ArabicNormalizationFilter filter = new ArabicNormalizationFilter(tokenStream);
     assertTokenStreamContents(filter, new String[]{expected});
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new ArabicNormalizationFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 
 }

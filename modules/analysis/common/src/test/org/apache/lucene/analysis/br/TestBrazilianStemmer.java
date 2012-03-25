@@ -18,11 +18,13 @@ package org.apache.lucene.analysis.br;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -161,5 +163,16 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, new BrazilianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new BrazilianStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

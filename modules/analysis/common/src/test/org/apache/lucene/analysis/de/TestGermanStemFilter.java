@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.de;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 
@@ -60,5 +61,16 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new GermanStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

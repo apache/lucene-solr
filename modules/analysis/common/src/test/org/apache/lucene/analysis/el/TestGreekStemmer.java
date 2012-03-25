@@ -17,8 +17,13 @@ package org.apache.lucene.analysis.el;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 public class TestGreekStemmer extends BaseTokenStreamTestCase {
   Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
@@ -521,5 +526,16 @@ public class TestGreekStemmer extends BaseTokenStreamTestCase {
     
     checkOneTerm(a, "αρχοντασ", "αρχοντ");
     checkOneTerm(a, "αρχοντων", "αρχοντ");
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new GreekStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

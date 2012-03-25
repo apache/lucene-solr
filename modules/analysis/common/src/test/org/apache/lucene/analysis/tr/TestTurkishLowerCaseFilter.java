@@ -17,11 +17,16 @@ package org.apache.lucene.analysis.tr;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 /**
  * Test the Turkish lowercase filter.
@@ -61,5 +66,16 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
     assertTokenStreamContents(filter, new String[] {"i\u0316stanbul", "izmir",
         "\u0131\u0316sparta",});
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new TurkishLowerCaseFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

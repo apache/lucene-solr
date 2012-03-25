@@ -22,8 +22,10 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.List;
@@ -1922,5 +1924,16 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       } 
     };
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new ASCIIFoldingFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

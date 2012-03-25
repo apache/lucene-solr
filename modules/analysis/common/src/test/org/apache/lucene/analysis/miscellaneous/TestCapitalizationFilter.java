@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 import static org.apache.lucene.analysis.miscellaneous.CapitalizationFilter.*;
@@ -132,5 +133,16 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
     };
     
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new CapitalizationFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

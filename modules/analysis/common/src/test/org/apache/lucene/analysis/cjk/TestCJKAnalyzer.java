@@ -23,13 +23,13 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
@@ -276,5 +276,16 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     checkRandomData(random, new CJKAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new CJKBigramFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

@@ -100,4 +100,15 @@ public class TestICUTransformFilter extends BaseTokenStreamTestCase {
     };
     checkRandomData(random, a, 1000*RANDOM_MULTIPLIER);
   }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new ICUTransformFilter(tokenizer, Transliterator.getInstance("Any-Latin")));
+      }
+    };
+    checkOneTermReuse(a, "", "");
+  }
 }

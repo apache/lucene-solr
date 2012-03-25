@@ -17,6 +17,7 @@
 
 package org.apache.lucene.analysis.cn.smart;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -26,6 +27,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.util.Version;
 
@@ -227,5 +229,16 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     checkRandomData(random, new SmartChineseAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new WordTokenFilter(tokenizer));
+      }
+    };
+    checkAnalysisConsistency(random, a, random.nextBoolean(), "");
   }
 }

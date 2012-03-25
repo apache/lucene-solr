@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -31,6 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util._TestUtil;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Iterator;
 import java.util.Arrays;
@@ -163,6 +165,17 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
 
       checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
     }
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 
 }

@@ -22,7 +22,9 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.regex.Pattern;
@@ -102,6 +104,17 @@ public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
       }    
     };
     checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer,  new PatternReplaceFilter(tokenizer, Pattern.compile("a"), "b", true));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 
 }

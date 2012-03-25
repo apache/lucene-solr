@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.kuromoji;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -60,5 +61,16 @@ public class TestKuromojiReadingFormFilter extends BaseTokenStreamTestCase {
   public void testRandomData() throws IOException {
     checkRandomData(random, katakanaAnalyzer, 1000*RANDOM_MULTIPLIER);
     checkRandomData(random, romajiAnalyzer, 1000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new KuromojiReadingFormFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

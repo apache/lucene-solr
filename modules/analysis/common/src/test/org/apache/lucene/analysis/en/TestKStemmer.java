@@ -19,12 +19,14 @@ package org.apache.lucene.analysis.en;
 
 import static org.apache.lucene.analysis.VocabularyAssert.assertVocabulary;
 
+import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 /**
  * Tests for {@link KStemmer}
@@ -50,6 +52,17 @@ public class TestKStemmer extends BaseTokenStreamTestCase {
    */
   public void testVocabulary() throws Exception {
     assertVocabulary(a, getDataFile("kstemTestData.zip"), "kstem_examples.txt");
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new KStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 
   /****** requires original java kstem source code to create map

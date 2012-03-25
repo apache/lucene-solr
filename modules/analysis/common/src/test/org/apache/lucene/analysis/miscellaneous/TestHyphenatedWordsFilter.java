@@ -17,6 +17,7 @@
 
 package org.apache.lucene.analysis.miscellaneous;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -25,6 +26,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 /**
  * HyphenatedWordsFilter test
@@ -73,5 +75,16 @@ public class TestHyphenatedWordsFilter extends BaseTokenStreamTestCase {
     };
     
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new HyphenatedWordsFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

@@ -17,12 +17,14 @@ package org.apache.lucene.analysis.gl;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 /**
  * Simple tests for {@link GalicianMinimalStemmer}
@@ -51,5 +53,16 @@ public class TestGalicianMinimalStemFilter extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new GalicianMinimalStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }
