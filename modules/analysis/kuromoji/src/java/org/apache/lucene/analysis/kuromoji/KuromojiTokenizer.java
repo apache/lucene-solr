@@ -683,18 +683,18 @@ public final class KuromojiTokenizer extends Tokenizer {
         // Re-base cost so we don't risk int overflow:
         Arrays.fill(leastPosData.costs, 0, leastPosData.count, 0);
 
+        if (pos != leastPosData.pos) {
+          // We jumped into a future position:
+          assert pos < leastPosData.pos;
+          pos = leastPosData.pos;
+        }
+
         if (pending.size() != 0) {
           return;
         } else {
           // This means the backtrace only produced
           // punctuation tokens, so we must keep parsing.
-          if (pos != leastPosData.pos) {
-            // We jumped into a future position; continue to
-            // the top of the loop to skip until we get
-            // there:
-            assert pos < leastPosData.pos;
-            continue;
-          }
+          continue;
         }
       }
 
@@ -955,10 +955,11 @@ public final class KuromojiTokenizer extends Tokenizer {
   // the pending list.  The pending list is then in-reverse
   // (last token should be returned first).
   private void backtrace(final Position endPosData, final int fromIDX) throws IOException {
-    if (VERBOSE) {
-      System.out.println("\n  backtrace: pos=" + pos + "; " + (pos - lastBackTracePos) + " characters; last=" + lastBackTracePos + " cost=" + endPosData.costs[fromIDX]);
-    }
     final int endPos = endPosData.pos;
+
+    if (VERBOSE) {
+      System.out.println("\n  backtrace: endPos=" + endPos + " pos=" + pos + "; " + (pos - lastBackTracePos) + " characters; last=" + lastBackTracePos + " cost=" + endPosData.costs[fromIDX]);
+    }
 
     final char[] fragment = buffer.get(lastBackTracePos, endPos-lastBackTracePos);
 

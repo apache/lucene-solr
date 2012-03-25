@@ -92,7 +92,7 @@ public final class RollingCharBuffer {
       assert pos < nextPos;
 
       // Cannot read from already freed past:
-      assert nextPos - pos <= count;
+      assert nextPos - pos <= count: "nextPos=" + nextPos + " pos=" + pos + " count=" + count;
 
       final int index = getIndex(pos);
       return buffer[index];
