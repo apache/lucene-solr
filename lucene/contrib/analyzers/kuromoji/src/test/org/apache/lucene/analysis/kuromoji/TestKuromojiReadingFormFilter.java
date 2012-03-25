@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.kuromoji;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Tokenizer;
 
 import java.io.IOException;
@@ -28,7 +29,7 @@ import java.io.Reader;
  * Tests for {@link TestKuromojiReadingFormFilter}
  */
 public class TestKuromojiReadingFormFilter extends BaseTokenStreamTestCase {
-  private Analyzer katakanaAnalyzer = new Analyzer() {
+  private Analyzer katakanaAnalyzer = new ReusableAnalyzerBase() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new KuromojiTokenizer(reader, null, true, KuromojiTokenizer.Mode.SEARCH);
@@ -36,7 +37,7 @@ public class TestKuromojiReadingFormFilter extends BaseTokenStreamTestCase {
     }
   };
 
-  private Analyzer romajiAnalyzer = new Analyzer() {
+  private Analyzer romajiAnalyzer = new ReusableAnalyzerBase() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Tokenizer tokenizer = new KuromojiTokenizer(reader, null, true, KuromojiTokenizer.Mode.SEARCH);
