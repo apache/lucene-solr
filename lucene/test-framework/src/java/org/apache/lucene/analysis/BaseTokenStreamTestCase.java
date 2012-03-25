@@ -390,8 +390,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         text = randomAnalysisString(random, maxWordLength, simple);
       }
 
-
-      checkAnalysisConsistency(random, a, useCharFilter, text);
+      try {
+        checkAnalysisConsistency(random, a, useCharFilter, text);
+      } catch (Throwable t) {
+        System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text=" + text);
+        throw new RuntimeException(t);
+      }
     }
   }
 
