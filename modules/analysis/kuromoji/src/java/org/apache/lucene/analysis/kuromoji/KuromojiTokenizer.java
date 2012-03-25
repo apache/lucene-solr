@@ -648,7 +648,7 @@ public final class KuromojiTokenizer extends Tokenizer {
           final Position posData2 = positions.get(pos2);
           for(int idx=0;idx<posData2.count;idx++) {
             //System.out.println("    idx=" + idx + " cost=" + cost);
-            final int cost = posData.costs[idx];
+            final int cost = posData2.costs[idx];
             if (cost < leastCost) {
               leastCost = cost;
               leastIDX = idx;
