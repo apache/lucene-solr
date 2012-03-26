@@ -108,7 +108,7 @@
        classpath -->
   <property name="javac.includeAntRuntime" value="${run.clover}"/>
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
-
+  <property name="bootclasspath" value=""/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" value="${common.dir}/tools/javadoc"/>
@@ -834,6 +834,7 @@
       <javac
         includeAntRuntime="@{includeantruntime}"
         encoding="${build.encoding}"
+        bootclasspath="${bootclasspath}"
         srcdir="@{srcdir}"
         destdir="@{destdir}"
         deprecation="${javac.deprecation}"
@@ -882,6 +883,7 @@
       <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
       <javadoc
           overview="@{overview}"
+          bootclasspath="${bootclasspath}"
           packagenames="org.apache.lucene.*,org.apache.solr.*"
           destdir="@{destdir}"
           access="${javadoc.access}"
