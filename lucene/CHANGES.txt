@@ -85,6 +85,10 @@ Changes in backwards compatibility policy
 * LUCENE-3738: All readXxx methods in BufferedIndexInput were made
   final. Subclasses should only override protected readInternal /
   seekInternal.  (Uwe Schindler)
+
+* LUCENE-2599: Deprecated the spatial contrib module, which was buggy and not
+  well maintained.  Solr 4 includes a new spatial module that replaces this.
+  (David Smiley, Ryan McKinley, Chris Male)
   
 Changes in Runtime Behavior
 
