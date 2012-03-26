@@ -27,6 +27,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -1368,7 +1369,10 @@ public final class SolrCore implements SolrInfoMBean {
     toLog.add("webapp", req.getContext().get("webapp"));
     toLog.add("path", req.getContext().get("path"));
     toLog.add("params", "{" + req.getParamString() + "}");
-    
+
+    if (req.getParams().getBool(ShardParams.IS_SHARD,false) && !(handler instanceof SearchHandler))
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"isShard is only acceptable with search handlers");
+
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(handler,req,rsp);
     

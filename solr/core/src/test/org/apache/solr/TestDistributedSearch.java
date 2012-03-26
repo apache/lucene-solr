@@ -18,6 +18,8 @@
 package org.apache.solr;
 
 
+import org.apache.solr.client.solrj.SolrServerException;
+
 /**
  * TODO? perhaps use:
  *  http://docs.codehaus.org/display/JETTY/ServletTester
@@ -280,6 +282,15 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       query("q","*:*", "rows",100);
     }
 
+    //SOLR 3161 ensure shards.qt=/update fails (anything but search handler really)
+    // Also see TestRemoteStreaming#testQtUpdateFails()
+    try {
+      query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
+      fail();
+    } catch (SolrServerException e) {
+      //expected
+    }
+    
     // Thread.sleep(10000000000L);
   }
 
