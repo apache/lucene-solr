@@ -58,7 +58,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <scope>runtime</scope>
+      <!-- HttpSolrServer requires this dependency. -->
       <optional>true</optional>
       <exclusions>
         <exclusion>
@@ -70,7 +70,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
-      <scope>runtime</scope>
+      <!-- HttpSolrServer requires this dependency. -->
       <optional>true</optional>
     </dependency>
     <!-- Technically, this is optional in SolrJ; but it's fast. SOLR-2852 -->
