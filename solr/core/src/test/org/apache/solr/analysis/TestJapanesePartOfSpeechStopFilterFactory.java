@@ -26,9 +26,9 @@ import org.apache.solr.core.SolrResourceLoader;
  */
 
 /**
- * Simple tests for {@link KuromojiPartOfSpeechStopFilter}
+ * Simple tests for {@link JapanesePartOfSpeechStopFilterFactory}
  */
-public class TestKuromojiPartOfSpeechStopFilterFactory extends BaseTokenTestCase {
+public class TestJapanesePartOfSpeechStopFilterFactory extends BaseTokenTestCase {
   public void testBasics() throws IOException {
     String tags = 
         "#  verb-main:\n" +
