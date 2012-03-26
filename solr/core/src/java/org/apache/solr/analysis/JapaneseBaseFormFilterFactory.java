@@ -17,25 +17,24 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.lucene.analysis.ja.JapaneseBaseFormFilter;
 
 /**
- * Simple tests for {@link JapaneseBaseFormFilterFactory}
+ * Factory for {@link org.apache.lucene.analysis.ja.JapaneseBaseFormFilter}.
+ * <pre class="prettyprint">
+ * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.JapaneseTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.JapaneseBaseFormFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;
+ * </pre>
  */
-public class TestKuromojiBaseFormFilterFactory extends BaseTokenTestCase {
-  public void testBasics() throws IOException {
-    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    tokenizerFactory.init(DEFAULT_VERSION_PARAM);
-    tokenizerFactory.inform(new SolrResourceLoader(null, null));
-    TokenStream ts = tokenizerFactory.create(new StringReader("それはまだ実験段階にあります"));
-    JapaneseBaseFormFilterFactory factory = new JapaneseBaseFormFilterFactory();
-    ts = factory.create(ts);
-    assertTokenStreamContents(ts,
-        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "ある", "ます"  }
-    );
+public class JapaneseBaseFormFilterFactory extends BaseTokenFilterFactory {
+
+  @Override
+  public TokenStream create(TokenStream input) {
+    return new JapaneseBaseFormFilter(input);
   }
 }

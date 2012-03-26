@@ -694,9 +694,9 @@
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/italian_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_it.txt"/>
     <!-- japanese -->
-    <copy verbose="true" file="${analysis-kuromoji.res.dir}/kuromoji/stopwords.txt" 
+    <copy verbose="true" file="${analysis-kuromoji.res.dir}/ja/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_ja.txt"/>
-    <copy verbose="true" file="${analysis-kuromoji.res.dir}/kuromoji/stoptags.txt" 
+    <copy verbose="true" file="${analysis-kuromoji.res.dir}/ja/stoptags.txt"
                          tofile="${analysis.conf.dest}/stoptags_ja.txt"/>
   	<!-- latvian -->
     <copy verbose="true" file="${analysis-common.res.dir}/lv/stopwords.txt"

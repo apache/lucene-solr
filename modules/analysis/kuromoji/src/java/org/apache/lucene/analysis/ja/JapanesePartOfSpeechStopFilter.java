@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.ja;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,24 +18,27 @@ package org.apache.solr.analysis;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
+import java.util.Set;
 
+import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
+import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrResourceLoader;
 
 /**
- * Simple tests for {@link JapaneseBaseFormFilterFactory}
+ * Removes tokens that match a set of part-of-speech tags.
  */
-public class TestKuromojiBaseFormFilterFactory extends BaseTokenTestCase {
-  public void testBasics() throws IOException {
-    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    tokenizerFactory.init(DEFAULT_VERSION_PARAM);
-    tokenizerFactory.inform(new SolrResourceLoader(null, null));
-    TokenStream ts = tokenizerFactory.create(new StringReader("それはまだ実験段階にあります"));
-    JapaneseBaseFormFilterFactory factory = new JapaneseBaseFormFilterFactory();
-    ts = factory.create(ts);
-    assertTokenStreamContents(ts,
-        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "ある", "ます"  }
-    );
+public final class JapanesePartOfSpeechStopFilter extends FilteringTokenFilter {
+  private final Set<String> stopTags;
+  private final PartOfSpeechAttribute posAtt = addAttribute(PartOfSpeechAttribute.class);
+
+  public JapanesePartOfSpeechStopFilter(boolean enablePositionIncrements, TokenStream input, Set<String> stopTags) {
+    super(enablePositionIncrements, input);
+    this.stopTags = stopTags;
+  }
+
+  @Override
+  protected boolean accept() throws IOException {
+    final String pos = posAtt.getPartOfSpeech();
+    return pos == null || !stopTags.contains(pos);
   }
 }

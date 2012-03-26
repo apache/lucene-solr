@@ -78,10 +78,10 @@
   <target name="build-dict" depends="compile-tools, download-dict">
     <sequential>
       <delete verbose="true">
-        <fileset dir="src/resources/org/apache/lucene/analysis/kuromoji/dict" includes="**/*"/>
+        <fileset dir="src/resources/org/apache/lucene/analysis/ja/dict" includes="**/*"/>
       </delete>
       <!-- TODO: optimize the dictionary construction a bit so that you don't need 1G -->
-      <java fork="true" failonerror="true" maxmemory="1g" classname="org.apache.lucene.analysis.kuromoji.util.DictionaryBuilder">
+      <java fork="true" failonerror="true" maxmemory="1g" classname="org.apache.lucene.analysis.ja.util.DictionaryBuilder">
         <classpath>
           <path refid="tools.classpath"/>
           <pathelement path="${build.dir}/classes/tools"/>
