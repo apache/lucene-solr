@@ -26,11 +26,11 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
- * Simple tests for {@link KuromojiTokenizerFactory}
+ * Simple tests for {@link JapaneseTokenizerFactory}
  */
 public class TestKuromojiTokenizerFactory extends BaseTokenTestCase {
   public void testSimple() throws IOException {
-    KuromojiTokenizerFactory factory = new KuromojiTokenizerFactory();
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     factory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = factory.create(new StringReader("これは本ではない"));
@@ -45,7 +45,7 @@ public class TestKuromojiTokenizerFactory extends BaseTokenTestCase {
    * Test that search mode is enabled and working by default
    */
   public void testDefaults() throws IOException {
-    KuromojiTokenizerFactory factory = new KuromojiTokenizerFactory();
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     factory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
@@ -58,7 +58,7 @@ public class TestKuromojiTokenizerFactory extends BaseTokenTestCase {
    * Test mode parameter: specifying normal mode
    */
   public void testMode() throws IOException {
-    KuromojiTokenizerFactory factory = new KuromojiTokenizerFactory();
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("mode", "normal");
     factory.init(args);
@@ -76,7 +76,7 @@ public class TestKuromojiTokenizerFactory extends BaseTokenTestCase {
         "関西国際空港,関西 国際 空港,カンサイ コクサイ クウコウ,テスト名詞\n" +
         "# Custom reading for sumo wrestler\n" +
         "朝青龍,朝青龍,アサショウリュウ,カスタム人名\n";
-    KuromojiTokenizerFactory factory = new KuromojiTokenizerFactory();
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("user-dictionary", "userdict.txt");
     factory.init(args);

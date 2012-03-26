@@ -34,11 +34,11 @@ public class TestKuromojiPartOfSpeechStopFilterFactory extends BaseTokenTestCase
         "#  verb-main:\n" +
         "動詞-自立\n";
     
-    KuromojiTokenizerFactory tokenizerFactory = new KuromojiTokenizerFactory();
+    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
     tokenizerFactory.init(DEFAULT_VERSION_PARAM);
     tokenizerFactory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = tokenizerFactory.create(new StringReader("私は制限スピードを超える。"));
-    KuromojiPartOfSpeechStopFilterFactory factory = new KuromojiPartOfSpeechStopFilterFactory();
+    JapanesePartOfSpeechStopFilterFactory factory = new JapanesePartOfSpeechStopFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
     args.put("tags", "stoptags.txt");
