@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ChaosMonkey;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -278,6 +279,15 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       query("q","*:*", "rows",100);
     }
 
+    //SOLR 3161 ensure shards.qt=/update fails (anything but search handler really)
+    // Also see TestRemoteStreaming#testQtUpdateFails()
+    try {
+      query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
+      fail();
+    } catch (SolrException e) {
+      //expected
+    }
+
     // test debugging
     handle.put("explain", UNORDERED);
     handle.put("debug", UNORDERED);
@@ -332,7 +342,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
-
+    
     // Thread.sleep(10000000000L);
   }
   

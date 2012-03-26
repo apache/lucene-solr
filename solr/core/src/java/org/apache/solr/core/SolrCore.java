@@ -28,6 +28,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -1542,6 +1543,9 @@ public final class SolrCore implements SolrInfoMBean {
     toLog.add("path", req.getContext().get("path"));
     toLog.add("params", "{" + req.getParamString() + "}");
 
+    if (req.getParams().getBool(ShardParams.IS_SHARD,false) && !(handler instanceof SearchHandler))
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"isShard is only acceptable with search handlers");
+
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(handler,req,rsp);
 
@@ -1587,7 +1591,7 @@ public final class SolrCore implements SolrInfoMBean {
     if( params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
       responseHeader.add("handler", handler.getName() );
     }
-    
+
     // Values for echoParams... false/true/all or false/explicit/all ???
     String ep = params.get( CommonParams.HEADER_ECHO_PARAMS, null );
     if( ep != null ) {
