@@ -101,7 +101,7 @@
 
   <path id="solr.test.base.classpath">
     <pathelement path="${common-solr.dir}/build/solr-test-framework/classes/java"/>
-  	<pathelement path="${tests.userdir}"/>
+  	<pathelement path="${build.dir}/test-files"/>
   	<path refid="test.base.classpath"/>
   </path>
  
@@ -190,7 +190,7 @@
   </target>
 
   <target name="compile-core" depends="prep-lucene-jars,common.compile-core"/>
-  <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
+  <target name="compile-test" depends="sync-resources,compile-solr-test-framework,common.compile-test"/>
 
   <target name="dist" depends="jar-core">
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
@@ -279,6 +279,12 @@
     <ant dir="${common-solr.dir}/solrj" target="dist" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
+  </target>
+
+  <target name="sync-resources">
+    <copy todir="${build.dir}/test-files">
+      <fileset dir="${tests.userdir}"/>
+    </copy>
   </target>
 
   <!-- Solr test-framework targets -->

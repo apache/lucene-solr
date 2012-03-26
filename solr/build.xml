@@ -202,8 +202,6 @@
         <exclude name="**/.gitignore" />
       </fileset>
     </delete>
-    <echo message="TODO: fix tests to not write files to 'core/src/test-files/solr/data'!" />
-    <delete dir="core/src/test-files/solr/data" />
   </target>
   
   <target name="clean-dest"
