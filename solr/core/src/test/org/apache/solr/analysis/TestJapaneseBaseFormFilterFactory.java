@@ -26,7 +26,7 @@ import org.apache.solr.core.SolrResourceLoader;
 /**
  * Simple tests for {@link JapaneseBaseFormFilterFactory}
  */
-public class TestKuromojiBaseFormFilterFactory extends BaseTokenTestCase {
+public class TestJapaneseBaseFormFilterFactory extends BaseTokenTestCase {
   public void testBasics() throws IOException {
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
     tokenizerFactory.init(DEFAULT_VERSION_PARAM);
