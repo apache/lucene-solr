@@ -281,10 +281,13 @@
     </ant>
   </target>
 
+  <!-- TODO: really a copy should work: but sync is currently safer
+       since some buggy tests don't create their own tempdir but
+       modify this target directory directly... -->
   <target name="sync-resources">
-    <copy todir="${build.dir}/test-files">
+    <sync todir="${build.dir}/test-files">
       <fileset dir="${tests.userdir}"/>
-    </copy>
+    </sync>
   </target>
 
   <!-- Solr test-framework targets -->
