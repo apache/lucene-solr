@@ -54,7 +54,7 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
         // Remove comments
         line = line.replaceAll("#.*$", "");
         // Skip empty lines or comment lines
-        if (line.trim().isEmpty()) {
+        if (line.trim().length() == 0) {
           continue;
         }
         if (VERBOSE) {
