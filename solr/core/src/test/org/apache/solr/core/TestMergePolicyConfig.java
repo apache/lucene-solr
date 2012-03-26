@@ -45,5 +45,9 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     
     // make sure we overrode segmentsPerTier (split from maxMergeAtOnce out of mergeFactor)
     assertEquals(9D, tieredMP.getSegmentsPerTier(), 0.001);
+    
+    // make sure we overrode noCFSRatio (useless because we disabled useCompoundFile,
+    // but just to make sure it works)
+    assertEquals(1.0D, tieredMP.getNoCFSRatio(), 0.001);
   }
 }
