@@ -38,7 +38,7 @@ public class JapaneseReadingFormFilterFactory extends BaseTokenFilterFactory {
   private static final String ROMAJI_PARAM = "useRomaji";
   private boolean useRomaji;
   
-  @Override
+  //@Override
   public void init(Map<String, String> args) {
     super.init(args);
     useRomaji = getBoolean(ROMAJI_PARAM, false);

@@ -150,22 +150,22 @@ public abstract class BinaryDictionary implements Dictionary {
     ref.length = targetMapOffsets[sourceId + 1] - ref.offset;
   }
   
-  @Override	
+  //@Override	
   public int getLeftId(int wordId) {
     return buffer.getShort(wordId) >>> 3;
   }
   
-  @Override
+  //@Override
   public int getRightId(int wordId) {
     return buffer.getShort(wordId) >>> 3;
   }
   
-  @Override
+  //@Override
   public int getWordCost(int wordId) {
     return buffer.getShort(wordId + 2);	// Skip id
   }
 
-  @Override
+  //@Override
   public String getBaseForm(int wordId, char surfaceForm[], int off, int len) {
     if (hasBaseFormData(wordId)) {
       int offset = baseFormOffset(wordId);
@@ -183,7 +183,7 @@ public abstract class BinaryDictionary implements Dictionary {
     }
   }
   
-  @Override
+  //@Override
   public String getReading(int wordId, char surface[], int off, int len) {
     if (hasReadingData(wordId)) {
       int offset = readingOffset(wordId);
@@ -204,12 +204,12 @@ public abstract class BinaryDictionary implements Dictionary {
     }
   }
   
-  @Override
+  //@Override
   public String getPartOfSpeech(int wordId) {
     return posDict[getLeftId(wordId)];
   }
   
-  @Override
+  //@Override
   public String getPronunciation(int wordId, char surface[], int off, int len) {
     if (hasPronunciationData(wordId)) {
       int offset = pronunciationOffset(wordId);
@@ -220,12 +220,12 @@ public abstract class BinaryDictionary implements Dictionary {
     }
   }
   
-  @Override
+  //@Override
   public String getInflectionType(int wordId) {
     return inflTypeDict[getLeftId(wordId)];
   }
 
-  @Override
+  //@Override
   public String getInflectionForm(int wordId) {
     return inflFormDict[getLeftId(wordId)];
   }

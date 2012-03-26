@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.ja.JapaneseBaseFormFilter;
  */
 public class JapaneseBaseFormFilterFactory extends BaseTokenFilterFactory {
 
-  @Override
+  //@Override
   public TokenStream create(TokenStream input) {
     return new JapaneseBaseFormFilter(input);
   }

@@ -39,7 +39,7 @@ public class JapaneseKatakanaStemFilterFactory extends BaseTokenFilterFactory {
   private static final String MINIMUM_LENGTH_PARAM = "minimumLength";
   private int minimumLength;
   
-  @Override
+  //@Override
   public void init(Map<String, String> args) {
     super.init(args);
     minimumLength = getInt(MINIMUM_LENGTH_PARAM, JapaneseKatakanaStemFilter.DEFAULT_MINIMUM_LENGTH);

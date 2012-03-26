@@ -79,7 +79,7 @@ public final class UserDictionary implements Dictionary {
     // the old treemap didn't support this either, and i'm not sure if its needed/useful?
 
     Collections.sort(featureEntries, new Comparator<String[]>() {
-      @Override
+      //@Override
       public int compare(String[] left, String[] right) {
         return left[0].compareTo(right[0]);
      }
@@ -194,47 +194,47 @@ public final class UserDictionary implements Dictionary {
     return segmentations[phraseID];
   }
   
-  @Override
+  //@Override
   public int getLeftId(int wordId) {
     return LEFT_ID;
   }
   
-  @Override
+  //@Override
   public int getRightId(int wordId) {
     return RIGHT_ID;
   }
   
-  @Override
+  //@Override
   public int getWordCost(int wordId) {
     return WORD_COST;
   }
   
-  @Override
+  //@Override
   public String getReading(int wordId, char surface[], int off, int len) {
     return getFeature(wordId, 0);
   }
   
-  @Override
+  //@Override
   public String getPartOfSpeech(int wordId) {
     return getFeature(wordId, 1);
   }
   
-  @Override
+  //@Override
   public String getBaseForm(int wordId, char surface[], int off, int len) {
     return null; // TODO: add support?
   }
   
-  @Override
+  //@Override
   public String getPronunciation(int wordId, char surface[], int off, int len) {
     return null; // TODO: add support?
   }
   
-  @Override
+  //@Override
   public String getInflectionType(int wordId) {
     return null; // TODO: add support?
   }
 
-  @Override
+  //@Override
   public String getInflectionForm(int wordId) {
     return null; // TODO: add support?
   }

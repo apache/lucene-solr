@@ -63,7 +63,7 @@ public class TokenInfoDictionaryBuilder {
   
   public TokenInfoDictionaryWriter build(String dirname) throws IOException {
     FilenameFilter filter = new FilenameFilter() {
-      @Override
+      //@Override
       public boolean accept(File dir, String name) {
         return name.endsWith(".csv");
       }

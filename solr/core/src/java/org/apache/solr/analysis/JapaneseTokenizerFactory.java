@@ -60,7 +60,7 @@ public class JapaneseTokenizerFactory extends BaseTokenizerFactory implements Re
   private UserDictionary userDictionary;
   private Mode mode;
   
-  @Override
+  //@Override
   public void inform(ResourceLoader loader) {
     mode = getMode(args);
     String userDictionaryPath = args.get(USER_DICT_PATH);
@@ -84,7 +84,7 @@ public class JapaneseTokenizerFactory extends BaseTokenizerFactory implements Re
     }
   }
   
-  @Override
+  //@Override
   public Tokenizer create(Reader input) {
     return new JapaneseTokenizer(input, userDictionary, true, mode);
   }
