@@ -17,6 +17,8 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
 public class TestLengthFilter extends BaseTokenStreamTestCase {
@@ -39,6 +41,17 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
       new String[]{"short", "ab", "foo"},
       new int[]{1, 4, 2}
     );
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new LengthFilter(true, tokenizer, 0, 5));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 
 }

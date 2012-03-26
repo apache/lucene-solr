@@ -44,7 +44,9 @@ public class CzechStemmer {
   public int stem(char s[], int len) {
     len = removeCase(s, len);
     len = removePossessives(s, len);
-    len = normalize(s, len);
+    if (len > 0) {
+      len = normalize(s, len);
+    }
     return len;
   }
   

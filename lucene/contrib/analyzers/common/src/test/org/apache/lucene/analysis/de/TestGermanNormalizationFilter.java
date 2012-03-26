@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 /**
  * Tests {@link GermanNormalizationFilter}
@@ -65,5 +66,16 @@ public class TestGermanNormalizationFilter extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new GermanNormalizationFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

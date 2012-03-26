@@ -27,6 +27,8 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.KeywordTokenizer;
+
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
@@ -48,5 +50,16 @@ public class TestGalicianStemFilter extends BaseTokenStreamTestCase {
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataFile("gltestdata.zip"), "gl.txt");
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new GalicianStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

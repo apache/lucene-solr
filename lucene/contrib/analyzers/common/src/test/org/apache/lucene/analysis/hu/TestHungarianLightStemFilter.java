@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
 
@@ -44,5 +45,16 @@ public class TestHungarianLightStemFilter extends BaseTokenStreamTestCase {
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataFile("hulighttestdata.zip"), "hulight.txt");
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new HungarianLightStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

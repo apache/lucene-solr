@@ -17,11 +17,17 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.Version;
@@ -183,5 +189,16 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
     ts = analyzer.reusableTokenStream("dummy", new StringReader("ภาษาไทย"));
     ts.addAttribute(FlagsAttribute.class);
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new ThaiWordFilter(TEST_VERSION_CURRENT, tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.MappingCharFilter;
 import org.apache.lucene.analysis.NormalizeCharMap;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -354,5 +355,31 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
       }
     };
     checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws Exception {
+    final String[] dict = { "a", "e", "i", "o", "u", "y", "bc", "def" };
+    Analyzer a = new ReusableAnalyzerBase() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, tokenizer, dict));
+      }
+    };
+    checkOneTermReuse(a, "", "");
+    
+    InputSource is = new InputSource(getClass().getResource("da_UTF8.xml").toExternalForm());
+    final HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
+    Analyzer b = new ReusableAnalyzerBase() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        TokenFilter filter = new HyphenationCompoundWordTokenFilter(TEST_VERSION_CURRENT, tokenizer, hyphenator);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+    checkOneTermReuse(b, "", "");
   }
 }

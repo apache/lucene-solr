@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 /**
  * Tests {@link PhoneticFilter}
@@ -102,6 +103,22 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
       };
       
       checkRandomData(random, b, 1000*RANDOM_MULTIPLIER);
+    }
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Encoder encoders[] = new Encoder[] {
+        new Metaphone(), new DoubleMetaphone(), new Soundex(), new RefinedSoundex(), new Caverphone()
+    };
+    for (final Encoder e : encoders) {
+      Analyzer a = new ReusableAnalyzerBase() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new KeywordTokenizer(reader);
+          return new TokenStreamComponents(tokenizer, new PhoneticFilter(tokenizer, e, random.nextBoolean()));
+        }
+      };
+      checkOneTermReuse(a, "", "");
     }
   }
 }

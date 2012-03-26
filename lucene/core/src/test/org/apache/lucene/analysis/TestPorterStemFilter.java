@@ -62,4 +62,15 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new PorterStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
+  }
 }

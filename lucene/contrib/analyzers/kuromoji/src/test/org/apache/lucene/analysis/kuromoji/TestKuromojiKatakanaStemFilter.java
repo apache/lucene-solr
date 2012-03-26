@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -68,5 +69,16 @@ public class TestKuromojiKatakanaStemFilter extends BaseTokenStreamTestCase {
   
   public void testRandomData() throws IOException {
     checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new KuromojiKatakanaStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

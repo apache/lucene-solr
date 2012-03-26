@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ASCIIFoldingFilter;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 import java.io.Reader;
 import java.io.StringReader;
@@ -131,5 +132,17 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
       }    
     };
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws Exception {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, 
+            new NGramTokenFilter(tokenizer, 2, 15));
+      }    
+    };
+    checkAnalysisConsistency(random, a, random.nextBoolean(), "");
   }
 }

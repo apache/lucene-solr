@@ -18,12 +18,17 @@ package org.apache.lucene.analysis.bg;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -220,5 +225,16 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
     BulgarianStemFilter filter = new BulgarianStemFilter(
         new KeywordMarkerFilter(tokenStream, set));
     assertTokenStreamContents(filter, new String[] { "строй", "строеве" });
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new BulgarianStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

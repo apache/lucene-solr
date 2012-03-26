@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 public class TestKuromojiBaseFormFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new ReusableAnalyzerBase() {
@@ -47,5 +48,16 @@ public class TestKuromojiBaseFormFilter extends BaseTokenStreamTestCase {
   
   public void testRandomStrings() throws IOException {
     checkRandomData(random, analyzer, atLeast(10000));
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new KuromojiBaseFormFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

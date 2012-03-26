@@ -18,12 +18,17 @@ package org.apache.lucene.analysis.cz;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 /**
  * Test the Czech Stemmer.
@@ -280,6 +285,17 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     CzechStemFilter filter = new CzechStemFilter(new KeywordMarkerFilter(
         new MockTokenizer(new StringReader("hole desek"), MockTokenizer.WHITESPACE, false), set));
     assertTokenStreamContents(filter, new String[] { "hole", "desk" });
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new CzechStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
   
 }

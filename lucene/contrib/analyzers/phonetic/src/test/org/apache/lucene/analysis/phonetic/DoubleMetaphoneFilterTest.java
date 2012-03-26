@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.analysis.phonetic;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -26,6 +27,7 @@ import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.util._TestUtil;
 
 public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
@@ -94,5 +96,16 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
       
     };
     checkRandomData(random, b, 1000 * RANDOM_MULTIPLIER); 
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new DoubleMetaphoneFilter(tokenizer, 8, random.nextBoolean()));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.br;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -25,6 +26,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 /**
  * Test the Brazilian Stem Filter, which only modifies the term text.
@@ -190,5 +194,16 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, new BrazilianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new BrazilianStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

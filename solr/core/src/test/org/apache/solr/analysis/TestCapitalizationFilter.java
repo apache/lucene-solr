@@ -17,6 +17,7 @@
 
 package org.apache.solr.analysis;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 
 /**
@@ -232,5 +234,20 @@ public class TestCapitalizationFilter extends BaseTokenTestCase {
     };
     
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+        CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+        factory.init(args);
+        TokenStream filter = factory.create(tokenizer);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

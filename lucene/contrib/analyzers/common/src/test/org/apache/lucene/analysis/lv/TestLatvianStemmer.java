@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 /**
  * Basic tests for {@link LatvianStemmer}
@@ -268,5 +269,16 @@ public class TestLatvianStemmer extends BaseTokenStreamTestCase {
   public void testLength() throws IOException {
     checkOneTerm(a, "usa", "usa"); // length
     checkOneTerm(a, "60ms", "60ms"); // vowel count
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new LatvianStemFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

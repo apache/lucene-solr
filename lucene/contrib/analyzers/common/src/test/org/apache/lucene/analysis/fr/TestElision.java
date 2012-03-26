@@ -18,13 +18,17 @@ package org.apache.lucene.analysis.fr;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.CharArraySet;
@@ -52,6 +56,17 @@ public class TestElision extends BaseTokenStreamTestCase {
       tas.add(termAtt.toString());
     }
     return tas;
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new ElisionFilter(TEST_VERSION_CURRENT, tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 
 }

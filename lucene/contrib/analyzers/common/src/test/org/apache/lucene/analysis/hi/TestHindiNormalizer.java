@@ -18,12 +18,16 @@ package org.apache.lucene.analysis.hi;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 
 /**
  * Test HindiNormalizer
@@ -62,5 +66,16 @@ public class TestHindiNormalizer extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     TokenFilter tf = new HindiNormalizationFilter(tokenizer);
     assertTokenStreamContents(tf, new String[] { output });
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new HindiNormalizationFilter(tokenizer));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

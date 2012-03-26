@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 
 /**
@@ -144,5 +145,16 @@ public class TestTrimFilter extends BaseTokenTestCase {
       } 
     };
     checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new TrimFilter(tokenizer, random.nextBoolean()));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }

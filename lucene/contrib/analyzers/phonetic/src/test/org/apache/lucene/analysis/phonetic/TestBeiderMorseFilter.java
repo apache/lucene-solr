@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.phonetic;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.HashSet;
 
@@ -29,6 +30,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.junit.Ignore;
 
 /** Tests {@link BeiderMorseFilter} */
@@ -91,5 +93,16 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
   @Ignore("broken: causes OOM on some strings (https://issues.apache.org/jira/browse/CODEC-132)")
   public void testRandom() throws Exception {
     checkRandomData(random, analyzer, 1000 * RANDOM_MULTIPLIER); 
+  }
+  
+  public void testEmptyTerm() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new BeiderMorseFilter(tokenizer, new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true)));
+      }
+    };
+    checkOneTermReuse(a, "", "");
   }
 }
