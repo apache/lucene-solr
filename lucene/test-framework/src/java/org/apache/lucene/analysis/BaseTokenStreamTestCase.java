@@ -158,7 +158,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (offsetAtt != null) {
         assertTrue("startOffset must be >= 0", offsetAtt.startOffset() >= 0);
         assertTrue("endOffset must be >= 0", offsetAtt.endOffset() >= 0);
-        assertTrue("endOffset must be >= startOffset", offsetAtt.endOffset() >= offsetAtt.startOffset());
+        assertTrue("endOffset must be >= startOffset, got startOffset=" + offsetAtt.startOffset() + ",endOffset=" + offsetAtt.endOffset(), 
+            offsetAtt.endOffset() >= offsetAtt.startOffset());
         if (finalOffset != null) {
           assertTrue("startOffset must be <= finalOffset", offsetAtt.startOffset() <= finalOffset.intValue());
           assertTrue("endOffset must be <= finalOffset: got endOffset=" + offsetAtt.endOffset() + " vs finalOffset=" + finalOffset.intValue(),
@@ -393,7 +394,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       try {
         checkAnalysisConsistency(random, a, useCharFilter, text);
       } catch (Throwable t) {
-        System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text=" + text);
+        System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text='" + text + "'");
         throw new RuntimeException(t);
       }
     }
