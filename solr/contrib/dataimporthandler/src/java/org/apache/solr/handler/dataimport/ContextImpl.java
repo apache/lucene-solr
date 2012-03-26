@@ -20,9 +20,9 @@ package org.apache.solr.handler.dataimport;
 import org.apache.solr.core.SolrCore;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
@@ -132,30 +132,28 @@ public class ContextImpl extends Context {
 
   @Override
   public void setSessionAttribute(String name, Object val, String scope) {
-    if(name == null) return;
+    if(name == null) {
+      return;
+    }
     if (Context.SCOPE_ENTITY.equals(scope)) {
-      if (entitySession == null)
-        entitySession = new ConcurrentHashMap<String, Object>();
-
-      putVal(name, val,entitySession);
+      if (entitySession == null) {
+        entitySession = new HashMap<String, Object>();
+      }
+      entitySession.put(name, val);
     } else if (Context.SCOPE_GLOBAL.equals(scope)) {
       if (globalSession != null) {
-        putVal(name, val,globalSession);
+        globalSession.put(name, val);
       }
     } else if (Context.SCOPE_DOC.equals(scope)) {
       DocBuilder.DocWrapper doc = getDocument();
-      if (doc != null)
+      if (doc != null) {
         doc.setSessionAttribute(name, val);
+      }
     } else if (SCOPE_SOLR_CORE.equals(scope)){
       if(dataImporter != null) {
-        putVal(name, val,dataImporter.getCoreScopeSession());
+        dataImporter.getCoreScopeSession().put(name, val);
       }
     }
-  }
-
-  private void putVal(String name, Object val, Map map) {
-    if(val == null) map.remove(name);
-    else map.put(name, val);
   }
 
   @Override

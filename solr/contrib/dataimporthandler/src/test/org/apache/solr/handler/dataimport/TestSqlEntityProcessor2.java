@@ -69,27 +69,6 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
   
   @Test
   @SuppressWarnings("unchecked")
-  public void testCompositePk_FullImport_MT() throws Exception {
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "1"));
-    parentRow.add(createMap("id", "2"));
-    MockDataSource.setIterator("select * from x", parentRow.iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "hello"));
-
-    MockDataSource.setIterator("select * from y where y.A=1", childRow.iterator());
-    MockDataSource.setIterator("select * from y where y.A=2", childRow.iterator());
-
-    runFullImport(dataConfig_2threads);
-
-    assertQ(req("id:1"), "//*[@numFound='1']");
-    assertQ(req("id:2"), "//*[@numFound='1']");
-    assertQ(req("desc:hello"), "//*[@numFound='2']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
   public void testCompositePk_FullImportWithoutCommit() throws Exception {
     List parentRow = new ArrayList();
     parentRow.add(createMap("id", "10"));
@@ -244,15 +223,6 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
   private static String dataConfig = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n"
           + "       <document>\n"
           + "               <entity name=\"x\" pk=\"id\" query=\"select * from x\" deletedPkQuery=\"select id from x where last_modified > NOW AND deleted='true'\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
-          + "                       <field column=\"id\" />\n"
-          + "                       <entity name=\"y\" query=\"select * from y where y.A=${x.id}\">\n"
-          + "                               <field column=\"desc\" />\n"
-          + "                       </entity>\n" + "               </entity>\n"
-          + "       </document>\n" + "</dataConfig>\n";
-
-  private static String dataConfig_2threads = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n"
-          + "       <document>\n"
-          + "               <entity name=\"x\" pk=\"id\" query=\"select * from x\" threads=\"2\">\n"
           + "                       <field column=\"id\" />\n"
           + "                       <entity name=\"y\" query=\"select * from y where y.A=${x.id}\">\n"
           + "                               <field column=\"desc\" />\n"

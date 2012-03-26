@@ -17,12 +17,6 @@
 package org.apache.solr.handler.dataimport;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,59 +63,6 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
     assertEquals(testDoc.getValues("description"), multiField);
     assertEquals(1, processor.getQueryCount());
     assertNull(processor.nextRow());
-  }
-
-  public void testMultiThread() throws Exception {
-    int numThreads = 5;
-    int numDocs = 40;
-    List<Doc> docs = generateUniqueDocs(numDocs);
-    final MockSolrEntityProcessor entityProcessor = new MockSolrEntityProcessor(docs, 25);
-    ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5, TimeUnit.SECONDS,
-          new SynchronousQueue<Runnable>());
-
-    final Map<String, Map<String, Object>> rowList = new LinkedHashMap<String, Map<String, Object>>();
-    final CountDownLatch latch = new CountDownLatch(numThreads);
-    final AtomicInteger errorCount = new AtomicInteger();
-    for (int i = 0; i < numThreads; i++) {
-      Runnable runnable = new Runnable() {
-        public void run() {
-          try {
-            while (true) {
-              synchronized (entityProcessor) {
-                Map<String, Object> row = entityProcessor.nextRow();
-                if (row == null) {
-                  break;
-                }
-                rowList.put(row.get(ID).toString(), row);
-              }
-            }
-          } catch (Throwable t) {
-            errorCount.incrementAndGet();
-            LOG.error("Error in thread", t);
-          } finally {
-            latch.countDown();
-          }
-        }
-      };
-      executor.execute(runnable);
-    }
-
-    latch.await();
-    assertEquals(0, errorCount.get());
-    assertEquals(numDocs, rowList.size());
-
-    for (Doc expectedDoc : docs) {
-      String id = (String) expectedDoc.getFirstValue("id");
-      Map<String, Object> row = rowList.get(id);
-      assertNotNull(id + " shouldn't yield null", row);
-      assertEquals(2, row.size());
-      assertEquals(expectedDoc.id, row.get("id"));
-      assertEquals(expectedDoc.getValues("description"), row.get("description"));
-      rowList.remove(id);
-    }
-
-    assertEquals(0, rowList.size());
-    executor.shutdown();
   }
 
   private List<Doc> generateUniqueDocs(int numDocs) {

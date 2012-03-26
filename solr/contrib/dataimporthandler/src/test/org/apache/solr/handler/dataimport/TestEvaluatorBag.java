@@ -98,19 +98,16 @@ public class TestEvaluatorBag extends AbstractDataImportHandlerTestCase {
   public void testEscapeSolrQueryFunction() {
     final VariableResolverImpl resolver = new VariableResolverImpl();
     ContextImpl context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
-    Context.CURRENT_CONTEXT.set(context);
-    try {
-      Map m= new HashMap();
-      m.put("query","c:t");
-      resolver.addNamespace("dataimporter.functions", EvaluatorBag
-              .getFunctionsNamespace(Collections.EMPTY_LIST, null));
-      resolver.addNamespace("e",m);
-      String s = resolver
-              .replaceTokens("${dataimporter.functions.escapeQueryChars(e.query)}");
-      org.junit.Assert.assertEquals("c\\:t", s);
-    } finally {
-      Context.CURRENT_CONTEXT.remove();
-    }
+    
+    Map m= new HashMap();
+    m.put("query","c:t");
+    resolver.addNamespace("dataimporter.functions", EvaluatorBag
+            .getFunctionsNamespace(Collections.EMPTY_LIST, null, resolver));
+    resolver.addNamespace("e",m);
+    String s = resolver
+            .replaceTokens("${dataimporter.functions.escapeQueryChars(e.query)}");
+    org.junit.Assert.assertEquals("c\\:t", s);
+    
   }
 
   /**
@@ -121,43 +118,36 @@ public class TestEvaluatorBag extends AbstractDataImportHandlerTestCase {
   public void testGetDateFormatEvaluator() {
     Evaluator dateFormatEval = EvaluatorBag.getDateFormatEvaluator();
     ContextImpl context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
-    Context.CURRENT_CONTEXT.set(context);
-    try {
-      Calendar calendar = new GregorianCalendar();
-      calendar.add(Calendar.DAY_OF_YEAR, -2);
+    
+    Calendar calendar = new GregorianCalendar();
+    calendar.add(Calendar.DAY_OF_YEAR, -2);
 
-      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(calendar.getTime()),
-              dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", Context.CURRENT_CONTEXT.get()));
+    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(calendar.getTime()),
+            dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", context));
 
-      calendar = new GregorianCalendar();
-      Date date = calendar.getTime();
-      
-      Map<String, Object> map = new HashMap<String, Object>();
-      map.put("key", date);
-      resolver.addNamespace("A", map);
+    calendar = new GregorianCalendar();
+    Date date = calendar.getTime();
+    
+    Map<String, Object> map = new HashMap<String, Object>();
+    map.put("key", date);
+    resolver.addNamespace("A", map);
 
-      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(date),
-              dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", Context.CURRENT_CONTEXT.get()));
-    } finally {
-      Context.CURRENT_CONTEXT.remove();
-    }
+    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(date),
+            dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", context));
+   
   }
 
   private void runTests(Map<String, String> tests, Evaluator evaluator) {
-    ContextImpl ctx = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
-    Context.CURRENT_CONTEXT.set(ctx);
-    try {
-      for (Map.Entry<String, String> entry : tests.entrySet()) {
-        Map<String, Object> values = new HashMap<String, Object>();
-        values.put("key", entry.getKey());
-        resolver.addNamespace("A", values);
+    ContextImpl ctx = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);    
+    for (Map.Entry<String, String> entry : tests.entrySet()) {
+      Map<String, Object> values = new HashMap<String, Object>();
+      values.put("key", entry.getKey());
+      resolver.addNamespace("A", values);
 
-        String expected = entry.getValue();
-        String actual = evaluator.evaluate("A.key", ctx);
-        assertEquals(expected, actual);
-      }
-    } finally {
-      Context.CURRENT_CONTEXT.remove();
+      String expected = entry.getValue();
+      String actual = evaluator.evaluate("A.key", ctx);
+      assertEquals(expected, actual);
     }
+    
   }
 }

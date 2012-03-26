@@ -252,25 +252,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     
     assertQ(req("*:*"), "//result[@numFound='0']");
   }
-  
-  public void testFullImportMultiThreaded() {
-    assertQ(req("*:*"), "//result[@numFound='0']");
-    int numDocs = 37;
-    List<Map<String,Object>> docList = generateSolrDocuments(numDocs);
     
-    try {
-      addDocumentsToSolr(docList);
-      Map<String,String> map = new HashMap<String,String>();
-      map.put("rows", "50");
-      runFullImport(generateDIHConfig("query='*:*' rows='6' numThreads='4'", jetty.getLocalPort()), map);
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
-      fail(e.getMessage());
-    }
-    
-    assertQ(req("*:*"), "//result[@numFound='" + numDocs + "']");
-  }
-  
   private static List<Map<String,Object>> generateSolrDocuments(int num) {
     List<Map<String,Object>> docList = new ArrayList<Map<String,Object>>();
     for (int i = 1; i <= num; i++) {

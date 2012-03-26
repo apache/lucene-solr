@@ -220,6 +220,4 @@ public abstract class Context {
    */
   public abstract String replaceTokens(String template);
 
-  static final ThreadLocal<Context> CURRENT_CONTEXT = new ThreadLocal<Context>();
-
 }

@@ -190,7 +190,7 @@ public class EvaluatorBag {
     };
   }
 
-  static Map<String, Object> getFunctionsNamespace(final List<Map<String, String>> fn, DocBuilder docBuilder) {
+  static Map<String, Object> getFunctionsNamespace(final List<Map<String, String>> fn, DocBuilder docBuilder, final VariableResolverImpl vr) {
     final Map<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
     evaluators.put(DATE_FORMAT_EVALUATOR, getDateFormatEvaluator());
     evaluators.put(SQL_ESCAPE_EVALUATOR, getSqlEscapingEvaluator());
@@ -217,7 +217,9 @@ public class EvaluatorBag {
         Evaluator evaluator = evaluators.get(fname);
         if (evaluator == null)
           return null;
-        return evaluator.evaluate(m.group(2), Context.CURRENT_CONTEXT.get());
+        ContextImpl ctx = new ContextImpl(null, vr, null, null, null, null, null);
+        String g2 = m.group(2);
+        return evaluator.evaluate(g2, ctx);
       }
 
     };

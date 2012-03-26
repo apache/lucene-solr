@@ -147,9 +147,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   
   /**
    * The following method changes the rowIterator mutable field. It requires
-   * external synchronization. In fact when used in a multi-threaded setup the nextRow() method is called from a
-   * synchronized block {@link ThreadedEntityProcessorWrapper#nextRow()}, so this
-   * is taken care of.
+   * external synchronization. 
    */
   private void buildIterator() {
     if (rowIterator == null) {
