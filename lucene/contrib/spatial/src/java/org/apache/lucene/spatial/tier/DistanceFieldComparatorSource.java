@@ -29,6 +29,7 @@ import org.apache.lucene.search.FieldComparatorSource;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public class DistanceFieldComparatorSource extends FieldComparatorSource {
 
   private static final long serialVersionUID = 1L;

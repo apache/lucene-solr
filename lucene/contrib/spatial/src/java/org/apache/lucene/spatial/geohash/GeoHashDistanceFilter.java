@@ -32,7 +32,7 @@ import org.apache.lucene.spatial.tier.DistanceFilter;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
-
+@Deprecated
 public class GeoHashDistanceFilter extends DistanceFilter {
 
   /**

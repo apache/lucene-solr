@@ -29,6 +29,7 @@ import org.apache.lucene.spatial.geohash.GeoHashDistanceFilter;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public class DistanceQueryBuilder {
 
   private static final long serialVersionUID = 1L;

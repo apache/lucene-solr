@@ -22,6 +22,7 @@ package org.apache.lucene.spatial.geometry;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public class FixedLatLng extends LatLng {
   public static final double SCALE_FACTOR=1000000;
   public static final int SCALE_FACTOR_INT=1000000;

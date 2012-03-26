@@ -22,6 +22,7 @@ package org.apache.lucene.spatial.tier.projections;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public interface IProjector {
   public String coordsAsString(double latitude, double longitude);
   public double[] coords(double latitude, double longitude);

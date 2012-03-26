@@ -30,6 +30,7 @@ import java.util.Map;
  * release.</font>
  *
  */
+@Deprecated
 public class DistanceHandler {
 
   public enum Precision {EXACT, TWOFEET, TWENTYFEET, TWOHUNDREDFEET}

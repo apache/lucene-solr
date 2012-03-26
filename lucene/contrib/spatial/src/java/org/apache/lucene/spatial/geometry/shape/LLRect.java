@@ -29,6 +29,7 @@ import org.apache.lucene.spatial.geometry.LatLng;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public class LLRect {
   private LatLng ll, ur;
   

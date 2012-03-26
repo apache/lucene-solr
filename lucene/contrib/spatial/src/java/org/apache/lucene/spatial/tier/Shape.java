@@ -26,6 +26,7 @@ import java.util.List;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public class Shape implements Serializable{
 
   private List<Double> area = new ArrayList<Double>();

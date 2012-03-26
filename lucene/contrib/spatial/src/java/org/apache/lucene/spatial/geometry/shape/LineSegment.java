@@ -25,6 +25,7 @@ package org.apache.lucene.spatial.geometry.shape;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public class LineSegment {
   public final Point2D A = new Point2D();
   public final Point2D B = new Point2D();

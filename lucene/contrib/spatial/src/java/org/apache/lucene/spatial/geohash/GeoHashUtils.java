@@ -24,6 +24,7 @@ import java.util.Map;
  * Utilities for encoding and decoding geohashes. Based on
  * <a href="http://en.wikipedia.org/wiki/Geohash">http://en.wikipedia.org/wiki/Geohash</a>.
  */
+@Deprecated
 public class GeoHashUtils {
 
   private static final char[] BASE_32 = {'0', '1', '2', '3', '4', '5', '6',

@@ -30,6 +30,7 @@ import org.apache.lucene.spatial.tier.DistanceHandler.Precision;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public abstract class DistanceFilter extends Filter {
 
   final protected Filter startingFilter;

@@ -21,6 +21,7 @@ package org.apache.lucene.spatial.geometry;
  * Enum representing difference distance units, currently only kilometers and
  * miles
  */
+@Deprecated
 public enum DistanceUnits {
 
   MILES("miles", 3959, 24902),

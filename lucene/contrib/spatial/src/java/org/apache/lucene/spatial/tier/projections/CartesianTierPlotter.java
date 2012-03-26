@@ -22,6 +22,7 @@ package org.apache.lucene.spatial.tier.projections;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public class CartesianTierPlotter {
   public static final String DEFALT_FIELD_PREFIX = "_tier_";
   

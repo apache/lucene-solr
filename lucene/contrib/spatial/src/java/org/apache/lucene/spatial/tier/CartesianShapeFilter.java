@@ -32,6 +32,7 @@ import org.apache.lucene.util.FixedBitSet;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public class CartesianShapeFilter extends Filter {
  
   private final Shape shape;

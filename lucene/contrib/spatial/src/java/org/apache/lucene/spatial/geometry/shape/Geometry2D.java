@@ -25,6 +25,7 @@ package org.apache.lucene.spatial.geometry.shape;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public interface Geometry2D {
   /**
    * Translate according to the vector

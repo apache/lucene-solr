@@ -34,6 +34,7 @@ import org.apache.lucene.spatial.geometry.shape.LLRect;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
+@Deprecated
 public class CartesianPolyFilterBuilder {
 
   // Finer granularity than 1 mile isn't accurate with
