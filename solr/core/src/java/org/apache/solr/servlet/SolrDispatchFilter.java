@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -49,10 +50,10 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.*;
+import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.*;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
@@ -228,6 +229,11 @@ public class SolrDispatchFilter implements Filter
                 handler = core.getRequestHandler( qt );
                 if( handler == null ) {
                   throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);
+                }
+                if( qt != null && qt.startsWith("/") && !(handler instanceof SearchHandler)) {
+                  //For security reasons it's a bad idea to allow a leading '/', ex: /select?qt=/update see SOLR-3161
+                  //There was no restriction from Solr 1.4 thru 3.5 and it's now only supported for SearchHandlers.
+                  throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid query type.  Do not use /select to access: "+qt);
                 }
               }
             }

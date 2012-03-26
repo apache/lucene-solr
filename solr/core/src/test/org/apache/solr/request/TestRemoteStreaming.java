@@ -23,9 +23,10 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,7 +45,8 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(ExternalPaths.EXAMPLE_HOME, null, null);
+    //this one has handleSelect=true which a test here needs
+    createJetty("solr/", null, null);
   }
 
   @Before
@@ -52,7 +54,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     //add document and commit, and ensure it's there
     SolrServer server1 = getSolrServer();
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "xxxx" );
+    doc.addField( "id", "1234" );
     server1.add(doc);
     server1.commit();
     assertTrue(searchFindsIt());
@@ -71,7 +73,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
     String getUrl = solrServer.getBaseURL()+"/debug/dump?wt=xml&stream.url="+URLEncoder.encode(streamUrl,"UTF-8");
     String content = getUrlForString(getUrl);
-    assertTrue(content.contains("xxxx"));
+    assertTrue(content.contains("1234"));
     //System.out.println(content);
   }
 
@@ -100,6 +102,29 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     assertTrue(searchFindsIt());//still there
   }
 
+  /** SOLR-3161
+   * Technically stream.body isn't remote streaming, but there wasn't a better place for this test method. */
+  @Test(expected = SolrException.class)
+  public void testQtUpdateFails() throws SolrServerException {
+    SolrQuery query = new SolrQuery();
+    query.setQuery( "*:*" );//for anything
+    query.add("echoHandler","true");
+    //sneaky sneaky
+    query.add("qt","/update");
+    query.add("stream.body","<delete><query>*:*</query></delete>");
+
+    QueryRequest queryRequest = new QueryRequest(query) {
+      @Override
+      public String getPath() { //don't let superclass substitute qt for the path
+        return "/select";
+      }
+    };
+    QueryResponse rsp = queryRequest.process(getSolrServer());
+    //!! should *fail* above for security purposes
+    String handler = (String) rsp.getHeader().get("handler");
+    System.out.println(handler);
+  }
+
   /** Compose a url that if you get it, it will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
     CommonsHttpSolrServer solrServer = (CommonsHttpSolrServer) getSolrServer();
@@ -109,7 +134,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   private boolean searchFindsIt() throws SolrServerException {
     SolrQuery query = new SolrQuery();
-    query.setQuery( "id:xxxx" );
+    query.setQuery( "id:1234" );
     QueryResponse rsp = getSolrServer().query(query);
     return rsp.getResults().getNumFound() != 0;
   }
