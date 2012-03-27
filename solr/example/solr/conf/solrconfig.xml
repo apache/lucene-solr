@@ -52,33 +52,41 @@
               <lib dir="./lib" />
     -->
 
-  <!-- A dir option by itself adds any files found in the directory to
-       the classpath, this is useful for including all jars in a
+  <!-- A 'dir' option by itself adds any files found in the directory 
+       to the classpath, this is useful for including all jars in a
        directory.
     -->
-  <lib dir="../../contrib/extraction/lib" />
-  <lib dir="../../contrib/clustering/lib/" />
-  <lib dir="../../contrib/velocity/lib" />
+  <!--
+     <lib dir="../add-everything-found-in-this-dir-to-the-classpath" />
+  -->
 
-  <!-- When a regex is specified in addition to a directory, only the
+  <!-- When a 'regex' is specified in addition to a 'dir', only the
        files in that directory which completely match the regex
        (anchored on both ends) will be included.
     -->
   <lib dir="../../dist/" regex="apache-solr-cell-\d.*\.jar" />
-  <lib dir="../../dist/" regex="apache-solr-clustering-\d.*\.jar" />
-  <lib dir="../../dist/" regex="apache-solr-langid-\d.*\.jar" />
-  <lib dir="../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
+  <lib dir="../../contrib/extraction/lib" regex=".*\.jar" />
 
-  <!-- If a dir option (with or without a regex) is used and nothing
+  <lib dir="../../dist/" regex="apache-solr-clustering-\d.*\.jar" />
+  <lib dir="../../contrib/clustering/lib/" regex=".*\.jar" />
+
+  <lib dir="../../dist/" regex="apache-solr-langid-\d.*\.jar" />
+  <lib dir="../../contrib/langid/lib/" regex=".*\.jar" />
+
+  <lib dir="../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
+  <lib dir="../../contrib/velocity/lib" regex=".*\.jar" />
+
+  <!-- If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, it will be ignored
     -->
   <lib dir="/total/crap/dir/ignored" /> 
 
-  <!-- an exact path can be used to specify a specific file.  This
-       will cause a serious error to be logged if it can't be loaded.
+  <!-- an exact 'path' can be used instead of a 'dir' to specify a 
+       specific file.  This will cause a serious error to be logged if 
+       it can't be loaded.
     -->
   <!--
-  <lib path="../a-jar-that-does-not-exist.jar" /> 
+     <lib path="../a-jar-that-does-not-exist.jar" /> 
   -->
   
   <!-- Data Directory
