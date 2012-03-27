@@ -78,13 +78,44 @@ public class CoreContainer
   // default, said to abort on config error
   private int numCoresAbortOnConfigError = 0;
   
+  /**
+   * Deprecated
+   * @deprecated use the single arg constructure with locateSolrHome()
+   * @see SolrResourceLoader#locateSolrHome
+   */
+  @Deprecated
   public CoreContainer() {
-    solrHome = SolrResourceLoader.locateSolrHome();
+    this(SolrResourceLoader.locateSolrHome());
     log.info("New CoreContainer: solrHome=" + solrHome + " instance="+System.identityHashCode(this));
   }
 
+
   public Properties getContainerProperties() {
     return containerProperties;
+  }
+
+  /**
+   * Initalize CoreContainer directly from the constructor
+   *
+   * @param dir
+   * @param configFile
+   * @throws ParserConfigurationException
+   * @throws IOException
+   * @throws SAXException
+   */
+  public CoreContainer(String dir, File configFile) throws ParserConfigurationException, IOException, SAXException
+  {
+    this(dir);
+    this.load(dir, configFile);
+  }
+
+  /**
+   * Minimal CoreContainer constructor.
+   * @param loader the CoreContainer resource loader
+   */
+  public CoreContainer(SolrResourceLoader loader) {
+    this(loader.getInstanceDir());
+    this.loader = loader;
   }
 
   // Helper class to initialize the CoreContainer
@@ -122,7 +153,7 @@ public class CoreContainer
       File fconf = new File(solrHome, solrConfigFilename == null ? "solr.xml"
           : solrConfigFilename);
       log.info("looking for solr.xml: " + fconf.getAbsolutePath());
-      cores = new CoreContainer();
+      cores = new CoreContainer(solrHome);
       cores.solrConfigFilenameOverride = solrConfigFilename;
       if (fconf.exists()) {
         // default abortOnConfigurationError ignored in multicore
@@ -167,29 +198,6 @@ public class CoreContainer
     return p;
   }
 
-  /**
-   * Initalize CoreContainer directly from the constructor
-   * 
-   * @param dir
-   * @param configFile
-   * @throws ParserConfigurationException
-   * @throws IOException
-   * @throws SAXException
-   */
-  public CoreContainer(String dir, File configFile) throws ParserConfigurationException, IOException, SAXException 
-  {
-    this.load(dir, configFile);
-  }
-  
-  /**
-   * Minimal CoreContainer constructor. 
-   * @param loader the CoreContainer resource loader
-   */
-  public CoreContainer(SolrResourceLoader loader) {
-    this.loader = loader;
-    this.solrHome = loader.getInstanceDir();
-  }
-
   public CoreContainer(String solrHome) {
     this.solrHome = solrHome;
   }
@@ -222,6 +230,13 @@ public class CoreContainer
    */
   public void load(String dir, InputSource cfgis)
       throws ParserConfigurationException, IOException, SAXException {
+
+    if (null == dir) {
+      // don't rely on SolrResourceLoader(), determine explicitly first
+      dir = SolrResourceLoader.locateSolrHome();
+    }
+    log.info("Loading CoreContainer using Solr Home: '{}'", dir);
+
     this.loader = new SolrResourceLoader(dir);
     solrHome = loader.getInstanceDir();
     Config cfg = new Config(loader, null, cfgis, null);
@@ -433,7 +448,8 @@ public class CoreContainer
       idir = new File(solrHome, dcore.getInstanceDir());
     }
     String instanceDir = idir.getPath();
-    
+    log.info("Creating SolrCore '{}' using instanceDir: {}", 
+             dcore.getName(), instanceDir);
     // Initialize the solr config
     SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()));
     SolrConfig config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
@@ -526,7 +542,10 @@ public class CoreContainer
     if (core == null)
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
 
-    SolrCore newCore = create(core.getCoreDescriptor());
+    CoreDescriptor cd = core.getCoreDescriptor();
+    log.info("Reloading SolrCore '{}' using instanceDir: {}", 
+             cd.getName(), cd.getInstanceDir());
+    SolrCore newCore = create(cd);
     register(name, newCore, false);
   }
 
@@ -596,7 +615,8 @@ public class CoreContainer
    * @return a CoreAdminHandler
    */
   protected CoreAdminHandler createMultiCoreHandler(final String adminHandlerClass) {
-    SolrResourceLoader loader = new SolrResourceLoader(null, libLoader, null);
+    // :TODO: why create a new SolrResourceLoader? why not use this.loader ???
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome, libLoader, null);
     Object obj = loader.newAdminHandlerInstance(CoreContainer.this, adminHandlerClass);
     if ( !(obj instanceof CoreAdminHandler))
     {
