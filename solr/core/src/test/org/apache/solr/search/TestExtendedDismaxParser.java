@@ -53,8 +53,11 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
             "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
     assertU(adoc("id", "48", "text_sw", "this has gigabyte potential", "foo_i","100"));
     assertU(adoc("id", "49", "text_sw", "start the big apple end", "foo_i","-100"));
-    assertU(adoc("id", "50", "text_sw", "start new big city end"));
+    assertU(adoc("id", "50", "text_sw", "start new big city end"));    
     assertU(adoc("id", "51", "store",   "12.34,-56.78"));
+    assertU(adoc("id", "52", "text_sw", "tekna theou klethomen"));
+    assertU(adoc("id", "53", "text_sw", "nun tekna theou esmen"));
+    assertU(adoc("id", "54", "text_sw", "phanera estin ta tekna tou theou"));
     assertU(commit());
   }
   @Override
@@ -63,7 +66,7 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     // the super classes version
     super.tearDown();
   }
-  
+    
   // test the edismax query parser based on the dismax parser
   public void testFocusQueryParser() {
     String allq = "id:[42 TO 51]";
@@ -293,6 +296,22 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     );
     ***/
 
+  }
+  
+  public void testBoostQuery() {
+    assertQ(
+        req("q", "tekna", "qf", "text_sw", "defType", "edismax", "bq", "id:54^100", "bq", "id:53^10", "fq", "id:[52 TO 54]", "fl", "id,score"), 
+        "//doc[1]/str[@name='id'][.='54']",
+        "//doc[2]/str[@name='id'][.='53']",
+        "//doc[3]/str[@name='id'][.='52']"
+     );
+    
+    assertQ(
+        req("q", "tekna", "qf", "text_sw", "defType", "edismax", "bq", "id:54^-100", "bq", "id:53^10", "bq", "id:52", "fq", "id:[52 TO 54]", "fl", "id,score"), 
+        "//doc[1]/str[@name='id'][.='53']",
+        "//doc[2]/str[@name='id'][.='52']",
+        "//doc[3]/str[@name='id'][.='54']"
+     );
   }
 
   public void testUserFields() {

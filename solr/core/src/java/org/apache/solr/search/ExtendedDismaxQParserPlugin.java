@@ -344,13 +344,17 @@ class ExtendedDismaxQParser extends QParser {
 
     /* * * Boosting Query * * */
     boostParams = solrParams.getParams(DisMaxParams.BQ);
-    //List<Query> boostQueries = U.parseQueryStrings(req, boostParams);
     boostQueries=null;
     if (boostParams!=null && boostParams.length>0) {
+      Map<String,Float> bqBoosts = SolrPluginUtils.parseFieldBoosts(boostParams);
       boostQueries = new ArrayList<Query>();
-      for (String qs : boostParams) {
-        if (qs.trim().length()==0) continue;
-        Query q = subQuery(qs, null).getQuery();
+      for (Map.Entry<String,Float> bqs : bqBoosts.entrySet()) {
+        if (bqs.getKey().trim().length()==0) continue;
+        Query q = subQuery(bqs.getKey(), null).getQuery();
+        Float b = bqs.getValue();
+        if(b!=null) {
+          q.setBoost(b);
+        }
         boostQueries.add(q);
       }
     }

@@ -250,6 +250,9 @@ New Features
  the same behaviour as solr 3.5, favouring throughput over latency. More
  information can be found on the wiki (http://wiki.apache.org/solr/SolrConfigXml) (Greg Bowyer)
 
+* SOLR-3278: Negative boost support to the Extended Dismax Query Parser Boost Query (bq).
+  (James Dyer)
+
 Optimizations
 ----------------------
 
