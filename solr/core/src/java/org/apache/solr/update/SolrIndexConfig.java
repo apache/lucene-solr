@@ -29,41 +29,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
-//
-// For performance reasons, we don't want to re-read
-// config params each time an index writer is created.
-// This config object encapsulates IndexWriter config params.
-//
 /**
+ * This config object encapsulates IndexWriter config params,
+ * defined in the &lt;indexConfig&gt; section of solrconfig.xml
  * @version $Id$
  */
 public class SolrIndexConfig {
   public static final Logger log = LoggerFactory.getLogger(SolrIndexConfig.class);
   
-  public static final String defaultsName ="indexDefaults";
   final String defaultMergePolicyClassName;
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
-  static final SolrIndexConfig defaultDefaults = new SolrIndexConfig();
-
-  private SolrIndexConfig() {
-    luceneVersion = Version.LUCENE_31;
-    useCompoundFile = true;
-    maxBufferedDocs = -1;
-    maxMergeDocs = -1;
-    mergeFactor = -1;
-    ramBufferSizeMB = 16;
-    maxFieldLength = -1;
-    writeLockTimeout = -1;
-    lockType = null;
-    termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
-    mergePolicyInfo = null;
-    mergeSchedulerInfo = null;
-    defaultMergePolicyClassName = TieredMergePolicy.class.getName();
-  }
-
   public final Version luceneVersion;
   
   public final boolean useCompoundFile;
