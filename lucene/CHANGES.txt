@@ -994,7 +994,20 @@ Optimizations
 
 Documentation
 
-* LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen, Robert Muir)
+* LUCENE-3597: Fixed incorrect grouping documentation. (Martijn van Groningen,
+  Robert Muir)
+
+* LUCENE-3926: Improve documentation of RAMDirectory, because this
+  class is not intended to work with huge indexes. Everything beyond
+  several hundred megabytes will waste resources (GC cycles), because
+  it uses an internal buffer size of 1024 bytes, producing millions of 
+  byte[1024] arrays. This class is optimized for small memory-resident
+  indexes. It also has bad concurrency on multithreaded environments.
+  It is recommended to materialize large indexes on disk and use
+  MMapDirectory, which is a high-performance directory implementation
+  working directly on the file system cache of the operating system,
+  so copying data to Java heap space is not useful.  (Uwe Schindler,
+  Mike McCandless, Robert Muir)
 
 Build
 
