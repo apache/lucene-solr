@@ -28,7 +28,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -102,20 +101,32 @@ public class RandomIndexWriter implements Closeable {
       System.out.println("RIW config=" + w.getConfig());
       System.out.println("codec default=" + codec.getName());
     }
-    /* TODO: find some what to make that random...
+    /* TODO: find some way to make this random...
      * This must be fixed across all fixed bytes 
      * fields in one index. so if you open another writer
      * this might change if I use r.nextInt(x)
      * maybe we can peek at the existing files here? 
      */
     fixedBytesLength = 17; 
-    docValuesFieldPrefix = r.nextLong();
+
+    // NOTE: this means up to 13 * 5 unique fields (we have
+    // 13 different DV types):
+    docValuesFieldPrefix = r.nextInt(5);
     switchDoDocValues();
+
+    // Make sure we sometimes test indices that don't get
+    // any forced merges:
+    doRandomForceMerge = r.nextBoolean();
   } 
 
   private void switchDoDocValues() {
     // randomly enable / disable docValues 
     doDocValues = LuceneTestCase.rarely(r);
+    if (LuceneTestCase.VERBOSE) {
+      if (doDocValues) {
+        System.out.println("NOTE: RIW: turning on random DocValues fields");
+      }
+    }
   }
   
   /**
@@ -175,8 +186,9 @@ public class RandomIndexWriter implements Closeable {
     DocValues.Type[] values = DocValues.Type.values();
     DocValues.Type type = values[random.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
-    if ("Lucene3x".equals(codec.getName()) || doc.getField(name) != null)
-        return;
+    if ("Lucene3x".equals(codec.getName()) || doc.getField(name) != null) {
+      return;
+    }
     final Field f;
     switch (type) {
     case BYTES_FIXED_DEREF:
@@ -367,7 +379,7 @@ public class RandomIndexWriter implements Closeable {
 
   public DirectoryReader getReader(boolean applyDeletions) throws IOException {
     getReaderCalled = true;
-    if (r.nextInt(4) == 2) {
+    if (r.nextInt(20) == 2) {
       doRandomForceMerge();
     }
     // If we are writing with PreFlexRW, force a full

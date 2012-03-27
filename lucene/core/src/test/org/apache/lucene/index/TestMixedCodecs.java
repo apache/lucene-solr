@@ -45,6 +45,9 @@ public class TestMixedCodecs extends LuceneTestCase {
     
     int docUpto = 0;
     while (docUpto < NUM_DOCS) {
+      if (VERBOSE) {
+        System.out.println("TEST: " + docUpto + " of " + NUM_DOCS);
+      }
       if (docsLeftInThisSegment == 0) {
         final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
         if (random.nextBoolean()) {
@@ -64,6 +67,10 @@ public class TestMixedCodecs extends LuceneTestCase {
       w.addDocument(doc);
       docUpto++;
       docsLeftInThisSegment--;
+    }
+
+    if (VERBOSE) {
+      System.out.println("\nTEST: now delete...");
     }
 
     // Random delete half the docs:

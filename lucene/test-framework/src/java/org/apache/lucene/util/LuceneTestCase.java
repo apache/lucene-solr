@@ -1173,6 +1173,9 @@ public abstract class LuceneTestCase extends Assert {
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
     stores.put(dir, Thread.currentThread().getStackTrace());
     dir.setThrottling(TEST_THROTTLING);
+    if (VERBOSE) {
+      System.out.println("NOTE: LuceneTestCase.newDirectory: returning " + dir);
+    }
     return dir;
    }
 
