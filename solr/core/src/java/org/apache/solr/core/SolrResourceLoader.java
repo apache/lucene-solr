@@ -88,17 +88,22 @@ public class SolrResourceLoader implements ResourceLoader
    * This loader will delegate to the context classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files
    * found in the "lib/" directory in the specified instance directory.
-   * If the instance directory is not specified (=null), SolrResourceLoader#locateInstanceDir will provide one.
-   * <p>
+   * </p>
+   *
+   * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used.
+   * @see #locateSolrHome
    */
   public SolrResourceLoader( String instanceDir, ClassLoader parent, Properties coreProperties )
   {
     if( instanceDir == null ) {
       this.instanceDir = SolrResourceLoader.locateSolrHome();
+      log.info("new SolrResourceLoader for deduced Solr Home: '{}'", 
+               this.instanceDir);
     } else{
       this.instanceDir = normalizeDir(instanceDir);
+      log.info("new SolrResourceLoader for directory: '{}'", 
+               this.instanceDir);
     }
-    log.info("Solr home set to '" + this.instanceDir + "'");
     
     this.classLoader = createClassLoader(null, parent);
     addToClassLoader("./lib/", null);
@@ -607,6 +612,7 @@ public class SolrResourceLoader implements ResourceLoader
    * @see #normalizeDir(String)
    */
   public static String locateSolrHome() {
+
     String home = null;
     // Try JNDI
     try {

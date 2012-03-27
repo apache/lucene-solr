@@ -123,8 +123,14 @@ public class CoreContainer
     log.info("New CoreContainer " + System.identityHashCode(this));
   }
 
+  /**
+   * Deprecated
+   * @deprecated use the single arg constructure with locateSolrHome()
+   * @see SolrResourceLoader#locateSolrHome
+   */
+  @Deprecated
   public CoreContainer() {
-    solrHome = SolrResourceLoader.locateSolrHome();
+    this(SolrResourceLoader.locateSolrHome());
   }
 
   /**
@@ -138,6 +144,7 @@ public class CoreContainer
    */
   public CoreContainer(String dir, File configFile) throws ParserConfigurationException, IOException, SAXException
   {
+    this(dir);
     this.load(dir, configFile);
   }
 
@@ -146,8 +153,8 @@ public class CoreContainer
    * @param loader the CoreContainer resource loader
    */
   public CoreContainer(SolrResourceLoader loader) {
+    this(loader.getInstanceDir());
     this.loader = loader;
-    this.solrHome = loader.getInstanceDir();
   }
 
   public CoreContainer(String solrHome) {
@@ -287,7 +294,7 @@ public class CoreContainer
       File fconf = new File(solrHome, containerConfigFilename == null ? "solr.xml"
           : containerConfigFilename);
       log.info("looking for solr.xml: " + fconf.getAbsolutePath());
-      cores = new CoreContainer();
+      cores = new CoreContainer(solrHome);
       
       if (fconf.exists()) {
         cores.load(solrHome, fconf);
@@ -355,6 +362,13 @@ public class CoreContainer
    */
   public void load(String dir, InputSource cfgis)
       throws ParserConfigurationException, IOException, SAXException {
+
+    if (null == dir) {
+      // don't rely on SolrResourceLoader(), determine explicitly first
+      dir = SolrResourceLoader.locateSolrHome();
+    }
+    log.info("Loading CoreContainer using Solr Home: '{}'", dir);
+
     this.loader = new SolrResourceLoader(dir);
     solrHome = loader.getInstanceDir();
     
@@ -675,7 +689,8 @@ public class CoreContainer
       idir = new File(solrHome, dcore.getInstanceDir());
     }
     String instanceDir = idir.getPath();
-    
+    log.info("Creating SolrCore '{}' using instanceDir: {}", 
+             dcore.getName(), instanceDir);
     // Initialize the solr config
     SolrResourceLoader solrLoader = null;
     
@@ -831,6 +846,9 @@ public class CoreContainer
     if (!instanceDir.isAbsolute()) {
       instanceDir = new File(getSolrHome(), cd.getInstanceDir());
     }
+
+    log.info("Reloading SolrCore '{}' using instanceDir: {}", 
+             cd.getName(), instanceDir.getAbsolutePath());
     
     SolrResourceLoader solrLoader;
     if(zkController == null) {
@@ -956,7 +974,8 @@ public class CoreContainer
    * @return a CoreAdminHandler
    */
   protected CoreAdminHandler createMultiCoreHandler(final String adminHandlerClass) {
-    SolrResourceLoader loader = new SolrResourceLoader(null, libLoader, null);
+    // :TODO: why create a new SolrResourceLoader? why not use this.loader ???
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome, libLoader, null);
     Object obj = loader.newAdminHandlerInstance(CoreContainer.this, adminHandlerClass);
     if ( !(obj instanceof CoreAdminHandler))
     {

@@ -729,6 +729,10 @@ Bug Fixes
   and was fundamentally broken/bizarre.
   (hossman, Ahmet Arslan)
 
+* SOLR-3264: Fix CoreContainer and SolrResourceLoader logging to be more 
+  clear about when SolrCores are being created, and stop misleading people 
+  about SolrCore instanceDir's being the "Solr Home Dir" (hossman)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
