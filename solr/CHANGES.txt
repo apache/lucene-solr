@@ -740,6 +740,9 @@ Bug Fixes
 
 * SOLR-3046: Fix whitespace typo in DIH response "Time taken" (hossman)
 
+* SOLR-3261: Fix edismax to respect query operators when literal colons 
+  are used in query string.  (Juan Grande via hossman)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)

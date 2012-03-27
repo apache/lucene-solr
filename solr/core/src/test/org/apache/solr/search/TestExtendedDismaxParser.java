@@ -464,5 +464,70 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
       assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
     }
   }
-  
+
+  public void testOperatorsWithLiteralColons() {
+    assertU(adoc("id", "142", "a_s", "bogus:xxx", "text_s", "yak"));
+    assertU(adoc("id", "143", "a_s", "bogus:xxx"));
+    assertU(adoc("id", "144", "text_s", "yak"));
+    assertU(adoc("id", "145", "a_s", "a_s:xxx", "text_s", "yak"));
+    assertU(adoc("id", "146", "a_s", "a_s:xxx"));
+    assertU(adoc("id", "147", "a_s", "AND", "a_s", "NOT"));
+    assertU(commit());
+
+    assertQ(req("q", "bogus:xxx AND text_s:yak",
+                "fl", "id",
+                "qf", "a_s b_s",
+                "defType", "edismax",
+                "mm", "0"),
+            "//*[@numFound='1']",
+            "//str[@name='id'][.='142']");
+    
+    assertQ(req("q", "a_s:xxx AND text_s:yak",
+                "fl", "id",
+                "qf", "a_s b_s",
+                "defType", "edismax",
+                "mm", "0",
+                "uf", "text_s"),
+            "//*[@numFound='1']",
+            "//str[@name='id'][.='145']");
+
+    assertQ(req("q", "NOT bogus:xxx +text_s:yak",
+                "fl", "id",
+                "qf", "a_s b_s",
+                "defType", "edismax",
+                "mm", "0",
+                "debugQuery", "true"),
+            "//*[@numFound='2']",
+            "//str[@name='id'][.='144']",
+            "//str[@name='id'][.='145']");
+    
+    assertQ(req("q", "NOT a_s:xxx +text_s:yak",
+                "fl", "id",
+                "qf", "a_s b_s",
+                "defType", "edismax",
+                "mm", "0",
+                "uf", "text_s"),
+            "//*[@numFound='2']",
+            "//str[@name='id'][.='142']",
+            "//str[@name='id'][.='144']");
+    
+    assertQ(req("q", "+bogus:xxx yak",
+                "fl", "id",
+                "qf", "a_s b_s text_s",
+                "defType", "edismax",
+                "mm", "0"),
+            "//*[@numFound='2']",
+            "//str[@name='id'][.='142']",
+            "//str[@name='id'][.='143']");
+
+    assertQ(req("q", "+a_s:xxx yak",
+                "fl", "id",
+                "qf", "a_s b_s text_s",
+                "defType", "edismax",
+                "mm", "0",
+                "uf", "b_s"),
+            "//*[@numFound='2']",
+            "//str[@name='id'][.='145']",
+            "//str[@name='id'][.='146']");
+  }
 }

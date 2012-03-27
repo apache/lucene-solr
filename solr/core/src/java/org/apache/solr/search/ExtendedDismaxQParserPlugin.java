@@ -635,14 +635,17 @@ class ExtendedDismaxQParser extends QParser {
   
   public List<Clause> splitIntoClauses(String s, boolean ignoreQuote) {
     ArrayList<Clause> lst = new ArrayList<Clause>(4);
-    Clause clause = new Clause();
+    Clause clause;
 
     int pos=0;
     int end=s.length();
     char ch=0;
     int start;
-    boolean disallowUserField = false;
+    boolean disallowUserField;
     outer: while (pos < end) {
+      clause = new Clause();
+      disallowUserField = true;
+      
       ch = s.charAt(pos);
 
       while (Character.isWhitespace(ch)) {
@@ -659,10 +662,10 @@ class ExtendedDismaxQParser extends QParser {
 
       clause.field = getFieldName(s, pos, end);
       if(clause.field != null && !userFields.isAllowed(clause.field)) {
-        disallowUserField = true;
         clause.field = null;
       }
       if (clause.field != null) {
+        disallowUserField = false;
         pos += clause.field.length(); // skip the field name
         pos++;  // skip the ':'
       }
@@ -758,7 +761,11 @@ class ExtendedDismaxQParser extends QParser {
 
       if (clause != null) {
         if(disallowUserField) {
-          clause.raw = clause.val;
+          clause.raw = s.substring(start, pos);
+          // escape colons, except for "match all" query
+          if(!"*:*".equals(clause.raw)) {
+            clause.raw = clause.raw.replaceAll(":", "\\\\:");
+          }
         } else {
           clause.raw = s.substring(start, pos);
           // Add default userField boost if no explicit boost exists
@@ -770,8 +777,6 @@ class ExtendedDismaxQParser extends QParser {
         }
         lst.add(clause);
       }
-      clause = new Clause();
-      disallowUserField = false;
     }
 
     return lst;
