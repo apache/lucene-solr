@@ -260,7 +260,8 @@ public final class JapaneseTokenizer extends Tokenizer {
   @Override
   public void end() {
     // Set final offset
-    offsetAtt.setOffset(correctOffset(pos), correctOffset(pos));
+    int finalOffset = correctOffset(pos);
+    offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
   // Returns the added cost that a 2nd best segmentation is
