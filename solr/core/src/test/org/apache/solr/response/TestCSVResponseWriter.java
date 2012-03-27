@@ -26,6 +26,7 @@ import org.apache.solr.search.ReturnFields;
 import org.junit.*;
 
 import java.io.StringWriter;
+import java.util.Arrays;
 
 public class TestCSVResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
@@ -98,9 +99,9 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     assertEquals("1,,hi\n2,\"hi,there\",\n"
     , h.query(req("q","id:[1 TO 2]", "wt","csv", "csv.header","false", "fl","id,v_ss,foo_s")));
 
-    // test SOLR-2970 not returning non-stored fields by default
-    assertEquals("id,foo_b,foo_d,foo_s,foo_f,foo_i,foo_dt,foo_l,v_ss,v2_ss\n"
-        , h.query(req("q","id:3", "wt","csv", "csv.header","true", "fl","*", "rows","0")));
+    // test SOLR-2970 not returning non-stored fields by default. Compare sorted list
+    assertEquals(sortHeader("v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l\n")
+    , sortHeader(h.query(req("q","id:3", "wt","csv", "csv.header","true", "fl","*", "rows","0"))));
 
 
     // now test SolrDocumentList
@@ -164,6 +165,15 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     assertTrue(s.indexOf("score") >=0 && s.indexOf("2.718") > 0 && s.indexOf("89.83") > 0 );
 
     req.close();
+  }
+
+  /*
+   * Utility method to sort a comma separated list of strings, for easier comparison regardless of platform
+   */
+  private String sortHeader(String input) {
+    String[] output = input.trim().split(","); 
+    Arrays.sort(output);
+    return Arrays.toString(output);
   }
 
 }
