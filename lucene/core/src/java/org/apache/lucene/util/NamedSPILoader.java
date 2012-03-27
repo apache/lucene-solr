@@ -31,6 +31,14 @@ import java.util.ServiceLoader;
 public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements Iterable<S> {
 
   private final Map<String,S> services;
+
+  /** This field is a hack for LuceneTestCase to get access
+   * to the modifiable map (to work around bugs in IBM J9) */
+  @SuppressWarnings("unused")
+  @Deprecated
+  // Hackidy-Häck-Hack for bugs in IBM J9 ServiceLoader
+  private final Map<String,S> modifiableServices;
+  
   private final Class<S> clazz;
 
   public NamedSPILoader(Class<S> clazz) {
@@ -46,6 +54,7 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
         services.put(name, service);
       }
     }
+    this.modifiableServices = services; // hack, remove when IBM J9 is fixed!
     this.services = Collections.unmodifiableMap(services);
   }
   
