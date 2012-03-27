@@ -158,7 +158,7 @@ public class BasicZkTest extends AbstractZkTestCase {
       
     }
     
-    zkController.getZkClient().printLayoutToStdOut();
+    //zkController.getZkClient().printLayoutToStdOut();
   }
   
   public SolrQueryRequest request(String... q) {
