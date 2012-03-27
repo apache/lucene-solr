@@ -17,6 +17,16 @@
 -->
 
 <!--
+   This is an example of a simple "solr.xml" file for configuring one or 
+   more Solr Cores, as well as allowing Cores to be added, removed, and 
+   reloaded via HTTP requests.
+
+   More information about options available in this configuration file, 
+   and Solr Core administration can be found online:
+   http://wiki.apache.org/solr/CoreAdmin
+-->
+
+<!--
  All (relative) paths are relative to the installation path
   
   persistent: Save changes made via the API to this file
