@@ -201,8 +201,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       cacheMap = noGenericCaches;
       cacheList= noCaches;
     }
-    optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
-
+    
+    // TODO: This option has been dead/noop since 3.1, should we re-enable it?
+//    optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
+    optimizer = null;
+    
     fieldNames = new HashSet<String>();
     for(FieldInfo fieldInfo : ReaderUtil.getMergedFieldInfos(r)) {
       fieldNames.add(fieldInfo.name);
@@ -373,6 +376,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return qr;
   }
 
+//  FIXME: This option has been dead/noop since 3.1, should we re-enable or remove it?
 //  public Hits search(Query query, Filter filter, Sort sort) throws IOException {
 //    // todo - when Solr starts accepting filters, need to
 //    // change this conditional check (filter!=null) and create a new filter

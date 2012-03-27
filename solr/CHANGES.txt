@@ -38,6 +38,9 @@ Upgrading from Solr 3.5
   HTMLStripCharFilter in Solr version 3.5 and earlier: the old implementation
   (bugs and all) is preserved as LegacyHTMLStripCharFilter.
 
+* As of Solr 3.6, the <indexDefaults> and <mainIndex> sections of solrconfig.xml are deprecated
+  and replaced with a new <indexConfig> section. Read more in SOLR-1052 below.
+
 * SOLR-3040: The DIH's admin UI (dataimport.jsp) now requires DIH request handlers to start with
   a '/'. (dsmiley)
 
@@ -325,6 +328,12 @@ Other Changes
 * SOLR-3156: Check for Lucene directory locks at startup. In previous versions
   this check was only performed during modifying (e.g. adding and deleting
   documents) the index. (Luca Cavanna via Martijn van Groningen)
+
+* SOLR-1052: Deprecated <indexDefaults> and <mainIndex> in solrconfig.xml
+  From now, all settings go in the new <indexConfig> tag, and some defaults are
+  changed: useCompoundFile=false, ramBufferSizeMB=32, lockType=native, so that
+  the effect of NOT specifying <indexConfig> at all gives same result as the
+  example config used to give in 3.5 (janhoy, gsingers)
 
 Build
 ----------------------

@@ -81,14 +81,14 @@
 
      Other implementations of MergePolicy must have a no-argument constructor
      -->
-    <mergePolicy>org.apache.lucene.index.LogDocMergePolicy</mergePolicy>
+    <mergePolicy class="org.apache.lucene.index.LogDocMergePolicy"/>
 
     <!--
      Expert:
      The Merge Scheduler in Lucene controls how merges are performed.  The ConcurrentMergeScheduler (Lucene 2.3 default)
       can perform merges in the background using separate threads.  The SerialMergeScheduler (Lucene 2.2 default) does not.
      -->
-    <mergeScheduler>org.apache.lucene.index.SerialMergeScheduler</mergeScheduler>
+    <mergeScheduler class="org.apache.lucene.index.SerialMergeScheduler"/>
     <!-- these are global... can't currently override per index -->
     <writeLockTimeout>1000</writeLockTimeout>
 
@@ -105,8 +105,8 @@
     <maxBufferedDocs>10</maxBufferedDocs>
     <maxMergeDocs>2147483647</maxMergeDocs>
     <maxFieldLength>10000</maxFieldLength>
-    <mergePolicy>org.apache.lucene.index.LogDocMergePolicy</mergePolicy>
-    <mergeScheduler>org.apache.lucene.index.SerialMergeScheduler</mergeScheduler>
+    <mergePolicy class="org.apache.lucene.index.LogDocMergePolicy"/>
+    <mergeScheduler class="org.apache.lucene.index.SerialMergeScheduler"/>
     <unlockOnStartup>true</unlockOnStartup>
   </mainIndex>
 

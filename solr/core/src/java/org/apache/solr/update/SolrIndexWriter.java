@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.schema.IndexSchema;
@@ -45,6 +46,11 @@ import java.util.Locale;
 public class SolrIndexWriter extends IndexWriter {
   private static Logger log = LoggerFactory.getLogger(SolrIndexWriter.class);
 
+  public final static String LOCK_TYPE_SIMPLE = "simple";
+  public final static String LOCK_TYPE_NATIVE = "native";
+  public final static String LOCK_TYPE_SINGLE = "single";
+  public final static String LOCK_TYPE_NONE   = "none";
+  
   String name;
   private PrintStream infoStream;
 
@@ -52,23 +58,18 @@ public class SolrIndexWriter extends IndexWriter {
     
     Directory d = directoryFactory.open(path);
 
-    String rawLockType = (null == config) ? null : config.lockType;
-    if (null == rawLockType) {
-      // we default to "simple" for backwards compatibility
-      log.warn("No lockType configured for " + path + " assuming 'simple'");
-      rawLockType = "simple";
-    }
+    String rawLockType = config.lockType;
     final String lockType = rawLockType.toLowerCase(Locale.ENGLISH).trim();
 
-    if ("simple".equals(lockType)) {
+    if (LOCK_TYPE_SIMPLE.equals(lockType)) {
       // multiple SimpleFSLockFactory instances should be OK
       d.setLockFactory(new SimpleFSLockFactory(path));
-    } else if ("native".equals(lockType)) {
+    } else if (LOCK_TYPE_NATIVE.equals(lockType)) {
       d.setLockFactory(new NativeFSLockFactory(path));
-    } else if ("single".equals(lockType)) {
+    } else if (LOCK_TYPE_SINGLE.equals(lockType)) {
       if (!(d.getLockFactory() instanceof SingleInstanceLockFactory))
         d.setLockFactory(new SingleInstanceLockFactory());
-    } else if ("none".equals(lockType)) {
+    } else if (LOCK_TYPE_NONE.equals(lockType)) {
       // Recipe for disaster
       log.error("CONFIGURATION WARNING: locks are disabled on " + path);      
       d.setLockFactory(NoLockFactory.getNoLockFactory());

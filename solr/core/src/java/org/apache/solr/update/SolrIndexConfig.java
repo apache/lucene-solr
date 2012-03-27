@@ -19,6 +19,8 @@ package org.apache.solr.update;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.util.Version;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.schema.IndexSchema;
@@ -80,15 +82,54 @@ public class SolrIndexConfig {
   
   public String infoStreamFile = null;
 
+  /**
+   * Internal constructor for setting defaults based on Lucene Version
+   */
+  private SolrIndexConfig(SolrConfig solrConfig) {
+    luceneVersion = solrConfig.luceneMatchVersion;
+    useCompoundFile = luceneVersion.onOrAfter(Version.LUCENE_36) ? false : true;
+    maxBufferedDocs = -1;
+    maxMergeDocs = -1;
+    mergeFactor = -1;
+    ramBufferSizeMB = luceneVersion.onOrAfter(Version.LUCENE_36) ? 32 : 16;
+    maxFieldLength = -1;
+    writeLockTimeout = -1;
+    lockType = luceneVersion.onOrAfter(Version.LUCENE_36) ? 
+               SolrIndexWriter.LOCK_TYPE_NATIVE : 
+               SolrIndexWriter.LOCK_TYPE_SIMPLE;
+    termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
+    mergePolicyInfo = null;
+    mergeSchedulerInfo = null;
+    defaultMergePolicyClassName = luceneVersion.onOrAfter(Version.LUCENE_33) ? TieredMergePolicy.class.getName() : LogByteSizeMergePolicy.class.getName();
+  }
+  
+  /**
+   * Constructs a SolrIndexConfig which parses the Lucene related config params in solrconfig.xml
+   * @param solrConfig the overall SolrConfig object
+   * @param prefix the XPath prefix for which section to parse (mandatory)
+   * @param def a SolrIndexConfig instance to pick default values from (optional)
+   */
   public SolrIndexConfig(SolrConfig solrConfig, String prefix, SolrIndexConfig def)  {
     if (prefix == null)
-      prefix = defaultsName;
+      throw new SolrException(ErrorCode.FORBIDDEN, "Prefix was null");
     if (def == null)
-      def = defaultDefaults;
+      def = new SolrIndexConfig(solrConfig);
 
     luceneVersion = solrConfig.luceneMatchVersion;
 
-    defaultMergePolicyClassName = luceneVersion.onOrAfter(Version.LUCENE_33) ? TieredMergePolicy.class.getName() : LogByteSizeMergePolicy.class.getName();
+    // Assert that end-of-life parameters or syntax is not in our config.
+    // Warn for luceneMatchVersion's before LUCENE_36, fail fast above
+    assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
+        !((solrConfig.get(prefix+"/mergeScheduler/text()",null) != null) && (solrConfig.get(prefix+"/mergeScheduler/@class",null) == null)),
+        luceneVersion.onOrAfter(Version.LUCENE_36));
+    assertWarnOrFail("The <mergePolicy>myclass</mergePolicy> syntax is no longer supported in solrconfig.xml. Please use syntax <mergePolicy class=\"myclass\"/> instead.",
+        !((solrConfig.get(prefix+"/mergePolicy/text()",null) != null) && (solrConfig.get(prefix+"/mergePolicy/@class",null) == null)),
+        luceneVersion.onOrAfter(Version.LUCENE_36));
+    assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
+        solrConfig.get(prefix+"/luceneAutoCommit", null) == null,
+        luceneVersion.onOrAfter(Version.LUCENE_36));
+
+    defaultMergePolicyClassName = def.defaultMergePolicyClassName;
     useCompoundFile=solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
     maxMergeDocs=solrConfig.getInt(prefix+"/maxMergeDocs",def.maxMergeDocs);
@@ -99,33 +140,8 @@ public class SolrIndexConfig {
     writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
 
-    String str =  solrConfig.get(prefix+"/mergeScheduler/text()",null);
-    if(str != null && str.trim().length() >0){
-      //legacy handling <mergeScheduler>[classname]</mergeScheduler>
-      //remove in Solr2.0
-      log.warn("deprecated syntax : <mergeScheduler>[classname]</mergeScheduler>");
-      Map<String,String> atrs = new HashMap<String, String>();
-      atrs.put("class",str.trim());
-      mergeSchedulerInfo = new PluginInfo("mergeScheduler",atrs,null,null);
-    } else {
-      mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
-    }
-    str =  solrConfig.get(prefix+"/mergePolicy/text()",null);
-    if(str != null && str.trim().length() >0){
-      //legacy handling  <mergePolicy>[classname]</mergePolicy>
-      //remove in Solr2.0
-      log.warn("deprecated syntax : <mergePolicy>[classname]</mergePolicy>");
-      Map<String,String> atrs = new HashMap<String, String>();
-      atrs.put("class",str.trim());
-      mergePolicyInfo = new PluginInfo("mergePolicy",atrs,null,null);
-    } else {
-      mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
-    }
-    
-    Object luceneAutoCommit = solrConfig.get(prefix + "/luceneAutoCommit", null);
-    if(luceneAutoCommit != null) {
-      log.warn("found deprecated option : luceneAutoCommit no longer has any affect - it is always false");
-    }
+    mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
+    mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
     
     termIndexInterval = solrConfig.getInt(prefix + "/termIndexInterval", def.termIndexInterval);
     
@@ -133,6 +149,21 @@ public class SolrIndexConfig {
     if(infoStreamEnabled) {
       infoStreamFile= solrConfig.get(prefix + "/infoStream/@file", null);
       log.info("IndexWriter infoStream debug log is enabled: " + infoStreamFile);
+    }
+  }
+
+  /*
+   * Assert that assertCondition is true.
+   * If not, prints reason as log warning.
+   * If failCondition is true, then throw exception instead of warning 
+   */
+  private void assertWarnOrFail(String reason, boolean assertCondition, boolean failCondition) {
+    if(assertCondition) {
+      return;
+    } else if(failCondition) {
+      throw new SolrException(ErrorCode.FORBIDDEN, reason);
+    } else {
+      log.warn(reason);
     }
   }
 

@@ -17,6 +17,8 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.RegexFileFilter;
 import org.apache.solr.common.util.NamedList;
@@ -130,21 +132,46 @@ public class SolrConfig extends Config {
    *@param name the configuration name
    *@param is the configuration stream
    */
+  @SuppressWarnings("deprecation")
   SolrConfig(SolrResourceLoader loader, String name, InputSource is)
   throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     initLibs();
     luceneMatchVersion = getLuceneVersion("luceneMatchVersion", Version.LUCENE_24);
-    defaultIndexConfig = new SolrIndexConfig(this, null, null);
-    mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);
-    reopenReaders = getBool("mainIndex/reopenReaders", true);
+    // Old indexDefaults and mainIndex sections are deprecated. We allow either the old-style or new-style, not both
+    String indexConfigPrefix;
+    boolean hasDeprecatedIndexConfig = get("indexDefaults/text()", null) != null || get("mainIndex/text()", null) != null;
+    boolean hasNewIndexConfig = get("indexConfig/text()", null) != null; 
+    if(hasDeprecatedIndexConfig){
+      if(hasNewIndexConfig)
+        throw new SolrException(ErrorCode.FORBIDDEN, "Cannot specify both <indexDefaults>, <mainIndex> and <indexConfig> at the same time. Please use <indexConfig> only.");
+      log.warn("<indexDefaults> and <mainIndex> configuration sections are deprecated (but still work). Please use <indexConfig> instead.");
+      defaultIndexConfig = new SolrIndexConfig(this, "indexDefaults", null);
+      mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);
+      indexConfigPrefix = "mainIndex";
+    } else {
+      defaultIndexConfig = mainIndexConfig = null;
+      indexConfigPrefix = "indexConfig";
+    }
+    // Parse indexConfig section, using mainIndex as backup in case old config is used
+    indexConfig = new SolrIndexConfig(this, "indexConfig", mainIndexConfig);
+
+    reopenReaders = getBool(indexConfigPrefix+"/reopenReaders", true);
     
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
     log.info("Using Lucene MatchVersion: " + luceneMatchVersion);
 
-    filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
-    filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
-    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
+    // Warn about deprecated / discontinued parameters
+    // boolToFilterOptimizer has had no effect since 3.1 
+    if(get("query/boolTofilterOptimizer", null) != null)
+      log.warn("solrconfig.xml: <boolTofilterOptimizer> is currently not implemented and has no effect.");
+    if(get("query/HashDocSet", null) != null)
+      log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer recommended used.");
+
+// TODO: Old code - in case somebody wants to re-enable. Also see SolrIndexSearcher#search()
+//    filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
+//    filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
+//    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
     
     useFilterForSortedQuery = getBool("query/useFilterForSortedQuery", false);
     queryResultWindowSize = Math.max(1, getInt("query/queryResultWindowSize", 1));
@@ -165,7 +192,7 @@ public class SolrConfig extends Config {
       conf = new CacheConfig(FastLRUCache.class, args, null);
     }
     fieldValueCacheConfig = conf;
-    unlockOnStartup = getBool("mainIndex/unlockOnStartup", false);
+    unlockOnStartup = getBool(indexConfigPrefix+"/unlockOnStartup", false);
     useColdSearcher = getBool("query/useColdSearcher",false);
     dataDir = get("dataDir", null);
     if (dataDir != null && dataDir.length()==0) dataDir=null;
@@ -207,7 +234,7 @@ public class SolrConfig extends Config {
      loadPluginInfo(SolrEventListener.class, "//listener",false, true);
 
      loadPluginInfo(DirectoryFactory.class,"directoryFactory",false, true);
-     loadPluginInfo(IndexDeletionPolicy.class,"mainIndex/deletionPolicy",false, true);
+     loadPluginInfo(IndexDeletionPolicy.class,indexConfigPrefix+"/deletionPolicy",false, true);
      loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
      loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
 
@@ -248,10 +275,10 @@ public class SolrConfig extends Config {
 
   /* The set of materialized parameters: */
   public final int booleanQueryMaxClauseCount;
-  // SolrIndexSearcher - nutch optimizer
-  public final boolean filtOptEnabled;
-  public final int filtOptCacheSize;
-  public final float filtOptThreshold;
+// SolrIndexSearcher - nutch optimizer -- Disabled since 3.1
+//  public final boolean filtOptEnabled;
+//  public final int filtOptCacheSize;
+//  public final float filtOptThreshold;
   // SolrIndexSearcher - caches configurations
   public final CacheConfig filterCacheConfig ;
   public final CacheConfig queryResultCacheConfig;
@@ -267,9 +294,13 @@ public class SolrConfig extends Config {
   // DocSet
   public final float hashSetInverseLoadFactor;
   public final int hashDocSetMaxSize;
-  // default & main index configurations
+  // default & main index configurations, deprecated as of 3.6
+  @Deprecated
   public final SolrIndexConfig defaultIndexConfig;
+  @Deprecated
   public final SolrIndexConfig mainIndexConfig;
+  // IndexConfig settings
+  public final SolrIndexConfig indexConfig;
 
   protected UpdateHandlerInfo updateHandlerInfo ;
 
