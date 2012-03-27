@@ -260,7 +260,7 @@ public class DocBuilder {
 	    if(importStatistics.failedDocCount.get() > 0)
 	      statusMessages.put(DataImporter.MSG.TOTAL_FAILED_DOCS, ""+ importStatistics.failedDocCount.get());
 	
-	    statusMessages.put("Time taken ", getTimeElapsedSince(startTime.get()));
+	    statusMessages.put("Time taken", getTimeElapsedSince(startTime.get()));
 	    LOG.info("Time taken = " + getTimeElapsedSince(startTime.get()));
 	  } catch(Exception e)
 		{

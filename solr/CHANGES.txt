@@ -738,6 +738,8 @@ Bug Fixes
   clear about when SolrCores are being created, and stop misleading people 
   about SolrCore instanceDir's being the "Solr Home Dir" (hossman)
 
+* SOLR-3046: Fix whitespace typo in DIH response "Time taken" (hossman)
+
 Other Changes
 ----------------------
 * SOLR-2922: Upgrade commons-io and commons-lang to 2.1 and 2.6, respectively. (koji)
