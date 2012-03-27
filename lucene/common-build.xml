@@ -984,6 +984,7 @@
       <available property="gpg.input.handler" classname="org.apache.tools.ant.input.SecureInputHandler"
                  value="org.apache.tools.ant.input.SecureInputHandler"/>
       <!--else:--><property name="gpg.input.handler" value="org.apache.tools.ant.input.DefaultInputHandler"/>
+      <echo>WARNING: IF USING JAVA5 YOUR PASSPHRASE WILL BE ECHOED BACK!!!!!</echo>
       <input message="Enter GPG keystore password: >" addproperty="gpg.passphrase">
         <handler classname="${gpg.input.handler}" />
       </input>
