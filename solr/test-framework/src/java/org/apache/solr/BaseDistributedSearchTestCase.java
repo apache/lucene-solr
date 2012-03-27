@@ -643,11 +643,16 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (System.getProperty("remove.version.field") != null) {
       // we don't care if one has a version and the other doesnt -
       // control vs distrib
-      for (SolrDocument doc : a.getResults()) {
-        doc.removeFields("_version_");
+      // TODO: this should prob be done by adding an ignore on _version_ rather than mutating the responses?
+      if (a.getResults() != null) {
+        for (SolrDocument doc : a.getResults()) {
+          doc.removeFields("_version_");
+        }
       }
-      for (SolrDocument doc : b.getResults()) {
-        doc.removeFields("_version_");
+      if (b.getResults() != null) {
+        for (SolrDocument doc : b.getResults()) {
+          doc.removeFields("_version_");
+        }
       }
     }
     cmp = compare(a.getResponse(), b.getResponse(), flags, handle);

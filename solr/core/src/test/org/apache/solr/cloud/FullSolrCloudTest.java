@@ -817,8 +817,23 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
   }
   
   private void checkQueries() throws Exception {
+
+    handle.put("_version_", SKIPVAL);
+
     query("q", "*:*", "sort", "n_tl1 desc");
-    
+
+    handle.put("response", UNORDERED);  // get?ids=a,b,c requests are unordered
+    String ids = "987654";
+    for (int i=0; i<20; i++) {
+      query("qt","/get", "id",Integer.toString(i));
+      query("qt","/get", "ids",Integer.toString(i));
+      ids = ids + ',' + Integer.toString(i);
+      query("qt","/get", "ids",ids);
+    }
+    handle.remove("response");
+
+
+
     // random value sort
     for (String f : fieldNames) {
       query("q", "*:*", "sort", f + " desc");
