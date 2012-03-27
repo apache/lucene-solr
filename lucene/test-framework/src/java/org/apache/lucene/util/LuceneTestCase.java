@@ -1075,6 +1075,9 @@ public abstract class LuceneTestCase extends Assert {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, maybeNRTWrap(r, impl));
     stores.put(dir, Thread.currentThread().getStackTrace());
+    if (VERBOSE) {
+      System.out.println("NOTE: LuceneTestCase.newDirectory: returning " + dir);
+    }
     return dir;
   }
   

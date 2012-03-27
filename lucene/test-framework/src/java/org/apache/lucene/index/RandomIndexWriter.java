@@ -92,6 +92,10 @@ public class RandomIndexWriter implements Closeable {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW config=" + w.getConfig());
     }
+
+    // Make sure we sometimes test indices that don't get
+    // any forced merges:
+    doRandomForceMerge = r.nextBoolean();
   } 
 
   /**
@@ -220,7 +224,7 @@ public class RandomIndexWriter implements Closeable {
 
   public IndexReader getReader(boolean applyDeletions) throws IOException {
     getReaderCalled = true;
-    if (r.nextInt(4) == 2) {
+    if (r.nextInt(20) == 2) {
       doRandomForceMerge();
     }
     if (r.nextBoolean()) {
