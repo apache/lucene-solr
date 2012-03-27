@@ -287,9 +287,9 @@ Bug Fixes
    SpanOrQuery with no clauses added).  (Alan Woodward via Mike
    McCandless).
 
- * LUCENE-3894: ICUTokenizer, NGramTokenzire and EdgeNGramTokenizer
+ * LUCENE-3894: ICUTokenizer, NGramTokenizer and EdgeNGramTokenizer
    could stop early if the Reader only partially fills the provided
-   buffer 
+   buffer. (Mike McCandless) 
   
 Documentation
 
