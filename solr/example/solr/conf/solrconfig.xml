@@ -447,7 +447,8 @@
     <!-- Query Result Cache
          
          Caches results of searches - ordered lists of document ids
-         (DocList) based on a query, a sort, and the range of documents requested.  
+         (DocList) based on a query, a sort, and the range of documents 
+         requested.  
       -->
     <queryResultCache class="solr.LRUCache"
                      size="512"
@@ -530,9 +531,9 @@
         An optimization for use with the queryResultCache.  When a search
         is requested, a superset of the requested number of document ids
         are collected.  For example, if a search for a particular query
-        requests matching documents 10 through 19, and queryWindowSize is 50,
-        then documents 0 through 49 will be collected and cached.  Any further
-        requests in that range can be satisfied via the cache.  
+        requests matching documents 10 through 19, and queryWindowSize 
+        is 50, then documents 0 through 49 will be collected and cached.  
+        Any further requests in that range can be satisfied via the cache.  
      -->
    <queryResultWindowSize>20</queryResultWindowSize>
 
@@ -1109,7 +1110,10 @@
       <str name="name">default</str>
       <str name="field">name</str>
       <str name="spellcheckIndexDir">spellchecker</str>
-      <!-- uncomment this to require terms to occur in 1% of the documents in order to be included in the dictionary
+      <!-- uncomment this to require terms to occur in 1% of the documents 
+           in order to be included in the dictionary
+        -->
+      <!--
       	<float name="thresholdTokenFrequency">.01</float>
       -->
     </lst>
@@ -1444,10 +1448,17 @@
       <boundaryScanner name="breakIterator" 
                        class="solr.highlight.BreakIteratorBoundaryScanner">
         <lst name="defaults">
-          <!-- type should be one of CHARACTER, WORD(default), LINE and SENTENCE -->
+          <!-- type should be one of:
+               * CHARACTER 
+               * WORD (default)
+               * LINE
+               * SENTENCE 
+            -->
           <str name="hl.bs.type">WORD</str>
-          <!-- language and country are used when constructing Locale object.  -->
-          <!-- And the Locale object will be used when getting instance of BreakIterator -->
+          <!-- language and country are used when constructing Locale 
+               object which will be used when getting instance of 
+               BreakIterator 
+            -->
           <str name="hl.bs.language">en</str>
           <str name="hl.bs.country">US</str>
         </lst>
