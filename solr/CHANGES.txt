@@ -1,4 +1,4 @@
-﻿                      Apache Solr Release Notes
+﻿﻿                      Apache Solr Release Notes
 
 Introduction
 ------------
@@ -353,7 +353,9 @@ Bug Fixes
 
 * SOLR-3062: A join in the main query was not respecting any filters pushed
   down to it via acceptDocs since LUCENE-1536. (Mike Hugo, yonik)
-
+  
+* SOLR-3214: If you use multiple fl entries rather than a comma separated list, all but the first
+  entry can be ignored if you are using distributed search. (Tomas Fernandez Lobbe via Mark Miller)
 
 Other Changes
 ----------------------

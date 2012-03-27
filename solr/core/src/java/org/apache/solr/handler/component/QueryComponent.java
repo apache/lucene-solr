@@ -941,17 +941,10 @@ public class QueryComponent extends SearchComponent
       // we already have the field sort values
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
 
-      // make sure that the id is returned for correlation.
-      String fl = sreq.params.get(CommonParams.FL);
-      if (fl != null) {
-         fl = fl.trim();
-        // currently, "score" is synonymous with "*,score" so
-        // don't add "id" if the fl is empty or "score" or it would change the meaning.
-         if (fl.length()!=0 && !"score".equals(fl) && !"*".equals(fl)) {
-           sreq.params.set(CommonParams.FL, fl+','+uniqueField.getName());
-         }
-      }      
-
+      if(!rb.rsp.getReturnFields().wantsField(uniqueField.getName())) {
+        sreq.params.add(CommonParams.FL, uniqueField.getName());
+      }
+    
       ArrayList<String> ids = new ArrayList<String>(shardDocs.size());
       for (ShardDoc shardDoc : shardDocs) {
         // TODO: depending on the type, we may need more tha a simple toString()?
@@ -979,6 +972,7 @@ public class QueryComponent extends SearchComponent
       SolrDocumentList docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
 
       String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
+      boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
 
       for (SolrDocument doc : docs) {
         Object id = doc.getFieldValue(keyFieldName);
@@ -986,6 +980,9 @@ public class QueryComponent extends SearchComponent
         if (sdoc != null) {
           if (returnScores && sdoc.score != null) {
               doc.setField("score", sdoc.score);
+          }
+          if(removeKeyField) {
+            doc.removeFields(keyFieldName);
           }
           rb._responseDocs.set(sdoc.positionInResponse, doc);
         }

@@ -204,6 +204,16 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.range.start",200, 
           "facet.range.gap",100, 
           "f."+tlong+".facet.range.end",900);
+    
+    //  variations of fl
+    query("q","*:*", "fl","score","sort",i1 + " desc");
+    query("q","*:*", "fl",i1 + ",score","sort",i1 + " desc");
+    query("q","*:*", "fl", i1, "fl","score","sort",i1 + " desc");
+    query("q","*:*", "fl", "id," + i1,"sort",i1 + " desc");
+    query("q","*:*", "fl", "id", "fl",i1,"sort",i1 + " desc");
+    query("q","*:*", "fl",i1, "fl", "id","sort",i1 + " desc");
+    query("q","*:*", "fl", "id", "fl",nint, "fl",tint,"sort",i1 + " desc");
+    query("q","*:*", "fl",nint, "fl", "id", "fl",tint,"sort",i1 + " desc");
 
     stress=0;  // turn off stress... we want to tex max combos in min time
     for (int i=0; i<25*RANDOM_MULTIPLIER; i++) {
