@@ -177,7 +177,7 @@ public class RAMOutputStream extends IndexOutput {
 
   /** Returns byte usage of all buffers. */
   public long sizeInBytes() {
-    return file.numBuffers() * BUFFER_SIZE;
+    return (long) file.numBuffers() * (long) BUFFER_SIZE;
   }
   
   @Override
