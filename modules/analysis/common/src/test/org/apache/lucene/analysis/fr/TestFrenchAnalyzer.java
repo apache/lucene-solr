@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.fr;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
@@ -263,5 +264,12 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, new FrenchAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
+  
+  /** test accent-insensitive */
+  public void testAccentInsensitive() throws Exception {
+    Analyzer a = new FrenchAnalyzer(TEST_VERSION_CURRENT);
+    checkOneTermReuse(a, "sécuritaires", "securitair");
+    checkOneTermReuse(a, "securitaires", "securitair");
   }
 }
