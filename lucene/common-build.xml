@@ -275,7 +275,7 @@
   </target>
 
   <target name="resolve" depends="install-ivy">
-    <ivy:retrieve type="jar" log="quiet"/>
+    <ivy:retrieve type="jar,bundle" log="quiet"/>
   </target>
 
   <target name="jflex-uptodate-check">
