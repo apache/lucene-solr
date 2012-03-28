@@ -478,34 +478,52 @@ in subsequent searches.
     named <span class="codefrag">text_general</span>, which has defaults appropriate for all languages.
   </p>
 <p>
-    If you know your textual content is English, as is the case for the example documents in this tutorial,
-    and you'd like to apply English-specific stemming and stop word removal, as well as split compound words, you can use the <span class="codefrag">text_en_splitting</span> fieldType instead.
-    Go ahead and edit the <span class="codefrag">schema.xml</span> under the <span class="codefrag">solr/example/solr/conf</span> directory,
-    and change the <span class="codefrag">type</span> for fields <span class="codefrag">text</span> and <span class="codefrag">features</span> from <span class="codefrag">text_general</span> to <span class="codefrag">text_en_splitting</span>.
-    Restart the server and then re-post all of the documents, and then these queries will show the English-specific transformations:
+  If you know your textual content is English, as is the case for the example 
+  documents in this tutorial, and you'd like to apply English-specific stemming
+  and stop word removal, as well as split compound words, you can use the 
+  <span class="codefrag">text_en_splitting</span> fieldType instead.
+  Go ahead and edit the <span class="codefrag">schema.xml</span> in the 
+  <span class="codefrag">solr/example/solr/conf</span> directory,
+  to use the <span class="codefrag">text_en_splitting</span> fieldType for 
+  the <span class="codefrag">text</span> and 
+  <span class="codefrag">features</span> fields like so:
+</p>
+<pre class="code">
+   &lt;field name="features" <b>type="text_en_splitting"</b> indexed="true" stored="true" multiValued="true"/&gt;
+   ...
+   &lt;field name="text" <b>type="text_en_splitting"</b> indexed="true" stored="false" multiValued="true"/&gt;
+</pre>
+<p>
+  Stop and restart Solr after making these changes and then re-post all of 
+  the example documents using 
+  <span class="codefrag">java -jar post.jar *.xml</span>.  
+  Now queries like the ones listed below will demonstrate English-specific 
+  transformations:
   </p>
 <ul>
     
 <li>A search for
-       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=power-shot&amp;fl=name">power-shot</a>
-       matches <span class="codefrag">PowerShot</span>, and
-      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=adata&amp;fl=name">adata</a>
-      matches <span class="codefrag">A-DATA</span> due to the use of <span class="codefrag">WordDelimiterFilter</span> and <span class="codefrag">LowerCaseFilter</span>.
-    </li>
+  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=power-shot&amp;fl=name">power-shot</a>
+  can match <span class="codefrag">PowerShot</span>, and
+  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=adata&amp;fl=name">adata</a>
+  can match <span class="codefrag">A-DATA</span> by using the 
+  <span class="codefrag">WordDelimiterFilter</span> and <span class="codefrag">LowerCaseFilter</span>.
+</li>
 
     
 <li>A search for
-      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=features:recharging&amp;fl=name,features">features:recharging</a>
-       matches <span class="codefrag">Rechargeable</span> due to stemming with the <span class="codefrag">EnglishPorterFilter</span>.
-    </li>
+  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=features:recharging&amp;fl=name,features">features:recharging</a>
+  can match <span class="codefrag">Rechargeable</span> using the stemming 
+  features of <span class="codefrag">PorterStemFilter</span>.
+</li>
 
     
 <li>A search for
-       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=%221 gigabyte%22&amp;fl=name">"1 gigabyte"</a>
-       matches things with <span class="codefrag">GB</span>, and the misspelled
-      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=pixima&amp;fl=name">pixima</a>
-       matches <span class="codefrag">Pixma</span> due to use of a <span class="codefrag">SynonymFilter</span>.
-    </li>
+  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=%221 gigabyte%22&amp;fl=name">"1 gigabyte"</a>
+  can match <span class="codefrag">1GB</span>, and the commonly misspelled
+  <a href="http://localhost:8983/solr/select/?indent=on&amp;q=pixima&amp;fl=name">pixima</a> can matches <span class="codefrag">Pixma</span> using the 
+  <span class="codefrag">SynonymFilter</span>.
+</li>
 
   
 </ul>
@@ -514,30 +532,56 @@ in subsequent searches.
   </p>
 <a name="N1030B"></a><a name="Analysis+Debugging"></a>
 <h3 class="boxed">Analysis Debugging</h3>
-<p>There is a handy <a href="http://localhost:8983/solr/admin/analysis.jsp">analysis</a>
-      debugging page where you can see how a text value is broken down into words,
-      and shows the resulting tokens after they pass through each filter in the chain.
-    </p>
 <p>
-      
-<a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;val=Canon+Power-Shot+SD500">This</a>
-      shows how "<span class="codefrag">Canon Power-Shot SD500</span>" would be indexed as a value in the name field.  Each row of
-      the table shows the resulting tokens after having passed through the next <span class="codefrag">TokenFilter</span> in the analyzer for the <span class="codefrag">name</span> field.
-      Notice how both <span class="codefrag">powershot</span> and <span class="codefrag">power</span>, <span class="codefrag">shot</span> are indexed.  Tokens generated at the same position
-      are shown in the same column, in this case <span class="codefrag">shot</span> and <span class="codefrag">powershot</span>.
-    </p>
-<p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;verbose=on&amp;val=Canon+Power-Shot+SD500">verbose output</a>
-    will show more details, such as the name of each analyzer component in the chain, token positions, and the start and end positions
-    of the token in the original text.
-    </p>
-<p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;highlight=on&amp;val=Canon+Power-Shot+SD500&amp;qval=Powershot sd-500">highlight matches</a>
-    when both index and query values are provided will take the resulting terms from the query value and highlight
-    all matches in the index value analysis.
-    </p>
+  There is a handy <a href="http://localhost:8983/solr/admin/analysis.jsp">analysis</a>
+  debugging page where you can see how a text value is broken down into words,
+  and shows the resulting tokens after they pass through each filter in the chain.
+</p>
 <p>
-<a href="http://localhost:8983/solr/admin/analysis.jsp?name=text&amp;highlight=on&amp;val=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.+&amp;qval=liberties+and+equality">Here</a>
-    is an example of stemming and stop-words at work.
-    </p>
+  <a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_en_splitting&amp;val=Canon+Power-Shot+SD500">This</a>
+  url shows how "<span class="codefrag">Canon Power-Shot SD500</span>" would 
+  shows the tokens that would be instead be created using the 
+  <span class="codefrag">text_en_splitting</span> type.  Each row of
+  the table shows the resulting tokens after having passed through the next 
+  <span class="codefrag">TokenFilter</span> in the analyzer.
+  Notice how both <span class="codefrag">powershot</span> and 
+  <span class="codefrag">power</span>, <span class="codefrag">shot</span> 
+  are indexed.  Tokens generated at the same position
+  are shown in the same column, in this case 
+  <span class="codefrag">shot</span> and 
+  <span class="codefrag">powershot</span>.  (Compare the previous output with
+  <a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_general&amp;val=Canon+Power-Shot+SD500">The tokens produced using the text_general field type</a>.)
+</p>
+<p>
+  Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_en_splitting&amp;verbose=on&amp;val=Canon+Power-Shot+SD500">verbose output</a>
+  will show more details, such as the name of each analyzer component in the 
+  chain, token positions, and the start and end positions of the token in 
+  the original text.
+</p>
+<p>
+  Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_en_splitting&amp;highlight=on&amp;val=Canon+Power-Shot+SD500&amp;qval=Powershot sd-500">highlight matches</a>
+  when both index and query values are provided will take the resulting 
+  terms from the query value and highlight
+  all matches in the index value analysis.
+</p>
+<p>
+  Other interesting examples:
+</p>
+<ul>
+  <li><a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_en&amp;highlight=on&amp;val=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.+&amp;qval=liberties+and+equality">English stemming and stop-words</a> 
+    using the <span class="codefrag">text_en</span> field type
+  </li>
+  <li><a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_cjk&amp;highlight=on&amp;val=%EF%BD%B6%EF%BE%80%EF%BD%B6%EF%BE%85&amp;qval=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A">Half-width katakana normalization with bi-graming</a> 
+    using the <span class="codefrag">text_cjk</span> field type
+  </li>
+  <li><a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_ja&amp;verbose=on&amp;val=%E7%A7%81%E3%81%AF%E5%88%B6%E9%99%90%E3%82%B9%E3%83%94%E3%83%BC%E3%83%89%E3%82%92%E8%B6%85%E3%81%88%E3%82%8B%E3%80%82">Japanese morphological decomposition with part-of-speech filtering</a>
+    using the <span class="codefrag">text_ja</span> field type 
+  </li>
+  <li><a href="http://localhost:8983/solr/admin/analysis.jsp?nt=type&amp;name=text_ar&amp;verbose=on&amp;val=%D9%84%D8%A7+%D8%A3%D8%AA%D9%83%D9%84%D9%85+%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9">Arabic stop-words, normalization and stemming</a>
+    using the <span class="codefrag">text_ar</span> field type 
+  </li>
+</ul>
+
 </div>
 
 
