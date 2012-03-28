@@ -54,7 +54,8 @@
   <property name="final.name" value="lucene-${name}-${version}"/>
 
   <property name="ivy.install.version" value="2.2.0" />
-  <property name="ivy.jar.dir" value="${common.dir}/lib" />
+  <!-- todo: maybe a better place -->
+  <property name="ivy.jar.dir" value="${common.dir}/test-framework/lib" />
   <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy-${ivy.install.version}.jar" />
   <available file="${ivy.jar.file}" property="ivy.available" />
 
