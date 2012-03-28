@@ -96,8 +96,7 @@ public abstract class QParser {
     lst.add(val);
   }
 
-  /** Create and return the <code>Query</code> object represented by <code>qstr</code>.  Null MAY be returned to signify
-   * there was no input (e.g. no query string) to parse.
+  /** Create and return the <code>Query</code> object represented by <code>qstr</code>
    * @see #getQuery()
    **/
   public abstract Query parse() throws ParseException;

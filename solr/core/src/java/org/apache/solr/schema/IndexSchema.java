@@ -438,7 +438,7 @@ public final class IndexSchema {
 
     node = (Node) xpath.evaluate("/schema/defaultSearchField/text()", document, XPathConstants.NODE);
     if (node==null) {
-      log.debug("no default search field specified in schema.");
+      log.warn("no default search field specified in schema.");
     } else {
       defaultSearchFieldName=node.getNodeValue().trim();
       // throw exception if specified, but not found or not indexed
@@ -449,7 +449,7 @@ public final class IndexSchema {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
         }
       }
-      log.info("default search field in schema is "+defaultSearchFieldName);
+      log.info("default search field is "+defaultSearchFieldName);
     }
 
     node = (Node) xpath.evaluate("/schema/solrQueryParser/@defaultOperator", document, XPathConstants.NODE);

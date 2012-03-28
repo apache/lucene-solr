@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -47,6 +48,7 @@ public class LuceneQParserPlugin extends QParserPlugin {
 }
 
 class LuceneQParser extends QParser {
+  String sortStr;
   SolrQueryParser lparser;
 
   public LuceneQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -57,7 +59,7 @@ class LuceneQParser extends QParser {
   @Override
   public Query parse() throws ParseException {
     String qstr = getString();
-    if (qstr == null || qstr.length()==0) return null;
+    if (qstr == null) return null;
 
     String defaultField = getParam(CommonParams.DF);
     if (defaultField==null) {
@@ -93,8 +95,6 @@ class OldLuceneQParser extends LuceneQParser {
     // handle legacy "query;sort" syntax
     if (getLocalParams() == null) {
       String qstr = getString();
-      if (qstr == null || qstr.length() == 0)
-        return null;
       sortStr = getParams().get(CommonParams.SORT);
       if (sortStr == null) {
         // sort may be legacy form, included in the query string
@@ -107,7 +107,7 @@ class OldLuceneQParser extends LuceneQParser {
           qstr = commands.get(0);
         }
         else if (commands.size() > 2) {
-          throw new ParseException("If you want to use multiple ';' in the query, use the 'sort' param.");
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "If you want to use multiple ';' in the query, use the 'sort' param.");
         }
       }
       setString(qstr);

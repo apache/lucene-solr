@@ -734,7 +734,6 @@
      <lst name="defaults">
        <str name="echoParams">explicit</str>
        <int name="rows">10</int>
-       <str name="df">text</str>
      </lst>
     <!-- In addition to defaults, "appends" params can be specified
          to identify values which should be appended to the list of
@@ -1041,6 +1040,7 @@
   <!-- ping/healthcheck -->
   <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
     <lst name="invariants">
+      <str name="qt">search</str>
       <str name="q">solrpingquery</str>
     </lst>
     <lst name="defaults">

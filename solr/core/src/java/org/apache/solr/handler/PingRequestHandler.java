@@ -39,6 +39,7 @@ public class PingRequestHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
     SolrParams params = req.getParams();
+    SolrParams required = params.required();
     SolrCore core = req.getCore();
     
     // Check if the service is available
@@ -48,11 +49,11 @@ public class PingRequestHandler extends RequestHandlerBase
     }
     
     // Get the RequestHandler
-    String qt = params.get( CommonParams.QT );//optional; you get the default otherwise
+    String qt = required.get( CommonParams.QT );
     SolrRequestHandler handler = core.getRequestHandler( qt );
     if( handler == null ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-          "Unknown RequestHandler (qt): "+qt );
+          "Unknown RequestHandler: "+qt );
     }
     
     if( handler instanceof PingRequestHandler ) {
