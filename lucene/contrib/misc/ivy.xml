@@ -18,5 +18,4 @@
 -->
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="misc"/>
-    <!-- TODO: what is this cpptasks? -->
 </ivy-module>

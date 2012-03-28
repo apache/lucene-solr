@@ -32,6 +32,7 @@
 
     <taskdef resource="cpptasks.tasks">
       <classpath>
+        <!-- TODO: nuke this jar and load up like maven-ant-tasks -->
         <pathelement location="ant_lib/cpptasks-1.0b5.jar"/>
       </classpath>
     </taskdef>
