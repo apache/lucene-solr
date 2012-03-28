@@ -48,7 +48,9 @@
   <path id="classpath">
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/java"/>
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
-    <fileset dir="${common-solr.dir}/contrib/dataimporthandler/lib" includes="**/*.jar"/>
+    <pathelement location="${common-solr.dir}/contrib/dataimporthandler/lib/activation-1.1.jar"/>
+    <pathelement location="${common-solr.dir}/contrib/dataimporthandler/lib/mail-1.4.1.jar"/>
+    <!-- FIXME: nuke wildcarding -->
     <fileset dir="${common-solr.dir}/contrib/extraction/lib" includes="**/*.jar"/>
     <path refid="solr.base.classpath"/>
   </path>
