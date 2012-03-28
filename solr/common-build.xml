@@ -60,12 +60,10 @@
   </condition>
 
   <path id="additional.dependencies">
-  	<fileset dir="${common-solr.dir}/lib" includes="**/*.jar"/>
-  	<fileset dir="${common-solr.dir}/example/lib" includes="**/*.jar"/>
-  	<fileset dir="lib" includes="**/*.jar" erroronmissingdir="false"/>
+  	<fileset dir="${common-solr.dir}/lib" excludes="*.txt,*.template"/>
+  	<fileset dir="${common-solr.dir}/example/lib" excludes="*.txt,*.template"/>
+  	<fileset dir="lib" excludes="*.txt,*.template" erroronmissingdir="false"/>
   </path>
-
-  <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies"/>
 
   <import file="${common-solr.dir}/../lucene/contrib/contrib-build.xml"/>
 
@@ -94,6 +92,7 @@
     <pathelement path="${queryparser.jar}"/>
     <pathelement location="${common-solr.dir}/build/solr-solrj/classes/java"/>
     <pathelement location="${common-solr.dir}/build/solr-core/classes/java"/>
+    <path refid="additional.dependencies"/>
     <path refid="base.classpath"/>
   </path>
 

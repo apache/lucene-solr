@@ -26,8 +26,8 @@
 	<import file="../contrib-build.xml"/>
 
 	<path id="classpath">
-    <fileset dir="../extraction/lib" includes="*.jar"/>
-    <fileset dir="lib" includes="*.jar"/>
+    <fileset dir="../extraction/lib" excludes="*.txt"/>
+    <fileset dir="lib" excludes="*.txt"/>
     <path refid="solr.base.classpath"/>   
   </path>
 
