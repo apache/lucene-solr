@@ -43,7 +43,9 @@ import org.slf4j.LoggerFactory;
 final class RequestHandlers {
   public static Logger log = LoggerFactory.getLogger(RequestHandlers.class);
 
+  /** @deprecated It's actually "/select" */
   public static final String DEFAULT_HANDLER_NAME="standard";
+
   protected final SolrCore core;
   // Use a synchronized map - since the handlers can be changed at runtime, 
   // the map implementation should be thread safe
@@ -184,7 +186,8 @@ final class RequestHandlers {
       }
     }
 
-    if(get("") == null) register("", get(DEFAULT_HANDLER_NAME));
+    if(get("") == null) register("", get(DEFAULT_HANDLER_NAME));//old-ish default handler
+    if(get("") == null) register("", get("/select"));//defacto default handler
   }
     
 
