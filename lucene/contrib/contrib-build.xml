@@ -163,14 +163,29 @@
   </target>
 
   <property name="analyzers-uima.jar" value="${common.dir}/../modules/analysis/build/uima/lucene-analyzers-uima-${version}.jar"/>
-    <target name="check-analyzers-uima-uptodate" unless="analyzers-uima.uptodate">
-      <module-uptodate name="analysis/uima" jarfile="${analyzers-uima.jar}" property="analyzers-uima.uptodate"/>
-    </target>
-    <target name="jar-analyzers-uima" unless="analyzers-uima.uptodate" depends="check-analyzers-uima-uptodate">
-    	<ant dir="${common.dir}/../modules/analysis/uima" target="jar-core" inheritAll="false">
-        <propertyset refid="uptodate.and.compiled.properties"/>
-      </ant>
+  <target name="check-analyzers-uima-uptodate" unless="analyzers-uima.uptodate">
+    <module-uptodate name="analysis/uima" jarfile="${analyzers-uima.jar}" property="analyzers-uima.uptodate"/>
+  </target>
+  <target name="jar-analyzers-uima" unless="analyzers-uima.uptodate" depends="check-analyzers-uima-uptodate">
+    <ant dir="${common.dir}/../modules/analysis/uima" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
     <property name="analyzers-uima.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-morfologik.jar" value="${common.dir}/../modules/analysis/build/morfologik/lucene-analyzers-morfologik-${version}.jar"/>
+  <fileset id="analyzers-morfologik.fileset" dir="${common.dir}/../modules/analysis">
+    <include name="build/morfologik/lucene-analyzers-morfologik-${version}.jar" />
+    <include name="morfologik/lib/*.jar" />
+  </fileset>
+  <target name="check-analyzers-morfologik-uptodate" unless="analyzers-morfologik.uptodate">
+    <module-uptodate name="analysis/morfologik" jarfile="${analyzers-morfologik.jar}" property="analyzers-morfologik.uptodate"/>
+  </target>
+  <target name="jar-analyzers-morfologik" unless="analyzers-morfologik.uptodate" depends="check-analyzers-morfologik-uptodate">
+    <ant dir="${common.dir}/../modules/analysis/morfologik" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-morfologik.uptodate" value="true"/>
   </target>
 
   <property name="grouping.jar" value="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"/>

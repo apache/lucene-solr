@@ -88,6 +88,11 @@
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-analyzers-morfologik</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-analyzers-phonetic</artifactId>
       <version>${project.version}</version>
     </dependency>

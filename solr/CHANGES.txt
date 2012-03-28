@@ -1,4 +1,4 @@
-﻿﻿                      Apache Solr Release Notes
+﻿                      Apache Solr Release Notes
 
 Introduction
 ------------
@@ -73,6 +73,9 @@ Detailed Change List
 
 New Features
 ----------------------
+
+* SOLR-3272: Solr filter factory for MorfologikFilter (Polish lemmatisation).
+  (Rafał Kuć via Dawid Weiss, Steven Rowe, Uwe Schindler).
 
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
