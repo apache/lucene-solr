@@ -48,7 +48,8 @@ import org.slf4j.LoggerFactory;
  * Although any SolrServer request can be made with this implementation,
  * it is only recommended to use {@link StreamingUpdateSolrServer} with
  * /update requests.  The base class {&link CommonsHttpSolrServer} is
- * better suited for the query interface.
+ * better suited for the query interface, or for situations where you
+ * need to detect errors or catch exceptions from udpate requests.
  * 
  * @version $Id: CommonsHttpSolrServer.java 724175 2008-12-07 19:07:11Z ryan $
  * @since solr 1.4
