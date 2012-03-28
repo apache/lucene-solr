@@ -77,13 +77,10 @@ To launch Jetty with the Solr WAR, and the example configs, just run the <span c
 </p>
 <pre class="code">
 user:~/solr/example$ <strong>java -jar start.jar</strong>
-2009-10-23 16:42:53.816::INFO:  Logging to STDERR via org.mortbay.log.StdErrLog
-2009-10-23 16:42:53.907::INFO:  jetty-6.1.26
-
+2012-03-27 17:11:29.529:INFO::Logging to STDERR via org.mortbay.log.StdErrLog
+2012-03-27 17:11:29.696:INFO::jetty-6.1-SNAPSHOT
 ...
-
-Oct 23, 2009 4:41:56 PM org.apache.solr.core.SolrCore registerSearcher
-INFO: [] Registered new searcher Searcher@7c3885 main
+2012-03-27 17:11:32.343:INFO::Started SocketConnector@0.0.0.0:8983
 </pre>
 <p>
 This will start up the Jetty application server on port 8983, and use your terminal to display the logging information from Solr.
@@ -117,8 +114,7 @@ indicating the URL of the Solr server:
 </p>
 <pre class="code">
 user:~/solr/example/exampledocs$ <strong>java -jar post.jar solr.xml monitor.xml</strong>
-SimplePostTool: version 1.2
-SimplePostTool: WARNING: Make sure your XML documents are encoded in UTF-8, other encodings are not currently supported
+SimplePostTool: version 1.4
 SimplePostTool: POSTing files to http://localhost:8983/solr/update..
 SimplePostTool: POSTing file solr.xml
 SimplePostTool: POSTing file monitor.xml
@@ -139,19 +135,19 @@ You can index all of the sample data, using the following command (assuming your
 </p>
 <pre class="code">
 user:~/solr/example/exampledocs$ <strong>java -jar post.jar *.xml</strong>
-SimplePostTool: version 1.2
-SimplePostTool: WARNING: Make sure your XML documents are encoded in UTF-8, other encodings are not currently supported
+SimplePostTool: version 1.4
 SimplePostTool: POSTing files to http://localhost:8983/solr/update..
+SimplePostTool: POSTing file gb18030-example.xml
 SimplePostTool: POSTing file hd.xml
 SimplePostTool: POSTing file ipod_other.xml
 SimplePostTool: POSTing file ipod_video.xml
 SimplePostTool: POSTing file mem.xml
-SimplePostTool: POSTing file monitor.xml
+SimplePostTool: POSTing file money.xml
 SimplePostTool: POSTing file monitor2.xml
+SimplePostTool: POSTing file monitor.xml
 SimplePostTool: POSTing file mp500.xml
 SimplePostTool: POSTing file sd500.xml
 SimplePostTool: POSTing file solr.xml
-SimplePostTool: POSTing file spellchecker.xml
 SimplePostTool: POSTing file utf8-example.xml
 SimplePostTool: POSTing file vidcard.xml
 SimplePostTool: COMMITting Solr index changes..
@@ -582,7 +578,7 @@ in subsequent searches.
 <div id="footer">
 <div class="copyright">
         Copyright &copy;
-         2007 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
+         2012 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
 </div>
 </div>
 </body>
