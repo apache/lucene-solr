@@ -24,8 +24,8 @@
   <import file="../contrib-build.xml"/>
 
   <path id="classpath">
-    <pathelement path="${lucene-core.jar}"/>
     <pathelement path="lib/jakarta-regexp-1.4.jar"/>
+    <path refid="base.classpath"/>
   </path>
 
 </project>
