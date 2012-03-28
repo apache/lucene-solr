@@ -78,7 +78,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenTestCase {
         "朝青龍,朝青龍,アサショウリュウ,カスタム人名\n";
     JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
     Map<String,String> args = new HashMap<String,String>();
-    args.put("user-dictionary", "userdict.txt");
+    args.put("userDictionary", "userdict.txt");
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader(userDict));
     TokenStream ts = factory.create(new StringReader("関西国際空港に行った"));

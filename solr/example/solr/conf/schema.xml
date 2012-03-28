@@ -709,24 +709,35 @@
     -->
     <fieldType name="text_ja" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
       <analyzer>
-      <!-- Kuromoji Japanese morphological analyzer/tokenizer.
+      <!-- Kuromoji Japanese morphological analyzer/tokenizer (JapaneseTokenizer)
 
-           Uses a search-mode (heuristic) to get a noun-decompounding effect that is useful for search.
-           
-           Example:
-             関西国際空港 (Kansai International Airpart) becomes 関西 (Kansai) 国際 (International) 空港 (airport)
-             so we get a match when searching for 空港 (airport) as we would expect from a good search engine.
-             (With regular segmentation 関西国際空港 becomes one word and we don't get a hit.)
+           Kuromoji has a search mode (default) that does segmentation useful for search.  A heuristic
+           is used to segment compounds into its parts and the compound itself is kept as synonym.
 
-           Valid values for mode are:
+           Valid values for attribute mode are:
               normal: regular segmentation
-              search: segmentation useful for search with extra splitting (default)
+              search: segmentation useful for search with synonyms compounds (default)
             extended: same as search mode, but unigrams unknown words (experimental)
 
-           NOTE: Search-mode improves segmentation for search at the expense of part-of-speech and reading accuracy
+           For some applications it might be good to use search mode for indexing and normal mode for
+           queries to reduce recall and prevent parts of compounds from being matched and highlighted.
+           Use <analyzer type="index"> and <analyzer type="query"> for this and mode normal in query.
+
+           Kuromoji also has a convenient user dictionary feature that allows overriding the statistical
+           model with your own entries for segmentation, part-of-speech tags and readings without a need
+           to specify weights.  Notice that user dictionaries have not been subject to extensive testing.
+
+           User dictionary attributes are:
+                     userDictionary: user dictionary filename
+             userDictionaryEncoding: user dictionary encoding (default is UTF-8)
+
+           See lang/userdict_ja.txt for a sample user dictionary file.
+
+           See http://wiki.apache.org/solr/JapaneseLanguageSupport for more on Japanese language support.
         -->
         <tokenizer class="solr.JapaneseTokenizerFactory" mode="search"/>
-        <!-- Reduces inflected verbs and adjectives to their base/dictionary forms (辞書形) -->	
+        <!--<tokenizer class="solr.JapaneseTokenizerFactory" mode="search" userDictionary="lang/userdict_ja.txt"/>-->
+        <!-- Reduces inflected verbs and adjectives to their base/dictionary forms (辞書形) -->
         <filter class="solr.JapaneseBaseFormFilterFactory"/>
         <!-- Removes tokens with certain part-of-speech tags -->
         <filter class="solr.JapanesePartOfSpeechStopFilterFactory" tags="lang/stoptags_ja.txt" enablePositionIncrements="true"/>

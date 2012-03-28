@@ -42,8 +42,8 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.JapaneseTokenizerFactory"
  *       mode=NORMAL
- *       user-dictionary=user.txt
- *       user-dictionary-encoding=UTF-8
+ *       userDictionary=user.txt
+ *       userDictionaryEncoding=UTF-8
  *     /&gt;
  *     &lt;filter class="solr.JapaneseBaseFormFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
@@ -53,9 +53,9 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
 public class JapaneseTokenizerFactory extends BaseTokenizerFactory implements ResourceLoaderAware {
   private static final String MODE = "mode";
   
-  private static final String USER_DICT_PATH = "user-dictionary";
+  private static final String USER_DICT_PATH = "userDictionary";
   
-  private static final String USER_DICT_ENCODING = "user-dictionary-encoding";
+  private static final String USER_DICT_ENCODING = "userDictionaryEncoding";
 
   private UserDictionary userDictionary;
   private Mode mode;
