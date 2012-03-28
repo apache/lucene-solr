@@ -26,19 +26,11 @@
   <property name="build.dir" location="../build/phonetic" />
   <property name="dist.dir" location="../dist/phonetic" />
 
-  <path id="additional.dependencies">
-    <fileset dir="lib" includes="commons-codec-*.jar"/>
-  </path>
-
-  <pathconvert property="project.classpath"
-               targetos="unix"
-               refid="additional.dependencies"
-  />
-
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
+    <pathelement path="lib/commons-codec-1.6.jar"/>
     <path refid="base.classpath"/>
   </path>
 
