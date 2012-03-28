@@ -68,12 +68,6 @@
     <fileset dir="${common.dir}/test-framework/lib" includes="ant-*.jar"/>
   </path>
 
-  <path id="maven-ant-tasks.classpath">
-    <fileset dir="${common.dir}/lib">
-      <include name="maven-ant-tasks-*.jar"/>
-    </fileset>
-  </path>
-
   <!-- default arguments to pass to JVM executing tests -->
   <property name="testmethod" value=""/>
   <property name="args" value=""/>
