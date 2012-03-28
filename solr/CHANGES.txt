@@ -53,6 +53,10 @@ Upgrading from Solr 3.5
 * SOLR-3161: Don't use the 'qt' parameter with a leading '/'.  It probably won't work in 4.0
   and it's now limited in 3.6 to SearchHandler subclasses that aren't lazy-loaded.
 
+* SOLR-2724: Specifying <defaultSearchField> and <solrQueryParser defaultOperator="..."/> in
+  schema.xml is now considered deprecated.  Instead you are encouraged to specify these via the "df"
+  and "q.op" parameters in your request handler definition.  (David Smiley)
+
 New Features
 ----------------------
 * SOLR-2020: Add Java client that uses Apache Http Components http client (4.x).
