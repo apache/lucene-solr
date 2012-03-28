@@ -92,13 +92,23 @@ public class QueryComponent extends SearchComponent
 
     String defType = params.get(QueryParsing.DEFTYPE,QParserPlugin.DEFAULT_QTYPE);
 
-    if (rb.getQueryString() == null) {
-      rb.setQueryString( params.get( CommonParams.Q ) );
+    // get it from the response builder to give a different component a chance
+    // to set it.
+    String queryString = rb.getQueryString();
+    if (queryString == null) {
+      // this is the normal way it's set.
+      queryString = params.get( CommonParams.Q );
+      rb.setQueryString(queryString);
     }
 
     try {
       QParser parser = QParser.getParser(rb.getQueryString(), defType, req);
-      rb.setQuery( parser.getQuery() );
+      Query q = parser.getQuery();
+      if (q == null) {
+        // normalize a null query to a query that matches nothing
+        q = new BooleanQuery();        
+      }
+      rb.setQuery( q );
       rb.setSortSpec( parser.getSort(true) );
       rb.setQparser(parser);
 

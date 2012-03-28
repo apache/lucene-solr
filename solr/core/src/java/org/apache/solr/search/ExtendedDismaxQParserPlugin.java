@@ -27,14 +27,12 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.search.SolrQueryParser.MagicFieldName;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.function.BoostedQuery;
 import org.apache.solr.search.function.FunctionQuery;
 import org.apache.solr.search.function.ProductFloatFunction;
@@ -166,7 +164,8 @@ class ExtendedDismaxQParser extends QParser {
         altUserQuery = altQParser.getQuery();
         query.add( altUserQuery , BooleanClause.Occur.MUST );
       } else {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing query string" );
+        return null;
+        // throw new ParseException("missing query string" );
       }
     }
     else {     

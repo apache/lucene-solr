@@ -20,7 +20,6 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -75,7 +74,9 @@ public class DisMaxQParser extends QParser {
      */
     BooleanQuery query = new BooleanQuery(true);
 
-    addMainQuery(query, solrParams);
+    boolean notBlank = addMainQuery(query, solrParams);
+    if (!notBlank)
+      return null;
     addBoostQuery(query, solrParams);
     addBoostFunctions(query, solrParams);
 
@@ -134,7 +135,8 @@ public class DisMaxQParser extends QParser {
     }
   }
 
-  protected void addMainQuery(BooleanQuery query, SolrParams solrParams) throws ParseException {
+  /** Adds the main query to the query argument. If its blank then false is returned. */
+  protected boolean addMainQuery(BooleanQuery query, SolrParams solrParams) throws ParseException {
     Map<String, Float> phraseFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.PF));
     float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
 
@@ -153,6 +155,8 @@ public class DisMaxQParser extends QParser {
     if (userQuery == null || userQuery.trim().length() < 1) {
       // If no query is specified, we may have an alternate
       altUserQuery = getAlternateUserQuery(solrParams);
+      if (altUserQuery == null)
+        return false;
       query.add(altUserQuery, BooleanClause.Occur.MUST);
     } else {
       // There is a valid query string
@@ -167,6 +171,7 @@ public class DisMaxQParser extends QParser {
         query.add(phrase, BooleanClause.Occur.SHOULD);
       }
     }
+    return true;
   }
 
   protected Query getAlternateUserQuery(SolrParams solrParams) throws ParseException {
@@ -175,7 +180,7 @@ public class DisMaxQParser extends QParser {
       QParser altQParser = subQuery(altQ, null);
       return altQParser.getQuery();
     } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing query string");
+      return null;
     }
   }
 
