@@ -987,12 +987,6 @@
    -->
  <uniqueKey>id</uniqueKey>
 
- <!-- field for the QueryParser to use when an explicit fieldname is absent -->
- <defaultSearchField>text</defaultSearchField>
-
- <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
- <solrQueryParser defaultOperator="OR"/>
-
   <!-- copyField commands copy one field to another at the time a document
         is added to the index.  It's used either to index the same field differently,
         or to add multiple fields to the same field for easier/faster searching.  -->
