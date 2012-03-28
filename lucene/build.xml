@@ -226,8 +226,13 @@
     <contrib-crawl target="javadocs"
                    failonerror="false"/>
   </target>
+
+  <!-- called by javadocs-all, just forcing dependencies to be in lib/ for javadocs -->
+  <target name="contrib-init">
+    <contrib-crawl target="init" failonerror="true"/>
+  </target>
   	
-  <target name="javadocs-all" depends="jar-analyzers-common,jar-queryparser,jar-queries" 
+  <target name="javadocs-all" depends="contrib-init,jar-analyzers-common,jar-queryparser,jar-queries" 
           description="Generate javadoc for core and contrib classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
@@ -235,10 +240,7 @@
       <path id="javadoc.classpath">
         <path refid="classpath"/>
         <pathelement location="${ant.home}/lib/ant.jar"/>
-        <fileset dir=".">
-          <exclude name="build/**/*.jar"/>
-          <include name="**/lib/*.jar"/>
-        </fileset>
+        <fileset dir="." includes="test-framework/lib/,contrib/demo/lib/,contrib/sandbox/lib/" excludes="**/lib/*.txt"/>
         <pathelement location="${analyzers-common.jar}"/>
         <pathelement location="${queryparser.jar}"/>
         <pathelement location="${queries.jar}"/>
