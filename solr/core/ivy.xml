@@ -18,4 +18,20 @@
 -->
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="core"/>
+
+    <dependencies>
+      <dependency org="commons-codec" name="commons-codec" rev="1.6" transitive="false"/>
+      <dependency org="commons-fileupload" name="commons-fileupload" rev="1.2.1" transitive="false"/>
+      <dependency org="commons-httpclient" name="commons-httpclient" rev="3.1" transitive="false"/>
+      <dependency org="org.slf4j" name="jcl-over-slf4j" rev="1.6.1" transitive="false"/>
+      <dependency org="commons-io" name="commons-io" rev="2.1" transitive="false"/>
+      <dependency org="commons-lang" name="commons-lang" rev="2.6" transitive="false"/>
+      <dependency org="com.google.guava" name="guava" rev="r05" transitive="false"/>
+      <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="3.2.7" transitive="false"/>
+      <dependency org="org.easymock" name="easymock" rev="2.2" transitive="false"/>
+      <dependency org="org.slf4j" name="slf4j-api" rev="1.6.1" transitive="false"/>
+      <dependency org="org.slf4j" name="slf4j-jdk14" rev="1.6.1" transitive="false"/>
+      <dependency org="com.spatial4j" name="spatial4j" rev="0.2" transitive="false"/>
+      <dependency org="junit" name="junit" rev="4.10" transitive="false"/>
+    </dependencies>
 </ivy-module>
