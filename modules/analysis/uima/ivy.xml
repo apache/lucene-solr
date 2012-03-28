@@ -18,4 +18,9 @@
 -->
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="analyzers-uima"/>
+    <dependencies>
+      <dependency org="org.apache.uima" name="Tagger" rev="2.3.1" transitive="false"/>
+      <dependency org="org.apache.uima" name="WhitespaceTokenizer" rev="2.3.1" transitive="false"/>
+      <dependency org="org.apache.uima" name="uimaj-core" rev="2.3.1" transitive="false"/>
+    </dependencies>
 </ivy-module>

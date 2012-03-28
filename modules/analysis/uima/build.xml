@@ -28,17 +28,18 @@
   <property name="tests.userdir" value="src/test-files"/>
   <property name="tests.threadspercpu" value="0" />
 
-  <path id="additional.dependencies">
-    <fileset dir="lib" includes="*.jar"/>
+  <path id="uimajars">
+    <pathelement path="lib/uimaj-core-2.3.1.jar"/>
+    <pathelement path="lib/Tagger-2.3.1.jar"/>
+    <pathelement path="lib/WhitespaceTokenizer-2.3.1.jar"/>
   </path>
-
-  <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
 
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
     <pathelement path="${tests.userdir}"/>
+    <path refid="uimajars"/>
     <path refid="base.classpath"/>
   </path>
 
