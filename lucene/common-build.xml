@@ -17,7 +17,8 @@
     limitations under the License.
  -->
 
-<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant" 
+                       xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>
     This file is designed for importing into a main build file, and not intended
     for standalone use.
@@ -52,14 +53,19 @@
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
 
+  <property name="ivy.install.version" value="2.2.0" />
+  <property name="ivy.jar.dir" value="${common.dir}/lib" />
+  <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy-${ivy.install.version}.jar" />
+  <available file="${ivy.jar.file}" property="ivy.available" />
+
   <property name="junit.jar" value="junit-4.10.jar"/>
-  <property name="junit-location.jar" value="${common.dir}/lib/${junit.jar}"/>
+  <property name="junit-location.jar" value="${common.dir}/test-framework/lib/${junit.jar}"/>
   <path id="junit-path">
     <pathelement location="${junit-location.jar}"/>
   </path>
 
   <path id="ant-path">
-    <fileset dir="${common.dir}/lib" includes="ant-*.jar"/>
+    <fileset dir="${common.dir}/test-framework/lib" includes="ant-*.jar"/>
   </path>
 
   <path id="maven-ant-tasks.classpath">
@@ -249,8 +255,29 @@
     </echo>
   </target>
 
-  <target name="init">
+  <target name="init" depends="resolve">
     <!-- currently empty -->
+  </target>
+
+  <target name="download-ivy" unless="ivy.available">
+      <mkdir dir="${ivy.jar.dir}"/>
+      <!-- download Ivy from web site so that it can be used even without any special installation -->
+      <echo message="installing ivy..."/>
+        <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+            dest="${ivy.jar.file}" usetimestamp="true"/>
+   </target>
+
+  <target name="install-ivy" depends="download-ivy" unless="ivy.uptodate">
+    <property name="ivy.uptodate" value="true"/>
+    <path id="ivy.lib.path">
+      <pathelement location="${ivy.jar.file}"/>
+    </path>
+    <taskdef resource="org/apache/ivy/ant/antlib.xml"
+             uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+  </target>
+
+  <target name="resolve" depends="install-ivy">
+    <ivy:retrieve type="jar" log="quiet"/>
   </target>
 
   <target name="jflex-uptodate-check">
