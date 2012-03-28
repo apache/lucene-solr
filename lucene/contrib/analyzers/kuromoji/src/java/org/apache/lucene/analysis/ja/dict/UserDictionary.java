@@ -99,8 +99,9 @@ public final class UserDictionary implements Dictionary {
       String pos = values[3];
       
       if (segmentation.length != readings.length) {
-        // FIXME: Should probably deal with this differently.  Exception?
-        System.out.println("This entry is not properly formatted : " + line);
+        throw new RuntimeException("Illegal user dictionary entry " + values[0] +
+                                   " - the number of segmentations (" + segmentation.length + ")" +
+                                   " does not the match number of readings (" + readings.length + ")");
       }
       
       int[] wordIdAndLength = new int[segmentation.length + 1]; // wordId offset, length, length....

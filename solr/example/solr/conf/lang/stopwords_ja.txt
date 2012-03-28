@@ -6,7 +6,7 @@
 # for frequency lists, etc. that can be useful for making your own set (if desired)
 #
 # Note that there is an overlap between these stopwords and the terms stopped when used
-# in combination with the KuromojiPartOfSpeechStopFilter.  When editing this file, note
+# in combination with the JapanesePartOfSpeechStopFilter.  When editing this file, note
 # that comments are not allowed on the same line as stopwords.
 #
 # Also note that stopping is done in a case-insensitive manner.  Change your StopFilter
