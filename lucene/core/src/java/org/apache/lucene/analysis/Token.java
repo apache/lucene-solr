@@ -366,7 +366,7 @@ public class Token extends CharTermAttributeImpl
   }
 
   @Override
-  public Object clone() {
+  public Token clone() {
     Token t = (Token)super.clone();
     // Do a deep clone
     if (payload != null) {

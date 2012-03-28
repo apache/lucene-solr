@@ -193,7 +193,7 @@ public class SimpleFSDirectory extends FSDirectory {
     }
   
     @Override
-    public Object clone() {
+    public SimpleFSIndexInput clone() {
       SimpleFSIndexInput clone = (SimpleFSIndexInput)super.clone();
       clone.isClone = true;
       return clone;

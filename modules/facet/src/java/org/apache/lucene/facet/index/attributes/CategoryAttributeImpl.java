@@ -121,7 +121,7 @@ public final class CategoryAttributeImpl extends AttributeImpl implements
 
   @SuppressWarnings("unchecked")
   @Override
-  public CategoryAttribute clone() {
+  public CategoryAttributeImpl clone() {
     CategoryAttributeImpl ca = (CategoryAttributeImpl) super.clone();
     if (categoryPath != null) {
       ca.categoryPath = (CategoryPath) categoryPath.clone();

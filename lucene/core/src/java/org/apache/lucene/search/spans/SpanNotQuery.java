@@ -71,7 +71,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Object clone() {
+  public SpanNotQuery clone() {
     SpanNotQuery spanNotQuery = new SpanNotQuery((SpanQuery)include.clone(),(SpanQuery) exclude.clone());
     spanNotQuery.setBoost(getBoost());
     return  spanNotQuery;
@@ -175,12 +175,12 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
 
     SpanQuery rewrittenInclude = (SpanQuery) include.rewrite(reader);
     if (rewrittenInclude != include) {
-      clone = (SpanNotQuery) this.clone();
+      clone = this.clone();
       clone.include = rewrittenInclude;
     }
     SpanQuery rewrittenExclude = (SpanQuery) exclude.rewrite(reader);
     if (rewrittenExclude != exclude) {
-      if (clone == null) clone = (SpanNotQuery) this.clone();
+      if (clone == null) clone = this.clone();
       clone.exclude = rewrittenExclude;
     }
 

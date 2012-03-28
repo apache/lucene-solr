@@ -123,10 +123,10 @@ public abstract class AttributeImpl implements Cloneable, Attribute {
    * need to clone any members deeply,
    */
   @Override
-  public Object clone() {
-    Object clone = null;
+  public AttributeImpl clone() {
+    AttributeImpl clone = null;
     try {
-      clone = super.clone();
+      clone = (AttributeImpl)super.clone();
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);  // shouldn't happen
     }

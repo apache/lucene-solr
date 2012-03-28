@@ -450,7 +450,7 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
-  public Object clone() {
+  public ToParentBlockJoinQuery clone() {
     return new ToParentBlockJoinQuery((Query) origChildQuery.clone(),
                               parentsFilter,
                               scoreMode);

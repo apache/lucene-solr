@@ -80,7 +80,7 @@ public class CharVector implements Cloneable {
   }
 
   @Override
-  public Object clone() {
+  public CharVector clone() {
     CharVector cv = new CharVector(array.clone(), blockSize);
     cv.n = this.n;
     return cv;

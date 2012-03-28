@@ -252,7 +252,7 @@ public final class SegmentInfo implements Cloneable {
   }
 
   @Override
-  public Object clone() {
+  public SegmentInfo clone() {
     final SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, codec,
         fieldInfos == null ? null : (FieldInfos) fieldInfos.clone());
     si.docStoreOffset = docStoreOffset;

@@ -82,7 +82,7 @@ final class TermInfosReader {
     }
 
     @Override
-    public Object clone() {
+    public CloneableTerm clone() {
       return new CloneableTerm(term);
     }
   }

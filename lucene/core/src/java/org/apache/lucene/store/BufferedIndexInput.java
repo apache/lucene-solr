@@ -306,7 +306,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   protected abstract void seekInternal(long pos) throws IOException;
 
   @Override
-  public Object clone() {
+  public BufferedIndexInput clone() {
     BufferedIndexInput clone = (BufferedIndexInput)super.clone();
 
     clone.buffer = null;

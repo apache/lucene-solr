@@ -348,7 +348,7 @@ public class TernaryTree implements Cloneable {
   }
 
   @Override
-  public Object clone() {
+  public TernaryTree clone() {
     TernaryTree t = new TernaryTree();
     t.lo = this.lo.clone();
     t.hi = this.hi.clone();
@@ -484,7 +484,7 @@ public class TernaryTree implements Cloneable {
       }
 
       @Override
-      public Object clone() {
+      public Item clone() {
         return new Item(parent, child);
       }
 

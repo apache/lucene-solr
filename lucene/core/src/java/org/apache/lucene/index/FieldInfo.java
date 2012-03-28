@@ -87,7 +87,7 @@ public final class FieldInfo {
   }
   
   @Override
-  public Object clone() {
+  public FieldInfo clone() {
     return new FieldInfo(name, isIndexed, number, storeTermVector,
                          omitNorms, storePayloads, indexOptions, docValueType, normType);
   }

@@ -401,7 +401,7 @@ public class DateField extends PrimitiveFieldType {
     }
 
     @Override
-    public Object clone() {
+    public DateFormat clone() {
       ISO8601CanonicalDateFormat c
         = (ISO8601CanonicalDateFormat) super.clone();
       c.millisParser = NumberFormat.getIntegerInstance(CANONICAL_LOCALE);

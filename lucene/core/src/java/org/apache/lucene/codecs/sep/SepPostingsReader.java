@@ -161,7 +161,7 @@ public class SepPostingsReader extends PostingsReaderBase {
     ByteArrayDataInput bytesReader;
 
     @Override
-    public Object clone() {
+    public SepTermState clone() {
       SepTermState other = new SepTermState();
       other.copyFrom(this);
       return other;

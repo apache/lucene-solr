@@ -374,7 +374,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    */
   
   @Override
-  public Object clone() {
+  public SegmentInfos clone() {
     try {
       final SegmentInfos sis = (SegmentInfos) super.clone();
       // deep clone, first recreate all collections:

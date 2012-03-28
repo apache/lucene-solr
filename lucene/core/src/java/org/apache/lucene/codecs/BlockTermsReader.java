@@ -95,7 +95,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
 
     @Override
-    public Object clone() {
+    public FieldAndTerm clone() {
       return new FieldAndTerm(this);
     }
 

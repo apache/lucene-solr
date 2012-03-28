@@ -190,7 +190,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     }
 
     @Override
-    public Object clone() {
+    public CountingStream clone() {
       return new CountingStream((IndexInput) this.input.clone());
     }
 

@@ -424,7 +424,7 @@ public class NativeUnixDirectory extends FSDirectory {
     }
 
     @Override
-    public Object clone() {
+    public NativeUnixIndexInput clone() {
       try {
         return new NativeUnixIndexInput(this);
       } catch (IOException ioe) {

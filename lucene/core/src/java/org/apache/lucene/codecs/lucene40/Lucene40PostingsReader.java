@@ -105,7 +105,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     byte[] bytes;
 
     @Override
-    public Object clone() {
+    public StandardTermState clone() {
       StandardTermState other = new StandardTermState();
       other.copyFrom(this);
       return other;

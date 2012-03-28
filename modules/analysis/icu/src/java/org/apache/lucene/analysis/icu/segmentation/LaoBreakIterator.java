@@ -211,7 +211,7 @@ public class LaoBreakIterator extends BreakIterator {
    * @return The clone.
    */
   @Override
-  public Object clone() {
+  public LaoBreakIterator clone() {
     LaoBreakIterator other = (LaoBreakIterator) super.clone();
     other.rules = (RuleBasedBreakIterator) rules.clone();
     other.verify = (RuleBasedBreakIterator) verify.clone();

@@ -415,7 +415,7 @@ public final class PagedBytes {
     }
 
     @Override
-    public Object clone() {
+    public PagedBytesDataInput clone() {
       PagedBytesDataInput clone = getDataInput();
       clone.setPosition(getPosition());
       return clone;

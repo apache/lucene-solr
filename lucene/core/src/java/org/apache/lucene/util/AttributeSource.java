@@ -101,12 +101,12 @@ public class AttributeSource {
     State next;
     
     @Override
-    public Object clone() {
+    public State clone() {
       State clone = new State();
-      clone.attribute = (AttributeImpl) attribute.clone();
+      clone.attribute = attribute.clone();
       
       if (next != null) {
-        clone.next = (State) next.clone();
+        clone.next = next.clone();
       }
       
       return clone;

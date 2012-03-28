@@ -99,7 +99,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     }
 
     @Override
-    public Object clone() {
+    public Index clone() {
       Index other = new Index();
       other.fp = fp;
       return other;

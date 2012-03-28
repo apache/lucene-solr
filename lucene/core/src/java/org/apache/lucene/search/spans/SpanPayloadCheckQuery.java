@@ -90,7 +90,7 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery{
   }
 
   @Override
-  public Object clone() {
+  public SpanPayloadCheckQuery clone() {
     SpanPayloadCheckQuery result = new SpanPayloadCheckQuery((SpanQuery) match.clone(), payloadToMatch);
     result.setBoost(getBoost());
     return result;

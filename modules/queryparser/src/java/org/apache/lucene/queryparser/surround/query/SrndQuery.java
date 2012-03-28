@@ -62,9 +62,9 @@ public abstract class SrndQuery implements Cloneable {
   public boolean isFieldsSubQueryAcceptable() {return true;}
     
   @Override
-  public Object clone() {
+  public SrndQuery clone() {
     try {
-      return super.clone();
+      return (SrndQuery)super.clone();
     } catch (CloneNotSupportedException cns) {
       throw new Error(cns);
     }

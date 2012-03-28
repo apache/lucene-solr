@@ -114,7 +114,7 @@ public class CustomScoreQuery extends Query {
 
   /*(non-Javadoc) @see org.apache.lucene.search.Query#clone() */
   @Override
-  public Object clone() {
+  public CustomScoreQuery clone() {
     CustomScoreQuery clone = (CustomScoreQuery)super.clone();
     clone.subQuery = (Query) subQuery.clone();
     clone.scoringQueries = new Query[scoringQueries.length];

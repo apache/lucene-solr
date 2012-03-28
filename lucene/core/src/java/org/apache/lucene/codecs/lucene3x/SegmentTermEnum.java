@@ -100,7 +100,7 @@ final class SegmentTermEnum implements Cloneable {
   }
 
   @Override
-  protected Object clone() {
+  protected SegmentTermEnum clone() {
     SegmentTermEnum clone = null;
     try {
       clone = (SegmentTermEnum) super.clone();

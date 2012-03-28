@@ -284,7 +284,7 @@ public abstract class Directory implements Closeable {
     }
     
     @Override
-    public Object clone() {
+    public SlicedIndexInput clone() {
       SlicedIndexInput clone = (SlicedIndexInput)super.clone();
       clone.base = (IndexInput)base.clone();
       clone.fileOffset = fileOffset;

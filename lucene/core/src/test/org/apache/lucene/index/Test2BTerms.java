@@ -117,7 +117,7 @@ public class Test2BTerms extends LuceneTestCase {
       }
     
       @Override
-      public Object clone() {
+      public MyTermAttributeImpl clone() {
         throw new UnsupportedOperationException();
       }
     }

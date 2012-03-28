@@ -163,7 +163,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * Returns a deep clone of this FieldInfos instance.
    */
   @Override
-  synchronized public Object clone() {
+  synchronized public FieldInfos clone() {
     FieldInfos fis = new FieldInfos(globalFieldNumbers);
     fis.hasFreq = hasFreq;
     fis.hasProx = hasProx;

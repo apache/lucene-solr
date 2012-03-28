@@ -69,7 +69,7 @@ public class WrappedQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public Object clone() {
+  public WrappedQuery clone() {
     WrappedQuery newQ = (WrappedQuery)super.clone();
     newQ.q = (Query) q.clone();
     return newQ;

@@ -83,7 +83,7 @@ public class MorphosyntacticTagAttributeImpl extends AttributeImpl
     ((MorphosyntacticTagAttribute) target).setTag(this.tag);
   }
 
-  public Object clone() {
+  public MorphosyntacticTagAttributeImpl clone() {
     MorphosyntacticTagAttributeImpl cloned = new MorphosyntacticTagAttributeImpl();
     cloned.tag = (tag == null ? null : tag.toString());
     return cloned;

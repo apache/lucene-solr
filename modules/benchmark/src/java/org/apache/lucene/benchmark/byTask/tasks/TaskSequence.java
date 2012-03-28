@@ -508,7 +508,7 @@ public class TaskSequence extends PerfTask {
    * @see java.lang.Object#clone()
    */
   @Override
-  protected Object clone() throws CloneNotSupportedException {
+  protected TaskSequence clone() throws CloneNotSupportedException {
     TaskSequence res = (TaskSequence) super.clone();
     res.tasks = new ArrayList<PerfTask>();
     for (int i = 0; i < tasks.size(); i++) {

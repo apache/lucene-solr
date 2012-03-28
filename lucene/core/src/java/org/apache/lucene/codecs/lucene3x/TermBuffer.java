@@ -111,7 +111,7 @@ final class TermBuffer implements Cloneable {
   }
 
   @Override
-  protected Object clone() {
+  protected TermBuffer clone() {
     TermBuffer clone = null;
     try {
       clone = (TermBuffer)super.clone();

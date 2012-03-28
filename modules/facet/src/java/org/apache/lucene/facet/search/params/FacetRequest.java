@@ -114,9 +114,9 @@ public abstract class FacetRequest implements Cloneable {
   }
 
   @Override
-  public Object clone() throws CloneNotSupportedException {
+  public FacetRequest clone() throws CloneNotSupportedException {
     // Overridden to make it public
-    return super.clone();
+    return (FacetRequest)super.clone();
   }
   
   public void setNumLabel(int numLabel) {

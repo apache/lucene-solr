@@ -257,6 +257,8 @@ Changes in backwards compatibility policy
   you can use SlowCompositeReaderWrapper to make all parallel readers atomic
   and use ParallelAtomicReader.  (Uwe Schindler, Mike McCandless, Robert Muir)
 
+* LUCENE-2000: clone() now returns covariant types where possible. (ryan)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
