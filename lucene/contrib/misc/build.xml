@@ -28,7 +28,7 @@
   <import file="../contrib-build.xml"/>
 
   <target name="install-cpptasks" depends="install-ivy" unless="cpptasks.uptodate">
-    <property name="maven-tasks.uptodate" value="true"/>
+    <property name="cpptasks.uptodate" value="true"/>
     <ivy:cachepath organisation="ant-contrib" module="cpptasks" revision="1.0b5"
              inline="true" conf="master" type="jar" pathid="cpptasks.classpath"/>
     <taskdef resource="cpptasks.tasks" classpathref="cpptasks.classpath"/>
