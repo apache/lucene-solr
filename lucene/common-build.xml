@@ -810,11 +810,16 @@
   <target name="javadocs">
   	<fail message="You must redefine the javadocs task to do something!!!!!"/>
   </target>
-  
-  <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src, javadocs">
+
+  <target name="install-maven-tasks" unless="maven-tasks.uptodate">
+    <ivy:cachepath organisation="org.apache.maven" module="maven-ant-tasks" revision="2.1.3"
+             inline="true" conf="master" pathid="maven-ant-tasks.classpath"/>
     <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
              uri="antlib:org.apache.maven.artifact.ant" 
              classpathref="maven-ant-tasks.classpath"/>
+  </target>
+  
+  <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src, javadocs, install-maven-tasks">
     <sequential>
       <m2-deploy>
         <artifact-attachments>
