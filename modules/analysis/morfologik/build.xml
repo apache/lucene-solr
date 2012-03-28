@@ -26,18 +26,13 @@
   <property name="build.dir" location="../build/morfologik" />
   <property name="dist.dir" location="../dist/morfologik" />
 
-  <path id="additional.dependencies">
-    <fileset dir="lib" includes="morfologik-fsa-*.jar"/>
-    <fileset dir="lib" includes="morfologik-polish-*.jar"/>
-    <fileset dir="lib" includes="morfologik-stemming-*.jar"/>
-  </path>
-
-  <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
-
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
+    <pathelement path="lib/morfologik-fsa-1.5.2.jar"/>
+    <pathelement path="lib/morfologik-polish-1.5.2.jar"/>
+    <pathelement path="lib/morfologik-stemming-1.5.2.jar"/>
     <path refid="base.classpath"/>
   </path>
 

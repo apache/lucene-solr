@@ -18,4 +18,9 @@
 -->
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="analyzers-morfologik"/>
+    <dependencies>
+      <dependency org="org.carrot2" name="morfologik-polish" rev="1.5.2" transitive="false"/>
+      <dependency org="org.carrot2" name="morfologik-fsa" rev="1.5.2" transitive="false"/>
+      <dependency org="org.carrot2" name="morfologik-stemming" rev="1.5.2" transitive="false"/>
+    </dependencies>
 </ivy-module>
