@@ -18,5 +18,7 @@
 -->
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="spatial"/>
-    <!-- TODO: spatial lib -->
+    <dependencies>
+      <dependency org="com.spatial4j" name="spatial4j" rev="0.2" transitive="false"/>
+    </dependencies>
 </ivy-module>
