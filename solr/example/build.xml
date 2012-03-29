@@ -18,11 +18,20 @@
 <project name="solr-example" default="resolve" xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>Solr Example</description>
 
-  <target name="resolve" depends="common.resolve">
+  <target name="resolve">
+    <sequential>
+    <!-- jetty libs in lib/ -->
+    <ivy:retrieve conf="default" type="jar" log="download-only"/>
+    <!-- start.jar -->
+    <!-- TODO: put this in ivy.xml -->
     <ivy:retrieve inline="true" organisation="org.eclipse.jetty" 
                   module="jetty-start" revision="8.1.2.v20120308" 
                   transitive="false" type="jar" log="download-only" 
                   pattern="start.jar"/>
+    <!-- servlet-api.jar -->
+    <ivy:retrieve conf="servlet" log="download-only" type="orbit"
+                  pattern="lib/servlet-api-3.0.jar"/>
+    </sequential>
   </target>
 
   <import file="../common-build.xml"/>

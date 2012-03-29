@@ -253,6 +253,8 @@
   </target>
 
   <target name="resolve" depends="ivy-availability-check,ivy-fail">
+    <!-- todo, make this a property or something. 
+         only special cases need bundles -->
     <ivy:retrieve type="jar,bundle" log="download-only"/>
   </target>
   <target name="ivy-availability-check" unless="ivy.available">
