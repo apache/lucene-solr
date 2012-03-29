@@ -253,28 +253,7 @@
     <!-- currently empty -->
   </target>
 
-  <target name="download-ivy" unless="ivy.available">
-      <mkdir dir="${ivy.jar.dir}"/>
-      <!-- download Ivy from web site so that it can be used even without any special installation -->
-      <echo>
-      NOTE: You do not have ivy installed, so downloading it...
-      If you make lots of checkouts, download ivy-${ivy.install.version}.jar yourself 
-      and set ivy.jar.file to this in your ~/build.properties
-      </echo>
-        <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
-            dest="${ivy.jar.file}" usetimestamp="true"/>
-   </target>
-
-  <target name="install-ivy" depends="download-ivy" unless="ivy.uptodate">
-    <property name="ivy.uptodate" value="true"/>
-    <path id="ivy.lib.path">
-      <pathelement location="${ivy.jar.file}"/>
-    </path>
-    <taskdef resource="org/apache/ivy/ant/antlib.xml"
-             uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
-  </target>
-
-  <target name="resolve" depends="install-ivy">
+  <target name="resolve">
     <ivy:retrieve type="jar,bundle" log="quiet"/>
   </target>
 
@@ -809,7 +788,7 @@
   	<fail message="You must redefine the javadocs task to do something!!!!!"/>
   </target>
 
-  <target name="install-maven-tasks" depends="install-ivy" unless="maven-tasks.uptodate">
+  <target name="install-maven-tasks" unless="maven-tasks.uptodate">
     <property name="maven-tasks.uptodate" value="true"/>
     <ivy:cachepath organisation="org.apache.maven" module="maven-ant-tasks" revision="2.1.3"
              inline="true" conf="master" type="jar" pathid="maven-ant-tasks.classpath"/>
