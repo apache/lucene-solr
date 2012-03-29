@@ -53,11 +53,6 @@
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
 
-  <property name="ivy.install.version" value="2.2.0" />
-  <property name="ivy.jar.dir" value="${common.dir}/ivy" />
-  <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy-${ivy.install.version}.jar" />
-  <available file="${ivy.jar.file}" property="ivy.available" />
-
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" value="${common.dir}/test-framework/lib/${junit.jar}"/>
   <path id="junit-path">
@@ -254,7 +249,7 @@
   </target>
 
   <target name="resolve">
-    <ivy:retrieve type="jar,bundle" log="quiet"/>
+    <ivy:retrieve type="jar,bundle" log="download-only"/>
   </target>
 
   <target name="jflex-uptodate-check">
