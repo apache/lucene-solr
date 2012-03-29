@@ -24,12 +24,11 @@ package org.apache.lucene.util;
  * <p>Pulled from http://www.javapuzzlers.com (I
  * think?).</p>
  */
-
+@SuppressWarnings({"unchecked","rawtypes"})
 public final class Rethrow {
   /**
    * Classy puzzler to rethrow any checked exception as an unchecked one.
    */
-  @SuppressWarnings("all")
   private static class Rethrower<T extends Throwable> {
     private void rethrow(Throwable t) throws T {
       throw (T) t;
