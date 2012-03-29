@@ -18,8 +18,8 @@ package org.apache.solr.search;
 
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
+import org.apache.solr.internal.noggit.JSONUtil;
+import org.apache.solr.internal.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ByteUtils;
 import org.apache.solr.request.SolrQueryRequest;

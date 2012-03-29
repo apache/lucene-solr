@@ -18,8 +18,8 @@
 package org.apache.solr;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
+import org.apache.solr.internal.noggit.JSONUtil;
+import org.apache.solr.internal.noggit.ObjectBuilder;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;

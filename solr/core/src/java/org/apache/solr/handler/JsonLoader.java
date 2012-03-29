@@ -24,9 +24,9 @@ import java.util.Map;
 import java.util.Stack;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.noggit.JSONParser;
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.ObjectBuilder;
+import org.apache.solr.internal.noggit.JSONParser;
+import org.apache.solr.internal.noggit.JSONUtil;
+import org.apache.solr.internal.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
