@@ -47,11 +47,11 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Currency;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Field type for support of monetary values.
@@ -62,7 +62,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   protected static final String PARAM_DEFAULT_CURRENCY      = "defaultCurrency";
   protected static final String PARAM_RATE_PROVIDER_CLASS   = "providerClass";
   protected static final Object PARAM_PRECISION_STEP        = "precisionStep";
-  protected static final String DEFAULT_RATE_PROVIDER_CLASS = "org.apache.solr.schema.FileExchangeRateProvider";
+  protected static final String DEFAULT_RATE_PROVIDER_CLASS = "solr.FileExchangeRateProvider";
   protected static final String DEFAULT_DEFAULT_CURRENCY    = "USD";
   protected static final String DEFAULT_PRECISION_STEP      = "0";
   protected static final String FIELD_SUFFIX_AMOUNT_RAW     = "_amount_raw";
@@ -117,8 +117,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     args.remove(PARAM_PRECISION_STEP);
 
     try {
-      // TODO: Are we using correct classloader?
-      Class<?> c = Class.forName(exchangeRateProviderClass);
+      Class<?> c = schema.getResourceLoader().findClass(exchangeRateProviderClass);
       Object clazz = c.newInstance();
       if (clazz instanceof ExchangeRateProvider) {
         provider = (ExchangeRateProvider) clazz;
@@ -512,14 +511,15 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
   }
 
   @Override
-  public String[] listAvailableCurrencies() {
-    List<String> pairs = new ArrayList<String>();
+  public Set<String> listAvailableCurrencies() {
+    Set<String> currencies = new HashSet<String>();
     for(String from : rates.keySet()) {
+      currencies.add(from);
       for(String to : rates.get(from).keySet()) {
-        pairs.add(from+","+to);
+        currencies.add(to);
       }
     }
-    return pairs.toArray(new String[1]);
+    return currencies;
   }
 
   @Override

@@ -17,6 +17,7 @@ package org.apache.solr.schema;
  */
 
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -35,11 +36,10 @@ public interface ExchangeRateProvider {
   public double getExchangeRate(String sourceCurrencyCode, String targetCurrencyCode) throws SolrException;
   
   /**
-   * List all configured currency code pairs
-   * @return a string array of <a href="http://en.wikipedia.org/wiki/ISO_4217">ISO 4217</a> currency codes on the format
-   * ["SRC,DST", "SRC,DST"...]
+   * List all configured currency codes which are valid as source/target for this Provider
+   * @return a Set of <a href="http://en.wikipedia.org/wiki/ISO_4217">ISO 4217</a> currency code strings
    */
-  public String[] listAvailableCurrencies();
+  public Set<String> listAvailableCurrencies();
 
   /**
    * Ask the currency provider to explicitly reload/refresh its configuration.
