@@ -35,6 +35,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.Rethrow;
 
 /** 
  * Base class for all Lucene unit tests that use TokenStreams. 
@@ -335,7 +336,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         // to verify reproducability/reuse: hopefully this would catch thread hazards.
         checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean(), simple);
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        Rethrow.rethrow(e);
       }
     }
   };
@@ -395,7 +396,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         checkAnalysisConsistency(random, a, useCharFilter, text);
       } catch (Throwable t) {
         System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text='" + text + "'");
-        throw new RuntimeException(t);
+        Rethrow.rethrow(t);
       }
     }
   }
