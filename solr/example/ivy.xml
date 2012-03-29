@@ -31,6 +31,10 @@
       <dependency org="org.eclipse.jetty" name="jetty-util" rev="8.1.2.v20120308" transitive="false"/>
       <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="8.1.2.v20120308" transitive="false"/>
       <dependency org="org.eclipse.jetty" name="jetty-xml" rev="8.1.2.v20120308" transitive="false"/>
-      <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" transitive="false"/>
+      <!-- bogus
+           broken
+           bogus
+           don't use
+      <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" transitive="false"/> -->
     </dependencies>
 </ivy-module>

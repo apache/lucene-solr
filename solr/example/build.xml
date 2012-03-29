@@ -15,8 +15,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  -->
-<project name="solr-example" default="resolve">
+<project name="solr-example" default="resolve" xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>Solr Example</description>
+
+  <target name="resolve" depends="common.resolve">
+    <ivy:retrieve inline="true" organisation="org.eclipse.jetty" 
+                  module="jetty-start" revision="8.1.2.v20120308" 
+                  transitive="false" type="jar" log="download-only" 
+                  pattern="start.jar"/>
+  </target>
 
   <import file="../common-build.xml"/>
 </project>
