@@ -235,6 +235,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     SolrException.ignorePatterns.add(pattern);
   }
 
+  public static void unIgnoreException(String pattern) {
+    if (SolrException.ignorePatterns != null)
+      SolrException.ignorePatterns.remove(pattern);
+  }
+
+
   public static void resetExceptionIgnores() {
     SolrException.ignorePatterns = null;
     ignoreException("ignore_exception");  // always ignore "ignore_exception"    
