@@ -106,6 +106,9 @@ API Changes
    not take position overlaps into account while recalculating norms.
    (Uwe Schindler, Robert Muir)
 
+ * LUCENE-3936: Renamed StringIndexDocValues to DocTermsIndexDocValues.
+   (Martijn van Groningen)
+
 Bug Fixes
 
  * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
