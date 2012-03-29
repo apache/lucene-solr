@@ -128,4 +128,10 @@
     </sequential>
   </target>
 
+  <target name="ivy-bootstrap">
+    <subant target="ivy-bootstrap" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+    </subant>
+  </target>
+
 </project>
