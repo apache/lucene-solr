@@ -163,7 +163,11 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
   
   static boolean isJREBug7104012(Throwable t) {
     if (!(t instanceof ArrayIndexOutOfBoundsException)) {
-      return false;
+      // BaseTokenStreamTestCase now wraps exc in a new RuntimeException:
+      t = t.getCause();
+      if (!(t instanceof ArrayIndexOutOfBoundsException)) {
+        return false;
+      }
     }
     StackTraceElement trace[] = t.getStackTrace();
     for (StackTraceElement st : trace) {
