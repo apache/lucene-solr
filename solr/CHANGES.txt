@@ -352,6 +352,13 @@ Other Changes
   the effect of NOT specifying <indexConfig> at all gives same result as the
   example config used to give in 3.5 (janhoy, gsingers)
 
+* SOLR-3294: In contrib/clustering/lib/, replaced the manually retrowoven
+  Java 1.5-compatible carrot2-core-3.5.0.jar (which is not publicly available,
+  except from the Solr Subversion repository), with newly released Java
+  1.5-compatible carrot2-core-3.5.0.1.jar (hosted on the Maven Central
+  repository).  Also updated dependencies jackson-core-asl and
+  jackson-mapper-asl (both v1.5.2 -> v1.7.4).  (Dawid Weiss, Steve Rowe)
+
 Build
 ----------------------
 * SOLR-2487: Add build target to package war without slf4j jars (janhoy)

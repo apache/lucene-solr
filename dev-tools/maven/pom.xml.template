@@ -286,9 +286,67 @@
         <version>2.0</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-carrot2-core</artifactId>
-        <version>${project.version}</version>
+        <groupId>org.carrot2</groupId>
+        <artifactId>carrot2-core</artifactId>
+        <version>3.5.0.1</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>lucene-highlighter</artifactId>
+            <groupId>org.apache.lucene</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>lucene-analyzers</artifactId>
+            <groupId>org.apache.lucene</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>lucene-memory</artifactId>
+            <groupId>org.apache.lucene</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>rome-fetcher</artifactId>
+            <groupId>net.java.dev.rome</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>jdom</artifactId>
+            <groupId>org.jdom</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>httpclient</artifactId>
+            <groupId>org.apache.httpcomponents</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>rome</artifactId>
+            <groupId>net.java.dev.rome</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>lucene-core</artifactId>
+            <groupId>org.apache.lucene</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>commons-codec</artifactId>
+            <groupId>commons-codec</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>httpmime</artifactId>
+            <groupId>org.apache.httpcomponents</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>slf4j-api</artifactId>
+            <groupId>org.slf4j</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>guava</artifactId>
+            <groupId>com.google.guava</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>commons-lang</artifactId>
+            <groupId>commons-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>ehcache-core</artifactId>
+            <groupId>net.sf.ehcache</groupId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.codehaus.woodstox</groupId>
@@ -606,33 +664,6 @@
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-resources-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>filter-carrot2-core-pom</id>
-                <phase>process-resources</phase>
-                <goals>
-                  <goal>copy-resources</goal>
-                </goals>
-                <configuration>
-                  <resources>
-                    <resource>  <!-- Filter carrot2-core POM, for local install -->
-                      <directory>solr/contrib/clustering/lib</directory>
-                      <includes>
-                        <include>*pom.xml.template</include>
-                      </includes>
-                      <filtering>true</filtering>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-            </executions>
-            <configuration>
-              <outputDirectory>${project.build.directory}</outputDirectory>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-install-plugin</artifactId>
             <executions>
               <execution>
@@ -675,23 +706,6 @@
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
                   <file>solr/lib/apache-solr-noggit-r1099557.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <!-- In order to be able to compile with Java5, we need to -->
-                <!-- use the org.carrot2:carrot2-core .jar compiled with   -->
-                <!-- Java5 in solr/contrib/clustering/lib/ - the .jar in   -->
-                <!-- the central Maven repository was compiled with Java6. -->
-                <!-- The version in the carrot2-core POM file is filtered  -->
-                <!-- so that the version is the same as this project's.    -->
-                <id>install-java5-carrot2-core</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <file>solr/contrib/clustering/lib/carrot2-core-3.5.0.jar</file>
-                  <pomFile>lucene/build/lucene-solr-grandparent/solr-carrot2-core-pom.xml.template</pomFile>
                 </configuration>  
               </execution>
               <execution>
