@@ -244,7 +244,14 @@
       <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
     </target>
 
-    <target name="init" depends="contrib-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
+    <!-- we don't actually need to compile this thing, we just want its lib -->
+    <target name="resolve-icu">
+       <ant dir="${common.dir}/../modules/analysis/icu/" target="resolve" inheritAll="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+    </target>
+
+    <target name="init" depends="contrib-build.init,resolve-icu,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
   
     <target name="clean-javacc">
       <fileset dir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml" includes="*.java">
