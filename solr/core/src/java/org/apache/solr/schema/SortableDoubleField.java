@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.StringIndexDocValues;
+import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -121,7 +121,7 @@ class SortableDoubleFieldSource extends FieldCacheSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final double def = defVal;
 
-    return new StringIndexDocValues(this, readerContext, field) {
+    return new DocTermsIndexDocValues(this, readerContext, field) {
       private final BytesRef spare = new BytesRef();
 
       @Override

@@ -31,17 +31,18 @@ import org.apache.lucene.util.mutable.MutableValueStr;
 
 import java.io.IOException;
 
-/** Internal class, subject to change.
- *  Serves as base class for FunctionValues based on StringIndex 
- **/
-public abstract class StringIndexDocValues extends FunctionValues {
+/**
+ * Internal class, subject to change.
+ * Serves as base class for FunctionValues based on DocTermsIndex.
+ */
+public abstract class DocTermsIndexDocValues extends FunctionValues {
   protected final FieldCache.DocTermsIndex termsIndex;
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
   protected final BytesRef spare = new BytesRef();
   protected final CharsRef spareChars = new CharsRef();
 
-  public StringIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
+  public DocTermsIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
     try {
       termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
     } catch (RuntimeException e) {
@@ -155,11 +156,11 @@ public abstract class StringIndexDocValues extends FunctionValues {
   }
 
   public static final class StringIndexException extends RuntimeException {
-    public StringIndexException(final String fieldName,
-                                final RuntimeException cause) {
-      super("Can't initialize StringIndex to generate (function) " +
-              "FunctionValues for field: " + fieldName, cause);
+
+    public StringIndexException(final String fieldName, final RuntimeException cause) {
+      super("Can't initialize StringIndex to generate (function) FunctionValues for field: " + fieldName, cause);
     }
+
   }
 
 
