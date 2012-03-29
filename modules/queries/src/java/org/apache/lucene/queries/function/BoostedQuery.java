@@ -20,6 +20,7 @@ package org.apache.lucene.queries.function;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -52,7 +53,7 @@ public class BoostedQuery extends Query {
   }
 
   @Override
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
     q.extractTerms(terms);
   }
 
