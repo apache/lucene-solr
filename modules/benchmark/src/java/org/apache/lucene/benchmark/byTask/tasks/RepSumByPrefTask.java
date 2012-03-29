@@ -60,7 +60,7 @@ public class RepSumByPrefTask extends ReportTask {
         TaskStats stat2 = p2.get(name);
         if (stat2 == null) {
           try {
-            stat2 = (TaskStats) stat1.clone();
+            stat2 = stat1.clone();
           } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
           }

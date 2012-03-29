@@ -56,7 +56,7 @@ public class ScoredDocIdsUtils {
     final OpenBitSet complement;
     if (docIdSet instanceof OpenBitSet) {
       // That is the most common case, if ScoredDocIdsCollector was used.
-      complement = (OpenBitSet) ((OpenBitSet) docIdSet).clone();
+      complement = ((OpenBitSet) docIdSet).clone();
     } else {
       complement = new OpenBitSetDISI(docIdSet.iterator(), maxDoc);
     }

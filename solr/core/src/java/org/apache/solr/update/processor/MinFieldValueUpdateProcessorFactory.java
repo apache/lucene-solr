@@ -60,7 +60,7 @@ public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetU
     Collection result = values;
     try {
       result = Collections.singletonList
-        (Collections.min((Collection)values));
+        (Collections.min(values));
     } catch (ClassCastException e) {
       throw new SolrException
         (BAD_REQUEST, 

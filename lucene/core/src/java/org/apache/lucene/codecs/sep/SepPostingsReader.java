@@ -172,13 +172,13 @@ public class SepPostingsReader extends PostingsReaderBase {
       super.copyFrom(_other);
       SepTermState other = (SepTermState) _other;
       if (docIndex == null) {
-        docIndex = (IntIndexInput.Index) other.docIndex.clone();
+        docIndex = other.docIndex.clone();
       } else {
         docIndex.set(other.docIndex);
       }
       if (other.freqIndex != null) {
         if (freqIndex == null) {
-          freqIndex = (IntIndexInput.Index) other.freqIndex.clone();
+          freqIndex = other.freqIndex.clone();
         } else {
           freqIndex.set(other.freqIndex);
         }
@@ -187,7 +187,7 @@ public class SepPostingsReader extends PostingsReaderBase {
       }
       if (other.posIndex != null) {
         if (posIndex == null) {
-          posIndex = (IntIndexInput.Index) other.posIndex.clone();
+          posIndex = other.posIndex.clone();
         } else {
           posIndex.set(other.posIndex);
         }

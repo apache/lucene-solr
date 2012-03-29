@@ -156,7 +156,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
   @Test
   public void testClone() throws Exception {
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
-    IndexWriterConfig clone = (IndexWriterConfig) conf.clone();
+    IndexWriterConfig clone = conf.clone();
 
     // Clone is shallow since not all parameters are cloneable.
     assertTrue(conf.getIndexDeletionPolicy() == clone.getIndexDeletionPolicy());

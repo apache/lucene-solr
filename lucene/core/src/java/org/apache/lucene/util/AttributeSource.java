@@ -334,7 +334,7 @@ public class AttributeSource {
    */
   public final State captureState() {
     final State state = this.getCurrentState();
-    return (state == null) ? null : (State) state.clone();
+    return (state == null) ? null : state.clone();
   }
   
   /**
@@ -466,7 +466,7 @@ public class AttributeSource {
     if (hasAttributes()) {
       // first clone the impls
       for (State state = getCurrentState(); state != null; state = state.next) {
-        clone.attributeImpls.put(state.attribute.getClass(), (AttributeImpl) state.attribute.clone());
+        clone.attributeImpls.put(state.attribute.getClass(), state.attribute.clone());
       }
       
       // now the interfaces

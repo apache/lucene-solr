@@ -54,7 +54,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
       Iterator<String> fni = getFieldNames().listIterator();
       SrndQuery qc;
       while (fni.hasNext()) {
-        qc = (SrndQuery) q.clone();
+        qc = q.clone();
         queries.add( new FieldsQuery( qc, fni.next(), fieldOp));
       }
       OrQuery oq = new OrQuery(queries,

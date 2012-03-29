@@ -729,7 +729,7 @@ public class BlockTermsReader extends FieldsProducer {
       public TermState termState() throws IOException {
         //System.out.println("BTR.termState this=" + this);
         decodeMetaData();
-        TermState ts = (TermState) state.clone();
+        TermState ts = state.clone();
         //System.out.println("  return ts=" + ts);
         return ts;
       }

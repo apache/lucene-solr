@@ -248,9 +248,9 @@ public abstract class FacetRequest implements Cloneable {
   public FacetResultsHandler createFacetResultsHandler(TaxonomyReader taxonomyReader) {
     try {
       if (resultMode == ResultMode.PER_NODE_IN_TREE) {
-        return new TopKInEachNodeHandler(taxonomyReader, (FacetRequest) clone());
+        return new TopKInEachNodeHandler(taxonomyReader, clone());
       } 
-      return new TopKFacetResultsHandler(taxonomyReader, (FacetRequest) clone());
+      return new TopKFacetResultsHandler(taxonomyReader, clone());
     } catch (CloneNotSupportedException e) {
       // Shouldn't happen since we implement Cloneable. If it does happen, it is
       // probably because the class was changed to not implement Cloneable

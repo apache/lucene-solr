@@ -340,12 +340,12 @@ final class TermInfosReader {
 
   /** Returns an enumeration of all the Terms and TermInfos in the set. */
   public SegmentTermEnum terms() {
-    return (SegmentTermEnum)origEnum.clone();
+    return origEnum.clone();
   }
 
   /** Returns an enumeration of terms starting at or after the named term. */
   public SegmentTermEnum terms(Term term) throws IOException {
     get(term, true);
-    return (SegmentTermEnum)getThreadResources().termEnum.clone();
+    return getThreadResources().termEnum.clone();
   }
 }

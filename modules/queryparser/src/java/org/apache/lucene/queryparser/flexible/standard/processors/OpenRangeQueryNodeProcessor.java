@@ -37,11 +37,10 @@ public class OpenRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
     
     if (node instanceof TermRangeQueryNode) {
       TermRangeQueryNode rangeNode = (TermRangeQueryNode) node;
-      FieldQueryNode lowerNode = (FieldQueryNode) rangeNode.getLowerBound();
-      FieldQueryNode upperNode = (FieldQueryNode) rangeNode.getUpperBound();
+      FieldQueryNode lowerNode = rangeNode.getLowerBound();
+      FieldQueryNode upperNode = rangeNode.getUpperBound();
       CharSequence lowerText = lowerNode.getText();
       CharSequence upperText = upperNode.getText();
-      
       
       if (OPEN_RANGE_TOKEN.equals(upperNode.getTextAsString())
           && (!(upperText instanceof UnescapedCharSequence) || !((UnescapedCharSequence) upperText)
@@ -57,7 +56,6 @@ public class OpenRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       
       lowerNode.setText(lowerText);
       upperNode.setText(upperText);
-      
     }
     
     return node;

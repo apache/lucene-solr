@@ -99,7 +99,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
     CharArrayIterator ci = new CharArrayIterator();
     ci.setText(text, 0, text.length);
     ci.next();
-    CharArrayIterator ci2 = (CharArrayIterator) ci.clone();
+    CharArrayIterator ci2 = ci.clone();
     assertEquals(ci.getIndex(), ci2.getIndex());
     assertEquals(ci.next(), ci2.next());
     assertEquals(ci.last(), ci2.last());

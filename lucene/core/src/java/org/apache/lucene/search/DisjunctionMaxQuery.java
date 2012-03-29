@@ -190,7 +190,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       Query singleton = disjuncts.get(0);
       Query result = singleton.rewrite(reader);
       if (getBoost() != 1.0f) {
-        if (result == singleton) result = (Query)result.clone();
+        if (result == singleton) result = result.clone();
         result.setBoost(getBoost() * result.getBoost());
       }
       return result;

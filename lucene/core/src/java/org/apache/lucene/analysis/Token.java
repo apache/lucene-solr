@@ -370,7 +370,7 @@ public class Token extends CharTermAttributeImpl
     Token t = (Token)super.clone();
     // Do a deep clone
     if (payload != null) {
-      t.payload = (Payload) payload.clone();
+      t.payload = payload.clone();
     }
     return t;
   }
@@ -386,7 +386,7 @@ public class Token extends CharTermAttributeImpl
     t.flags = flags;
     t.type = type;
     if (payload != null)
-      t.payload = (Payload) payload.clone();
+      t.payload = payload.clone();
     return t;
   }
 
@@ -577,13 +577,13 @@ public class Token extends CharTermAttributeImpl
       to.reinit(this);
       // reinit shares the payload, so clone it:
       if (payload !=null) {
-        to.payload = (Payload) payload.clone();
+        to.payload = payload.clone();
       }
     } else {
       super.copyTo(target);
       ((OffsetAttribute) target).setOffset(startOffset, endOffset);
       ((PositionIncrementAttribute) target).setPositionIncrement(positionIncrement);
-      ((PayloadAttribute) target).setPayload((payload == null) ? null : (Payload) payload.clone());
+      ((PayloadAttribute) target).setPayload((payload == null) ? null : payload.clone());
       ((FlagsAttribute) target).setFlags(flags);
       ((TypeAttribute) target).setType(type);
     }

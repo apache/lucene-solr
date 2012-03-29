@@ -95,7 +95,7 @@ public class PrefixAwareTokenFilter extends TokenStream {
         // Make it a deep copy
         Payload p = previousPrefixToken.getPayload();
         if (p != null) {
-          previousPrefixToken.setPayload((Payload) p.clone());
+          previousPrefixToken.setPayload(p.clone());
         }
         setCurrentToken(nextToken);
         return true;

@@ -124,7 +124,7 @@ public final class CategoryAttributeImpl extends AttributeImpl implements
   public CategoryAttributeImpl clone() {
     CategoryAttributeImpl ca = (CategoryAttributeImpl) super.clone();
     if (categoryPath != null) {
-      ca.categoryPath = (CategoryPath) categoryPath.clone();
+      ca.categoryPath = categoryPath.clone();
     }
     if (properties != null && !properties.isEmpty()) {
       ca.properties = (HashMap<Class<? extends CategoryProperty>, CategoryProperty>) properties

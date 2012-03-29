@@ -347,7 +347,7 @@ public class TaskSequence extends PerfTask {
     int index = 0;
     for (int k=0; k<repetitions; k++) {
       for (int i = 0; i < tasksArray.length; i++) {
-        final PerfTask task = (PerfTask) tasksArray[i].clone();
+        final PerfTask task = tasksArray[i].clone();
         t[index++] = new ParallelTask(task);
       }
     }
@@ -512,7 +512,7 @@ public class TaskSequence extends PerfTask {
     TaskSequence res = (TaskSequence) super.clone();
     res.tasks = new ArrayList<PerfTask>();
     for (int i = 0; i < tasks.size(); i++) {
-      res.tasks.add((PerfTask)tasks.get(i).clone());
+      res.tasks.add(tasks.get(i).clone());
     }
     return res;
   }

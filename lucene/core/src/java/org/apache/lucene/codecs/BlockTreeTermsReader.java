@@ -803,7 +803,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       @Override
       public TermState termState() throws IOException {
         currentFrame.decodeMetaData();
-        return (TermState) currentFrame.termState.clone();
+        return currentFrame.termState.clone();
       }
 
       private Frame getFrame(int ord) throws IOException {
@@ -2166,7 +2166,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       public TermState termState() throws IOException {
         assert !eof;
         currentFrame.decodeMetaData();
-        TermState ts = (TermState) currentFrame.state.clone();
+        TermState ts = currentFrame.state.clone();
         //if (DEBUG) System.out.println("BTTR.termState seg=" + segment + " state=" + ts);
         return ts;
       }

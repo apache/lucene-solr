@@ -116,7 +116,7 @@ class TermInfosReaderIndex {
   }
 
   void seekEnum(SegmentTermEnum enumerator, int indexOffset) throws IOException {
-    PagedBytesDataInput input = (PagedBytesDataInput) dataInput.clone();
+    PagedBytesDataInput input = dataInput.clone();
     
     input.setPosition(indexToDataOffset.get(indexOffset));
 
@@ -152,7 +152,7 @@ class TermInfosReaderIndex {
   int getIndexOffset(Term term) throws IOException {
     int lo = 0;
     int hi = indexSize - 1;
-    PagedBytesDataInput input = (PagedBytesDataInput) dataInput.clone();
+    PagedBytesDataInput input = dataInput.clone();
     BytesRef scratch = new BytesRef();
     while (hi >= lo) {
       int mid = (lo + hi) >>> 1;
@@ -176,7 +176,7 @@ class TermInfosReaderIndex {
    * @throws IOException
    */
   Term getTerm(int termIndex) throws IOException {
-    PagedBytesDataInput input = (PagedBytesDataInput) dataInput.clone();
+    PagedBytesDataInput input = dataInput.clone();
     input.setPosition(indexToDataOffset.get(termIndex));
 
     // read the term
@@ -206,7 +206,7 @@ class TermInfosReaderIndex {
    * @throws IOException 
    */
   int compareTo(Term term, int termIndex) throws IOException {
-    return compareTo(term, termIndex, (PagedBytesDataInput) dataInput.clone(), new BytesRef());
+    return compareTo(term, termIndex, dataInput.clone(), new BytesRef());
   }
 
   /**

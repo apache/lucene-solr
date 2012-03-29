@@ -216,11 +216,11 @@ public class LaoBreakIterator extends BreakIterator {
     other.rules = (RuleBasedBreakIterator) rules.clone();
     other.verify = (RuleBasedBreakIterator) verify.clone();
     if (text != null)
-      other.text = (CharArrayIterator) text.clone();
+      other.text = text.clone();
     if (working != null)
-      other.working = (CharArrayIterator) working.clone();
+      other.working = working.clone();
     if (verifyText != null)
-      other.verifyText = (CharArrayIterator) verifyText.clone();
+      other.verifyText = verifyText.clone();
     return other;
   }
 }

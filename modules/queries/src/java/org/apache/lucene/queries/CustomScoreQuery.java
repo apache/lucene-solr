@@ -88,14 +88,14 @@ public class CustomScoreQuery extends Query {
     
     final Query sq = subQuery.rewrite(reader);
     if (sq != subQuery) {
-      clone = (CustomScoreQuery) clone();
+      clone = clone();
       clone.subQuery = sq;
     }
 
     for(int i = 0; i < scoringQueries.length; i++) {
       final Query v = scoringQueries[i].rewrite(reader);
       if (v != scoringQueries[i]) {
-        if (clone == null) clone = (CustomScoreQuery) clone();
+        if (clone == null) clone = clone();
         clone.scoringQueries[i] = v;
       }
     }
@@ -116,10 +116,10 @@ public class CustomScoreQuery extends Query {
   @Override
   public CustomScoreQuery clone() {
     CustomScoreQuery clone = (CustomScoreQuery)super.clone();
-    clone.subQuery = (Query) subQuery.clone();
+    clone.subQuery = subQuery.clone();
     clone.scoringQueries = new Query[scoringQueries.length];
     for(int i = 0; i < scoringQueries.length; i++) {
-      clone.scoringQueries[i] = (Query) scoringQueries[i].clone();
+      clone.scoringQueries[i] = scoringQueries[i].clone();
     }
     return clone;
   }

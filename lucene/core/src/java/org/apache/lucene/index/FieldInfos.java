@@ -169,7 +169,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     fis.hasProx = hasProx;
     fis.hasVectors = hasVectors;
     for (FieldInfo fi : this) {
-      FieldInfo clone = (FieldInfo) (fi).clone();
+      FieldInfo clone = fi.clone();
       fis.putInternal(clone);
     }
     return fis;
@@ -444,7 +444,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
     final FieldInfos roFis = new FieldInfos((FieldNumberBiMap)null);
     for (FieldInfo fieldInfo : this) {
-      FieldInfo clone = (FieldInfo) (fieldInfo).clone();
+      FieldInfo clone = fieldInfo.clone();
       roFis.putInternal(clone);
       roFis.hasVectors |= clone.storeTermVector;
       roFis.hasProx |= clone.isIndexed && clone.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;

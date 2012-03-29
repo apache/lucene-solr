@@ -61,7 +61,7 @@ public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttrib
   public PayloadAttributeImpl clone()  {
     PayloadAttributeImpl clone = (PayloadAttributeImpl) super.clone();
     if (payload != null) {
-      clone.payload = (Payload) payload.clone();
+      clone.payload = payload.clone();
     }
     return clone;
   }
@@ -92,7 +92,7 @@ public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttrib
   @Override
   public void copyTo(AttributeImpl target) {
     PayloadAttribute t = (PayloadAttribute) target;
-    t.setPayload((payload == null) ? null : (Payload) payload.clone());
+    t.setPayload((payload == null) ? null : payload.clone());
   }  
 
   

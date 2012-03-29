@@ -44,7 +44,7 @@ public class BoostingQuery extends Query {
 
     public BoostingQuery(Query match, Query context, float boost) {
       this.match = match;
-      this.context = (Query) context.clone();        // clone before boost
+      this.context = context.clone();        // clone before boost
       this.boost = boost;
       this.context.setBoost(0.0f);                      // ignore context-only matches
     }

@@ -354,7 +354,7 @@ public class TernaryTree implements Cloneable {
     t.hi = this.hi.clone();
     t.eq = this.eq.clone();
     t.sc = this.sc.clone();
-    t.kv = (CharVector) this.kv.clone();
+    t.kv = this.kv.clone();
     t.root = this.root;
     t.freenode = this.freenode;
     t.length = this.length;
@@ -556,11 +556,11 @@ public class TernaryTree implements Cloneable {
           case 1:
             if (sc[i.parent] != 0) {
               res = eq[i.parent];
-              ns.push((Item) i.clone());
+              ns.push(i.clone());
               ks.append(sc[i.parent]);
             } else {
               i.child++;
-              ns.push((Item) i.clone());
+              ns.push(i.clone());
               res = hi[i.parent];
             }
             climb = false;
@@ -568,7 +568,7 @@ public class TernaryTree implements Cloneable {
 
           case 2:
             res = hi[i.parent];
-            ns.push((Item) i.clone());
+            ns.push(i.clone());
             if (ks.length() > 0) {
               ks.setLength(ks.length() - 1); // pop
             }
