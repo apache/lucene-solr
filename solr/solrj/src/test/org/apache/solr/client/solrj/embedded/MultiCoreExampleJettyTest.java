@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -95,7 +96,7 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
       // setup the server...
       String url = "http://localhost:"+port+context+"/"+name;
       HttpSolrServer s = new HttpSolrServer( url );
-      s.setConnectionTimeout(100); // 1/10th sec
+      s.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;

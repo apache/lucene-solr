@@ -1356,7 +1356,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       String url = "http://localhost:" + port + context + "/"
           + DEFAULT_COLLECTION;
       HttpSolrServer s = new HttpSolrServer(url);
-      s.setConnectionTimeout(100); // 1/10th sec
+      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setSoTimeout(15000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);

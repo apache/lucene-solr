@@ -43,7 +43,7 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
       // setup the server...
       String url = "http://localhost:"+port+context;
       HttpSolrServer s = new HttpSolrServer( url );
-      s.setConnectionTimeout(100); // 1/10th sec
+      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
 

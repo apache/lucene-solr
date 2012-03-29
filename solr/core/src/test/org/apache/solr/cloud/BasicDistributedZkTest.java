@@ -605,7 +605,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     try {
       // setup the server...
       HttpSolrServer s = new HttpSolrServer(baseUrl + "/" + collection);
-      s.setConnectionTimeout(100); // 1/10th sec
+      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
