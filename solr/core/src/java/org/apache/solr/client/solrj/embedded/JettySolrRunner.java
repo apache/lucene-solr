@@ -28,8 +28,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.handler.GzipHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -124,6 +124,7 @@ public class JettySolrRunner {
 
     // Initialize the servlets
     final ServletContextHandler root = new ServletContextHandler(server,context,ServletContextHandler.SESSIONS);
+    root.setHandler(new GzipHandler());
     server.addLifeCycleListener(new LifeCycle.Listener() {
 
       public void lifeCycleStopping(LifeCycle arg0) {

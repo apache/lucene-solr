@@ -20,16 +20,14 @@ package org.apache.solr.client.solrj.embedded;
 import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.search.SolrIndexSearcher.QueryResult;
 import org.junit.Test;
 
 /**
@@ -96,7 +94,7 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     try {
       // setup the server...
       String url = "http://localhost:"+port+context+"/"+name;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
+      HttpSolrServer s = new HttpSolrServer( url );
       s.setConnectionTimeout(100); // 1/10th sec
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);

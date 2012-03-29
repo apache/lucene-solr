@@ -17,11 +17,10 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.lucene.util.LuceneTestCase;
-
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
 /**
  * 
@@ -38,9 +37,9 @@ public class SolrExceptionTest extends LuceneTestCase {
     try {
       // switched to a local address to avoid going out on the net, ns lookup issues, etc.
       // set a 1ms timeout to let the connection fail faster.
-      HttpClient httpClient = new HttpClient(new MultiThreadedHttpConnectionManager());
-      httpClient.getParams().setParameter("http.connection.timeout", new Integer(1));
-      SolrServer client = new CommonsHttpSolrServer("http://[ff01::114]:11235/solr/", httpClient);
+      DefaultHttpClient httpClient = new DefaultHttpClient(new ThreadSafeClientConnManager());
+      httpClient.getParams().setIntParameter("http.connection.timeout", 1);
+      SolrServer client = new HttpSolrServer("http://[ff01::114]:11235/solr/", httpClient);
       SolrQuery query = new SolrQuery("test123");
       client.query(query);
     } catch (SolrServerException sse) {

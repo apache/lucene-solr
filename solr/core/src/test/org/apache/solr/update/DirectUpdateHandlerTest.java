@@ -88,7 +88,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertU(adoc("id","5"));
 
     // search - not committed - "5" should not be found.
-    assertQ(req("q","id:5"), "//*[@numFound='0']");
+    assertQ(req("qt","standard","q","id:5"), "//*[@numFound='0']");
 
     assertU(commit());
 

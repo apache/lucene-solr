@@ -22,7 +22,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -68,7 +68,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testStreamUrl() throws Exception {
-    CommonsHttpSolrServer solrServer = (CommonsHttpSolrServer) getSolrServer();
+    HttpSolrServer solrServer = (HttpSolrServer) getSolrServer();
     String streamUrl = solrServer.getBaseURL()+"/select?q=*:*&fl=id&wt=csv";
 
     String getUrl = solrServer.getBaseURL()+"/debug/dump?wt=xml&stream.url="+URLEncoder.encode(streamUrl,"UTF-8");
@@ -127,7 +127,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   /** Compose a url that if you get it, it will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
-    CommonsHttpSolrServer solrServer = (CommonsHttpSolrServer) getSolrServer();
+    HttpSolrServer solrServer = (HttpSolrServer) getSolrServer();
     String deleteQuery = "<delete><query>*:*</query></delete>";
     return solrServer.getBaseURL()+"/update?commit=true&stream.body="+ URLEncoder.encode(deleteQuery, "UTF-8");
   }

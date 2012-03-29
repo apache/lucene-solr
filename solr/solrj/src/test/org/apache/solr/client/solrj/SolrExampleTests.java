@@ -29,12 +29,11 @@ import junit.framework.Assert;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -288,19 +287,19 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     
     // save the old parser, so we can set it back.
     ResponseParser oldParser = null;
-    if (server instanceof CommonsHttpSolrServer) {
-      CommonsHttpSolrServer cserver = (CommonsHttpSolrServer) server;
+    if (server instanceof HttpSolrServer) {
+      HttpSolrServer cserver = (HttpSolrServer) server;
       oldParser = cserver.getParser();
     }
     
     try {
       for (int iteration = 0; iteration < numIterations; iteration++) {
         // choose format
-        if (server instanceof CommonsHttpSolrServer) {
+        if (server instanceof HttpSolrServer) {
           if (random.nextBoolean()) {
-            ((CommonsHttpSolrServer) server).setParser(new BinaryResponseParser());
+            ((HttpSolrServer) server).setParser(new BinaryResponseParser());
           } else {
-            ((CommonsHttpSolrServer) server).setParser(new XMLResponseParser());
+            ((HttpSolrServer) server).setParser(new XMLResponseParser());
           }
         }
 
@@ -336,7 +335,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     } finally {
       if (oldParser != null) {
         // set the old parser back
-        ((CommonsHttpSolrServer)server).setParser(oldParser);
+        ((HttpSolrServer)server).setParser(oldParser);
       }
     }
   }

@@ -20,7 +20,7 @@ package org.apache.solr;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
 
@@ -34,7 +34,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
   public static JettySolrRunner jetty;
   public static int port;
-  public static SolrServer server;
+  public static SolrServer server = null;
   public static String context;
 
   public static JettySolrRunner createJetty(String solrHome, String configFile, String context) throws Exception {
@@ -87,7 +87,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       try {
         // setup the server...
         String url = "http://localhost:"+port+context;
-        CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
+        HttpSolrServer s = new HttpSolrServer( url );
         s.setConnectionTimeout(100); // 1/10th sec
         s.setDefaultMaxConnectionsPerHost(100);
         s.setMaxTotalConnections(100);

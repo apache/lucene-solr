@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -48,7 +48,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    CommonsHttpSolrServer commonsHttpSolrServer = (CommonsHttpSolrServer) getSolrServer();
+    HttpSolrServer commonsHttpSolrServer = (HttpSolrServer) getSolrServer();
     commonsHttpSolrServer.setRequestWriter(new RequestWriter());
     commonsHttpSolrServer.deleteByQuery( "*:*" ); // delete everything!    
     doIt(commonsHttpSolrServer);
@@ -56,7 +56,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithBinary()throws Exception{
-    CommonsHttpSolrServer commonsHttpSolrServer = (CommonsHttpSolrServer) getSolrServer();
+    HttpSolrServer commonsHttpSolrServer = (HttpSolrServer) getSolrServer();
     commonsHttpSolrServer.setRequestWriter(new BinaryRequestWriter());
     commonsHttpSolrServer.deleteByQuery( "*:*" ); // delete everything!
     doIt(commonsHttpSolrServer);
@@ -64,7 +64,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithBinaryBean()throws Exception{
-    CommonsHttpSolrServer commonsHttpSolrServer = (CommonsHttpSolrServer) getSolrServer();
+    HttpSolrServer commonsHttpSolrServer = (HttpSolrServer) getSolrServer();
     commonsHttpSolrServer.setRequestWriter(new BinaryRequestWriter());
     commonsHttpSolrServer.deleteByQuery( "*:*" ); // delete everything!
     final int[] counter = new int[1];
@@ -100,7 +100,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     String cat;
   }
        
-  private void doIt(CommonsHttpSolrServer commonsHttpSolrServer) throws SolrServerException, IOException {
+  private void doIt(HttpSolrServer commonsHttpSolrServer) throws SolrServerException, IOException {
     final int[] counter = new int[1];
     counter[0] = 0;
     commonsHttpSolrServer.add(new Iterator<SolrInputDocument>() {

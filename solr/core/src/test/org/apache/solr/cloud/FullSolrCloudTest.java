@@ -25,12 +25,13 @@ import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.http.params.CoreConnectionPNames;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -206,8 +207,9 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
           server.setDefaultCollection(DEFAULT_COLLECTION);
           server.getLbServer().getHttpClient().getParams()
-              .setConnectionManagerTimeout(5000);
-          server.getLbServer().getHttpClient().getParams().setSoTimeout(15000);
+              .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
+          server.getLbServer().getHttpClient().getParams()
+              .setParameter(CoreConnectionPNames.SO_TIMEOUT, 15000);
           cloudClient = server;
         } catch (MalformedURLException e) {
           throw new RuntimeException(e);
@@ -348,7 +350,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
-          int port = new URI(((CommonsHttpSolrServer) client).getBaseURL())
+          int port = new URI(((HttpSolrServer) client).getBaseURL())
               .getPort();
           
           if (shard.getKey().contains(":" + port + "_")) {
@@ -475,7 +477,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     }
     controlClient.add(doc);
     
-    CommonsHttpSolrServer client = (CommonsHttpSolrServer) clients
+    HttpSolrServer client = (HttpSolrServer) clients
         .get(serverNumber);
     
     UpdateRequest ureq = new UpdateRequest();
@@ -1207,7 +1209,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
         Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
         for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
           String shardName = new URI(
-              ((CommonsHttpSolrServer) client).getBaseURL()).getPort()
+              ((HttpSolrServer) client).getBaseURL()).getPort()
               + "_solr_";
           if (verbose && shard.getKey().endsWith(shardName)) {
             System.err.println("shard:" + slice.getKey());
@@ -1317,7 +1319,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
     if (VERBOSE || printLayoutOnTearDown) {
       super.printLayout();
     }
-    ((CommonsHttpSolrServer) controlClient).shutdown();
+    ((HttpSolrServer) controlClient).shutdown();
     if (cloudClient != null) {
       cloudClient.close();
     }
@@ -1353,7 +1355,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       // setup the server...
       String url = "http://localhost:" + port + context + "/"
           + DEFAULT_COLLECTION;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
+      HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(100); // 1/10th sec
       s.setSoTimeout(15000);
       s.setDefaultMaxConnectionsPerHost(100);

@@ -21,7 +21,7 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
@@ -42,7 +42,7 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
     try {
       // setup the server...
       String url = "http://localhost:"+port+context;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
+      HttpSolrServer s = new HttpSolrServer( url );
       s.setConnectionTimeout(100); // 1/10th sec
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);

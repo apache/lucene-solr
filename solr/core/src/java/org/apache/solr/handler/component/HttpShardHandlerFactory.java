@@ -16,10 +16,15 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.params.HttpMethodParams;
+import java.net.MalformedURLException;
+import java.util.Random;
+import java.util.concurrent.*;
+
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.params.CoreConnectionPNames;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -28,10 +33,6 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.MalformedURLException;
-import java.util.Random;
-import java.util.concurrent.*;
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements PluginInfoInitialized {
   protected static Logger log = LoggerFactory.getLogger(HttpShardHandlerFactory.class);
@@ -64,7 +65,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
 
   public String scheme = "http://"; //current default values
 
-  private MultiThreadedHttpConnectionManager mgr;
+  private ThreadSafeClientConnManager mgr;
   // socket timeout measured in ms, closes a socket if read
   // takes longer than x ms to complete. throws
   // java.net.SocketTimeoutException: Read timed out exception
@@ -100,7 +101,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
     return getShardHandler(null);
   }
 
-  public ShardHandler getShardHandler(HttpClient httpClient) {
+  public ShardHandler getShardHandler(DefaultHttpClient httpClient){
     return new HttpShardHandler(this, httpClient);
   }
 
@@ -130,18 +131,20 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
         new DefaultSolrThreadFactory("httpShardExecutor")
     );
 
-    mgr = new MultiThreadedHttpConnectionManager();
-    mgr.getParams().setDefaultMaxConnectionsPerHost(this.maxConnectionsPerHost);
-    mgr.getParams().setMaxTotalConnections(10000);
-    mgr.getParams().setConnectionTimeout(this.connectionTimeout);
-    mgr.getParams().setSoTimeout(this.soTimeout);
+    mgr = new ThreadSafeClientConnManager();
+    mgr.setDefaultMaxPerRoute(256);
+    mgr.setMaxTotal(10000);
+    DefaultHttpClient client = new DefaultHttpClient(mgr);
+    
+    client.getParams().setIntParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, connectionTimeout);
+    client.getParams().setIntParameter(CoreConnectionPNames.SO_TIMEOUT, soTimeout);
     // mgr.getParams().setStaleCheckingEnabled(false);
 
-    client = new HttpClient(mgr);
 
     // prevent retries  (note: this didn't work when set on mgr.. needed to be set on client)
-    DefaultHttpMethodRetryHandler retryhandler = new DefaultHttpMethodRetryHandler(0, false);
-    client.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, retryhandler);
+    DefaultHttpRequestRetryHandler retryhandler = new DefaultHttpRequestRetryHandler(0, false);
+    client.setHttpRequestRetryHandler(retryhandler);
+    this.client = client;
 
     try {
       loadbalancer = new LBHttpSolrServer(client);

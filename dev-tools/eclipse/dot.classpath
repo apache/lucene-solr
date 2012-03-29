@@ -104,7 +104,9 @@
 	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1211150.jar"/>
 	<classpathentry kind="lib" path="solr/lib/apache-solr-commons-csv-1.0-SNAPSHOT-r966014.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
-	<classpathentry kind="lib" path="solr/lib/commons-httpclient-3.1.jar"/>
+	<classpathentry kind="lib" path="solr/lib/httpclient-4.1.3.jar"/>
+	<classpathentry kind="lib" path="solr/lib/httpcore-4.1.4.jar"/>
+	<classpathentry kind="lib" path="solr/lib/httpmime-4.1.3.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-io-2.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-lang-2.6.jar"/>
 	<classpathentry kind="lib" path="solr/lib/easymock-2.2.jar"/>

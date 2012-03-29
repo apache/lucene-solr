@@ -23,12 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.params.CoreConnectionPNames;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
@@ -55,17 +55,16 @@ public class SyncStrategy {
 
   private ShardHandler shardHandler;
   
-  private static MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
-  private static HttpClient client = new HttpClient(mgr);
+  private static ThreadSafeClientConnManager mgr = new ThreadSafeClientConnManager();
+  private static DefaultHttpClient client = new DefaultHttpClient(mgr);
   static {
-    mgr.getParams().setDefaultMaxConnectionsPerHost(20);
-    mgr.getParams().setMaxTotalConnections(10000);
-    mgr.getParams().setConnectionTimeout(30000);
-    mgr.getParams().setSoTimeout(30000);
-
+    mgr.setDefaultMaxPerRoute(20);
+    mgr.setMaxTotal(10000);
+    client.getParams().setIntParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 30000);
+    client.getParams().setIntParameter(CoreConnectionPNames.SO_TIMEOUT, 30000);
     // prevent retries  (note: this didn't work when set on mgr.. needed to be set on client)
-    DefaultHttpMethodRetryHandler retryhandler = new DefaultHttpMethodRetryHandler(0, false);
-    client.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, retryhandler);
+    DefaultHttpRequestRetryHandler retryhandler = new DefaultHttpRequestRetryHandler(0, false);
+    client.setHttpRequestRetryHandler(retryhandler);
   }
   
   public SyncStrategy() {
@@ -241,7 +240,7 @@ public class SyncStrategy {
            recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
            recoverRequestCmd.setCoreName(((SyncShardRequest)srsp.getShardRequest()).coreName);
            
-           CommonsHttpSolrServer server = new CommonsHttpSolrServer(zkLeader.getBaseUrl());
+           HttpSolrServer server = new HttpSolrServer(zkLeader.getBaseUrl());
            server.request(recoverRequestCmd);
          } catch (Exception e) {
            log.info("Could not tell a replica to recover", e);

@@ -16,11 +16,24 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import org.apache.commons.httpclient.HttpClient;
+import java.net.ConnectException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -41,10 +54,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
-
-import java.net.ConnectException;
-import java.util.*;
-import java.util.concurrent.*;
 
 public class HttpShardHandler extends ShardHandler {
 
@@ -152,7 +161,7 @@ public class HttpShardHandler extends ShardHandler {
           if (urls.size() <= 1) {
             String url = urls.get(0);
             srsp.setShardAddress(url);
-            SolrServer server = new CommonsHttpSolrServer(url, httpClient == null ? httpShardHandlerFactory.client : httpClient);
+            SolrServer server = new HttpSolrServer(url, httpClient == null ? httpShardHandlerFactory.client : httpClient);
             ssr.nl = server.request(req);
           } else {
             LBHttpSolrServer.Rsp rsp = httpShardHandlerFactory.loadbalancer.request(new LBHttpSolrServer.Req(req, urls));

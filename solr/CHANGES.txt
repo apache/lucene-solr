@@ -508,6 +508,9 @@ Upgrading from Solr 3.5
 
 New Features
 ----------------------
+* SOLR-2020: Add Java client that uses Apache Http Components http client (4.x).
+  (Chantal Ackermann, Ryan McKinley, Yonik Seeley, siren)
+
 * SOLR-2854: Now load URL content stream data (via stream.url) when called for during request handling,
   rather than loading URL content streams automatically regardless of use.
   (David Smiley and Ryan McKinley via ehatcher)

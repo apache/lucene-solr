@@ -174,3 +174,9 @@
       of your accepting any such warranty or additional liability.
 
    END OF TERMS AND CONDITIONS
+   
+This project contains annotations derived from JCIP-ANNOTATIONS
+Copyright (c) 2005 Brian Goetz and Tim Peierls.
+See http://www.jcip.net and the Creative Commons Attribution License 
+(http://creativecommons.org/licenses/by/2.5)
+

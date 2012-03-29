@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -87,7 +87,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     List<Node> nodes = new ArrayList<Node>();
 
     ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        ((CommonsHttpSolrServer) controlClient).getBaseURL(),
+        ((HttpSolrServer) controlClient).getBaseURL(),
         ZkStateReader.CORE_NAME_PROP, "");
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
 
@@ -109,7 +109,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         .getNumFound();
     assertEquals(1, numFound);
     
-    CommonsHttpSolrServer client = (CommonsHttpSolrServer) clients.get(0);
+    HttpSolrServer client = (HttpSolrServer) clients.get(0);
     nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
         client.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));

@@ -36,7 +36,7 @@ import junit.framework.TestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -230,9 +230,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void destroyServers() throws Exception {
     controlJetty.stop();
-    ((CommonsHttpSolrServer) controlClient).shutdown();
+    ((HttpSolrServer) controlClient).shutdown();
     for (JettySolrRunner jetty : jettys) jetty.stop();
-    for (SolrServer client : clients) ((CommonsHttpSolrServer) client).shutdown();
+    for (SolrServer client : clients) ((HttpSolrServer) client).shutdown();
     clients.clear();
     jettys.clear();
   }
@@ -259,7 +259,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     try {
       // setup the server...
       String url = "http://localhost:" + port + context;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
+      HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(100); // 1/10th sec
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);

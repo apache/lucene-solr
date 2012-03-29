@@ -19,10 +19,10 @@ package org.apache.solr;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.commons.io.IOUtils;
 
@@ -51,7 +51,7 @@ public class TestSolrCoreProperties extends LuceneTestCase {
 
     solrJetty.start();
     String url = "http://localhost:" + solrJetty.getLocalPort() + "/solr";
-    client = new CommonsHttpSolrServer(url);
+    client = new HttpSolrServer(url);
 
   }
 

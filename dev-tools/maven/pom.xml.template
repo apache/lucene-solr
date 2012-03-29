@@ -45,6 +45,7 @@
     <jetty.version>8.1.2.v20120308</jetty.version>
     <slf4j.version>1.6.1</slf4j.version>
     <tika.version>1.0</tika.version>
+    <httpcomponents.version>4.1.3</httpcomponents.version>
   </properties>
   <issueManagement>
     <system>JIRA</system>
@@ -150,9 +151,14 @@
         <version>2.1</version>
       </dependency>
       <dependency>
-        <groupId>commons-httpclient</groupId>
-        <artifactId>commons-httpclient</artifactId>
-        <version>3.1</version>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>${httpcomponents.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpmime</artifactId>
+        <version>${httpcomponents.version}</version>
       </dependency>
       <dependency>
         <groupId>commons-lang</groupId>

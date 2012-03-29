@@ -38,7 +38,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
@@ -288,7 +288,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
   private void testNumberOfCommitsWithCommitAfterAdd()
       throws MalformedURLException, SolrServerException, IOException {
-    long startCommits = getNumCommits((CommonsHttpSolrServer) clients.get(0));
+    long startCommits = getNumCommits((HttpSolrServer) clients.get(0));
     
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update/csv");
     up.addFile(getFile("books_numeric_ids.csv"));
@@ -296,14 +296,14 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = clients.get(0).request(up);
     
-    long endCommits = getNumCommits((CommonsHttpSolrServer) clients.get(0));
+    long endCommits = getNumCommits((HttpSolrServer) clients.get(0));
 
     assertEquals(startCommits + 1L, endCommits);
   }
 
-  private Long getNumCommits(CommonsHttpSolrServer solrServer) throws MalformedURLException,
+  private Long getNumCommits(HttpSolrServer solrServer) throws MalformedURLException,
       SolrServerException, IOException {
-    CommonsHttpSolrServer server = new CommonsHttpSolrServer(solrServer.getBaseURL());
+    HttpSolrServer server = new HttpSolrServer(solrServer.getBaseURL());
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/admin/mbeans?key=updateHandler&stats=true");
     // use generic request to avoid extra processing of queries
@@ -322,7 +322,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     SolrServer client = clients.get(0);
     otherCollectionClients.put(oneInstanceCollection2, collectionClients);
-    String baseUrl = ((CommonsHttpSolrServer) client).getBaseURL();
+    String baseUrl = ((HttpSolrServer) client).getBaseURL();
     createCollection(oneInstanceCollection2, collectionClients, baseUrl, 1, "slice1");
     createCollection(oneInstanceCollection2, collectionClients, baseUrl, 2, "slice2");
     createCollection(oneInstanceCollection2, collectionClients, baseUrl, 3, "slice2");
@@ -386,7 +386,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
   private void testSearchByCollectionName() throws SolrServerException {
     SolrServer client = clients.get(0);
-    String baseUrl = ((CommonsHttpSolrServer) client).getBaseURL();
+    String baseUrl = ((HttpSolrServer) client).getBaseURL();
     
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -400,7 +400,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     SolrServer client = clients.get(0);
     otherCollectionClients.put(oneInstanceCollection , collectionClients);
-    String baseUrl = ((CommonsHttpSolrServer) client).getBaseURL();
+    String baseUrl = ((HttpSolrServer) client).getBaseURL();
     createCollection(oneInstanceCollection, collectionClients, baseUrl, 1);
     createCollection(oneInstanceCollection, collectionClients, baseUrl, 2);
     createCollection(oneInstanceCollection, collectionClients, baseUrl, 3);
@@ -458,9 +458,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       IOException, InterruptedException {
     Callable call = new Callable() {
       public Object call() {
-        CommonsHttpSolrServer server;
+        HttpSolrServer server;
         try {
-          server = new CommonsHttpSolrServer(baseUrl);
+          server = new HttpSolrServer(baseUrl);
           
           Create createCmd = new Create();
           createCmd.setRoles("none");
@@ -570,10 +570,10 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       final int frozeUnique = unique;
       Callable call = new Callable() {
         public Object call() {
-          CommonsHttpSolrServer server;
+          HttpSolrServer server;
           try {
-            server = new CommonsHttpSolrServer(
-                ((CommonsHttpSolrServer) client).getBaseURL());
+            server = new HttpSolrServer(
+                ((HttpSolrServer) client).getBaseURL());
             
             Create createCmd = new Create();
             createCmd.setCoreName(collection);
@@ -590,7 +590,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       };
      
       collectionClients.add(createNewSolrServer(collection,
-          ((CommonsHttpSolrServer) client).getBaseURL()));
+          ((HttpSolrServer) client).getBaseURL()));
       pending.add(completionService.submit(call));
       while (pending != null && pending.size() > 0) {
         
@@ -604,7 +604,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   protected SolrServer createNewSolrServer(String collection, String baseUrl) {
     try {
       // setup the server...
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer(baseUrl + "/" + collection);
+      HttpSolrServer s = new HttpSolrServer(baseUrl + "/" + collection);
       s.setConnectionTimeout(100); // 1/10th sec
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
