@@ -293,7 +293,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // Also see TestRemoteStreaming#testQtUpdateFails()
     try {
       ignoreException("isShard is only acceptable");
-      query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
+      // query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
       // fail();
     } catch (SolrException e) {
       //expected
