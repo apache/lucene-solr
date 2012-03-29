@@ -57,7 +57,7 @@ Includes contrib/queries/lib/jakarta-regexp-1.4.jar from Apache Jakarta Regexp
 Includes software from other Apache Software Foundation projects,
 including, but not limited to:
  - Commons Compress (contrib/benchmark/lib/commons-compress-1.0.jar)
- - Xerces (contrib/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar)
+ - Xerces (contrib/benchmark/lib/xercesImpl-2.9.1.jar)
 
 The SmartChineseAnalyzer source code (under contrib/analyzers) was
 provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
