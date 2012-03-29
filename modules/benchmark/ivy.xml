@@ -20,5 +20,6 @@
     <info organisation="org.apache.lucene" module="benchmark"/>
     <dependencies>
       <dependency org="org.apache.commons" name="commons-compress" rev="1.2" transitive="false"/>
+      <dependency org="xerces" name="xercesImpl" rev="2.9.1" transitive="false"/>
     </dependencies>
 </ivy-module>
