@@ -360,6 +360,11 @@
         <artifactId>spatial4j</artifactId>
         <version>0.2</version>
       </dependency>
+      <dependency>
+        <groupId>xerces</groupId>
+        <artifactId>xercesImpl</artifactId>
+        <version>2.9.1</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <dependencies>
@@ -631,20 +636,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-install-plugin</artifactId>
             <executions>
-              <execution>
-                <id>install-xercesImpl</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>${project.groupId}</groupId>
-                  <artifactId>lucene-xercesImpl</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar</file>
-                </configuration>  
-              </execution>
               <execution>
                 <id>install-solr-commons-csv</id>
                 <phase>install</phase>
