@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.noggit.JSONWriter;
+import org.apache.solr.internal.noggit.JSONWriter;
 
 public class CoreState implements JSONWriter.Writable {
 

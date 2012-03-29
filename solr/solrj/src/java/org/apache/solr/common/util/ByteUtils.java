@@ -17,7 +17,7 @@
 
 package org.apache.solr.common.util;
 
-import org.apache.noggit.CharArr;
+import org.apache.solr.internal.noggit.CharArr;
 
 public class ByteUtils {
 
