@@ -18,7 +18,9 @@
 <project name="solr-example" default="resolve" xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>Solr Example</description>
 
-  <target name="resolve">
+  <import file="../common-build.xml"/>
+
+  <target name="resolve" depends="ivy-availability-check">
     <sequential>
     <!-- jetty libs in lib/ -->
     <ivy:retrieve conf="default" type="jar" log="download-only"/>
@@ -34,5 +36,4 @@
     </sequential>
   </target>
 
-  <import file="../common-build.xml"/>
 </project>
