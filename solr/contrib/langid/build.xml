@@ -39,4 +39,13 @@
     <m2-deploy-with-pom-template pom.xml="${solr-langid.dir}/lib/langdetect-pom.xml.template"
                                  jar.file="${solr-langid.dir}/lib/langdetect-r111.jar" />
   </target>
+
+   <!-- hack: do this better -->
+   <target name="fetch">
+     <get src="http://language-detection.googlecode.com/git-history/c51112119be53a81e59706ce57bacaa90c052284/lib/langdetect.jar" 
+          dest="lib/langdetect-c51112119be53a81e59706ce57bacaa90c052284.jar"/>
+     <get src="http://language-detection.googlecode.com/git-history/c51112119be53a81e59706ce57bacaa90c052284/lib/jsonic-1.2.0.jar" 
+          dest="lib/jsonic-1.2.0.jar"/>
+   </target>
+  <target name="compile-core" depends="fetch,solr-contrib-build.compile-core"/>
 </project>
