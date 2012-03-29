@@ -195,11 +195,7 @@
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
   </target>
 
-  <target name="lucene-javadocs-all">
-    <ant dir="${common.dir}" target="javadocs-all" inheritall="false"/>
-  </target>
-
-  <target name="javadocs" depends="compile-core,lucene-javadocs-all,define-lucene-javadoc-url">
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url">
    	<sequential>
       <mkdir dir="${javadoc.dir}"/>
       <mkdir dir="${dest}/META-INF/"/>

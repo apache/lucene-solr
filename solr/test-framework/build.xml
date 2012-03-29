@@ -42,7 +42,7 @@
   <!-- Override common-solr.javadocs to include a JUnit javadoc link     -->
   <!-- and to copy the built javadocs to ${dest}/docs/api/test-framework -->
   <target name="javadocs"
-          depends="compile-core,lucene-javadocs-all,define-lucene-javadoc-url">
+          depends="compile-core,define-lucene-javadoc-url">
     <sequential>
       <mkdir dir="${javadoc.dir}"/>
       <mkdir dir="${dest}/META-INF/"/>
