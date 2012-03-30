@@ -158,7 +158,7 @@
       <path refid="base.classpath"/>
     	<fileset dir="lib">
     	  <include name="commons-compress-1.2.jar"/>
-    	  <include name="xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
+    	  <include name="xercesImpl-2.9.1.jar"/>
     	</fileset>
     </path>
     <path id="run.classpath">
