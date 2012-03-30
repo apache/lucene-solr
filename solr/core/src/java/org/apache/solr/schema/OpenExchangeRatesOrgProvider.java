@@ -225,6 +225,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
              
           case JSONParser.OBJECT_END:
           case JSONParser.OBJECT_START:
+          case JSONParser.EOF:
             break;
 
           default:
