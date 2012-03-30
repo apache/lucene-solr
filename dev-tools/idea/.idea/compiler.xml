@@ -22,6 +22,7 @@
       <entry name="?*.incl" />
       <entry name="?*.jpeg" />
       <entry name="?*.jpg" />
+      <entry name="?*.json" />
       <entry name="?*.mem" />
       <entry name="?*.mt" />
       <entry name="?*.nrm" />
