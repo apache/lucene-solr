@@ -431,34 +431,34 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
   
   public void testCyclicAliasing() throws IOException, Exception {
     try {
-      h.query(req("defType","edismax", "q","Zapp Pig", "qf","who", "f.who.qf","name","f.name.qf","who"));
+      h.query(req("defType","edismax", "q","ignore_exception", "qf","who", "f.who.qf","name","f.name.qf","who"));
       fail("Simple cyclic alising");
     } catch (SolrException e) {
       assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
     }
     
     try {
-      h.query(req("defType","edismax", "q","Zapp Pig", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
+      h.query(req("defType","edismax", "q","ignore_exception", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
       fail();
     } catch (SolrException e) {
       assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
     }
     
     try {
-      h.query(req("defType","edismax", "q","Zapp Pig", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6"));
+      h.query(req("defType","edismax", "q","ignore_exception", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6"));
     } catch (SolrException e) {
       fail("This is not cyclic alising");
     }
     
     try {
-      h.query(req("defType","edismax", "q","Zapp Pig", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4"));
+      h.query(req("defType","edismax", "q","ignore_exception", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4"));
       fail();
     } catch (SolrException e) {
       assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
     }
     
     try {
-      h.query(req("defType","edismax", "q","who:(Zapp Pig)", "qf","field1", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
+      h.query(req("defType","edismax", "q","who:(Zapp Pig) ignore_exception", "qf","field1", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
       fail();
     } catch (SolrException e) {
       assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
