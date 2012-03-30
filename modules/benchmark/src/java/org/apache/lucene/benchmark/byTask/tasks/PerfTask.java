@@ -111,10 +111,10 @@ public abstract class PerfTask implements Cloneable {
   }
   
   @Override
-  protected Object clone() throws CloneNotSupportedException {
+  protected PerfTask clone() throws CloneNotSupportedException {
     // tasks having non primitive data structures should override this.
     // otherwise parallel running of a task sequence might not run correctly. 
-    return super.clone();
+    return (PerfTask)super.clone();
   }
 
   public void close() throws Exception {

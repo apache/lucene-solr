@@ -145,7 +145,7 @@ public final class IndexUpgrader {
       }
     }
     
-    final IndexWriterConfig c = (IndexWriterConfig) iwc.clone();
+    final IndexWriterConfig c = iwc.clone();
     c.setMergePolicy(new UpgradeIndexMergePolicy(c.getMergePolicy()));
     c.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     

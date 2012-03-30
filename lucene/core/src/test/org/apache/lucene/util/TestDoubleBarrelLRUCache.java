@@ -156,7 +156,7 @@ public class TestDoubleBarrelLRUCache extends LuceneTestCase {
     }
 
     @Override
-    public Object clone() {
+    public CloneableObject clone() {
       return new CloneableObject(value);
     }
   }
@@ -179,7 +179,7 @@ public class TestDoubleBarrelLRUCache extends LuceneTestCase {
     }
 
     @Override
-    public Object clone() {
+    public CloneableInteger clone() {
       return new CloneableInteger(value);
     }
   }

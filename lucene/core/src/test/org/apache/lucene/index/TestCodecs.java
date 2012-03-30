@@ -255,7 +255,7 @@ public class TestCodecs extends LuceneTestCase {
     final FieldData[] fields = new FieldData[] {field};
 
     final Directory dir = newDirectory();
-    FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
+    FieldInfos clonedFieldInfos = fieldInfos.clone();
     this.write(fieldInfos, dir, fields, true);
     Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, codec, clonedFieldInfos);
@@ -311,7 +311,7 @@ public class TestCodecs extends LuceneTestCase {
       System.out.println("TEST: now write postings");
     }
 
-    FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
+    FieldInfos clonedFieldInfos = fieldInfos.clone();
     this.write(fieldInfos, dir, fields, false);
     Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, codec, clonedFieldInfos);

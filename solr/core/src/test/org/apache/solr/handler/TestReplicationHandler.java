@@ -41,7 +41,7 @@ import org.apache.solr.TestDistributedSearch;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -131,7 +131,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     try {
       // setup the server...
       String url = "http://localhost:" + port + context;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
+      HttpSolrServer s = new HttpSolrServer(url);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;

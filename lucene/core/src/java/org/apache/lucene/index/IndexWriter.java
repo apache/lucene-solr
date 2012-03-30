@@ -585,7 +585,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public IndexWriter(Directory d, IndexWriterConfig conf)
       throws CorruptIndexException, LockObtainFailedException, IOException {
-    config = (IndexWriterConfig) conf.clone();
+    config = conf.clone();
     directory = d;
     analyzer = conf.getAnalyzer();
     infoStream = conf.getInfoStream();
@@ -2431,7 +2431,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             // no partial changes (eg a delete w/o
             // corresponding add from an updateDocument) can
             // sneak into the commit point:
-            toCommit = (SegmentInfos) segmentInfos.clone();
+            toCommit = segmentInfos.clone();
 
             pendingCommitChangeCount = changeCount;
 

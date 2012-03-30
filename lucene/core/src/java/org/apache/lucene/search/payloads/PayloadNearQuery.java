@@ -76,7 +76,7 @@ public class PayloadNearQuery extends SpanNearQuery {
   }
 
   @Override
-  public Object clone() {
+  public PayloadNearQuery clone() {
     int sz = clauses.size();
     SpanQuery[] newClauses = new SpanQuery[sz];
 

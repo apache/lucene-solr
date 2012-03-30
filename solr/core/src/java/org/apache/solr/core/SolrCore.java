@@ -1543,8 +1543,9 @@ public final class SolrCore implements SolrInfoMBean {
     toLog.add("path", req.getContext().get("path"));
     toLog.add("params", "{" + req.getParamString() + "}");
 
-    if (req.getParams().getBool(ShardParams.IS_SHARD,false) && !(handler instanceof SearchHandler))
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"isShard is only acceptable with search handlers");
+    // TODO: this doesn't seem to be working correctly and causes problems with the example server and distrib (for example /spell)
+    // if (req.getParams().getBool(ShardParams.IS_SHARD,false) && !(handler instanceof SearchHandler))
+    //   throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"isShard is only acceptable with search handlers");
 
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(handler,req,rsp);

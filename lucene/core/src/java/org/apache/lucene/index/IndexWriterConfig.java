@@ -185,11 +185,11 @@ public final class IndexWriterConfig implements Cloneable {
   }
 
   @Override
-  public Object clone() {
+  public IndexWriterConfig clone() {
     // Shallow clone is the only thing that's possible, since parameters like
     // analyzer, index commit etc. do not implement Cloneable.
     try {
-      return super.clone();
+      return (IndexWriterConfig)super.clone();
     } catch (CloneNotSupportedException e) {
       // should not happen
       throw new RuntimeException(e);

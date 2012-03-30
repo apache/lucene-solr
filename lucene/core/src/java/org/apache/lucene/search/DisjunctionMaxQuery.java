@@ -190,7 +190,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       Query singleton = disjuncts.get(0);
       Query result = singleton.rewrite(reader);
       if (getBoost() != 1.0f) {
-        if (result == singleton) result = (Query)result.clone();
+        if (result == singleton) result = result.clone();
         result.setBoost(getBoost() * result.getBoost());
       }
       return result;
@@ -200,7 +200,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       Query clause = disjuncts.get(i);
       Query rewrite = clause.rewrite(reader);
       if (rewrite != clause) {
-        if (clone == null) clone = (DisjunctionMaxQuery)this.clone();
+        if (clone == null) clone = this.clone();
         clone.disjuncts.set(i, rewrite);
       }
     }
@@ -211,7 +211,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   /** Create a shallow copy of us -- used in rewriting if necessary
    * @return a copy of us (but reuse, don't copy, our subqueries) */
   @Override @SuppressWarnings("unchecked")
-  public Object clone() {
+  public DisjunctionMaxQuery clone() {
     DisjunctionMaxQuery clone = (DisjunctionMaxQuery)super.clone();
     clone.disjuncts = (ArrayList<Query>) this.disjuncts.clone();
     return clone;

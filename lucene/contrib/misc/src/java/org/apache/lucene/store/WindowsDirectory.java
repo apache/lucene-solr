@@ -120,7 +120,7 @@ public class WindowsDirectory extends FSDirectory {
     }
     
     @Override
-    public Object clone() {
+    public WindowsIndexInput clone() {
       WindowsIndexInput clone = (WindowsIndexInput)super.clone();
       clone.isClone = true;
       return clone;

@@ -106,6 +106,9 @@ API Changes
    not take position overlaps into account while recalculating norms.
    (Uwe Schindler, Robert Muir)
 
+ * LUCENE-3936: Renamed StringIndexDocValues to DocTermsIndexDocValues.
+   (Martijn van Groningen)
+
 Bug Fixes
 
  * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
@@ -290,6 +293,9 @@ Bug Fixes
  * LUCENE-3894: ICUTokenizer, NGramTokenizer and EdgeNGramTokenizer
    could stop early if the Reader only partially fills the provided
    buffer. (Mike McCandless) 
+   
+ * LUCENE-3937: Workaround a XERCES-J bug in benchmark module.
+   (Uwe Schindler, Robert Muir, Mike McCandless)
   
 Documentation
 

@@ -475,7 +475,7 @@ public class CheckIndex {
     }
 
 
-    result.newSegments = (SegmentInfos) sis.clone();
+    result.newSegments = sis.clone();
     result.newSegments.clear();
     result.maxSegmentName = -1;
 
@@ -642,7 +642,7 @@ public class CheckIndex {
       }
 
       // Keeper
-      result.newSegments.add((SegmentInfo) info.clone());
+      result.newSegments.add(info.clone());
     }
 
     if (0 == result.numBadSegments) {

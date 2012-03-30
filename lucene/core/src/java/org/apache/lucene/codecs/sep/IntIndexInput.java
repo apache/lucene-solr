@@ -47,7 +47,7 @@ public abstract class IntIndexInput implements Closeable {
     public abstract void set(Index other);
     
     @Override
-    public abstract Object clone();
+    public abstract Index clone();
   }
 
   public abstract static class Reader {

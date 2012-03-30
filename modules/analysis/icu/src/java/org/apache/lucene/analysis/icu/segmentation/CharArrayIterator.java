@@ -109,7 +109,7 @@ final class CharArrayIterator implements CharacterIterator {
   }
 
   @Override
-  public Object clone() {
+  public CharArrayIterator clone() {
     CharArrayIterator clone = new CharArrayIterator();
     clone.setText(array, start, length);
     clone.index = index;

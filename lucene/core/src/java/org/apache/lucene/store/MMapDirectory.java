@@ -412,7 +412,7 @@ public class MMapDirectory extends FSDirectory {
     }
   
     @Override
-    public Object clone() {
+    public MMapIndexInput clone() {
       if (buffers == null) {
         throw new AlreadyClosedException("MMapIndexInput already closed: " + this);
       }

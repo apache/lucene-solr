@@ -39,7 +39,7 @@ public final class SingleTokenTokenStream extends TokenStream {
     super(Token.TOKEN_ATTRIBUTE_FACTORY);
     
     assert token != null;
-    this.singleToken = (Token) token.clone();
+    this.singleToken = token.clone();
     
     tokenAtt = (AttributeImpl) addAttribute(CharTermAttribute.class);
     assert (tokenAtt instanceof Token);
@@ -63,10 +63,10 @@ public final class SingleTokenTokenStream extends TokenStream {
   }
 
   public Token getToken() {
-    return (Token) singleToken.clone();
+    return singleToken.clone();
   }
 
   public void setToken(Token token) {
-    this.singleToken = (Token) token.clone();
+    this.singleToken = token.clone();
   }
 }

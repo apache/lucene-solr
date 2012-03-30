@@ -25,7 +25,7 @@ import java.util.Map.Entry;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -333,10 +333,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // TODO: what if its is already recovering? Right now recoveries queue up -
       // should they?
       String recoveryUrl = error.node.getBaseUrl();
-      CommonsHttpSolrServer server;
+      HttpSolrServer server;
       log.info("try and ask " + recoveryUrl + " to recover");
       try {
-        server = new CommonsHttpSolrServer(recoveryUrl);
+        server = new HttpSolrServer(recoveryUrl);
         server.setSoTimeout(5000);
         server.setConnectionTimeout(5000);
         

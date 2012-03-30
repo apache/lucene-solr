@@ -23,8 +23,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * Tests currency field type.
@@ -86,10 +86,24 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     
     // A few tests on the provider directly
     ExchangeRateProvider p = ((CurrencyField) tmp).getProvider();
-    String[] available = p.listAvailableCurrencies();
-    assert(available.length == 5);
+    Set<String> availableCurrencies = p.listAvailableCurrencies();
+    assert(availableCurrencies.size() == 4);
     assert(p.reload() == true);
     assert(p.getExchangeRate("USD", "EUR") == 2.5);
+  }
+
+  @Test
+  public void testMockExchangeRateProvider() throws Exception {
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getSchema();
+    SchemaField amount = schema.getField("mock_amount");
+
+    // A few tests on the provider directly
+    ExchangeRateProvider p = ((CurrencyField)amount.getType()).getProvider();
+    Set<String> availableCurrencies = p.listAvailableCurrencies();
+    assert(availableCurrencies.size() == 3);
+    assert(p.reload() == true);
+    assert(p.getExchangeRate("USD", "EUR") == 0.8);
   }
 
   @Test
@@ -197,7 +211,7 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMockExchangeRateProvider() throws Exception {
+  public void testMockFieldType() throws Exception {
     assertU(adoc("id", "1", "mock_amount", "1.00,USD"));
     assertU(adoc("id", "2", "mock_amount", "1.00,EUR"));
     assertU(adoc("id", "3", "mock_amount", "1.00,NOK"));

@@ -208,7 +208,7 @@ public class TaskStats implements Cloneable {
    * @see java.lang.Object#clone()
    */
   @Override
-  public Object clone() throws CloneNotSupportedException {
+  public TaskStats clone() throws CloneNotSupportedException {
     TaskStats c = (TaskStats) super.clone();
     if (c.countsByTime != null) {
       c.countsByTime = c.countsByTime.clone();

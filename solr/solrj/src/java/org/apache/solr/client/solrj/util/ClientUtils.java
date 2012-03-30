@@ -33,8 +33,6 @@ import java.util.TimeZone;
 import java.util.Map.Entry;
 import java.nio.ByteBuffer;
 
-import org.apache.commons.httpclient.util.DateParseException;
-
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -159,7 +157,7 @@ public class ClientUtils
    * @deprecated Use {@link org.apache.solr.common.util.DateUtil#parseDate(String)}
    */
   @Deprecated
-  public static Date parseDate( String d ) throws ParseException, DateParseException
+  public static Date parseDate( String d ) throws ParseException
   {
     return DateUtil.parseDate(d);
   }

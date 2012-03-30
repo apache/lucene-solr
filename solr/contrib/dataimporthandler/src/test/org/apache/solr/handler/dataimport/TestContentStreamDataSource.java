@@ -18,7 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -69,7 +69,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     params.set("clean", "false");
     req.setParams(params);
     String url = "http://localhost:" + jetty.getLocalPort() + "/solr";
-    CommonsHttpSolrServer solrServer = new CommonsHttpSolrServer(url);
+    HttpSolrServer solrServer = new HttpSolrServer(url);
     solrServer.request(req);
     ModifiableSolrParams qparams = new ModifiableSolrParams();
     qparams.add("q", "*:*");
@@ -89,7 +89,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
         UpdateParams.COMMIT_WITHIN, "1000");
     req.setParams(params);
     String url = "http://localhost:" + jetty.getLocalPort() + "/solr";
-    CommonsHttpSolrServer solrServer = new CommonsHttpSolrServer(url);
+    HttpSolrServer solrServer = new HttpSolrServer(url);
     solrServer.request(req);
     Thread.sleep(100);
     ModifiableSolrParams queryAll = params("q", "*");

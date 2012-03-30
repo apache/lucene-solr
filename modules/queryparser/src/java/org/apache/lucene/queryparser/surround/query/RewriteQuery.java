@@ -74,7 +74,7 @@ abstract class RewriteQuery<SQ extends SrndQuery> extends Query {
 
   /** @throws UnsupportedOperationException */
   @Override
-  public Object clone() {
+  public RewriteQuery clone() {
     throw new UnsupportedOperationException();
   }
 }

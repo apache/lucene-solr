@@ -374,7 +374,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
    */
   
   @Override
-  public Object clone() {
+  public SegmentInfos clone() {
     try {
       final SegmentInfos sis = (SegmentInfos) super.clone();
       // deep clone, first recreate all collections:
@@ -385,7 +385,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       for(final SegmentInfo info : this) {
         assert info.getCodec() != null;
         // dont directly access segments, use add method!!!
-        sis.add((SegmentInfo) info.clone());
+        sis.add(info.clone());
       }
       sis.userData = new HashMap<String,String>(userData);
       return sis;
@@ -957,7 +957,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       final List<SegmentInfo> list = new ArrayList<SegmentInfo>(size());
       for(final SegmentInfo info : this) {
         assert info.getCodec() != null;
-        list.add((SegmentInfo) info.clone());
+        list.add(info.clone());
       }
       return list;
     } else {

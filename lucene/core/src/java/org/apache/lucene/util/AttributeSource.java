@@ -101,12 +101,12 @@ public class AttributeSource {
     State next;
     
     @Override
-    public Object clone() {
+    public State clone() {
       State clone = new State();
-      clone.attribute = (AttributeImpl) attribute.clone();
+      clone.attribute = attribute.clone();
       
       if (next != null) {
-        clone.next = (State) next.clone();
+        clone.next = next.clone();
       }
       
       return clone;
@@ -334,7 +334,7 @@ public class AttributeSource {
    */
   public final State captureState() {
     final State state = this.getCurrentState();
-    return (state == null) ? null : (State) state.clone();
+    return (state == null) ? null : state.clone();
   }
   
   /**
@@ -466,7 +466,7 @@ public class AttributeSource {
     if (hasAttributes()) {
       // first clone the impls
       for (State state = getCurrentState(); state != null; state = state.next) {
-        clone.attributeImpls.put(state.attribute.getClass(), (AttributeImpl) state.attribute.clone());
+        clone.attributeImpls.put(state.attribute.getClass(), state.attribute.clone());
       }
       
       // now the interfaces

@@ -181,7 +181,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public Object clone() {
+    public Index clone() {
       Index other = new Index();
       other.fp = fp;
       other.upto = upto;

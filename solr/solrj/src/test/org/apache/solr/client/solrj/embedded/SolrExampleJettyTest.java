@@ -18,7 +18,7 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.SolrExampleTests;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -43,7 +43,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     try {
       // setup the server...
       String url = "http://localhost/?core=xxx";
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
+      HttpSolrServer s = new HttpSolrServer( url );
       Assert.fail( "CommonsHttpSolrServer should not allow a path with a parameter: "+s.getBaseURL() );
     }
     catch( Exception ex ) {

@@ -24,8 +24,8 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.impl.StreamingUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -40,7 +40,6 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * Super basic testing, no shard restarting or anything.
@@ -239,8 +238,8 @@ public class FullSolrCloudDistribCmdsTest extends FullSolrCloudTest {
   }
 
   private void testIndexingWithSuss() throws MalformedURLException, Exception {
-    StreamingUpdateSolrServer suss = new StreamingUpdateSolrServer(
-        ((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), 3, 1);
+    ConcurrentUpdateSolrServer suss = new ConcurrentUpdateSolrServer(
+        ((HttpSolrServer) clients.get(0)).getBaseURL(), 3, 1);
     
     for (int i=100; i<150; i++) {
       index_specific(suss, id, i);      

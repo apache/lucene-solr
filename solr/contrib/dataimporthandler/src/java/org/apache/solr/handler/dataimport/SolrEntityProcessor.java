@@ -17,12 +17,13 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -82,7 +83,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
    * @return a {@link HttpClient} instance used for interfacing with a source Solr service
    */
   protected HttpClient getHttpClient() {
-    return new HttpClient(new MultiThreadedHttpConnectionManager());
+    return new DefaultHttpClient(new ThreadSafeClientConnManager());
   }
 
   @Override
@@ -100,10 +101,10 @@ public class SolrEntityProcessor extends EntityProcessorBase {
       URL url = new URL(serverPath);
       // (wt="javabin|xml") default is javabin
       if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {
-        solrServer = new CommonsHttpSolrServer(url, client, new XMLResponseParser(), false);
+        solrServer = new HttpSolrServer(url.toExternalForm(), client, new XMLResponseParser());
         LOG.info("using XMLResponseParser");
       } else {
-        solrServer = new CommonsHttpSolrServer(url, client);
+        solrServer = new HttpSolrServer(url.toExternalForm(), client);
         LOG.info("using BinaryResponseParser");
       }
     } catch (MalformedURLException e) {

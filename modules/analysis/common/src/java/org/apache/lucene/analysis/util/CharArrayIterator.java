@@ -113,9 +113,9 @@ public abstract class CharArrayIterator implements CharacterIterator {
   }
   
   @Override
-  public Object clone() {
+  public CharArrayIterator clone() {
     try {
-      return super.clone();
+      return (CharArrayIterator)super.clone();
     } catch (CloneNotSupportedException e) {
       // CharacterIterator does not allow you to throw CloneNotSupported
       throw new RuntimeException(e);

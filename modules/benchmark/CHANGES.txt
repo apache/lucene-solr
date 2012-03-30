@@ -5,6 +5,11 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+3/29/2012
+ LUCENE-3937: Workaround the XERCES-J bug by avoiding the broken UTF-8 decoding
+ in the v2.9.1 release.  Replaced the XERCESJ-1247-patched jar with the v2.9.1
+ release jar.  (Uwe Schindler, Robert Muir, Mike McCandless)
+
 2/15/2011
   LUCENE-3768: fix typos in .alg files, and add test that all .alg files in conf/
   can be parsed.  (Sami Siren via Robert Muir)

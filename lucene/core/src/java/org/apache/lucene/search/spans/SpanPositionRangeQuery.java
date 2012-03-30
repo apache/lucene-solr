@@ -77,7 +77,7 @@ public class SpanPositionRangeQuery extends SpanPositionCheckQuery {
   }
 
   @Override
-  public Object clone() {
+  public SpanPositionRangeQuery clone() {
     SpanPositionRangeQuery result = new SpanPositionRangeQuery((SpanQuery) match.clone(), start, end);
     result.setBoost(getBoost());
     return result;

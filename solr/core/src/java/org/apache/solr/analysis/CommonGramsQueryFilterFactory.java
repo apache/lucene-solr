@@ -65,7 +65,7 @@ public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
         throw new RuntimeException(e);
       }
     } else {
-      commonWords = (CharArraySet) StopAnalyzer.ENGLISH_STOP_WORDS_SET;
+      commonWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
     }
   }
 

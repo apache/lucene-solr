@@ -27,8 +27,6 @@ import java.util.Iterator;
 
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.XML;
 
@@ -38,16 +36,6 @@ import org.apache.solr.common.util.XML;
  * @since solr 1.3
  */
 public class UpdateRequest extends AbstractUpdateRequest {
-  /**
-   * Kept for back compatibility.
-   *
-   * @deprecated Use {@link AbstractUpdateRequest.ACTION} instead
-   */
-  @Deprecated
-  public enum ACTION {
-    COMMIT,
-    OPTIMIZE
-  };
   
   private List<SolrInputDocument> documents = null;
   private Iterator<SolrInputDocument> docIterator = null;
@@ -129,48 +117,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
     deleteQuery.add( q );
     return this;
   }
-
-  /** Sets appropriate parameters for the given ACTION
-   *
-   * @deprecated Use {@link org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION} instead
-   * */
-  @Deprecated
-  public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher ) {
-    return setAction(action, waitFlush, waitSearcher, 1);
-  }
-
-  /**
-   *
-   * @deprecated Use {@link org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION} instead
-   */
-  @Deprecated
-  public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher, int maxSegments ) {
-    if (params == null)
-      params = new ModifiableSolrParams();
-
-    if( action == ACTION.OPTIMIZE ) {
-      params.set( UpdateParams.OPTIMIZE, "true" );
-      params.set(UpdateParams.MAX_OPTIMIZE_SEGMENTS, maxSegments);
-    }
-    else if( action == ACTION.COMMIT ) {
-      params.set( UpdateParams.COMMIT, "true" );
-    }
-    params.set( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
-    return this;
-  }
-
-  /**
-   *
-   *
-   * @deprecated Use {@link org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION} instead
-   */
-  @Deprecated
-  public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher, int maxSegments , boolean expungeDeletes) {
-    setAction(action, waitFlush, waitSearcher,maxSegments) ;
-    params.set(UpdateParams.EXPUNGE_DELETES,""+expungeDeletes);
-    return this;
-  }
-
 
   public void setDocIterator(Iterator<SolrInputDocument> docIterator) {
     this.docIterator = docIterator;

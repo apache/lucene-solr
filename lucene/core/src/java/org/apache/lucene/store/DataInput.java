@@ -184,7 +184,7 @@ public abstract class DataInput implements Cloneable {
    * were cloned from.
    */
   @Override
-  public Object clone() {
+  public DataInput clone() {
     DataInput clone = null;
     try {
       clone = (DataInput)super.clone();

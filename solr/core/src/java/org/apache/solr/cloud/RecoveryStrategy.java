@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -159,7 +159,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
 
   private void commitOnLeader(String leaderUrl) throws MalformedURLException,
       SolrServerException, IOException {
-    CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderUrl);
+    HttpSolrServer server = new HttpSolrServer(leaderUrl);
     server.setConnectionTimeout(30000);
     server.setSoTimeout(30000);
     UpdateRequest ureq = new UpdateRequest();
@@ -174,7 +174,7 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
   private void sendPrepRecoveryCmd(String leaderBaseUrl,
       String leaderCoreName) throws MalformedURLException, SolrServerException,
       IOException {
-    CommonsHttpSolrServer server = new CommonsHttpSolrServer(leaderBaseUrl);
+    HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
     server.setConnectionTimeout(45000);
     server.setSoTimeout(45000);
     WaitForState prepCmd = new WaitForState();

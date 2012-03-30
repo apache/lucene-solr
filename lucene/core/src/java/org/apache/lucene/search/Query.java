@@ -97,9 +97,9 @@ public abstract class Query implements Cloneable {
 
   /** Returns a clone of this query. */
   @Override
-  public Object clone() {
+  public Query clone() {
     try {
-      return super.clone();
+      return (Query)super.clone();
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException("Clone not supported: " + e.getMessage());
     }

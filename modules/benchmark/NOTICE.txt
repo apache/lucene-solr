@@ -7,4 +7,4 @@ The Apache Software Foundation (http://www.apache.org/).
 Includes software from other Apache Software Foundation projects,
 including, but not limited to:
  - Commons Compress (lib/commons-compress-1.0.jar)
- - Xerces (lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar)
+ - Xerces (lib/xercesImpl-2.9.1.jar)

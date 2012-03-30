@@ -28,8 +28,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -55,14 +55,14 @@ public class CloudSolrServer extends SolrServer {
   private volatile String defaultCollection;
   private LBHttpSolrServer lbServer;
   Random rand = new Random();
-  private MultiThreadedHttpConnectionManager connManager;
+  private ThreadSafeClientConnManager connManager;
   /**
    * @param zkHost The address of the zookeeper quorum containing the cloud state
    */
   public CloudSolrServer(String zkHost) throws MalformedURLException {
-      connManager = new MultiThreadedHttpConnectionManager();
+      connManager = new ThreadSafeClientConnManager();
       this.zkHost = zkHost;
-      this.lbServer = new LBHttpSolrServer(new HttpClient(connManager));
+      this.lbServer = new LBHttpSolrServer(new DefaultHttpClient(connManager));
   }
 
   /**

@@ -142,7 +142,7 @@ public final class SegmentInfo implements Cloneable {
     docStoreIsCompoundFile = src.docStoreIsCompoundFile;
     hasVectors = src.hasVectors;
     hasProx = src.hasProx;
-    fieldInfos = src.fieldInfos == null ? null : (FieldInfos) src.fieldInfos.clone();
+    fieldInfos = src.fieldInfos == null ? null : src.fieldInfos.clone();
     if (src.normGen == null) {
       normGen = null;
     } else {
@@ -252,9 +252,9 @@ public final class SegmentInfo implements Cloneable {
   }
 
   @Override
-  public Object clone() {
+  public SegmentInfo clone() {
     final SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, codec,
-        fieldInfos == null ? null : (FieldInfos) fieldInfos.clone());
+        fieldInfos == null ? null : fieldInfos.clone());
     si.docStoreOffset = docStoreOffset;
     si.docStoreSegment = docStoreSegment;
     si.docStoreIsCompoundFile = docStoreIsCompoundFile;

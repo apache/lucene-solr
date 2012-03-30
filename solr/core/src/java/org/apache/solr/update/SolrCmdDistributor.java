@@ -33,9 +33,10 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
 import org.apache.solr.common.SolrException;
@@ -58,10 +59,10 @@ public class SolrCmdDistributor {
   static HttpClient client;
   
   static {
-    MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
-    mgr.getParams().setDefaultMaxConnectionsPerHost(8);
-    mgr.getParams().setMaxTotalConnections(200);
-    client = new HttpClient(mgr);
+    ThreadSafeClientConnManager mgr = new ThreadSafeClientConnManager();
+    mgr.setDefaultMaxPerRoute(8);
+    mgr.setMaxTotal(200);
+    client = new DefaultHttpClient(mgr);
   }
   
   CompletionService<Request> completionService;
@@ -313,7 +314,7 @@ public class SolrCmdDistributor {
             fullUrl = url;
           }
   
-          CommonsHttpSolrServer server = new CommonsHttpSolrServer(fullUrl,
+          HttpSolrServer server = new HttpSolrServer(fullUrl,
               client);
           
           clonedRequest.ursp = server.request(clonedRequest.ureq);

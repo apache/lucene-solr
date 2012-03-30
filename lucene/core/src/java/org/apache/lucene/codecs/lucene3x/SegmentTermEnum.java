@@ -100,7 +100,7 @@ final class SegmentTermEnum implements Cloneable {
   }
 
   @Override
-  protected Object clone() {
+  protected SegmentTermEnum clone() {
     SegmentTermEnum clone = null;
     try {
       clone = (SegmentTermEnum) super.clone();
@@ -109,8 +109,8 @@ final class SegmentTermEnum implements Cloneable {
     clone.input = (IndexInput) input.clone();
     clone.termInfo = new TermInfo(termInfo);
 
-    clone.termBuffer = (TermBuffer)termBuffer.clone();
-    clone.prevBuffer = (TermBuffer)prevBuffer.clone();
+    clone.termBuffer = termBuffer.clone();
+    clone.prevBuffer = prevBuffer.clone();
     clone.scanBuffer = new TermBuffer();
 
     return clone;

@@ -389,7 +389,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   }
 
   @Override
-  public Object clone() {
+  public FixedBitSet clone() {
     return new FixedBitSet(this);
   }
 

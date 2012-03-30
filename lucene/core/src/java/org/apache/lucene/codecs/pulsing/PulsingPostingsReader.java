@@ -73,7 +73,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private byte[] inlinedBytes;
 
     @Override
-    public Object clone() {
+    public PulsingTermState clone() {
       PulsingTermState clone;
       clone = (PulsingTermState) super.clone();
       if (postingsSize != -1) {

@@ -17,7 +17,9 @@ package org.apache.solr.schema;
  */
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -53,8 +55,17 @@ public class MockExchangeRateProvider implements ExchangeRateProvider {
   }
 
   @Override
-  public String[] listAvailableCurrencies() {
-    return map.keySet().toArray(new String[1]);
+  public Set<String> listAvailableCurrencies() {
+    Set<String> currenciesPairs = map.keySet();
+    Set<String> returnSet;
+    
+    returnSet = new HashSet<String>();
+    for (String c : currenciesPairs) {
+      String[] pairs = c.split(",");
+      returnSet.add(pairs[0]);
+      returnSet.add(pairs[1]);
+    }
+    return returnSet;
   }
 
   @Override

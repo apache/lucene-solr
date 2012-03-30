@@ -19,6 +19,7 @@ package org.apache.lucene.queries.function;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.Bits;
@@ -57,7 +58,7 @@ public class FunctionQuery extends Query {
   }
 
   @Override
-  public void extractTerms(Set terms) {}
+  public void extractTerms(Set<Term> terms) {}
 
   protected class FunctionWeight extends Weight {
     protected IndexSearcher searcher;

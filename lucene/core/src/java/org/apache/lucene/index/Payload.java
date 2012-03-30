@@ -155,7 +155,7 @@ public class Payload implements Cloneable {
    * byte array.
    */
   @Override
-  public Object clone() {
+  public Payload clone() {
     try {
       // Start with a shallow copy of data
       Payload clone = (Payload) super.clone();

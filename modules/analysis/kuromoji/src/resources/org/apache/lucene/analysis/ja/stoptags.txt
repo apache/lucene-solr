@@ -1,5 +1,5 @@
 #
-# This file defines a Japanese stoptag set for KuromojiPartOfSpeechStopFilter.
+# This file defines a Japanese stoptag set for JapanesePartOfSpeechStopFilter.
 #
 # Any token with a part-of-speech tag that exactly matches those defined in this
 # file are removed from the token stream.

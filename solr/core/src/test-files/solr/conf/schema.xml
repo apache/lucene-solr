@@ -396,7 +396,10 @@
 
   <!-- Currency type -->
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml"/>
-  <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="org.apache.solr.schema.MockExchangeRateProvider" foo="bar" />
+  <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar" />
+  <fieldType name="openexchangeratesorg_currency" class="solr.CurrencyField" 
+             providerClass="solr.OpenExchangeRatesOrgProvider"
+             ratesFileLocation="open-exchange-rates.json" />
 
   <!--  some per-field similarity examples -->
   

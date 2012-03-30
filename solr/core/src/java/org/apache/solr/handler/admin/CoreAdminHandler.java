@@ -147,11 +147,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
           break;
         }
 
-        case ALIAS: {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'ALIAS' is not supported " +
-            req.getParams().get(CoreAdminParams.ACTION));
-        }
-
         case UNLOAD: {
           doPersist = this.handleUnloadAction(req, rsp);
           break;

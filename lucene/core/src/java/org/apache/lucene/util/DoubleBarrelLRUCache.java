@@ -47,7 +47,7 @@ final public class DoubleBarrelLRUCache<K extends DoubleBarrelLRUCache.Cloneable
   /** Object providing clone(); the key class must subclass this. */
   public static abstract class CloneableKey {
     @Override
-    abstract public Object clone();
+    abstract public CloneableKey clone();
   }
 
   private final Map<K,V> cache1;

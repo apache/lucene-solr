@@ -622,7 +622,7 @@ public class CategoryPath implements Serializable, Cloneable, Comparable<Categor
   }
 
   @Override
-  public Object clone() {
+  public CategoryPath clone() {
     return new CategoryPath(this);
   }
 

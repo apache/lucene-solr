@@ -25,12 +25,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.impl.StreamingUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -206,11 +206,11 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
   }
 
   class FullThrottleStopableIndexingThread extends StopableIndexingThread {
-    MultiThreadedHttpConnectionManager cm = new MultiThreadedHttpConnectionManager();
-    private HttpClient httpClient = new HttpClient(cm) ;
+    ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager();
+    private DefaultHttpClient httpClient = new DefaultHttpClient(cm) ;
     private volatile boolean stop = false;
     int clientIndex = 0;
-    private StreamingUpdateSolrServer suss;
+    private ConcurrentUpdateSolrServer suss;
     private List<SolrServer> clients;  
     
     public FullThrottleStopableIndexingThread(List<SolrServer> clients,
@@ -219,8 +219,8 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
       this.clients = clients;
-      suss = new StreamingUpdateSolrServer(
-          ((CommonsHttpSolrServer) clients.get(0)).getBaseURL(), httpClient, 8,
+      suss = new ConcurrentUpdateSolrServer(
+          ((HttpSolrServer) clients.get(0)).getBaseURL(), httpClient, 8,
           2) {
         public void handleError(Throwable ex) {
           log.warn("suss error", ex);
@@ -288,8 +288,8 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
         }
         try {
           suss.shutdownNow();
-          suss = new StreamingUpdateSolrServer(
-              ((CommonsHttpSolrServer) clients.get(clientIndex)).getBaseURL(),
+          suss = new ConcurrentUpdateSolrServer(
+              ((HttpSolrServer) clients.get(clientIndex)).getBaseURL(),
               httpClient, 30, 3) {
             public void handleError(Throwable ex) {
               log.warn("suss error", ex);

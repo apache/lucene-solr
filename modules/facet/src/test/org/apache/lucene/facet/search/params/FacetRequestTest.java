@@ -88,7 +88,7 @@ public class FacetRequestTest extends LuceneTestCase {
   @Test
   public void testClone() throws Exception {
     FacetRequest fr = new CountFacetRequest(new CategoryPath("a"), 10);
-    FacetRequest clone = (FacetRequest) fr.clone();
+    FacetRequest clone = fr.clone();
     fr.setDepth(10);
     assertEquals("depth should not have been affected in the clone", FacetRequest.DEFAULT_DEPTH, clone.getDepth());
   }

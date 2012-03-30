@@ -207,7 +207,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public Object clone() {
+    public Index clone() {
       Index other = new Index();
       other.fp = fp;
       other.upto = upto;

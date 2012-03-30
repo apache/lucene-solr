@@ -131,7 +131,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   }
 
   @Override
-  public Object clone() throws CloneNotSupportedException {
+  public QueryNode clone() throws CloneNotSupportedException {
     return cloneTree();
   }
 

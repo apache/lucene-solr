@@ -212,7 +212,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   public void testBoostOmitNorms() throws Exception {
     XmlDoc xml = new XmlDoc();
     xml.xml = "<doc>"
-        + "<field name=\"id\">1</field>"
+        + "<field name=\"id\">ignore_exception</field>"
         + "<field name=\"title_stringNoNorms\" boost=\"3.0\">mytitle</field>"
         + "</doc>";
     try {

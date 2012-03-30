@@ -83,7 +83,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     List<SegmentReader> readers = new ArrayList<SegmentReader>();
     final Directory dir = writer.getDirectory();
 
-    final SegmentInfos segmentInfos = (SegmentInfos) infos.clone();
+    final SegmentInfos segmentInfos = infos.clone();
     int infosUpto = 0;
     for (int i=0;i<numSegments;i++) {
       IOException prior = null;

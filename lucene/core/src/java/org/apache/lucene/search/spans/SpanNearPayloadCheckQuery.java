@@ -88,7 +88,7 @@ public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
   }
 
   @Override
-  public Object clone() {
+  public SpanNearPayloadCheckQuery clone() {
     SpanNearPayloadCheckQuery result = new SpanNearPayloadCheckQuery((SpanNearQuery) match.clone(), payloadToMatch);
     result.setBoost(getBoost());
     return result;

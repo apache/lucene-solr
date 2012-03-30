@@ -76,6 +76,8 @@ import org.xml.sax.SAXException;
  *
  */
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
+  public static int DEFAULT_CONNECTION_TIMEOUT = 500;  // default socket connection timeout in ms
+
 
   @ClassRule
   public static TestRule solrClassRules = 
@@ -234,6 +236,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       SolrException.ignorePatterns = new HashSet<String>();
     SolrException.ignorePatterns.add(pattern);
   }
+
+  public static void unIgnoreException(String pattern) {
+    if (SolrException.ignorePatterns != null)
+      SolrException.ignorePatterns.remove(pattern);
+  }
+
 
   public static void resetExceptionIgnores() {
     SolrException.ignorePatterns = null;

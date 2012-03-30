@@ -273,7 +273,7 @@ class ReadersAndLiveDocs {
       assert liveDocs.length() == info.docCount;
 
       // Save in case we need to rollback on failure:
-      final SegmentInfo sav = (SegmentInfo) info.clone();
+      final SegmentInfo sav = info.clone();
       info.advanceDelGen();
       info.setDelCount(info.getDelCount() + pendingDeleteCount);
 

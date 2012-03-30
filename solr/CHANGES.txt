@@ -1,4 +1,4 @@
-﻿﻿                      Apache Solr Release Notes
+﻿                      Apache Solr Release Notes
 
 Introduction
 ------------
@@ -73,6 +73,9 @@ Detailed Change List
 
 New Features
 ----------------------
+
+* SOLR-3272: Solr filter factory for MorfologikFilter (Polish lemmatisation).
+  (Rafał Kuć via Dawid Weiss, Steven Rowe, Uwe Schindler).
 
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
@@ -505,6 +508,9 @@ Upgrading from Solr 3.5
 
 New Features
 ----------------------
+* SOLR-2020: Add Java client that uses Apache Http Components http client (4.x).
+  (Chantal Ackermann, Ryan McKinley, Yonik Seeley, siren)
+
 * SOLR-2854: Now load URL content stream data (via stream.url) when called for during request handling,
   rather than loading URL content streams automatically regardless of use.
   (David Smiley and Ryan McKinley via ehatcher)
@@ -574,6 +580,8 @@ New Features
 
 * SOLR-2202: Currency FieldType, whith support for currencies and exchange rates
   (Greg Fodor & Andrew Morrison via janhoy, rmuir, Uwe Schindler)
+
+* SOLR-3255: OpenExchangeRates.Org Exchange Rate Provider for CurrencyField (janhoy)
 
 * SOLR-3026: eDismax: Locking down which fields can be explicitly queried (user fields aka uf)
   (janhoy, hossmann, Tomás Fernández Löbbe)

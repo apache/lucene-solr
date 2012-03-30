@@ -19,8 +19,7 @@ package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.docvalues.StringIndexDocValues;
-import org.apache.lucene.queries.function.ValueSource; //javadoc
+import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 
 import java.io.IOException;
 import java.util.Map;
@@ -36,7 +35,7 @@ public class BytesRefFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    return new StringIndexDocValues(this, readerContext, field) {
+    return new DocTermsIndexDocValues(this, readerContext, field) {
 
       @Override
       protected String toTerm(String readableValue) {

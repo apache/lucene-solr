@@ -16,10 +16,21 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.message.AbstractHttpMessage;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.CoreConnectionPNames;
+import org.apache.http.util.EntityUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -109,17 +120,23 @@ public class SnapPuller {
   // HttpClient for this instance if connectionTimeout or readTimeout has been specified
   private final HttpClient myHttpClient;
 
-  private static synchronized HttpClient createHttpClient(String connTimeout, String readTimeout) {
+  private static synchronized HttpClient createHttpClient(String connTimeout, String readTimeout, String httpBasicAuthUser, String httpBasicAuthPassword) {
     if (connTimeout == null && readTimeout == null && client != null)  return client;
-    MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
+    ThreadSafeClientConnManager mgr = new ThreadSafeClientConnManager();
     // Keeping a very high number so that if you have a large number of cores
     // no requests are kept waiting for an idle connection.
-    mgr.getParams().setDefaultMaxConnectionsPerHost(10000);
-    mgr.getParams().setMaxTotalConnections(10000);
-    mgr.getParams().setSoTimeout(readTimeout == null ? 20000 : Integer.parseInt(readTimeout)); //20 secs
-    mgr.getParams().setConnectionTimeout(connTimeout == null ? 5000 : Integer.parseInt(connTimeout)); //5 secs
-    HttpClient httpClient = new HttpClient(mgr);
+    mgr.setDefaultMaxPerRoute(10000);
+    mgr.setMaxTotal(10000);
+    DefaultHttpClient httpClient = new DefaultHttpClient(mgr);
+    httpClient.getParams().setIntParameter(CoreConnectionPNames.SO_TIMEOUT, readTimeout == null ? 20000 : Integer.parseInt(readTimeout)); //20 secs
+    httpClient.getParams().setIntParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, connTimeout == null ? 5000 : Integer.parseInt(connTimeout)); //5 secs
     if (client == null && connTimeout == null && readTimeout == null) client = httpClient;
+    
+    if (httpBasicAuthUser != null && httpBasicAuthPassword != null) {
+      httpClient.getCredentialsProvider().setCredentials(AuthScope.ANY,
+              new UsernamePasswordCredentials(httpBasicAuthUser, httpBasicAuthPassword));
+    }
+
     return httpClient;
   }
 
@@ -139,11 +156,7 @@ public class SnapPuller {
     String readTimeout = (String) initArgs.get(HTTP_READ_TIMEOUT);
     String httpBasicAuthUser = (String) initArgs.get(HTTP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HTTP_BASIC_AUTH_PASSWORD);
-    myHttpClient = createHttpClient(connTimeout, readTimeout);
-    if (httpBasicAuthUser != null && httpBasicAuthPassword != null) {
-      myHttpClient.getState().setCredentials(AuthScope.ANY,
-              new UsernamePasswordCredentials(httpBasicAuthUser, httpBasicAuthPassword));
-    }
+    myHttpClient = createHttpClient(connTimeout, readTimeout, httpBasicAuthUser, httpBasicAuthPassword);
     if (pollInterval != null && pollInterval > 0) {
       startExecutorService();
     } else {
@@ -177,45 +190,66 @@ public class SnapPuller {
    */
   @SuppressWarnings("unchecked")
   NamedList getLatestVersion() throws IOException {
-    PostMethod post = new PostMethod(masterUrl);
-    post.addParameter(COMMAND, CMD_INDEX_VERSION);
-    post.addParameter("wt", "javabin");
+    HttpPost post = new HttpPost(masterUrl);
+    List<BasicNameValuePair> formparams = new ArrayList<BasicNameValuePair>();
+    formparams.add(new BasicNameValuePair("wt", "javabin"));
+    formparams.add(new BasicNameValuePair(COMMAND, CMD_INDEX_VERSION));
+    UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
+    post.setEntity(entity);
     return getNamedListResponse(post);
   }
 
   NamedList getCommandResponse(NamedList<String> commands) throws IOException {
-    PostMethod post = new PostMethod(masterUrl);
+    
+    HttpPost post = new HttpPost(masterUrl);
+
+    List<BasicNameValuePair> formparams = new ArrayList<BasicNameValuePair>();
+    formparams.add(new BasicNameValuePair("wt", "javabin"));
+    
     for (Map.Entry<String, String> c : commands) {
-      post.addParameter(c.getKey(),c.getValue());
+      formparams.add(new BasicNameValuePair(c.getKey(), c.getValue()));
     }
-    post.addParameter("wt", "javabin");
+    UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
+    post.setEntity(entity);
     return getNamedListResponse(post);
   }
 
-  private NamedList<?> getNamedListResponse(PostMethod method) throws IOException {
+  private NamedList<?> getNamedListResponse(HttpPost method) throws IOException {
+    InputStream input = null;
+    NamedList<?> result = null;
     try {
-      int status = myHttpClient.executeMethod(method);
+      HttpResponse response = myHttpClient.execute(method);
+      int status = response.getStatusLine().getStatusCode();
       if (status != HttpStatus.SC_OK) {
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
                 "Request failed for the url " + method);
       }
-      return (NamedList<?>) new JavaBinCodec().unmarshal(method.getResponseBodyAsStream());
+      input = response.getEntity().getContent();
+      result = (NamedList<?>)new JavaBinCodec().unmarshal(input);
     } finally {
       try {
-        method.releaseConnection();
+        if (input != null) {
+          input.close();
+        }
       } catch (Exception e) {
       }
     }
+    return result;
   }
 
   /**
    * Fetches the list of files in a given index commit point
    */
   void fetchFileList(long gen) throws IOException {
-    PostMethod post = new PostMethod(masterUrl);
-    post.addParameter(COMMAND, CMD_GET_FILE_LIST);
-    post.addParameter(GENERATION, String.valueOf(gen));
-    post.addParameter("wt", "javabin");
+    HttpPost post = new HttpPost(masterUrl);
+
+    List<BasicNameValuePair> formparams = new ArrayList<BasicNameValuePair>();
+    formparams.add(new BasicNameValuePair("wt", "javabin"));
+    formparams.add(new BasicNameValuePair(COMMAND, CMD_GET_FILE_LIST));
+    formparams.add(new BasicNameValuePair(GENERATION, String.valueOf(gen)));
+
+    UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
+    post.setEntity(entity);
 
     @SuppressWarnings("unchecked")
     NamedList<List<Map<String, Object>>> nl 
@@ -907,7 +941,7 @@ public class SnapPuller {
 
     private boolean isConf;
 
-    private PostMethod post;
+    private HttpPost post;
 
     private boolean aborted = false;
 
@@ -1064,10 +1098,6 @@ public class SnapPuller {
       } catch (Exception e) {/* noop */
           LOG.error("Error closing the file stream: "+ this.saveAs ,e);
       }
-      try {
-        post.releaseConnection();
-      } catch (Exception e) {
-      }
       if (bytesDownloaded != size) {
         //if the download is not complete then
         //delete the file being downloaded
@@ -1088,35 +1118,43 @@ public class SnapPuller {
      * Open a new stream using HttpClient
      */
     FastInputStream getStream() throws IOException {
-      post = new PostMethod(masterUrl);
+      post = new HttpPost(masterUrl);
       //the method is command=filecontent
-      post.addParameter(COMMAND, CMD_GET_FILE);
+      
+      List<BasicNameValuePair> formparams = new ArrayList<BasicNameValuePair>();
+
+      formparams.add(new BasicNameValuePair(COMMAND, CMD_GET_FILE));
+
       //add the version to download. This is used to reserve the download
-      post.addParameter(GENERATION, indexGen.toString());
+      formparams.add(new BasicNameValuePair(GENERATION, indexGen.toString()));
       if (isConf) {
         //set cf instead of file for config file
-        post.addParameter(CONF_FILE_SHORT, fileName);
+        formparams.add(new BasicNameValuePair(CONF_FILE_SHORT, fileName));
       } else {
-        post.addParameter(FILE, fileName);
+        formparams.add(new BasicNameValuePair(FILE, fileName));
       }
       if (useInternal) {
-        post.addParameter(COMPRESSION, "true");
+        formparams.add(new BasicNameValuePair(COMPRESSION, "true"));
       }
       if (useExternal) {
-        post.setRequestHeader(new Header("Accept-Encoding", "gzip,deflate"));
+        formparams.add(new BasicNameValuePair("Accept-Encoding", "gzip,deflate"));
       }
       //use checksum
       if (this.includeChecksum)
-        post.addParameter(CHECKSUM, "true");
+        formparams.add(new BasicNameValuePair(CHECKSUM, "true"));
       //wt=filestream this is a custom protocol
-      post.addParameter("wt", FILE_STREAM);
+      formparams.add(new BasicNameValuePair("wt", FILE_STREAM));
       // This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures that
       // the server starts from the offset
       if (bytesDownloaded > 0) {
-        post.addParameter(OFFSET, "" + bytesDownloaded);
+        formparams.add(new BasicNameValuePair(OFFSET, "" + bytesDownloaded));
       }
-      myHttpClient.executeMethod(post);
-      InputStream is = post.getResponseBodyAsStream();
+      
+      UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
+      post.setEntity(entity);
+
+      HttpResponse response = myHttpClient.execute(post);
+      InputStream is = response.getEntity().getContent();
       //wrap it using FastInputStream
       if (useInternal) {
         is = new InflaterInputStream(is);
@@ -1130,8 +1168,8 @@ public class SnapPuller {
   /*
    * This is copied from CommonsHttpSolrServer
    */
-  private InputStream checkCompressed(HttpMethod method, InputStream respBody) throws IOException {
-    Header contentEncodingHeader = method.getResponseHeader("Content-Encoding");
+  private InputStream checkCompressed(AbstractHttpMessage method, InputStream respBody) throws IOException {
+    Header contentEncodingHeader = method.getFirstHeader("Content-Encoding");
     if (contentEncodingHeader != null) {
       String contentEncoding = contentEncodingHeader.getValue();
       if (contentEncoding.contains("gzip")) {
@@ -1140,7 +1178,7 @@ public class SnapPuller {
         respBody = new InflaterInputStream(respBody);
       }
     } else {
-      Header contentTypeHeader = method.getResponseHeader("Content-Type");
+      Header contentTypeHeader = method.getFirstHeader("Content-Type");
       if (contentTypeHeader != null) {
         String contentType = contentTypeHeader.getValue();
         if (contentType != null) {
