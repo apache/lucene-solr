@@ -20,5 +20,6 @@
     <info organisation="org.apache.solr" module="analysis-extras"/>
     <dependencies>
       <dependency org="com.ibm.icu" name="icu4j" rev="4.8.1.1" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

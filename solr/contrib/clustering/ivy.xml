@@ -26,5 +26,6 @@
       <dependency org="org.apache.mahout" name="mahout-collections" rev="0.3" transitive="false"/>
       <dependency org="org.apache.mahout" name="mahout-math" rev="0.3" transitive="false"/>
       <dependency org="org.simpleframework" name="simple-xml" rev="2.4.1" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

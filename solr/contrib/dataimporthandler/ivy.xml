@@ -21,5 +21,6 @@
     <dependencies>
       <dependency org="javax.activation" name="activation" rev="1.1" transitive="false"/>
       <dependency org="javax.mail" name="mail" rev="1.4.1" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

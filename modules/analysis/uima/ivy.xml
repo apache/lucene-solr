@@ -22,5 +22,6 @@
       <dependency org="org.apache.uima" name="Tagger" rev="2.3.1" transitive="false"/>
       <dependency org="org.apache.uima" name="WhitespaceTokenizer" rev="2.3.1" transitive="false"/>
       <dependency org="org.apache.uima" name="uimaj-core" rev="2.3.1" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

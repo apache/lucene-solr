@@ -22,5 +22,6 @@
       <dependency org="org.carrot2" name="morfologik-polish" rev="1.5.2" transitive="false"/>
       <dependency org="org.carrot2" name="morfologik-fsa" rev="1.5.2" transitive="false"/>
       <dependency org="org.carrot2" name="morfologik-stemming" rev="1.5.2" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

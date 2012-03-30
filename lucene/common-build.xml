@@ -221,6 +221,13 @@
               excludes="**/pom.xml,**/*.iml,site/build/"
   />
 
+  <!-- Default exclude sources and javadoc jars from Ivy fetch to save time and bandwidth -->
+  <condition property="ivy.exclude.types" 
+      value=""
+      else="source|javadoc">
+    <isset property="fetch.sources.javadocs"/>
+  </condition>
+
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />
 

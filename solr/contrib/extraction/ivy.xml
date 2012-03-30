@@ -45,5 +45,6 @@
       <dependency org="xerces" name="xercesImpl" rev="2.8.1" transitive="false"/>
       <dependency org="xml-apis" name="xml-apis" rev="1.0.b2" transitive="false"/>
       <dependency org="org.apache.xmlbeans" name="xmlbeans" rev="2.3.0" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

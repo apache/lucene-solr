@@ -22,5 +22,6 @@
       <dependency org="org.apache.ant" name="ant" rev="1.7.1" transitive="false"/>
       <dependency org="org.apache.ant" name="ant-junit" rev="1.7.1" transitive="false"/>
       <dependency org="junit" name="junit" rev="4.10" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>
