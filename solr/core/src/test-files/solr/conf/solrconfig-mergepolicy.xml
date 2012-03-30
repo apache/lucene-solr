@@ -25,17 +25,16 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
-  <indexDefaults>
-    <ramBufferSizeMB>32</ramBufferSizeMB>
-    <termIndexInterval>256</termIndexInterval>
+  <indexConfig>
     <mergeFactor>7</mergeFactor>
-    <useCompoundFile>false</useCompoundFile>
     <mergePolicy class="org.apache.lucene.index.TieredMergePolicy">
       <int name="maxMergeAtOnceExplicit">19</int>
       <int name="segmentsPerTier">9</int>
       <double name="noCFSRatio">1.0</double>
     </mergePolicy>
-  </indexDefaults>
+    <lockType>single</lockType>
+    <unlockOnStartup>true</unlockOnStartup>
+  </indexConfig>
 
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
 

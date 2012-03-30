@@ -82,14 +82,18 @@ public class SolrIndexConfig {
   /**
    * Constructs a SolrIndexConfig which parses the Lucene related config params in solrconfig.xml
    * @param solrConfig the overall SolrConfig object
-   * @param prefix the XPath prefix for which section to parse (mandatory)
+   * @param prefix the XPath prefix for which section to parse (default if null is "indexConfig")
    * @param def a SolrIndexConfig instance to pick default values from (optional)
    */
   public SolrIndexConfig(SolrConfig solrConfig, String prefix, SolrIndexConfig def)  {
-    if (prefix == null)
-      throw new SolrException(ErrorCode.FORBIDDEN, "Prefix was null");
-    if (def == null)
+    if (prefix == null) {
+      prefix = "indexConfig";
+      log.debug("Defaulting to prefix \""+prefix+"\" for index configuration");
+    }
+    
+    if (def == null) {
       def = new SolrIndexConfig(solrConfig);
+    }
 
     luceneVersion = solrConfig.luceneMatchVersion;
 
