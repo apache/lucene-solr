@@ -26,8 +26,8 @@
 	<import file="../contrib-build.xml"/>
 
 	<path id="classpath">
-    <fileset dir="../extraction/lib" includes="*.jar"/>
-    <fileset dir="lib" includes="*.jar"/>
+    <fileset dir="../extraction/lib" excludes="*.txt,*.template"/>
+    <fileset dir="lib" excludes="*.txt,*.template"/>
     <path refid="solr.base.classpath"/>   
   </path>
 
@@ -37,6 +37,15 @@
                                  jar.file="${solr-langid.dir}/lib/jsonic-1.2.0.jar" />
 
     <m2-deploy-with-pom-template pom.xml="${solr-langid.dir}/lib/langdetect-pom.xml.template"
-                                 jar.file="${solr-langid.dir}/lib/langdetect-r111.jar" />
+                                 jar.file="${solr-langid.dir}/lib/langdetect-c51112119be53a81e59706ce57bacaa90c052284.jar" />
   </target>
+
+    <!-- we don't actually need to compile this thing, we just want its libs -->
+  <target name="resolve-extraction-libs">
+    <ant dir="${common-solr.dir}/contrib/extraction" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="compile-core" depends="resolve-extraction-libs,solr-contrib-build.compile-core"/>
 </project>

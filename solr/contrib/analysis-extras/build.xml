@@ -26,6 +26,7 @@
   <import file="../contrib-build.xml"/>
 
   <path id="classpath">
+        <fileset dir="lib" excludes="*.txt"/>
   	<pathelement path="${analyzers-icu.jar}"/>
   	<pathelement path="${analyzers-smartcn.jar}"/>
   	<pathelement path="${analyzers-stempel.jar}"/>

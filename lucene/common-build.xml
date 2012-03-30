@@ -17,7 +17,8 @@
     limitations under the License.
  -->
 
-<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant" 
+                       xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>
     This file is designed for importing into a main build file, and not intended
     for standalone use.
@@ -52,20 +53,18 @@
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
 
+  <property name="ivy.bootstrap.version" value="2.2.0" />
+  <property name="ivy.resource" value="org/apache/ivy/ant/antlib.xml" />
+  <available resource="${ivy.resource}" property="ivy.available" />
+
   <property name="junit.jar" value="junit-4.10.jar"/>
-  <property name="junit-location.jar" value="${common.dir}/lib/${junit.jar}"/>
+  <property name="junit-location.jar" value="${common.dir}/test-framework/lib/${junit.jar}"/>
   <path id="junit-path">
     <pathelement location="${junit-location.jar}"/>
   </path>
 
   <path id="ant-path">
-    <fileset dir="${common.dir}/lib" includes="ant-*.jar"/>
-  </path>
-
-  <path id="maven-ant-tasks.classpath">
-    <fileset dir="${common.dir}/lib">
-      <include name="maven-ant-tasks-*.jar"/>
-    </fileset>
+    <fileset dir="${common.dir}/test-framework/lib" includes="ant-*.jar"/>
   </path>
 
   <!-- default arguments to pass to JVM executing tests -->
@@ -222,6 +221,13 @@
               excludes="**/pom.xml,**/*.iml,site/build/"
   />
 
+  <!-- Default exclude sources and javadoc jars from Ivy fetch to save time and bandwidth -->
+  <condition property="ivy.exclude.types" 
+      value=""
+      else="source|javadoc">
+    <isset property="fetch.sources.javadocs"/>
+  </condition>
+
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />
 
@@ -249,8 +255,54 @@
     </echo>
   </target>
 
-  <target name="init">
+  <target name="init" depends="resolve">
     <!-- currently empty -->
+  </target>
+
+  <target name="resolve" depends="ivy-availability-check,ivy-fail">
+    <!-- todo, make this a property or something. 
+         only special cases need bundles -->
+    <ivy:retrieve type="jar,bundle" log="download-only"/>
+  </target>
+  <target name="ivy-availability-check" unless="ivy.available">
+   <echo>
+     This build requires Ivy and Ivy could not be found in your ant classpath
+
+     (Due to classpath issues and the recursive nature of the Lucene/Solr 
+     build system, a local copy of Ivy can not be used an loaded dynamically 
+     by the build.xml)
+
+     You can either manually install a copy of Ivy ${ivy.bootstrap.version} in your ant classpath:
+       http://ant.apache.org/manual/install.html#optionalTasks
+
+     Or this build file can do it for you by running the Ivy Bootstrap target:
+       ant ivy-bootstrap     
+     
+     Either way you will only have to install Ivy one time.
+
+     'ant ivy-bootstrap' will install a copy of Ivy into your Ant User Library:
+       ${user.home}/.ant/lib
+     
+     If you would prefer, you can have it installed into an alternative 
+     directory using the "-Divy_install_path=/some/path/you/choose" option, 
+     but you will have to specify this path every time you build Lucene/Solr 
+     in the future...
+       ant ivy-bootstrap -Divy_install_path=/some/path/you/choose
+       ...
+       ant -lib /some/path/you/choose clean compile
+       ...
+       ant -lib /some/path/you/choose clean compile
+    </echo>
+  </target>
+  <target name="ivy-fail" unless="ivy.available">
+    <fail>Ivy is not available</fail>
+  </target>
+  <target name="ivy-bootstrap">
+    <property name="ivy_install_path" location="${user.home}/.ant/lib" />
+    <mkdir dir="${ivy_install_path}"/>
+    <echo message="installing ivy ${ivy.bootstrap.version} to ${ivy_install_path}"/>
+    <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.bootstrap.version}/ivy-${ivy.bootstrap.version}.jar"
+         dest="${ivy_install_path}/ivy-${ivy.bootstrap.version}.jar" usetimestamp="true"/>
   </target>
 
   <target name="jflex-uptodate-check">
@@ -783,11 +835,17 @@
   <target name="javadocs">
   	<fail message="You must redefine the javadocs task to do something!!!!!"/>
   </target>
-  
-  <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src, javadocs">
+
+  <target name="install-maven-tasks" unless="maven-tasks.uptodate">
+    <property name="maven-tasks.uptodate" value="true"/>
+    <ivy:cachepath organisation="org.apache.maven" module="maven-ant-tasks" revision="2.1.3"
+             inline="true" conf="master" type="jar" pathid="maven-ant-tasks.classpath"/>
     <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
              uri="antlib:org.apache.maven.artifact.ant" 
              classpathref="maven-ant-tasks.classpath"/>
+  </target>
+  
+  <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src, javadocs, install-maven-tasks">
     <sequential>
       <m2-deploy>
         <artifact-attachments>

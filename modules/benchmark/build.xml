@@ -154,10 +154,11 @@
       <pathelement path="${analyzers-common.jar}"/>
       <pathelement path="${queryparser.jar}"/>
       <pathelement path="${facet.jar}"/>
-      <fileset dir="${common.dir}/../modules/analysis/icu/lib" includes="icu4j*.jar"/>
+      <fileset dir="${common.dir}/../modules/analysis/icu/lib" includes="icu4j-4.8.1.1.jar"/>
       <path refid="base.classpath"/>
     	<fileset dir="lib">
-    		<include name="**/*.jar"/>
+    	  <include name="commons-compress-1.2.jar"/>
+    	  <include name="xercesImpl-2.9.1.jar"/>
     	</fileset>
     </path>
     <path id="run.classpath">
@@ -198,7 +199,7 @@
 	<path id="collation.runtime.classpath">
 	  <path refid="run.classpath"/>
     <pathelement path="${analyzers-icu.jar}"/>
-    <fileset dir="${common.dir}/../modules/analysis/icu/lib" includes="icu4j*.jar"/>
+    <fileset dir="${common.dir}/../modules/analysis/icu/lib" includes="icu4j-4.8.1.1.jar"/>
 	</path>
 	
 	<target name="collation" depends="compile,jar-analyzers-icu,top-100k-wiki-word-files">
@@ -243,7 +244,14 @@
       <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
     </target>
 
-    <target name="init" depends="contrib-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
+    <!-- we don't actually need to compile this thing, we just want its lib -->
+    <target name="resolve-icu">
+       <ant dir="${common.dir}/../modules/analysis/icu/" target="resolve" inheritAll="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+    </target>
+
+    <target name="init" depends="contrib-build.init,resolve-icu,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
   
     <target name="clean-javacc">
       <fileset dir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml" includes="*.java">

@@ -21,15 +21,11 @@
     Sandbox for odd contrib code
   </description>
 
-  <path id="additional.dependencies">
-    <fileset dir="lib" includes="*-regexp-*.jar"/>
-  </path>
-
-  <pathconvert property="project.classpath"
-               targetos="unix"
-               refid="additional.dependencies"
-  />
-
   <import file="../contrib-build.xml"/>
+
+  <path id="classpath">
+    <pathelement path="lib/jakarta-regexp-1.4.jar"/>
+    <path refid="base.classpath"/>
+  </path>
 
 </project>

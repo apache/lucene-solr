@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+<project name="solr-example" default="resolve" xmlns:ivy="antlib:org.apache.ivy.ant">
+  <description>Solr Example</description>
+
+  <import file="../common-build.xml"/>
+
+  <!-- example tests are currently elsewhere -->
+  <target name="test"/>
+
+  <!-- this module has no javadocs -->
+  <target name="javadocs"/>
+
+  <!-- this module has no jar either -->
+  <target name="jar-core"/>
+
+  <!-- nothing to compile -->
+  <target name="compile-core"/>
+  <target name="compile-test"/>
+
+  <target name="resolve" depends="ivy-availability-check">
+    <sequential>
+    <!-- jetty libs in lib/ -->
+    <ivy:retrieve conf="default" type="jar" log="download-only"/>
+    <!-- start.jar -->
+    <!-- TODO: put this in ivy.xml -->
+    <ivy:retrieve inline="true" organisation="org.eclipse.jetty" 
+                  module="jetty-start" revision="8.1.2.v20120308" 
+                  transitive="false" type="jar" log="download-only" 
+                  pattern="start.jar"/>
+    <!-- servlet-api.jar -->
+    <ivy:retrieve conf="servlet" log="download-only" type="orbit"
+                  pattern="lib/servlet-api-3.0.jar"/>
+    </sequential>
+  </target>
+
+</project>

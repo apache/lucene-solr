@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="misc" default="default">
+<project name="misc" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
 
   <!-- TODO: add javacc capability for PrecedenceQueryParser -->
 
@@ -27,14 +27,15 @@
 
   <import file="../contrib-build.xml"/>
 
-  <target name="build-native-unix" >
-    <mkdir dir="${common.build.dir}/native"/>
+  <target name="install-cpptasks" unless="cpptasks.uptodate">
+    <property name="cpptasks.uptodate" value="true"/>
+    <ivy:cachepath organisation="ant-contrib" module="cpptasks" revision="1.0b5"
+             inline="true" conf="master" type="jar" pathid="cpptasks.classpath"/>
+    <taskdef resource="cpptasks.tasks" classpathref="cpptasks.classpath"/>
+  </target>
 
-    <taskdef resource="cpptasks.tasks">
-      <classpath>
-        <pathelement location="ant_lib/cpptasks-1.0b5.jar"/>
-      </classpath>
-    </taskdef>
+  <target name="build-native-unix" depends="install-cpptasks">
+    <mkdir dir="${common.build.dir}/native"/>
 
     <cc outtype="shared" subsystem="console" outfile="${common.build.dir}/native/NativePosixUtil" >
       <fileset file="${src.dir}/org/apache/lucene/store/NativePosixUtil.cpp" />  

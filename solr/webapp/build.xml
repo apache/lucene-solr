@@ -27,6 +27,16 @@
   	<!-- no more JSP -->
   </target>
 
+  <!-- this module has no javadocs -->
+  <target name="javadocs"/>
+
+  <!-- this module has no jar either -->
+  <target name="jar-core"/>
+
+  <!-- nothing to compile -->
+  <target name="compile-core"/>
+  <target name="compile-test"/>
+
   <target name="dist"
           description="Creates the Solr WAR Distribution file."
           depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">

@@ -45,14 +45,21 @@
     </ant>
   </target>
 
+  <!-- we don't actually need to compile this thing, we just want its libs -->
+  <target name="resolve-extraction-libs">
+    <ant dir="${common-solr.dir}/contrib/extraction" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
   <path id="classpath">
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/java"/>
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
-    <fileset dir="${common-solr.dir}/contrib/dataimporthandler/lib" includes="**/*.jar"/>
-    <fileset dir="${common-solr.dir}/contrib/extraction/lib" includes="**/*.jar"/>
+    <fileset dir="${common-solr.dir}/contrib/dataimporthandler/lib" excludes="*.txt"/>
+    <fileset dir="${common-solr.dir}/contrib/extraction/lib" excludes="*.txt"/>
     <path refid="solr.base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="compile-solr-dataimporthandler, solr-contrib-build.compile-core"/>
+  <target name="compile-core" depends="compile-solr-dataimporthandler,resolve-extraction-libs,solr-contrib-build.compile-core"/>
   <target name="compile-test" depends="compile-solr-dataimporthandler-tests, common-solr.compile-test"/>
 </project>

@@ -8,24 +8,21 @@
   <property name="dist.dir" location="dist/" />
   <property name="maven.dist.dir" location="../dist/maven" />
 
-  <path id="additional.dependencies">
-    <fileset dir="lib" includes="*.jar"/>
-  </path>
-
-  <pathconvert property="project.classpath"
-               targetos="unix"
-               refid="additional.dependencies"
-  />
-  
   <import file="../../lucene/contrib/contrib-build.xml"/>
+
+  <path id="spatialjar">
+     <pathelement path="lib/spatial4j-0.2.jar"/>
+  </path>
 
   <path id="classpath">
     <path refid="base.classpath"/>
+    <path refid="spatialjar"/>
     <pathelement path="${queries.jar}" />
   </path>
 
   <path id="test.classpath">
     <path refid="test.base.classpath" />
+    <path refid="spatialjar"/>
     <pathelement path="src/test-files" />
   </path>
 

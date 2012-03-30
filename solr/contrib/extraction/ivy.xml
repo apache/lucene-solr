@@ -1,0 +1,50 @@
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.    
+-->
+<ivy-module version="2.0">
+    <info organisation="org.apache.solr" module="extraction"/>
+    <dependencies>
+      <dependency org="org.apache.james" name="apache-mime4j-core" rev="0.7" transitive="false"/>
+      <dependency org="org.apache.james" name="apache-mime4j-dom" rev="0.7" transitive="false"/>
+      <dependency org="asm" name="asm" rev="3.1" transitive="false"/>
+      <dependency org="org.bouncycastle" name="bcmail-jdk15" rev="1.45" transitive="false"/>
+      <dependency org="org.bouncycastle" name="bcprov-jdk15" rev="1.45" transitive="false"/>
+      <dependency org="de.l3s.boilerpipe" name="boilerpipe" rev="1.1.0" transitive="false"/>
+      <dependency org="org.apache.commons" name="commons-compress" rev="1.3" transitive="false"/>
+      <dependency org="dom4j" name="dom4j" rev="1.6.1" transitive="false"/>
+      <dependency org="org.apache.pdfbox" name="fontbox" rev="1.6.0" transitive="false"/>
+      <dependency org="com.ibm.icu" name="icu4j" rev="4.8.1.1" transitive="false"/>
+      <dependency org="jdom" name="jdom" rev="1.0" transitive="false"/>
+      <dependency org="org.apache.pdfbox" name="jempbox" rev="1.6.0" transitive="false"/>
+      <dependency org="com.drewnoakes" name="metadata-extractor" rev="2.4.0-beta-1" transitive="false"/>
+      <dependency org="edu.ucar" name="netcdf" rev="4.2-min" transitive="false"/>
+      <dependency org="org.apache.pdfbox" name="pdfbox" rev="1.6.0" transitive="false"/>
+      <dependency org="org.apache.poi" name="poi" rev="3.8-beta4" transitive="false"/>
+      <dependency org="org.apache.poi" name="poi-ooxml" rev="3.8-beta4" transitive="false"/>
+      <dependency org="org.apache.poi" name="poi-scratchpad" rev="3.8-beta4" transitive="false"/>
+      <dependency org="org.apache.poi" name="poi-ooxml-schemas" rev="3.8-beta4" transitive="false"/>
+      <dependency org="rome" name="rome" rev="0.9" transitive="false"/>
+      <dependency org="org.ccil.cowan.tagsoup" name="tagsoup" rev="1.2.1" transitive="false"/>
+      <dependency org="org.apache.tika" name="tika-core" rev="1.0" transitive="false"/>
+      <dependency org="org.apache.tika" name="tika-parsers" rev="1.0" transitive="false"/>
+      <dependency org="xerces" name="xercesImpl" rev="2.8.1" transitive="false"/>
+      <dependency org="xml-apis" name="xml-apis" rev="1.0.b2" transitive="false"/>
+      <dependency org="org.apache.xmlbeans" name="xmlbeans" rev="2.3.0" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+    </dependencies>
+</ivy-module>

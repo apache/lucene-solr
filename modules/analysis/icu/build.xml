@@ -27,19 +27,15 @@
   <property name="build.dir" location="../build/icu" />
   <property name="dist.dir" location="../dist/icu" />
 
-  <path id="additional.dependencies">
-    <fileset dir="lib" includes="icu4j-*.jar"/>
-  </path>
-
-  <pathconvert property="project.classpath"
-               targetos="unix"
-               refid="additional.dependencies"
-  />
-
   <import file="../../../lucene/contrib/contrib-build.xml"/>
+
+  <path id="icujar">
+     <pathelement location="lib/icu4j-4.8.1.1.jar"/>
+  </path>
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
+    <path refid="icujar"/>
     <path refid="base.classpath"/>
   </path>
 
@@ -82,7 +78,7 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
       fork="true"
       failonerror="true">
       <classpath>
-      	<path refid="additional.dependencies"/>
+      	<path refid="icujar"/>
       	<pathelement location="${build.dir}/classes/tools"/>
       </classpath>
       <assertions>
@@ -104,7 +100,7 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
       failonerror="true"
       output="${uax29.supp.macros.output.file}">
       <classpath>
-      	<path refid="additional.dependencies"/>
+      	<path refid="icujar"/>
       	<pathelement location="${build.dir}/classes/tools"/>
       </classpath>
       <assertions>
@@ -124,13 +120,13 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
         failonerror="true"
         output="${html.strip.charfilter.supp.macros.output.file}">
       <classpath>
-        <path refid="additional.dependencies"/>
+        <path refid="icujar"/>
         <pathelement location="${build.dir}/classes/tools"/>
       </classpath>
     </java>
   </target>
 
-  <target name="compile-tools" depends="common.compile-tools">
+  <target name="compile-tools" depends="init,common.compile-tools">
     <compile
       srcdir="src/tools/java"
       destdir="${build.dir}/classes/tools">

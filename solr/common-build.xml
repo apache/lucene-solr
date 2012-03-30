@@ -60,12 +60,10 @@
   </condition>
 
   <path id="additional.dependencies">
-  	<fileset dir="${common-solr.dir}/lib" includes="**/*.jar"/>
-  	<fileset dir="${common-solr.dir}/example/lib" includes="**/*.jar"/>
-  	<fileset dir="lib" includes="**/*.jar" erroronmissingdir="false"/>
+  	<fileset dir="${common-solr.dir}/lib" excludes="*.txt,*.template"/>
+  	<fileset dir="${common-solr.dir}/example/lib" excludes="*.txt,*.template"/>
+  	<fileset dir="lib" excludes="*.txt,*.template" erroronmissingdir="false"/>
   </path>
-
-  <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies"/>
 
   <import file="${common-solr.dir}/../lucene/contrib/contrib-build.xml"/>
 
@@ -94,6 +92,7 @@
     <pathelement path="${queryparser.jar}"/>
     <pathelement location="${common-solr.dir}/build/solr-solrj/classes/java"/>
     <pathelement location="${common-solr.dir}/build/solr-core/classes/java"/>
+    <path refid="additional.dependencies"/>
     <path refid="base.classpath"/>
   </path>
 
@@ -190,18 +189,14 @@
     <solr-jarify/>
   </target>
 
-  <target name="compile-core" depends="prep-lucene-jars,common.compile-core"/>
+  <target name="compile-core" depends="prep-lucene-jars,resolve-jetty,common.compile-core"/>
   <target name="compile-test" depends="sync-resources,compile-solr-test-framework,common.compile-test"/>
 
   <target name="dist" depends="jar-core">
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
   </target>
 
-  <target name="lucene-javadocs-all">
-    <ant dir="${common.dir}" target="javadocs-all" inheritall="false"/>
-  </target>
-
-  <target name="javadocs" depends="compile-core,lucene-javadocs-all,define-lucene-javadoc-url">
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url">
    	<sequential>
       <mkdir dir="${javadoc.dir}"/>
       <mkdir dir="${dest}/META-INF/"/>
@@ -298,6 +293,14 @@
     </ant>
   	<property name="solr.core.compiled" value="true"/>
     <property name="solr.test.framework.compiled" value="true"/>
+  </target>
+
+  <!-- resolve jetty dependencies in the example (relied upon by compile!) -->
+  <target name="resolve-jetty" unless="jetty.libs.uptodate">
+    <ant dir="${common-solr.dir}/example" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="jetty.libs.uptodate" value="true"/>
   </target>
 
   <!-- Solr contrib targets -->

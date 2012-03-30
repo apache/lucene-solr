@@ -212,22 +212,12 @@
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
-        <artifactId>solr-commons-csv</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.solr</groupId>
         <artifactId>solr-jsonic</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
         <artifactId>solr-langdetect</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-noggit</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -636,34 +626,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-install-plugin</artifactId>
             <executions>
-              <execution>
-                <id>install-solr-commons-csv</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-commons-csv</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/lib/apache-solr-commons-csv-1.0-SNAPSHOT-r966014.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-solr-noggit</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-noggit</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/lib/apache-solr-noggit-r1211150.jar</file>
-                </configuration>  
-              </execution>
               <execution>
                 <id>install-jsonic</id>
                 <phase>install</phase>

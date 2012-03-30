@@ -30,6 +30,23 @@
       - uima: UIMA Analysis module
   </description>
 
+  <dirname file="${ant.file.analyzers}" property="analyzers.dir"/>
+
+  <macrodef name="forall-analyzers">
+    <attribute name="target" />
+    <sequential>
+      <subant target="@{target}" inheritall="false" failonerror="true">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="${analyzers.dir}" includes="*/build.xml" />
+      </subant>
+    </sequential>
+  </macrodef>
+
+  <propertyset id="uptodate.and.compiled.properties" dynamic="true">
+    <propertyref regex=".*\.uptodate$$"/>
+    <propertyref regex=".*\.compiled$$"/>
+  </propertyset>
+
   <target name="common">
     <ant dir="common" />
   </target>
@@ -65,90 +82,39 @@
   <target name="default" depends="compile"/>
   <target name="compile" depends="common,icu,kuromoji,morfologik,phonetic,smartcn,stempel,uima" />
 
+   <!-- FIXME: these should crawl like contrib-crawl/modules-crawl, passing the 
+        propset so we dont install maven-ant-tasks over and over -->
   <target name="clean">
-    <ant dir="common" target="clean" />
-    <ant dir="icu" target="clean" />
-    <ant dir="kuromoji" target="clean"/>
-    <ant dir="morfologik" target="clean" />
-    <ant dir="phonetic" target="clean" />
-    <ant dir="smartcn" target="clean" />
-    <ant dir="stempel" target="clean" />
-    <ant dir="uima" target="clean" />
+    <forall-analyzers target="clean"/>
+  </target>
+  <target name="resolve">
+    <forall-analyzers target="resolve"/>
   </target>
   <target name="validate">
-    <ant dir="common" target="validate" />
-    <ant dir="icu" target="validate" />
-    <ant dir="kuromoji" target="validate" />
-    <ant dir="morfologik" target="validate" />
-    <ant dir="phonetic" target="validate" />
-    <ant dir="smartcn" target="validate" />
-    <ant dir="stempel" target="validate" />
-    <ant dir="uima" target="validate" />
+    <forall-analyzers target="validate"/>
   </target>
   <target name="compile-core">
-    <ant dir="common" target="compile-core" />
-    <ant dir="icu" target="compile-core" />
-    <ant dir="kuromoji" target="compile-core" />
-    <ant dir="morfologik" target="compile-core" />
-    <ant dir="phonetic" target="compile-core" />
-    <ant dir="smartcn" target="compile-core" />
-    <ant dir="stempel" target="compile-core" />
-    <ant dir="uima" target="compile-core" />
+    <forall-analyzers target="compile-core"/>
   </target>
   <target name="compile-test">
-    <ant dir="common" target="compile-test" />
-    <ant dir="icu" target="compile-test" />
-    <ant dir="kuromoji" target="compile-test" />
-    <ant dir="morfologik" target="compile-test" />
-    <ant dir="phonetic" target="compile-test" />
-    <ant dir="smartcn" target="compile-test" />
-    <ant dir="stempel" target="compile-test" />
-    <ant dir="uima" target="compile-test" />
+    <forall-analyzers target="compile-test"/>
   </target>
   <target name="test">
-    <ant dir="common" target="test" />
-    <ant dir="icu" target="test" />
-    <ant dir="kuromoji" target="test" />
-    <ant dir="morfologik" target="test" />
-    <ant dir="phonetic" target="test" />
-    <ant dir="smartcn" target="test" />
-    <ant dir="stempel" target="test" />
-    <ant dir="uima" target="test" />
+    <forall-analyzers target="test"/>
   </target>
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
 
   <target name="dist-maven" depends="default,javadocs">
-    <ant dir="common" target="dist-maven" />
-    <ant dir="icu" target="dist-maven" />
-    <ant dir="kuromoji" target="dist-maven" />
-    <ant dir="morfologik" target="dist-maven" />
-    <ant dir="phonetic" target="dist-maven" />
-    <ant dir="smartcn" target="dist-maven" />
-    <ant dir="stempel" target="dist-maven" />
-    <ant dir="uima" target="dist-maven" />
+    <forall-analyzers target="dist-maven"/>
   </target>  	
 
   <target name="javadocs">
-    <ant dir="common" target="javadocs" />
-    <ant dir="icu" target="javadocs" />
-    <ant dir="kuromoji" target="javadocs" />
-    <ant dir="morfologik" target="javadocs" />
-    <ant dir="phonetic" target="javadocs" />
-    <ant dir="smartcn" target="javadocs" />
-    <ant dir="stempel" target="javadocs" />
-    <ant dir="uima" target="javadocs" />
+    <forall-analyzers target="javadocs"/>
   </target>  	
 
   <target name="javadocs-index.html">
-    <ant dir="common" target="javadocs-index.html" />
-    <ant dir="icu" target="javadocs-index.html" />
-    <ant dir="kuromoji" target="javadocs-index.html" />
-    <ant dir="morfologik" target="javadocs-index.html" />
-    <ant dir="phonetic" target="javadocs-index.html" />
-    <ant dir="smartcn" target="javadocs-index.html" />
-    <ant dir="stempel" target="javadocs-index.html" />
-    <ant dir="uima" target="javadocs-index.html" />
+    <forall-analyzers target="javadocs-index.html"/>
   </target>
 	
 </project>

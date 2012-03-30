@@ -25,10 +25,17 @@
     <attribute name="target" />
     <sequential>
       <subant target="@{target}" inheritall="false" failonerror="true">
+         <propertyset refid="uptodate.and.compiled.properties"/>
         <fileset dir="${modules.dir}" includes="*/build.xml" />
       </subant>
     </sequential>
   </macrodef>
+
+  <propertyset id="uptodate.and.compiled.properties" dynamic="true">
+    <propertyref regex=".*\.uptodate$$"/>
+    <propertyref regex=".*\.compiled$$"/>
+  </propertyset>
+
 
   <target name="test" description="Test all modules">
     <forall-modules target="test" />
@@ -36,6 +43,10 @@
 
   <target name="compile" description="Compile all modules" depends="validate">
     <forall-modules target="compile" />
+  </target>
+
+  <target name="resolve">
+    <forall-modules target="resolve"/>
   </target>
 
   <target name="compile-test" description="Compile all tests">
@@ -51,7 +62,7 @@
     <forall-modules target="dist-maven" />
   </target>
 
-  <target name="validate" description="Validate legal stuff.">
+  <target name="validate" depends="resolve" description="Validate legal stuff.">
     <!-- The order here is important because forall compiles tools. -->
     <forall-modules target="validate" />
     <license-check-macro dir="${basedir}" />
@@ -60,5 +71,15 @@
   <target name="clean" description="Clean all modules">
     <delete dir="dist"/>
     <forall-modules target="clean" />
+  </target>
+
+  <!-- TODO: in the future, we don't need to actually put
+       jars in the lib/ folders, but can just put in classpath.
+       only packaging tasks really need that (and could do it
+       under build/ directories) -->
+  <target name="clean-jars" description="Clean local jars">
+     <delete>
+       <fileset dir="." includes="**/*.jar"/>
+     </delete>
   </target>
 </project>

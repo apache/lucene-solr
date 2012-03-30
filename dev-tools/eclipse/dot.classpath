@@ -90,19 +90,17 @@
 	<classpathentry kind="src" path="solr/contrib/velocity/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/velocity/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/velocity/src/test-files"/>
-	<classpathentry kind="lib" path="lucene/lib/ant-1.7.1.jar"/>
-	<classpathentry kind="lib" path="lucene/lib/ant-junit-1.7.1.jar"/>
-	<classpathentry kind="lib" path="lucene/lib/junit-4.10.jar"/>
+	<classpathentry kind="lib" path="lucene/test-framework/lib/ant-1.7.1.jar"/>
+	<classpathentry kind="lib" path="lucene/test-framework/lib/ant-junit-1.7.1.jar"/>
+	<classpathentry kind="lib" path="lucene/test-framework/lib/junit-4.10.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/sandbox/lib/jakarta-regexp-1.4.jar"/>
-	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4_8_1_1.jar"/>
+	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4.8.1.1.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.6.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-fsa-1.5.2.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-polish-1.5.2.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-stemming-1.5.2.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-compress-1.2.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1.jar"/>
-	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1211150.jar"/>
-	<classpathentry kind="lib" path="solr/lib/apache-solr-commons-csv-1.0-SNAPSHOT-r966014.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/httpclient-4.1.3.jar"/>
 	<classpathentry kind="lib" path="solr/lib/httpcore-4.1.4.jar"/>
@@ -159,13 +157,13 @@
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-core-1.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-parsers-1.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/xmlbeans-2.3.0.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/langid/lib/langdetect-r111.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/langid/lib/langdetect-c51112119be53a81e59706ce57bacaa90c052284.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/langid/lib/jsonic-1.2.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/commons-digester-2.0.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-alchemy-2.3.1.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-calais-2.3.1.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-tagger-2.3.1.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/uima/lib/uima-an-wst-2.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/uima/lib/AlchemyAPIAnnotator-2.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/uima/lib/OpenCalaisAnnotator-2.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/uima/lib/Tagger-2.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/uima/lib/WhitespaceTokenizer-2.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/uimaj-core-2.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/velocity/lib/velocity-1.6.4.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/velocity/lib/velocity-tools-2.0.jar"/>
