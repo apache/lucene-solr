@@ -22,7 +22,7 @@ import java.io.File;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -95,10 +95,10 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   public void testMultiCore() throws Exception
   {
     UpdateRequest up = new UpdateRequest();
-    up.setAction( ACTION.COMMIT, true, true );
-    up.deleteByQuery( "*:*" );
-    up.process( getSolrCore0() );
-    up.process( getSolrCore1() );
+    up.setAction(ACTION.COMMIT, true, true);
+    up.deleteByQuery("*:*");
+    up.process(getSolrCore0());
+    up.process(getSolrCore1());
     up.clear();
     
     // Add something to each core

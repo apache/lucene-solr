@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -112,10 +112,10 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
   public void testDistributed() throws Exception
   {
     UpdateRequest up = new UpdateRequest();
-    up.setAction( ACTION.COMMIT, true, true );
-    up.deleteByQuery( "*:*" );
-    up.process( getSolrCore0() );
-    up.process( getSolrCore1() );
+    up.setAction(ACTION.COMMIT, true, true);
+    up.deleteByQuery("*:*");
+    up.process(getSolrCore0());
+    up.process(getSolrCore1());
     up.clear();
     
     // Add something to each core
