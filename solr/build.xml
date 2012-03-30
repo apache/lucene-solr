@@ -519,10 +519,7 @@
     </sequential>
   </target>
  
-  <target name="generate-maven-artifacts">
-    <taskdef uri="antlib:org.apache.maven.artifact.ant"
-             resource="org/apache/maven/artifact/ant/antlib.xml"
-             classpathref="maven-ant-tasks.classpath" />
+  <target name="generate-maven-artifacts" depends="install-maven-tasks">
     <sequential>
       <ant target="get-maven-poms" dir=".." inheritall="false"/>
       <m2-deploy pom.xml="pom.xml"/> <!-- Solr parent POM -->
