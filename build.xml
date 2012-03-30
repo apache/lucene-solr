@@ -122,4 +122,8 @@
     </sequential>
   </target>
 
+ <!-- temporarily added before LUCENE-3930, maven
+      calls this on 3.x too... -->
+  <target name="clean-jars"/>
+
 </project>
