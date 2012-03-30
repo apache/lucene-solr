@@ -472,14 +472,14 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     SolrQuery query = new SolrQuery();
     query.set(CommonParams.QT, "/analysis/field");
     query.set(AnalysisParams.FIELD_TYPE, "int");
-    query.set(AnalysisParams.FIELD_VALUE, "hello");
+    query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
     try {
       server.query( query );
       Assert.fail("should have a number format exception");
     }
     catch(SolrException ex) {
       assertEquals(400, ex.code());
-      assertEquals("Invalid Number: hello", ex.getMessage());  // The reason should get passed through
+      assertEquals("Invalid Number: ignore_exception", ex.getMessage());  // The reason should get passed through
     }
     catch(Throwable t) {
       t.printStackTrace();
@@ -487,12 +487,12 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     }
     
     try {
-      server.deleteByQuery( "??::??" ); // query syntax error
+      server.deleteByQuery( "??::?? ignore_exception" ); // query syntax error
       Assert.fail("should have a number format exception");
     }
     catch(SolrException ex) {
       assertEquals(400, ex.code());
-      assertTrue(ex.getMessage().indexOf("??::??")>0);  // The reason should get passed through
+      assertTrue(ex.getMessage().indexOf("??::?? ignore_exception")>0);  // The reason should get passed through
     }
     catch(Throwable t) {
       t.printStackTrace();
