@@ -419,15 +419,6 @@ public class CoreAdminRequest extends SolrRequest
     return req.process( server );
   }
 
-  public static CoreAdminResponse aliasCore(String coreName, String newName, SolrServer server ) throws SolrServerException, IOException
-  {
-    CoreAdminRequest req = new CoreAdminRequest();
-    req.setCoreName(coreName);
-    req.setOtherCoreName(newName);
-    req.setAction( CoreAdminAction.ALIAS );
-    return req.process( server );
-  }
-
   public static CoreAdminResponse getStatus( String name, SolrServer server ) throws SolrServerException, IOException
   {
     CoreAdminRequest req = new CoreAdminRequest();
