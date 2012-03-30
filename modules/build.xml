@@ -62,7 +62,7 @@
     <forall-modules target="dist-maven" />
   </target>
 
-  <target name="validate" description="Validate legal stuff.">
+  <target name="validate" depends="resolve" description="Validate legal stuff.">
     <!-- The order here is important because forall compiles tools. -->
     <forall-modules target="validate" />
     <license-check-macro dir="${basedir}" />

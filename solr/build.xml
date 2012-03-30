@@ -179,7 +179,7 @@
   </target>
     
   <!-- Validation (license/ notice checks). -->
-  <target name="validate" depends="compile-tools" description="Validate legal stuff.">
+  <target name="validate" depends="compile-tools,resolve" description="Validate legal stuff.">
     <license-check-macro dir="${basedir}">
       <additional-excludes>
         <!-- Exclude start.jar only (it'd be weird to have a license file there?) -->

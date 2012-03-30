@@ -174,7 +174,7 @@
   </target>
 
   <!-- Validate once from top-level. -->
-  <target name="validate" depends="compile-tools" description="Validate legal stuff.">
+  <target name="validate" depends="compile-tools,resolve" description="Validate legal stuff.">
     <license-check-macro dir="${basedir}" />
   </target>
 
