@@ -45,6 +45,10 @@
     <forall-modules target="compile" />
   </target>
 
+  <target name="resolve">
+    <forall-modules target="resolve"/>
+  </target>
+
   <target name="compile-test" description="Compile all tests">
     <forall-modules target="compile-test" />
   </target>

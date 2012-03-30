@@ -462,13 +462,27 @@
     <!-- NOOP -->
   </target>
 
+  <target name="resolve" depends="resolve-example,resolve-jetty">
+     <sequential>
+     <ant dir="core" target="resolve" inheritall="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+     <ant dir="solrj" target="resolve" inheritall="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+     <ant dir="test-framework" target="resolve" inheritall="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+     <contrib-crawl target="resolve"/>
+    </sequential>
+  </target>
+
+  <!-- since we build across all contribs, we must ensure all deps
+       are resolved -->
   <target name="javadocs-all"
-          depends="prep-lucene-jars,javadocs-dep,define-lucene-javadoc-url"
+          depends="resolve,prep-lucene-jars,javadocs-dep,define-lucene-javadoc-url"
           description="Generate javadoc for core, java client and contrib">
     <sequential>
-      <!-- since we build across all contribs, we must ensure all deps
-           are resolved -->
-      <contrib-crawl target="resolve" failonerror="true"/>
       <mkdir dir="${dest}/docs/api"/>
  
       <!-- TODO: optimize this, thats stupid here: -->

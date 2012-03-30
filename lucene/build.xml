@@ -190,6 +190,15 @@
     </copy>
   </target>
 
+  <target name="resolve">
+    <sequential>
+      <ant dir="test-framework" target="resolve" inheritall="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+      <contrib-crawl target="resolve" failonerror="true"/>
+    </sequential>
+  </target>
+
   <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" 
           depends="javadocs-all, javadocs-core, javadocs-contrib, javadocs-test-framework">
@@ -227,12 +236,8 @@
                    failonerror="false"/>
   </target>
 
-  <!-- called by javadocs-all, just forcing dependencies to be in lib/ for javadocs -->
-  <target name="contrib-init">
-    <contrib-crawl target="init" failonerror="true"/>
-  </target>
-  	
-  <target name="javadocs-all" depends="contrib-init,jar-analyzers-common,jar-queryparser,jar-queries" 
+  <!-- call resolve to force dependencies to be in lib/ for javadocs -->
+  <target name="javadocs-all" depends="resolve,jar-analyzers-common,jar-queryparser,jar-queries" 
           description="Generate javadoc for core and contrib classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
