@@ -65,8 +65,12 @@ Upgrading from Solr 3.6-dev
 
 * The update request parameter to choose Update Request Processor Chain is 
   renamed from "update.processor" to "update.chain". The old parameter was
-  deprecated but still working since Solr3.2, but is now removed entirely.
+  deprecated but still working since Solr3.2, but is now removed
+  entirely.
 
+* Two of the SolrServer subclasses in SolrJ were renamed/replaced.
+  CommonsHttpSolrServer is now HttpSolrServer, and 
+  StreamingUpdateSolrServer is now ConcurrentUpdateSolrServer.
 
 Detailed Change List
 ----------------------

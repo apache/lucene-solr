@@ -37,7 +37,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 
 /**
- * LBHttpSolrServer or "LoadBalanced HttpSolrServer" is a load balancing wrapper to CommonsHttpSolrServer. This is useful when you
+ * LBHttpSolrServer or "LoadBalanced HttpSolrServer" is a load balancing wrapper around
+ * {@link org.apache.solr.client.solrj.impl.HttpSolrServer}. This is useful when you
  * have multiple SolrServers and the requests need to be Load Balanced among them. This should <b>NOT</b> be used for
  * indexing. Also see the <a href="http://wiki.apache.org/solr/LBHttpSolrServer">wiki</a> page.
  * <p/>
