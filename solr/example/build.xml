@@ -20,6 +20,19 @@
 
   <import file="../common-build.xml"/>
 
+  <!-- example tests are currently elsewhere -->
+  <target name="test"/>
+
+  <!-- this module has no javadocs -->
+  <target name="javadocs"/>
+
+  <!-- this module has no jar either -->
+  <target name="jar-core"/>
+
+  <!-- nothing to compile -->
+  <target name="compile-core"/>
+  <target name="compile-test"/>
+
   <target name="resolve" depends="ivy-availability-check">
     <sequential>
     <!-- jetty libs in lib/ -->
