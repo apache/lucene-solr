@@ -724,4 +724,9 @@
     <copy verbose="true" file="${analysis-common.res.dir}/tr/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_tr.txt"/>
   </target>
+
+  <!-- temporarily added before LUCENE-3930, to avoid
+       any broken builds from timing issues: so hudson
+       won't invoke ant target that does not exist -->
+  <target name="clean-jars"/>
 </project>

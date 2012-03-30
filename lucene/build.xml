@@ -540,4 +540,9 @@
     <property name="core.compiled" value="true"/>
     <property name="lucene-core.uptodate" value="true"/>
   </target>
+
+  <!-- temporarily added before LUCENE-3930, to avoid
+       any broken builds from timing issues: so hudson
+       won't invoke ant target that does not exist -->
+  <target name="clean-jars"/>
 </project>
