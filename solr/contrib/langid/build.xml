@@ -26,8 +26,8 @@
 	<import file="../contrib-build.xml"/>
 
 	<path id="classpath">
-    <fileset dir="../extraction/lib" excludes="*.txt"/>
-    <fileset dir="lib" excludes="*.txt"/>
+    <fileset dir="../extraction/lib" excludes="*.txt,*.template"/>
+    <fileset dir="lib" excludes="*.txt,*.template"/>
     <path refid="solr.base.classpath"/>   
   </path>
 
@@ -40,5 +40,12 @@
                                  jar.file="${solr-langid.dir}/lib/langdetect-r111.jar" />
   </target>
 
-  <target name="compile-core" depends="solr-contrib-build.compile-core"/>
+    <!-- we don't actually need to compile this thing, we just want its libs -->
+  <target name="resolve-extraction-libs">
+    <ant dir="${common-solr.dir}/contrib/extraction" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="compile-core" depends="resolve-extraction-libs,solr-contrib-build.compile-core"/>
 </project>
