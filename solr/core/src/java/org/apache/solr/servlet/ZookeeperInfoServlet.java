@@ -18,8 +18,8 @@
 package org.apache.solr.servlet;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.internal.noggit.CharArr;
-import org.apache.solr.internal.noggit.JSONWriter;
+import org.apache.noggit.CharArr;
+import org.apache.noggit.JSONWriter;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;

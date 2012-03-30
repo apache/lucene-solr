@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.internal.noggit;
+package org.apache.noggit;
 
 /**
  * @author yonik
@@ -43,7 +43,7 @@ public class JSONUtil {
   /**
    * @param o  The object to convert to JSON
    * @param indentSize  The number of space characters to use as an indent (default 2). 0=newlines but no spaces, -1=no indent at all.
-   * @return
+   * @return Given Object converted to its JSON representation using the given indentSize
    */
   public static String toJSON(Object o, int indentSize) {
     CharArr out = new CharArr();

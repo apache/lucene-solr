@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import org.apache.solr.internal.noggit.JSONWriter;
+import org.apache.noggit.JSONWriter;
 
 // Immutable
 public class ZkNodeProps implements JSONWriter.Writable {

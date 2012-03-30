@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.internal.noggit;
+package org.apache.noggit;
 
 
 /**

@@ -32,10 +32,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 
-import org.apache.solr.internal.noggit.CharArr;
-import org.apache.solr.internal.noggit.JSONParser;
-import org.apache.solr.internal.noggit.JSONWriter;
-import org.apache.solr.internal.noggit.ObjectBuilder;
+import org.apache.noggit.CharArr;
+import org.apache.noggit.JSONParser;
+import org.apache.noggit.JSONWriter;
+import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ByteUtils;

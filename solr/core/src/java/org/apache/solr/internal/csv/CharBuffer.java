@@ -172,7 +172,6 @@ public class CharBuffer {
      * modifying it.
      * This method allows to avoid copying if the caller knows the exact capacity
      * before.
-     * @return
      */
     public char[] getCharacters() {
         if (c.length == length) {
@@ -193,7 +192,6 @@ public class CharBuffer {
     /**
      * Converts the contents of the buffer into a StringBuffer.
      * This method involves copying the new data once!
-     * @return
      */
     public StringBuffer toStringBuffer() {
         StringBuffer sb = new StringBuffer(length);
@@ -204,7 +202,6 @@ public class CharBuffer {
     /**
      * Converts the contents of the buffer into a StringBuffer.
      * This method involves copying the new data once!
-     * @return
      */
     public String toString() {
         return new String(c, 0, length);
