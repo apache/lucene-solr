@@ -110,7 +110,7 @@
     </copy>
     <echo>
       To complete IntelliJ IDEA setup, you must manually configure
-      Project Structure | Project | Project SDK.
+      File | Project Structure | Project | Project SDK.
     </echo>
   </target>
   <target name="clean-idea"
