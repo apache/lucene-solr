@@ -37,7 +37,7 @@
                                  jar.file="${solr-langid.dir}/lib/jsonic-1.2.0.jar" />
 
     <m2-deploy-with-pom-template pom.xml="${solr-langid.dir}/lib/langdetect-pom.xml.template"
-                                 jar.file="${solr-langid.dir}/lib/langdetect-r111.jar" />
+                                 jar.file="${solr-langid.dir}/lib/langdetect-c51112119be53a81e59706ce57bacaa90c052284.jar" />
   </target>
 
     <!-- we don't actually need to compile this thing, we just want its libs -->
