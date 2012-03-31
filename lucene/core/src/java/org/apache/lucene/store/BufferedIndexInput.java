@@ -199,17 +199,17 @@ public abstract class BufferedIndexInput extends IndexInput {
   public final int readVInt() throws IOException {
     if (5 <= (bufferLength-bufferPosition)) {
       byte b = buffer[bufferPosition++];
+      if (b >= 0) return b;
       int i = b & 0x7F;
-      if ((b & 0x80) == 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7F) << 7;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7F) << 14;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7F) << 21;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
       i |= (b & 0x0F) << 28;
@@ -224,32 +224,32 @@ public abstract class BufferedIndexInput extends IndexInput {
   public final long readVLong() throws IOException {
     if (9 <= bufferLength-bufferPosition) {
       byte b = buffer[bufferPosition++];
+      if (b >= 0) return b;
       long i = b & 0x7FL;
-      if ((b & 0x80) == 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7FL) << 7;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7FL) << 14;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7FL) << 21;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7FL) << 28;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7FL) << 35;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7FL) << 42;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7FL) << 49;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       b = buffer[bufferPosition++];
       i |= (b & 0x7FL) << 56;
-      if ((b & 0x80) == 0) return i;
+      if (b >= 0) return i;
       throw new IOException("Invalid vLong detected (negative values disallowed)");
     } else {
       return super.readVLong();
