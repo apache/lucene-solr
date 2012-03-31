@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import org.apache.solr.handler.ContentStreamHandlerBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -230,9 +231,9 @@ public class SolrDispatchFilter implements Filter
                 if( handler == null ) {
                   throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);
                 }
-                if( qt != null && qt.startsWith("/") && !(handler instanceof SearchHandler)) {
+                if( qt != null && qt.startsWith("/") && (handler instanceof ContentStreamHandlerBase)) {
                   //For security reasons it's a bad idea to allow a leading '/', ex: /select?qt=/update see SOLR-3161
-                  //There was no restriction from Solr 1.4 thru 3.5 and it's now only supported for SearchHandlers.
+                  //There was no restriction from Solr 1.4 thru 3.5 and it's not supported for update handlers.
                   throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid query type.  Do not use /select to access: "+qt);
                 }
               }
