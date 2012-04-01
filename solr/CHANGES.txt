@@ -91,10 +91,6 @@ New Features
 
 * SOLR-1665: Add debug component options for timings, results and query info only (gsingers, hossman, yonik)
 
-* SOLR-2001: The query component will substitute an empty query that matches
-  no documents if the query parser returns null.  This also prevents an
-  exception from being thrown by the default parser if "q" is missing. (yonik)
-
 * SOLR-2112: Solrj API now supports streaming results. (ryan)
 
 * SOLR-792: Adding PivotFacetComponent for Hierarchical faceting
@@ -601,6 +597,11 @@ New Features
  block to configure the thread pool. The default configuration has
  the same behaviour as solr 3.5, favouring throughput over latency. More
  information can be found on the wiki (http://wiki.apache.org/solr/SolrConfigXml) (Greg Bowyer)
+
+* SOLR-2001: The query component will substitute an empty query that matches
+  no documents if the query parser returns null.  This also prevents an
+  exception from being thrown by the default parser if "q" is missing. (yonik)
+  SOLR-435: if q is "" then it's also acceptable. (dsmiley, hoss)
 
 Optimizations
 ----------------------
