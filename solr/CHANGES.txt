@@ -256,6 +256,8 @@ New Features
 * SOLR-3278: Negative boost support to the Extended Dismax Query Parser Boost Query (bq).
   (James Dyer)
 
+* SOLR-3255: OpenExchangeRates.Org Exchange Rate Provider for CurrencyField (janhoy)
+
 Optimizations
 ----------------------
 
@@ -580,8 +582,6 @@ New Features
 
 * SOLR-2202: Currency FieldType, whith support for currencies and exchange rates
   (Greg Fodor & Andrew Morrison via janhoy, rmuir, Uwe Schindler)
-
-* SOLR-3255: OpenExchangeRates.Org Exchange Rate Provider for CurrencyField (janhoy)
 
 * SOLR-3026: eDismax: Locking down which fields can be explicitly queried (user fields aka uf)
   (janhoy, hossmann, Tomás Fernández Löbbe)
