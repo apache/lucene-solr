@@ -17,6 +17,10 @@
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/benchmark/build" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+      <method>
+        <option name="AntTarget" enabled="true" target="copy-alg-files-for-testing"
+                antfile="file://$PROJECT_DIR$/modules/benchmark/build.xml" />
+      </method>
     </configuration>
     <configuration default="false" name="clustering contrib" type="JUnit" factoryName="JUnit">
       <module name="clustering" />

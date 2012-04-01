@@ -265,10 +265,10 @@
 		     />
     </target>
     
-    <target name="compile-test" depends="contrib-build.compile-test">
-       <!-- copy .alg files as resources for testing -->
-       <copy todir="${build.dir}/classes/test/conf">
-         <fileset dir="conf"/>
-       </copy>
+    <target name="compile-test" depends="copy-alg-files-for-testing,contrib-build.compile-test"/>
+    <target name="copy-alg-files-for-testing" description="copy .alg files as resources for testing">
+      <copy todir="${build.dir}/classes/test/conf">
+        <fileset dir="conf"/>
+      </copy>
     </target>
 </project>
