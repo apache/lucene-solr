@@ -22,7 +22,9 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="Solr library" level="project" />
+    <orderEntry type="library" name="Morfologik library" level="project" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
+    <orderEntry type="module" module-name="morfologik" />
     <orderEntry type="module" module-name="icu" />
     <orderEntry type="module" module-name="smartcn" />
     <orderEntry type="module" module-name="solr" />
