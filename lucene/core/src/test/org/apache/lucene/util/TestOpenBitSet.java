@@ -183,14 +183,14 @@ public class TestOpenBitSet extends LuceneTestCase {
       fromIndex = random.nextInt(sz+80);
       toIndex = fromIndex + random.nextInt((sz>>1)+1);
       BitSet aa = (BitSet)a.clone(); aa.flip(fromIndex,toIndex);
-      OpenBitSet bb = (OpenBitSet)b.clone(); bb.flip(fromIndex,toIndex);
+      OpenBitSet bb = b.clone(); bb.flip(fromIndex,toIndex);
 
       doIterate(aa,bb, mode);   // a problem here is from flip or doIterate
 
       fromIndex = random.nextInt(sz+80);
       toIndex = fromIndex + random.nextInt((sz>>1)+1);
       aa = (BitSet)a.clone(); aa.clear(fromIndex,toIndex);
-      bb = (OpenBitSet)b.clone(); bb.clear(fromIndex,toIndex);
+      bb = b.clone(); bb.clear(fromIndex,toIndex);
 
       doNextSetBit(aa,bb); // a problem here is from clear() or nextSetBit
       doNextSetBitLong(aa,bb);
@@ -201,7 +201,7 @@ public class TestOpenBitSet extends LuceneTestCase {
       fromIndex = random.nextInt(sz+80);
       toIndex = fromIndex + random.nextInt((sz>>1)+1);
       aa = (BitSet)a.clone(); aa.set(fromIndex,toIndex);
-      bb = (OpenBitSet)b.clone(); bb.set(fromIndex,toIndex);
+      bb = b.clone(); bb.set(fromIndex,toIndex);
 
       doNextSetBit(aa,bb); // a problem here is from set() or nextSetBit
       doNextSetBitLong(aa,bb);
@@ -219,10 +219,10 @@ public class TestOpenBitSet extends LuceneTestCase {
         BitSet a_xor = (BitSet)a.clone(); a_xor.xor(a0);
         BitSet a_andn = (BitSet)a.clone(); a_andn.andNot(a0);
 
-        OpenBitSet b_and = (OpenBitSet)b.clone(); assertEquals(b,b_and); b_and.and(b0);
-        OpenBitSet b_or = (OpenBitSet)b.clone(); b_or.or(b0);
-        OpenBitSet b_xor = (OpenBitSet)b.clone(); b_xor.xor(b0);
-        OpenBitSet b_andn = (OpenBitSet)b.clone(); b_andn.andNot(b0);
+        OpenBitSet b_and = b.clone(); assertEquals(b,b_and); b_and.and(b0);
+        OpenBitSet b_or = b.clone(); b_or.or(b0);
+        OpenBitSet b_xor = b.clone(); b_xor.xor(b0);
+        OpenBitSet b_andn = b.clone(); b_andn.andNot(b0);
 
         doIterate(a_and,b_and, mode);
         doIterate(a_or,b_or, mode);

@@ -125,7 +125,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
   
   public void testSeekEnum() throws CorruptIndexException, IOException {
     int indexPosition = 3;
-    SegmentTermEnum clone = (SegmentTermEnum) termEnum.clone();
+    SegmentTermEnum clone = termEnum.clone();
     Term term = findTermThatWouldBeAtIndex(clone, indexPosition);
     SegmentTermEnum enumerator = clone;
     index.seekEnum(enumerator, indexPosition);

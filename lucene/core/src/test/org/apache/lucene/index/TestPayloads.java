@@ -80,7 +80,7 @@ public class TestPayloads extends LuceneTestCase {
             // expected exception
         }
         
-        Payload clone = (Payload) payload.clone();
+        Payload clone = payload.clone();
         assertEquals(payload.length(), clone.length());
         for (int i = 0; i < payload.length(); i++) {
           assertEquals(payload.byteAt(i), clone.byteAt(i));
