@@ -24,8 +24,11 @@ import java.io.UnsupportedEncodingException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 /**
  * An abstract test class that prepares nested test classes to run.
@@ -48,10 +51,18 @@ public abstract class WithNestedTests {
   };
 
   public static abstract class AbstractNestedTest extends LuceneTestCase {
-    @Before
-    public void before() {
-      Assume.assumeTrue(isRunningNested());
-    }
+    @ClassRule
+    public static TestRule ignoreIfRunAsStandalone = new TestRule() {
+      public Statement apply(final Statement s, Description arg1) {
+        return new Statement() {
+          public void evaluate() throws Throwable {
+            if (isRunningNested()) {
+              s.evaluate();
+            }
+          }
+        };
+      }
+    };
 
     protected static boolean isRunningNested() {
       return runsAsNested.get() != null && runsAsNested.get();
