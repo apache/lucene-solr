@@ -66,7 +66,7 @@
   </target>
 
   <property name="version" value="4.0-SNAPSHOT"/>
-  <target name="get-maven-poms" 
+  <target name="get-maven-poms" depends="resolve"
           description="Copy Maven POMs from dev-tools/maven/ to their target locations">
     <copy todir="." overwrite="true">
       <fileset dir="${basedir}/dev-tools/maven"/>

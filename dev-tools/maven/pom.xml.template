@@ -614,7 +614,6 @@
           </execution>
         </executions>
       </plugin>
-      
     </plugins>
   </build>
   <profiles>
@@ -652,7 +651,7 @@
                   <artifactId>solr-langdetect</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/langid/lib/langdetect-r111.jar</file>
+                  <file>solr/contrib/langid/lib/langdetect-c51112119be53a81e59706ce57bacaa90c052284.jar</file>
                 </configuration>
               </execution>
             </executions>
