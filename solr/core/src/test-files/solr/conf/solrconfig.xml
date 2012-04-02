@@ -530,6 +530,16 @@
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
+  <updateRequestProcessorChain name="dedupe-allfields">
+    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
+      <bool name="enabled">false</bool>
+      <bool name="overwriteDupes">false</bool>
+      <str name="signatureField">id</str>
+      <str name="fields"></str>
+      <str name="signatureClass">org.apache.solr.update.processor.Lookup3Signature</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
   <updateRequestProcessorChain name="stored_sig">
     <!-- this chain is valid even though the signature field is not
          indexed, because we are not asking for dups to be overwritten

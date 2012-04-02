@@ -132,29 +132,30 @@ public class SignatureUpdateProcessorFactory
     public void processAdd(AddUpdateCommand cmd) throws IOException {
       if (enabled) {
         SolrInputDocument doc = cmd.getSolrInputDocument();
+        List<String> currDocSigFields = null;
         if (sigFields == null || sigFields.size() == 0) {
           Collection<String> docFields = doc.getFieldNames();
-          sigFields = new ArrayList<String>(docFields.size());
-          sigFields.addAll(docFields);
-          Collections.sort(sigFields);
+          currDocSigFields = new ArrayList<String>(docFields.size());
+          currDocSigFields.addAll(docFields);
+          Collections.sort(currDocSigFields);
+        } else {
+          currDocSigFields = sigFields;
         }
 
         Signature sig = (Signature) req.getCore().getResourceLoader().newInstance(signatureClass); 
         sig.init(params);
 
-        for (String field : sigFields) {
+        for (String field : currDocSigFields) {
           SolrInputField f = doc.getField(field);
           if (f != null) {
             sig.add(field);
             Object o = f.getValue();
-            if (o instanceof String) {
-              sig.add((String)o);
-            } else if (o instanceof Collection) {
+            if (o instanceof Collection) {
               for (Object oo : (Collection)o) {
-                if (oo instanceof String) {
-                  sig.add((String)oo);
-                }
+                sig.add(String.valueOf(oo));
               }
+            } else {
+              sig.add(String.valueOf(o));
             }
           }
         }

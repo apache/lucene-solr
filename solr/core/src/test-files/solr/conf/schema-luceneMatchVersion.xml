@@ -44,6 +44,7 @@
   </fieldtype>
  </types>
  <fields>
+   <field name="id" type="string" indexed="true" stored="true"/>
    <field name="signatureField" type="string" indexed="true" stored="false"/>
    <field name="text30" type="text30" indexed="true" stored="false" />
    <field name="textDefault" type="textDefault" indexed="true" stored="false" />
@@ -51,4 +52,5 @@
    <field name="textStandardAnalyzerDefault" type="textStandardAnalyzerDefault" indexed="true" stored="false" />
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
  </fields>
+ <uniqueKey>id</uniqueKey>
 </schema>

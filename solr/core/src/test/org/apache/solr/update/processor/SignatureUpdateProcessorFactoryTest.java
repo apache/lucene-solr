@@ -22,6 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -29,9 +32,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.BinaryUpdateRequestHandler;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -67,6 +72,29 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       req.close();
     }
   }
+  
+  @Test
+  public void testDupeAllFieldsDetection() throws Exception {
+    
+    this.chain = "dedupe-allfields";
+    
+    SolrCore core = h.getCore();
+    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(this.chain);
+    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained
+        .getFactories()[0]);
+    factory.setEnabled(true);
+    assertNotNull(chained);
+
+    addDoc(adoc("v_t", "Hello Dude man!"));
+    addDoc(adoc("v_t", "Hello Dude man!", "name", "name1'"));
+    addDoc(adoc("v_t", "Hello Dude man!", "name", "name2'"));
+
+    addDoc(commit());
+    
+    checkNumDocs(3);
+
+    factory.setEnabled(false);
+  }  
 
   @Test
   public void testDupeDetection() throws Exception {
@@ -227,6 +255,100 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     }
     assertTrue("Should have gotten an exception from inform(SolrCore)", 
                exception_ok);
+  }
+  
+  @Test
+  public void testNonStringFieldsValues() throws Exception {
+    this.chain = "dedupe-allfields";
+    
+    SolrCore core = h.getCore();
+    UpdateRequestProcessorChain chained = core
+        .getUpdateProcessingChain(chain);
+    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained
+        .getFactories()[0]);
+    factory.setEnabled(true);
+    
+    Map<String,String[]> params = new HashMap<String,String[]>();
+    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
+    params.put(UpdateParams.UPDATE_CHAIN, new String[] {chain});
+    
+    UpdateRequest ureq = new UpdateRequest();
+    
+    {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("v_t", "same");
+      doc.addField("weight", 1.0f);
+      doc.addField("ints_is", 34);
+      doc.addField("ints_is", 42);
+      ureq.add(doc);
+    }
+    {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("v_t", "same");
+      doc.addField("weight", 2.0f);
+      doc.addField("ints_is", 42);
+      doc.addField("ints_is", 66);
+      ureq.add(doc);
+    }
+    {
+      // A and B should have same sig as eachother
+      // even though the particulars of how the the ints_is list are built
+
+      SolrInputDocument docA = new SolrInputDocument();
+      SolrInputDocument docB = new SolrInputDocument();
+
+      UnusualList<Integer> ints = new UnusualList<Integer>(3);
+      for (int val : new int[] {42, 66, 34}) {
+        docA.addField("ints_is", new Integer(val));
+        ints.add(val);
+      }
+      docB.addField("ints_is", ints);
+
+      for (SolrInputDocument doc : new SolrInputDocument[] { docA, docB }) {
+        doc.addField("v_t", "same");
+        doc.addField("weight", 3.0f);
+        ureq.add(doc);
+      }
+    }
+    {
+      // now add another doc with the same values as A & B above, 
+      // but diff ints_is collection (diff order)
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("v_t", "same");
+      doc.addField("weight", 3.0f);
+      for (int val : new int[] {66, 42, 34}) {
+        doc.addField("ints_is", new Integer(val));
+      }
+      ureq.add(doc);
+    }
+        
+
+    ArrayList<ContentStream> streams = new ArrayList<ContentStream>(2);
+    streams.add(new BinaryRequestWriter().getContentStream(ureq));
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams);
+    try {
+      req.setContentStreams(streams);
+      BinaryUpdateRequestHandler h = new BinaryUpdateRequestHandler();
+      h.handleRequestBody(req, new SolrQueryResponse());
+    } finally {
+      req.close();
+    }
+    
+    addDoc(commit());
+    
+    checkNumDocs(4);
+    
+
+  }
+
+  /** A list with an unusual toString */
+  private static final class UnusualList<T> extends ArrayList<T> {
+    public UnusualList(int size) {
+      super(size);
+    }
+    public String toString() {
+      return "UNUSUAL:" + super.toString();
+    }
   }
 
   private void addDoc(String doc) throws Exception {

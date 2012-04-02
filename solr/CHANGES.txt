@@ -508,6 +508,13 @@ Upgrading from Solr 3.5
 * SOLR-3161: Don't use the 'qt' parameter with a leading '/'.  It probably won't work in 4.0
   and it's now limited in 3.6 to SearchHandler subclasses that aren't lazy-loaded.
 
+* Bugs found and fixed in the SignatureUpdateProcessor that previously caused 
+  some documents to produce the same signature even when the configured fields 
+  contained distinct (non-String) values.  Users of SignatureUpdateProcessor 
+  are strongly advised that they should re-index as document signatures may 
+  have now changed. (see SOLR-3200 & SOLR-3226 for details)
+
+
 New Features
 ----------------------
 * SOLR-2020: Add Java client that uses Apache Http Components http client (4.x).
@@ -755,6 +762,13 @@ Bug Fixes
 
 * SOLR-3261: Fix edismax to respect query operators when literal colons 
   are used in query string.  (Juan Grande via hossman)
+
+* SOLR-3226: Fix SignatureUpdateProcessor to no longer ignore non-String 
+  field values (Spyros Kapnissis, hossman)
+
+* SOLR-3200: Fix SignatureUpdateProcessor "all fields" mode to use all 
+  fields of each document instead of hte fields specified by the first 
+  document indexed (Spyros Kapnissis via hossman)
 
 Other Changes
 ----------------------
