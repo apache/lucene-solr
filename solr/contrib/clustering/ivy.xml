@@ -21,8 +21,8 @@
     <dependencies>
       <dependency org="org.carrot2" name="carrot2-core" rev="3.5.0" transitive="false"/>
       <dependency org="com.carrotsearch" name="hppc" rev="0.3.3" transitive="false"/>
-      <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="1.5.2" transitive="false"/>
-      <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="1.5.2" transitive="false"/>
+      <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="1.7.4" transitive="false"/>
+      <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="1.7.4" transitive="false"/>
       <dependency org="org.apache.mahout" name="mahout-collections" rev="0.3" transitive="false"/>
       <dependency org="org.apache.mahout" name="mahout-math" rev="0.3" transitive="false"/>
       <dependency org="org.simpleframework" name="simple-xml" rev="2.4.1" transitive="false"/>
