@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -51,7 +50,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
     public void test() {}
   }
 
-  public static class Nested2 extends LuceneTestCase {
+  public static class Nested2 extends WithNestedTests.AbstractNestedTest {
     public void test1() throws Exception {
       Thread t = new Thread() {
         public void run() {

@@ -19,7 +19,6 @@ package org.apache.lucene.util.junitcompat;
 
 import java.util.Properties;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SystemPropertiesInvariantRule;
 import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.junit.*;
@@ -40,7 +39,7 @@ public class TestSystemPropertiesInvariantRule extends WithNestedTests {
     super(true);
   }
   
-  public static class Base extends LuceneTestCase {
+  public static class Base extends WithNestedTests.AbstractNestedTest {
     public void testEmpty() {}
   }
   
@@ -102,6 +101,12 @@ public class TestSystemPropertiesInvariantRule extends WithNestedTests {
     }
   }
 
+  @Before
+  @After
+  public void cleanup() {
+    System.clearProperty(PROP_KEY1);
+  }
+  
   @Test
   public void testRuleInvariantBeforeClass() {
     Result runClasses = JUnitCore.runClasses(InBeforeClass.class);
