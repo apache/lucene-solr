@@ -53,10 +53,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>solr-noggit</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
       <version>${project.version}</version>
@@ -110,10 +106,6 @@
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-grouping</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-commons-csv</artifactId>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>

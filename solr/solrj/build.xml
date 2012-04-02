@@ -18,6 +18,8 @@
 <project name="solr-solrj" default="default">
   <description>Solrj - Solr Java Client</description>
 
+  <property name="ivy.retrieve.pattern" value="${common-solr.dir}/lib/[artifact]-[revision].[ext]"/>
+
   <import file="../common-build.xml"/>
 
   <!-- Specialized common-solr.test.classpath, to remove the Solr core test output -->

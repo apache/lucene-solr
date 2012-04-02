@@ -27,14 +27,10 @@
   <property name="dist.dir" location="../../../dist/contrib/analyzers/phonetic" />
   <property name="maven.dist.dir" location="../../../dist/maven" />
 
-  <path id="additional.dependencies">
-    <fileset dir="lib" includes="commons-codec-*.jar"/>
-  </path>
-
-  <pathconvert property="project.classpath"
-               targetos="unix"
-               refid="additional.dependencies"
-  />
-
   <import file="../../contrib-build.xml"/>
+
+  <path id="classpath">
+    <pathelement path="lib/commons-codec-1.6.jar"/>
+    <path refid="base.classpath"/>
+  </path>
 </project>

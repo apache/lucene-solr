@@ -46,7 +46,7 @@
   </target>
 
   <target name="javadocs-core" depends="javadocs"/>
-  <target name="javadocs">
+  <target name="javadocs" depends="init">
     <sequential>
       <mkdir dir="${javadoc.dir}/test-framework"/>
       <invoke-javadoc overview="${src.dir}/overview.html"

@@ -36,7 +36,7 @@
               excludes="*-src.jar"
   />
   <patternset id="binary.root.dist.patterns"
-              includes="CHANGES.txt,LICENSE.txt,NOTICE.txt,README.txt,MIGRATE.txt,JRE_VERSION_MIGRATION.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/ contrib/xml-query-parser/*.dtd,lib/*.jar,lib/*LICENSE*.txt,lib/*NOTICE*.txt,contrib/*/lib/*.jar,contrib/*/lib/*LICENSE*.txt,contrib/*/lib/*NOTICE*.txt"
+              includes="CHANGES.txt,LICENSE.txt,NOTICE.txt,README.txt,MIGRATE.txt,JRE_VERSION_MIGRATION.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/ contrib/xml-query-parser/*.dtd,lib/*.jar,lib/*LICENSE*.txt,lib/*NOTICE*.txt,contrib/*/lib/*.jar,contrib/*/lib/*LICENSE*.txt,contrib/*/lib/*NOTICE*.txt,test-framework/**/lib/*.jar,test-framework/**/lib/*NOTICE*.txt,test-framework/**/lib/*LICENSE*.txt"
   />
 
 
@@ -57,9 +57,7 @@
   <path id="backwards.test.compile.classpath">
     <path refid="junit-path"/>
     <path refid="ant-path"/>
-    <fileset dir="${backwards.dir}/lib">
-      <include name="lucene-core*.jar"/>
-    </fileset>
+    <fileset dir="${backwards.dir}/lib/"/>
   </path>
 	
   <path id="backwards.junit.classpath">
@@ -72,7 +70,7 @@
   <!-- remove this -->
   <target name="test-tag" depends="test-backwards" description="deprecated"/>
   
-  <target name="compile-backwards" depends="compile-core"
+  <target name="compile-backwards" depends="compile-core,resolve"
   	description="Runs tests of a previous Lucene version.">
     <sequential>
       <mkdir dir="${build.dir.backwards}"/>	  
@@ -180,7 +178,7 @@
   </target>
 
   <!-- Validate once from top-level. -->
-  <target name="validate" depends="compile-tools" description="Validate legal stuff.">
+  <target name="validate" depends="compile-tools,resolve" description="Validate legal stuff.">
     <license-check-macro dir="${basedir}">
       <additional-excludes>
         <exclude name="backwards/lib/**/*.jar" />
@@ -200,6 +198,18 @@
     <copy todir="build/docs">
       <fileset dir="site/build/site"/> 
     </copy>
+  </target>
+
+  <target name="resolve">
+    <sequential>
+      <ant dir="test-framework" target="resolve" inheritall="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+      <ant dir="backwards" target="resolve" inheritall="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+      <contrib-crawl target="resolve" failonerror="true"/>
+    </sequential>
   </target>
 
   <target name="javadoc" depends="javadocs"/>
@@ -238,18 +248,17 @@
     <contrib-crawl target="javadocs"
                    failonerror="false"/>
   </target>
-  	
-  <target name="javadocs-all" description="Generate javadoc for core and contrib classes">
+
+  <!-- call resolve to force dependencies to be in lib/ for javadocs -->
+  <target name="javadocs-all" depends="resolve" 
+          description="Generate javadoc for core and contrib classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
 
       <path id="javadoc.classpath">
         <path refid="classpath"/>
         <pathelement location="${ant.home}/lib/ant.jar"/>
-        <fileset dir=".">
-          <exclude name="build/**/*.jar"/>
-          <include name="**/lib/*.jar"/>
-        </fileset>
+        <fileset dir="." includes="test-framework/lib/,contrib/analyzers/phonetic/lib/,contrib/benchmark/lib/,contrib/icu/lib/,contrib/queries/lib/" excludes="**/lib/*.txt"/>
       </path>
 
       <invoke-javadoc overview="${common.dir}/core/src/java/overview.html"
@@ -418,7 +427,7 @@
   <!-- ================================================================== -->
   <!-- Packages the sources from "svn export" with tar-gzip               -->
   <!-- ================================================================== -->
-  <target name="package-tgz-src" depends="init, init-dist"
+  <target name="package-tgz-src" depends="init-dist"
           description="--> Generates the Lucene source distribution from 'svn export' as .tgz">
     <property name="source.package.file"
               value="${dist.dir}/lucene-${version}-src.tgz"/>
@@ -439,7 +448,7 @@
   <!-- ================================================================== -->
   <!-- Packages the sources from local working copy with tar-gzip     -->
   <!-- ================================================================== -->
-  <target name="package-local-src-tgz" depends="init"
+  <target name="package-local-src-tgz" depends="init-dist"
     description="--> Packages the Lucene source from the local working copy">
     <mkdir dir="${common.dir}/build"/>
     <property name="source.package.file"
@@ -467,10 +476,7 @@
 
   <target name="stage" depends="prepare-release, copy-to-stage"/>
 
-  <target name="generate-maven-artifacts" depends="package, javadocs">
-    <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
-             uri="antlib:org.apache.maven.artifact.ant" 
-             classpathref="maven-ant-tasks.classpath"/>
+  <target name="generate-maven-artifacts" depends="install-maven-tasks, package, javadocs">
     <sequential>
       
       <ant target="get-maven-poms" dir=".."/>
@@ -512,9 +518,9 @@
     </delete>
   </target>
 
-  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser,javacc-contrib-queryparser,javacc-contrib-demo"/>
+  <target name="javacc" depends="javacc-check,clean-javacc,javacc-QueryParser,javacc-contrib-queryparser,javacc-contrib-demo"/>
 
-  <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
+  <target name="javacc-QueryParser" depends="javacc-check" if="javacc.present">
     <sequential>
       <invoke-javacc target="src/java/org/apache/lucene/queryParser/QueryParser.jj"
                      outputDir="src/java/org/apache/lucene/queryParser"/>
@@ -532,14 +538,14 @@
     </sequential>
   </target>	
 
-  <target name="javacc-contrib-queryparser" depends="init,javacc-check" if="javacc.present">
+  <target name="javacc-contrib-queryparser" depends="javacc-check" if="javacc.present">
     <ant target="javacc"
       dir="contrib/queryparser"
       antfile="build.xml" 
     />
   </target>
 
-  <target name="javacc-contrib-demo" depends="init,javacc-check" if="javacc.present">
+  <target name="javacc-contrib-demo" depends="javacc-check" if="javacc.present">
     <ant target="javacc"
       dir="contrib/demo"
       antfile="build.xml"
@@ -617,8 +623,13 @@
     <property name="lucene-core.uptodate" value="true"/>
   </target>
 
-  <!-- temporarily added before LUCENE-3930, to avoid
-       any broken builds from timing issues: so hudson
-       won't invoke ant target that does not exist -->
-  <target name="clean-jars"/>
+  <!-- TODO: in the future, we don't need to actually put
+       jars in the lib/ folders, but can just put in classpath.
+       only packaging tasks really need that (and could do it
+       under build/ directories) -->
+  <target name="clean-jars" description="Clean local jars">
+     <delete>
+       <fileset dir="." includes="**/*.jar"/>
+     </delete>
+  </target>
 </project>
