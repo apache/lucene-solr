@@ -61,6 +61,12 @@ Upgrading from Solr 3.5
   schema.xml is now considered deprecated.  Instead you are encouraged to specify these via the "df"
   and "q.op" parameters in your request handler definition.  (David Smiley)
 
+* Bugs found and fixed in the SignatureUpdateProcessor that previously caused 
+  some documents to produce the same signature even when the configured fields 
+  contained distinct (non-String) values.  Users of SignatureUpdateProcessor 
+  are strongly advised that they should re-index as document signatures may 
+  have now changed. (see SOLR-3200 & SOLR-3226 for details)
+
 New Features
 ----------------------
 * SOLR-2020: Add Java client that uses Apache Http Components http client (4.x).
@@ -312,6 +318,13 @@ Bug Fixes
 
 * SOLR-3261: Fix edismax to respect query operators when literal colons 
   are used in query string.  (Juan Grande via hossman)
+
+* SOLR-3226: Fix SignatureUpdateProcessor to no longer ignore non-String 
+  field values (Spyros Kapnissis, hossman)
+
+* SOLR-3200: Fix SignatureUpdateProcessor "all fields" mode to use all 
+  fields of each document instead of hte fields specified by the first 
+  document indexed (Spyros Kapnissis via hossman)
 
 Other Changes
 ----------------------
