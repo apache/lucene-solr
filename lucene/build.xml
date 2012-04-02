@@ -31,7 +31,17 @@
               excludes="*-src.jar"
   />
   <patternset id="binary.root.dist.patterns"
-              includes="CHANGES.txt,LICENSE.txt,NOTICE.txt,README.txt,MIGRATE.txt,JRE_VERSION_MIGRATION.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/,lib/*.jar,lib/*LICENSE*.txt,lib/*NOTICE*.txt,contrib/*/lib/*.jar,contrib/*/lib/*LICENSE*.txt,contrib/*/lib/*NOTICE*.txt"
+              includes="LICENSE.txt,NOTICE.txt,README.txt,
+                        MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
+                        CHANGES.txt,
+                        test-framework/**/CHANGES.txt,contrib/**/CHANGES.txt,
+                        lib/*.jar,
+                        test-framework/**/lib/*.jar,contrib/**/lib/*.jar,
+                        lib/*LICENSE*.txt,
+                        test-framework/**/lib/*LICENSE*.txt,contrib/**/lib/*LICENSE*.txt,
+                        lib/*NOTICE*.txt,
+                        test-framework/**/lib/*NOTICE*.txt,contrib/**/lib/*NOTICE*.txt
+                        contrib/**/*.sh contrib/**/docs/,contrib/**/README*"
   />
 
 
