@@ -111,7 +111,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
       boolean removeAllExisting, boolean forceNewDirectory) throws IOException {
     return new SolrIndexWriter(name, core.getNewIndexDir(),
         core.getDirectoryFactory(), removeAllExisting, core.getSchema(),
-        core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodec(), forceNewDirectory);
+        core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), forceNewDirectory);
   }
 
   @Override

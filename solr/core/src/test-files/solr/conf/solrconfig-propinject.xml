@@ -45,7 +45,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
  
-  <mainIndex>
+  <indexConfig>
     <mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy">
       <double name="maxMergeMB">64.0</double>
     </mergePolicy>
@@ -53,7 +53,7 @@
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">
       <int name="maxThreadCount">2</int>
     </mergeScheduler>
-  </mainIndex>
+  </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>

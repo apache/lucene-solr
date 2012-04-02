@@ -21,7 +21,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexConfig;
 import org.junit.BeforeClass;
@@ -93,11 +92,11 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @Test
   public void testLucene23Upgrades() throws Exception {
-    double bufferSize = solrConfig.getDouble("indexDefaults/ramBufferSizeMB");
+    double bufferSize = solrConfig.indexConfig.ramBufferSizeMB;
     assertTrue(bufferSize + " does not equal: " + 32, bufferSize == 32);
-    String mergePolicy = solrConfig.get("indexDefaults/mergePolicy/@class");
+    String mergePolicy = solrConfig.indexConfig.mergePolicyInfo.className;
     assertEquals(TieredMergePolicy.class.getName(), mergePolicy);
-    String mergeSched = solrConfig.get("indexDefaults/mergeScheduler/@class");
+    String mergeSched = solrConfig.indexConfig.mergeSchedulerInfo.className;
     assertTrue(mergeSched + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME, mergeSched.equals(SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME) == true);
   }
 
@@ -128,6 +127,24 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals(12, sirf.termInfosIndexDivisor);
   }
 
+  // If defaults change, add test methods to cover each version
+  @Test
+  public void testDefaults() throws Exception {
+    SolrConfig sc = new SolrConfig("solrconfig-basic.xml");
+    SolrIndexConfig sic = sc.indexConfig;
+    assertTrue("default ramBufferSizeMB should be 32", sic.ramBufferSizeMB == 32);
+    assertTrue("default useCompoundFile should be false", sic.useCompoundFile == false);
+    assertTrue("default LockType should be native", sic.lockType.equals(SolrIndexConfig.LOCK_TYPE_NATIVE));
+  }
+
+  @Test
+  public void testDefaults31() throws Exception {
+    SolrConfig sc = new SolrConfig("solrconfig-basic-luceneVersion31.xml");
+    SolrIndexConfig sic = sc.indexConfig;
+    assertTrue("default ramBufferSizeMB should be 16", sic.ramBufferSizeMB == 16);
+    assertTrue("default useCompoundFile should be true", sic.useCompoundFile == true);
+    assertTrue("default LockType should be simple", sic.lockType.equals(SolrIndexConfig.LOCK_TYPE_SIMPLE));
+  }
 
 }
 

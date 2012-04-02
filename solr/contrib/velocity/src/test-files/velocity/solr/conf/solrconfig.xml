@@ -32,28 +32,7 @@
                     class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
 
 
-  <indexDefaults>
-    <useCompoundFile>false</useCompoundFile>
-    <mergeFactor>10</mergeFactor>
-    <ramBufferSizeMB>32</ramBufferSizeMB>
-    <maxFieldLength>10000</maxFieldLength>
-    <writeLockTimeout>1000</writeLockTimeout>
-    <commitLockTimeout>10000</commitLockTimeout>
-    <lockType>native</lockType>
-  </indexDefaults>
-
-  <mainIndex>
-    <useCompoundFile>false</useCompoundFile>
-    <ramBufferSizeMB>32</ramBufferSizeMB>
-    <mergeFactor>10</mergeFactor>
-    <unlockOnStartup>false</unlockOnStartup>
-    <reopenReaders>true</reopenReaders>
-    <deletionPolicy class="solr.SolrDeletionPolicy">
-      <str name="maxCommitsToKeep">1</str>
-      <str name="maxOptimizedCommitsToKeep">0</str>
-    </deletionPolicy>
-     <infoStream file="INFOSTREAM.txt">false</infoStream>
-  </mainIndex>
+  <!-- <indexConfig> section could go here, but we want the defaults -->
 
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>

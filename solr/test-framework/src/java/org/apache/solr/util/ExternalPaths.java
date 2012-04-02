@@ -19,8 +19,6 @@ package org.apache.solr.util;
 
 import java.io.File;
 
-import org.apache.solr.SolrTestCaseJ4;
-
 /**
  * Some tests need to reach outside the classpath to get certain resources (e.g. the example configuration).
  * This class provides some paths to allow them to do this.

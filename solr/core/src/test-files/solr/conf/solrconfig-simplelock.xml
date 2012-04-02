@@ -27,7 +27,7 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
-  <indexDefaults>
+  <indexConfig>
     <lockType>simple</lockType>
-  </indexDefaults>
+  </indexConfig>
 </config>

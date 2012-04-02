@@ -44,7 +44,7 @@
         solr.RAMDirectoryFactory is memory based and not persistent. -->
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
-  <indexDefaults>
+  <indexConfig>
     <mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy">
       <double name="maxMergeMB">32.0</double>
     </mergePolicy>
@@ -52,7 +52,7 @@
       <int name="maxMergeCount">4</int>
       <int name="maxThreadCount">4</int>
     </mergeScheduler>
-  </indexDefaults>
+  </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>

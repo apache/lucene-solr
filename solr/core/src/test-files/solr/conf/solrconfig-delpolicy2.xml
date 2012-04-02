@@ -20,12 +20,12 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
-  <mainIndex>
+  <indexConfig>
     <deletionPolicy class="org.apache.solr.core.FakeDeletionPolicy">
       <str name="var1">value1</str>
 		  <str name="var2">value2</str>
 	  </deletionPolicy>
-  </mainIndex>
+  </indexConfig>
 
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
 </config>

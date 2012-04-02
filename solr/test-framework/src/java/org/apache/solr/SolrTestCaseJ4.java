@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-
 package org.apache.solr;
-
 
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +34,6 @@ import java.util.logging.Level;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.SystemPropertiesInvariantRule;
 import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONUtil;

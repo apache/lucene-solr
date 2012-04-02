@@ -23,27 +23,10 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
-  <indexDefaults>
-
-    <useCompoundFile>false</useCompoundFile>
-    <mergeFactor>10</mergeFactor>
-    <ramBufferSizeMB>32</ramBufferSizeMB>
-    <maxMergeDocs>2147483647</maxMergeDocs>
-    <maxFieldLength>10000</maxFieldLength>
-    <writeLockTimeout>1000</writeLockTimeout>
+  <indexConfig>
     <mergePolicy class="org.apache.solr.update.DummyMergePolicy"/>
-
-  </indexDefaults>
-
-  <mainIndex>
-    <useCompoundFile>false</useCompoundFile>
     <mergeFactor>8</mergeFactor>
-    <maxBufferedDocs>10</maxBufferedDocs>
-    <maxMergeDocs>2147483647</maxMergeDocs>
-    <maxFieldLength>10000</maxFieldLength>
-    <mergePolicy class="org.apache.solr.update.DummyMergePolicy"/>
-    <unlockOnStartup>true</unlockOnStartup>
-  </mainIndex>
+  </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>

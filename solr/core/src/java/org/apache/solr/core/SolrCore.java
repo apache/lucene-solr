@@ -323,7 +323,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name) throws IOException {
-    return new SolrIndexSearcher(this, getNewIndexDir(), schema, getSolrConfig().mainIndexConfig, name, false, directoryFactory);
+    return new SolrIndexSearcher(this, getNewIndexDir(), schema, getSolrConfig().indexConfig, name, false, directoryFactory);
   }
 
 
@@ -370,7 +370,7 @@ public final class SolrCore implements SolrInfoMBean {
       if (indexExists && firstTime) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
-        Directory dir = directoryFactory.get(indexDir, getSolrConfig().mainIndexConfig.lockType);
+        Directory dir = directoryFactory.get(indexDir, getSolrConfig().indexConfig.lockType);
         if (dir != null)  {
           if (IndexWriter.isLocked(dir)) {
             if (removeLocks) {
@@ -390,7 +390,7 @@ public final class SolrCore implements SolrInfoMBean {
         log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy, codec, false);
+        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.indexConfig, solrDelPolicy, codec, false);
         writer.close();
       }
 
@@ -1134,7 +1134,7 @@ public final class SolrCore implements SolrInfoMBean {
 
       } else {
         // verbose("non-reopen START:");
-        tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().mainIndexConfig, "main", true, directoryFactory);
+        tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().indexConfig, "main", true, directoryFactory);
         // verbose("non-reopen DONE: searcher=",tmp);
       }
 

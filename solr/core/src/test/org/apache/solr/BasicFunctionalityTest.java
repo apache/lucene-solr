@@ -126,7 +126,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
     IndexWriter writer = ((DirectUpdateHandler2)core.getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
-    assertEquals("Mergefactor was not picked up", ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
+    assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor());
 
     lrf.args.put(CommonParams.VERSION,"2.2");
     assertQ("test query on empty index",

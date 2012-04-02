@@ -32,59 +32,7 @@
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
-  <indexDefaults>
-   <!-- Values here affect all index writers and act as a default
-   unless overridden. -->
-    <!-- Values here affect all index writers and act as a default unless overridden. -->
-    <useCompoundFile>false</useCompoundFile>
-    <mergeFactor>10</mergeFactor>
-    <!-- If both ramBufferSizeMB and maxBufferedDocs is set, then Lucene will flush based on whichever limit is hit first.
-     -->
-    <!--<maxBufferedDocs>1000</maxBufferedDocs>-->
-    <!-- Tell Lucene when to flush documents to disk.
-    Giving Lucene more memory for indexing means faster indexing at the cost of more RAM
-
-    If both ramBufferSizeMB and maxBufferedDocs is set, then Lucene will flush based on whichever limit is hit first.
-
-    -->
-    <ramBufferSizeMB>32</ramBufferSizeMB>
-    <maxMergeDocs>2147483647</maxMergeDocs>
-    <maxFieldLength>10000</maxFieldLength>
-
-    <!--
-     Expert:
-     The Merge Policy in Lucene controls how merging is handled by Lucene.  The default in 2.3 is the LogByteSizeMergePolicy, previous
-     versions used LogDocMergePolicy.
-
-     LogByteSizeMergePolicy chooses segments to merge based on their size.  The Lucene 2.2 default, LogDocMergePolicy chose when
-     to merge based on number of documents
-
-     Other implementations of MergePolicy must have a no-argument constructor
-     -->
-    <mergePolicy>org.apache.lucene.index.LogByteSizeMergePolicy</mergePolicy>
-
-    <!--
-     Expert:
-     The Merge Scheduler in Lucene controls how merges are performed.  The ConcurrentMergeScheduler (Lucene 2.3 default)
-      can perform merges in the background using separate threads.  The SerialMergeScheduler (Lucene 2.2 default) does not.
-     -->
-    <mergeScheduler>org.apache.lucene.index.ConcurrentMergeScheduler</mergeScheduler>
-    <!-- these are global... can't currently override per index -->
-    <writeLockTimeout>1000</writeLockTimeout>
-
-    <lockType>single</lockType>
-  </indexDefaults>
-
-  <mainIndex>
-    <!-- lucene options specific to the main on-disk lucene index -->
-    <useCompoundFile>false</useCompoundFile>
-    <mergeFactor>10</mergeFactor>
-    <ramBufferSizeMB>32</ramBufferSizeMB>
-    <maxMergeDocs>2147483647</maxMergeDocs>
-    <maxFieldLength>10000</maxFieldLength>
-
-    <unlockOnStartup>true</unlockOnStartup>
-  </mainIndex>
+  <!-- <indexConfig> section could go here, but we want the defaults -->
 
   <updateHandler class="solr.DirectUpdateHandler2">
 

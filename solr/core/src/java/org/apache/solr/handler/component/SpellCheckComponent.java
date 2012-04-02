@@ -563,7 +563,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
       //ensure that there is at least one query converter defined
       if (queryConverters.size() == 0) {
-        LOG.warn("No queryConverter defined, using default converter");
+        LOG.info("No queryConverter defined, using default converter");
         queryConverters.put("queryConverter", new SpellingQueryConverter());
       }
 

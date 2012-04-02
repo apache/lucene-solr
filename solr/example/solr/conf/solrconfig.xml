@@ -113,53 +113,60 @@
   <directoryFactory name="DirectoryFactory" 
                     class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
 
+  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       Index Config - These settings control low-level behavior of indexing
+       Most example settings here show the default value, but are commented
+       out, to more easily see where customizations have been made.
+       
+       Note: This replaces <indexDefaults> and <mainIndex> from older versions
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  <indexConfig>
+    <!-- maxFieldLength specifies max number of *tokens* indexed per field. Default: 10000 -->
+    <!-- <maxFieldLength>10000</maxFieldLength>  -->
+    <!-- Maximum time to wait for a write lock (ms) for an IndexWriter. Default: 1000 -->
+    <!-- <writeLockTimeout>1000</writeLockTimeout>  -->
 
-  <!-- Index Defaults
+    <!-- Expert: Enabling compound file will use less files for the index, 
+         using fewer file descriptors on the expense of performance decrease. 
+         Default in Lucene is "true". Default in Solr is "false" (since 3.6) -->
+    <!-- <useCompoundFile>false</useCompoundFile> -->
 
-       Values here affect all index writers and act as a default
-       unless overridden.
-
-       WARNING: See also the <mainIndex> section below for parameters
-       that overfor Solr's main Lucene index.
-    -->
-  <indexDefaults>
-
-    <useCompoundFile>false</useCompoundFile>
-
-    <mergeFactor>10</mergeFactor>
-    <!-- Sets the amount of RAM that may be used by Lucene indexing
-         for buffering added documents and deletions before they are
-         flushed to the Directory.  -->
-    <ramBufferSizeMB>32</ramBufferSizeMB>
-    <!-- If both ramBufferSizeMB and maxBufferedDocs is set, then
-         Lucene will flush based on whichever limit is hit first.  
-      -->
+    <!-- ramBufferSizeMB sets the amount of RAM that may be used by Lucene
+         indexing for buffering added documents and deletions before they are
+         flushed to the Directory.
+         maxBufferedDocs sets a limit on the number of documents buffered
+         before flushing.
+         If both ramBufferSizeMB and maxBufferedDocs is set, then
+         Lucene will flush based on whichever limit is hit first.  -->
+    <!-- <ramBufferSizeMB>32</ramBufferSizeMB> -->
     <!-- <maxBufferedDocs>1000</maxBufferedDocs> -->
 
-    <maxFieldLength>10000</maxFieldLength>
-    <writeLockTimeout>1000</writeLockTimeout>
-
     <!-- Expert: Merge Policy 
-
-         The Merge Policy in Lucene controls how merging is handled by
-         Lucene.  The default in Solr 3.3 is TieredMergePolicy.
-         
-         The default in 2.3 was the LogByteSizeMergePolicy,
-         previous versions used LogDocMergePolicy.
-         
-         LogByteSizeMergePolicy chooses segments to merge based on
-         their size.  The Lucene 2.2 default, LogDocMergePolicy chose
-         when to merge based on number of documents
-         
-         Other implementations of MergePolicy must have a no-argument
-         constructor
+         The Merge Policy in Lucene controls how merging of segments is done.
+         The default since Solr/Lucene 3.3 is TieredMergePolicy.
+         The default since Lucene 2.3 was the LogByteSizeMergePolicy,
+         Even older versions of Lucene used LogDocMergePolicy.
       -->
     <!--
-       <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
-       -->
+        <mergePolicy class="org.apache.lucene.index.TieredMergePolicy">
+          <int name="maxMergeAtOnce">10</int>
+          <int name="segmentsPerTier">10</int>
+        </mergePolicy>
+      -->
+       
+    <!-- Merge Factor
+         The merge factor controls how many segments will get merged at a time.
+         For TieredMergePolicy, mergeFactor is a convenience parameter which
+         will set both MaxMergeAtOnce and SegmentsPerTier at once.
+         For LogByteSizeMergePolicy, mergeFactor decides how many new segments
+         will be allowed before they are merged into one.
+         Default is 10 for both merge policies.
+      -->
+    <!-- 
+    <mergeFactor>10</mergeFactor>
+      -->
 
     <!-- Expert: Merge Scheduler
-
          The Merge Scheduler in Lucene controls how merges are
          performed.  The ConcurrentMergeScheduler (Lucene 2.3 default)
          can perform merges in the background using separate threads.
@@ -168,7 +175,7 @@
     <!-- 
        <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
        -->
-	  
+
     <!-- LockFactory 
 
          This option specifies which Lucene LockFactory implementation
@@ -182,66 +189,60 @@
                   JVM are attempting to share a single index.
          simple = SimpleFSLockFactory  - uses a plain file for locking
 
-         (For backwards compatibility with Solr 1.2, 'simple' is the
-         default if not specified.)
+         Defaults: 'native' is default for Solr3.6 and later, otherwise
+                   'simple' is the default
 
          More details on the nuances of each LockFactory...
          http://wiki.apache.org/lucene-java/AvailableLockFactories
     -->
-    <lockType>native</lockType>
-
-    <!-- Expert: Controls how often Lucene loads terms into memory
-         Default is 128 and is likely good for most everyone.
-      -->
-    <!-- <termIndexInterval>256</termIndexInterval> -->
-  </indexDefaults>
-
-  <!-- Main Index
-
-       Values here override the values in the <indexDefaults> section
-       for the main on disk index.
-    -->
-  <mainIndex>
-
-    <useCompoundFile>false</useCompoundFile>
-    <ramBufferSizeMB>32</ramBufferSizeMB>
-    <mergeFactor>10</mergeFactor>
+    <!-- <lockType>native</lockType> -->
 
     <!-- Unlock On Startup
 
          If true, unlock any held write or commit locks on startup.
          This defeats the locking mechanism that allows multiple
          processes to safely access a lucene index, and should be used
-         with care.
+         with care. Default is "false".
 
          This is not needed if lock type is 'none' or 'single'
      -->
+    <!--
     <unlockOnStartup>false</unlockOnStartup>
-    
-    <!-- If true, IndexReaders will be reopened (often more efficient)
-         instead of closed and then opened.
       -->
+    
+    <!-- Expert: Controls how often Lucene loads terms into memory
+         Default is 128 and is likely good for most everyone.
+      -->
+    <!-- <termIndexInterval>128</termIndexInterval> -->
+
+    <!-- If true, IndexReaders will be reopened (often more efficient)
+         instead of closed and then opened. Default: true
+      -->
+    <!-- 
     <reopenReaders>true</reopenReaders>
+      -->
 
     <!-- Commit Deletion Policy
 
-         Custom deletion policies can specified here. The class must
+         Custom deletion policies can be specified here. The class must
          implement org.apache.lucene.index.IndexDeletionPolicy.
 
-         http://lucene.apache.org/java/2_9_1/api/all/org/apache/lucene/index/IndexDeletionPolicy.html
+         http://lucene.apache.org/java/3_5_0/api/core/org/apache/lucene/index/IndexDeletionPolicy.html
 
-         The standard Solr IndexDeletionPolicy implementation supports
+         The default Solr IndexDeletionPolicy implementation supports
          deleting index commit points on number of commits, age of
          commit point and optimized status.
          
          The latest commit point should always be preserved regardless
          of the criteria.
     -->
+    <!-- 
     <deletionPolicy class="solr.SolrDeletionPolicy">
+    -->
       <!-- The number of commit points to be kept -->
-      <str name="maxCommitsToKeep">1</str>
+      <!-- <str name="maxCommitsToKeep">1</str> -->
       <!-- The number of optimized commit points to be kept -->
-      <str name="maxOptimizedCommitsToKeep">0</str>
+      <!-- <str name="maxOptimizedCommitsToKeep">0</str> -->
       <!--
           Delete all commit points once they have reached the given age.
           Supports DateMathParser syntax e.g.
@@ -250,7 +251,9 @@
          <str name="maxCommitAge">30MINUTES</str>
          <str name="maxCommitAge">1DAY</str>
       -->
+    <!-- 
     </deletionPolicy>
+    -->
 
     <!-- Lucene Infostream
        
@@ -260,9 +263,9 @@
          Setting The value to true will instruct the underlying Lucene
          IndexWriter to write its debugging info the specified file
       -->
-     <infoStream file="INFOSTREAM.txt">false</infoStream> 
+     <!-- <infoStream file="INFOSTREAM.txt">false</infoStream> --> 
+  </indexConfig>
 
-  </mainIndex>
 
   <!-- JMX
        
@@ -398,7 +401,9 @@
      </indexReaderFactory >
     -->
 
-
+  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       Query section - these settings control query time things like caches
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
   <query>
     <!-- Max Boolean Clauses
 
