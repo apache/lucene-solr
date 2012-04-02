@@ -177,6 +177,9 @@ Bug Fixes
    
  * LUCENE-3937: Workaround a XERCES-J bug in benchmark module.
    (Uwe Schindler, Robert Muir, Mike McCandless)
+
+ * LUCENE-3934: Residual IDF calculation in the pruning package is wrong
+   (Andrzej Bialecki)
   
 Documentation
 

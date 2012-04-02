@@ -27,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.PruningReader;
 import org.apache.lucene.index.pruning.CarmelTopKTermPruningPolicy;
 import org.apache.lucene.index.pruning.PruningPolicy;
+import org.apache.lucene.index.pruning.RIDFTermPruningPolicy;
 import org.apache.lucene.index.pruning.StorePruningPolicy;
 import org.apache.lucene.index.pruning.TFTermPruningPolicy;
 import org.apache.lucene.search.IndexSearcher;
@@ -55,7 +56,8 @@ public class TestPruningReader extends LuceneTestCase {
     try {
       int i = 0;
       while(td.next()) {
-        assertEquals(t + ", i=" + i, ids[i], td.doc());
+        int doc = td.doc();
+        assertEquals(t + ", i=" + i, ids[i], doc);
         i++;
       }
       assertEquals(ids.length, i);
@@ -207,6 +209,20 @@ public class TestPruningReader extends LuceneTestCase {
     IndexReader ir = IndexReader.open(sourceDir, false);
     ir.deleteDocument(5);
     ir.close();
+  }
+  
+  public void testRIDFPruning() throws Exception {
+    RAMDirectory targetDir = new RAMDirectory();
+    IndexReader in = IndexReader.open(sourceDir, true);
+    // remove only very popular terms
+    RIDFTermPruningPolicy ridf = new RIDFTermPruningPolicy(in, null, null, -0.12);
+    PruningReader tfr = new PruningReader(in, null, ridf);
+    assertTDCount(tfr, new Term("body", "one"), 0);
+    assertTD(tfr, new Term("body", "two"), new int[]{0, 1, 2, 4});
+    assertTD(tfr, new Term("body", "three"), new int[]{0, 1, 3});
+    assertTD(tfr, new Term("test", "one"), new int[]{4});
+    assertTD(tfr, new Term("body", "four"), new int[]{0});
+    assertTD(tfr, new Term("test", "four"), new int[]{4});
   }
 
   public void testTfPruning() throws Exception {
