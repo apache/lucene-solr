@@ -59,7 +59,7 @@
   </target>
 
   <path id="tools.dependencies">
-    <fileset dir="../icu/lib" includes="icu4j-*.jar"/>
+    <fileset dir="../icu/lib" includes="icu4j-4.8.1.1.jar"/>
   </path>
 
   <path id="tools.classpath">
@@ -98,7 +98,14 @@
     </sequential>
   </target>
 
-  <target name="compile-tools" depends="compile-core, common.compile-tools">
+   <!-- we don't actually need to compile this thing, we just want its lib -->
+   <target name="resolve-icu">
+     <ant dir="../icu/" target="resolve" inheritAll="false">
+       <propertyset refid="uptodate.and.compiled.properties"/>
+     </ant>
+   </target>
+
+  <target name="compile-tools" depends="resolve-icu, compile-core, common.compile-tools">
     <compile
       srcdir="src/tools/java"
       destdir="${build.dir}/classes/tools">
