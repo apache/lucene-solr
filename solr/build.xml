@@ -498,7 +498,7 @@
       </subant>
 
       <path id="javadoc.classpath">
-        <path refid="classpath"/>
+        <path refid="test.classpath"/>
         <fileset dir="${dest}/contrib">
           <include name="**/lucene-libs/**/*.jar"/>
         </fileset>
