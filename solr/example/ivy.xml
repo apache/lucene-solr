@@ -27,10 +27,10 @@
     <dependencies>
       <dependency org="org.mortbay.jetty" name="servlet-api" rev="2.5-20081211" transitive="false" conf="jetty->default"/>
       <dependency org="org.mortbay.jetty" name="jetty-util" rev="6.1.26-patched-JETTY-1340" transitive="false" conf="jetty->default">
-        <artifact name="jetty-util" type="jar" url="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_5_0/solr/example/lib/jetty-util-6.1.26-patched-JETTY-1340.jar"/>
+        <artifact name="jetty-util" type="jar" url="http://cloud.github.com/downloads/rmuir/jetty6-unicode/jetty-util-6.1.26-patched-JETTY-1340.jar"/>
       </dependency>
       <dependency org="org.mortbay.jetty" name="jetty" rev="6.1.26-patched-JETTY-1340" transitive="false" conf="jetty->default">
-        <artifact name="jetty" type="jar" url="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_5_0/solr/example/lib/jetty-6.1.26-patched-JETTY-1340.jar"/>
+        <artifact name="jetty" type="jar" url="http://cloud.github.com/downloads/rmuir/jetty6-unicode/jetty-6.1.26-patched-JETTY-1340.jar"/>
       </dependency>
       <dependency org="org.mortbay.jetty" name="jsp-2.1-glassfish" rev="2.1.v20091210" transitive="false" conf="jsp->default"/>
       <dependency org="org.mortbay.jetty" name="jsp-api-2.1-glassfish" rev="2.1.v20091210" transitive="false" conf="jsp->default"/>
