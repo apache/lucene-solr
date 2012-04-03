@@ -129,8 +129,8 @@
   <classpathentry kind="lib" path="solr/example/lib/servlet-api-3.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/carrot2-core-3.5.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/hppc-0.3.3.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-core-asl-1.5.2.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-mapper-asl-1.5.2.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-core-asl-1.7.4.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-mapper-asl-1.7.4.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/mahout-collections-0.3.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/mahout-math-0.3.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/simple-xml-2.4.1.jar"/>
