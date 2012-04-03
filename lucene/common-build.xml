@@ -196,6 +196,8 @@
   <property name="gpg.exe" value="gpg" />
   <property name="gpg.key" value="CODE SIGNING KEY" />
 
+  <property name="filtered.pom.templates.dir" location="${common.dir}/build/poms"/>
+
   <property name="clover.db.dir" location="${common.dir}/build/test/clover/db"/>
   <property name="clover.report.dir" location="${common.dir}/build/test/clover/reports"/>
 
@@ -399,7 +401,7 @@
 
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
   	<element name="artifact-attachments" optional="yes"/>
-    <attribute name="pom.xml" default="pom.xml"/>
+    <attribute name="pom.xml"/>
     <attribute name="jar.file" default="${build.dir}/${final.name}.jar"/>
     <sequential>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
@@ -844,10 +846,23 @@
              uri="antlib:org.apache.maven.artifact.ant" 
              classpathref="maven-ant-tasks.classpath"/>
   </target>
-  
-  <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src, javadocs, install-maven-tasks">
+
+  <target name="dist-maven"
+          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, dist-maven-common"/>
+  <target name="dist-maven-common"
+          depends="jar-core, jar-src, javadocs, install-maven-tasks, filter-pom-templates">
     <sequential>
-      <m2-deploy>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="pom.xml">
+        <mapper>
+          <chainedmapper>
+            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+            <globmapper from="*build.xml" to="*pom.xml"/>
+          </chainedmapper>
+        </mapper>
+        <path location="${ant.file}"/>
+      </pathconvert>
+      <m2-deploy pom.xml="${pom.xml}">
         <artifact-attachments>
           <attach file="${build.dir}/${final.name}-src.jar"
                   classifier="sources"/>
@@ -856,6 +871,30 @@
         </artifact-attachments>
       </m2-deploy>
     </sequential>
+  </target>
+
+  <target name="filter-pom-templates" unless="filtered.pom.templates.uptodate">
+    <mkdir dir="${filtered.pom.templates.dir}"/>
+    <copy todir="${common.dir}/build/poms" overwrite="true">
+      <fileset dir="${common.dir}/../dev-tools/maven"/>
+      <filterset begintoken="@" endtoken="@">
+        <filter token="version" value="${version}"/>
+      </filterset>
+      <globmapper from="*.template" to="*"/>
+    </copy>
+    <property name="filtered.pom.templates.uptodate" value="true"/>
+  </target>
+
+  <target name="m2-deploy-lucene-parent-pom" depends="filter-pom-templates,m2-deploy-grandparent-pom"
+          unless="deployed.lucene.parent.pom.uptodate">
+    <m2-deploy pom.xml="${filtered.pom.templates.dir}/lucene/pom.xml"/>    <!-- Lucene parent POM -->
+    <property name="deployed.lucene.parent.pom.uptodate" value="true"/>
+  </target>
+
+  <target name="m2-deploy-grandparent-pom" depends="filter-pom-templates"
+          unless="deployed.grandparent.pom.uptodate">
+    <m2-deploy pom.xml="${filtered.pom.templates.dir}/pom.xml"/>    <!-- Lucene/Solr grandparent POM -->
+    <property name="deployed.grandparent.pom.uptodate" value="true"/>
   </target>
 
   <target name="rat-sources-typedef">

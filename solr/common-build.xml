@@ -237,6 +237,15 @@
   	<solr-jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar"/>
   </target>
 
+  <target name="m2-deploy-solr-parent-pom" depends="filter-pom-templates"
+          unless="deployed.solr.parent.pom.uptodate">
+    <m2-deploy pom.xml="${filtered.pom.templates.dir}/solr/pom.xml"/>    <!-- Solr parent POM -->
+    <property name="deployed.solr.parent.pom.uptodate" value="true"/>
+  </target>
+
+  <target name="dist-maven"
+          depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, dist-maven-common"/>
+
   <!-- Solr core targets -->
   <target name="compile-solr-core" description="Compile Solr core." unless="solr.core.compiled">
     <ant dir="${common-solr.dir}/core" target="compile-core" inheritAll="false">

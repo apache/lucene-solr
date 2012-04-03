@@ -1065,6 +1065,11 @@ Build
 * LUCENE-3762: Upgrade JUnit to 4.10, refactor state-machine of detecting 
   setUp/tearDown call chaining in LuceneTestCase. (Dawid Weiss, Robert Muir)
 
+* LUCENE-3944: Make the 'generate-maven-artifacts' target use filtered POMs
+  placed under lucene/build/poms/, rather than in each module's base
+  directory.  The 'clean' target now removes them.
+  (Steve Rowe, Robert Muir)
+
 
 ======================= Lucene 3.5.0 =======================
 

@@ -32,7 +32,7 @@
   </path>
 
   <dirname file="${ant.file.solr-langid}" property="solr-langid.dir"/>
-  <target name="dist-maven" depends="jar-core,javadocs,jar-src,common.dist-maven">
+  <target name="dist-maven" depends="common-solr.dist-maven">
     <m2-deploy-with-pom-template pom.xml="${solr-langid.dir}/lib/langdetect-pom.xml.template"
                                  jar.file="${solr-langid.dir}/lib/langdetect-c51112119be53a81e59706ce57bacaa90c052284.jar" />
   </target>

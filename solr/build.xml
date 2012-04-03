@@ -537,8 +537,6 @@
  
   <target name="generate-maven-artifacts" depends="install-maven-tasks">
     <sequential>
-      <ant target="get-maven-poms" dir=".." inheritall="false"/>
-      <m2-deploy pom.xml="pom.xml"/> <!-- Solr parent POM -->
       <subant target="dist-maven" inheritall="false" >
         <fileset dir="core" includes="build.xml"/>
         <fileset dir="solrj" includes="build.xml"/>

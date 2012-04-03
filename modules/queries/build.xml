@@ -25,6 +25,4 @@
   <property name="maven.dist.dir" location="../dist/maven"/>
 
   <import file="../../lucene/contrib/contrib-build.xml"/>
-
-  <target name="dist-maven" depends="jar-core,javadocs,common.dist-maven"/>
 </project>

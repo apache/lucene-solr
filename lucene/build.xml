@@ -450,13 +450,9 @@
   </target>
 
 
-  <target name="generate-maven-artifacts" depends="install-maven-tasks, package, javadocs">
+  <target name="generate-maven-artifacts"
+          depends="install-maven-tasks, filter-pom-templates, package, javadocs">
     <sequential>
-	  <ant target="get-maven-poms" dir=".."/>
- 
-      <m2-deploy pom.xml="../pom.xml"/> <!-- Lucene/Solr grandparent POM -->
-      <m2-deploy pom.xml="pom.xml"/>    <!-- Lucene parent POM -->
-      
       <subant target="dist-maven" failonerror="true" inheritall="false">
         <propertyset refid="uptodate.and.compiled.properties"/>
         <fileset dir="${common.dir}/core" includes="build.xml"/>

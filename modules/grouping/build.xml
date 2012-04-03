@@ -40,7 +40,6 @@
       <path refid="base.classpath"/>
     </path>
 
-    <target name="dist-maven" depends="jar-core,javadocs,common.dist-maven" />
     <target name="compile" depends="jar-queries,common.compile-core" description="Compiles facet classes" />
     <target name="jar-core" depends="common.jar-core" />
 
