@@ -97,7 +97,7 @@ public class TestThreaded extends AbstractDataImportHandlerTestCase {
   
   @Test
   public void testCachedThread_FullImport() throws Exception {
-    int numThreads = random.nextInt(9) + 1; // between one and 10
+    int numThreads = random.nextInt(8) + 2; // between 2 and 10
     String config = getCachedConfig(random.nextBoolean(), random.nextBoolean(), numThreads);
     runFullImport(config);
   }

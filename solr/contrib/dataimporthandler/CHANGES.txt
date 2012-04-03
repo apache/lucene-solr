@@ -38,8 +38,8 @@ Bug Fixes
 ----------------------
 * SOLR-2875: Fix the incorrect url in tika-data-config.xml (Shinichiro Abe via koji)
 
-* SOLR-3011: Extensive bug fixes for "threads" parameter.  Also added deprecation a warning when using "threads".
-             (Mikhail Khludnev via James Dyer)
+* SOLR-3011 / SOLR-3307: Extensive bug fixes for "threads" parameter.  Also added deprecation a warning when using
+                          "threads".  (Mikhail Khludnev, Bernd Fehling, James Dyer)
 
 ==================  3.4.0 ==================
 

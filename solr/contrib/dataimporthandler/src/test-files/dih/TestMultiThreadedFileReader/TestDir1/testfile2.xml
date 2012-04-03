@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<documents>
+  <document id="testdir2_testfile2_record1">
+    <element name="desc"><value>test desc 2_2_1</value></element>
+  </document>
+  <document id="testdir2_testfile2_record2">
+    <element name="desc"><value>test desc 2_2_2</value></element>
+  </document>
+  <document id="testdir2_testfile2_record3">
+    <element name="desc"><value>test desc 2_2_3</value></element>
+  </document>
+</documents>
