@@ -135,7 +135,6 @@
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/fontbox-1.6.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/jempbox-1.6.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/metadata-extractor-2.4.0-beta-1.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/netcdf-4.2-min.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/pdfbox-1.6.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-3.8-beta4.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-ooxml-3.8-beta4.jar"/>
