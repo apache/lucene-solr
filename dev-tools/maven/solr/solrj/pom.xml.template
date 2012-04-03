@@ -48,11 +48,6 @@
   </scm>
   <dependencies>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-noggit</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.zookeeper</groupId>
       <artifactId>zookeeper</artifactId>
       <exclusions>

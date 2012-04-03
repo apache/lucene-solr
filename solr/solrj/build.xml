@@ -33,7 +33,6 @@
     <mkdir  dir="${dist}/solrj-lib" />
     <copy todir="${dist}/solrj-lib">
       <fileset dir="${common-solr.dir}/lib">
-        <include name="apache-solr-noggit-*.jar"/>
         <include name="commons-codec-*.jar"/>
         <include name="commons-io-*.jar"/>
         <include name="commons-httpclient-*.jar"/>
