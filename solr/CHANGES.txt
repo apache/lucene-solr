@@ -777,7 +777,7 @@ Bug Fixes
   field values (Spyros Kapnissis, hossman)
 
 * SOLR-3200: Fix SignatureUpdateProcessor "all fields" mode to use all 
-  fields of each document instead of hte fields specified by the first 
+  fields of each document instead of the fields specified by the first 
   document indexed (Spyros Kapnissis via hossman)
 
 Other Changes
