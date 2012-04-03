@@ -99,7 +99,7 @@ For further information on Lucene, go to:
   http://lucene.apache.org/
 
 Please join the Lucene-User mailing list by visiting this site:
-  http://lucene.apache.org/java/docs/mailinglists.html
+  http://lucene.apache.org/core/discussion.html
 
 Please post suggestions, questions, corrections or additions to this
 document to the lucene-user mailing list.

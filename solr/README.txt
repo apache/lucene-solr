@@ -81,7 +81,7 @@ Instructions for Building Apache Solr from Source
    Alternately, you can obtain a copy of the latest Apache Solr source code
    directly from the Subversion repository:
 
-     http://lucene.apache.org/solr/version_control.html
+     http://lucene.apache.org/solr/versioncontrol.html
 
 4. Navigate to the "solr" folder and issue an "ant" command to see the available options
    for building, testing, and packaging Solr.
