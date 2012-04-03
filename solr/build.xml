@@ -538,6 +538,7 @@
   <target name="generate-maven-artifacts" depends="install-maven-tasks">
     <sequential>
       <subant target="dist-maven" inheritall="false" >
+        <propertyset refid="uptodate.and.compiled.properties"/>
         <fileset dir="core" includes="build.xml"/>
         <fileset dir="solrj" includes="build.xml"/>
         <fileset dir="test-framework" includes="build.xml"/>
