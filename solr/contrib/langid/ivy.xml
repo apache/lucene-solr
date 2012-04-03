@@ -22,8 +22,7 @@
       <dependency org="langdetect" name="langdetect" rev="r111-java5">
         <artifact name="langdetect" type="jar" url="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_5_0/solr/contrib/langid/lib/langdetect-r111-java5.jar"/>
       </dependency>
-      <dependency org="jsonic" name="jsonic" rev="1.2.0">
-        <artifact name="jsonic" type="jar" url="http://language-detection.googlecode.com/git-history/c51112119be53a81e59706ce57bacaa90c052284/lib/jsonic-1.2.0.jar"/>
-      </dependency>
+      <dependency org="net.arnx" name="jsonic" rev="1.2.7" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
     </dependencies>
 </ivy-module>

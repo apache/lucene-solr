@@ -63,8 +63,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-jsonic</artifactId>
+      <groupId>net.arnx</groupId>
+      <artifactId>jsonic</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
