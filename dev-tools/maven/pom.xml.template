@@ -211,9 +211,9 @@
         <version>1.2</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-jsonic</artifactId>
-        <version>${project.version}</version>
+        <groupId>net.arnx</groupId>
+        <artifactId>jsonic</artifactId>
+        <version>1.2.7</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
@@ -625,21 +625,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-install-plugin</artifactId>
             <executions>
-              <execution>
-                <id>install-jsonic</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <!-- jsonic v1.2.7 is in the central maven repo - remove this once upgraded. -->
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-jsonic</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/contrib/langid/lib/jsonic-1.2.0.jar</file>
-                </configuration>
-              </execution>
               <execution>
                 <id>install-langdetect</id>
                 <phase>install</phase>

@@ -157,7 +157,7 @@
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-parsers-1.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/xmlbeans-2.3.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/langid/lib/langdetect-c51112119be53a81e59706ce57bacaa90c052284.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/langid/lib/jsonic-1.2.0.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/langid/lib/jsonic-1.2.7.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/commons-digester-2.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/AlchemyAPIAnnotator-2.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/uima/lib/OpenCalaisAnnotator-2.3.1.jar"/>

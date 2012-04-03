@@ -72,8 +72,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>solr-jsonic</artifactId>
+      <groupId>net.arnx</groupId>
+      <artifactId>jsonic</artifactId>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
