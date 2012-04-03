@@ -146,7 +146,7 @@
      </delete>
   </target>
 
-  <target name="ivy-bootstrap">
+  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir">
     <subant target="ivy-bootstrap" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
     </subant>

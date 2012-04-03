@@ -297,7 +297,7 @@
   <target name="ivy-fail" unless="ivy.available">
     <fail>Ivy is not available</fail>
   </target>
-  <target name="ivy-bootstrap">
+  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir">
     <property name="ivy_install_path" location="${user.home}/.ant/lib" />
     <mkdir dir="${ivy_install_path}"/>
     <echo message="installing ivy ${ivy.bootstrap.version} to ${ivy_install_path}"/>

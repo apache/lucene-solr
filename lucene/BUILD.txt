@@ -31,6 +31,8 @@ according to the instructions at:
 
 Finally, you'll need to install ivy into your ant lib folder
 (~/.ant/lib). You can get it from http://ant.apache.org/ivy/.
+If you skip this step, the Lucene build system will offer to do it 
+for you.
 
 Step 1) Download Lucene from Apache
 

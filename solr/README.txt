@@ -66,13 +66,15 @@ Instructions for Building Apache Solr from Source
    folder included on your command path. To test this, issue a "java -version" command 
    from your shell (command prompt) and verify that the Java version is 1.6 or later.
 
-2. Download the Apache Ant binary distribution (1.7.x, not 1.6.x, not 1.8.x) from http://ant.apache.org/
-   You will need Ant installed and the $ANT_HOME/bin (Windows: %ANT_HOME%\bin) folder 
-   included on your command path. To test this, issue a "ant -version" command from your
-   shell (command prompt) and verify that Ant is available.
+2. Download the Apache Ant binary distribution (1.7.x, not 1.6.x, not 1.8.x) from 
+   http://ant.apache.org/  You will need Ant installed and the $ANT_HOME/bin (Windows: 
+   %ANT_HOME%\bin) folder included on your command path. To test this, issue a 
+   "ant -version" command from your shell (command prompt) and verify that Ant is 
+   available. 
 
-   Install Apache Ivy binary distribution (2.2.0) from http://ant.apache.org/ivy/
-   You will need to place ivy-2.2.0.jar file in ~/.ant/lib.
+   You will also need to install Apache Ivy binary distribution (2.2.0) from 
+   http://ant.apache.org/ivy/ and place ivy-2.2.0.jar file in ~/.ant/lib -- if you skip 
+   this step, the Solr build system will offer to do it for you.
 
 3. Download the Apache Solr distribution, linked from the above web site. 
    Unzip the distribution to a folder of your choice, e.g. C:\solr or ~/solr
