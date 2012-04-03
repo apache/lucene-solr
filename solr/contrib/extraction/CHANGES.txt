@@ -36,6 +36,10 @@ $Id$
 
 * SOLR-2901: Upgrade Solr to Tika 1.0 (janhoy)
 
+* SOLR-3295: netcdf jar is excluded from the binary release (and disabled in ivy.xml)
+  because it requires java 6. If you want to parse this content and are willing to
+  use java 6, just add the jar. (rmuir)
+
 ================== Release 3.5.0 ==================
 
 * SOLR-2372: Upgrade Solr to Tika 0.10 (janhoy)
