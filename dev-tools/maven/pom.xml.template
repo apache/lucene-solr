@@ -46,6 +46,17 @@
     <slf4j.version>1.6.1</slf4j.version>
     <tika.version>1.0</tika.version>
     <httpcomponents.version>4.1.3</httpcomponents.version>
+
+    <tests.locale>random</tests.locale>
+    <tests.asserts.gracious>false</tests.asserts.gracious>
+    <tests.iter>1</tests.iter>
+    <tests.directory>random</tests.directory>
+    <tests.iter.min>1</tests.iter.min>
+    <tests.luceneMatchVersion>3.6</tests.luceneMatchVersion>
+    <tests.multiplier>1</tests.multiplier>
+    <tests.seed>random</tests.seed>
+    <tests.timezone>random</tests.timezone>
+    <tests.verbose>false</tests.verbose>
   </properties>
   <issueManagement>
     <system>JIRA</system>
@@ -488,17 +499,20 @@
             <workingDirectory>${project.build.directory}/test</workingDirectory>
             <argLine>-Xmx512M</argLine>
             <systemPropertyVariables>
+              <!-- See <http://wiki.apache.org/lucene-java/RunningTests>
+                   for a description of the tests.* system properties. -->
               <tempDir>.</tempDir>
               <jetty.testMode>1</jetty.testMode>
-              <tests.codec>${tests.codec}</tests.codec>
+              <tests.asserts.gracious>${tests.asserts.gracious}</tests.asserts.gracious>
               <tests.directory>${tests.directory}</tests.directory>
               <tests.iter>${tests.iter}</tests.iter>
+              <tests.iter.min>${tests.iter.min}</tests.iter.min>
               <tests.locale>${tests.locale}</tests.locale>
               <tests.luceneMatchVersion>${tests.luceneMatchVersion}</tests.luceneMatchVersion>
               <tests.multiplier>${tests.multiplier}</tests.multiplier>
-              <tests.nightly>${tests.nightly}</tests.nightly>
               <tests.seed>${tests.seed}</tests.seed>
               <tests.timezone>${tests.timezone}</tests.timezone>
+              <tests.verbose>${tests.verbose}</tests.verbose>
             </systemPropertyVariables>
           </configuration>
         </plugin>
