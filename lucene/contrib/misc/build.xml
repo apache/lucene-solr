@@ -27,7 +27,7 @@
 
   <import file="../contrib-build.xml"/>
 
-  <target name="install-cpptasks" unless="cpptasks.uptodate">
+  <target name="install-cpptasks" unless="cpptasks.uptodate" depends="ivy-availability-check,ivy-fail">
     <property name="cpptasks.uptodate" value="true"/>
     <ivy:cachepath organisation="ant-contrib" module="cpptasks" revision="1.0b5"
              inline="true" conf="master" type="jar" pathid="cpptasks.classpath"/>
