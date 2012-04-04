@@ -62,7 +62,11 @@
     <forall-modules target="dist-maven" />
   </target>
 
-  <target name="validate" depends="resolve" description="Validate legal stuff.">
+  <target name="compile-tools">
+    <ant target="compile-tools" dir="../lucene"/>
+  </target>
+
+  <target name="validate" depends="compile-tools,resolve" description="Validate legal stuff.">
     <!-- The order here is important because forall compiles tools. -->
     <forall-modules target="validate" />
     <license-check-macro dir="${basedir}" />
