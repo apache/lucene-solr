@@ -26,6 +26,9 @@
   <property name="build.dir" location="../build/common" />
   <property name="dist.dir" location="../dist/common" />
 
+  <!-- some files for testing that do not have license headers -->
+  <property name="rat.excludes" value="**/*.aff,**/*.dic,**/*.txt,**/charfilter/*.htm*,**/*LuceneResourcesWikiPage.html"/>
+
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 	
   <target name="compile-core" depends="jflex-notice, common.compile-core"/>

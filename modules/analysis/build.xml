@@ -116,5 +116,9 @@
   <target name="javadocs-index.html">
     <forall-analyzers target="javadocs-index.html"/>
   </target>
+
+  <target name="rat-sources">
+    <forall-analyzers target="rat-sources"/>
+  </target>
 	
 </project>

@@ -68,6 +68,10 @@
     <license-check-macro dir="${basedir}" />
   </target>
 
+  <target name="rat-sources">
+    <forall-modules target="rat-sources"/>
+  </target>
+
   <target name="clean" description="Clean all modules">
     <delete dir="dist"/>
     <forall-modules target="clean" />

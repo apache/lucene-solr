@@ -301,6 +301,14 @@
   	</sequential>
   </target>
 
+  <target name="rat-sources">
+    <sequential>
+       <ant dir="core" target="rat-sources" inheritall="false"/>
+       <ant dir="test-framework" target="rat-sources" inheritall="false"/>
+       <ant dir="tools" target="rat-sources" inheritall="false"/>
+       <contrib-crawl target="rat-sources" failonerror="true"/>
+    </sequential>
+  </target>
 
   <!-- ================================================================== -->
   <!-- D I S T R I B U T I O N                                            -->

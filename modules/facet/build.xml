@@ -26,6 +26,9 @@
   <property name="build.dir" location="build/" />
   <property name="dist.dir" location="dist/" />
   <property name="maven.dist.dir" location="../dist/maven" />
+
+  <!-- prettify.css/js -->
+  <property name="rat.excludes" value="**/prettify.css,**/prettify.js"/>
   
   <import file="../../lucene/contrib/contrib-build.xml"/>
 

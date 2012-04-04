@@ -195,6 +195,16 @@
       </additional-filters>
     </license-check-macro>
   </target>
+
+  <!-- rat sources -->
+  <target name="rat-sources">
+    <sequential>
+       <ant dir="core" target="rat-sources" inheritall="false"/>
+       <ant dir="solrj" target="rat-sources" inheritall="false"/>
+       <ant dir="test-framework" target="rat-sources" inheritall="false"/>
+      <contrib-crawl target="rat-sources" failonerror="true"/>
+    </sequential>
+  </target>
   
   <!-- Clean targets -->
   <target name="clean" description="Cleans compiled files and other temporary artifacts.">
