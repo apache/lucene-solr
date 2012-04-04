@@ -55,8 +55,8 @@
   <path id="classpath">
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/java"/>
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
-    <fileset dir="${common-solr.dir}/contrib/dataimporthandler/lib" excludes="*.txt"/>
-    <fileset dir="${common-solr.dir}/contrib/extraction/lib" excludes="*.txt"/>
+    <fileset dir="${common-solr.dir}/contrib/dataimporthandler/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/contrib/extraction/lib" excludes="${common.classpath.excludes}"/>
     <path refid="solr.base.classpath"/>
   </path>
 

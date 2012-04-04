@@ -27,7 +27,7 @@
 
   <path id="classpath">
   	<pathelement path="${icu.jar}"/>
-        <fileset dir="lib" excludes="*.txt"/>
+        <fileset dir="lib" excludes="${common.classpath.excludes}"/>
   	<pathelement path="${analyzers-smartcn.jar}"/>
   	<pathelement path="${analyzers-stempel.jar}"/>
     <path refid="solr.base.classpath"/>
