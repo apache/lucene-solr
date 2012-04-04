@@ -1082,7 +1082,7 @@
   <!-- VALIDATION work -->
 
   <!-- Generic placeholder target for if we add other validation tasks -->
-  <target name="validate" depends="compile-tools">
+  <target name="validate">
   </target>
 
   <property name="svn.export.dir" location="${build.dir}/svn-export"/>
