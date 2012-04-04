@@ -19,9 +19,7 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="langid"/>
     <dependencies>
-      <dependency org="langdetect" name="langdetect" rev="r111-java5">
-        <artifact name="langdetect" type="jar" url="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_5_0/solr/contrib/langid/lib/langdetect-r111-java5.jar"/>
-      </dependency>
+      <dependency org="com.cybozu.labs" name="langdetect" rev="1.1-20120112" transitive="false"/>
       <dependency org="net.arnx" name="jsonic" rev="1.2.7" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
     </dependencies>

@@ -67,8 +67,8 @@
       <artifactId>jsonic</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-langdetect</artifactId>
+      <groupId>com.cybozu.labs</groupId>
+      <artifactId>langdetect</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.tika</groupId>

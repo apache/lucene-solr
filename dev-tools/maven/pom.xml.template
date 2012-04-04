@@ -226,9 +226,9 @@
         <version>1.2.7</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-langdetect</artifactId>
-        <version>${project.version}</version>
+        <groupId>com.cybozu.labs</groupId>
+        <artifactId>langdetect</artifactId>
+        <version>1.1-20120112</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tika</groupId>
@@ -687,20 +687,6 @@
                   <version>${patched.jetty.version}</version>
                   <packaging>jar</packaging>
                   <file>solr/example/lib/jetty-util-${patched.jetty.version}.jar</file>
-                </configuration>
-              </execution>
-              <execution>
-                <id>install-langdetect</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-langdetect</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/contrib/langid/lib/langdetect-r111-java5.jar</file>
                 </configuration>
               </execution>
             </executions>
