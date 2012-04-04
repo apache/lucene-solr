@@ -42,6 +42,10 @@
   <property name="dict.format" value="ipadic"/>
   <property name="dict.normalize" value="false"/>
   <property name="dict.target.dir" location="./src/resources"/>
+
+  <!-- currently whether rat detects this as binary or not
+       is platform dependent?! -->
+  <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
   <import file="../../../lucene/contrib/contrib-build.xml"/> 
 
   <available type="dir" file="${build.dir}/${ipadic.version}" property="dict.available"/>
