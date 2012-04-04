@@ -661,14 +661,32 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
             <executions>
+              <!--
+               !  Retrieve the patched jetty and jetty-util jars via ivy.
+               !
+               !  Don't include a property setting for ivy.default.ivy.user.dir unless
+               !  the same-named system property was given on the Maven command line.
+               -->
               <execution>
+                <id>ivy.default.ivy.user.dir-is-not-set</id>
                 <phase>install</phase>
                 <goals>
                   <goal>run</goal>
                 </goals>
                 <configuration>
-                  <target>
-                    <!-- Retrieve the patched jetty and jetty-util jars via ivy -->
+                  <target unless="ivy.default.ivy.user.dir">
+                    <ant antfile="solr/example/build.xml" target="resolve" inheritall="false"/>
+                  </target>
+                </configuration>
+              </execution>
+              <execution>
+                <id>ivy.default.ivy.user.dir-is-set</id>
+                <phase>install</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target if="ivy.default.ivy.user.dir">
                     <ant antfile="solr/example/build.xml" target="resolve" inheritall="false">
                       <property name="ivy.default.ivy.user.dir" value="${ivy.default.ivy.user.dir}"/>
                     </ant>
