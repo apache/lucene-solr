@@ -453,17 +453,25 @@
             <workingDirectory>${project.build.directory}/test</workingDirectory>
             <argLine>-Xmx512M</argLine>
             <systemPropertyVariables>
+              <!-- See <http://wiki.apache.org/lucene-java/RunningTests>
+                   for a description of the tests.* system properties. -->
               <tempDir>.</tempDir>
               <jetty.testMode>1</jetty.testMode>
+              <tests.asserts.gracious>${tests.asserts.gracious}</tests.asserts.gracious>
               <tests.codec>${tests.codec}</tests.codec>
               <tests.directory>${tests.directory}</tests.directory>
+              <tests.infostream>${tests.infostream}</tests.infostream>
               <tests.iter>${tests.iter}</tests.iter>
+              <tests.iter.min>${tests.iter.min}</tests.iter.min>
               <tests.locale>${tests.locale}</tests.locale>
               <tests.luceneMatchVersion>${tests.luceneMatchVersion}</tests.luceneMatchVersion>
               <tests.multiplier>${tests.multiplier}</tests.multiplier>
               <tests.nightly>${tests.nightly}</tests.nightly>
+              <tests.postingsformat>${tests.postingsformat}</tests.postingsformat>
               <tests.seed>${tests.seed}</tests.seed>
+              <tests.threadspercpu>${tests.threadspercpu}</tests.threadspercpu>
               <tests.timezone>${tests.timezone}</tests.timezone>
+              <tests.verbose>${tests.verbose}</tests.verbose>
             </systemPropertyVariables>
           </configuration>
         </plugin>
@@ -618,6 +626,8 @@
   </build>
   <profiles>
     <profile>
+      <!-- Although currently a no-op, this profile remains here to reserve
+           the ability to perform Maven build initialization tasks. -->
       <id>bootstrap</id>
       <build>
         <plugins>
