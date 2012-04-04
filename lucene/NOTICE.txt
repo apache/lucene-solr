@@ -4,9 +4,10 @@ Copyright 2012 The Apache Software Foundation
 This product includes software developed by
 The Apache Software Foundation (http://www.apache.org/).
 
-Includes lib/servlet-api-2.4.jar from  Apache Tomcat
-Includes lib/ant-1.7.1.jar and lib/ant-junit-1.7.1.jar from Apache Ant
-Includes contrib/queries/lib/jakarta-regexp-1.4.jar from Apache Jakarta Regexp
+Includes software from other Apache Software Foundation projects,
+including, but not limited to:
+ - Apache Ant
+ - Apache Jakarta Regexp
 
 ICU4J, (under contrib/icu) is licensed under an MIT styles license
 (contrib/icu/lib/ICU-LICENSE.txt) and Copyright (c) 1995-2008 
@@ -36,9 +37,6 @@ the Apache CXF project and is Apache License 2.0.
 The Google Code Prettify is Apache License 2.0.
 See http://code.google.com/p/google-code-prettify/
 
-JUnit (under lib/junit-4.10.jar) is licensed under the Common Public License v. 1.0
+JUnit (junit-4.10) is licensed under the Common Public License v. 1.0
 See http://junit.sourceforge.net/cpl-v10.html
-
-JLine (under contrib/lucli/lib/jline.jar) is licensed under the BSD License.
-See http://jline.sourceforge.net/
 

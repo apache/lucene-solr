@@ -9,9 +9,9 @@ The Apache Software Foundation (http://www.apache.org/).
 Includes software from other Apache Software Foundation projects,
 including, but not limited to:
   - Apache Lucene Java
-  - Apache Tomcat (lib/servlet-api-2.4.jar)
+  - Apache Tomcat (servlet-api-2.4)
   - Apache Commons
-  - Apache Geronimo (stax API jar)
+  - Apache Geronimo (stax API)
 
 This product includes tests written with EasyMock Copyright 2001-2007
 Tammo Freese (http://www.easymock.org/)
@@ -19,22 +19,19 @@ Tammo Freese (http://www.easymock.org/)
 This product includes the JQuery JavaScript library created by John Resig.
 Copyright (c) 2010 John Resig, http://jquery.com/
 
-This product includes the stax-utils jar: https://stax-utils.dev.java.net/
+stax-utils library: https://stax-utils.dev.java.net/
 Copyright (c) 2004, Christian Niles, unit12.net
 Copyright (c) 2004, Sun Microsystems, Inc.
 Copyright (c) 2006, John Kristian 
 License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
 
-This product includes a JUnit jar: http://junit.sourceforge.net/
-License: Common Public License - v 1.0 (http://junit.sourceforge.net/cpl-v10.html)
-
-This product includes the JavaMail API 1.4.1 jar: https://glassfish.dev.java.net/javaee5/mail/
+JavaMail API 1.4.1: https://glassfish.dev.java.net/javaee5/mail/
 License: Common Development and Distribution License (CDDL) v1.0 (https://glassfish.dev.java.net/public/CDDLv1.0.html)
 
-This product includes the JavaBeans Activation Framework (JAF) 1.1 jar: http://java.sun.com/products/javabeans/jaf/index.jsp
+JavaBeans Activation Framework (JAF): http://java.sun.com/products/javabeans/jaf/index.jsp
 License: Common Development and Distribution License (CDDL) v1.0 (https://glassfish.dev.java.net/public/CDDLv1.0.html)
 
-This product includes the HSQL Database (HSQLDB) 1.8.0.10 jar: http://hsqldb.org/
+HSQL Database (HSQLDB): http://hsqldb.org/
 License: http://hsqldb.org/web/hsqlLicense.html
 
 This product includes code (JaspellTernarySearchTrie) from Java Spelling Checking Package (jaspell): http://jaspell.sourceforge.net/
@@ -43,9 +40,6 @@ License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
 =========================================================================
 ==  Apache Lucene Notice                                               ==
 =========================================================================
-Includes lib/servlet-api-2.4.jar from  Apache Tomcat
-Includes lib/ant-1.7.1.jar and lib/ant-junit-1.7.1.jar from Apache Ant
-Includes contrib/queries/lib/jakarta-regexp-1.4.jar from Apache Jakarta Regexp
 
 ICU4J, (under contrib/icu) is licensed under an MIT styles license
 (contrib/icu/lib/ICU-LICENSE.txt) and Copyright (c) 1995-2008 
@@ -75,22 +69,18 @@ the Apache CXF project and is Apache License 2.0.
 The Google Code Prettify is Apache License 2.0.
 See http://code.google.com/p/google-code-prettify/
 
-JUnit (under lib/junit-4.10.jar) is licensed under the Common Public License v. 1.0
+JUnit (junit-4.10) is licensed under the Common Public License v. 1.0
 See http://junit.sourceforge.net/cpl-v10.html
-
-JLine (under contrib/lucli/lib/jline.jar) is licensed under the BSD License.
-See http://jline.sourceforge.net/
 
 =========================================================================
 ==  Apache Lucene Benchmark Notice                                     ==
 =========================================================================
 Includes software from other Apache Software Foundation projects,
 including, but not limited to:
- - Commons Beanutils (lib/commons-beanutils-1.7.0.jar)
- - Commons Collections (lib/commons-collections-3.1.jar)
- - Commons Compress (lib/commons-compress-1.0.jar)
- - Commons Digester (lib/commons-digester-1.7.jar)
- - Commons Logging (lib/commons-logging-1.0.4.jar)
+ - Apache Ant
+ - Apache Jakarta Regexp
+ - Commons Compress
+ - Xerces
 
 =========================================================================
 ==  Apache Lucene Analyzers Notice                                     ==
@@ -234,7 +224,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ==  Apache Tika Notices                                                ==
 =========================================================================
 
-The following notices apply to the Apache Tika libraries in contrib/extraction/lib:
+The following notices apply to contrib/extraction:
 
 This product includes software developed by the following copyright owners:
 
@@ -259,7 +249,7 @@ Copyright 2002-2008 by John Cowan (TagSoup -- http://ccil.org/~cowan/XML/tagsoup
 ==  Language Detection Notices                                         ==
 =========================================================================
 
-The following notices apply to the libraries in contrib/langid/lib:
+The following notices apply to contrib/langid:
 
 This product includes software developed by Cybozu Labs, Inc.
 (c)2010 All rights reserved by Cybozu Labs, Inc.
