@@ -910,7 +910,10 @@
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
       <fileset dir="${src.dir}"/>
       <fileset dir="${tests-framework.src.dir}"/>
-      <fileset dir="${tests.src.dir}"/>
+      <fileset dir="${tests.src.dir}" erroronmissingdir="false"/>
+      <!-- some modules have a src/tools/[java,test] -->
+      <fileset dir="src/tools/java" erroronmissingdir="false"/>
+      <fileset dir="src/tools/test" erroronmissingdir="false"/>
     </rat:report>
   </target>
 
