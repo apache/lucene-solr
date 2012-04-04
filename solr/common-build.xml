@@ -59,13 +59,13 @@
     </and>
   </condition>
 
-  <path id="additional.dependencies">
-  	<fileset dir="${common-solr.dir}/lib" excludes="*.txt,*.template"/>
-  	<fileset dir="${common-solr.dir}/example/lib" excludes="*.txt,*.template"/>
-  	<fileset dir="lib" excludes="*.txt,*.template" erroronmissingdir="false"/>
-  </path>
-
   <import file="${common-solr.dir}/../lucene/contrib/contrib-build.xml"/>
+
+  <path id="additional.dependencies">
+  	<fileset dir="${common-solr.dir}/lib" excludes="${common.classpath.excludes}"/>
+  	<fileset dir="${common-solr.dir}/example/lib" excludes="${common.classpath.excludes}"/>
+  	<fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
+  </path>
 
   <!-- Solr Specification Version
 

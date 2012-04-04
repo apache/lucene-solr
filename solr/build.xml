@@ -415,7 +415,7 @@
                   excludes="lib/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
-                            **/*pom.xml.template" />
+                            **/*pom.xml.template **/*.sha1" />
       <tarfileset dir="${dest}/contrib-lucene-libs-to-package"
                   prefix="${fullnamever}"
                   includes="**" />
@@ -426,7 +426,7 @@
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="dist/*.jar dist/*.war dist/solrj-lib/*"
-                  excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar" />
+                  excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />
       <tarfileset dir="${dest}/docs"
                   prefix="${fullnamever}/docs" />
     </tar>
