@@ -23,5 +23,7 @@
     Spell Checker
   </description>
 
+  <!-- just a list of words for testing suggesters -->
+  <property name="rat.excludes" value="**/Top50KWiki.utf8"/>
   <import file="../contrib-build.xml"/>
 </project>

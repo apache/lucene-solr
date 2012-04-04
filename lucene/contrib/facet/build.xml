@@ -23,6 +23,9 @@
     Faceted search module
   </description>
 
+  <!-- prettify.css/js -->
+  <property name="rat.excludes" value="**/prettify.css,**/prettify.js"/>
+  
   <import file="../contrib-build.xml"/>
 
   <property name="examples.dir" location="src/examples"/>

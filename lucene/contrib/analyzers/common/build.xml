@@ -27,8 +27,11 @@
   <property name="dist.dir" location="../../../dist/contrib/analyzers/common" />
   <property name="maven.dist.dir" location="../../../dist/maven" />
 
-  <import file="../../contrib-build.xml"/>
+  <!-- some files for testing that do not have license headers -->
+  <property name="rat.excludes" value="**/*.aff,**/*.dic,**/*.txt,**/charfilter/*.htm*"/>
 
+  <import file="../../contrib-build.xml"/>
+	
   <target name="compile-core" depends="jflex-notice, common.compile-core"/>
 
   <target name="jflex" depends="jflex-check,clean-jflex,jflex-wiki-tokenizer,jflex-HTMLStripCharFilter"/>
