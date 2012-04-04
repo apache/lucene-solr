@@ -82,8 +82,6 @@
   <target name="default" depends="compile"/>
   <target name="compile" depends="common,icu,kuromoji,morfologik,phonetic,smartcn,stempel,uima" />
 
-   <!-- FIXME: these should crawl like contrib-crawl/modules-crawl, passing the 
-        propset so we dont install maven-ant-tasks over and over -->
   <target name="clean">
     <forall-analyzers target="clean"/>
   </target>
