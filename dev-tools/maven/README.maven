@@ -73,7 +73,11 @@ D. How to use Maven to build Lucene/Solr
 
          svn update
          ant get-maven-poms
-         mvn -N -Pbootstrap install
+         mvn -N -Pbootstrap install [ -Divy.default.ivy.user.dir=... ]
+
+         If your ivy user directory is not in the default location, you can
+         specify it via -Divy.default.ivy.user.dir=... -- otherwise you don't
+         need to give this property setting.
 
    The details, followed by some example Maven commands:
 
@@ -105,7 +109,11 @@ D. How to use Maven to build Lucene/Solr
       are not available from public Maven repositories (a.k.a. "non-mavenized
       dependencies"):
 
-         mvn -N -Pbootstrap install
+         mvn -N -Pbootstrap install [ -Divy.default.ivy.user.dir=... ]
+
+         If your ivy user directory is not in the default location, you can
+         specify it via -Divy.default.ivy.user.dir=... -- otherwise you don't
+         need to give this property setting.
 
       Note that you will need to do this whenever changes to the non-Mavenized
       dependencies are committed.  It's a good idea to follow every
