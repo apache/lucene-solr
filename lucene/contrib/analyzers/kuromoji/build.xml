@@ -43,7 +43,6 @@
   <property name="dict.format" value="ipadic"/>
   <property name="dict.normalize" value="false"/>
   <property name="dict.target.dir" location="./src/resources"/>
-  <import file="../../contrib-build.xml"/> 
 
   <!-- currently whether rat detects this as binary or not
        is platform dependent?! -->
