@@ -46,6 +46,20 @@
     <slf4j.version>1.6.1</slf4j.version>
     <tika.version>1.0</tika.version>
     <httpcomponents.version>4.1.3</httpcomponents.version>
+
+    <tests.asserts.gracious>false</tests.asserts.gracious>
+    <tests.codec>random</tests.codec>
+    <tests.directory>random</tests.directory>
+    <tests.iter>1</tests.iter>
+    <tests.iter.min>1</tests.iter.min>
+    <tests.locale>random</tests.locale>
+    <tests.luceneMatchVersion>4.0</tests.luceneMatchVersion>
+    <tests.multiplier>1</tests.multiplier>
+    <tests.postingsformat>random</tests.postingsformat>
+    <tests.seed>random</tests.seed>
+    <tests.timezone>random</tests.timezone>
+    <tests.verbose>false</tests.verbose>
+    <tests.infostream>${tests.verbose}</tests.infostream>
   </properties>
   <issueManagement>
     <system>JIRA</system>
@@ -469,7 +483,6 @@
               <tests.nightly>${tests.nightly}</tests.nightly>
               <tests.postingsformat>${tests.postingsformat}</tests.postingsformat>
               <tests.seed>${tests.seed}</tests.seed>
-              <tests.threadspercpu>${tests.threadspercpu}</tests.threadspercpu>
               <tests.timezone>${tests.timezone}</tests.timezone>
               <tests.verbose>${tests.verbose}</tests.verbose>
             </systemPropertyVariables>
