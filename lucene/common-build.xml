@@ -273,7 +273,7 @@
   </target>
   <target name="ivy-availability-check" unless="ivy.available">
    <echo>
-     This build requires Ivy and Ivy could not be found in your ant classpath
+     This build requires Ivy and Ivy could not be found in your ant classpath.
 
      (Due to classpath issues and the recursive nature of the Lucene/Solr 
      build system, a local copy of Ivy can not be used an loaded dynamically 
@@ -299,6 +299,11 @@
        ant -lib /some/path/you/choose clean compile
        ...
        ant -lib /some/path/you/choose clean compile
+
+     If you have already run ivy-bootstrap, and still get this message, please 
+     try using the "--noconfig" option when running ant, or editing your global
+     ant config to allow the user lib to be loaded.  See the wiki for more details:
+       http://wiki.apache.org/lucene-java/HowToContribute#antivy
     </echo>
   </target>
   <target name="ivy-fail" unless="ivy.available">
