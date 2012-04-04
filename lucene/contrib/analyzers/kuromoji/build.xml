@@ -45,6 +45,11 @@
   <property name="dict.target.dir" location="./src/resources"/>
   <import file="../../contrib-build.xml"/> 
 
+  <!-- currently whether rat detects this as binary or not
+       is platform dependent?! -->
+  <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
+  <import file="../../contrib-build.xml"/> 
+
   <available type="dir" file="${build.dir}/${ipadic.version}" property="dict.available"/>
 
   <path id="classpath">
