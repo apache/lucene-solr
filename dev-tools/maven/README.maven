@@ -75,7 +75,6 @@ D. How to use Maven to build Lucene/Solr
 
          svn update
          ant get-maven-poms
-         mvn -N -Pbootstrap install
 
    The details, followed by some example Maven commands:
 
@@ -102,17 +101,6 @@ D. How to use Maven to build Lucene/Solr
       with the above command, e.g.:
 
          ant -Dversion=4.0-my-special-version get-maven-poms
-
-   4. Populate your local repository with .jars & POMs for dependencies that
-      are not available from public Maven repositories (a.k.a. "non-mavenized
-      dependencies"):
-
-         mvn -N -Pbootstrap install
-
-      Note that you will need to do this whenever changes to the non-Mavenized
-      dependencies are committed.  It's a good idea to follow every
-      "svn update" with "ant get-maven-poms" and "mvn -N -Pbootstrap install"
-      for this reason.
 
 
    Some example Maven commands you can use after you perform the above
