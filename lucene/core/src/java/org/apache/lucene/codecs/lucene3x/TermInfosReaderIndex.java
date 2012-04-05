@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataOutput;
 import org.apache.lucene.util.PagedBytes;
@@ -72,7 +73,9 @@ class TermInfosReaderIndex {
     PagedBytes dataPagedBytes = new PagedBytes(estimatePageBits(initialSize));
     PagedBytesDataOutput dataOutput = dataPagedBytes.getDataOutput();
 
-    GrowableWriter indexToTerms = new GrowableWriter(4, indexSize, false);
+    final int bitEstimate = 1+MathUtil.log(tiiFileLength, 2);
+    GrowableWriter indexToTerms = new GrowableWriter(bitEstimate, indexSize, false);
+
     String currentField = null;
     List<String> fieldStrs = new ArrayList<String>();
     int fieldCounter = -1;

@@ -690,6 +690,9 @@ Optimizations
 * LUCENE-3795: Replace contrib/spatial with modules/spatial.  This includes 
   a basic spatial strategy interface.  (David Smiley, Chris Male, ryan)
     
+* LUCENE-3932: Lucene3x codec loads terms index faster, by
+  pre-allocating the packed ints array based on the .tii file size
+  (Sean Bridges via Mike McCandless)
   
 Bug fixes
 
