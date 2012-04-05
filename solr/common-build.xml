@@ -218,7 +218,7 @@
 
   <target name="define-lucene-javadoc-url-SNAPSHOT" if="version.contains.SNAPSHOT">
     <property name="lucene.javadoc.url"
-              value="https://builds.apache.org/job/Lucene-3.x/javadoc/all/"/>
+              value="${common.dir}/build/docs/api/all/"/>
   </target>
 
   <target name="define-lucene-javadoc-url-release" unless="version.contains.SNAPSHOT">
