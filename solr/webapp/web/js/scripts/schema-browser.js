@@ -311,7 +311,7 @@ sammy.bind
       if( 0 !== navigation_data.fields.length )
       {
         navigation_data.fields.sort();
-        navigation_content += '<dt class="field">Fields</dt>' + "\n";
+        navigation_content += '<dt class="field">Field</dt>' + "\n";
         for( var i in navigation_data.fields )
         {
           var href = sammy_basepath + '?field=' + navigation_data.fields[i];
@@ -344,7 +344,7 @@ sammy.bind
       if( 0 !== navigation_data.dynamic_fields.length )
       {
         navigation_data.dynamic_fields.sort();
-        navigation_content += '<dt class="dynamic-field">Dynamic Fields</dt>' + "\n";
+        navigation_content += '<dt class="dynamic-field">Dynamic Field</dt>' + "\n";
         for( var i in navigation_data.dynamic_fields )
         {
           var href = sammy_basepath + '?dynamic-field=' + navigation_data.dynamic_fields[i];
@@ -355,7 +355,7 @@ sammy.bind
       if( 0 !== navigation_data.types.length )
       {
         navigation_data.types.sort();
-        navigation_content += '<dt class="type">Types</dt>' + "\n";
+        navigation_content += '<dt class="type">Type</dt>' + "\n";
         for( var i in navigation_data.types )
         {
           var href = sammy_basepath + '?type=' + navigation_data.types[i];
