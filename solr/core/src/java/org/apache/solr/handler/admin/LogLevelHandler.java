@@ -393,17 +393,17 @@ public class LogLevelHandler extends RequestHandlerBase {
 
   @Override
   public String getVersion() {
-    return "$Revision: 1079707 $";
+    return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id: LogLevelHandler.... $";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL: https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/src/... $";
+    return "$URL$";
   }
 
   @Override

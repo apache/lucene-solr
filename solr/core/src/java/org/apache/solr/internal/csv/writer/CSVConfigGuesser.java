@@ -26,7 +26,7 @@ import java.io.InputStreamReader;
  * Tries to guess a config based on an InputStream.
  *
  * @author Martin van den Bemt
- * @version $Id: $
+ * @version $Id$
  */
 public class CSVConfigGuesser {
 
