@@ -833,9 +833,13 @@ sammy.get
           $( 'dd.docs', options_element )
             .remove();
 
+          var target = '#/' + current_core + '/query?q=' + field.esc() + ':[* TO *]';
           docs_element
             .show()
-            .after( '<dd class="docs">' + schema_browser_data.fields[field].docs + '</dd>' );
+            .after( 
+             '<dd class="docs">'+
+               '<a href="'+target+'">' + schema_browser_data.fields[field].docs + '</a>' +
+             '</dd>' );
         }
         else
         {
