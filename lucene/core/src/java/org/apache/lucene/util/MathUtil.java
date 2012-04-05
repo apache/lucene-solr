@@ -17,6 +17,10 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+/**
+ * Math static utility methods.
+ */
+
 public final class MathUtil {
 
   // No instance:
