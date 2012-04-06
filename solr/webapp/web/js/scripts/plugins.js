@@ -185,16 +185,25 @@ sammy.get
 
                   if( 'description' === detail_key )
                   {
-                    detail_value = detail_value.replace( /,/g, ',&#8203;' );
-                  }
-                  else if( 'src' === detail_key )
-                  {
-                    detail_value = detail_value.replace( /\//g, '/&#8203;' );
+                    // For list of components
+                    if(detail_value.match(/^Search using components: /)) {
+                      detail_value = detail_value
+                        .replace( /: /, ':<ul><li>' )
+                        .replace( /,/g, '</li><li>' ) +
+                        "</li></ul>";
+                    }
                   }
 
                   content += '<li><dl class="clearfix">' + "\n";
                   content += '<dt>' + detail_key + ':</dt>' + "\n";
-                  content += '<dd>' + detail_value + '</dd>' + "\n";
+                  if($.isArray(detail_value)) {
+                    $.each(detail_value, function(index, value) { 
+                      content += '<dd>' + value + '</dd>' + "\n";
+                    });
+                  }
+                  else {
+                    content += '<dd>' + detail_value + '</dd>' + "\n";
+                  }
                   content += '</dl></li>' + "\n";
                 }
                 else if( 'stats' === detail_key && details[detail_key] )
@@ -232,6 +241,24 @@ sammy.get
 
           $( 'a[href="' + decodeURIComponent( context.path ) + '"]', frame_element )
             .parent().addClass( 'expanded' );
+          
+          // Try to make links for anythign with http (but leave the rest alone)
+          $( '.detail dd' ).each(function(index) {
+            var txt = $(this).html();
+            if(txt.indexOf("http") >= 0) {
+              $(this).linker({
+                 target: '', //blank,self,parent,top
+                 className : 'linker',
+                 rel : ''
+              });
+            }
+          });
+          
+          // Add invisible whitespace after each slash
+          $( '.detail a.linker' ).each(function(index) {
+            $(this).html( $(this).html().replace( /\//g, '/&#8203;' ) );
+          });
+          
                     
           $( '.entry', frame_element )
             .each

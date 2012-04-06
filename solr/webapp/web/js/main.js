@@ -27,6 +27,7 @@ require
     'lib/order!lib/jquery.sparkline',
     'lib/order!lib/jquery.timeago',
     'lib/order!lib/highlight',
+    'lib/order!lib/linker',
     'lib/order!lib/ZeroClipboard',
     'lib/order!lib/d3',
     'lib/order!lib/chosen',

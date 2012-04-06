@@ -1,3 +1,4 @@
+
 #content #plugins #navigation
 {
   width: 20%;
@@ -101,4 +102,16 @@
 #content #plugins #frame .entry .stats dd
 {
   width: 72%;
+}
+
+#content #plugins #frame .entry.expanded a.linker {
+  background-image: none;
+  background-position: 0 0;
+  display: inline;
+  font-weight: normal;
+  padding:0px;
+}
+
+#content #plugins #frame .entry.expanded a.linker:hover {
+  background-color:#F0F3FF;
 }
