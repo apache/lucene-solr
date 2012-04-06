@@ -24,18 +24,19 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.grouping.GroupingSpecification;
+import org.apache.solr.handler.component.ResponseBuilder;
 
 import java.util.Map;
 
 /**
- *
+ * Implementation of {@link EndResultTransformer} that transforms the grouped result into a single flat list.
  */
 public class SimpleEndResultTransformer implements EndResultTransformer {
 
-  @Override
-  public void transform(Map<String, ?> result, SolrQueryResponse response, GroupingSpecification groupingSpecification, SolrDocumentSource solrDocumentSource) {
+  /**
+   * {@inheritDoc}
+   */
+  public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new SimpleOrderedMap<Object>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
@@ -43,12 +44,12 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
         @SuppressWarnings("unchecked")
         TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
         NamedList<Object> command = new SimpleOrderedMap<Object>();
-        command.add("matches", topGroups.totalHitCount);
+        command.add("matches", rb.totalHitCount);
         if (topGroups.totalGroupCount != null) {
           command.add("ngroups", topGroups.totalGroupCount);
         }
         SolrDocumentList docList = new SolrDocumentList();
-        docList.setStart(groupingSpecification.getOffset());
+        docList.setStart(rb.getGroupingSpec().getOffset());
         docList.setNumFound(topGroups.totalHitCount);
 
         Float maxScore = Float.NEGATIVE_INFINITY;
@@ -68,6 +69,6 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
       }
     }
 
-    response.add("grouped", commands);
+    rb.rsp.add("grouped", commands);
   }
 }

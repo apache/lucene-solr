@@ -19,6 +19,7 @@ package org.apache.solr.search.grouping.distributed.command;
 
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
@@ -30,6 +31,7 @@ import org.apache.solr.search.grouping.Command;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -130,6 +132,10 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   }
 
   public List<Collector> create() throws IOException {
+    if (firstPhaseGroups.isEmpty()) {
+      return Collections.emptyList();
+    }
+
     List<Collector> collectors = new ArrayList<Collector>();
     secondPassCollector = new TermSecondPassGroupingCollector(
           field.getName(), firstPhaseGroups, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true
@@ -143,7 +149,12 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     return collectors;
   }
 
+  @SuppressWarnings("unchecked")
   public TopGroups<BytesRef> result() {
+    if (firstPhaseGroups.isEmpty()) {
+      return new TopGroups<BytesRef>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0]);
+    }
+
     TopGroups<BytesRef> result = secondPassCollector.getTopGroups(0);
     if (allGroupsCollector != null) {
       result = new TopGroups<BytesRef>(result, allGroupsCollector.getGroupCount());

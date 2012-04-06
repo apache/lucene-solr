@@ -22,24 +22,27 @@ import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.grouping.GroupingSpecification;
+import org.apache.solr.handler.component.ResponseBuilder;
 
 import java.util.Map;
 
 /**
- *
+ * Implementation of {@link EndResultTransformer} that transforms the grouped result into the main result list in the
+ * response.
  */
 public class MainEndResultTransformer implements EndResultTransformer {
 
-  public void transform(Map<String, ?> result, SolrQueryResponse response, GroupingSpecification groupingSpecification, SolrDocumentSource solrDocumentSource) {
-    Object value = result.get(groupingSpecification.getFields()[0]);
+  /**
+   * {@inheritDoc}
+   */
+  public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
+    Object value = result.get(rb.getGroupingSpec().getFields()[0]);
     if (TopGroups.class.isInstance(value)) {
       @SuppressWarnings("unchecked")
       TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
       SolrDocumentList docList = new SolrDocumentList();
-      docList.setStart(groupingSpecification.getOffset());
-      docList.setNumFound(topGroups.totalHitCount);
+      docList.setStart(rb.getGroupingSpec().getOffset());
+      docList.setNumFound(rb.totalHitCount);
 
       Float maxScore = Float.NEGATIVE_INFINITY;
       for (GroupDocs<BytesRef> group : topGroups.groups) {
@@ -53,7 +56,7 @@ public class MainEndResultTransformer implements EndResultTransformer {
       if (maxScore != Float.NEGATIVE_INFINITY) {
         docList.setMaxScore(maxScore);
       }
-      response.add("response", docList);
+      rb.rsp.add("response", docList);
     }
   }
 }

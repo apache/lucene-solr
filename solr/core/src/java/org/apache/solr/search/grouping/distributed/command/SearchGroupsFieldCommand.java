@@ -28,6 +28,7 @@ import org.apache.solr.search.grouping.Command;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -70,7 +71,7 @@ public class SearchGroupsFieldCommand implements Command<Collection<SearchGroup<
   private final Sort groupSort;
   private final int topNGroups;
 
-  private TermFirstPassGroupingCollector collector;
+  private TermFirstPassGroupingCollector firstPassGroupingCollector;
 
   private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups) {
     this.field = field;
@@ -79,12 +80,20 @@ public class SearchGroupsFieldCommand implements Command<Collection<SearchGroup<
   }
 
   public List<Collector> create() throws IOException {
-    collector = new TermFirstPassGroupingCollector(field.getName(), groupSort, topNGroups);
-    return Arrays.asList((Collector) collector);
+    if (topNGroups > 0) {
+      firstPassGroupingCollector = new TermFirstPassGroupingCollector(field.getName(), groupSort, topNGroups);
+      return Arrays.asList((Collector) firstPassGroupingCollector);
+    } else {
+      return Collections.emptyList();
+    }
   }
 
   public Collection<SearchGroup<BytesRef>> result() {
-    return collector.getTopGroups(0, true);
+    if (topNGroups > 0) {
+      return firstPassGroupingCollector.getTopGroups(0, true);
+    } else {
+      return Collections.emptyList();
+    }
   }
 
   public Sort getSortWithinGroup() {
