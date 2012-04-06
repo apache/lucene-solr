@@ -23,8 +23,6 @@ package org.apache.solr.internal.csv;
  * reduce copying as much as possible. The buffer
  * grows as necessary.
  * This class is not thread safe.
- * 
- * @author Ortwin Gl�ck
  */
 public class CharBuffer {
 

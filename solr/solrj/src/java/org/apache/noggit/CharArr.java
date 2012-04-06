@@ -28,7 +28,6 @@ import java.nio.CharBuffer;
 // V1.1 9/21/99
 // V1.2 2/02/04  // Java5 features
 // V1.3 11/26/06 // Make safe for Java 1.4, work into Noggit
-// @author yonik
 
 
 // Java5 version could look like the following:
@@ -36,7 +35,6 @@ import java.nio.CharBuffer;
 
 
 /**
- * @author yonik
  */
 public class CharArr implements CharSequence, Appendable {
   protected char[] buf;

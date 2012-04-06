@@ -18,7 +18,6 @@
 package org.apache.noggit;
 
 /**
- * @author yonik
  */
 
 public class JSONUtil {

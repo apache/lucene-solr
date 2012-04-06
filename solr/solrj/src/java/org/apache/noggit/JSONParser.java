@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * @author yonik
  */
 
 public class JSONParser {

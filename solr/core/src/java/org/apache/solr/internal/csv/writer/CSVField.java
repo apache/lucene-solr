@@ -21,7 +21,6 @@ package org.apache.solr.internal.csv.writer;
 
 /**
  * 
- * @author Martin van den Bemt
  */
 public class CSVField {
 

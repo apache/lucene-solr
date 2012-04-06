@@ -24,7 +24,6 @@ import com.spatial4j.core.distance.DistanceUtils;
 import java.util.Map;
 
 /**
- * @author dsmiley
  */
 public abstract class SpatialPrefixTreeFactory {
 

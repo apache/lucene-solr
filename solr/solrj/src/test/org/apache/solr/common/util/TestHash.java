@@ -22,7 +22,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.util.Random;
 
 /** Tests for lookup3ycs hash functions
- * @author yonik
  */
 public class TestHash extends LuceneTestCase {
 

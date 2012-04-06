@@ -26,7 +26,6 @@ import java.util.Map;
 /**
  * CSVWriter
  *
- * @author Martin van den Bemt
  */
 public class CSVWriter {
 

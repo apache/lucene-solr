@@ -31,8 +31,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 
 /**
  * Some tests for {@link ParallelAtomicReader}s with empty indexes
- * 
- * @author Christian Kohlschuetter
  */
 public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 

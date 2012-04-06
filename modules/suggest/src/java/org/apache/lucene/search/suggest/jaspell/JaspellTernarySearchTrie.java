@@ -57,9 +57,6 @@ import java.util.zip.GZIPInputStream;
  * Algorithms, January 1997). Algorithms in C, Third Edition, by Robert
  * Sedgewick (Addison-Wesley, 1998) provides yet another view of ternary search
  * trees.
- * 
- * @author Bruno Martins
- * 
  */
 public class JaspellTernarySearchTrie {
 

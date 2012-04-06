@@ -15,8 +15,6 @@ import org.apache.lucene.util.LuceneTestCase;
 /**
  * Unit Test Case for {@link org.apache.solr.common.params.ModifiableSolrParams
  * ModifiableSolrParams}
- * 
- * @author kkumar
  */
 public class ModifiableSolrParamsTest extends LuceneTestCase
 {

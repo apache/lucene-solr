@@ -20,7 +20,6 @@ package org.apache.noggit;
 import java.util.*;
 
 /**
- * @author yonik
  */
 public class JSONWriter {
 
