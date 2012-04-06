@@ -14,6 +14,10 @@
 # limitations under the License.
 
 import os
+import tarfile
+import threading
+import subprocess
+import signal
 import shutil
 import hashlib
 import httplib
@@ -32,11 +36,42 @@ import checkJavaDocs
 # must have a working gpg, tar, unzip in your path.  This has been
 # tested on Linux and on Cygwin under Windows 7.
 
-# http://s.apache.org/lusolr32rc2
+def javaExe(version):
+  if version == '1.5':
+    path = JAVA5_HOME
+  elif version == '1.6':
+    path = JAVA6_HOME
+  elif version == '1.7':
+    path = JAVA7_HOME
+  else:
+    raise RuntimeError("unknown Java version '%s'" % version)
+  return 'export JAVA_HOME=%s PATH=%s/bin:$PATH' % (path, path)
 
-JAVA5_HOME = '/usr/local/jdk1.5.0_22'
-JAVA6_HOME = '/usr/local/jdk1.6.0_27'
-JAVA7_HOME = '/usr/local/jdk1.7.0_01'
+def verifyJavaVersion(version):
+  s = os.popen('%s; java -version 2>&1' % javaExe(version)).read()
+  if s.find('java version "%s.' % version) == -1:
+    raise RuntimeError('got wrong version for java %s:\n%s' % (version, s))
+
+# http://s.apache.org/lusolr32rc2
+env = os.environ
+try:
+  JAVA5_HOME = env['JAVA5_HOME']
+except KeyError:
+  JAVA5_HOME = '/usr/local/jdk1.5.0_22'
+
+try:
+  JAVA6_HOME = env['JAVA6_HOME']
+except KeyError:
+  JAVA6_HOME = '/usr/local/jdk1.6.0_27'
+
+try:
+  JAVA7_HOME = env['JAVA7_HOME']
+except KeyError:
+  JAVA7_HOME = '/usr/local/jdk1.7.0_01'
+
+verifyJavaVersion('1.5')
+verifyJavaVersion('1.6')
+verifyJavaVersion('1.7')
 
 # TODO
 #   + verify KEYS contains key that signed the release
@@ -165,6 +200,17 @@ def checkSigs(project, urlString, version, tmpDir):
   if keysURL is None:
     raise RuntimeError('%s is missing KEYS' % project)
 
+  if not os.path.exists('%s/apache-rat-0.8.jar' % tmpDir):
+    print '  downloading Apache RAT...'
+    download('apache-rat-incubating-0.8-bin.tar.bz2',
+             'http://archive.apache.org/dist/incubator/rat/binaries/apache-rat-incubating-0.8-bin.tar.bz2',
+             tmpDir)
+    t = tarfile.open('%s/apache-rat-incubating-0.8-bin.tar.bz2' % tmpDir)
+    t.extract('apache-rat-0.8/apache-rat-0.8.jar', '%s/apache-rat-0.8.jar' % tmpDir)
+  else:
+    print '  apache RAT already downloaded...'
+
+  print '  get KEYS'
   download('%s.KEYS' % project, keysURL, tmpDir)
 
   keysFile = '%s/%s.KEYS' % (tmpDir, project)
@@ -327,9 +373,9 @@ def unpack(project, tmpDir, artifact, version):
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
   unpackPath = '%s/%s' % (destDir, expected)
-  verifyUnpacked(project, artifact, unpackPath, version)
+  verifyUnpacked(project, artifact, unpackPath, version, tmpDir)
 
-def verifyUnpacked(project, artifact, unpackPath, version):
+def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
   os.chdir(unpackPath)
   isSrc = artifact.find('-src') != -1
   l = os.listdir(unpackPath)
@@ -376,53 +422,75 @@ def verifyUnpacked(project, artifact, unpackPath, version):
       raise RuntimeError('%s: unexpected files/dirs in artifact %s: %s' % (project, artifact, l))
 
   if isSrc:
+    print '    make sure no JARs/WARs in src dist...'
+    lines = os.popen('find . -name \\*.jar').readlines()
+    if len(lines) != 0:
+      print '    FAILED:'
+      for line in lines:
+        print '      %s' % line.strip()
+      raise RuntimeError('source release has JARs...')
+    lines = os.popen('find . -name \\*.war').readlines()
+    if len(lines) != 0:
+      print '    FAILED:'
+      for line in lines:
+        print '      %s' % line.strip()
+      raise RuntimeError('source release has WARs...')
+
+    print '    run "ant validate"'
+    run('%s; ant validate' % javaExe('1.7'), '%s/validate.log' % unpackPath)
+
+    print '    run "ant rat-sources"'
+    run('%s; ant -lib %s/apache-rat-0.8.jar rat-sources' % (javaExe('1.7'), tmpDir), '%s/rat-sources.log' % unpackPath)
+    
     if project == 'lucene':
       print '    run tests w/ Java 5...'
-      run('export JAVA_HOME=%s; ant test' % JAVA5_HOME, '%s/test.log' % unpackPath)
-      run('export JAVA_HOME=%s; ant jar' % JAVA5_HOME, '%s/compile.log' % unpackPath)
+      run('%s; ant test' % javaExe('1.5'), '%s/test.log' % unpackPath)
+      run('%s; ant jar' % javaExe('1.5'), '%s/compile.log' % unpackPath)
       testDemo(isSrc, version)
       # test javadocs
       print '    generate javadocs w/ Java 5...'
-      run('export JAVA_HOME=%s; ant javadocs' % JAVA5_HOME, '%s/javadocs.log' % unpackPath)
-      # disabled: RM cannot fix all this, see LUCENE-3887
-      #if checkJavaDocs.checkPackageSummaries('build/docs/api'):
-      #  raise RuntimeError('javadoc summaries failed')
-      
+      run('%s; ant javadocs' % javaExe('1.5'), '%s/javadocs.log' % unpackPath)
+      if checkJavaDocs.checkPackageSummaries('build/docs/api'):
+        print '\n***WARNING***: javadocs want to fail!\n'
+        # disabled: RM cannot fix all this, see LUCENE-3887
+        #raise RuntimeError('javadoc summaries failed')
     else:
       print '    run tests w/ Java 6...'
-      run('export JAVA_HOME=%s; ant test' % JAVA6_HOME, '%s/test.log' % unpackPath)
+      run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
 
       # test javadocs
       print '    generate javadocs w/ Java 6...'
-      # uncomment this after 3.5.0 and delete the hack below
-      # run('export JAVA_HOME=%s; ant javadocs' % JAVA6_HOME, '%s/javadocs.log' % unpackPath)
-      os.chdir('lucene')
-      run('export JAVA_HOME=%s; ant javadocs' % JAVA6_HOME, '%s/javadocs.log' % unpackPath)
-      os.chdir(unpackPath)
-
-      os.chdir('solr')
-      run('export JAVA_HOME=%s; ant javadocs' % JAVA6_HOME, '%s/javadocs.log' % unpackPath)
-      os.chdir(unpackPath)
-      # end hackidy-hack     
+      run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
 
       print '    run tests w/ Java 7...'
-      run('export JAVA_HOME=%s; ant test' % JAVA7_HOME, '%s/test.log' % unpackPath)
+      run('%s; ant test' % javaExe('1.7'), '%s/test.log' % unpackPath)
  
       # test javadocs
       print '    generate javadocs w/ Java 7...'
-      # uncomment this after 3.5.0 and delete the hack below
-      # run('export JAVA_HOME=%s; ant javadocs' % JAVA7_HOME, '%s/javadocs.log' % unpackPath)
-      os.chdir('lucene')
-      run('export JAVA_HOME=%s; ant javadocs' % JAVA7_HOME, '%s/javadocs.log' % unpackPath)
-      os.chdir(unpackPath)
+      run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
 
       os.chdir('solr')
-      run('export JAVA_HOME=%s; ant javadocs' % JAVA7_HOME, '%s/javadocs.log' % unpackPath)
-      os.chdir(unpackPath)
-      # end hackidy-hack   
+      print '    test solr example w/ Java 6...'
+      run('%s; ant clean example' % javaExe('1.6'), '%s/antexample.log' % unpackPath)
+      testSolrExample(unpackPath, JAVA6_HOME, True)
+
+      print '    test solr example w/ Java 7...'
+      run('%s; ant clean example' % javaExe('1.7'), '%s/antexample.log' % unpackPath)
+      testSolrExample(unpackPath, JAVA7_HOME, True)
+      os.chdir('..')
+
+      print '    check NOTICE'
+      testNotice(unpackPath)
+
   else:
     if project == 'lucene':
       testDemo(isSrc, version)
+    else:
+      print '    test solr example w/ Java 6...'
+      testSolrExample(unpackPath, JAVA6_HOME, False)
+
+      print '    test solr example w/ Java 7...'
+      testSolrExample(unpackPath, JAVA7_HOME, False)
 
   testChangesText('.', version, project)
 
@@ -430,6 +498,86 @@ def verifyUnpacked(project, artifact, unpackPath, version):
     print '    check Lucene\'s javadoc JAR'
     unpackJavadocsJar('%s/lucene-core-%s-javadoc.jar' % (unpackPath, version), unpackPath)
 
+def testNotice(unpackPath):
+  solrNotice = open('%s/NOTICE.txt' % unpackPath).read()
+  luceneNotice = open('%s/lucene/NOTICE.txt' % unpackPath).read()
+
+  expected = """
+=========================================================================
+==  Apache Lucene Notice                                               ==
+=========================================================================
+
+""" + luceneNotice + """---
+"""
+  
+  if solrNotice.find(expected) == -1:
+    raise RuntimeError('Solr\'s NOTICE.txt does not have the verbatim copy, plus header/footer, of Lucene\'s NOTICE.txt')
+  
+def readSolrOutput(p, startupEvent, logFile):
+  f = open(logFile, 'wb')
+  try:
+    while True:
+      line = p.readline()
+      if line == '':
+        break
+      f.write(line)
+      f.flush()
+      # print 'SOLR: %s' % line.strip()
+      if line.find('Started SocketConnector@0.0.0.0:8983') != -1:
+        startupEvent.set()
+  finally:
+    f.close()
+    
+def testSolrExample(unpackPath, javaPath, isSrc):
+  logFile = '%s/solr-example.log' % unpackPath
+  os.chdir('example')
+  print '      start Solr instance (log=%s)...' % logFile
+  env = {}
+  env.update(os.environ)
+  env['JAVA_HOME'] = javaPath
+  env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
+  server = subprocess.Popen(['java', '-jar', 'start.jar'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+
+  startupEvent = threading.Event()
+  serverThread = threading.Thread(target=readSolrOutput, args=(server.stderr, startupEvent, logFile))
+  serverThread.setDaemon(True)
+  serverThread.start()
+
+  # Make sure Solr finishes startup:
+  startupEvent.wait()
+  print '      startup done'
+  
+  try:
+    print '      test utf8...'
+    run('sh ./exampledocs/test_utf8.sh', 'utf8.log')
+    print '      index example docs...'
+    run('sh ./exampledocs/post.sh ./exampledocs/*.xml', 'post-example-docs.log')
+    print '      run query...'
+    s = urllib2.urlopen('http://localhost:8983/solr/select/?q=video').read()
+    if s.find('<result name="response" numFound="3" start="0">') == -1:
+      print 'FAILED: response is:\n%s' % s
+      raise RuntimeError('query on solr example instance failed')
+  finally:
+    # Stop server:
+    print '      stop server (SIGINT)...'
+    os.kill(server.pid, signal.SIGINT)
+
+    # Give it 10 seconds to gracefully shut down
+    serverThread.join(10.0)
+
+    if serverThread.isAlive():
+      # Kill server:
+      print '***WARNING***: Solr instance didn\'t respond to SIGINT; using SIGKILL now...'
+      os.kill(server.pid, signal.SIGKILL)
+
+      serverThread.join(10.0)
+
+      if serverThread.isAlive():
+        # Shouldn't happen unless something is seriously wrong...
+        print '***WARNING***: Solr instance didn\'t respond to SIGKILL; ignoring...'
+
+  os.chdir('..')
+    
 def unpackJavadocsJar(jarPath, unpackPath):
   destDir = '%s/javadocs' % unpackPath
   if os.path.exists(destDir):
@@ -437,9 +585,10 @@ def unpackJavadocsJar(jarPath, unpackPath):
   os.makedirs(destDir)
   os.chdir(destDir)
   run('unzip %s' % jarPath, '%s/unzip.log' % destDir)
-  # disabled: RM cannot fix all this, see LUCENE-3887
-  #if checkJavaDocs.checkPackageSummaries('.'):
-  #  raise RuntimeError('javadoc problems')
+  if checkJavaDocs.checkPackageSummaries('.'):
+    # disabled: RM cannot fix all this, see LUCENE-3887
+    # raise RuntimeError('javadoc problems')
+    print '\n***WARNING***: javadocs want to fail!\n'
   os.chdir(unpackPath)
 
 def testDemo(isSrc, version):
@@ -456,8 +605,8 @@ def testDemo(isSrc, version):
   else:
     cp = 'lucene-core-{0}.jar{1}contrib/demo/lucene-demo-{0}.jar'.format(version, sep)
     docsDir = 'docs'
-  run('export JAVA_HOME=%s; %s/bin/java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (JAVA5_HOME, JAVA5_HOME, cp, docsDir), 'index.log')
-  run('export JAVA_HOME=%s; %s/bin/java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % (JAVA5_HOME, JAVA5_HOME, cp), 'search.log')
+  run('%s; java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (javaExe('1.5'), cp, docsDir), 'index.log')
+  run('%s; java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % (javaExe('1.5'), cp), 'search.log')
   reMatchingDocs = re.compile('(\d+) total matching documents')
   m = reMatchingDocs.search(open('search.log', 'rb').read())
   if m is None:
@@ -862,6 +1011,8 @@ def main():
   if not DEBUG:
     if os.path.exists(tmpDir):
       raise RuntimeError('temp dir %s exists; please remove first' % tmpDir)
+
+  if not os.path.exists(tmpDir):
     os.makedirs(tmpDir)
   
   lucenePath = None
