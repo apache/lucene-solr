@@ -1073,6 +1073,10 @@ Build
   directory.  The 'clean' target now removes them.
   (Steve Rowe, Robert Muir)
 
+* LUCENE-3930: Changed build system to use Apache Ivy for retrival of 3rd
+  party JAR files.  Please review BUILD.txt for instructions.
+  (Robert Muir, Chris Male, Uwe Schindler, Steven Rowe, Hossman)
+
 
 ======================= Lucene 3.5.0 =======================
 

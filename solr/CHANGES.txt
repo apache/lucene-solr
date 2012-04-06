@@ -746,12 +746,6 @@ Bug Fixes
 * SOLR-3195: timeAllowed is ignored for grouping queries
   (Russell Black via Martijn van Groningen)
 
-* SOLR-3204: The packaged pre-release artifact of Commons CSV used the original
-  package name (org.apache.commons.csv). This created a compatibility issue as
-  the Apache Commons team works toward an official release of Commons CSV.
-  JARJAR (http://code.google.com/p/jarjar/) was used to change the package name
-  to org.apache.solr.internal.csv.  (Uwe Schindler, Emmanuel Bourg)  
- 
 * SOLR-2124: Do not log stack traces for "Service Disabled" / 503 Exceptions (PingRequestHandler, etc)
   (James Dyer, others)
   
@@ -791,7 +785,7 @@ Other Changes
   AppendedSolrParams into factory methods.
   (David Smiley via hossman)
 
-* Solr-3032: Deprecate logOnce from SolrException logOnce and all the supporting
+* SOLR-3032: Deprecate logOnce from SolrException logOnce and all the supporting
   structure will disappear in 4.0. Errors should be caught and logged at the
   top-most level or logged and NOT propagated up the chain. (Erick Erickson)
 
@@ -832,6 +826,18 @@ Build
 * SOLR-2487: Add build target to package war without slf4j jars (janhoy)
 
 * SOLR-3112: Fix tests not to write to src/test-files (Luca Cavanna via Robert Muir)
+
+* LUCENE-3753: Restructure the Solr build system. (Steve Rowe)
+
+* SOLR-3204: The packaged pre-release artifact of Commons CSV used the original
+  package name (org.apache.commons.csv). This created a compatibility issue as
+  the Apache Commons team works toward an official release of Commons CSV.
+  The source of Commons CSV was added under a separate package name to the
+  Solr source code.  (Uwe Schindler, Chris Male, Emmanuel Bourg)  
+ 
+* LUCENE-3930: Changed build system to use Apache Ivy for retrival of 3rd
+  party JAR files.  Please review README.txt for instructions.
+  (Robert Muir, Chris Male, Uwe Schindler, Steven Rowe, Hossman)
 
 ==================  3.5.0  ==================
 
