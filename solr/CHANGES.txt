@@ -369,9 +369,6 @@ Bug Fixes
 * SOLR-3214: If you use multiple fl entries rather than a comma separated list, all but the first
   entry can be ignored if you are using distributed search. (Tomas Fernandez Lobbe via Mark Miller)
 
-* SOLR-3316: Distributed grouping failed when rows parameter was set to 0 and sometimes returned a wrong
-  hit count as matches. (Cody Young, Martijn van Groningen)
-
 Other Changes
 ----------------------
 
@@ -779,6 +776,9 @@ Bug Fixes
 * SOLR-3200: Fix SignatureUpdateProcessor "all fields" mode to use all 
   fields of each document instead of the fields specified by the first 
   document indexed (Spyros Kapnissis via hossman)
+
+* SOLR-3316: Distributed grouping failed when rows parameter was set to 0 and sometimes returned a wrong
+  hit count as matches. (Cody Young, Martijn van Groningen)
 
 Other Changes
 ----------------------
