@@ -17,15 +17,22 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
+import java.io.StringReader;
 import java.net.URL;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -36,11 +43,12 @@ import java.util.HashSet;
  * A request handler that provides info about all 
  * registered SolrInfoMBeans.
  */
+@SuppressWarnings("unchecked")
 public class SolrInfoMBeanHandler extends RequestHandlerBase {
 
   /**
    * Take an array of any type and generate a Set containing the toString.
-   * Set is garunteed to never be null (but may be empty)
+   * Set is guarantee to never be null (but may be empty)
    */
   private Set<String> arrayToSet(Object[] arr) {
     HashSet<String> r = new HashSet<String>();
@@ -50,14 +58,61 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     }
     return r;
   }
-  
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    SolrCore core = req.getCore();
-    
+    NamedList<NamedList<NamedList<Object>>> cats = getMBeanInfo(req);
+    if(req.getParams().getBool("diff", false)) {
+      ContentStream body = null;
+      try {
+        body = req.getContentStreams().iterator().next();
+      }
+      catch(Exception ex) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "missing content-stream for diff");
+      }
+      String content = IOUtils.toString(body.getReader());
+      
+      NamedList<NamedList<NamedList<Object>>> ref = fromXML(content);
+      
+      
+      // Normalize the output 
+      SolrQueryResponse wrap = new SolrQueryResponse();
+      wrap.add("solr-mbeans", cats);
+      cats = (NamedList<NamedList<NamedList<Object>>>)
+          BinaryResponseWriter.getParsedResponse(req, wrap).get("solr-mbeans");
+      
+      // Get rid of irrelevant things
+      ref = normalize(ref);
+      cats = normalize(cats);
+      
+      // Only the changes
+      rsp.add("solr-mbeans", getDiff(ref,cats));
+    }
+    else {
+      rsp.add("solr-mbeans", cats);
+    }
+    rsp.setHttpCaching(false); // never cache, no matter what init config looks like
+  }
+  
+  static NamedList<NamedList<NamedList<Object>>> fromXML(String content) {
+    int idx = content.indexOf("<response>");
+    if(idx<0) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Body does not appear to be an XML response");
+    }
+  
+    try {
+      XMLResponseParser parser = new XMLResponseParser();
+      return (NamedList<NamedList<NamedList<Object>>>)
+          parser.processResponse(new StringReader(content.substring(idx))).get("solr-mbeans");
+    }
+    catch(Exception ex) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to read original XML", ex);
+    }
+  }
+  
+  protected NamedList<NamedList<NamedList<Object>>> getMBeanInfo(SolrQueryRequest req) {
+
     NamedList<NamedList<NamedList<Object>>> cats = new NamedList<NamedList<NamedList<Object>>>();
-    rsp.add("solr-mbeans", cats);
     
     String[] requestedCats = req.getParams().getParams("cat");
     if (null == requestedCats || 0 == requestedCats.length) {
@@ -72,7 +127,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
          
     Set<String> requestedKeys = arrayToSet(req.getParams().getParams("key"));
     
-    Map<String, SolrInfoMBean> reg = core.getInfoRegistry();
+    Map<String, SolrInfoMBean> reg = req.getCore().getInfoRegistry();
     for (Map.Entry<String, SolrInfoMBean> entry : reg.entrySet()) {
       String key = entry.getKey();
       SolrInfoMBean m = entry.getValue();
@@ -103,16 +158,122 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       
       catInfo.add(key, mBeanInfo);
     }
-    rsp.setHttpCaching(false); // never cache, no matter what init config looks like
+    return cats;
   }
 
+  protected NamedList<NamedList<NamedList<Object>>> getDiff(NamedList<NamedList<NamedList<Object>>> ref, NamedList<NamedList<NamedList<Object>>> now) {
+    NamedList<NamedList<NamedList<Object>>> changed = new NamedList<NamedList<NamedList<Object>>>();
+    
+    // Cycle through each category
+    for(int i=0;i<ref.size();i++) {
+      String category = ref.getName(i);
+      NamedList<NamedList<Object>> ref_cat = ref.get(category);
+      NamedList<NamedList<Object>> now_cat = now.get(category);
+      if(now_cat != null) {
+        String ref_txt = ref_cat+"";
+        String now_txt = now_cat+"";
+        if(!ref_txt.equals(now_txt)) {
+          // Something in the category changed
+          // Now iterate the real beans
+          
+          NamedList<NamedList<Object>> cat = new NamedList<NamedList<Object>>();
+          for(int j=0;j<ref_cat.size();j++) {
+            String name = ref_cat.getName(j);
+            NamedList<Object> ref_bean = ref_cat.get(name);
+            NamedList<Object> now_bean = now_cat.get(name);
+
+            ref_txt = ref_bean+"";
+            now_txt = now_bean+"";
+            if(!ref_txt.equals(now_txt)) {
+//              System.out.println( "----" );
+//              System.out.println( category +" : " + name );
+//              System.out.println( "REF: " + ref_txt );
+//              System.out.println( "NOW: " + now_txt );
+              
+              // Calculate the differences
+              cat.add(name, diffNamedList(ref_bean,now_bean));
+            }
+          }
+          if(cat.size()>0) {
+            changed.add(category, cat);
+          }
+        }
+      }
+    }
+    return changed;
+  }
+  
+  public NamedList diffNamedList(NamedList ref, NamedList now) {
+    NamedList out = new NamedList();
+    for(int i=0; i<ref.size(); i++) {
+      String name = ref.getName(i);
+      Object r = ref.getVal(i);
+      Object n = now.remove(name);
+      if(n == null) {
+        if(r!=null) {
+          out.add("REMOVE "+name, r);
+        }
+      }
+      else {
+        out.add(name, diffObject(r,n));
+      }
+    }
+    
+    for(int i=0; i<now.size(); i++) {
+      String name = now.getName(i);
+      Object v = now.getVal(i);
+      if(v!=null) {
+        out.add("ADD "+name, v);
+      }
+    }
+    return out;
+  }
+  
+  public Object diffObject(Object ref, Object now) {
+    if(ref instanceof NamedList) {
+      return diffNamedList((NamedList)ref, (NamedList)now);
+    }
+    if(ref.equals(now)) {
+      return ref;
+    }
+    StringBuilder str = new StringBuilder();
+    str.append("Was: ")
+     .append(ref).append(", Now: ").append(now);
+    
+    if(ref instanceof Number) {
+      NumberFormat nf = NumberFormat.getIntegerInstance();
+      if((ref instanceof Double) || (ref instanceof Float)) {
+        nf = NumberFormat.getInstance();
+      }
+      double diff = ((Number)now).doubleValue() - ((Number)ref).doubleValue();
+      str.append( ", Delta: ").append(nf.format(diff));
+    }
+    return str.toString();
+  }
+  
+  
+  /**
+   * The 'avgRequestsPerSecond' field will make everything look like it changed
+   */
+  public NamedList normalize(NamedList input) {
+    input.remove("avgRequestsPerSecond");
+    for(int i=0; i<input.size(); i++) {
+      Object v = input.getVal(i);
+      if(v instanceof NamedList) {
+        input.setVal(i, normalize((NamedList)v));
+      }
+    }
+    return input;
+  }
+  
+  
   @Override
   public String getDescription() {
-    return "Get Info (and statistics) about all registered SolrInfoMBeans";
+    return "Get Info (and statistics) for registered SolrInfoMBeans";
   }
 
   @Override
-  public String getSource() {
+  public String getSource() {    
     return "$URL$";
   }
 }
