@@ -17,9 +17,12 @@ package org.apache.solr;
  * limitations under the License.
  */
 
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * TODO? perhaps use:
@@ -168,6 +171,26 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "fq", s2 + ":a", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "group.ngroups", "true");
     query("q", "*:*", "fq", s2 + ":a", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "group.truncate", "true");
     query("q", "*:*", "fq", s2 + ":a", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
+
+    query("q", "*:*", "fq", s2 + ":a", "rows", 0, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "facet", "true", "facet.field", t1);
+    query("q", "*:*", "fq", s2 + ":a", "rows", 0, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    Object[] q =  {"q", "*:*", "fq", s2 + ":a", "rows", 1, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10};
+
+    for (int i = 0; i < q.length; i += 2) {
+      params.add(q[i].toString(), q[i + 1].toString());
+    }
+
+    params.set("shards", shards);
+
+    int which = r.nextInt(clients.size());
+    SolrServer client = clients.get(which);
+    QueryResponse rsp = client.query(params);
+    NamedList nl = (NamedList<?>) rsp.getResponse().get("grouped");
+    nl = (NamedList<?>) nl.getVal(0);
+    int matches = (Integer) nl.getVal(0);
+    assertEquals(100 * clients.size(), matches);
 
     // We cannot validate distributed grouping with scoring as first sort. since there is no global idf. We can check if no errors occur
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " desc", "group.sort", "score desc"); // SOLR-2955

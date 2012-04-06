@@ -24,7 +24,6 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -265,6 +264,7 @@ public class QueryComponent extends SearchComponent
           CommandHandler.Builder topsGroupsActionBuilder = new CommandHandler.Builder()
               .setQueryCommand(cmd)
               .setNeedDocSet(false) // Order matters here
+              .setIncludeHitCount(true)
               .setSearcher(searcher);
 
           for (String field : groupingSpec.getFields()) {
@@ -280,6 +280,7 @@ public class QueryComponent extends SearchComponent
           commandHandler.execute();
           SearchGroupsResultTransformer serializer = new SearchGroupsResultTransformer(searcher);
           rsp.add("firstPhase", commandHandler.processResult(result, serializer));
+          rsp.add("totalHitCount", commandHandler.getTotalHitCount());
           rb.setResult(result);
           return;
         } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
@@ -291,7 +292,7 @@ public class QueryComponent extends SearchComponent
           for (String field : groupingSpec.getFields()) {
             String[] topGroupsParam = params.getParams(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + field);
             if (topGroupsParam == null) {
-              continue;
+              topGroupsParam = new String[0];
             }
 
             List<SearchGroup<String>> topGroups = new ArrayList<SearchGroup<String>>(topGroupsParam.length);
@@ -638,7 +639,7 @@ public class QueryComponent extends SearchComponent
     Map<String, Object> combinedMap = new LinkedHashMap<String, Object>();
     combinedMap.putAll(rb.mergedTopGroups);
     combinedMap.putAll(rb.mergedQueryCommandResults);
-    endResultTransformer.transform(combinedMap, rb.rsp, rb.getGroupingSpec(), solrDocumentSource);
+    endResultTransformer.transform(combinedMap, rb, solrDocumentSource);
   }
 
   private void regularFinishStage(ResponseBuilder rb) {

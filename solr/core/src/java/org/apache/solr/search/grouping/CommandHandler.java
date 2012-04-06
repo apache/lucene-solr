@@ -47,6 +47,7 @@ public class CommandHandler {
     private SolrIndexSearcher searcher;
     private boolean needDocSet = false;
     private boolean truncateGroups = false;
+    private boolean includeHitCount = false;
 
     public Builder setQueryCommand(SolrIndexSearcher.QueryCommand queryCommand) {
       this.queryCommand = queryCommand;
@@ -76,6 +77,11 @@ public class CommandHandler {
       return this;
     }
 
+    public Builder setIncludeHitCount(boolean includeHitCount) {
+      this.includeHitCount = includeHitCount;
+      return this;
+    }
+
     public Builder setTruncateGroups(boolean truncateGroups) {
       this.truncateGroups = truncateGroups;
       return this;
@@ -86,7 +92,7 @@ public class CommandHandler {
         throw new IllegalStateException("All fields must be set");
       }
 
-      return new CommandHandler(queryCommand, commands, searcher, needDocSet, truncateGroups);
+      return new CommandHandler(queryCommand, commands, searcher, needDocSet, truncateGroups, includeHitCount);
     }
 
   }
@@ -98,19 +104,24 @@ public class CommandHandler {
   private final SolrIndexSearcher searcher;
   private final boolean needDocset;
   private final boolean truncateGroups;
+  private final boolean includeHitCount;
   private boolean partialResults = false;
+  private int totalHitCount;
 
   private DocSet docSet;
 
   private CommandHandler(SolrIndexSearcher.QueryCommand queryCommand,
                          List<Command> commands,
                          SolrIndexSearcher searcher,
-                         boolean needDocset, boolean truncateGroups) {
+                         boolean needDocset,
+                         boolean truncateGroups,
+                         boolean includeHitCount) {
     this.queryCommand = queryCommand;
     this.commands = commands;
     this.searcher = searcher;
     this.needDocset = needDocset;
     this.truncateGroups = truncateGroups;
+    this.includeHitCount = includeHitCount;
   }
 
   @SuppressWarnings("unchecked")
@@ -127,12 +138,14 @@ public class CommandHandler {
     Filter luceneFilter = pf.filter;
     Query query = QueryUtils.makeQueryable(queryCommand.getQuery());
 
-    if (truncateGroups && nrOfCommands > 0) {
+    if (truncateGroups) {
       docSet = computeGroupedDocSet(query, luceneFilter, collectors);
     } else if (needDocset) {
       docSet = computeDocSet(query, luceneFilter, collectors);
-    } else {
+    } else if (!collectors.isEmpty()) {
       searchWithTimeLimiter(query, luceneFilter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
+    } else {
+      searchWithTimeLimiter(query, luceneFilter, null);
     }
   }
 
@@ -182,12 +195,25 @@ public class CommandHandler {
     if (queryCommand.getTimeAllowed() > 0 ) {
       collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), queryCommand.getTimeAllowed());
     }
+
+    TotalHitCountCollector hitCountCollector = new TotalHitCountCollector();
+    if (includeHitCount) {
+      collector = MultiCollector.wrap(collector, hitCountCollector);
+    }
+
     try {
       searcher.search(query, luceneFilter, collector);
     } catch (TimeLimitingCollector.TimeExceededException x) {
       partialResults = true;
       logger.warn( "Query: " + query + "; " + x.getMessage() );
     }
+
+    if (includeHitCount) {
+      totalHitCount = hitCountCollector.getTotalHits();
+    }
   }
 
+  public int getTotalHitCount() {
+    return totalHitCount;
+  }
 }

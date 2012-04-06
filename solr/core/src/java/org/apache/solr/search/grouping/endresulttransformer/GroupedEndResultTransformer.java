@@ -23,11 +23,10 @@ import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Implementation of {@link EndResultTransformer} that keeps each grouped result separate in the final response.
  */
 public class GroupedEndResultTransformer implements EndResultTransformer {
 
@@ -45,7 +44,10 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
     this.searcher = searcher;
   }
 
-  public void transform(Map<String, ?> result, SolrQueryResponse response, GroupingSpecification groupingSpecification, SolrDocumentSource solrDocumentSource) {
+  /**
+   * {@inheritDoc}
+   */
+  public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new NamedList<Object>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
@@ -53,7 +55,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         @SuppressWarnings("unchecked")
         TopGroups<String> topGroups = (TopGroups<String>) value;
         NamedList<Object> command = new SimpleOrderedMap<Object>();
-        command.add("matches", topGroups.totalHitCount);
+        command.add("matches", rb.totalHitCount);
         if (topGroups.totalGroupCount != null) {
           command.add("ngroups", topGroups.totalGroupCount);
         }
@@ -75,7 +77,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           if (!Float.isNaN(group.maxScore)) {
             docList.setMaxScore(group.maxScore);
           }
-          docList.setStart(groupingSpecification.getGroupOffset());
+          docList.setStart(rb.getGroupingSpec().getGroupOffset());
           for (ScoreDoc scoreDoc : group.scoreDocs) {
             docList.add(solrDocumentSource.retrieve(scoreDoc));
           }
@@ -93,7 +95,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         if (!Float.isNaN(queryCommandResult.getTopDocs().getMaxScore())) {
           docList.setMaxScore(queryCommandResult.getTopDocs().getMaxScore());
         }
-        docList.setStart(groupingSpecification.getGroupOffset());
+        docList.setStart(rb.getGroupingSpec().getGroupOffset());
         for (ScoreDoc scoreDoc :queryCommandResult.getTopDocs().scoreDocs){
           docList.add(solrDocumentSource.retrieve(scoreDoc));
         }
@@ -101,7 +103,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         commands.add(entry.getKey(), command);
       }
     }
-    response.add("grouped", commands);
+    rb.rsp.add("grouped", commands);
   }
 
 }
