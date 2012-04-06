@@ -23,6 +23,7 @@ import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.*;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.ShardResultTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
