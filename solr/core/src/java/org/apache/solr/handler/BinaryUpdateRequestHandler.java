@@ -147,17 +147,7 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
   }
 
   @Override
-  public String getSourceId() {
-    return "$Id$";
-  }
-
-  @Override
   public String getSource() {
     return "$URL$";
-  }
-
-  @Override
-  public String getVersion() {
-    return "$Revision$";
   }
 }

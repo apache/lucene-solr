@@ -86,7 +86,6 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       mBeanInfo.add("class", m.getName());
       mBeanInfo.add("version", m.getVersion());
       mBeanInfo.add("description", m.getDescription());
-      mBeanInfo.add("srcId", m.getSourceId());
       mBeanInfo.add("src", m.getSource());
       
       // Use an external form
@@ -113,17 +112,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   }
 
   @Override
-  public String getSourceId() {
-    return "$Id$";
-  }
-
-  @Override
   public String getSource() {
     return "$URL$";
-  }
-
-  @Override
-  public String getVersion() {
-    return "$Revision$";
   }
 }

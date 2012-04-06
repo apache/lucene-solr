@@ -83,18 +83,8 @@ public class PingRequestHandler extends RequestHandlerBase
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
-  public String getVersion() {
-    return "$Revision$";
-  }
-
-  @Override
   public String getDescription() {
     return "Reports application health to a load-balancer";
-  }
-
-  @Override
-  public String getSourceId() {
-    return "$Id$";
   }
 
   @Override

@@ -156,10 +156,6 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
     public NamedList getStatistics() {
       return null;
     }
-
-    public String getSourceId() {
-      return "mock";
-    }
   }
 
 }

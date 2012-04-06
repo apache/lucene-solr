@@ -32,7 +32,6 @@ import java.util.Map;
 /**
  * Test for LFUCache
  *
- * @version $Id: TestFastLFUCache.java 1170772 2011-09-14 19:09:56Z sarowe $
  * @see org.apache.solr.search.LFUCache
  * @since solr 3.6
  */

@@ -112,13 +112,9 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
   public String getDescription() {
     return "Register Standard Admin Handlers";
   }
-
+  
   public String getVersion() {
-    return "$Revision$";
-  }
-
-  public String getSourceId() {
-    return "$Id$";
+    return getClass().getPackage().getSpecificationVersion();
   }
 
   public String getSource() {

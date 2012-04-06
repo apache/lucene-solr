@@ -244,15 +244,7 @@ public class PivotFacetHelper
 //    return "Handle Pivot (multi-level) Faceting";
 //  }
 //
-//  public String getSourceId() {
-//    return "$Id$";
-//  }
-//
 //  public String getSource() {
 //    return "$URL$";
-//  }
-//
-//  public String getVersion() {
-//    return "$Revision$";
 //  }
 }

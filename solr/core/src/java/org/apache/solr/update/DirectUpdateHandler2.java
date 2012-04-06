@@ -621,10 +621,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     return Category.UPDATEHANDLER;
   }
 
-  public String getSourceId() {
-    return "$Id$";
-  }
-
   public String getSource() {
     return "$URL$";
   }

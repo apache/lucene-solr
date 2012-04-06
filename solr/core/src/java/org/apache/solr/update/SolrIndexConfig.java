@@ -33,7 +33,6 @@ import java.util.List;
 /**
  * This config object encapsulates IndexWriter config params,
  * defined in the &lt;indexConfig&gt; section of solrconfig.xml
- * @version $Id$
  */
 public class SolrIndexConfig {
   public static final Logger log = LoggerFactory.getLogger(SolrIndexConfig.class);

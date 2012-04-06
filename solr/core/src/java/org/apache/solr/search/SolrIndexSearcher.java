@@ -1987,10 +1987,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     return Category.CORE;
   }
 
-  public String getSourceId() {
-    return "$Id$";
-  }
-
   public String getSource() {
     return "$URL$";
   }

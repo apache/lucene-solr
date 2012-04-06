@@ -477,6 +477,9 @@ Other Changes
 
 * SOLR-3159: Upgrade example and tests to run with Jetty 8 (ryan)
 
+* SOLR-3329: Dropped getSourceID() from SolrInfoMBean and using 
+  getClass().getPackage().getSpecificationVersion() for Version. (ryan)
+
 
 Documentation
 ----------------------

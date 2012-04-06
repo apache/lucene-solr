@@ -24,7 +24,6 @@ import java.math.BigInteger;
 
 /**
  * @author yonik
- * @version $Id$
  */
 public class ObjectBuilder {
 

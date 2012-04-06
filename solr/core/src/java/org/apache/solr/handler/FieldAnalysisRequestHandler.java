@@ -107,16 +107,6 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   }
 
   @Override
-  public String getVersion() {
-    return "$Revision$";
-  }
-
-  @Override
-  public String getSourceId() {
-    return "$Id$";
-  }
-
-  @Override
   public String getSource() {
     return "$URL$";
   }

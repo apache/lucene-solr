@@ -329,15 +329,5 @@ public class FileFloatSource extends ValueSource {
     public String getSource() {
       return "$URL$";
     }
-
-    @Override
-    public String getSourceId() {
-      return "$Id$";
-    }
-
-    @Override
-    public String getVersion() {
-      return "$Revision$";
-    }    
   }
 }

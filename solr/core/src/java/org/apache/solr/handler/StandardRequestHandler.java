@@ -46,18 +46,8 @@ public class StandardRequestHandler extends SearchHandler
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
-  public String getVersion() {
-    return "$Revision$";
-  }
-
-  @Override
   public String getDescription() {
     return "The standard Solr request handler";
-  }
-
-  @Override
-  public String getSourceId() {
-    return "$Id$";
   }
 
   @Override

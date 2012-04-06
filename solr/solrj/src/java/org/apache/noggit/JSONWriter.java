@@ -21,7 +21,6 @@ import java.util.*;
 
 /**
  * @author yonik
- * @version $Id: JSONWriter.java 1211150 2011-12-06 21:10:01Z yonik $
  */
 public class JSONWriter {
 

@@ -22,7 +22,6 @@ package org.apache.solr.handler.dataimport;
  * <p/>
  * <b>This API is experimental and subject to change</b>
  * <p/>
- * $Id$
  *
  * @since solr 1.3
  */

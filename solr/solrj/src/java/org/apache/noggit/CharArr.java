@@ -37,7 +37,6 @@ import java.nio.CharBuffer;
 
 /**
  * @author yonik
- * @version $Id: CharArr.java 583538 2007-10-10 16:53:02Z yonik $
  */
 public class CharArr implements CharSequence, Appendable {
   protected char[] buf;

@@ -334,16 +334,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   }
 
   @Override
-  public String getVersion() {
-    return "$Revision$";
-  }
-
-  @Override
-  public String getSourceId() {
-    return "$Id$";
-  }
-
-  @Override
   public String getSource() {
     return "$URL$";
   }

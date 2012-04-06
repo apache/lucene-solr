@@ -423,18 +423,8 @@ public class MoreLikeThisHandler extends RequestHandlerBase
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
-  public String getVersion() {
-    return "$Revision$";
-  }
-
-  @Override
   public String getDescription() {
     return "Solr MoreLikeThis";
-  }
-
-  @Override
-  public String getSourceId() {
-    return "$Id$";
   }
 
   @Override

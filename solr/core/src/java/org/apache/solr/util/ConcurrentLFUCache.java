@@ -38,7 +38,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * <p/>
  * <b>This API is experimental and subject to change</b>
  *
- * @version $Id$
  * @since solr 1.6
  */
 public class ConcurrentLFUCache<K, V> {

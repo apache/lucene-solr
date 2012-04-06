@@ -230,6 +230,4 @@ class EmptyRequestHandler extends RequestHandlerBase
 
   @Override public String getDescription() { return null; }
   @Override public String getSource() { return null; }
-  @Override public String getSourceId() { return null; }
-  @Override public String getVersion() { return null; }
 }

@@ -226,10 +226,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     return Category.CACHE;
   }
 
-  public String getSourceId() {
-    return "$Id$";
-  }
-
   public String getSource() {
     return "$URL$";
   }

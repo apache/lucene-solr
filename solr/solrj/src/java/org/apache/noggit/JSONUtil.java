@@ -19,7 +19,6 @@ package org.apache.noggit;
 
 /**
  * @author yonik
- * @version $Id: JSONUtil.java 1209632 2011-12-02 18:48:42Z yonik $
  */
 
 public class JSONUtil {

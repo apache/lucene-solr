@@ -53,19 +53,7 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   }
 
   @Override
-  public String getSourceId() {
-    String result = null;
-    return result;
-  }
-
-  @Override
   public String getSource() {
-    String result = null;
-    return result;
-  }
-
-  @Override
-  public String getVersion() {
     String result = null;
     return result;
   }

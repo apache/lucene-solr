@@ -20,7 +20,6 @@ package org.apache.noggit;
 
 /**
  * @author yonik
- * @version $Id: CharUtil.java 479919 2006-11-28 05:53:55Z yonik $
  */
 public class CharUtil {
 

@@ -398,16 +398,6 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   @Override
-  public String getVersion() {
-    return "$Revision$";
-  }
-
-  @Override
-  public String getSourceId() {
-    return "$Id$";
-  }
-
-  @Override
   public String getSource() {
     return "$URL$";
   }
@@ -416,7 +406,6 @@ public class RealTimeGetComponent extends SearchComponent
   public URL[] getDocs() {
     return null;
   }
-
 
 
   ///////////////////////////////////////////////////////////////////////////////////

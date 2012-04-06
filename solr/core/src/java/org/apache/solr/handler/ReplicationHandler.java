@@ -495,18 +495,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
-  public String getSourceId() {
-    return "$Id$";
-  }
-
-  @Override
   public String getSource() {
     return "$URL$";
-  }
-
-  @Override
-  public String getVersion() {
-    return "$Revision$";
   }
 
   private long[] getIndexVersion() {

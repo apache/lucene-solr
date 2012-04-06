@@ -207,7 +207,7 @@ public final class RequestHandlers {
    * 
    * @since solr 1.2
    */
-  public static final class LazyRequestHandlerWrapper implements SolrRequestHandler, SolrInfoMBean
+  public static final class LazyRequestHandlerWrapper implements SolrRequestHandler
   {
     private final SolrCore core;
     private String _className;
@@ -279,19 +279,10 @@ public final class RequestHandlers {
     }
     
     public String getVersion() {
-        String rev = "$Revision$";
-        if( _handler != null ) {
-          rev += " :: " + _handler.getVersion();
-        }
-        return rev;
-    }
-
-    public String getSourceId() {
-      String rev = "$Id$";
       if( _handler != null ) {
-        rev += " :: " + _handler.getSourceId();
+        return _handler.getVersion();
       }
-      return rev;
+      return null;
     }
 
     public String getSource() {

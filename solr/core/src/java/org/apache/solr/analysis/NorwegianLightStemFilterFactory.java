@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.no.NorwegianLightStemFilter;
  *     &lt;filter class="solr.NorwegianLightStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$ 
  */
 public class NorwegianLightStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

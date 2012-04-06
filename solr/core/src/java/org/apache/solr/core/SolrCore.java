@@ -1916,10 +1916,6 @@ public final class SolrCore implements SolrInfoMBean {
     return Category.CORE;
   }
 
-  public String getSourceId() {
-    return "$Id$";
-  }
-
   public String getSource() {
     return "$URL$";
   }

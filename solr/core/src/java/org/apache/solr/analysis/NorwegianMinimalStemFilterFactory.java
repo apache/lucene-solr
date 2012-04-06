@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.no.NorwegianMinimalStemFilter;
  *     &lt;filter class="solr.NorwegianMinimalStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$ 
  */
 public class NorwegianMinimalStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

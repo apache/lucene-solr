@@ -46,16 +46,6 @@ public class HtmlFormatter extends HighlightingPluginBase implements SolrFormatt
   }
 
   @Override
-  public String getVersion() {
-      return "$Revision$";
-  }
-
-  @Override
-  public String getSourceId() {
-    return "$Id$";
-  }
-
-  @Override
   public String getSource() {
     return "$URL$";
   }

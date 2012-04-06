@@ -156,9 +156,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   }
 
   public abstract String getDescription();
-  public abstract String getSourceId();
   public abstract String getSource();
-  public abstract String getVersion();
+  
+  public String getVersion() {
+    return getClass().getPackage().getSpecificationVersion();
+  }
   
   public Category getCategory() {
     return Category.QUERYHANDLER;

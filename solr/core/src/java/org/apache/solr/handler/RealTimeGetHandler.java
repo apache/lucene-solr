@@ -36,18 +36,8 @@ public class RealTimeGetHandler extends SearchHandler {
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
-  public String getVersion() {
-    return "$Revision$";
-  }
-
-  @Override
   public String getDescription() {
     return "The realtime get handler";
-  }
-
-  @Override
-  public String getSourceId() {
-    return "$Id$";
   }
 
   @Override

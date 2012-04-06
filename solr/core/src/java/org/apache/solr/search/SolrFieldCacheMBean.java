@@ -46,9 +46,6 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
       +    "this is **NOT** a cache that is managed by Solr.";
   }
   public Category getCategory() { return Category.CACHE; } 
-  public String getSourceId() { 
-    return "$Id$"; 
-  }
   public String getSource() { 
     return "$URL$";
   }

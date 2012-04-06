@@ -255,18 +255,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @Override
-  public String getVersion() {
-    return "$Revision$";
-  }
-
-  @Override
-  public String getSourceId() {
-    return "$Id$";
-  }
-
-  @Override
   public String getSource() {
     return "$URL$";
   }
-
 }

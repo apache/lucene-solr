@@ -23,7 +23,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.XML;
 
 /** Test (some of the) character escaping functions of the XML class
- *  $Id$
  */
 
 public class TestXMLEscaping extends LuceneTestCase {

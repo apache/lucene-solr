@@ -336,16 +336,6 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   @Override
-  public String getSourceId() {
-    return "$Id$";
-  }
-
-  @Override
-  public String getVersion() {
-    return "1.0";
-  }
-
-  @Override
   public String getSource() {
     return "$URL$";
   }

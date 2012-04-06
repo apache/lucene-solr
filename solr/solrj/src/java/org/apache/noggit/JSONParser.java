@@ -22,7 +22,6 @@ import java.io.Reader;
 
 /**
  * @author yonik
- * @version $Id: JSONParser.java 1099557 2011-05-04 18:54:26Z yonik $
  */
 
 public class JSONParser {
