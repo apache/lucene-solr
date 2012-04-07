@@ -55,7 +55,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    List<Class<?>> analysisClasses = getClassesForPackage("org.apache.lucene.analysis");
+    List<Class<?>> analysisClasses = new ArrayList<Class<?>>();
+    getClassesForPackage("org.apache.lucene.analysis", analysisClasses);
     tokenizers = new ArrayList<Class<? extends Tokenizer>>();
     tokenfilters = new ArrayList<Class<? extends TokenFilter>>();
     charfilters = new ArrayList<Class<? extends CharStream>>();
@@ -274,17 +275,16 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
   }
   
-  private static List<Class<?>> getClassesForPackage(String pckgname) throws Exception {
-    ArrayList<File> directories = new ArrayList<File>();
-    ClassLoader cld = Thread.currentThread().getContextClassLoader();
-    String path = pckgname.replace('.', '/');
-    Enumeration<URL> resources = cld.getResources(path);
+  private static void getClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
+    final ArrayList<File> directories = new ArrayList<File>();
+    final ClassLoader cld = TestRandomChains.class.getClassLoader();
+    final String path = pckgname.replace('.', '/');
+    final Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
       final File f = new File(resources.nextElement().toURI());
       directories.add(f);
     }
       
-    ArrayList<Class<?>> classes = new ArrayList<Class<?>>();
     for (File directory : directories) {
       if (directory.exists()) {
         String[] files = directory.list();
@@ -292,19 +292,20 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           if (new File(directory, file).isDirectory()) {
             // recurse
             String subPackage = pckgname + "." + file;
-            classes.addAll(getClassesForPackage(subPackage));
+            getClassesForPackage(subPackage, classes);
           }
           if (file.endsWith(".class")) {
-             String clazzName = file.substring(0, file.length() - 6);
-             // exclude Test classes that happen to be in these packages.
-             // class.ForName'ing some of them can cause trouble.
-             if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
-               classes.add(Class.forName(pckgname + '.' + clazzName));
-             }
+            String clazzName = file.substring(0, file.length() - 6);
+            // exclude Test classes that happen to be in these packages.
+            // class.ForName'ing some of them can cause trouble.
+            if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
+              // Don't run static initializers, as we won't use most of them.
+              // Java will do that automatically once accessed/instantiated.
+              classes.add(Class.forName(pckgname + '.' + clazzName, false, cld));
+            }
           }
         }
       }
     }
-    return classes;
   }
 }
