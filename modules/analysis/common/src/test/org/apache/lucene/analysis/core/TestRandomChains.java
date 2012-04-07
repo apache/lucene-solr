@@ -24,7 +24,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.List;
@@ -48,21 +48,23 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** tests random analysis chains */
-@SuppressWarnings({"unchecked", "rawtypes"}) // broken generics
 public class TestRandomChains extends BaseTokenStreamTestCase {
-  static Class[] tokenizers;
-  static Class[] tokenfilters;
-  static Class[] charfilters;
+  static List<Class<? extends Tokenizer>> tokenizers;
+  static List<Class<? extends TokenFilter>> tokenfilters;
+  static List<Class<? extends CharStream>> charfilters;
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    List<Class> analysisClasses = getClassesForPackage("org.apache.lucene.analysis");
-    List<Class> tokenizersList = new ArrayList<Class>();
-    List<Class> tokenfiltersList = new ArrayList<Class>();
-    List<Class> charfiltersList = new ArrayList<Class>();
-    for (Class c : analysisClasses) {
+    List<Class<?>> analysisClasses = getClassesForPackage("org.apache.lucene.analysis");
+    tokenizers = new ArrayList<Class<? extends Tokenizer>>();
+    tokenfilters = new ArrayList<Class<? extends TokenFilter>>();
+    charfilters = new ArrayList<Class<? extends CharStream>>();
+    for (Class<?> c : analysisClasses) {
       // don't waste time with abstract classes or deprecated known-buggy ones
-      if (Modifier.isAbstract(c.getModifiers()) || c.getAnnotation(Deprecated.class) != null
+      final int modifiers = c.getModifiers();
+      if (Modifier.isAbstract(modifiers) || !Modifier.isPublic(modifiers)
+          || c.getAnnotation(Deprecated.class) != null
+          || c.isSynthetic() || c.isAnonymousClass() || c.isMemberClass() || c.isInterface()
           // TODO: fix basetokenstreamtestcase not to trip because this one has no CharTermAtt
           || c.equals(EmptyTokenizer.class)
           // doesn't actual reset itself!
@@ -78,38 +80,26 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         continue;
       }
       if (Tokenizer.class.isAssignableFrom(c)) {
-        tokenizersList.add(c);
+        tokenizers.add(c.asSubclass(Tokenizer.class));
       } else if (TokenFilter.class.isAssignableFrom(c)) {
-        tokenfiltersList.add(c);
+        tokenfilters.add(c.asSubclass(TokenFilter.class));
       } else if (CharStream.class.isAssignableFrom(c)) {
-        charfiltersList.add(c);
+        charfilters.add(c.asSubclass(CharStream.class));
       }
     }
-    tokenizers = tokenizersList.toArray(new Class[0]);
-    Arrays.sort(tokenizers, new Comparator<Class>() {
+    final Comparator<Class<?>> classComp = new Comparator<Class<?>>() {
       @Override
-      public int compare(Class arg0, Class arg1) {
+      public int compare(Class<?> arg0, Class<?> arg1) {
         return arg0.getName().compareTo(arg1.getName());
       }
-    });
-    tokenfilters = tokenfiltersList.toArray(new Class[0]);
-    Arrays.sort(tokenfilters, new Comparator<Class>() {
-      @Override
-      public int compare(Class arg0, Class arg1) {
-        return arg0.getName().compareTo(arg1.getName());
-      }
-    });
-    charfilters = charfiltersList.toArray(new Class[0]);
-    Arrays.sort(charfilters, new Comparator<Class>() {
-      @Override
-      public int compare(Class arg0, Class arg1) {
-        return arg0.getName().compareTo(arg1.getName());
-      }
-    });
+    };
+    Collections.sort(tokenizers, classComp);
+    Collections.sort(tokenfilters, classComp);
+    Collections.sort(charfilters, classComp);
     if (VERBOSE) {
-      System.out.println("tokenizers = " + Arrays.toString(tokenizers));
-      System.out.println("tokenfilters = " + Arrays.toString(tokenfilters));
-      System.out.println("charfilters = " + Arrays.toString(charfilters));
+      System.out.println("tokenizers = " + tokenizers);
+      System.out.println("tokenfilters = " + tokenfilters);
+      System.out.println("charfilters = " + charfilters);
     }
   }
   
@@ -170,15 +160,15 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         try {
           // TODO: check Reader+Version,Version+Reader too
           // also look for other variants and handle them special
-          int idx = random.nextInt(tokenizers.length);
+          int idx = random.nextInt(tokenizers.size());
           try {
-            Constructor c = tokenizers[idx].getConstructor(Version.class, Reader.class);
-            spec.tokenizer = (Tokenizer) c.newInstance(TEST_VERSION_CURRENT, reader);
+            Constructor<? extends Tokenizer> c = tokenizers.get(idx).getConstructor(Version.class, Reader.class);
+            spec.tokenizer = c.newInstance(TEST_VERSION_CURRENT, reader);
           } catch (NoSuchMethodException e) {
-            Constructor c = tokenizers[idx].getConstructor(Reader.class);
-            spec.tokenizer = (Tokenizer) c.newInstance(reader);
+            Constructor<? extends Tokenizer> c = tokenizers.get(idx).getConstructor(Reader.class);
+            spec.tokenizer = c.newInstance(reader);
           }
-          spec.toString = tokenizers[idx].toString();
+          spec.toString = tokenizers.get(idx).toString();
           success = true;
         } catch (Exception e) {
           // ignore
@@ -197,19 +187,19 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         while (!success) {
           try {
             // TODO: also look for other variants and handle them special
-            int idx = random.nextInt(charfilters.length);
+            int idx = random.nextInt(charfilters.size());
             try {
-              Constructor c = charfilters[idx].getConstructor(Reader.class);
-              spec.reader = (Reader) c.newInstance(spec.reader);
+              Constructor<? extends CharStream> c = charfilters.get(idx).getConstructor(Reader.class);
+              spec.reader = c.newInstance(spec.reader);
             } catch (NoSuchMethodException e) {
-              Constructor c = charfilters[idx].getConstructor(CharStream.class);
-              spec.reader = (Reader) c.newInstance(CharReader.get(spec.reader));
+              Constructor<? extends CharStream> c = charfilters.get(idx).getConstructor(CharStream.class);
+              spec.reader = c.newInstance(CharReader.get(spec.reader));
             }
 
             if (descr.length() > 0) {
               descr.append(",");
             }
-            descr.append(charfilters[idx].toString());
+            descr.append(charfilters.get(idx).toString());
             success = true;
           } catch (Exception e) {
             // ignore
@@ -230,18 +220,18 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         while (!success) {
           try {
             // TODO: also look for other variants and handle them special
-            int idx = random.nextInt(tokenfilters.length);
+            int idx = random.nextInt(tokenfilters.size());
             try {
-              Constructor c = tokenfilters[idx].getConstructor(Version.class, TokenStream.class);
-              spec.stream = (TokenFilter) c.newInstance(TEST_VERSION_CURRENT, spec.stream);
+              Constructor<? extends TokenFilter> c = tokenfilters.get(idx).getConstructor(Version.class, TokenStream.class);
+              spec.stream = c.newInstance(TEST_VERSION_CURRENT, spec.stream);
             } catch (NoSuchMethodException e) {
-              Constructor c = tokenfilters[idx].getConstructor(TokenStream.class);
-              spec.stream = (TokenFilter) c.newInstance(spec.stream);
+              Constructor<? extends TokenFilter> c = tokenfilters.get(idx).getConstructor(TokenStream.class);
+              spec.stream = c.newInstance(spec.stream);
             }
             if (descr.length() > 0) {
               descr.append(",");
             }
-            descr.append(tokenfilters[idx].toString());
+            descr.append(tokenfilters.get(idx).toString());
             success = true;
           } catch (Exception e) {
             // ignore
@@ -284,7 +274,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
   }
   
-  private static List<Class> getClassesForPackage(String pckgname) throws Exception {
+  private static List<Class<?>> getClassesForPackage(String pckgname) throws Exception {
     ArrayList<File> directories = new ArrayList<File>();
     ClassLoader cld = Thread.currentThread().getContextClassLoader();
     String path = pckgname.replace('.', '/');
@@ -294,7 +284,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       directories.add(f);
     }
       
-    ArrayList<Class> classes = new ArrayList<Class>();
+    ArrayList<Class<?>> classes = new ArrayList<Class<?>>();
     for (File directory : directories) {
       if (directory.exists()) {
         String[] files = directory.list();
