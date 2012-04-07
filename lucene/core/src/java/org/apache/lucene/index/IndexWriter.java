@@ -1345,7 +1345,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   final InfoStream infoStream;
 
   /**
-   * Forces merge policy to merge segments until there's <=
+   * Forces merge policy to merge segments until there are <=
    * maxNumSegments.  The actual merges to be
    * executed are determined by the {@link MergePolicy}.
    *
@@ -1371,14 +1371,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * <p>The actual temporary usage could be much less than
    * these figures (it depends on many factors).</p>
    *
-   * <p>In general, once the this completes, the total size of the
+   * <p>In general, once this completes, the total size of the
    * index will be less than the size of the starting index.
    * It could be quite a bit smaller (if there were many
    * pending deletes) or just slightly smaller.</p>
    *
    * <p>If an Exception is hit, for example
-   * due to disk full, the index will not be corrupt and no
-   * documents will have been lost.  However, it may have
+   * due to disk full, the index will not be corrupted and no
+   * documents will be lost.  However, it may have
    * been partially merged (some segments were merged but
    * not all), and it's possible that one of the segments in
    * the index will be in non-compound format even when
