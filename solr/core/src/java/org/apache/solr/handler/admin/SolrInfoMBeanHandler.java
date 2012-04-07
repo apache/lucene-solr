@@ -35,6 +35,7 @@ import java.net.URL;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashSet;
@@ -241,9 +242,9 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
      .append(ref).append(", Now: ").append(now);
     
     if(ref instanceof Number) {
-      NumberFormat nf = NumberFormat.getIntegerInstance();
+      NumberFormat nf = NumberFormat.getIntegerInstance(Locale.ENGLISH);
       if((ref instanceof Double) || (ref instanceof Float)) {
-        nf = NumberFormat.getInstance();
+        nf = NumberFormat.getInstance(Locale.ENGLISH);
       }
       double diff = ((Number)now).doubleValue() - ((Number)ref).doubleValue();
       str.append( ", Delta: ").append(nf.format(diff));
