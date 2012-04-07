@@ -1,0 +1,260 @@
+package org.apache.lucene.analysis.core;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.File;
+import java.io.Reader;
+import java.io.StringReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Random;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.EmptyTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
+import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
+import org.apache.lucene.analysis.ngram.NGramTokenFilter;
+import org.apache.lucene.analysis.ngram.NGramTokenizer;
+import org.apache.lucene.util.Version;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
+/** tests random analysis chains */
+@SuppressWarnings({"unchecked", "rawtypes"}) // broken generics
+public class TestRandomChains extends BaseTokenStreamTestCase {
+  static Class[] tokenizers;
+  static Class[] tokenfilters;
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    List<Class> analysisClasses = getClassesForPackage("org.apache.lucene.analysis");
+    List<Class> tokenizersList = new ArrayList<Class>();
+    List<Class> tokenfiltersList = new ArrayList<Class>();
+    for (Class c : analysisClasses) {
+      // don't waste time with abstract classes or deprecated known-buggy ones
+      if (Modifier.isAbstract(c.getModifiers()) || c.getAnnotation(Deprecated.class) != null
+          // TODO: fix basetokenstreamtestcase not to trip because this one has no CharTermAtt
+          || c.equals(EmptyTokenizer.class)
+          // doesn't actual reset itself!
+          || c.equals(CachingTokenFilter.class)
+          // broken!
+          || c.equals(NGramTokenizer.class)
+          // broken!
+          || c.equals(NGramTokenFilter.class)
+          // broken!
+          || c.equals(EdgeNGramTokenizer.class)
+          // broken!
+          || c.equals(EdgeNGramTokenFilter.class)) {
+        continue;
+      }
+      if (Tokenizer.class.isAssignableFrom(c)) {
+        tokenizersList.add(c);
+      } else if (TokenFilter.class.isAssignableFrom(c)) {
+        tokenfiltersList.add(c);
+      }
+    }
+    tokenizers = tokenizersList.toArray(new Class[0]);
+    Arrays.sort(tokenizers, new Comparator<Class>() {
+      @Override
+      public int compare(Class arg0, Class arg1) {
+        return arg0.getName().compareTo(arg1.getName());
+      }
+    });
+    tokenfilters = tokenfiltersList.toArray(new Class[0]);
+    Arrays.sort(tokenfilters, new Comparator<Class>() {
+      @Override
+      public int compare(Class arg0, Class arg1) {
+        return arg0.getName().compareTo(arg1.getName());
+      }
+    });
+    if (VERBOSE) {
+      System.out.println("tokenizers = " + Arrays.toString(tokenizers));
+      System.out.println("tokenfilters = " + Arrays.toString(tokenfilters));
+    }
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    tokenizers = null;
+    tokenfilters = null;
+  }
+  
+  static class MockRandomAnalyzer extends Analyzer {
+    final long seed;
+    
+    MockRandomAnalyzer(long seed) {
+      this.seed = seed;
+    }
+    
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Random random = new Random(seed);
+      TokenizerSpec tokenizerspec = newTokenizer(random, reader);
+      TokenFilterSpec filterspec = newFilterChain(random, tokenizerspec.tokenizer);
+      return new TokenStreamComponents(tokenizerspec.tokenizer, filterspec.stream);
+    }
+
+    @Override
+    protected Reader initReader(Reader reader) {
+      // TODO: random charfilter chain!
+      return super.initReader(reader);
+    }
+
+    @Override
+    public String toString() {
+      Random random = new Random(seed);
+      TokenizerSpec tokenizerSpec = newTokenizer(random, new StringReader(""));
+      StringBuilder sb = new StringBuilder();
+      sb.append("tokenizer=");
+      sb.append(tokenizerSpec.toString);
+      TokenFilterSpec tokenfilterSpec = newFilterChain(random, tokenizerSpec.tokenizer);
+      sb.append("\n");
+      sb.append("filters=");
+      sb.append(tokenfilterSpec.toString);
+      return sb.toString();
+    }
+    
+    // create a new random tokenizer from classpath
+    private TokenizerSpec newTokenizer(Random random, Reader reader) {
+      TokenizerSpec spec = new TokenizerSpec();
+      boolean success = false;
+      while (!success) {
+        try {
+          // TODO: check Reader+Version,Version+Reader too
+          // also look for other variants and handle them special
+          int idx = random.nextInt(tokenizers.length);
+          try {
+            Constructor c = tokenizers[idx].getConstructor(Version.class, Reader.class);
+            spec.tokenizer = (Tokenizer) c.newInstance(TEST_VERSION_CURRENT, reader);
+          } catch (NoSuchMethodException e) {
+            Constructor c = tokenizers[idx].getConstructor(Reader.class);
+            spec.tokenizer = (Tokenizer) c.newInstance(reader);
+          }
+          spec.toString = tokenizers[idx].toString();
+          success = true;
+        } catch (Exception e) {
+          // ignore
+        }
+      }
+      return spec;
+    }
+    
+    private TokenFilterSpec newFilterChain(Random random, Tokenizer tokenizer) {
+      TokenFilterSpec spec = new TokenFilterSpec();
+      spec.stream = tokenizer;
+      StringBuilder descr = new StringBuilder();
+      int numFilters = random.nextInt(5);
+      for (int i = 0; i < numFilters; i++) {
+        boolean success = false;
+        while (!success) {
+          try {
+            // TODO: also look for other variants and handle them special
+            int idx = random.nextInt(tokenfilters.length);
+            try {
+              Constructor c = tokenfilters[idx].getConstructor(Version.class, TokenStream.class);
+              spec.stream = (TokenFilter) c.newInstance(TEST_VERSION_CURRENT, spec.stream);
+            } catch (NoSuchMethodException e) {
+              Constructor c = tokenfilters[idx].getConstructor(TokenStream.class);
+              spec.stream = (TokenFilter) c.newInstance(spec.stream);
+            }
+            if (descr.length() > 0) {
+              descr.append(",");
+            }
+            descr.append(tokenfilters[idx].toString());
+            success = true;
+          } catch (Exception e) {
+            // ignore
+          }
+        }
+      }
+      spec.toString = descr.toString();
+      return spec;
+    }
+  }
+  
+  static class TokenizerSpec {
+    Tokenizer tokenizer;
+    String toString;
+  }
+  
+  static class TokenFilterSpec {
+    TokenStream stream;
+    String toString;
+  }
+  
+  public void testRandomChains() throws Throwable {
+    int numIterations = atLeast(20);
+    for (int i = 0; i < numIterations; i++) {
+      MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
+      if (VERBOSE) {
+        System.out.println("Creating random analyzer:" + a);
+      }
+      try {
+        checkRandomData(random, a, 1000);
+      } catch (Throwable e) {
+        System.err.println("Exception from random analyzer: " + a);
+        throw e;
+      }
+    }
+  }
+  
+  private static List<Class> getClassesForPackage(String pckgname) throws Exception {
+    ArrayList<File> directories = new ArrayList<File>();
+    ClassLoader cld = Thread.currentThread().getContextClassLoader();
+    String path = pckgname.replace('.', '/');
+    Enumeration<URL> resources = cld.getResources(path);
+    while (resources.hasMoreElements()) {
+      final File f = new File(resources.nextElement().toURI());
+      directories.add(f);
+    }
+      
+    ArrayList<Class> classes = new ArrayList<Class>();
+    for (File directory : directories) {
+      if (directory.exists()) {
+        String[] files = directory.list();
+        for (String file : files) {
+          if (new File(directory, file).isDirectory()) {
+            // recurse
+            String subPackage = pckgname + "." + file;
+            classes.addAll(getClassesForPackage(subPackage));
+          }
+          if (file.endsWith(".class")) {
+             String clazzName = file.substring(0, file.length() - 6);
+             // exclude Test classes that happen to be in these packages.
+             // class.ForName'ing some of them can cause trouble.
+             if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
+               classes.add(Class.forName(pckgname + '.' + clazzName));
+             }
+          }
+        }
+      }
+    }
+    return classes;
+  }
+}
