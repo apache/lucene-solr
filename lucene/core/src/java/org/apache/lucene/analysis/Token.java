@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.DocsAndPositionsEnum; // for javadoc
@@ -121,13 +122,14 @@ import org.apache.lucene.util.AttributeReflector;
 */
 public class Token extends CharTermAttributeImpl 
                    implements TypeAttribute, PositionIncrementAttribute,
-                              FlagsAttribute, OffsetAttribute, PayloadAttribute {
+                              FlagsAttribute, OffsetAttribute, PayloadAttribute, PositionLengthAttribute {
 
   private int startOffset,endOffset;
   private String type = DEFAULT_TYPE;
   private int flags;
   private Payload payload;
   private int positionIncrement = 1;
+  private int positionLength = 1;
 
   /** Constructs a Token will null text. */
   public Token() {
@@ -268,6 +270,20 @@ public class Token extends CharTermAttributeImpl
    */
   public int getPositionIncrement() {
     return positionIncrement;
+  }
+
+  /** Set the position length.
+   * @see PositionLengthAttribute */
+  @Override
+  public void setPositionLength(int positionLength) {
+    this.positionLength = positionLength;
+  }
+
+  /** Get the position length.
+   * @see PositionLengthAttribute */
+  @Override
+  public int getPositionLength() {
+    return positionLength;
   }
 
   /** Returns this Token's starting offset, the position of the first character

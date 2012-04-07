@@ -26,6 +26,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
@@ -190,7 +191,21 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
     checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER, 8192);
     checkRandomData(random, analyzerNoPunct, 200*RANDOM_MULTIPLIER, 8192);
   }
-  
+
+  public void testRandomHugeStringsMockGraphAfter() throws Exception {
+    // Randomly inject graph tokens after JapaneseTokenizer:
+    checkRandomData(random,
+                    new Analyzer() {
+                      @Override
+                      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+                        Tokenizer tokenizer = new JapaneseTokenizer(reader, readDict(), false, Mode.SEARCH);
+                        TokenStream graph = new MockGraphTokenFilter(random, tokenizer);
+                        return new TokenStreamComponents(tokenizer, graph);
+                      }
+                    },
+                    200*RANDOM_MULTIPLIER, 8192);
+  }
+
   public void testLargeDocReliability() throws Exception {
     for (int i = 0; i < 100; i++) {
       String s = _TestUtil.randomUnicodeString(random, 10000);
