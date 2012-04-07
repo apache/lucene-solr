@@ -276,16 +276,11 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
   
   private static void getClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
-    final ArrayList<File> directories = new ArrayList<File>();
     final ClassLoader cld = TestRandomChains.class.getClassLoader();
     final String path = pckgname.replace('.', '/');
     final Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
-      final File f = new File(resources.nextElement().toURI());
-      directories.add(f);
-    }
-      
-    for (File directory : directories) {
+      final File directory = new File(resources.nextElement().toURI());
       if (directory.exists()) {
         String[] files = directory.list();
         for (String file : files) {
