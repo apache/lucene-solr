@@ -33,6 +33,8 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.CharReader;
+import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -50,12 +52,14 @@ import org.junit.BeforeClass;
 public class TestRandomChains extends BaseTokenStreamTestCase {
   static Class[] tokenizers;
   static Class[] tokenfilters;
+  static Class[] charfilters;
   
   @BeforeClass
   public static void beforeClass() throws Exception {
     List<Class> analysisClasses = getClassesForPackage("org.apache.lucene.analysis");
     List<Class> tokenizersList = new ArrayList<Class>();
     List<Class> tokenfiltersList = new ArrayList<Class>();
+    List<Class> charfiltersList = new ArrayList<Class>();
     for (Class c : analysisClasses) {
       // don't waste time with abstract classes or deprecated known-buggy ones
       if (Modifier.isAbstract(c.getModifiers()) || c.getAnnotation(Deprecated.class) != null
@@ -77,6 +81,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         tokenizersList.add(c);
       } else if (TokenFilter.class.isAssignableFrom(c)) {
         tokenfiltersList.add(c);
+      } else if (CharStream.class.isAssignableFrom(c)) {
+        charfiltersList.add(c);
       }
     }
     tokenizers = tokenizersList.toArray(new Class[0]);
@@ -93,9 +99,17 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         return arg0.getName().compareTo(arg1.getName());
       }
     });
+    charfilters = charfiltersList.toArray(new Class[0]);
+    Arrays.sort(charfilters, new Comparator<Class>() {
+      @Override
+      public int compare(Class arg0, Class arg1) {
+        return arg0.getName().compareTo(arg1.getName());
+      }
+    });
     if (VERBOSE) {
       System.out.println("tokenizers = " + Arrays.toString(tokenizers));
       System.out.println("tokenfilters = " + Arrays.toString(tokenfilters));
+      System.out.println("charfilters = " + Arrays.toString(charfilters));
     }
   }
   
@@ -103,6 +117,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   public static void afterClass() throws Exception {
     tokenizers = null;
     tokenfilters = null;
+    charfilters = null;
   }
   
   static class MockRandomAnalyzer extends Analyzer {
@@ -122,15 +137,22 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
 
     @Override
     protected Reader initReader(Reader reader) {
-      // TODO: random charfilter chain!
-      return super.initReader(reader);
+      Random random = new Random(seed);
+      CharFilterSpec charfilterspec = newCharFilterChain(random, reader);
+      return charfilterspec.reader;
     }
 
     @Override
     public String toString() {
       Random random = new Random(seed);
-      TokenizerSpec tokenizerSpec = newTokenizer(random, new StringReader(""));
       StringBuilder sb = new StringBuilder();
+      CharFilterSpec charfilterSpec = newCharFilterChain(random, new StringReader(""));
+      sb.append("\ncharfilters=");
+      sb.append(charfilterSpec.toString);
+      // intentional: initReader gets its own separate random
+      random = new Random(seed);
+      TokenizerSpec tokenizerSpec = newTokenizer(random, charfilterSpec.reader);
+      sb.append("\n");
       sb.append("tokenizer=");
       sb.append(tokenizerSpec.toString);
       TokenFilterSpec tokenfilterSpec = newFilterChain(random, tokenizerSpec.tokenizer);
@@ -162,6 +184,39 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           // ignore
         }
       }
+      return spec;
+    }
+    
+    private CharFilterSpec newCharFilterChain(Random random, Reader reader) {
+      CharFilterSpec spec = new CharFilterSpec();
+      spec.reader = reader;
+      StringBuilder descr = new StringBuilder();
+      int numFilters = random.nextInt(3);
+      for (int i = 0; i < numFilters; i++) {
+        boolean success = false;
+        while (!success) {
+          try {
+            // TODO: also look for other variants and handle them special
+            int idx = random.nextInt(charfilters.length);
+            try {
+              Constructor c = charfilters[idx].getConstructor(Reader.class);
+              spec.reader = (Reader) c.newInstance(spec.reader);
+            } catch (NoSuchMethodException e) {
+              Constructor c = charfilters[idx].getConstructor(CharStream.class);
+              spec.reader = (Reader) c.newInstance(CharReader.get(spec.reader));
+            }
+
+            if (descr.length() > 0) {
+              descr.append(",");
+            }
+            descr.append(charfilters[idx].toString());
+            success = true;
+          } catch (Exception e) {
+            // ignore
+          }
+        }
+      }
+      spec.toString = descr.toString();
       return spec;
     }
     
@@ -205,6 +260,11 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   
   static class TokenFilterSpec {
     TokenStream stream;
+    String toString;
+  }
+  
+  static class CharFilterSpec {
+    Reader reader;
     String toString;
   }
   
