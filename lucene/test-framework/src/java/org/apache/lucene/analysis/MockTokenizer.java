@@ -95,6 +95,11 @@ public class MockTokenizer extends Tokenizer {
     this(input, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
   }
   
+  /** Calls {@link #MockTokenizer(Reader, CharacterRunAutomaton, boolean) MockTokenizer(Reader, WHITESPACE, true)} */
+  public MockTokenizer(Reader input) {
+    this(input, WHITESPACE, true);
+  }
+  
   @Override
   public final boolean incrementToken() throws IOException {
     assert !enableChecks || (streamState == State.RESET || streamState == State.INCREMENT) 
