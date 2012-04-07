@@ -186,9 +186,16 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
     @Override
     public String toString() {
-      return "SolrResourceLocator, " 
-          + "configDir=" + new File(resourceLoader.getConfigDir()).getAbsolutePath()
-          + ", Carrot2 relative lexicalResourcesDir=";
+      String configDir = "";
+      try {
+        configDir = "configDir=" + new File(resourceLoader.getConfigDir()).getAbsolutePath() + ", ";
+      } catch (Exception ignored) {
+        // If we get the exception, the resource loader implementation 
+        // probably does not support getConfigDir(). Not a big problem.
+      }
+      
+      return "SolrResourceLocator, " + configDir
+          + "Carrot2 relative lexicalResourcesDir=" + carrot2ResourcesDir;
     }
   }
 
