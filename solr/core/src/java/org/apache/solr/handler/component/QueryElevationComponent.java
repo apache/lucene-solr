@@ -532,7 +532,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
         //convert the ids to Lucene doc ids, the ordSet and termValues needs to be the same size as the number of elevation docs we have
         ordSet.clear();
-        Fields fields = context.reader().fields();
+        InvertedFields fields = context.reader().fields();
         if (fields == null) return this;
         Terms terms = fields.terms(idField);
         if (terms == null) return this;

@@ -23,8 +23,8 @@ import java.util.HashSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.InvertedFieldsConsumer;
+import org.apache.lucene.codecs.InvertedFieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
@@ -106,7 +106,7 @@ public class TestCodecs extends LuceneTestCase {
       return fieldInfo.name.compareTo(other.fieldInfo.name);
     }
 
-    public void write(final FieldsConsumer consumer) throws Throwable {
+    public void write(final InvertedFieldsConsumer consumer) throws Throwable {
       Arrays.sort(terms);
       final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
       long sumTotalTermCount = 0;
@@ -260,7 +260,7 @@ public class TestCodecs extends LuceneTestCase {
     Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, codec, clonedFieldInfos);
 
-    final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random), DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR));
+    final InvertedFieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random), DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
     final FieldsEnum fieldsEnum = reader.iterator();
     assertNotNull(fieldsEnum.next());
@@ -319,7 +319,7 @@ public class TestCodecs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now read postings");
     }
-    final FieldsProducer terms = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random), DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR));
+    final InvertedFieldsProducer terms = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random), DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
     final Verify[] threads = new Verify[NUM_TEST_THREADS-1];
     for(int i=0;i<NUM_TEST_THREADS-1;i++) {
@@ -398,12 +398,12 @@ public class TestCodecs extends LuceneTestCase {
   }
 
   private class Verify extends Thread {
-    final Fields termsDict;
+    final InvertedFields termsDict;
     final FieldData[] fields;
     final SegmentInfo si;
     volatile boolean failed;
 
-    Verify(final SegmentInfo si, final FieldData[] fields, final Fields termsDict) {
+    Verify(final SegmentInfo si, final FieldData[] fields, final InvertedFields termsDict) {
       this.fields = fields;
       this.termsDict = termsDict;
       this.si = si;
@@ -549,18 +549,16 @@ public class TestCodecs extends LuceneTestCase {
           term = field.terms[upto];
           if (LuceneTestCase.random.nextInt(3) == 1) {
             final DocsEnum docs;
-            final DocsEnum docsAndFreqs;
             final DocsAndPositionsEnum postings;
             if (!field.omitTF) {
               postings = termsEnum.docsAndPositions(null, null, false);
               if (postings != null) {
-                docs = docsAndFreqs = postings;
+                docs = postings;
               } else {
-                docs = docsAndFreqs = _TestUtil.docs(random, termsEnum, null, null, true);
+                docs = _TestUtil.docs(random, termsEnum, null, null, true);
               }
             } else {
               postings = null;
-              docsAndFreqs = null;
               docs = _TestUtil.docs(random, termsEnum, null, null, false);
             }
             assertNotNull(docs);
@@ -620,7 +618,7 @@ public class TestCodecs extends LuceneTestCase {
     final Codec codec = Codec.getDefault();
     final SegmentWriteState state = new SegmentWriteState(InfoStream.getDefault(), dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codec, null, newIOContext(random));
 
-    final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(state);
+    final InvertedFieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(state);
     Arrays.sort(fields);
     for (final FieldData field : fields) {
       if (!allowPreFlex && codec instanceof Lucene3xCodec) {

@@ -18,7 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.TermState;
@@ -93,7 +93,7 @@ public class SpanTermQuery extends SpanQuery {
     if (termContext == null) {
       // this happens with span-not query, as it doesn't include the NOT side in extractTerms()
       // so we seek to the term now in this segment..., this sucks because its ugly mostly!
-      final Fields fields = context.reader().fields();
+      final InvertedFields fields = context.reader().fields();
       if (fields != null) {
         final Terms terms = fields.terms(term.field());
         if (terms != null) {

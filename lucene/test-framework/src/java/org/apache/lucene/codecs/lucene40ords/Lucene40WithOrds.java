@@ -22,8 +22,8 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.BlockTermsReader;
 import org.apache.lucene.codecs.BlockTermsWriter;
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.InvertedFieldsConsumer;
+import org.apache.lucene.codecs.InvertedFieldsProducer;
 import org.apache.lucene.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -48,7 +48,7 @@ public class Lucene40WithOrds extends PostingsFormat {
   }
 
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public InvertedFieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase docs = new Lucene40PostingsWriter(state);
 
     // TODO: should we make the terms index more easily
@@ -70,7 +70,7 @@ public class Lucene40WithOrds extends PostingsFormat {
     try {
       // Must use BlockTermsWriter (not BlockTree) because
       // BlockTree doens't support ords (yet)...
-      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, docs);
+      InvertedFieldsConsumer ret = new BlockTermsWriter(indexWriter, state, docs);
       success = true;
       return ret;
     } finally {
@@ -87,7 +87,7 @@ public class Lucene40WithOrds extends PostingsFormat {
   public final static int TERMS_CACHE_SIZE = 1024;
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public InvertedFieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
     TermsIndexReaderBase indexReader;
 
@@ -108,7 +108,7 @@ public class Lucene40WithOrds extends PostingsFormat {
 
     success = false;
     try {
-      FieldsProducer ret = new BlockTermsReader(indexReader,
+      InvertedFieldsProducer ret = new BlockTermsReader(indexReader,
                                                 state.dir,
                                                 state.fieldInfos,
                                                 state.segmentInfo.name,

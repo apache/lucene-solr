@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -78,7 +78,7 @@ public class FieldTermStack {
     // just return to make null snippet if un-matched fieldName specified when fieldMatch == true
     if( termSet == null ) return;
 
-    final Fields vectors = reader.getTermVectors(docId);
+    final InvertedFields vectors = reader.getTermVectors(docId);
     if (vectors == null) {
       // null snippet
       return;

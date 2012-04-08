@@ -30,7 +30,7 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooNewException;
@@ -195,7 +195,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     return size;
   }
 
-  private class TVFields extends Fields {
+  private class TVFields extends InvertedFields {
     private final int[] fieldNumbers;
     private final long[] fieldFPs;
     private final Map<Integer,Integer> fieldNumberToIndex = new HashMap<Integer,Integer>();
@@ -654,12 +654,12 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
   }
 
   @Override
-  public Fields get(int docID) throws IOException {
+  public InvertedFields get(int docID) throws IOException {
     if (docID < 0 || docID >= numTotalDocs) {
       throw new IllegalArgumentException("doID=" + docID + " is out of bounds [0.." + (numTotalDocs-1) + "]");
     }
     if (tvx != null) {
-      Fields fields = new TVFields(docID);
+      InvertedFields fields = new TVFields(docID);
       if (fields.getUniqueFieldCount() == 0) {
         // TODO: we can improve writer here, eg write 0 into
         // tvx file, so we know on first read from tvx that

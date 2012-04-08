@@ -34,14 +34,12 @@ import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -584,7 +582,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * @return the first document number containing the term
    */
   public int getFirstMatch(Term t) throws IOException {
-    Fields fields = atomicReader.fields();
+    InvertedFields fields = atomicReader.fields();
     if (fields == null) return -1;
     Terms terms = fields.terms(t.field());
     if (terms == null) return -1;
@@ -612,7 +610,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       final AtomicReaderContext leaf = leaves[i];
       final AtomicReader reader = leaf.reader();
 
-      final Fields fields = reader.fields();
+      final InvertedFields fields = reader.fields();
       if (fields == null) continue;
 
       final Bits liveDocs = reader.getLiveDocs();
@@ -998,7 +996,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           final AtomicReaderContext leaf = leaves[i];
           final AtomicReader reader = leaf.reader();
           collector.setNextReader(leaf);
-          Fields fields = reader.fields();
+          InvertedFields fields = reader.fields();
           Terms terms = fields.terms(t.field());
           BytesRef termBytes = t.bytes();
           

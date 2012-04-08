@@ -10,7 +10,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -251,7 +251,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         }
       } else {
         // extract all fields
-        final Fields vectors = reader.getTermVectors(docId);
+        final InvertedFields vectors = reader.getTermVectors(docId);
         final FieldsEnum fieldsEnum = vectors.iterator();
         String field;
         while((field = fieldsEnum.next()) != null) {

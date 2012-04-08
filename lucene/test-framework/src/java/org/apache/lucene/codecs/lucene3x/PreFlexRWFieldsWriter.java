@@ -20,7 +20,7 @@ package org.apache.lucene.codecs.lucene3x;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.InvertedFieldsConsumer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
@@ -34,7 +34,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-class PreFlexRWFieldsWriter extends FieldsConsumer {
+class PreFlexRWFieldsWriter extends InvertedFieldsConsumer {
 
   private final TermInfosWriter termsOut;
   private final IndexOutput freqOut;

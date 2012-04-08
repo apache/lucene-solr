@@ -24,8 +24,6 @@ import java.util.Map;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ReaderUtil; // javadoc
 
-import org.apache.lucene.index.DirectoryReader; // javadoc
-import org.apache.lucene.index.MultiReader; // javadoc
 
 /**
  * This class forces a composite reader (eg a {@link
@@ -47,7 +45,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
 
   private final CompositeReader in;
   private final Map<String, DocValues> normsCache = new HashMap<String, DocValues>();
-  private final Fields fields;
+  private final InvertedFields fields;
   private final Bits liveDocs;
   
   /** This method is sugar for getting an {@link AtomicReader} from
@@ -77,7 +75,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
+  public InvertedFields fields() throws IOException {
     ensureOpen();
     return fields;
   }
@@ -100,7 +98,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   }
   
   @Override
-  public Fields getTermVectors(int docID)
+  public InvertedFields getTermVectors(int docID)
           throws IOException {
     ensureOpen();
     return in.getTermVectors(docID);

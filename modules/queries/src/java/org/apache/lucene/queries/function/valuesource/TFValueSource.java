@@ -40,7 +40,7 @@ public class TFValueSource extends TermFreqValueSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    Fields fields = readerContext.reader().fields();
+    InvertedFields fields = readerContext.reader().fields();
     final Terms terms = fields.terms(field);
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(), field);

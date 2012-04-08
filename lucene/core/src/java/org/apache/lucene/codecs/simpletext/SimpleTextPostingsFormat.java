@@ -20,8 +20,8 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.InvertedFieldsConsumer;
+import org.apache.lucene.codecs.InvertedFieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
@@ -43,12 +43,12 @@ public class SimpleTextPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public InvertedFieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return new SimpleTextFieldsWriter(state);
   }
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public InvertedFieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new SimpleTextFieldsReader(state);
   }
 

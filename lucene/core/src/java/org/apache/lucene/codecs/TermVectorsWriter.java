@@ -24,7 +24,7 @@ import java.util.Comparator;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.Terms;
@@ -153,7 +153,7 @@ public abstract class TermVectorsWriter implements Closeable {
         }
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Fields vectors = reader.reader.getTermVectors(docID);
+        InvertedFields vectors = reader.reader.getTermVectors(docID);
         addAllDocVectors(vectors, mergeState.fieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);
@@ -166,9 +166,9 @@ public abstract class TermVectorsWriter implements Closeable {
   /** Safe (but, slowish) default method to write every
    *  vector field in the document.  This default
    *  implementation requires that the vectors implement
-   *  both Fields.getUniqueFieldCount and
+   *  both InvertedFields.getUniqueFieldCount and
    *  Terms.getUniqueTermCount. */
-  protected final void addAllDocVectors(Fields vectors, FieldInfos fieldInfos) throws IOException {
+  protected final void addAllDocVectors(InvertedFields vectors, FieldInfos fieldInfos) throws IOException {
     if (vectors == null) {
       startDocument(0);
       return;

@@ -27,11 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Bits;  // javadocs
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;         // for javadocs
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -373,19 +371,19 @@ public abstract class IndexReader implements Closeable {
   }
 
   /** Retrieve term vectors for this document, or null if
-   *  term vectors were not indexed.  The returned Fields
+   *  term vectors were not indexed.  The returned InvertedFields
    *  instance acts like a single-document inverted index
    *  (the docID will be 0). */
-  public abstract Fields getTermVectors(int docID)
+  public abstract InvertedFields getTermVectors(int docID)
           throws IOException;
 
   /** Retrieve term vector for this document and field, or
    *  null if term vectors were not indexed.  The returned
-   *  Fields instance acts like a single-document inverted
+   *  InvertedFields instance acts like a single-document inverted
    *  index (the docID will be 0). */
   public final Terms getTermVector(int docID, String field)
     throws IOException {
-    Fields vectors = getTermVectors(docID);
+    InvertedFields vectors = getTermVectors(docID);
     if (vectors == null) {
       return null;
     }

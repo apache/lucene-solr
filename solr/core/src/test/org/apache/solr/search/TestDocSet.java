@@ -23,8 +23,8 @@ import java.util.Random;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -368,12 +368,12 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
-      public Fields fields() {
+      public InvertedFields fields() {
         return null;
       }
 
       @Override
-      public Fields getTermVectors(int doc) {
+      public InvertedFields getTermVectors(int doc) {
         return null;
       }
 

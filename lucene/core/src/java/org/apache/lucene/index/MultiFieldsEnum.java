@@ -41,7 +41,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
 
   private int numTop;
 
-  private final Fields fields;
+  private final InvertedFields fields;
 
   private String currentField;
 
@@ -125,7 +125,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
     }
 
     @Override
-    protected final boolean lessThan(FieldsEnumWithSlice fieldsA, FieldsEnumWithSlice fieldsB) {
+    protected boolean lessThan(FieldsEnumWithSlice fieldsA, FieldsEnumWithSlice fieldsB) {
       // No need to break ties by field name: TermsEnum handles that
       return fieldsA.current.compareTo(fieldsB.current) < 0;
     }

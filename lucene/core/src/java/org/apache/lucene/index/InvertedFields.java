@@ -22,7 +22,7 @@ import java.io.IOException;
 /** Flex API for access to fields and terms
  *  @lucene.experimental */
 
-public abstract class Fields {
+public abstract class InvertedFields {
 
   /** Returns an iterator that will step through all fields
    *  names.  This will not return null.  */
@@ -64,5 +64,5 @@ public abstract class Fields {
     return numTerms;
   }
   
-  public final static Fields[] EMPTY_ARRAY = new Fields[0];
+  public final static InvertedFields[] EMPTY_ARRAY = new InvertedFields[0];
 }

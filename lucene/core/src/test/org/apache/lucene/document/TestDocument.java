@@ -21,10 +21,9 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -342,7 +341,7 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(1, s.search(new TermQuery(new Term("tokenized_tokenstream", "xyz")), 1).totalHits);
 
     for(String field : new String[] {"tv", "tv_pos", "tv_off", "tv_pos_off"}) {
-      Fields tvFields = r.getTermVectors(0);
+      InvertedFields tvFields = r.getTermVectors(0);
       Terms tvs = tvFields.terms(field);
       assertNotNull(tvs);
       assertEquals(2, tvs.getUniqueTermCount());

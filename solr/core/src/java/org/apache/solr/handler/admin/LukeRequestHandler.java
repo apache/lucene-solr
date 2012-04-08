@@ -575,7 +575,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     final CharsRef spare = new CharsRef();
 
-    Fields fields = MultiFields.getFields(req.getSearcher().getIndexReader());
+    InvertedFields fields = MultiFields.getFields(req.getSearcher().getIndexReader());
 
     if (fields == null) { // No indexed fields
       return;

@@ -19,8 +19,8 @@ package org.apache.lucene.codecs.lucene3x;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.InvertedFieldsConsumer;
+import org.apache.lucene.codecs.InvertedFieldsProducer;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.LuceneTestCase;
@@ -38,12 +38,12 @@ class PreFlexRWPostingsFormat extends Lucene3xPostingsFormat {
   }
   
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public InvertedFieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return new PreFlexRWFieldsWriter(state);
   }
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public InvertedFieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
     // Whenever IW opens readers, eg for merging, we have to
     // keep terms order in UTF16:

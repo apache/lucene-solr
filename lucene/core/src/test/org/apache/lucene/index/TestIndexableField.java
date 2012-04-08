@@ -281,7 +281,7 @@ public class TestIndexableField extends LuceneTestCase {
             // TODO: offsets
             
           } else {
-            Fields vectors = r.getTermVectors(docID);
+            InvertedFields vectors = r.getTermVectors(docID);
             assertTrue(vectors == null || vectors.terms(name) == null);
           }
 

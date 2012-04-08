@@ -46,12 +46,12 @@ import org.apache.lucene.util.ReaderUtil;
  * @lucene.experimental
  */
 
-public final class MultiFields extends Fields {
-  private final Fields[] subs;
+public final class MultiFields extends InvertedFields {
+  private final InvertedFields[] subs;
   private final ReaderUtil.Slice[] subSlices;
   private final Map<String,Terms> terms = new ConcurrentHashMap<String,Terms>();
 
-  /** Returns a single {@link Fields} instance for this
+  /** Returns a single {@link InvertedFields} instance for this
    *  reader, merging fields/terms/docs/positions on the
    *  fly.  This method will return null if the reader 
    *  has no postings.
@@ -60,7 +60,7 @@ public final class MultiFields extends Fields {
    *  It's better to get the sub-readers (using {@link
    *  Gather}) and iterate through them
    *  yourself. */
-  public static Fields getFields(IndexReader r) throws IOException {
+  public static InvertedFields getFields(IndexReader r) throws IOException {
     if (r instanceof AtomicReader) {
       // already an atomic reader
       return ((AtomicReader) r).fields();
@@ -71,13 +71,13 @@ public final class MultiFields extends Fields {
       // no fields
       return null;
     } else {
-      final List<Fields> fields = new ArrayList<Fields>();
+      final List<InvertedFields> fields = new ArrayList<InvertedFields>();
       final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
 
       new ReaderUtil.Gather(r) {
         @Override
         protected void add(int base, AtomicReader r) throws IOException {
-          final Fields f = r.fields();
+          final InvertedFields f = r.fields();
           if (f != null) {
             fields.add(f);
             slices.add(new ReaderUtil.Slice(base, r.maxDoc(), fields.size()-1));
@@ -90,7 +90,7 @@ public final class MultiFields extends Fields {
       } else if (fields.size() == 1) {
         return fields.get(0);
       } else {
-        return new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
+        return new MultiFields(fields.toArray(InvertedFields.EMPTY_ARRAY),
                                        slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
       }
     }
@@ -130,7 +130,7 @@ public final class MultiFields extends Fields {
 
   /**  This method may return null if the field does not exist.*/
   public static Terms getTerms(IndexReader r, String field) throws IOException {
-    final Fields fields = getFields(r);
+    final InvertedFields fields = getFields(r);
     if (fields == null) {
       return null;
     } else {
@@ -170,7 +170,7 @@ public final class MultiFields extends Fields {
     return null;
   }
 
-  public MultiFields(Fields[] subs, ReaderUtil.Slice[] subSlices) {
+  public MultiFields(InvertedFields[] subs, ReaderUtil.Slice[] subSlices) {
     this.subs = subs;
     this.subSlices = subSlices;
   }

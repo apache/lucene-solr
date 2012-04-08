@@ -47,7 +47,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @lucene.experimental
  */
 
-public class BlockTermsWriter extends FieldsConsumer {
+public class BlockTermsWriter extends InvertedFieldsConsumer {
 
   final static String CODEC_NAME = "BLOCK_TERMS_DICT";
 

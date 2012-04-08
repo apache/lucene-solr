@@ -19,8 +19,8 @@ package org.apache.lucene.misc;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
@@ -115,7 +115,7 @@ public class HighFreqTerms {
     TermStatsQueue tiq = null;
     
     if (field != null) {
-      Fields fields = MultiFields.getFields(reader);
+      InvertedFields fields = MultiFields.getFields(reader);
       if (fields == null) {
         throw new RuntimeException("field " + field + " not found");
       }
@@ -126,7 +126,7 @@ public class HighFreqTerms {
         fillQueue(termsEnum, tiq, field);
       }
     } else {
-      Fields fields = MultiFields.getFields(reader);
+      InvertedFields fields = MultiFields.getFields(reader);
       if (fields == null) {
         throw new RuntimeException("no fields found for this index");
       }

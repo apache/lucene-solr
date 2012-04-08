@@ -75,7 +75,7 @@ public class TestSumDocFreq extends LuceneTestCase {
   
   private void assertSumDocFreq(IndexReader ir) throws Exception {
     // compute sumDocFreq across all fields
-    Fields fields = MultiFields.getFields(ir);
+    InvertedFields fields = MultiFields.getFields(ir);
     FieldsEnum fieldEnum = fields.iterator();
     String f = null;
     while ((f = fieldEnum.next()) != null) {

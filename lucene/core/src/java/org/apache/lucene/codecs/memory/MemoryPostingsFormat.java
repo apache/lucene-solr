@@ -24,8 +24,8 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.InvertedFieldsConsumer;
+import org.apache.lucene.codecs.InvertedFieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
@@ -283,12 +283,12 @@ public class MemoryPostingsFormat extends PostingsFormat {
   private static String EXTENSION = "ram";
 
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public InvertedFieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
 
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, state.segmentSuffix, EXTENSION);
     final IndexOutput out = state.directory.createOutput(fileName, state.context);
     
-    return new FieldsConsumer() {
+    return new InvertedFieldsConsumer() {
       @Override
       public TermsConsumer addField(FieldInfo field) {
         //System.out.println("\naddField field=" + field.name);
@@ -840,7 +840,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public InvertedFieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
     final IndexInput in = state.dir.openInput(fileName, IOContext.READONCE);
 
@@ -860,7 +860,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       in.close();
     }
 
-    return new FieldsProducer() {
+    return new InvertedFieldsProducer() {
       @Override
       public FieldsEnum iterator() {
         final Iterator<TermsReader> iter = fields.values().iterator();

@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.InvertedFieldsProducer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -49,7 +49,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * @deprecated (4.0)
  */
 @Deprecated
-class Lucene3xFields extends FieldsProducer {
+class Lucene3xFields extends InvertedFieldsProducer {
   
   private static final boolean DEBUG_SURROGATES = false;
 
@@ -59,17 +59,13 @@ class Lucene3xFields extends FieldsProducer {
   public final IndexInput freqStream;
   public final IndexInput proxStream;
   final private FieldInfos fieldInfos;
-  private final SegmentInfo si;
   final TreeMap<String,FieldInfo> fields = new TreeMap<String,FieldInfo>();
   final Map<String,Terms> preTerms = new HashMap<String,Terms>();
   private final Directory dir;
-  private final IOContext context;
   private Directory cfsReader;
 
   public Lucene3xFields(Directory dir, FieldInfos fieldInfos, SegmentInfo info, IOContext context, int indexDivisor)
     throws IOException {
-
-    si = info;
 
     // NOTE: we must always load terms index, even for
     // "sequential" scan during merging, because what is
@@ -88,7 +84,6 @@ class Lucene3xFields extends FieldsProducer {
         tisNoIndex = null;
         tis = r;
       }
-      this.context = context;
       this.fieldInfos = fieldInfos;
 
       // make sure that all index files have been read or are kept open

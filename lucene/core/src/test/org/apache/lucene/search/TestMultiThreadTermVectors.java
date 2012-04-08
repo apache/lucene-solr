@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -154,7 +154,6 @@ class MultiThreadTermVectorsReader implements Runnable {
       catch (Exception e) {
         e.printStackTrace();
       }
-      return;
   }
   
   private void testTermVectors() throws Exception {
@@ -163,7 +162,7 @@ class MultiThreadTermVectorsReader implements Runnable {
     long start = 0L;
     for (int docId = 0; docId < numDocs; docId++) {
       start = System.currentTimeMillis();
-      Fields vectors = reader.getTermVectors(docId);
+      InvertedFields vectors = reader.getTermVectors(docId);
       timeElapsed += System.currentTimeMillis()-start;
       
       // verify vectors result
@@ -177,7 +176,7 @@ class MultiThreadTermVectorsReader implements Runnable {
     }
   }
   
-  private void verifyVectors(Fields vectors, int num) throws IOException {
+  private void verifyVectors(InvertedFields vectors, int num) throws IOException {
     FieldsEnum fieldsEnum = vectors.iterator();
     while(fieldsEnum.next() != null) {
       Terms terms = fieldsEnum.terms();

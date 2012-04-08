@@ -85,7 +85,7 @@ import org.apache.lucene.util.fst.Util;
  * @lucene.experimental
  */
 
-public class BlockTreeTermsReader extends FieldsProducer {
+public class BlockTreeTermsReader extends InvertedFieldsProducer {
 
   // Open input to the main terms dict file (_X.tib)
   private final IndexInput in;

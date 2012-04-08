@@ -23,7 +23,7 @@ import java.util.Comparator;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.MergeState;
@@ -231,7 +231,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   }
 
   @Override
-  public final int merge(MergeState mergeState) throws IOException {
+  public int merge(MergeState mergeState) throws IOException {
     // Used for bulk-reading raw bytes for term vectors
     int rawDocLengths[] = new int[MAX_RAW_MERGE_DOCS];
     int rawDocLengths2[] = new int[MAX_RAW_MERGE_DOCS];
@@ -309,7 +309,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
         
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Fields vectors = reader.reader.getTermVectors(docNum);
+        InvertedFields vectors = reader.reader.getTermVectors(docNum);
         addAllDocVectors(vectors, mergeState.fieldInfos);
         totalNumDocs++;
         mergeState.checkAbort.work(300);
@@ -339,7 +339,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
       for (int docNum = 0; docNum < maxDoc; docNum++) {
         // NOTE: it's very important to first assign to vectors then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Fields vectors = reader.reader.getTermVectors(docNum);
+        InvertedFields vectors = reader.reader.getTermVectors(docNum);
         addAllDocVectors(vectors, mergeState.fieldInfos);
         mergeState.checkAbort.work(300);
       }

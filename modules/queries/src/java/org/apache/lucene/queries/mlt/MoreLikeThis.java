@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
@@ -705,7 +705,7 @@ public final class MoreLikeThis {
   public PriorityQueue<Object[]> retrieveTerms(int docNum) throws IOException {
     Map<String, Int> termFreqMap = new HashMap<String, Int>();
     for (String fieldName : fieldNames) {
-      final Fields vectors = ir.getTermVectors(docNum);
+      final InvertedFields vectors = ir.getTermVectors(docNum);
       final Terms vector;
       if (vectors != null) {
         vector = vectors.terms(fieldName);

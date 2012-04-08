@@ -18,7 +18,7 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.InvertedFieldsConsumer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
@@ -30,7 +30,7 @@ import org.apache.lucene.store.IndexOutput;
 import java.io.IOException;
 import java.util.Comparator;
 
-class SimpleTextFieldsWriter extends FieldsConsumer {
+class SimpleTextFieldsWriter extends InvertedFieldsConsumer {
   
   private final IndexOutput out;
   private final BytesRef scratch = new BytesRef(10);

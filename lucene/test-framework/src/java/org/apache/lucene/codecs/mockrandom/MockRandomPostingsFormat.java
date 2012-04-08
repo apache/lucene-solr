@@ -28,8 +28,8 @@ import org.apache.lucene.codecs.BlockTermsReader;
 import org.apache.lucene.codecs.BlockTermsWriter;
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.InvertedFieldsConsumer;
+import org.apache.lucene.codecs.InvertedFieldsProducer;
 import org.apache.lucene.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -126,7 +126,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public InvertedFieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     // we pull this before the seed intentionally: because its not consumed at runtime
     // (the skipInterval is written into postings header)
     int skipInterval = _TestUtil.nextInt(seedRandom, 2, 10);
@@ -171,7 +171,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
       postingsWriter = new PulsingPostingsWriter(totTFCutoff, postingsWriter);
     }
 
-    final FieldsConsumer fields;
+    final InvertedFieldsConsumer fields;
 
     if (random.nextBoolean()) {
       // Use BlockTree terms dict
@@ -270,7 +270,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public InvertedFieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
     final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
     final IndexInput in = state.dir.openInput(seedFileName, state.context);
@@ -310,7 +310,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
       postingsReader = new PulsingPostingsReader(postingsReader);
     }
 
-    final FieldsProducer fields;
+    final InvertedFieldsProducer fields;
 
     if (random.nextBoolean()) {
       // Use BlockTree terms dict

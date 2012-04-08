@@ -24,7 +24,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
- * Access to the terms in a specific field.  See {@link Fields}.
+ * Access to the terms in a specific field.  See {@link InvertedFields}.
  * @lucene.experimental
  */
 

@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -85,7 +85,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     final AtomicReader reader = context.reader();
-    final Fields fields = reader.fields();
+    final InvertedFields fields = reader.fields();
     if (fields == null) {
       // reader has no fields
       return DocIdSet.EMPTY_DOCIDSET;

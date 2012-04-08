@@ -41,7 +41,7 @@ import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -750,7 +750,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     writer.close();
     Directory dir = benchmark.getRunData().getDirectory();
     IndexReader reader = IndexReader.open(dir);
-    Fields tfv = reader.getTermVectors(0);
+    InvertedFields tfv = reader.getTermVectors(0);
     assertNotNull(tfv);
     assertTrue(tfv.getUniqueFieldCount() > 0);
     reader.close();

@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.InvertedFieldsConsumer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
@@ -316,7 +316,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   /* Walk through all unique text tokens (Posting
    * instances) found in this field and serialize them
    * into a single RAM segment. */
-  void flush(String fieldName, FieldsConsumer consumer,  final SegmentWriteState state)
+  void flush(String fieldName, InvertedFieldsConsumer consumer,  final SegmentWriteState state)
     throws CorruptIndexException, IOException {
 
     final TermsConsumer termsConsumer = consumer.addField(fieldInfo);

@@ -19,10 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ReaderUtil;         // for javadocs
 
 /** {@code AtomicReader} is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -74,15 +72,15 @@ public abstract class AtomicReader extends IndexReader {
   }
 
   /**
-   * Returns {@link Fields} for this reader.
+   * Returns {@link InvertedFields} for this reader.
    * This method may return null if the reader has no
    * postings.
    */
-  public abstract Fields fields() throws IOException;
+  public abstract InvertedFields fields() throws IOException;
   
   @Override
   public final int docFreq(String field, BytesRef term) throws IOException {
-    final Fields fields = fields();
+    final InvertedFields fields = fields();
     if (fields == null) {
       return 0;
     }
@@ -104,7 +102,7 @@ public abstract class AtomicReader extends IndexReader {
    * account deleted documents that have not yet been merged
    * away. */
   public final long totalTermFreq(String field, BytesRef term) throws IOException {
-    final Fields fields = fields();
+    final InvertedFields fields = fields();
     if (fields == null) {
       return 0;
     }
@@ -122,7 +120,7 @@ public abstract class AtomicReader extends IndexReader {
 
   /** This may return null if the field does not exist.*/
   public final Terms terms(String field) throws IOException {
-    final Fields fields = fields();
+    final InvertedFields fields = fields();
     if (fields == null) {
       return null;
     }
@@ -135,7 +133,7 @@ public abstract class AtomicReader extends IndexReader {
   public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, boolean needsFreqs) throws IOException {
     assert field != null;
     assert term != null;
-    final Fields fields = fields();
+    final InvertedFields fields = fields();
     if (fields != null) {
       final Terms terms = fields.terms(field);
       if (terms != null) {
@@ -155,7 +153,7 @@ public abstract class AtomicReader extends IndexReader {
   public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, boolean needsOffsets) throws IOException {
     assert field != null;
     assert term != null;
-    final Fields fields = fields();
+    final InvertedFields fields = fields();
     if (fields != null) {
       final Terms terms = fields.terms(field);
       if (terms != null) {
@@ -176,7 +174,7 @@ public abstract class AtomicReader extends IndexReader {
   public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsFreqs) throws IOException {
     assert state != null;
     assert field != null;
-    final Fields fields = fields();
+    final InvertedFields fields = fields();
     if (fields != null) {
       final Terms terms = fields.terms(field);
       if (terms != null) {
@@ -197,7 +195,7 @@ public abstract class AtomicReader extends IndexReader {
   public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsOffsets) throws IOException {
     assert state != null;
     assert field != null;
-    final Fields fields = fields();
+    final InvertedFields fields = fields();
     if (fields != null) {
       final Terms terms = fields.terms(field);
       if (terms != null) {
@@ -213,7 +211,7 @@ public abstract class AtomicReader extends IndexReader {
    *  in this reader.
    */
   public final long getUniqueTermCount() throws IOException {
-    final Fields fields = fields();
+    final InvertedFields fields = fields();
     if (fields == null) {
       return 0;
     }

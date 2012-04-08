@@ -28,8 +28,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
@@ -1698,7 +1696,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
 
   public int getFirstMatch(IndexReader r, Term t) throws IOException {
-    Fields fields = MultiFields.getFields(r);
+    InvertedFields fields = MultiFields.getFields(r);
     if (fields == null) return -1;
     Terms terms = fields.terms(t.field());
     if (terms == null) return -1;

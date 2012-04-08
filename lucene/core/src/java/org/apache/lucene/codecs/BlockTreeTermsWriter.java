@@ -83,7 +83,7 @@ import org.apache.lucene.util.fst.Util;
  * @lucene.experimental
 */
 
-public class BlockTreeTermsWriter extends FieldsConsumer {
+public class BlockTreeTermsWriter extends InvertedFieldsConsumer {
 
   public final static int DEFAULT_MIN_BLOCK_SIZE = 25;
   public final static int DEFAULT_MAX_BLOCK_SIZE = 48;

@@ -357,7 +357,7 @@ class BufferedDeletesStream {
   // Delete by Term
   private synchronized long applyTermDeletes(Iterable<Term> termsIter, ReadersAndLiveDocs rld, SegmentReader reader) throws IOException {
     long delCount = 0;
-    Fields fields = reader.fields();
+    InvertedFields fields = reader.fields();
     if (fields == null) {
       // This reader has no postings
       return 0;

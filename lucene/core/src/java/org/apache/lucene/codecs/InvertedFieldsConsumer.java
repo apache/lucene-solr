@@ -21,7 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.Terms;
@@ -33,7 +33,7 @@ import org.apache.lucene.index.Terms;
  *
  * @lucene.experimental
  */
-public abstract class FieldsConsumer implements Closeable {
+public abstract class InvertedFieldsConsumer implements Closeable {
 
   /** Add a new field */
   public abstract TermsConsumer addField(FieldInfo field) throws IOException;
@@ -41,7 +41,7 @@ public abstract class FieldsConsumer implements Closeable {
   /** Called when we are done adding everything. */
   public abstract void close() throws IOException;
 
-  public void merge(MergeState mergeState, Fields fields) throws IOException {
+  public void merge(MergeState mergeState, InvertedFields fields) throws IOException {
     FieldsEnum fieldsEnum = fields.iterator();
     assert fieldsEnum != null;
     String field;

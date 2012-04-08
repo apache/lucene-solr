@@ -60,7 +60,7 @@ public class TestDocCount extends LuceneTestCase {
   }
   
   private void verifyCount(IndexReader ir) throws Exception {
-    Fields fields = MultiFields.getFields(ir);
+    InvertedFields fields = MultiFields.getFields(ir);
     if (fields == null) {
       return;
     }

@@ -701,11 +701,11 @@ public class CheckIndex {
   }
 
   /**
-   * checks Fields api is consistent with itself.
+   * checks InvertedFields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
   // TODO: cutover term vectors to this!
-  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, IndexSearcher searcher) throws IOException {
+  private Status.TermIndexStatus checkFields(InvertedFields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, IndexSearcher searcher) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
@@ -1003,7 +1003,7 @@ public class CheckIndex {
         // make sure TermsEnum is empty:
         final Terms fieldTerms2 = fieldsEnum.terms();
         if (fieldTerms2 != null && fieldTerms2.iterator(null).next() != null) {
-          throw new RuntimeException("Fields.terms(field=" + field + ") returned null yet the field appears to have terms");
+          throw new RuntimeException("InvertedFields.terms(field=" + field + ") returned null yet the field appears to have terms");
         }
       } else {
         if (fieldTerms instanceof BlockTreeTermsReader.FieldReader) {
@@ -1160,7 +1160,7 @@ public class CheckIndex {
         infoStream.print("    test: terms, freq, prox...");
       }
 
-      final Fields fields = reader.fields();
+      final InvertedFields fields = reader.fields();
       status = checkFields(fields, liveDocs, maxDoc, fieldInfos, is);
       if (liveDocs != null) {
         if (infoStream != null) {
@@ -1328,7 +1328,7 @@ public class CheckIndex {
         }
       }
 
-      msg("OK [" + status.docCount + " total doc Count; Num DocValues Fields "
+      msg("OK [" + status.docCount + " total doc Count; Num DocValues InvertedFields "
           + status.totalValueFields);
     } catch (Throwable e) {
       msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
@@ -1362,7 +1362,7 @@ public class CheckIndex {
 
       final Bits liveDocs = reader.getLiveDocs();
 
-      final Fields postingsFields;
+      final InvertedFields postingsFields;
       // TODO: testTermsIndex
       if (crossCheckTermVectors) {
         postingsFields = reader.fields();
@@ -1377,7 +1377,7 @@ public class CheckIndex {
         // Intentionally pull/visit (but don't count in
         // stats) deleted documents to make sure they too
         // are not corrupt:
-        Fields tfv = reader.getTermVectors(j);
+        InvertedFields tfv = reader.getTermVectors(j);
 
         // TODO: can we make a IS(FIR) that searches just
         // this term vector... to pass for searcher?
