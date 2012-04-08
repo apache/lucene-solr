@@ -19,17 +19,15 @@ import shutil
 import os
 import sys
 
-# Usage: python -u buildRelease.py /path/to/checkout version(eg: 3.4.0) gpgKey(eg: 6E68DA61) rcNum user [-prepare] [-push]
+# Usage: python -u buildRelease.py [-sign gpgKey(eg: 6E68DA61)] [-prepare] [-push userName] [-pushLocal dirName] [-smoke tmpDir] /path/to/checkout version(eg: 3.4.0) rcNum(eg: 0)
 #
-# EG: python -u buildRelease.py -prepare -push /lucene/34x 3.4.0 6E68DA61 1 mikemccand
-# 
+# EG: python -u buildRelease.py -prepare -push -sign 6E68DA61 mikemccand /lucene/34x 3.4.0 0
 
-# TODO: also run smokeTestRelease.py?
-
-# NOTE: you have to type in your gpg password at some point while this
-# runs; it's VERY confusing because the output is directed to
-# /tmp/release.log, so, you have to tail that and when GPG wants your
-# password, type it!
+# NOTE: if you specify -sign, you have to type in your gpg password at
+# some point while this runs; it's VERY confusing because the output
+# is directed to /tmp/release.log, so, you have to tail that and when
+# GPG wants your password, type it!  Also sometimes you have to type
+# it twice in a row!
 
 LOG = '/tmp/release.log'
 
@@ -70,7 +68,7 @@ def getSVNRev():
   return rev
   
 
-def prepare(root, version, gpgKeyID):
+def prepare(root, version, gpgKeyID, doTest):
   print
   print 'Prepare release...'
   if os.path.exists(LOG):
@@ -84,8 +82,10 @@ def prepare(root, version, gpgKeyID):
   print '  svn rev: %s' % rev
   log('\nSVN rev: %s\n' % rev)
 
-  print '  ant clean test'
-  run('ant clean test')
+  if doTest:
+    # Don't run tests if we are gonna smoke test after the release...
+    print '  ant clean test'
+    run('ant clean test')
 
   print '  clean checkout'
   scrubCheckout()
@@ -93,10 +93,21 @@ def prepare(root, version, gpgKeyID):
   
   print '  lucene prepare-release'
   os.chdir('lucene')
-  run('ant -Dversion=%s -Dspecversion=%s -Dgpg.key=%s prepare-release' % (version, version, gpgKeyID))
+  cmd = 'ant -Dversion=%s -Dspecversion=%s' % (version, version)
+  if gpgKeyID is not None:
+    cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
+  else:
+    cmd += ' prepare-release-no-sign'
+  run(cmd)
+  
   print '  solr prepare-release'
   os.chdir('../solr')
-  run('ant -Dversion=%s -Dspecversion=%s -Dgpg.key=%s prepare-release' % (version, version, gpgKeyID))
+  cmd = 'ant -Dversion=%s -Dspecversion=%s' % (version, version)
+  if gpgKeyID is not None:
+    cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
+  else:
+    cmd += ' prepare-release-no-sign'
+  run(cmd)
   print '  done!'
   print
   return rev
@@ -149,30 +160,134 @@ def push(version, root, rev, rcNum, username):
   print '  chmod...'
   run('ssh %s@people.apache.org "chmod -R a+rX-w public_html/staging_area/%s"' % (username, dir))
 
-  print '  done!  URL: https://people.apache.org/~%s/staging_area/%s' % (username, dir)
+  print '  done!'
+  url = 'https://people.apache.org/~%s/staging_area/%s' % (username, dir)
+  return url
 
+def pushLocal(version, root, rev, rcNum, localDir):
+  print 'Push local [%s]...' % localDir
+  os.makedirs(localDir)
+
+  dir = 'lucene-solr-%s-RC%d-rev%s' % (version, rcNum, rev)
+  os.makedirs('%s/%s/lucene' % (localDir, dir))
+  os.makedirs('%s/%s/solr' % (localDir, dir))
+  print '  Lucene'
+  os.chdir('%s/lucene/dist' % root)
+  print '    zip...'
+  if os.path.exists('lucene.tar.bz2'):
+    os.remove('lucene.tar.bz2')
+  run('tar cjf lucene.tar.bz2 *')
+
+  os.chdir('%s/%s/lucene' % (localDir, dir))
+  print '    unzip...'
+  run('tar xjf "%s/lucene/dist/lucene.tar.bz2"' % root)
+  os.remove('%s/lucene/dist/lucene.tar.bz2' % root)
+  print '    copy changes...'
+  run('cp -r "%s/lucene/build/docs/changes" changes-%s' % (root, version))
+
+  print '  Solr'
+  os.chdir('%s/solr/package' % root)
+  print '    zip...'
+  if os.path.exists('solr.tar.bz2'):
+    os.remove('solr.tar.bz2')
+  run('tar cjf solr.tar.bz2 *')
+  print '    unzip...'
+  os.chdir('%s/%s/solr' % (localDir, dir))
+  run('tar xjf "%s/solr/package/solr.tar.bz2"' % root)
+  os.remove('%s/solr/package/solr.tar.bz2' % root)
+
+  print '  KEYS'
+  run('wget http://people.apache.org/keys/group/lucene.asc')
+  os.rename('lucene.asc', 'KEYS')
+  run('chmod a+r-w KEYS')
+  run('cp KEYS ../lucene')
+
+  print '  chmod...'
+  os.chdir('..')
+  run('chmod -R a+rX-w .')
+
+  print '  done!'
+  return 'file://%s/%s' % (os.path.abspath(localDir), dir)
   
 def main():
   doPrepare = '-prepare' in sys.argv
   if doPrepare:
     sys.argv.remove('-prepare')
-  doPush = '-push' in sys.argv
-  if doPush:
-    sys.argv.remove('-push')
+
+  try:
+    idx = sys.argv.index('-push')
+  except ValueError:
+    doPushRemote = False
+  else:
+    doPushRemote = True
+    username = sys.argv[idx+1]
+    del sys.argv[idx:idx+2]
+
+  try:
+    idx = sys.argv.index('-smoke')
+  except ValueError:
+    smokeTmpDir = None
+  else:
+    smokeTmpDir = sys.argv[idx+1]
+    del sys.argv[idx:idx+2]
+    if os.path.exists(smokeTmpDir):
+      print
+      print 'ERROR: smoke tmpDir "%s" exists; please remove first' % smokeTmpDir
+      print
+      sys.exit(1)
+    
+  try:
+    idx = sys.argv.index('-pushLocal')
+  except ValueError:
+    doPushLocal = False
+  else:
+    doPushLocal = True
+    localStagingDir = sys.argv[idx+1]
+    del sys.argv[idx:idx+2]
+    if os.path.exists(localStagingDir):
+      print
+      print 'ERROR: pushLocal dir "%s" exists; please remove first' % localStagingDir
+      print
+      sys.exit(1)
+
+  if doPushRemote and doPushLocal:
+    print
+    print 'ERROR: specify at most one of -push or -pushLocal (got both)'
+    print
+    sys.exit(1)
+
+  try:
+    idx = sys.argv.index('-sign')
+  except ValueError:
+    gpgKeyID = None
+  else:
+    gpgKeyID = sys.argv[idx+1]
+    del sys.argv[idx:idx+2]
+    
   root = os.path.abspath(sys.argv[1])
   version = sys.argv[2]
-  gpgKeyID = sys.argv[3]
-  rcNum = int(sys.argv[4])
-  username = sys.argv[5]
+  rcNum = int(sys.argv[3])
 
   if doPrepare:
-    rev = prepare(root, version, gpgKeyID)
+    rev = prepare(root, version, gpgKeyID, smokeTmpDir is None)
   else:
     os.chdir(root)
     rev = open('rev.txt').read()
 
-  if doPush:
-    push(version, root, rev, rcNum, username)
+  if doPushRemote:
+    url = push(version, root, rev, rcNum, username)
+  elif doPushLocal:
+    url = pushLocal(version, root, rev, rcNum, localStagingDir)
+  else:
+    url = NOne
+
+  if url is not None:
+    print '  URL: %s' % url
+
+  if smokeTmpDir is not None:
+    import smokeTestRelease
+    smokeTestRelease.DEBUG = False
+    smokeTestRelease.smokeTest(url, version, smokeTmpDir, gpgKeyID is not None)
     
 if __name__ == '__main__':
   main()

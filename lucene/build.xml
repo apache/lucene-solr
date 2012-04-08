@@ -452,7 +452,8 @@
     <copy-to-stage-macro artifacts.dir="${dist.dir}"/>
   </target>
 
-  <target name="prepare-release" depends="clean, dist-all, generate-maven-artifacts, sign-artifacts"/>
+  <target name="prepare-release-no-sign" depends="clean, dist-all, generate-maven-artifacts"/>
+  <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
   <target name="stage" depends="prepare-release, copy-to-stage">
 
   </target>

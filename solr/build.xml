@@ -330,8 +330,8 @@
     </ant>
   </target>
 
-	<target name="prepare-release"
-          depends="clean, package, generate-maven-artifacts, sign-artifacts"/>
+  <target name="prepare-release-no-sign" depends="clean, package, generate-maven-artifacts"/>
+  <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  
   <!-- make a distribution -->
   <target name="package" depends="package-src-tgz,create-package"/>
