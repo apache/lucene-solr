@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.InvertedFields;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -70,7 +70,7 @@ public class TokenSources {
       String field, Document doc, Analyzer analyzer) throws IOException {
     TokenStream ts = null;
 
-    InvertedFields vectors = reader.getTermVectors(docId);
+    Fields vectors = reader.getTermVectors(docId);
     if (vectors != null) {
       Terms vector = vectors.terms(field);
       if (vector != null) {
@@ -102,7 +102,7 @@ public class TokenSources {
       String field, Analyzer analyzer) throws IOException {
     TokenStream ts = null;
 
-    InvertedFields vectors = reader.getTermVectors(docId);
+    Fields vectors = reader.getTermVectors(docId);
     if (vectors != null) {
       Terms vector = vectors.terms(field);
       if (vector != null) {
@@ -275,7 +275,7 @@ public class TokenSources {
   public static TokenStream getTokenStream(IndexReader reader, int docId,
       String field) throws IOException {
 
-    InvertedFields vectors = reader.getTermVectors(docId);
+    Fields vectors = reader.getTermVectors(docId);
     if (vectors == null) {
       throw new IllegalArgumentException(field + " in doc #" + docId
           + "does not have any term position data stored");

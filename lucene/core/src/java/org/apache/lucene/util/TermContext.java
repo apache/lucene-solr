@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.InvertedFields;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
@@ -89,7 +89,7 @@ public final class TermContext {
     //if (DEBUG) System.out.println("prts.build term=" + term);
     for (int i = 0; i < leaves.length; i++) {
       //if (DEBUG) System.out.println("  r=" + leaves[i].reader);
-      final InvertedFields fields = leaves[i].reader().fields();
+      final Fields fields = leaves[i].reader().fields();
       if (fields != null) {
         final Terms terms = fields.terms(field);
         if (terms != null) {

@@ -222,7 +222,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
   public static int[] toDocsArray(Term term, Bits bits, IndexReader reader)
       throws IOException {
-    InvertedFields fields = MultiFields.getFields(reader);
+    Fields fields = MultiFields.getFields(reader);
     Terms cterms = fields.terms(term.field);
     TermsEnum ctermsEnum = cterms.iterator(null);
     if (ctermsEnum.seekExact(new BytesRef(term.text()), false)) {

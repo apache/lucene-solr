@@ -157,10 +157,10 @@ public class TestDuelingCodecs extends LuceneTestCase {
   }
   
   /** 
-   * InvertedFields api equivalency
+   * Fields api equivalency 
    */
-  public void assertFields(InvertedFields leftFields, InvertedFields rightFields, boolean deep) throws Exception {
-    // InvertedFields could be null if there are no postings,
+  public void assertFields(Fields leftFields, Fields rightFields, boolean deep) throws Exception {
+    // Fields could be null if there are no postings,
     // but then it must be null for both
     if (leftFields == null || rightFields == null) {
       assertNull(info, leftFields);
@@ -181,9 +181,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
   }
   
   /** 
-   * checks that top-level statistics on InvertedFields are the same
+   * checks that top-level statistics on Fields are the same 
    */
-  public void assertFieldStatistics(InvertedFields leftFields, InvertedFields rightFields) throws Exception {
+  public void assertFieldStatistics(Fields leftFields, Fields rightFields) throws Exception {
     if (leftFields.getUniqueFieldCount() != -1 && rightFields.getUniqueFieldCount() != -1) {
       assertEquals(info, leftFields.getUniqueFieldCount(), rightFields.getUniqueFieldCount());
     }
@@ -448,9 +448,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
    * checks that norms are the same across all fields 
    */
   public void assertNorms(IndexReader leftReader, IndexReader rightReader) throws Exception {
-    InvertedFields leftFields = MultiFields.getFields(leftReader);
-    InvertedFields rightFields = MultiFields.getFields(rightReader);
-    // InvertedFields could be null if there are no postings,
+    Fields leftFields = MultiFields.getFields(leftReader);
+    Fields rightFields = MultiFields.getFields(rightReader);
+    // Fields could be null if there are no postings,
     // but then it must be null for both
     if (leftFields == null || rightFields == null) {
       assertNull(info, leftFields);
@@ -522,8 +522,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
   public void assertTermVectors(IndexReader leftReader, IndexReader rightReader) throws Exception {
     assert leftReader.maxDoc() == rightReader.maxDoc();
     for (int i = 0; i < leftReader.maxDoc(); i++) {
-      InvertedFields leftFields = leftReader.getTermVectors(i);
-      InvertedFields rightFields = rightReader.getTermVectors(i);
+      Fields leftFields = leftReader.getTermVectors(i);
+      Fields rightFields = rightReader.getTermVectors(i);
       assertFields(leftFields, rightFields, rarely());
     }
   }

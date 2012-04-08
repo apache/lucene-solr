@@ -114,9 +114,9 @@ public final class ParallelAtomicReader extends AtomicReader {
       }
     }
     
-    // build InvertedFields instance
+    // build Fields instance
     for (final AtomicReader reader : this.parallelReaders) {
-      final InvertedFields readerFields = reader.fields();
+      final Fields readerFields = reader.fields();
       if (readerFields != null) {
         final FieldsEnum it = readerFields.iterator();
         String name;
@@ -176,7 +176,7 @@ public final class ParallelAtomicReader extends AtomicReader {
   }
   
   // Single instance of this, per ParallelReader instance
-  private final class ParallelFields extends InvertedFields {
+  private final class ParallelFields extends Fields {
     final Map<String,Terms> fields = new TreeMap<String,Terms>();
     
     ParallelFields() {
@@ -214,7 +214,7 @@ public final class ParallelAtomicReader extends AtomicReader {
   }
   
   @Override
-  public InvertedFields fields() {
+  public Fields fields() {
     ensureOpen();
     return fields;
   }
@@ -246,7 +246,7 @@ public final class ParallelAtomicReader extends AtomicReader {
   }
   
   @Override
-  public InvertedFields getTermVectors(int docID) throws IOException {
+  public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
     ParallelFields fields = null;
     for (Map.Entry<String,AtomicReader> ent : tvFieldToReader.entrySet()) {

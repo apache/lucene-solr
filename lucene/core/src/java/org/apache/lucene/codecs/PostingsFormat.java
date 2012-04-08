@@ -49,12 +49,12 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   }
   
   /** Writes a new segment */
-  public abstract InvertedFieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
+  public abstract FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
 
   /** Reads a segment.  NOTE: by the time this call
    *  returns, it must hold open any files it will need to
    *  use; else, those files may be deleted. */
-  public abstract InvertedFieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
+  public abstract FieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
 
   /**
    * Gathers files associated with this segment

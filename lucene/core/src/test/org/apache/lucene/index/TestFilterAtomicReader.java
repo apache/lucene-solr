@@ -37,7 +37,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
 
     /** Filter that only permits terms containing 'e'.*/
     private static class TestFields extends FilterFields {
-      TestFields(InvertedFields in) {
+      TestFields(Fields in) {
         super(in);
       }
       @Override
@@ -117,7 +117,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     }
 
     @Override
-    public InvertedFields fields() throws IOException {
+    public Fields fields() throws IOException {
       return new TestFields(super.fields());
     }
   }

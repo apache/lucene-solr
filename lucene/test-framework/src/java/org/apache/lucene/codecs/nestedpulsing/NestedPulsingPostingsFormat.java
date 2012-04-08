@@ -22,8 +22,8 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
-import org.apache.lucene.codecs.InvertedFieldsConsumer;
-import org.apache.lucene.codecs.InvertedFieldsProducer;
+import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
@@ -48,7 +48,7 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
   }
   
   @Override
-  public InvertedFieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase docsWriter = new Lucene40PostingsWriter(state);
 
     PostingsWriterBase pulsingWriterInner = new PulsingPostingsWriter(2, docsWriter);
@@ -57,7 +57,7 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
     // Terms dict
     boolean success = false;
     try {
-      InvertedFieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter,
+      FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, 
           BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
       success = true;
       return ret;
@@ -69,13 +69,13 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public InvertedFieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
     PostingsReaderBase pulsingReaderInner = new PulsingPostingsReader(docsReader);
     PostingsReaderBase pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
     boolean success = false;
     try {
-      InvertedFieldsProducer ret = new BlockTreeTermsReader(
+      FieldsProducer ret = new BlockTreeTermsReader(
                                                     state.dir, state.fieldInfos, state.segmentInfo.name,
                                                     pulsingReader,
                                                     state.context,

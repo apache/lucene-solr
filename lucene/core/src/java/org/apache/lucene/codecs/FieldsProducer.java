@@ -20,7 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.index.InvertedFields;
+import org.apache.lucene.index.Fields;
 
 /** Abstract API that produces terms, doc, freq, prox and
  *  payloads postings.  
@@ -28,6 +28,6 @@ import org.apache.lucene.index.InvertedFields;
  * @lucene.experimental
  */
 
-public abstract class InvertedFieldsProducer extends InvertedFields implements Closeable {
+public abstract class FieldsProducer extends Fields implements Closeable {
   public abstract void close() throws IOException;
 }

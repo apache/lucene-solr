@@ -200,7 +200,7 @@ public class DocTermOrds {
     }
     if (indexedTermsArray == null) {
       //System.out.println("GET normal enum");
-      final InvertedFields fields = reader.fields();
+      final Fields fields = reader.fields();
       if (fields == null) {
         return null;
       }
@@ -241,7 +241,7 @@ public class DocTermOrds {
     final int[] lastTerm = new int[maxDoc];    // last term we saw for this document
     final byte[][] bytes = new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
 
-    final InvertedFields fields = reader.fields();
+    final Fields fields = reader.fields();
     if (fields == null) {
       // No terms
       return;

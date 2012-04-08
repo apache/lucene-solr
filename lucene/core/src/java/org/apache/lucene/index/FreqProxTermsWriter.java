@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.codecs.InvertedFieldsConsumer;
+import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
@@ -34,7 +34,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   void abort() {}
 
   // TODO: would be nice to factor out more of this, eg the
-  // FreqProxFieldMergeState, and code to visit all InvertedFields
+  // FreqProxFieldMergeState, and code to visit all Fields
   // under the same FieldInfo together, up into TermsHash*.
   // Other writers would presumably share alot of this...
 
@@ -57,7 +57,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     // Sort by field name
     CollectionUtil.quickSort(allFields);
 
-    final InvertedFieldsConsumer consumer = state.codec.postingsFormat().fieldsConsumer(state);
+    final FieldsConsumer consumer = state.codec.postingsFormat().fieldsConsumer(state);
 
     boolean success = false;
 
@@ -66,7 +66,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       
       /*
     Current writer chain:
-      InvertedFieldsConsumer
+      FieldsConsumer
         -> IMPL: FormatPostingsTermsDictWriter
           -> TermsConsumer
             -> IMPL: FormatPostingsTermsDictWriter.TermsWriter

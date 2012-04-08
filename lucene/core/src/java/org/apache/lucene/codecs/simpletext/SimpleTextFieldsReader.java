@@ -22,7 +22,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.codecs.InvertedFieldsProducer;
+import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -47,7 +47,7 @@ import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
-class SimpleTextFieldsReader extends InvertedFieldsProducer {
+class SimpleTextFieldsReader extends FieldsProducer {
 
   private final IndexInput in;
   private final FieldInfos fieldInfos;

@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.FilterAtomicReader;
+
 public final class FieldFilterAtomicReader extends FilterAtomicReader {
   
   private final Set<String> fields;
@@ -48,8 +50,8 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   }
 
   @Override
-  public InvertedFields getTermVectors(int docID) throws IOException {
-    InvertedFields f = super.getTermVectors(docID);
+  public Fields getTermVectors(int docID) throws IOException {
+    Fields f = super.getTermVectors(docID);
     if (f == null) {
       return null;
     }
@@ -99,8 +101,8 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   }
 
   @Override
-  public InvertedFields fields() throws IOException {
-    final InvertedFields f = super.fields();
+  public Fields fields() throws IOException {
+    final Fields f = super.fields();
     return (f == null) ? null : new FieldFilterFields(f);
   }
 
@@ -123,7 +125,7 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   }
   
   private class FieldFilterFields extends FilterFields {
-    public FieldFilterFields(InvertedFields in) {
+    public FieldFilterFields(Fields in) {
       super(in);
     }
 

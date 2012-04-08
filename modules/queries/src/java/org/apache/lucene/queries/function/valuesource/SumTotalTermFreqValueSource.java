@@ -18,12 +18,13 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.InvertedFields;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class SumTotalTermFreqValueSource extends ValueSource {
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     long sumTotalTermFreq = 0;
     for (AtomicReaderContext readerContext : searcher.getTopReaderContext().leaves()) {
-      InvertedFields fields = readerContext.reader().fields();
+      Fields fields = readerContext.reader().fields();
       if (fields == null) continue;
       Terms terms = fields.terms(indexedField);
       if (terms == null) continue;

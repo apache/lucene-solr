@@ -202,7 +202,7 @@ public class TestSegmentReader extends LuceneTestCase {
       assertTrue(freq > 0);
     }
 
-    InvertedFields results = reader.getTermVectors(0);
+    Fields results = reader.getTermVectors(0);
     assertTrue(results != null);
     assertEquals("We do not have 3 term freq vectors", 3, results.getUniqueFieldCount());      
   }    

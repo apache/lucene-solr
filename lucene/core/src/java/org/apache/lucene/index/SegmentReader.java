@@ -137,7 +137,7 @@ public final class SegmentReader extends AtomicReader {
   }
 
   @Override
-  public InvertedFields fields() throws IOException {
+  public Fields fields() throws IOException {
     ensureOpen();
     return core.fields;
   }
@@ -167,7 +167,7 @@ public final class SegmentReader extends AtomicReader {
    * @throws IOException
    */
   @Override
-  public InvertedFields getTermVectors(int docID) throws IOException {
+  public Fields getTermVectors(int docID) throws IOException {
     TermVectorsReader termVectorsReader = getTermVectorsReader();
     if (termVectorsReader == null) {
       return null;

@@ -313,7 +313,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     int[] r2r1 = new int[r2.maxDoc()];   // r2 id to r1 id mapping
 
     // create mapping from id2 space to id2 based on idField
-    final InvertedFields f1 = MultiFields.getFields(r1);
+    final Fields f1 = MultiFields.getFields(r1);
     if (f1 == null) {
       // make sure r2 is empty
       assertNull(MultiFields.getFields(r2));
@@ -330,7 +330,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     final Bits liveDocs1 = MultiFields.getLiveDocs(r1);
     final Bits liveDocs2 = MultiFields.getLiveDocs(r2);
     
-    InvertedFields fields = MultiFields.getFields(r2);
+    Fields fields = MultiFields.getFields(r2);
     if (fields == null) {
       // make sure r1 is in fact empty (eg has only all
       // deleted docs):
@@ -393,7 +393,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         verifyEquals(r1.getTermVectors(id1), r2.getTermVectors(id2));
       } catch (Throwable e) {
         System.out.println("FAILED id=" + term + " id1=" + id1 + " id2=" + id2);
-        InvertedFields tv1 = r1.getTermVectors(id1);
+        Fields tv1 = r1.getTermVectors(id1);
         System.out.println("  d1=" + tv1);
         if (tv1 != null) {
           FieldsEnum fieldsEnum = tv1.iterator();
@@ -427,7 +427,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
           }
         }
         
-        InvertedFields tv2 = r2.getTermVectors(id2);
+        Fields tv2 = r2.getTermVectors(id2);
         System.out.println("  d2=" + tv2);
         if (tv2 != null) {
           FieldsEnum fieldsEnum = tv2.iterator();
@@ -598,7 +598,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
     }
 
-  public static void verifyEquals(InvertedFields d1, InvertedFields d2) throws IOException {
+  public static void verifyEquals(Fields d1, Fields d2) throws IOException {
     if (d1 == null) {
       assertTrue(d2 == null || d2.getUniqueFieldCount() == 0);
       return;

@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.InvertedFieldsProducer;
+import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -50,7 +50,7 @@ final class SegmentCoreReaders {
   
   final FieldInfos fieldInfos;
   
-  final InvertedFieldsProducer fields;
+  final FieldsProducer fields;
   final PerDocProducer perDocProducer;
   final PerDocProducer norms;
 
@@ -148,7 +148,7 @@ final class SegmentCoreReaders {
     }
   }
   
-  private void notifyCoreClosedListeners() {
+  private final void notifyCoreClosedListeners() {
     synchronized(coreClosedListeners) {
       for (CoreClosedListener listener : coreClosedListeners) {
         listener.onClose(owner);

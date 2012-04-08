@@ -56,7 +56,7 @@ import org.apache.lucene.util.DoubleBarrelLRUCache;
  * implementation of the terms dict index. 
  * @lucene.experimental */
 
-public class BlockTermsReader extends InvertedFieldsProducer {
+public class BlockTermsReader extends FieldsProducer {
   // Open input to the main terms dict file (_X.tis)
   private final IndexInput in;
 

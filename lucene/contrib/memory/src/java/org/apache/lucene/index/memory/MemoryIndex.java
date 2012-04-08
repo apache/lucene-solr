@@ -35,13 +35,13 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.InvertedFields;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -58,6 +58,7 @@ import org.apache.lucene.store.RAMDirectory; // for javadocs
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants; // for javadocs
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -715,7 +716,7 @@ public class MemoryIndex {
       return fieldInfos;
     }
 
-    private class MemoryFields extends InvertedFields {
+    private class MemoryFields extends Fields {
       @Override
       public FieldsEnum iterator() {
         return new FieldsEnum() {
@@ -790,7 +791,7 @@ public class MemoryIndex {
     }
   
     @Override
-    public InvertedFields fields() {
+    public Fields fields() {
       sortFields();
       return new MemoryFields();
     }
@@ -1016,7 +1017,7 @@ public class MemoryIndex {
     }
     
     @Override
-    public InvertedFields getTermVectors(int docID) {
+    public Fields getTermVectors(int docID) {
       if (docID == 0) {
         return fields();
       } else {

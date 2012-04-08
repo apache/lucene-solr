@@ -57,7 +57,7 @@ public class TermsFilter extends Filter {
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     AtomicReader reader = context.reader();
     FixedBitSet result = new FixedBitSet(reader.maxDoc());
-    InvertedFields fields = reader.fields();
+    Fields fields = reader.fields();
 
     if (fields == null) {
       return result;

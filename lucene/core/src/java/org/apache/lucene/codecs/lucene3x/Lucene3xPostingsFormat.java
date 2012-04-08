@@ -20,8 +20,8 @@ package org.apache.lucene.codecs.lucene3x;
 import java.util.Set;
 import java.io.IOException;
 
-import org.apache.lucene.codecs.InvertedFieldsConsumer;
-import org.apache.lucene.codecs.InvertedFieldsProducer;
+import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
@@ -55,12 +55,12 @@ class Lucene3xPostingsFormat extends PostingsFormat {
   }
   
   @Override
-  public InvertedFieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override
-  public InvertedFieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new Lucene3xFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor);
   }
 

@@ -22,7 +22,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute; // javadocs
 import org.apache.lucene.index.DocsAndPositionsEnum; // javadocs
-import org.apache.lucene.index.InvertedFields;
+import org.apache.lucene.index.Fields;
 
 /**
  * Codec API for reading term vectors:
@@ -35,7 +35,7 @@ public abstract class TermVectorsReader implements Cloneable,Closeable {
    *  term vectors were not indexed. If offsets are
    *  available they are in an {@link OffsetAttribute}
    *  available from the {@link DocsAndPositionsEnum}. */
-  public abstract InvertedFields get(int doc) throws IOException;
+  public abstract Fields get(int doc) throws IOException;
 
   /** Create a clone that one caller at a time may use to
    *  read term vectors. */

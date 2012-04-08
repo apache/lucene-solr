@@ -669,7 +669,7 @@ public class SimpleFacets {
       startTermBytes = new BytesRef(indexedPrefix);
     }
 
-    InvertedFields fields = r.fields();
+    Fields fields = r.fields();
     Terms terms = fields==null ? null : fields.terms(field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;

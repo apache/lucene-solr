@@ -118,7 +118,7 @@ public class TermsComponent extends SearchComponent {
 
 
     final AtomicReader indexReader = rb.req.getSearcher().getAtomicReader();
-    InvertedFields lfields = indexReader.fields();
+    Fields lfields = indexReader.fields();
 
     for (String field : fields) {
       NamedList<Integer> fieldTerms = new NamedList<Integer>();

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.InvertedFields;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
@@ -50,7 +50,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
     Comparator<BytesRef> lastTermComp = null;
     final AtomicReaderContext[] leaves = topReaderContext.leaves();
     for (AtomicReaderContext context : leaves) {
-      final InvertedFields fields = context.reader().fields();
+      final Fields fields = context.reader().fields();
       if (fields == null) {
         // reader has no fields
         continue;

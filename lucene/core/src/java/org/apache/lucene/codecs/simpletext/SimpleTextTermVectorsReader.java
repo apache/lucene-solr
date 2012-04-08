@@ -29,7 +29,7 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.InvertedFields;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -94,7 +94,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   }
   
   @Override
-  public InvertedFields get(int doc) throws IOException {
+  public Fields get(int doc) throws IOException {
     // TestTV tests for this in testBadParams... but is this
     // really guaranteed by the API?
     if (doc < 0 || doc >= offsets.size()) {
@@ -221,7 +221,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     return scratchUTF16.toString();
   }
   
-  private class SimpleTVFields extends InvertedFields {
+  private class SimpleTVFields extends Fields {
     private final SortedMap<String,SimpleTVTerms> fields;
     
     SimpleTVFields(SortedMap<String,SimpleTVTerms> fields) throws IOException {

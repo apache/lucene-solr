@@ -28,8 +28,8 @@ import java.util.ServiceLoader; // javadocs
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.apache.lucene.codecs.InvertedFieldsConsumer;
-import org.apache.lucene.codecs.InvertedFieldsProducer;
+import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo;
@@ -72,17 +72,17 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public InvertedFieldsConsumer fieldsConsumer(SegmentWriteState state)
+  public FieldsConsumer fieldsConsumer(SegmentWriteState state)
       throws IOException {
     return new FieldsWriter(state);
   }
 
   // NOTE: not private to avoid $accessN at runtime!!
   static class FieldsConsumerAndID implements Closeable {
-    final InvertedFieldsConsumer fieldsConsumer;
+    final FieldsConsumer fieldsConsumer;
     final String segmentSuffix;
 
-    public FieldsConsumerAndID(InvertedFieldsConsumer fieldsConsumer, String segmentSuffix) {
+    public FieldsConsumerAndID(FieldsConsumer fieldsConsumer, String segmentSuffix) {
       this.fieldsConsumer = fieldsConsumer;
       this.segmentSuffix = segmentSuffix;
     }
@@ -93,7 +93,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
   };
     
-  private class FieldsWriter extends InvertedFieldsConsumer {
+  private class FieldsWriter extends FieldsConsumer {
 
     private final Map<PostingsFormat,FieldsConsumerAndID> formats = new IdentityHashMap<PostingsFormat,FieldsConsumerAndID>();
 
@@ -181,10 +181,10 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
   }
 
-  private class FieldsReader extends InvertedFieldsProducer {
+  private class FieldsReader extends FieldsProducer {
 
-    private final Map<String,InvertedFieldsProducer> fields = new TreeMap<String,InvertedFieldsProducer>();
-    private final Map<PostingsFormat,InvertedFieldsProducer> formats = new IdentityHashMap<PostingsFormat,InvertedFieldsProducer>();
+    private final Map<String,FieldsProducer> fields = new TreeMap<String,FieldsProducer>();
+    private final Map<PostingsFormat,FieldsProducer> formats = new IdentityHashMap<PostingsFormat,FieldsProducer>();
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 
@@ -243,7 +243,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public Terms terms(String field) throws IOException {
-      InvertedFieldsProducer fieldsProducer = fields.get(field);
+      FieldsProducer fieldsProducer = fields.get(field);
       return fieldsProducer == null ? null : fieldsProducer.terms(field);
     }
     
@@ -259,7 +259,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public InvertedFieldsProducer fieldsProducer(SegmentReadState state)
+  public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
     return new FieldsReader(state);
   }

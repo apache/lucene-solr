@@ -36,12 +36,12 @@ import java.util.Comparator;
  */
 public class FilterAtomicReader extends AtomicReader {
 
-  /** Base class for filtering {@link InvertedFields}
+  /** Base class for filtering {@link Fields}
    *  implementations. */
-  public static class FilterFields extends InvertedFields {
-    protected final InvertedFields in;
+  public static class FilterFields extends Fields {
+    protected final Fields in;
 
-    public FilterFields(InvertedFields in) {
+    public FilterFields(Fields in) {
       this.in = in;
     }
 
@@ -329,7 +329,7 @@ public class FilterAtomicReader extends AtomicReader {
   }
 
   @Override
-  public InvertedFields getTermVectors(int docID)
+  public Fields getTermVectors(int docID)
           throws IOException {
     ensureOpen();
     return in.getTermVectors(docID);
@@ -365,7 +365,7 @@ public class FilterAtomicReader extends AtomicReader {
   }
   
   @Override
-  public InvertedFields fields() throws IOException {
+  public Fields fields() throws IOException {
     ensureOpen();
     return in.fields();
   }

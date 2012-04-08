@@ -38,7 +38,7 @@ public class TermFreqValueSource extends DocFreqValueSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    InvertedFields fields = readerContext.reader().fields();
+    Fields fields = readerContext.reader().fields();
     final Terms terms = fields.terms(field);
 
     return new IntDocValues(this) {

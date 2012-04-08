@@ -29,8 +29,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.codecs.InvertedFieldsConsumer;
-import org.apache.lucene.codecs.InvertedFieldsProducer;
+import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
@@ -100,7 +100,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
   }
     
   // Postings state:
-  static class RAMPostings extends InvertedFieldsProducer {
+  static class RAMPostings extends FieldsProducer {
     final Map<String,RAMField> fieldToTerms = new TreeMap<String,RAMField>();
 
     @Override
@@ -186,7 +186,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
   }
 
   // Classes for writing to the postings state
-  private static class RAMFieldsConsumer extends InvertedFieldsConsumer {
+  private static class RAMFieldsConsumer extends FieldsConsumer {
 
     private final RAMPostings postings;
     private final RAMTermsConsumer termsConsumer = new RAMTermsConsumer();
@@ -534,7 +534,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
   private static final String ID_EXTENSION = "id";
 
   @Override
-  public InvertedFieldsConsumer fieldsConsumer(SegmentWriteState writeState) throws IOException {
+  public FieldsConsumer fieldsConsumer(SegmentWriteState writeState) throws IOException {
     final int id = nextID.getAndIncrement();
 
     // TODO -- ok to do this up front instead of
@@ -565,7 +565,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public InvertedFieldsProducer fieldsProducer(SegmentReadState readState)
+  public FieldsProducer fieldsProducer(SegmentReadState readState)
     throws IOException {
 
     // Load our ID:

@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.codecs.InvertedFieldsConsumer;
+import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -334,14 +334,14 @@ final class SegmentMerger {
 
   private final void mergeTerms(SegmentWriteState segmentWriteState) throws CorruptIndexException, IOException {
     
-    final List<InvertedFields> fields = new ArrayList<InvertedFields>();
+    final List<Fields> fields = new ArrayList<Fields>();
     final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
 
     int docBase = 0;
 
     for(int readerIndex=0;readerIndex<mergeState.readers.size();readerIndex++) {
       final MergeState.IndexReaderAndLiveDocs r = mergeState.readers.get(readerIndex);
-      final InvertedFields f = r.reader.fields();
+      final Fields f = r.reader.fields();
       final int maxDoc = r.reader.maxDoc();
       if (f != null) {
         slices.add(new ReaderUtil.Slice(docBase, maxDoc, readerIndex));
@@ -350,11 +350,11 @@ final class SegmentMerger {
       docBase += maxDoc;
     }
 
-    final InvertedFieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState);
+    final FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(segmentWriteState);
     boolean success = false;
     try {
       consumer.merge(mergeState,
-                     new MultiFields(fields.toArray(InvertedFields.EMPTY_ARRAY),
+                     new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
                                      slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY)));
       success = true;
     } finally {
