@@ -45,7 +45,7 @@ def javaExe(version):
     path = JAVA7_HOME
   else:
     raise RuntimeError("unknown Java version '%s'" % version)
-  return 'export JAVA_HOME=%s PATH=%s/bin:$PATH' % (path, path)
+  return 'export JAVA_HOME="%s" PATH="%s/bin:$PATH"' % (path, path)
 
 def verifyJavaVersion(version):
   s = os.popen('%s; java -version 2>&1' % javaExe(version)).read()
@@ -72,6 +72,9 @@ except KeyError:
 verifyJavaVersion('1.5')
 verifyJavaVersion('1.6')
 verifyJavaVersion('1.7')
+
+cygwin = platform.system().lower().startswith('cygwin')
+cygwinWindowsRoot = os.popen('cygpath -w /').read().strip().replace('\\','/') if cygwin else ''
 
 # TODO
 #   + verify KEYS contains key that signed the release
@@ -311,8 +314,30 @@ def checkChangesContent(s, version, name, project, isHTML):
       # contrib/benchmark never seems to include release info:
       if name.find('/benchmark/') == -1:
         raise RuntimeError('did not see "%s" in %s' % (sub, name))
-  
+
+reUnixPath = re.compile(r'\b[a-zA-Z_]+=(?:"(?:\\"|[^"])*"' + '|(?:\\\\.|[^"\'\\s])*' + r"|'(?:\\'|[^'])*')" \
+                        + r'|(/(?:\\.|[^"\'\s])*)' \
+                        + r'|("/(?:\\.|[^"])*")'   \
+                        + r"|('/(?:\\.|[^'])*')")
+
+def unix2win(matchobj):
+  if matchobj.group(1) is not None: return cygwinWindowsRoot + matchobj.group()
+  if matchobj.group(2) is not None: return '"%s%s' % (cygwinWindowsRoot, matchobj.group().lstrip('"'))
+  if matchobj.group(3) is not None: return "'%s%s" % (cygwinWindowsRoot, matchobj.group().lstrip("'"))
+  return matchobj.group()
+
+def cygwinifyPaths(command):
+  # The problem: Native Windows applications running under Cygwin
+  # (e.g. Ant, which isn't available as a Cygwin package) can't
+  # handle Cygwin's Unix-style paths.  However, environment variable
+  # values are automatically converted, so only paths outside of
+  # environment variable values should be converted to Windows paths.
+  # Assumption: all paths will be absolute.
+  if '; ant ' in command: command = reUnixPath.sub(unix2win, command)
+  return command
+
 def run(command, logFile):
+  if cygwin: command = cygwinifyPaths(command)
   if os.system('%s > %s 2>&1' % (command, logFile)):
     logPath = os.path.abspath(logFile)
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
@@ -440,7 +465,7 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     run('%s; ant validate' % javaExe('1.7'), '%s/validate.log' % unpackPath)
 
     print '    run "ant rat-sources"'
-    run('%s; ant -lib %s/apache-rat-0.8.jar rat-sources' % (javaExe('1.7'), tmpDir), '%s/rat-sources.log' % unpackPath)
+    run('%s; ant -lib "%s/apache-rat-0.8.jar/apache-rat-0.8" rat-sources' % (javaExe('1.7'), tmpDir), '%s/rat-sources.log' % unpackPath)
     
     if project == 'lucene':
       print '    run tests w/ Java 5...'
@@ -593,7 +618,7 @@ def unpackJavadocsJar(jarPath, unpackPath):
 
 def testDemo(isSrc, version):
   print '    test demo...'
-  sep = ';' if platform.system().lower().startswith('cygwin') else ':'
+  sep = ';' if cygwin else ':'
   if isSrc:
     # allow lucene dev version to be either 3.3 or 3.3.0:
     if version.endswith('.0'):
