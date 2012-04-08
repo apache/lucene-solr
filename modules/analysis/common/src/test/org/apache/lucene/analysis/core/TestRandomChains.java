@@ -190,7 +190,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
             // TODO: also look for other variants and handle them special
             int idx = random.nextInt(charfilters.size());
             try {
-              Constructor<? extends CharStream> c = charfilters.get(idx).getConstructor(Reader.class);
+              Constructor<? extends Reader> c = charfilters.get(idx).getConstructor(Reader.class);
               spec.reader = c.newInstance(spec.reader);
             } catch (NoSuchMethodException e) {
               Constructor<? extends CharStream> c = charfilters.get(idx).getConstructor(CharStream.class);
