@@ -439,6 +439,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       try {
         checkAnalysisConsistency(random, a, useCharFilter, text);
       } catch (Throwable t) {
+        // TODO: really we should pass a random seed to
+        // checkAnalysisConsistency then print it here too:
         System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text='" + escape(text) + "'");
         Rethrow.rethrow(t);
       }
