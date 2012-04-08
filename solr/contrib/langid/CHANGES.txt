@@ -7,6 +7,10 @@ See http://wiki.apache.org/solr/LanguageDetection for details
 
 $Id$
 
+================== Release 4.0.0 ==================
+
+(No changes)
+
 ================== Release 3.6.0 ==================
 
 * SOLR-3107: When using the LangDetect implementation of langid, set the random
