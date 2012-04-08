@@ -907,6 +907,25 @@
     <property name="deployed.grandparent.pom.uptodate" value="true"/>
   </target>
 
+  <target name="stage-maven-artifacts">
+    <sequential>
+      <property name="output.build.xml" location="${build.dir}/stage_maven_build.xml"/>
+      <property name="dev-tools.scripts.dir" value="../dev-tools/scripts"/>
+      <exec dir="." executable="perl" failonerror="true" outputproperty="stage.maven.script.output">
+        <arg value="${dev-tools.scripts.dir}/write.stage.maven.build.xml.pl"/>
+        <arg value="${maven.dist.dir}"/>              <!-- Maven distribution artifacts directory -->
+        <arg value="${output.build.xml}"/>            <!-- Ant build file to be written -->
+        <arg value="${common.dir}/common-build.xml"/> <!-- Imported from the ant file to be written -->
+      </exec>
+      <echo message="${stage.maven.script.output}"/>
+    </sequential>
+    <echo>Invoking target stage-maven in ${output.build.xml} now...</echo>
+    <ant target="stage-maven" antfile="${output.build.xml}" inheritall="false">
+      <property name="m2.repository.id" value="${m2.repository.id}"/>
+      <property name="m2.repository.url" value="${m2.repository.url}"/>
+    </ant>
+  </target>
+
   <!-- TODO: add cool detector like the ivy one? this requires you have rat -->
   <target name="rat-sources-typedef">
     <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:rat.anttasks">

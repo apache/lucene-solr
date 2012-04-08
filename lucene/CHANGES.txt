@@ -721,6 +721,12 @@ Documentation
 * LUCENE-3958: Javadocs corrections for IndexWriter.
   (Iulius Curt via Robert Muir)
 
+Build
+
+* LUCENE-3964: Added target stage-maven-artifacts, which stages
+  Maven release artifacts to a Maven staging repository in preparation
+  for release.  (Steve Rowe)
+
 ======================= Lucene 3.6.0 =======================
 
 Changes in backwards compatibility policy
