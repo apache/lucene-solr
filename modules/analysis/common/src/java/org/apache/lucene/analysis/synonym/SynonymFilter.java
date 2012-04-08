@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -99,7 +100,8 @@ import org.apache.lucene.util.fst.FST;
 // practice, but it's possible on some set of synonyms it
 // will.  We'd have to modify Aho/Corasick to enforce our
 // conflict resolving (eg greedy matching) because that algo
-// finds all matches.
+// finds all matches.  This really amounts to adding a .*
+// closure to the FST and then determinizing it.
 
 public final class SynonymFilter extends TokenFilter {
 
@@ -116,6 +118,7 @@ public final class SynonymFilter extends TokenFilter {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
@@ -156,14 +159,17 @@ public final class SynonymFilter extends TokenFilter {
   private static class PendingOutputs {
     CharsRef[] outputs;
     int[] endOffsets;
+    int[] posLengths;
     int upto;
     int count;
     int posIncr = 1;
     int lastEndOffset;
+    int lastPosLength;
 
     public PendingOutputs() {
       outputs = new CharsRef[1];
       endOffsets = new int[1];
+      posLengths = new int[1];
     }
 
     public void reset() {
@@ -174,6 +180,7 @@ public final class SynonymFilter extends TokenFilter {
     public CharsRef pullNext() {
       assert upto < count;
       lastEndOffset = endOffsets[upto];
+      lastPosLength = posLengths[upto];
       final CharsRef result = outputs[upto++];
       posIncr = 0;
       if (upto == count) {
@@ -186,7 +193,11 @@ public final class SynonymFilter extends TokenFilter {
       return lastEndOffset;
     }
 
-    public void add(char[] output, int offset, int len, int endOffset) {
+    public int getLastPosLength() {
+      return lastPosLength;
+    }
+
+    public void add(char[] output, int offset, int len, int endOffset, int posLength) {
       if (count == outputs.length) {
         final CharsRef[] next = new CharsRef[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
         System.arraycopy(outputs, 0, next, 0, count);
@@ -197,6 +208,11 @@ public final class SynonymFilter extends TokenFilter {
         System.arraycopy(endOffsets, 0, next, 0, count);
         endOffsets = next;
       }
+      if (count == posLengths.length) {
+        final int[] next = new int[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_INT)];
+        System.arraycopy(posLengths, 0, next, 0, count);
+        posLengths = next;
+      }
       if (outputs[count] == null) {
         outputs[count] = new CharsRef();
       }
@@ -205,6 +221,7 @@ public final class SynonymFilter extends TokenFilter {
       // use the endOffset of the input token, or X >= 0, in
       // which case we use X as the endOffset for this output
       endOffsets[count] = endOffset;
+      posLengths[count] = posLength;
       count++;
     }
   };
@@ -456,20 +473,23 @@ public final class SynonymFilter extends TokenFilter {
           // the output:
           assert outputLen > 0: "output contains empty string: " + scratchChars;
           final int endOffset;
+          final int posLen;
           if (chIDX == chEnd && lastStart == scratchChars.offset) {
             // This rule had a single output token, so, we set
             // this output's endOffset to the current
             // endOffset (ie, endOffset of the last input
             // token it matched):
             endOffset = matchEndOffset;
+            posLen = matchInputLength;
           } else {
             // This rule has more than one output token; we
             // can't pick any particular endOffset for this
             // case, so, we inherit the endOffset for the
             // input token which this output overlaps:
             endOffset = -1;
+            posLen = 1;
           }
-          futureOutputs[outputUpto].add(scratchChars.chars, lastStart, outputLen, endOffset);
+          futureOutputs[outputUpto].add(scratchChars.chars, lastStart, outputLen, endOffset, posLen);
           //System.out.println("      " + new String(scratchChars.chars, lastStart, outputLen) + " outputUpto=" + outputUpto);
           lastStart = 1+chIDX;
           //System.out.println("  slot=" + outputUpto + " keepOrig=" + keepOrig);
@@ -557,6 +577,7 @@ public final class SynonymFilter extends TokenFilter {
           }
           offsetAtt.setOffset(input.startOffset, endOffset);
           posIncrAtt.setPositionIncrement(posIncr);
+          posLenAtt.setPositionLength(outputs.getLastPosLength());
           if (outputs.count == 0) {
             // Done with the buffered input and all outputs at
             // this position
