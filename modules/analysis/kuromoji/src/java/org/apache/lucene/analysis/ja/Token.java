@@ -50,7 +50,9 @@ public class Token {
 
   @Override
   public String toString() {
-    return "Token(\"" + new String(surfaceForm, offset, length) + "\" pos=" + position + " type=" + type + " wordId=" + wordId + " leftID=" + dictionary.getLeftId(wordId) + ")";
+    return "Token(\"" + new String(surfaceForm, offset, length) + "\" pos=" + position + " length=" + length +
+      " posLen=" + positionLength + " type=" + type + " wordId=" + wordId +
+      " leftID=" + dictionary.getLeftId(wordId) + ")";
   }
   
   /**

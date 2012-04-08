@@ -31,6 +31,8 @@ public class MockCharFilter extends CharStream {
   // for testing only
   public MockCharFilter(Reader in, int remainder) {
     this.in = CharReader.get(in);
+    // TODO: instead of fixed remainder... maybe a fixed
+    // random seed?
     this.remainder = remainder;
     assert remainder >= 0 && remainder < 10 : "invalid parameter";
   }

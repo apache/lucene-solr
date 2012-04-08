@@ -28,6 +28,8 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.Attribute;
@@ -129,7 +131,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       posLengthAtt = ts.getAttribute(PositionLengthAttribute.class);
     }
     
+    // Maps position to the start/end offset:
+    final Map<Integer,Integer> posToStartOffset = new HashMap<Integer,Integer>();
+    final Map<Integer,Integer> posToEndOffset = new HashMap<Integer,Integer>();
+
     ts.reset();
+    int pos = -1;
     for (int i = 0; i < output.length; i++) {
       // extra safety to enforce, that the state is not preserved and also assign bogus values
       ts.clearAttributes();
@@ -157,14 +164,51 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       
       // we can enforce some basic things about a few attributes even if the caller doesn't check:
       if (offsetAtt != null) {
-        assertTrue("startOffset must be >= 0", offsetAtt.startOffset() >= 0);
-        assertTrue("endOffset must be >= 0", offsetAtt.endOffset() >= 0);
-        assertTrue("endOffset must be >= startOffset, got startOffset=" + offsetAtt.startOffset() + ",endOffset=" + offsetAtt.endOffset(), 
-            offsetAtt.endOffset() >= offsetAtt.startOffset());
+        final int startOffset = offsetAtt.startOffset();
+        final int endOffset = offsetAtt.endOffset();
+        assertTrue("startOffset must be >= 0", startOffset >= 0);
+        assertTrue("endOffset must be >= 0", endOffset >= 0);
+        assertTrue("endOffset must be >= startOffset, got startOffset=" + startOffset + ",endOffset=" + endOffset, 
+            endOffset >= startOffset);
         if (finalOffset != null) {
-          assertTrue("startOffset must be <= finalOffset", offsetAtt.startOffset() <= finalOffset.intValue());
-          assertTrue("endOffset must be <= finalOffset: got endOffset=" + offsetAtt.endOffset() + " vs finalOffset=" + finalOffset.intValue(),
-                     offsetAtt.endOffset() <= finalOffset.intValue());
+          assertTrue("startOffset must be <= finalOffset", startOffset <= finalOffset.intValue());
+          assertTrue("endOffset must be <= finalOffset: got endOffset=" + endOffset + " vs finalOffset=" + finalOffset.intValue(),
+                     endOffset <= finalOffset.intValue());
+        }
+
+        if (posLengthAtt != null && posIncrAtt != null) {
+          // Validate offset consistency in the graph, ie
+          // all tokens leaving from a certain pos have the
+          // same startOffset, and all tokens arriving to a
+          // certain pos have the same endOffset:
+          final int posInc = posIncrAtt.getPositionIncrement();
+          pos += posInc;
+
+          final int posLength = posLengthAtt.getPositionLength();
+
+          if (!posToStartOffset.containsKey(pos)) {
+            // First time we've seen a token leaving from this position:
+            posToStartOffset.put(pos, startOffset);
+            //System.out.println("  + s " + pos + " -> " + startOffset);
+          } else {
+            // We've seen a token leaving from this position
+            // before; verify the startOffset is the same:
+            //System.out.println("  + vs " + pos + " -> " + startOffset);
+            assertEquals(posToStartOffset.get(pos).intValue(), startOffset);
+          }
+
+          final int endPos = pos + posLength;
+
+          if (!posToEndOffset.containsKey(endPos)) {
+            // First time we've seen a token arriving to this position:
+            posToEndOffset.put(endPos, endOffset);
+            //System.out.println("  + e " + endPos + " -> " + endOffset);
+          } else {
+            // We've seen a token arriving to this position
+            // before; verify the endOffset is the same:
+            //System.out.println("  + ve " + endPos + " -> " + endOffset);
+            assertEquals(posToEndOffset.get(endPos).intValue(), endOffset);
+          }
         }
       }
       if (posIncrAtt != null) {
@@ -395,10 +439,39 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       try {
         checkAnalysisConsistency(random, a, useCharFilter, text);
       } catch (Throwable t) {
-        System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text='" + text + "'");
+        System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text='" + escape(text) + "'");
         Rethrow.rethrow(t);
       }
     }
+  }
+
+  public static String escape(String s) {
+    int charUpto = 0;
+    final StringBuilder sb = new StringBuilder();
+    while (charUpto < s.length()) {
+      final int c = s.codePointAt(charUpto);
+      if (c == 0xa) {
+        // Strangely, you cannot put \ u000A into Java
+        // sources (not in a comment nor a string
+        // constant)...:
+        sb.append("\\n");
+      } else if (c == 0xd) {
+        // ... nor \ u000D:
+        sb.append("\\r");
+      } else if (c == '"') {
+        sb.append("\\\"");
+      } else if (c == '\\') {
+        sb.append("\\\\");
+      } else if (c >= 0x20 && c < 0x80) {
+        sb.append((char) c);
+      } else {
+        // TODO: we can make ascii easier to read if we
+        // don't escape...
+        sb.append(String.format("\\u%04x", c));
+      }
+      charUpto += Character.charCount(c);
+    }
+    return sb.toString();
   }
 
   public static void checkAnalysisConsistency(Random random, Analyzer a, boolean useCharFilter, String text) throws IOException {
@@ -513,79 +586,79 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           ts.close();
         }
       }
+    }
 
-      // Final pass: verify clean tokenization matches
-      // results from first pass:
+    // Final pass: verify clean tokenization matches
+    // results from first pass:
 
+    if (VERBOSE) {
+      System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis; " + tokens.size() + " tokens");
+    }
+    reader = new StringReader(text);
+
+    if (random.nextInt(30) == 7) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: re-run analysis; " + tokens.size() + " tokens");
-      }
-      reader = new StringReader(text);
-
-      if (random.nextInt(30) == 7) {
-        if (VERBOSE) {
-          System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: using spoon-feed reader");
-        }
-
-        reader = new MockReaderWrapper(random, reader);
+        System.out.println(Thread.currentThread().getName() + ": NOTE: BaseTokenStreamTestCase: using spoon-feed reader");
       }
 
-      ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
-      if (typeAtt != null && posIncAtt != null && posLengthAtt != null && offsetAtt != null) {
-        // offset + pos + posLength + type
-        assertTokenStreamContents(ts, 
-                                  tokens.toArray(new String[tokens.size()]),
-                                  toIntArray(startOffsets),
-                                  toIntArray(endOffsets),
-                                  types.toArray(new String[types.size()]),
-                                  toIntArray(positions),
-                                  toIntArray(positionLengths),
-                                  text.length());
-      } else if (typeAtt != null && posIncAtt != null && offsetAtt != null) {
-        // offset + pos + type
-        assertTokenStreamContents(ts, 
-                                  tokens.toArray(new String[tokens.size()]),
-                                  toIntArray(startOffsets),
-                                  toIntArray(endOffsets),
-                                  types.toArray(new String[types.size()]),
-                                  toIntArray(positions),
-                                  null,
-                                  text.length());
-      } else if (posIncAtt != null && posLengthAtt != null && offsetAtt != null) {
-        // offset + pos + posLength
-        assertTokenStreamContents(ts, 
-                                  tokens.toArray(new String[tokens.size()]),
-                                  toIntArray(startOffsets),
-                                  toIntArray(endOffsets),
-                                  null,
-                                  toIntArray(positions),
-                                  toIntArray(positionLengths),
-                                  text.length());
-      } else if (posIncAtt != null && offsetAtt != null) {
-        // offset + pos
-        assertTokenStreamContents(ts, 
-                                  tokens.toArray(new String[tokens.size()]),
-                                  toIntArray(startOffsets),
-                                  toIntArray(endOffsets),
-                                  null,
-                                  toIntArray(positions),
-                                  null,
-                                  text.length());
-      } else if (offsetAtt != null) {
-        // offset
-        assertTokenStreamContents(ts, 
-                                  tokens.toArray(new String[tokens.size()]),
-                                  toIntArray(startOffsets),
-                                  toIntArray(endOffsets),
-                                  null,
-                                  null,
-                                  null,
-                                  text.length());
-      } else {
-        // terms only
-        assertTokenStreamContents(ts, 
-                                  tokens.toArray(new String[tokens.size()]));
-      }
+      reader = new MockReaderWrapper(random, reader);
+    }
+
+    ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
+    if (typeAtt != null && posIncAtt != null && posLengthAtt != null && offsetAtt != null) {
+      // offset + pos + posLength + type
+      assertTokenStreamContents(ts, 
+                                tokens.toArray(new String[tokens.size()]),
+                                toIntArray(startOffsets),
+                                toIntArray(endOffsets),
+                                types.toArray(new String[types.size()]),
+                                toIntArray(positions),
+                                toIntArray(positionLengths),
+                                text.length());
+    } else if (typeAtt != null && posIncAtt != null && offsetAtt != null) {
+      // offset + pos + type
+      assertTokenStreamContents(ts, 
+                                tokens.toArray(new String[tokens.size()]),
+                                toIntArray(startOffsets),
+                                toIntArray(endOffsets),
+                                types.toArray(new String[types.size()]),
+                                toIntArray(positions),
+                                null,
+                                text.length());
+    } else if (posIncAtt != null && posLengthAtt != null && offsetAtt != null) {
+      // offset + pos + posLength
+      assertTokenStreamContents(ts, 
+                                tokens.toArray(new String[tokens.size()]),
+                                toIntArray(startOffsets),
+                                toIntArray(endOffsets),
+                                null,
+                                toIntArray(positions),
+                                toIntArray(positionLengths),
+                                text.length());
+    } else if (posIncAtt != null && offsetAtt != null) {
+      // offset + pos
+      assertTokenStreamContents(ts, 
+                                tokens.toArray(new String[tokens.size()]),
+                                toIntArray(startOffsets),
+                                toIntArray(endOffsets),
+                                null,
+                                toIntArray(positions),
+                                null,
+                                text.length());
+    } else if (offsetAtt != null) {
+      // offset
+      assertTokenStreamContents(ts, 
+                                tokens.toArray(new String[tokens.size()]),
+                                toIntArray(startOffsets),
+                                toIntArray(endOffsets),
+                                null,
+                                null,
+                                null,
+                                text.length());
+    } else {
+      // terms only
+      assertTokenStreamContents(ts, 
+                                tokens.toArray(new String[tokens.size()]));
     }
   }
   

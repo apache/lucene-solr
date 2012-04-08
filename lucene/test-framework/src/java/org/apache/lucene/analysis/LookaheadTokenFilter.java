@@ -237,6 +237,7 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
             if (DEBUG) {
               System.out.println("  return inserted token");
             }
+            assert insertedTokenConsistent();
             insertPending = false;
             return true;
           }
@@ -251,6 +252,16 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
         posData = positions.get(outputPos);
       }
     }
+  }
+
+  // If subclass inserted a token, make sure it had in fact
+  // looked ahead enough:
+  private boolean insertedTokenConsistent() {
+    final int posLen = posLenAtt.getPositionLength();
+    final Position endPosData = positions.get(outputPos + posLen);
+    assert endPosData.endOffset != -1;
+    assert offsetAtt.endOffset() == endPosData.endOffset;
+    return true;
   }
 
   // TODO: end()?

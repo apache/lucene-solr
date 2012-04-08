@@ -22,7 +22,12 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util._TestUtil;
+
+// TODO: maybe, instead to be more "natural", we should make
+// a MockRemovesTokensTF, ideally subclassing FilteringTF
+// (in modules/analysis)
 
 // Randomly injects holes:
 public final class MockHoleInjectingTokenFilter extends TokenFilter {
@@ -30,6 +35,9 @@ public final class MockHoleInjectingTokenFilter extends TokenFilter {
   private final long randomSeed;
   private Random random;
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
+  private int maxPos;
+  private int pos;
 
   public MockHoleInjectingTokenFilter(Random random, TokenStream in) {
     super(in);
@@ -40,16 +48,28 @@ public final class MockHoleInjectingTokenFilter extends TokenFilter {
   public void reset() throws IOException {
     super.reset();
     random = new Random(randomSeed);
+    maxPos = -1;
+    pos = -1;
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       final int posInc = posIncAtt.getPositionIncrement();
-      if (posInc > 0 && random.nextInt(5) == 3) {
-        posIncAtt.setPositionIncrement(posInc + _TestUtil.nextInt(random, 1, 5));
-        // TODO: should we tweak offsets...?
+
+      int nextPos = pos + posInc;
+
+      // Carefully inject a hole only where it won't mess up
+      // the graph:
+      if (posInc > 0 && maxPos <= nextPos && random.nextInt(5) == 3) {
+        final int holeSize = _TestUtil.nextInt(random, 1, 5);
+        posIncAtt.setPositionIncrement(posInc + holeSize);
+        nextPos += holeSize;
       }
+
+      pos = nextPos;
+      maxPos = Math.max(maxPos, pos + posLenAtt.getPositionLength());
+
       return true;
     } else {
       return false;
@@ -58,5 +78,3 @@ public final class MockHoleInjectingTokenFilter extends TokenFilter {
 
   // TODO: end?
 }
-
-

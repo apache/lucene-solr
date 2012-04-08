@@ -644,4 +644,17 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
       System.out.println("Total time : " + (System.currentTimeMillis() - totalStart));
     }
   }
+
+  public void testWithPunctuation() throws Exception {
+    assertAnalyzesTo(analyzerNoPunct, "羽田。空港",
+                     new String[] { "羽田", "空港" },
+                     new int[] { 1, 1 });
+  }
+
+  public void testCompoundOverPunctuation() throws Exception {
+    assertAnalyzesToPositions(analyzerNoPunct, "dεε϶ϢϏΎϷΞͺ羽田",
+                              new String[] { "d", "ε", "ε", "ϢϏΎϷΞͺ", "羽田" },
+                              new int[] { 1, 1, 1, 1, 1},
+                              new int[] { 1, 1, 1, 1, 1});
+  }
 }
