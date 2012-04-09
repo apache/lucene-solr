@@ -188,7 +188,14 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     });
     put(char.class, new ArgProducer() {
       @Override public Object create(Random random) {
-        return Character.valueOf((char)random.nextInt(65536));
+        // nocommit: fix any filters that care to throw IAE instead.
+        // return Character.valueOf((char)random.nextInt(65536));
+        while(true) {
+          char c = (char)random.nextInt(65536);
+          if (c < '\uD800' || c > '\uDFFF') {
+            return Character.valueOf(c);
+          }
+        }
       }
     });
     put(float.class, new ArgProducer() {
