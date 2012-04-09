@@ -64,6 +64,7 @@ import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 import org.apache.lucene.analysis.ngram.NGramTokenizer;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
+import org.apache.lucene.analysis.position.PositionFilter;
 import org.apache.lucene.analysis.snowball.TestSnowball;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymMap;
@@ -106,6 +107,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         || c == EmptyTokenizer.class
         // doesn't actual reset itself!
         || c == CachingTokenFilter.class
+        // nocommit: corrumpts graphs (offset consistency check)
+        || c == PositionFilter.class
         // doesn't consume whole stream!
         || c == LimitTokenCountFilter.class
         // broken!
