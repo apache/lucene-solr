@@ -184,6 +184,35 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     return (Constructor<? extends T>) ctor;
   }
   
+  private static void getClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
+    final ClassLoader cld = TestRandomChains.class.getClassLoader();
+    final String path = pckgname.replace('.', '/');
+    final Enumeration<URL> resources = cld.getResources(path);
+    while (resources.hasMoreElements()) {
+      final File directory = new File(resources.nextElement().toURI());
+      if (directory.exists()) {
+        String[] files = directory.list();
+        for (String file : files) {
+          if (new File(directory, file).isDirectory()) {
+            // recurse
+            String subPackage = pckgname + "." + file;
+            getClassesForPackage(subPackage, classes);
+          }
+          if (file.endsWith(".class")) {
+            String clazzName = file.substring(0, file.length() - 6);
+            // exclude Test classes that happen to be in these packages.
+            // class.ForName'ing some of them can cause trouble.
+            if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
+              // Don't run static initializers, as we won't use most of them.
+              // Java will do that automatically once accessed/instantiated.
+              classes.add(Class.forName(pckgname + '.' + clazzName, false, cld));
+            }
+          }
+        }
+      }
+    }
+  }
+  
   private static interface ArgProducer {
     Object create(Random random);
   }
@@ -497,8 +526,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       Random random = new Random(seed);
       TokenizerSpec tokenizerspec = newTokenizer(random, reader);
       TokenFilterSpec filterspec = newFilterChain(random, tokenizerspec.tokenizer);
-      //System.out.println("seed=" + seed + ",tokenizerSpec=" + tokenizerspec.toString);
-      //System.out.println("seed=" + seed + ",tokenfilterSpec=" + filterspec.toString);
       return new TokenStreamComponents(tokenizerspec.tokenizer, filterspec.stream);
     }
 
@@ -506,7 +533,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     protected Reader initReader(Reader reader) {
       Random random = new Random(seed);
       CharFilterSpec charfilterspec = newCharFilterChain(random, reader);
-      //System.out.println("seed=" + seed + ",charFilterSpec=" + charfilterspec.toString);
       return charfilterspec.reader;
     }
 
@@ -530,34 +556,46 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       return sb.toString();
     }
     
+    private <T> T createComponent(Constructor<? extends T> ctor, Object[] args, StringBuilder descr) {
+      try {
+        final T instance = ctor.newInstance(args);
+        if (descr.length() > 0) {
+          descr.append(",");
+        }
+        descr.append(ctor.getDeclaringClass().getName());
+        String params = Arrays.toString(args);
+        params = params.substring(1, params.length()-1);
+        descr.append("(").append(params).append(")");
+        return instance;
+      } catch (InvocationTargetException ite) {
+        final Throwable cause = ite.getCause();
+        if (cause instanceof IllegalArgumentException ||
+            cause instanceof UnsupportedOperationException) {
+          // thats ok, ignore
+          if (VERBOSE) {
+            System.err.println("Ignoring IAE/UOE from ctor:");
+            cause.printStackTrace(System.err);
+          }
+        } else {
+          Rethrow.rethrow(cause);
+        }
+      } catch (IllegalAccessException iae) {
+        Rethrow.rethrow(iae);
+      } catch (InstantiationException ie) {
+        Rethrow.rethrow(ie);
+      }
+      return null; // no success
+    }
+    
     // create a new random tokenizer from classpath
     private TokenizerSpec newTokenizer(Random random, Reader reader) {
       TokenizerSpec spec = new TokenizerSpec();
-      boolean success = false;
-      while (!success) {
-        try {
-          final Constructor<? extends Tokenizer> ctor = tokenizers.get(random.nextInt(tokenizers.size()));
-          final Object args[] = newTokenizerArgs(random, reader, ctor.getParameterTypes());
-          spec.tokenizer = ctor.newInstance(args);
-          spec.toString =  ctor.getDeclaringClass().getName() + ("(" + Arrays.toString(args) + ")");
-          success = true;
-        } catch (InvocationTargetException ite) {
-          final Throwable cause = ite.getCause();
-          if (cause instanceof IllegalArgumentException ||
-              cause instanceof UnsupportedOperationException) {
-            // thats ok, ignore
-            if (VERBOSE) {
-              System.err.println("Ignoring IAE/UOE from ctor:");
-              cause.printStackTrace(System.err);
-            }
-          } else {
-            Rethrow.rethrow(cause);
-          }
-        } catch (IllegalAccessException iae) {
-          Rethrow.rethrow(iae);
-        } catch (InstantiationException ie) {
-          Rethrow.rethrow(ie);
-        }
+      while (spec.tokenizer == null) {
+        final Constructor<? extends Tokenizer> ctor = tokenizers.get(random.nextInt(tokenizers.size()));
+        final StringBuilder descr = new StringBuilder();
+        final Object args[] = newTokenizerArgs(random, reader, ctor.getParameterTypes());
+        spec.tokenizer = createComponent(ctor, args, descr);
+        spec.toString = descr.toString();
       }
       return spec;
     }
@@ -570,33 +608,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       for (int i = 0; i < numFilters; i++) {
         boolean success = false;
         while (!success) {
-          try {
-            final Constructor<? extends CharStream> ctor = charfilters.get(random.nextInt(charfilters.size()));
-            final Object args[] = newCharFilterArgs(random, spec.reader, ctor.getParameterTypes());
-            spec.reader = ctor.newInstance(args);
-
-            if (descr.length() > 0) {
-              descr.append(",");
-            }
-            descr.append(ctor.getDeclaringClass().getName());
-            descr.append("(" + Arrays.toString(args) + ")");
+          final Constructor<? extends CharStream> ctor = charfilters.get(random.nextInt(charfilters.size()));
+          final Object args[] = newCharFilterArgs(random, spec.reader, ctor.getParameterTypes());
+          reader = createComponent(ctor, args, descr);
+          if (reader != null) {
             success = true;
-          } catch (InvocationTargetException ite) {
-            final Throwable cause = ite.getCause();
-            if (cause instanceof IllegalArgumentException ||
-                cause instanceof UnsupportedOperationException) {
-              // thats ok, ignore
-              if (VERBOSE) {
-                System.err.println("Ignoring IAE/UOE from ctor:");
-                cause.printStackTrace(System.err);
-              }
-            } else {
-              Rethrow.rethrow(cause);
-            }
-          } catch (IllegalAccessException iae) {
-            Rethrow.rethrow(iae);
-          } catch (InstantiationException ie) {
-            Rethrow.rethrow(ie);
+            spec.reader = reader;
           }
         }
       }
@@ -612,32 +629,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       for (int i = 0; i < numFilters; i++) {
         boolean success = false;
         while (!success) {
-          try {
-            final Constructor<? extends TokenFilter> ctor = tokenfilters.get(random.nextInt(tokenfilters.size()));
-            final Object args[] = newFilterArgs(random, spec.stream, ctor.getParameterTypes());
-            spec.stream = ctor.newInstance(args);
-            if (descr.length() > 0) {
-              descr.append(",");
-            }
-            descr.append(ctor.getDeclaringClass().getName());
-            descr.append("(" + Arrays.toString(args) + ")");
+          final Constructor<? extends TokenFilter> ctor = tokenfilters.get(random.nextInt(tokenfilters.size()));
+          final Object args[] = newFilterArgs(random, spec.stream, ctor.getParameterTypes());
+          final TokenFilter flt = createComponent(ctor, args, descr);
+          if (flt != null) {
             success = true;
-          } catch (InvocationTargetException ite) {
-            final Throwable cause = ite.getCause();
-            if (cause instanceof IllegalArgumentException ||
-                cause instanceof UnsupportedOperationException) {
-              // thats ok, ignore
-              if (VERBOSE) {
-                System.err.println("Ignoring IAE/UOE from ctor:");
-                cause.printStackTrace(System.err);
-              }
-            } else {
-              Rethrow.rethrow(cause);
-            }
-          } catch (IllegalAccessException iae) {
-            Rethrow.rethrow(iae);
-          } catch (InstantiationException ie) {
-            Rethrow.rethrow(ie);
+            spec.stream = flt;
           }
         }
       }
@@ -673,35 +670,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       } catch (Throwable e) {
         System.err.println("Exception from random analyzer: " + a);
         throw e;
-      }
-    }
-  }
-  
-  private static void getClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
-    final ClassLoader cld = TestRandomChains.class.getClassLoader();
-    final String path = pckgname.replace('.', '/');
-    final Enumeration<URL> resources = cld.getResources(path);
-    while (resources.hasMoreElements()) {
-      final File directory = new File(resources.nextElement().toURI());
-      if (directory.exists()) {
-        String[] files = directory.list();
-        for (String file : files) {
-          if (new File(directory, file).isDirectory()) {
-            // recurse
-            String subPackage = pckgname + "." + file;
-            getClassesForPackage(subPackage, classes);
-          }
-          if (file.endsWith(".class")) {
-            String clazzName = file.substring(0, file.length() - 6);
-            // exclude Test classes that happen to be in these packages.
-            // class.ForName'ing some of them can cause trouble.
-            if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
-              // Don't run static initializers, as we won't use most of them.
-              // Java will do that automatically once accessed/instantiated.
-              classes.add(Class.forName(pckgname + '.' + clazzName, false, cld));
-            }
-          }
-        }
       }
     }
   }
