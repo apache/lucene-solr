@@ -222,7 +222,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         assertTrue("posLength must be >= 1", posLengthAtt.getPositionLength() >= 1);
       }
     }
-    assertFalse("TokenStream has more tokens than expected", ts.incrementToken());
+    assertFalse("TokenStream has more tokens than expected (expected count=" + output.length + ")", ts.incrementToken());
     ts.end();
     if (finalOffset != null) {
       assertEquals("finalOffset ", finalOffset.intValue(), offsetAtt.endOffset());

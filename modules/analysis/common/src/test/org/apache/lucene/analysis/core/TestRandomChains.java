@@ -34,11 +34,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.Map;
-import java.util.IdentityHashMap;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -52,6 +52,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.charfilter.CharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
@@ -73,8 +74,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.Version;
@@ -133,6 +134,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       ) {
         continue;
       }
+
+      if (c == ValidatingTokenFilter.class) {
+        // We insert this one ourselves after each stage...
+        continue;
+      }
+
       for (final Constructor<?> ctor : c.getConstructors()) {
         // don't test deprecated ctors, they likely have known bugs:
         if (ctor.isAnnotationPresent(Deprecated.class) || ctor.isSynthetic()) {
@@ -635,6 +642,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       StringBuilder descr = new StringBuilder();
       int numFilters = random.nextInt(5);
       for (int i = 0; i < numFilters; i++) {
+
+        // Insert ValidatingTF after each stage so we can
+        // catch problems right after the TF that "caused"
+        // them:
+        spec.stream = new ValidatingTokenFilter(spec.stream, "stage " + i);
+
         while (true) {
           final Constructor<? extends TokenFilter> ctor = tokenfilters.get(random.nextInt(tokenfilters.size()));
           final Object args[] = newFilterArgs(random, spec.stream, ctor.getParameterTypes());
@@ -645,6 +658,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           }
         }
       }
+
+      // Insert ValidatingTF after each stage so we can
+      // catch problems right after the TF that "caused"
+      // them:
+      spec.stream = new ValidatingTokenFilter(spec.stream, "last stage");
+
       spec.toString = descr.toString();
       return spec;
     }
