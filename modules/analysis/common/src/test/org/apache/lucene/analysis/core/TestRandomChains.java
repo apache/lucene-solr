@@ -180,8 +180,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   /** Hack to work around the stupidness of Oracle's strict Java backwards compatibility.
    * {@code Class<T>#getConstructors()} should return unmodifiable {@code List<Constructor<T>>} not array! */
   @SuppressWarnings("unchecked") 
-  private static <T> Constructor<? extends T> castConstructor(Class<T> instanceClazz, Constructor<?> ctor) {
-    return (Constructor<? extends T>) ctor;
+  private static <T> Constructor<T> castConstructor(Class<T> instanceClazz, Constructor<?> ctor) {
+    return (Constructor<T>) ctor;
   }
   
   private static void getClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
@@ -556,7 +556,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       return sb.toString();
     }
     
-    private <T> T createComponent(Constructor<? extends T> ctor, Object[] args, StringBuilder descr) {
+    private <T> T createComponent(Constructor<T> ctor, Object[] args, StringBuilder descr) {
       try {
         final T instance = ctor.newInstance(args);
         if (descr.length() > 0) {
