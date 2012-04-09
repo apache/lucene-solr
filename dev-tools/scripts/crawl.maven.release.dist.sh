@@ -1,7 +1,8 @@
 #!/bin/sh
 #
-# Crawls all Maven release distribution artifacts at the given URL
-# and downloads them to the current directory.
+# Crawls all Maven release distribution artifacts at the given release RC URL
+# and downloads them to ./lucene/ and ./solr/ after first creating these
+# two directories in the current directory.
 #
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,9 +22,30 @@
 #
 
 if [ -z "$1" ] ; then
-    echo "Usage: $0 <RC-url-to-lucene-or-solr-maven-dist-dir>"
-    echo "Example: $0 'http://people.apache.org/~rmuir/staging_area/lucene-solr-3.6RC0-rev1309642/solr/maven/'"
+    echo "Usage: $0 <RC-URL>"
+    echo ""
+    echo "Example: $0 http://s.apache.org/lusolr36rc1"
     exit 1;
 fi
 
-wget -r -np -l 0 -nH -erobots=off --cut-dirs=8 --reject="*.md5,*.sha1,maven-metadata.xml*,index.html*" "$1/"
+# Resolve redirects, e.g. from URL shortening, e.g. http://s.apache.org/lusolr36rc1
+RC_URL=`(echo "Location: $1" ; wget -l 1 --spider "$1" 2>&1) \
+        | perl -ne '$url=$1 if (/Location:\s*(\S+)/); END { print "$url" if ($url); }'`
+
+if [ -d lucene ] ; then
+    echo "Please remove directory ./lucene/ before running this script."
+    exit 1;
+elif [ -d solr ] ; then
+    echo "Please remove directory ./solr/ before running this script."
+    exit 1;
+fi
+mkdir lucene
+cd lucene
+wget -r -np -l 0 -nH -erobots=off --cut-dirs=8 \
+     --reject="*.md5,*.sha1,maven-metadata.xml*,index.html*" "${RC_URL}/lucene/maven/"
+cd ..
+mkdir solr
+cd solr
+wget -r -np -l 0 -nH -erobots=off --cut-dirs=8 \
+     --reject="*.md5,*.sha1,maven-metadata.xml*,index.html*" "${RC_URL}/solr/maven/"
+cd ..
