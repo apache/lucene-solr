@@ -71,6 +71,10 @@ public final class PatternTokenizer extends Tokenizer {
     this.group = group;
     fillBuffer(str, input);
     matcher = pattern.matcher(str);
+    // confusingly group count depends ENTIRELY on the pattern but is only accessible via matcher
+    if (group >= 0 && group > matcher.groupCount()) {
+      throw new IllegalArgumentException("invalid group specified: pattern only has: " + matcher.groupCount() + " capturing groups");
+    }
     index = 0;
   }
 

@@ -142,14 +142,16 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     }
   }
   
+  /** for testing purposes ONLY */
+  public static String SNOWBALL_LANGS[] = {
+    "Armenian", "Basque", "Catalan", "Danish", "Dutch", "English",
+    "Finnish", "French", "German2", "German", "Hungarian", "Irish",
+    "Italian", "Kp", "Lovins", "Norwegian", "Porter", "Portuguese",
+    "Romanian", "Russian", "Spanish", "Swedish", "Turkish"
+  };
+  
   public void testEmptyTerm() throws IOException {
-    String langs[] = { 
-        "Armenian", "Basque", "Catalan", "Danish", "Dutch", "English",
-        "Finnish", "French", "German2", "German", "Hungarian", "Irish",
-        "Italian", "Kp", "Lovins", "Norwegian", "Porter", "Portuguese",
-        "Romanian", "Russian", "Spanish", "Swedish", "Turkish"
-    };
-    for (final String lang : langs) {
+    for (final String lang : SNOWBALL_LANGS) {
       Analyzer a = new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

@@ -34,7 +34,9 @@ public class MockCharFilter extends CharStream {
     // TODO: instead of fixed remainder... maybe a fixed
     // random seed?
     this.remainder = remainder;
-    assert remainder >= 0 && remainder < 10 : "invalid parameter";
+    if (remainder < 0 || remainder >= 10) {
+      throw new IllegalArgumentException("invalid remainder parameter (must be 0..10): " + remainder);
+    }
   }
   
   // for testing only, uses a remainder of 0
