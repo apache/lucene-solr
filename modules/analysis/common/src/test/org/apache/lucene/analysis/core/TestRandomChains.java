@@ -475,7 +475,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // TODO: maybe the collator one...???
         args[i] = AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
       } else if (paramType == AttributeSource.class) {
-        args[i] = new AttributeSource();
+        // nocommit: args[i] = new AttributeSource();
+        // this is currently too scary to deal with!
+        args[i] = null; // force IAE
       } else {
         args[i] = newRandomArg(random, paramType);
       }
@@ -660,7 +662,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     int numIterations = atLeast(20);
     for (int i = 0; i < numIterations; i++) {
       MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
-      if (VERBOSE) {
+      // nocommit: wrap the uncaught handler with our own that prints the analyzer
+      if (true || VERBOSE) {
         System.out.println("Creating random analyzer:" + a);
       }
       try {
