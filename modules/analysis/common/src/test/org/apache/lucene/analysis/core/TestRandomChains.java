@@ -111,7 +111,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       // broken!
       EdgeNGramTokenizer.class,
       // broken!
-      EdgeNGramTokenFilter.class
+      EdgeNGramTokenFilter.class,
+      // Not broken: we forcefully add this, so we shouldn't
+      // also randomly pick it:
+      ValidatingTokenFilter.class
     );
   }
   
@@ -132,11 +135,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharStream.class.isAssignableFrom(c))
         || brokenComponents.contains(c)
       ) {
-        continue;
-      }
-
-      if (c == ValidatingTokenFilter.class) {
-        // We insert this one ourselves after each stage...
         continue;
       }
 

@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.util.Attribute;
 
 // nocommit better name...?
 
@@ -41,13 +42,21 @@ public final class ValidatingTokenFilter extends TokenFilter {
   private final Map<Integer,Integer> posToStartOffset = new HashMap<Integer,Integer>();
   private final Map<Integer,Integer> posToEndOffset = new HashMap<Integer,Integer>();
 
-  // nocommit must be more careful here?  check hasAttribute first...?
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-  private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
-  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final PositionIncrementAttribute posIncAtt = getAttrIfExists(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLenAtt = getAttrIfExists(PositionLengthAttribute.class);
+  private final OffsetAttribute offsetAtt = getAttrIfExists(OffsetAttribute.class);
+  private final CharTermAttribute termAtt = getAttrIfExists(CharTermAttribute.class);
 
   private final String name;
+
+  // Returns null if the attr wasn't already added
+  private <A extends Attribute> A getAttrIfExists(Class<A> att) {
+    if (hasAttribute(att)) {
+      return getAttribute(att);
+    } else {
+      return null;
+    }
+  }
 
   /** The name arg is used to identify this stage when
    *  throwing exceptions (useful if you have more than one
@@ -63,49 +72,61 @@ public final class ValidatingTokenFilter extends TokenFilter {
       return false;
     }
 
-    pos += posIncAtt.getPositionIncrement();
-    if (pos == -1) {
-      throw new IllegalStateException("first posInc must be > 0");
-    }
+    if (posIncAtt != null && offsetAtt != null) {
 
-    final int startOffset = offsetAtt.startOffset();
-    final int endOffset = offsetAtt.endOffset();
-
-    final int posLen = posLenAtt.getPositionLength();
-    if (!posToStartOffset.containsKey(pos)) {
-      // First time we've seen a token leaving from this position:
-      posToStartOffset.put(pos, startOffset);
-      System.out.println("  + s " + pos + " -> " + startOffset);
-    } else {
-      // We've seen a token leaving from this position
-      // before; verify the startOffset is the same:
-      System.out.println("  + vs " + pos + " -> " + startOffset);
-      final int oldStartOffset = posToStartOffset.get(pos);
-      if (oldStartOffset != startOffset) {
-        throw new IllegalStateException(name + ": inconsistent startOffset as pos=" + pos + ": " + oldStartOffset + " vs " + startOffset + "; token=" + termAtt);
+      pos += posIncAtt.getPositionIncrement();
+      if (pos == -1) {
+        throw new IllegalStateException("first posInc must be > 0");
       }
-    }
 
-    final int endPos = pos + posLen;
+      final int startOffset = offsetAtt.startOffset();
+      final int endOffset = offsetAtt.endOffset();
 
-    if (!posToEndOffset.containsKey(endPos)) {
-      // First time we've seen a token arriving to this position:
-      posToEndOffset.put(endPos, endOffset);
-      System.out.println("  + e " + endPos + " -> " + endOffset);
-    } else {
-      // We've seen a token arriving to this position
-      // before; verify the endOffset is the same:
-      System.out.println("  + ve " + endPos + " -> " + endOffset);
-      final int oldEndOffset = posToEndOffset.get(endPos);
-      if (oldEndOffset != endOffset) {
-        throw new IllegalStateException(name + ": inconsistent endOffset as pos=" + endPos + ": " + oldEndOffset + " vs " + endOffset + "; token=" + termAtt);
+      final int posLen = posLenAtt == null ? 1 : posLenAtt.getPositionLength();
+
+      if (!posToStartOffset.containsKey(pos)) {
+        // First time we've seen a token leaving from this position:
+        posToStartOffset.put(pos, startOffset);
+        System.out.println("  + s " + pos + " -> " + startOffset);
+      } else {
+        // We've seen a token leaving from this position
+        // before; verify the startOffset is the same:
+        System.out.println("  + vs " + pos + " -> " + startOffset);
+        final int oldStartOffset = posToStartOffset.get(pos);
+        if (oldStartOffset != startOffset) {
+          throw new IllegalStateException(name + ": inconsistent startOffset as pos=" + pos + ": " + oldStartOffset + " vs " + startOffset + "; token=" + termAtt);
+        }
+      }
+
+      final int endPos = pos + posLen;
+
+      if (!posToEndOffset.containsKey(endPos)) {
+        // First time we've seen a token arriving to this position:
+        posToEndOffset.put(endPos, endOffset);
+        System.out.println("  + e " + endPos + " -> " + endOffset);
+      } else {
+        // We've seen a token arriving to this position
+        // before; verify the endOffset is the same:
+        System.out.println("  + ve " + endPos + " -> " + endOffset);
+        final int oldEndOffset = posToEndOffset.get(endPos);
+        if (oldEndOffset != endOffset) {
+          throw new IllegalStateException(name + ": inconsistent endOffset as pos=" + endPos + ": " + oldEndOffset + " vs " + endOffset + "; token=" + termAtt);
+        }
       }
     }
 
     return true;
   }
 
-  // TODO: end?  (what to validate?)
+  @Override
+  public void end() throws IOException {
+    super.end();
+
+    // TODO: what else to validate
+
+    // nocommit check that endOffset is >= max(endOffset)
+    // we've seen
+  }
 
   @Override
   public void reset() throws IOException {
