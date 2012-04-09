@@ -321,7 +321,6 @@ public final class ShingleFilter extends TokenFilter {
           noShingleOutput = false;
         }
         offsetAtt.setOffset(offsetAtt.startOffset(), nextToken.offsetAtt.endOffset());
-        // nocommit is this right!?  i'm just guessing...
         posLenAtt.setPositionLength(builtGramSize);
         isOutputHere = true;
         gramSize.advance();
