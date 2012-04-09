@@ -289,7 +289,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         try {
          return new HunspellDictionary(affixStream, dictStream, TEST_VERSION_CURRENT);
         } catch (Exception ex) {
-          throw new RuntimeException(ex);
+          Rethrow.rethrow(ex);
+          return null; // unreachable code
         }
       }
     });
@@ -377,8 +378,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         }
         try {
           return b.build();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
+        } catch (Exception ex) {
+          Rethrow.rethrow(ex);
+          return null; // unreachable code
         }
       }
       
@@ -410,6 +412,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     allowedTokenFilterArgs = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
     allowedTokenFilterArgs.addAll(argProducers.keySet());
     allowedTokenFilterArgs.add(TokenStream.class);
+    // TODO: fix this one, thats broken:
     allowedTokenFilterArgs.add(CommonGramsFilter.class);
     
     allowedCharFilterArgs = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
@@ -419,7 +422,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
   
   @SuppressWarnings("unchecked")
-  static <T> T createRandomArg(Random random, Class<T> paramType) {
+  static <T> T newRandomArg(Random random, Class<T> paramType) {
     final ArgProducer producer = argProducers.get(paramType);
     assertNotNull("No producer for arguments of type " + paramType.getName() + " found", producer);
     return (T) producer.create(random);
@@ -435,9 +438,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // TODO: maybe the collator one...???
         args[i] = AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
       } else if (paramType == AttributeSource.class) {
-        args[i] = null; // this always gives IAE: fine 
+        args[i] = new AttributeSource();
       } else {
-        args[i] = createRandomArg(random, paramType);
+        args[i] = newRandomArg(random, paramType);
       }
     }
     return args;
@@ -452,7 +455,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       } else if (paramType == CharStream.class) {
         args[i] = CharReader.get(reader);
       } else {
-        args[i] = createRandomArg(random, paramType);
+        args[i] = newRandomArg(random, paramType);
       }
     }
     return args;
@@ -465,10 +468,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       if (paramType == TokenStream.class) {
         args[i] = stream;
       } else if (paramType == CommonGramsFilter.class) {
-        // CommonGramsQueryFilter takes this one explicitly
-        args[i] = new CommonGramsFilter(TEST_VERSION_CURRENT, stream, createRandomArg(random, CharArraySet.class));
+        // TODO: fix this one, thats broken: CommonGramsQueryFilter takes this one explicitly
+        args[i] = new CommonGramsFilter(TEST_VERSION_CURRENT, stream, newRandomArg(random, CharArraySet.class));
       } else {
-        args[i] = createRandomArg(random, paramType);
+        args[i] = newRandomArg(random, paramType);
       }
     }
     return args;
