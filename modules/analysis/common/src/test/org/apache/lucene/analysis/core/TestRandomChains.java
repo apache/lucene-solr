@@ -52,6 +52,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.charfilter.CharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
@@ -597,11 +598,11 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       while (spec.tokenizer == null) {
         final Constructor<? extends Tokenizer> ctor = tokenizers.get(random.nextInt(tokenizers.size()));
         final StringBuilder descr = new StringBuilder();
-        CheckThatYouDidntReadAnythingReaderWrapper wrapper = new CheckThatYouDidntReadAnythingReaderWrapper(reader);
+        final CheckThatYouDidntReadAnythingReaderWrapper wrapper = new CheckThatYouDidntReadAnythingReaderWrapper(reader);
         final Object args[] = newTokenizerArgs(random, wrapper, ctor.getParameterTypes());
         spec.tokenizer = createComponent(ctor, args, descr);
         if (spec.tokenizer == null) {
-          assert wrapper.readSomething == false;
+          assertFalse(ctor.getDeclaringClass().getName() + " has read something in ctor but failed with UOE/IAE", wrapper.readSomething);
         }
         spec.toString = descr.toString();
       }
@@ -649,73 +650,41 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
   }
   
-  // wants charfilter to be a filterreader...
-  static class CheckThatYouDidntReadAnythingReaderWrapper extends CharStream {
+  static final class CheckThatYouDidntReadAnythingReaderWrapper extends CharFilter {
     boolean readSomething;
-    CharStream in;
     
     CheckThatYouDidntReadAnythingReaderWrapper(Reader in) {
-      this.in = CharReader.get(in);
-    }
-    
-    @Override
-    public int correctOffset(int currentOff) {
-      return in.correctOffset(currentOff);
-    }
-
-    @Override
-    public void close() throws IOException {
-      in.close();
+      super(CharReader.get(in));
     }
 
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
       readSomething = true;
-      return in.read(cbuf, off, len);
+      return super.read(cbuf, off, len);
     }
 
     @Override
     public int read() throws IOException {
       readSomething = true;
-      return in.read();
+      return super.read();
     }
 
     @Override
     public int read(CharBuffer target) throws IOException {
       readSomething = true;
-      return in.read(target);
-    }
-
-    @Override
-    public void mark(int readAheadLimit) throws IOException {
-      in.mark(readAheadLimit);
-    }
-
-    @Override
-    public boolean markSupported() {
-      return in.markSupported();
+      return super.read(target);
     }
 
     @Override
     public int read(char[] cbuf) throws IOException {
       readSomething = true;
-      return in.read(cbuf);
-    }
-
-    @Override
-    public boolean ready() throws IOException {
-      return in.ready();
-    }
-
-    @Override
-    public void reset() throws IOException {
-      in.reset();
+      return super.read(cbuf);
     }
 
     @Override
     public long skip(long n) throws IOException {
       readSomething = true;
-      return in.skip(n);
+      return super.skip(n);
     }
   }
   
