@@ -28,7 +28,7 @@ release notes, upgrade instructions, or other changes may be found online at:
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.0
+Apache Tika 1.1
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -476,6 +476,8 @@ Other Changes
   (ryan, Aliaksandr Zhuhrou, Uwe Schindler)
 
 * SOLR-3159: Upgrade example and tests to run with Jetty 8 (ryan)
+
+* SOLR-3254: Upgrade Solr to Tika 1.1 (janhoy)
 
 * SOLR-3329: Dropped getSourceID() from SolrInfoMBean and using 
   getClass().getPackage().getSpecificationVersion() for Version. (ryan)

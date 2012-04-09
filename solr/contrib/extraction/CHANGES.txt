@@ -20,13 +20,13 @@ to your Solr Home lib directory.  See http://wiki.apache.org/solr/ExtractingRequ
 Tika Dependency
 ---------------
 
-Current Version: Tika 1.0 (released 2011-11-07)
+Current Version: Tika 1.1 (released 2012-03-23)
 
 $Id$
 
 ================== Release 4.0.0-dev ==============
 
-(No Changes)
+* SOLR-3254: Upgrade Solr to Tika 1.1 (janhoy)
 
 ================== Release 3.6.0 ==================
 
