@@ -88,6 +88,29 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   static List<Constructor<? extends TokenFilter>> tokenfilters;
   static List<Constructor<? extends CharStream>> charfilters;
   
+  // TODO: fix those and remove
+  private static final Set<Class<?>> brokenComponents = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
+  static {
+    Collections.<Class<?>>addAll(brokenComponents,
+      // TODO: fix basetokenstreamtestcase not to trip because this one has no CharTermAtt
+      EmptyTokenizer.class,
+      // doesn't actual reset itself!
+      CachingTokenFilter.class,
+      // nocommit: corrumpts graphs (offset consistency check)
+      PositionFilter.class,
+      // doesn't consume whole stream!
+      LimitTokenCountFilter.class,
+      // broken!
+      NGramTokenizer.class,
+      // broken!
+      NGramTokenFilter.class,
+      // broken!
+      EdgeNGramTokenizer.class,
+      // broken!
+      EdgeNGramTokenFilter.class
+    );
+  }
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     List<Class<?>> analysisClasses = new ArrayList<Class<?>>();
@@ -103,22 +126,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         || c.isAnnotationPresent(Deprecated.class)
         || c.isSynthetic() || c.isAnonymousClass() || c.isMemberClass() || c.isInterface()
         || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharStream.class.isAssignableFrom(c))
-        // TODO: fix basetokenstreamtestcase not to trip because this one has no CharTermAtt
-        || c == EmptyTokenizer.class
-        // doesn't actual reset itself!
-        || c == CachingTokenFilter.class
-        // nocommit: corrumpts graphs (offset consistency check)
-        || c == PositionFilter.class
-        // doesn't consume whole stream!
-        || c == LimitTokenCountFilter.class
-        // broken!
-        || c == NGramTokenizer.class
-        // broken!
-        || c == NGramTokenFilter.class
-        // broken!
-        || c == EdgeNGramTokenizer.class
-        // broken!
-        || c == EdgeNGramTokenFilter.class
+        || brokenComponents.contains(c)
       ) {
         continue;
       }
@@ -657,7 +665,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     int numIterations = atLeast(20);
     for (int i = 0; i < numIterations; i++) {
       MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
-      if (true || VERBOSE) {
+      if (VERBOSE) {
         System.out.println("Creating random analyzer:" + a);
       }
       try {
