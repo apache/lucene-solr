@@ -147,14 +147,14 @@
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/metadata-extractor-2.4.0-beta-1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/netcdf-4.2-min.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/pdfbox-1.6.0.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-3.8-beta4.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-ooxml-3.8-beta4.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-ooxml-schemas-3.8-beta4.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-scratchpad-3.8-beta4.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-3.8-beta5.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-ooxml-3.8-beta5.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-ooxml-schemas-3.8-beta5.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/poi-scratchpad-3.8-beta5.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/rome-0.9.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tagsoup-1.2.1.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-core-1.0.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-parsers-1.0.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-core-1.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/extraction/lib/tika-parsers-1.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/xmlbeans-2.3.0.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/langid/lib/langdetect-1.1-20120112.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/langid/lib/jsonic-1.2.7.jar"/>
