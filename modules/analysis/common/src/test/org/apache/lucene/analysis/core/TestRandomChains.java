@@ -606,14 +606,13 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       StringBuilder descr = new StringBuilder();
       int numFilters = random.nextInt(3);
       for (int i = 0; i < numFilters; i++) {
-        boolean success = false;
-        while (!success) {
+        while (true) {
           final Constructor<? extends CharStream> ctor = charfilters.get(random.nextInt(charfilters.size()));
           final Object args[] = newCharFilterArgs(random, spec.reader, ctor.getParameterTypes());
           reader = createComponent(ctor, args, descr);
           if (reader != null) {
-            success = true;
             spec.reader = reader;
+            break;
           }
         }
       }
@@ -627,14 +626,13 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       StringBuilder descr = new StringBuilder();
       int numFilters = random.nextInt(5);
       for (int i = 0; i < numFilters; i++) {
-        boolean success = false;
-        while (!success) {
+        while (true) {
           final Constructor<? extends TokenFilter> ctor = tokenfilters.get(random.nextInt(tokenfilters.size()));
           final Object args[] = newFilterArgs(random, spec.stream, ctor.getParameterTypes());
           final TokenFilter flt = createComponent(ctor, args, descr);
           if (flt != null) {
-            success = true;
             spec.stream = flt;
+            break;
           }
         }
       }
