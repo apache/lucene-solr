@@ -56,6 +56,7 @@ import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.charfilter.CharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
+import org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
@@ -66,6 +67,8 @@ import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
 import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 import org.apache.lucene.analysis.ngram.NGramTokenizer;
+import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
+import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.analysis.position.PositionFilter;
@@ -112,6 +115,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       EdgeNGramTokenizer.class,
       // broken!
       EdgeNGramTokenFilter.class,
+      // fix these 4 to use 'real positions' and not stack the way they do:
+      // if you want that use positionfilter
+      PathHierarchyTokenizer.class,
+      ReversePathHierarchyTokenizer.class,
+      HyphenationCompoundWordTokenFilter.class,
+      DictionaryCompoundWordTokenFilter.class,
       // Not broken: we forcefully add this, so we shouldn't
       // also randomly pick it:
       ValidatingTokenFilter.class
