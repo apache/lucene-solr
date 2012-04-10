@@ -207,7 +207,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
             // We've seen a token leaving from this position
             // before; verify the startOffset is the same:
             //System.out.println("  + vs " + pos + " -> " + startOffset);
-            assertEquals(posToStartOffset.get(pos).intValue(), startOffset);
+            assertEquals("pos=" + pos + " posLen=" + posLength + " token=" + termAtt, posToStartOffset.get(pos).intValue(), startOffset);
           }
 
           final int endPos = pos + posLength;
@@ -220,7 +220,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
             // We've seen a token arriving to this position
             // before; verify the endOffset is the same:
             //System.out.println("  + ve " + endPos + " -> " + endOffset);
-            assertEquals(posToEndOffset.get(endPos).intValue(), endOffset);
+            assertEquals("pos=" + pos + " posLen=" + posLength + " token=" + termAtt, posToEndOffset.get(endPos).intValue(), endOffset);
           }
         }
       }
@@ -386,6 +386,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     final Analyzer a;
     final boolean simple;
     final boolean offsetsAreCorrect;
+    public boolean failed;
     
     AnalysisThread(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple, boolean offsetsAreCorrect) {
       this.random = random;
@@ -398,12 +399,16 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     
     @Override
     public void run() {
+      boolean success = false;
       try {
         // see the part in checkRandomData where it replays the same text again
         // to verify reproducability/reuse: hopefully this would catch thread hazards.
         checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean(), simple, offsetsAreCorrect);
+        success = true;
       } catch (IOException e) {
         Rethrow.rethrow(e);
+      } finally {
+        failed = !success;
       }
     }
   };
@@ -416,7 +421,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean(), simple, offsetsAreCorrect);
     // now test with multiple threads
     int numThreads = _TestUtil.nextInt(random, 4, 8);
-    Thread threads[] = new Thread[numThreads];
+    AnalysisThread threads[] = new AnalysisThread[numThreads];
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new AnalysisThread(new Random(random.nextLong()), a, iterations, maxWordLength, simple, offsetsAreCorrect);
     }
@@ -428,6 +433,11 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         threads[i].join();
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
+      }
+    }
+    for (int i = 0; i < threads.length; i++) {
+      if (threads[i].failed) {
+        throw new RuntimeException("some thread(s) failed");
       }
     }
   }
