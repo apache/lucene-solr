@@ -11,6 +11,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="library" name="Solr library" level="project" />
     <orderEntry type="library" name="Solr extraction library" level="project" />
     <orderEntry type="module" module-name="solr" />
