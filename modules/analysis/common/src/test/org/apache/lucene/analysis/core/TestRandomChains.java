@@ -105,30 +105,30 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     // nocommit can we promote some of these to be only
     // offsets offenders?
     Collections.<Class<?>>addAll(brokenComponents,
-                                 // TODO: fix basetokenstreamtestcase not to trip because this one has no CharTermAtt
-                                 EmptyTokenizer.class,
-                                 // doesn't actual reset itself!
-                                 CachingTokenFilter.class,
-                                 // doesn't consume whole stream!
-                                 LimitTokenCountFilter.class,
-                                 // Not broken: we forcefully add this, so we shouldn't
-                                 // also randomly pick it:
-                                 ValidatingTokenFilter.class,
-                                 // NOTE: these by themselves won't cause any 'basic assertions' to fail.
-                                 // but see https://issues.apache.org/jira/browse/LUCENE-3920, if any 
-                                 // tokenfilter that combines words (e.g. shingles) comes after them,
-                                 // this will create bogus offsets because their 'offsets go backwards',
-                                 // causing shingle or whatever to make a single token with a 
-                                 // startOffset thats > its endOffset
-                                 // (see LUCENE-3738 for a list of other offenders here)
-                                 // broken!
-                                 NGramTokenizer.class,
-                                 // broken!
-                                 NGramTokenFilter.class,
-                                 // broken!
-                                 EdgeNGramTokenizer.class,
-                                 // broken!
-                                 EdgeNGramTokenFilter.class
+      // TODO: fix basetokenstreamtestcase not to trip because this one has no CharTermAtt
+      EmptyTokenizer.class,
+      // doesn't actual reset itself!
+      CachingTokenFilter.class,
+      // doesn't consume whole stream!
+      LimitTokenCountFilter.class,
+      // Not broken: we forcefully add this, so we shouldn't
+      // also randomly pick it:
+      ValidatingTokenFilter.class,
+      // NOTE: these by themselves won't cause any 'basic assertions' to fail.
+      // but see https://issues.apache.org/jira/browse/LUCENE-3920, if any 
+      // tokenfilter that combines words (e.g. shingles) comes after them,
+      // this will create bogus offsets because their 'offsets go backwards',
+      // causing shingle or whatever to make a single token with a 
+      // startOffset thats > its endOffset
+      // (see LUCENE-3738 for a list of other offenders here)
+      // broken!
+      NGramTokenizer.class,
+      // broken!
+      NGramTokenFilter.class,
+      // broken!
+      EdgeNGramTokenizer.class,
+      // broken!
+      EdgeNGramTokenFilter.class
     );
   }
 
@@ -137,18 +137,19 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   private static final Set<Class<?>> brokenOffsetsComponents = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
   static {
     Collections.<Class<?>>addAll(brokenOffsetsComponents,
-                                 WordDelimiterFilter.class,
-                                 TrimFilter.class,
-                                 ReversePathHierarchyTokenizer.class,
-                                 PathHierarchyTokenizer.class,
-                                 HyphenationCompoundWordTokenFilter.class,
-                                 DictionaryCompoundWordTokenFilter.class,
-                                 // nocommit: corrumpts graphs (offset consistency check):
-                                 PositionFilter.class,
-                                 // nocommit it seems to mess up offsets!?
-                                 WikipediaTokenizer.class
-                                 );
+      WordDelimiterFilter.class,
+      TrimFilter.class,
+      ReversePathHierarchyTokenizer.class,
+      PathHierarchyTokenizer.class,
+      HyphenationCompoundWordTokenFilter.class,
+      DictionaryCompoundWordTokenFilter.class,
+      // nocommit: corrumpts graphs (offset consistency check):
+      PositionFilter.class,
+      // nocommit it seems to mess up offsets!?
+      WikipediaTokenizer.class
+    );
   }
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     List<Class<?>> analysisClasses = new ArrayList<Class<?>>();
@@ -168,6 +169,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       ) {
         continue;
       }
+      
       for (final Constructor<?> ctor : c.getConstructors()) {
         // don't test synthetic or deprecated ctors, they likely have known bugs:
         if (ctor.isSynthetic() || ctor.isAnnotationPresent(Deprecated.class)) {
@@ -175,21 +177,22 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         }
         if (Tokenizer.class.isAssignableFrom(c)) {
           assertTrue(ctor.toGenericString() + " has unsupported parameter types",
-                     allowedTokenizerArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
+            allowedTokenizerArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
           tokenizers.add(castConstructor(Tokenizer.class, ctor));
         } else if (TokenFilter.class.isAssignableFrom(c)) {
           assertTrue(ctor.toGenericString() + " has unsupported parameter types",
-                     allowedTokenFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
+            allowedTokenFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
           tokenfilters.add(castConstructor(TokenFilter.class, ctor));
         } else if (CharStream.class.isAssignableFrom(c)) {
           assertTrue(ctor.toGenericString() + " has unsupported parameter types",
-                     allowedCharFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
+            allowedCharFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
           charfilters.add(castConstructor(CharStream.class, ctor));
         } else {
           fail("Cannot get here");
         }
       }
     }
+    
     final Comparator<Constructor<?>> ctorComp = new Comparator<Constructor<?>>() {
       @Override
       public int compare(Constructor<?> arg0, Constructor<?> arg1) {
@@ -205,12 +208,14 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       System.out.println("charfilters = " + charfilters);
     }
   }
+  
   @AfterClass
   public static void afterClass() throws Exception {
     tokenizers = null;
     tokenfilters = null;
     charfilters = null;
   }
+  
   /** Hack to work around the stupidness of Oracle's strict Java backwards compatibility.
    * {@code Class<T>#getConstructors()} should return unmodifiable {@code List<Constructor<T>>} not array! */
   @SuppressWarnings("unchecked") 
