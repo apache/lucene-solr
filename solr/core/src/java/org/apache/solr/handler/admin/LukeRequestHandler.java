@@ -595,7 +595,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (freq > tiq.minFreq) {
         UnicodeUtil.UTF8toUTF16(text, spare);
         String t = spare.toString();
-        tiq.distinctTerms = new Long(terms.getUniqueTermCount()).intValue();
+        tiq.distinctTerms = new Long(terms.size()).intValue();
 
         tiq.add(new TopTermQueue.TermInfo(new Term(field, t), termsEnum.docFreq()));
         if (tiq.size() > numTerms) { // if tiq full

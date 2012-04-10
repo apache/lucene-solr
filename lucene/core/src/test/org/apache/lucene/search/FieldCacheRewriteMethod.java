@@ -119,7 +119,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         }
 
         @Override
-        public long getUniqueTermCount() throws IOException {
+        public long size() throws IOException {
           return -1;
         }
       });

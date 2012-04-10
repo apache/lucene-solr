@@ -216,7 +216,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   }
 
   @Override
-  public int getUniqueFieldCount() {
+  public int size() {
     return fields.size();
   }
 
@@ -455,7 +455,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
 
     @Override
-    public long getUniqueTermCount() {
+    public long size() {
       return numTerms;
     }
 

@@ -270,7 +270,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public int getUniqueFieldCount() {
+    public int size() {
       if (fieldNumbers == null) {
         return 0;
       } else {
@@ -307,7 +307,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public long getUniqueTermCount() {
+    public long size() {
       return numTerms;
     }
 
@@ -660,7 +660,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     }
     if (tvx != null) {
       Fields fields = new TVFields(docID);
-      if (fields.getUniqueFieldCount() == 0) {
+      if (fields.size() == 0) {
         // TODO: we can improve writer here, eg write 0 into
         // tvx file, so we know on first read from tvx that
         // this doc has no TVs

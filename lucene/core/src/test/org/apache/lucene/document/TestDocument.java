@@ -21,7 +21,6 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
@@ -345,7 +344,7 @@ public class TestDocument extends LuceneTestCase {
       Fields tvFields = r.getTermVectors(0);
       Terms tvs = tvFields.terms(field);
       assertNotNull(tvs);
-      assertEquals(2, tvs.getUniqueTermCount());
+      assertEquals(2, tvs.size());
       TermsEnum tvsEnum = tvs.iterator(null);
       assertEquals(new BytesRef("abc"), tvsEnum.next());
       final DocsAndPositionsEnum dpEnum = tvsEnum.docsAndPositions(null, null, false);

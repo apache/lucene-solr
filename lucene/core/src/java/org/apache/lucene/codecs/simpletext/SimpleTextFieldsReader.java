@@ -596,7 +596,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public long getUniqueTermCount() {
+    public long size() {
       return (long) termCount;
     }
 
@@ -641,7 +641,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
 
   @Override
-  public int getUniqueFieldCount() {
+  public int size() {
     return -1;
   }
 

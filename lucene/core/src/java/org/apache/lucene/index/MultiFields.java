@@ -228,7 +228,7 @@ public final class MultiFields extends Fields {
   }
 
   @Override
-  public int getUniqueFieldCount() {
+  public int size() {
     return -1;
   }
 

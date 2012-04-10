@@ -109,7 +109,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int getUniqueFieldCount() {
+    public int size() {
       return fieldToTerms.size();
     }
 
@@ -135,7 +135,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public long getUniqueTermCount() {
+    public long size() {
       return termToDocs.size();
     }
 

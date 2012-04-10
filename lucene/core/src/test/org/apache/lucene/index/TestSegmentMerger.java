@@ -19,10 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -120,7 +118,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
     Terms vector = mergedReader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(vector);
-    assertEquals(3, vector.getUniqueTermCount());
+    assertEquals(3, vector.size());
     TermsEnum termsEnum = vector.iterator(null);
 
     int i = 0;

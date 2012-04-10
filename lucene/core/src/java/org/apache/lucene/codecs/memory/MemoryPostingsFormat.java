@@ -824,7 +824,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public long getUniqueTermCount() throws IOException {
+    public long size() throws IOException {
       return termCount;
     }
 
@@ -888,7 +888,7 @@ public class MemoryPostingsFormat extends PostingsFormat {
       }
       
       @Override
-      public int getUniqueFieldCount() {
+      public int size() {
         return fields.size();
       }
 

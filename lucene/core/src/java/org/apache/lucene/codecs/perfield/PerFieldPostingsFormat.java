@@ -248,7 +248,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public int getUniqueFieldCount() {
+    public int size() {
       return fields.size();
     }
 

@@ -98,7 +98,7 @@ public class TestTermVectors extends LuceneTestCase {
     for (int i = 0; i < hits.length; i++) {
       Fields vectors = searcher.reader.getTermVectors(hits[i].doc);
       assertNotNull(vectors);
-      assertEquals("doc=" + hits[i].doc + " tv=" + vectors, 1, vectors.getUniqueFieldCount());
+      assertEquals("doc=" + hits[i].doc + " tv=" + vectors, 1, vectors.size());
     }
     Terms vector;
     vector = searcher.reader.getTermVectors(hits[0].doc).terms("noTV");
@@ -121,13 +121,13 @@ public class TestTermVectors extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     Fields v = reader.getTermVectors(0);
-    assertEquals(4, v.getUniqueFieldCount());
+    assertEquals(4, v.size());
     String[] expectedFields = new String[]{"a", "b", "c", "x"};
     int[] expectedPositions = new int[]{1, 2, 0};
     FieldsEnum fieldsEnum = v.iterator();
     for(int i=0;i<expectedFields.length;i++) {
       assertEquals(expectedFields[i], fieldsEnum.next());
-      assertEquals(3, v.terms(expectedFields[i]).getUniqueTermCount());
+      assertEquals(3, v.terms(expectedFields[i]).size());
 
       DocsAndPositionsEnum dpEnum = null;
       Terms terms = fieldsEnum.terms();
@@ -166,7 +166,7 @@ public class TestTermVectors extends LuceneTestCase {
     for (int i = 0; i < hits.length; i++) {
       Fields vectors = searcher.reader.getTermVectors(hits[i].doc);
       assertNotNull(vectors);
-      assertEquals(1, vectors.getUniqueFieldCount());
+      assertEquals(1, vectors.size());
       
       TermsEnum termsEnum = vectors.terms("field").iterator(null);
       assertNotNull(termsEnum.next());
@@ -205,7 +205,7 @@ public class TestTermVectors extends LuceneTestCase {
     for (int i = 0; i < hits.length; i++) {
       Fields vectors = searcher.reader.getTermVectors(hits[i].doc);
       assertNotNull(vectors);
-      assertEquals(1, vectors.getUniqueFieldCount());
+      assertEquals(1, vectors.size());
     }
   }
 
@@ -303,7 +303,7 @@ public class TestTermVectors extends LuceneTestCase {
     Terms vector = knownSearcher.reader.getTermVectors(hits[1].doc).terms("field");
     assertNotNull(vector);
     //System.out.println("Vector: " + vector);
-    assertEquals(10, vector.getUniqueTermCount());
+    assertEquals(10, vector.size());
     TermsEnum termsEnum = vector.iterator(null);
     while(termsEnum.next() != null) {
       String term = termsEnum.term().utf8ToString();
@@ -371,7 +371,7 @@ public class TestTermVectors extends LuceneTestCase {
 
       Fields vectors = searcher.reader.getTermVectors(hits[i].doc);
       assertNotNull(vectors);
-      assertEquals(1, vectors.getUniqueFieldCount());
+      assertEquals(1, vectors.size());
     }
     reader.close();
   }
@@ -418,10 +418,10 @@ public class TestTermVectors extends LuceneTestCase {
 
     Fields vectors = searcher.reader.getTermVectors(hits[0].doc);
     assertNotNull(vectors);
-    assertEquals(1, vectors.getUniqueFieldCount());
+    assertEquals(1, vectors.size());
     Terms vector = vectors.terms("field");
     assertNotNull(vector);
-    assertEquals(1, vector.getUniqueTermCount());
+    assertEquals(1, vector.size());
     TermsEnum termsEnum = vector.iterator(null);
     assertNotNull(termsEnum.next());
     assertEquals("one", termsEnum.term().utf8ToString());

@@ -36,7 +36,7 @@ public abstract class Fields {
    *  measure isn't stored by the codec. Note that, just like 
    *  other term measures, this measure does not take deleted 
    *  documents into account. */
-  public abstract int getUniqueFieldCount() throws IOException;
+  public abstract int size() throws IOException;
   
   /** Returns the number of terms for all fields, or -1 if this 
    *  measure isn't stored by the codec. Note that, just like 
@@ -53,7 +53,7 @@ public abstract class Fields {
       }
       Terms terms = terms(field);
       if (terms != null) {
-        final long termCount = terms.getUniqueTermCount();
+        final long termCount = terms.size();
         if (termCount == -1) {
           return -1;
         }
