@@ -792,8 +792,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     int numIterations = atLeast(20);
     for (int i = 0; i < numIterations; i++) {
       MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
-      // nocommit: wrap the uncaught handler with our own that prints the analyzer
-      if (true || VERBOSE) {
+      if (VERBOSE) {
         System.out.println("Creating random analyzer:" + a);
       }
       try {

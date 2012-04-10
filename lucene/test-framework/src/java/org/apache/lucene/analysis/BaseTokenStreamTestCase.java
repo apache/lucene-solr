@@ -382,17 +382,19 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   static class AnalysisThread extends Thread {
     final int iterations;
     final int maxWordLength;
-    final Random random;
+    final long seed;
     final Analyzer a;
+    final boolean useCharFilter;
     final boolean simple;
     final boolean offsetsAreCorrect;
     public boolean failed;
     
-    AnalysisThread(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple, boolean offsetsAreCorrect) {
-      this.random = random;
+    AnalysisThread(long seed, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect) {
+      this.seed = seed;
       this.a = a;
       this.iterations = iterations;
       this.maxWordLength = maxWordLength;
+      this.useCharFilter = useCharFilter;
       this.simple = simple;
       this.offsetsAreCorrect = offsetsAreCorrect;
     }
@@ -403,7 +405,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       try {
         // see the part in checkRandomData where it replays the same text again
         // to verify reproducability/reuse: hopefully this would catch thread hazards.
-        checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean(), simple, offsetsAreCorrect);
+        checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect);
         success = true;
       } catch (IOException e) {
         Rethrow.rethrow(e);
@@ -418,12 +420,15 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean simple, boolean offsetsAreCorrect) throws IOException {
-    checkRandomData(random, a, iterations, maxWordLength, random.nextBoolean(), simple, offsetsAreCorrect);
-    // now test with multiple threads
+    long seed = random.nextLong();
+    boolean useCharFilter = random.nextBoolean();
+    checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect);
+    // now test with multiple threads: note we do the EXACT same thing we did before in each thread,
+    // so this should only really fail from another thread if its an actual thread problem
     int numThreads = _TestUtil.nextInt(random, 4, 8);
     AnalysisThread threads[] = new AnalysisThread[numThreads];
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new AnalysisThread(new Random(random.nextLong()), a, iterations, maxWordLength, simple, offsetsAreCorrect);
+      threads[i] = new AnalysisThread(seed, a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect);
     }
     for (int i = 0; i < threads.length; i++) {
       threads[i].start();
