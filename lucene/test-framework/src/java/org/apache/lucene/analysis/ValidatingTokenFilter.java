@@ -72,21 +72,35 @@ public final class ValidatingTokenFilter extends TokenFilter {
       return false;
     }
 
-    if (posIncAtt != null && offsetAtt != null) {
-
+    int startOffset = 0;
+    int endOffset = 0;
+    int posLen = 0;
+    
+    if (posIncAtt != null) {
       pos += posIncAtt.getPositionIncrement();
       if (pos == -1) {
         throw new IllegalStateException("first posInc must be > 0");
       }
+    }
+    
+    if (offsetAtt != null) {
+      startOffset = offsetAtt.startOffset();
+      endOffset = offsetAtt.endOffset();
 
-      final int startOffset = offsetAtt.startOffset();
-      final int endOffset = offsetAtt.endOffset();
-
+      if (startOffset < 0) {
+        throw new IllegalStateException(name + ": startOffset=" + startOffset + " is < 0");
+      }
+      if (endOffset < 0) {
+        throw new IllegalStateException(name + ": endOffset=" + endOffset + " is < 0");
+      }
       if (endOffset < startOffset) {
         throw new IllegalStateException(name + ": startOffset=" + startOffset + " is > endOffset=" + endOffset + " pos=" + pos + "; token=" + termAtt);
       }
-
-      final int posLen = posLenAtt == null ? 1 : posLenAtt.getPositionLength();
+    }
+    
+    posLen = posLenAtt == null ? 1 : posLenAtt.getPositionLength();
+    
+    if (offsetAtt != null && posIncAtt != null) {
 
       if (!posToStartOffset.containsKey(pos)) {
         // First time we've seen a token leaving from this position:
