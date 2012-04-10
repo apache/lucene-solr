@@ -27,7 +27,11 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.Attribute;
 
-// nocommit better name...?
+// nocommit rename to OffsetsXXXTF?  ie we only validate
+// offsets (now anyway...)
+
+// TODO: also make a DebuggingTokenFilter, that just prints
+// all att values that come through it...
 
 // nocommit BTSTC should just append this to the chain
 // instead of checking itself:
@@ -37,6 +41,7 @@ import org.apache.lucene.util.Attribute;
 public final class ValidatingTokenFilter extends TokenFilter {
 
   private int pos;
+  private int lastStartOffset;
 
   // Maps position to the start/end offset:
   private final Map<Integer,Integer> posToStartOffset = new HashMap<Integer,Integer>();
@@ -46,6 +51,7 @@ public final class ValidatingTokenFilter extends TokenFilter {
   private final PositionLengthAttribute posLenAtt = getAttrIfExists(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = getAttrIfExists(OffsetAttribute.class);
   private final CharTermAttribute termAtt = getAttrIfExists(CharTermAttribute.class);
+  private final boolean offsetsAreCorrect;
 
   private final String name;
 
@@ -61,9 +67,10 @@ public final class ValidatingTokenFilter extends TokenFilter {
   /** The name arg is used to identify this stage when
    *  throwing exceptions (useful if you have more than one
    *  instance in your chain). */
-  public ValidatingTokenFilter(TokenStream in, String name) {
+  public ValidatingTokenFilter(TokenStream in, String name, boolean offsetsAreCorrect) {
     super(in);
     this.name = name;
+    this.offsetsAreCorrect = offsetsAreCorrect;
   }
 
   @Override
@@ -82,6 +89,8 @@ public final class ValidatingTokenFilter extends TokenFilter {
         throw new IllegalStateException("first posInc must be > 0");
       }
     }
+
+    // System.out.println("  got token=" + termAtt + " pos=" + pos);
     
     if (offsetAtt != null) {
       startOffset = offsetAtt.startOffset();
@@ -96,11 +105,15 @@ public final class ValidatingTokenFilter extends TokenFilter {
       if (endOffset < startOffset) {
         throw new IllegalStateException(name + ": startOffset=" + startOffset + " is > endOffset=" + endOffset + " pos=" + pos + "; token=" + termAtt);
       }
+      if (offsetsAreCorrect && offsetAtt.startOffset() < lastStartOffset) {
+        throw new IllegalStateException(name + ": offsets must not go backwards startOffset=" + startOffset + " is < lastStartOffset=" + lastStartOffset);
+      }
+      lastStartOffset = offsetAtt.startOffset();
     }
     
     posLen = posLenAtt == null ? 1 : posLenAtt.getPositionLength();
     
-    if (offsetAtt != null && posIncAtt != null) {
+    if (offsetAtt != null && posIncAtt != null && offsetsAreCorrect) {
 
       if (!posToStartOffset.containsKey(pos)) {
         // First time we've seen a token leaving from this position:
@@ -152,5 +165,6 @@ public final class ValidatingTokenFilter extends TokenFilter {
     pos = -1;
     posToStartOffset.clear();
     posToEndOffset.clear();
+    lastStartOffset = 0;
   }
 }

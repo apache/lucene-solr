@@ -52,6 +52,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.charfilter.CharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
@@ -63,6 +64,8 @@ import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.analysis.hunspell.HunspellDictionaryTest;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
+import org.apache.lucene.analysis.miscellaneous.TrimFilter;
+import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
 import org.apache.lucene.analysis.ngram.NGramTokenFilter;
@@ -91,42 +94,54 @@ import org.xml.sax.InputSource;
 
 /** tests random analysis chains */
 public class TestRandomChains extends BaseTokenStreamTestCase {
+
   static List<Constructor<? extends Tokenizer>> tokenizers;
   static List<Constructor<? extends TokenFilter>> tokenfilters;
   static List<Constructor<? extends CharStream>> charfilters;
-  
+
   // TODO: fix those and remove
   private static final Set<Class<?>> brokenComponents = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
   static {
+    // nocommit can we promote some of these to be only
+    // offsets offenders?
     Collections.<Class<?>>addAll(brokenComponents,
-      // TODO: fix basetokenstreamtestcase not to trip because this one has no CharTermAtt
-      EmptyTokenizer.class,
-      // doesn't actual reset itself!
-      CachingTokenFilter.class,
-      // nocommit: corrumpts graphs (offset consistency check)
-      PositionFilter.class,
-      // doesn't consume whole stream!
-      LimitTokenCountFilter.class,
-      // broken!
-      NGramTokenizer.class,
-      // broken!
-      NGramTokenFilter.class,
-      // broken!
-      EdgeNGramTokenizer.class,
-      // broken!
-      EdgeNGramTokenFilter.class,
-      // fix these 4 to use 'real positions' and not stack the way they do:
-      // if you want that use positionfilter
-      PathHierarchyTokenizer.class,
-      ReversePathHierarchyTokenizer.class,
-      HyphenationCompoundWordTokenFilter.class,
-      DictionaryCompoundWordTokenFilter.class,
-      // Not broken: we forcefully add this, so we shouldn't
-      // also randomly pick it:
-      ValidatingTokenFilter.class
+                                 // TODO: fix basetokenstreamtestcase not to trip because this one has no CharTermAtt
+                                 EmptyTokenizer.class,
+                                 // doesn't actual reset itself!
+                                 CachingTokenFilter.class,
+                                 // doesn't consume whole stream!
+                                 LimitTokenCountFilter.class,
+                                 // Not broken: we forcefully add this, so we shouldn't
+                                 // also randomly pick it:
+                                 ValidatingTokenFilter.class,
+                                 // nocommit: randomly generate the Side enum param here; then promote to brokenOffsets?
+                                 EdgeNGramTokenizer.class,
+                                 // nocommit: randomly generate the Side enum param here; then promote to brokenOffsets?
+                                 EdgeNGramTokenFilter.class
     );
   }
-  
+
+  // TODO: also fix these and remove (maybe):
+  // Classes that don't produce consistent graph offsets:
+  private static final Set<Class<?>> brokenOffsetsComponents = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
+  static {
+    Collections.<Class<?>>addAll(brokenOffsetsComponents,
+                                 WordDelimiterFilter.class,
+                                 TrimFilter.class,
+                                 ReversePathHierarchyTokenizer.class,
+                                 PathHierarchyTokenizer.class,
+                                 HyphenationCompoundWordTokenFilter.class,
+                                 DictionaryCompoundWordTokenFilter.class,
+                                 // nocommit: corrumpts graphs (offset consistency check):
+                                 PositionFilter.class,
+                                 // broken!
+                                 NGramTokenizer.class,
+                                 // broken!
+                                 NGramTokenFilter.class,
+                                 // nocommit it seems to mess up offsets!?
+                                 WikipediaTokenizer.class
+                                 );
+  }
   @BeforeClass
   public static void beforeClass() throws Exception {
     List<Class<?>> analysisClasses = new ArrayList<Class<?>>();
@@ -146,7 +161,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       ) {
         continue;
       }
-
       for (final Constructor<?> ctor : c.getConstructors()) {
         // don't test synthetic or deprecated ctors, they likely have known bugs:
         if (ctor.isSynthetic() || ctor.isAnnotationPresent(Deprecated.class)) {
@@ -154,22 +168,21 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         }
         if (Tokenizer.class.isAssignableFrom(c)) {
           assertTrue(ctor.toGenericString() + " has unsupported parameter types",
-            allowedTokenizerArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
+                     allowedTokenizerArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
           tokenizers.add(castConstructor(Tokenizer.class, ctor));
         } else if (TokenFilter.class.isAssignableFrom(c)) {
           assertTrue(ctor.toGenericString() + " has unsupported parameter types",
-            allowedTokenFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
+                     allowedTokenFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
           tokenfilters.add(castConstructor(TokenFilter.class, ctor));
         } else if (CharStream.class.isAssignableFrom(c)) {
           assertTrue(ctor.toGenericString() + " has unsupported parameter types",
-            allowedCharFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
+                     allowedCharFilterArgs.containsAll(Arrays.asList(ctor.getParameterTypes())));
           charfilters.add(castConstructor(CharStream.class, ctor));
         } else {
           fail("Cannot get here");
         }
       }
     }
-
     final Comparator<Constructor<?>> ctorComp = new Comparator<Constructor<?>>() {
       @Override
       public int compare(Constructor<?> arg0, Constructor<?> arg1) {
@@ -179,28 +192,24 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     Collections.sort(tokenizers, ctorComp);
     Collections.sort(tokenfilters, ctorComp);
     Collections.sort(charfilters, ctorComp);
-    
     if (VERBOSE) {
       System.out.println("tokenizers = " + tokenizers);
       System.out.println("tokenfilters = " + tokenfilters);
       System.out.println("charfilters = " + charfilters);
     }
   }
-  
   @AfterClass
   public static void afterClass() throws Exception {
     tokenizers = null;
     tokenfilters = null;
     charfilters = null;
   }
-  
   /** Hack to work around the stupidness of Oracle's strict Java backwards compatibility.
    * {@code Class<T>#getConstructors()} should return unmodifiable {@code List<Constructor<T>>} not array! */
   @SuppressWarnings("unchecked") 
   private static <T> Constructor<T> castConstructor(Class<T> instanceClazz, Constructor<?> ctor) {
     return (Constructor<T>) ctor;
   }
-  
   private static void getClassesForPackage(String pckgname, List<Class<?>> classes) throws Exception {
     final ClassLoader cld = TestRandomChains.class.getClassLoader();
     final String path = pckgname.replace('.', '/');
@@ -541,13 +550,21 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     MockRandomAnalyzer(long seed) {
       this.seed = seed;
     }
+
+    public boolean offsetsAreCorrect() {
+      // nocommit: can we not do the full chain here!?
+      Random random = new Random(seed);
+      TokenizerSpec tokenizerSpec = newTokenizer(random, new StringReader(""));
+      TokenFilterSpec filterSpec = newFilterChain(random, tokenizerSpec.tokenizer, tokenizerSpec.offsetsAreCorrect);
+      return filterSpec.offsetsAreCorrect;
+    }
     
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Random random = new Random(seed);
-      TokenizerSpec tokenizerspec = newTokenizer(random, reader);
-      TokenFilterSpec filterspec = newFilterChain(random, tokenizerspec.tokenizer);
-      return new TokenStreamComponents(tokenizerspec.tokenizer, filterspec.stream);
+      TokenizerSpec tokenizerSpec = newTokenizer(random, reader);
+      TokenFilterSpec filterSpec = newFilterChain(random, tokenizerSpec.tokenizer, tokenizerSpec.offsetsAreCorrect);
+      return new TokenStreamComponents(tokenizerSpec.tokenizer, filterSpec.stream);
     }
 
     @Override
@@ -561,19 +578,21 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     public String toString() {
       Random random = new Random(seed);
       StringBuilder sb = new StringBuilder();
-      CharFilterSpec charfilterSpec = newCharFilterChain(random, new StringReader(""));
+      CharFilterSpec charFilterSpec = newCharFilterChain(random, new StringReader(""));
       sb.append("\ncharfilters=");
-      sb.append(charfilterSpec.toString);
+      sb.append(charFilterSpec.toString);
       // intentional: initReader gets its own separate random
       random = new Random(seed);
-      TokenizerSpec tokenizerSpec = newTokenizer(random, charfilterSpec.reader);
+      TokenizerSpec tokenizerSpec = newTokenizer(random, charFilterSpec.reader);
       sb.append("\n");
       sb.append("tokenizer=");
       sb.append(tokenizerSpec.toString);
-      TokenFilterSpec tokenfilterSpec = newFilterChain(random, tokenizerSpec.tokenizer);
+      TokenFilterSpec tokenFilterSpec = newFilterChain(random, tokenizerSpec.tokenizer, tokenizerSpec.offsetsAreCorrect);
       sb.append("\n");
       sb.append("filters=");
-      sb.append(tokenfilterSpec.toString);
+      sb.append(tokenFilterSpec.toString);
+      sb.append("\n");
+      sb.append("offsetsAreCorrect=" + tokenFilterSpec.offsetsAreCorrect);
       return sb.toString();
     }
     
@@ -620,6 +639,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         final CheckThatYouDidntReadAnythingReaderWrapper wrapper = new CheckThatYouDidntReadAnythingReaderWrapper(reader);
         final Object args[] = newTokenizerArgs(random, wrapper, ctor.getParameterTypes());
         spec.tokenizer = createComponent(ctor, args, descr);
+        if (brokenOffsetsComponents.contains(ctor.getDeclaringClass())) {
+          spec.offsetsAreCorrect = false;
+        }
         if (spec.tokenizer == null) {
           assertFalse(ctor.getDeclaringClass().getName() + " has read something in ctor but failed with UOE/IAE", wrapper.readSomething);
         }
@@ -648,8 +670,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       return spec;
     }
     
-    private TokenFilterSpec newFilterChain(Random random, Tokenizer tokenizer) {
+    private TokenFilterSpec newFilterChain(Random random, Tokenizer tokenizer, boolean offsetsAreCorrect) {
       TokenFilterSpec spec = new TokenFilterSpec();
+      spec.offsetsAreCorrect = offsetsAreCorrect;
       spec.stream = tokenizer;
       StringBuilder descr = new StringBuilder();
       int numFilters = random.nextInt(5);
@@ -658,13 +681,16 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // Insert ValidatingTF after each stage so we can
         // catch problems right after the TF that "caused"
         // them:
-        spec.stream = new ValidatingTokenFilter(spec.stream, "stage " + i);
+        spec.stream = new ValidatingTokenFilter(spec.stream, "stage " + i, spec.offsetsAreCorrect);
 
         while (true) {
           final Constructor<? extends TokenFilter> ctor = tokenfilters.get(random.nextInt(tokenfilters.size()));
           final Object args[] = newFilterArgs(random, spec.stream, ctor.getParameterTypes());
           final TokenFilter flt = createComponent(ctor, args, descr);
           if (flt != null) {
+            if (brokenOffsetsComponents.contains(ctor.getDeclaringClass())) {
+              spec.offsetsAreCorrect = false;
+            }
             spec.stream = flt;
             break;
           }
@@ -674,7 +700,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       // Insert ValidatingTF after each stage so we can
       // catch problems right after the TF that "caused"
       // them:
-      spec.stream = new ValidatingTokenFilter(spec.stream, "last stage");
+      spec.stream = new ValidatingTokenFilter(spec.stream, "last stage", spec.offsetsAreCorrect);
 
       spec.toString = descr.toString();
       return spec;
@@ -722,11 +748,13 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   static class TokenizerSpec {
     Tokenizer tokenizer;
     String toString;
+    boolean offsetsAreCorrect = true;
   }
   
   static class TokenFilterSpec {
     TokenStream stream;
     String toString;
+    boolean offsetsAreCorrect = true;
   }
   
   static class CharFilterSpec {
@@ -743,7 +771,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         System.out.println("Creating random analyzer:" + a);
       }
       try {
-        checkRandomData(random, a, 1000);
+        checkRandomData(random, a, 1000, 20, false,
+                        false /* We already validate our own offsets... */);
       } catch (Throwable e) {
         System.err.println("Exception from random analyzer: " + a);
         throw e;
