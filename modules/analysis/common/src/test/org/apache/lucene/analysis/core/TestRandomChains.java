@@ -130,17 +130,17 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       if (
         // don't waste time with abstract classes or deprecated known-buggy ones
         Modifier.isAbstract(modifiers) || !Modifier.isPublic(modifiers)
-        || c.isAnnotationPresent(Deprecated.class)
         || c.isSynthetic() || c.isAnonymousClass() || c.isMemberClass() || c.isInterface()
-        || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharStream.class.isAssignableFrom(c))
         || brokenComponents.contains(c)
+        || c.isAnnotationPresent(Deprecated.class)
+        || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharStream.class.isAssignableFrom(c))
       ) {
         continue;
       }
 
       for (final Constructor<?> ctor : c.getConstructors()) {
-        // don't test deprecated ctors, they likely have known bugs:
-        if (ctor.isAnnotationPresent(Deprecated.class) || ctor.isSynthetic()) {
+        // don't test synthetic or deprecated ctors, they likely have known bugs:
+        if (ctor.isSynthetic() || ctor.isAnnotationPresent(Deprecated.class)) {
           continue;
         }
         if (Tokenizer.class.isAssignableFrom(c)) {
@@ -258,9 +258,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     });
     put(byte.class, new ArgProducer() {
       @Override public Object create(Random random) {
-        byte bytes[] = new byte[1];
-        random.nextBytes(bytes);
-        return Byte.valueOf(bytes[0]);
+        // this wraps to negative when casting to byte
+        return Byte.valueOf((byte) random.nextInt(256));
       }
     });
     put(byte[].class, new ArgProducer() {
@@ -671,7 +670,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
   
   static final class CheckThatYouDidntReadAnythingReaderWrapper extends CharFilter {
-    boolean readSomething;
+    boolean readSomething = false;
     
     CheckThatYouDidntReadAnythingReaderWrapper(Reader in) {
       super(CharReader.get(in));

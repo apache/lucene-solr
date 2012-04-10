@@ -439,6 +439,8 @@ public final class ShingleFilter extends TokenFilter {
     super.reset();
     gramSize.reset();
     inputWindow.clear();
+    nextInputStreamToken = null;
+    isNextInputStreamToken = false;
     numFillerTokensToInsert = 0;
     isOutputHere = false;
     noShingleOutput = true;
