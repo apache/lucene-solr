@@ -190,4 +190,28 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     int numRounds = RANDOM_MULTIPLIER * 10000;
     checkRandomData(random, analyzer, numRounds);
   }
+  
+  // nocommit: wrong final offset, fix this!
+  public void testFinalOffsetSpecialCase() throws Exception {  
+    final NormalizeCharMap map = new NormalizeCharMap();
+    map.add("t", "");
+    // even though this below rule has no effect, the test passes if you remove it!!
+    map.add("tmakdbl", "c");
+    
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+
+      @Override
+      protected Reader initReader(Reader reader) {
+        return new MappingCharFilter(map, CharReader.get(reader));
+      }
+    };
+    
+    String text = "gzw f quaxot";
+    checkAnalysisConsistency(random, analyzer, false, text);
+  }
 }

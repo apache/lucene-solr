@@ -389,11 +389,14 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // we can't add duplicate keys, or NormalizeCharMap gets angry
         Set<String> keys = new HashSet<String>();
         int num = random.nextInt(5);
+        //System.out.println("NormalizeCharMap=");
         for (int i = 0; i < num; i++) {
           String key = _TestUtil.randomSimpleString(random);
           if (!keys.contains(key)) {
-            map.add(key,_TestUtil.randomSimpleString(random));
+            String value = _TestUtil.randomSimpleString(random);
+            map.add(key, value);
             keys.add(key);
+            //System.out.println("mapping: '" + key + "' => '" + value + "'");
           }
         }
         return map;
