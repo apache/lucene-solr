@@ -113,11 +113,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
                                  LimitTokenCountFilter.class,
                                  // Not broken: we forcefully add this, so we shouldn't
                                  // also randomly pick it:
-                                 ValidatingTokenFilter.class,
-                                 // nocommit: randomly generate the Side enum param here; then promote to brokenOffsets?
-                                 EdgeNGramTokenizer.class,
-                                 // nocommit: randomly generate the Side enum param here; then promote to brokenOffsets?
-                                 EdgeNGramTokenFilter.class
+                                 ValidatingTokenFilter.class
     );
   }
 
@@ -138,6 +134,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
                                  NGramTokenizer.class,
                                  // broken!
                                  NGramTokenFilter.class,
+                                 // broken!
+                                 EdgeNGramTokenizer.class,
+                                 // broken!
+                                 EdgeNGramTokenFilter.class,
                                  // nocommit it seems to mess up offsets!?
                                  WikipediaTokenizer.class
                                  );
@@ -354,6 +354,20 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           Rethrow.rethrow(ex);
           return null; // unreachable code
         }
+      }
+    });
+    put(EdgeNGramTokenizer.Side.class, new ArgProducer() {
+      @Override public Object create(Random random) {
+        return random.nextBoolean() 
+            ? EdgeNGramTokenizer.Side.FRONT 
+            : EdgeNGramTokenizer.Side.BACK;
+      }
+    });
+    put(EdgeNGramTokenFilter.Side.class, new ArgProducer() {
+      @Override public Object create(Random random) {
+        return random.nextBoolean() 
+            ? EdgeNGramTokenFilter.Side.FRONT 
+            : EdgeNGramTokenFilter.Side.BACK;
       }
     });
     put(HyphenationTree.class, new ArgProducer() {
