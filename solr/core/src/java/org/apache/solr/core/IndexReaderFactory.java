@@ -58,9 +58,13 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    * Creates a new IndexReader instance using the given Directory.
    * 
    * @param indexDir indexDir index location
+   * @param core {@link SolrCore} instance where this reader will be used. NOTE:
+   * this SolrCore instance may not be fully configured yet, but basic things like
+   * {@link SolrCore#getCoreDescriptor()}, {@link SolrCore#getSchema()} and
+   * {@link SolrCore#getSolrConfig()} are valid.
    * @return An IndexReader instance
    * @throws IOException
    */
-  public abstract DirectoryReader newReader(Directory indexDir)
+  public abstract DirectoryReader newReader(Directory indexDir, SolrCore core)
       throws IOException;
 }

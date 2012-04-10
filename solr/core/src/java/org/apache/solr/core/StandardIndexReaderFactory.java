@@ -30,7 +30,7 @@ import org.apache.lucene.store.Directory;
 public class StandardIndexReaderFactory extends IndexReaderFactory {
   
   @Override
-  public DirectoryReader newReader(Directory indexDir) throws IOException {
+  public DirectoryReader newReader(Directory indexDir, SolrCore core) throws IOException {
     return DirectoryReader.open(indexDir, termInfosIndexDivisor);
   }
 }
