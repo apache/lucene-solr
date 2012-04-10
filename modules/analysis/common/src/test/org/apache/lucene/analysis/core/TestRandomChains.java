@@ -569,9 +569,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     private <T> T createComponent(Constructor<T> ctor, Object[] args, StringBuilder descr) {
       try {
         final T instance = ctor.newInstance(args);
+        /*
         if (descr.length() > 0) {
           descr.append(",");
         }
+        */
+        descr.append("\n  ");
         descr.append(ctor.getDeclaringClass().getName());
         String params = Arrays.toString(args);
         params = params.substring(1, params.length()-1);
