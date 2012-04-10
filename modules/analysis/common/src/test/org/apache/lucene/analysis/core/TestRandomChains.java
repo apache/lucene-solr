@@ -113,7 +113,22 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
                                  LimitTokenCountFilter.class,
                                  // Not broken: we forcefully add this, so we shouldn't
                                  // also randomly pick it:
-                                 ValidatingTokenFilter.class
+                                 ValidatingTokenFilter.class,
+                                 // NOTE: these by themselves won't cause any 'basic assertions' to fail.
+                                 // but see https://issues.apache.org/jira/browse/LUCENE-3920, if any 
+                                 // tokenfilter that combines words (e.g. shingles) comes after them,
+                                 // this will create bogus offsets because their 'offsets go backwards',
+                                 // causing shingle or whatever to make a single token with a 
+                                 // startOffset thats > its endOffset
+                                 // (see LUCENE-3738 for a list of other offenders here)
+                                 // broken!
+                                 NGramTokenizer.class,
+                                 // broken!
+                                 NGramTokenFilter.class,
+                                 // broken!
+                                 EdgeNGramTokenizer.class,
+                                 // broken!
+                                 EdgeNGramTokenFilter.class
     );
   }
 
@@ -130,14 +145,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
                                  DictionaryCompoundWordTokenFilter.class,
                                  // nocommit: corrumpts graphs (offset consistency check):
                                  PositionFilter.class,
-                                 // broken!
-                                 NGramTokenizer.class,
-                                 // broken!
-                                 NGramTokenFilter.class,
-                                 // broken!
-                                 EdgeNGramTokenizer.class,
-                                 // broken!
-                                 EdgeNGramTokenFilter.class,
                                  // nocommit it seems to mess up offsets!?
                                  WikipediaTokenizer.class
                                  );
