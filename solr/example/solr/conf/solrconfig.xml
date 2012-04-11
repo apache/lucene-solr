@@ -620,12 +620,12 @@
        handleSelect affects the behavior of requests such as /select?qt=XXX
 
        handleSelect="true" will cause the SolrDispatchFilter to process
-       the request and will result in consistent error handling and
-       formatting for all types of requests.
+       the request and dispatch the query to a handler specified by the 
+       "qt" param
 
        handleSelect="false" will cause the SolrDispatchFilter to
-       ignore "/select" requests and fallback to using the legacy
-       SolrServlet and it's Solr 1.1 style error formatting
+       ignore "/select" requests, resulting in a 404 unless a handler
+       is explicitly registered with the name "/select"
     -->
   <requestDispatcher handleSelect="true" >
     <!-- Request Parsing
