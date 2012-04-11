@@ -12,6 +12,7 @@
 
 #content #plugins #navigation .PLUGINCHANGES { margin-top: 20px; }
 #content #plugins #navigation .PLUGINCHANGES a { background-image: url( ../../img/ico/eye.png ); }
+#content #plugins #navigation .RELOAD a { background-image: url( ../../img/ico/arrow-circle.png ); }
 
 
 #content #plugins #navigation a

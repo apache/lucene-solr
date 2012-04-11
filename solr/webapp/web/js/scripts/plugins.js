@@ -115,7 +115,7 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
   }
 
   navigation_content.push( '<li class="PLUGINCHANGES"><a href="#">Watch Changes</a></li>' );
-  //navigation_content.push( '<li class="RELOAD"><a href="#">Refresh Values</a></li>' );
+  navigation_content.push( '<li class="RELOAD"><a href="#" onClick="window.location.reload()">Refresh Values</a></li>' );
 
   navigation_element
     .html( navigation_content.join( "\n" ) );
