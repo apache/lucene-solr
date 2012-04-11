@@ -81,7 +81,6 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
       throw new IllegalArgumentException("bufferSize cannot be negative");
     }
     if (skip < 0) {
-      // nocommit: not quite right right here: see line 84... if skip > numTokensFound we always get a NegativeArrayException? needs fixing!
       throw new IllegalArgumentException("skip cannot be negative");
     }
     termAtt.resizeBuffer(bufferSize);

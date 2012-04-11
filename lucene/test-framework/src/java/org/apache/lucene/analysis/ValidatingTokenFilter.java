@@ -27,13 +27,13 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.Attribute;
 
-// nocommit rename to OffsetsXXXTF?  ie we only validate
+// TODO: rename to OffsetsXXXTF?  ie we only validate
 // offsets (now anyway...)
 
 // TODO: also make a DebuggingTokenFilter, that just prints
 // all att values that come through it...
 
-// nocommit BTSTC should just append this to the chain
+// TODO: BTSTC should just append this to the chain
 // instead of checking itself:
 
 /** A TokenFilter that checks consistency of the tokens (eg
@@ -155,7 +155,7 @@ public final class ValidatingTokenFilter extends TokenFilter {
 
     // TODO: what else to validate
 
-    // nocommit check that endOffset is >= max(endOffset)
+    // TODO: check that endOffset is >= max(endOffset)
     // we've seen
   }
 

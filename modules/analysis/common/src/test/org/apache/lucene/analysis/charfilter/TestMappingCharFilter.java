@@ -195,8 +195,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     checkRandomData(random, analyzer, numRounds);
   }
   
-  // nocommit: wrong final offset, fix this!
-  @Ignore
+  @Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
   public void testFinalOffsetSpecialCase() throws Exception {  
     final NormalizeCharMap map = new NormalizeCharMap();
     map.add("t", "");
@@ -220,8 +219,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     checkAnalysisConsistency(random, analyzer, false, text);
   }
   
-  // nocommit: this is intended to fail until we fix bugs
-  @Ignore
+  @Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
   public void testRandomMaps() throws Exception {
     for (int i = 0; i < 100; i++) {
       final NormalizeCharMap map = randomMap();
