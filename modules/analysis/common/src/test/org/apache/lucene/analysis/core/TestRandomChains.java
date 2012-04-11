@@ -57,6 +57,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.charfilter.CharFilter;
+import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilter;
@@ -130,7 +131,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       // broken!
       EdgeNGramTokenizer.class,
       // broken!
-      EdgeNGramTokenFilter.class
+      EdgeNGramTokenFilter.class,
+      // nocommit: remove this class after we fix its finalOffset bug
+      MappingCharFilter.class
     );
   }
 
