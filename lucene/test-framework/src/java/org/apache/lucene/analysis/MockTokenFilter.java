@@ -65,7 +65,6 @@ public final class MockTokenFilter extends TokenFilter {
    * 
    * @param input TokenStream to filter
    * @param filter DFA representing the terms that should be removed.
-   * @param enablePositionIncrements true if the removal should accumulate position increments.
    */
   public MockTokenFilter(TokenStream input, CharacterRunAutomaton filter) {
     super(input);
