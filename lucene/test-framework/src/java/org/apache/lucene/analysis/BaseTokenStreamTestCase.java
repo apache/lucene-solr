@@ -387,6 +387,10 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     final boolean useCharFilter;
     final boolean simple;
     final boolean offsetsAreCorrect;
+
+    // NOTE: not volatile because we don't want the tests to
+    // add memory barriers (ie alter how threads
+    // interact)... so this is just "best effort":
     public boolean failed;
     
     AnalysisThread(long seed, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect) {
