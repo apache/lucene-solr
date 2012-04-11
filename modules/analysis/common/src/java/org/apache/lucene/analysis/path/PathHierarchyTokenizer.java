@@ -195,5 +195,6 @@ public class PathHierarchyTokenizer extends Tokenizer {
     charsRead = 0;
     endDelimiter = false;
     skipped = 0;
+    startPosition = 0;
   }
 }
