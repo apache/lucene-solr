@@ -42,8 +42,6 @@ import org.apache.solr.common.util.*;
 
 
 /**
- * TODO? should this go in common?
- * 
  *
  * @since solr 1.3
  */
