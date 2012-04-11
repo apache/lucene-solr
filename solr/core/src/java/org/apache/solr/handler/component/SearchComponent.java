@@ -101,7 +101,6 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
   }
 
   public NamedList getStatistics() {
-    NamedList lst = new SimpleOrderedMap();
-    return lst;
+    return null;
   }
 }

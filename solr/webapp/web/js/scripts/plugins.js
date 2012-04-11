@@ -211,12 +211,17 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
 
           if( 'description' === detail_key )
           {
-            // For list of components
+            // Link component list to their MBeans page
             if(detail_value.match(/^Search using components: /)) {
-              detail_value = detail_value
-                .replace( /: /, ':<ul><li>' )
-                .replace( /,/g, '</li><li>' ) +
-                "</li></ul>";
+              var idx = detail_value.indexOf(':');
+              var url = '#/'+active_context.params.splat[0]+'/plugins/other?entry=';
+              var tmp = 'Search using components:<ul>';
+              $.each(detail_value.substr(idx+1).split(","), function(index, value) { 
+                value = $.trim(value);
+                tmp += '<li><a href="'+url+value+'" class="linker">'+value+"</a></li>";
+              });
+              tmp += "</ul>";
+              detail_value = tmp;
             }
           }
 
