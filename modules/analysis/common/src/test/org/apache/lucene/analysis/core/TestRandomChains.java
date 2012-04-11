@@ -47,6 +47,7 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.EmptyTokenizer;
+import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -711,6 +712,13 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
 
         while (true) {
           final Constructor<? extends TokenFilter> ctor = tokenfilters.get(random.nextInt(tokenfilters.size()));
+          
+          // nocommit/hack: MockGraph has assertions that will trip if it follows
+          // an offsets violator. so we cant use it after e.g. wikipediatokenizer
+          if (ctor.getDeclaringClass().equals(MockGraphTokenFilter.class) && !spec.offsetsAreCorrect) {
+            continue;
+          }
+          
           final Object args[] = newFilterArgs(random, spec.stream, ctor.getParameterTypes());
           final TokenFilter flt = createComponent(ctor, args, descr);
           if (flt != null) {
