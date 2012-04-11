@@ -151,7 +151,7 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
         startPosData.startOffset = startOffset;
       } else {
         // Make sure our input isn't messing up offsets:
-        assert startPosData.startOffset == startOffset;
+        assert startPosData.startOffset == startOffset: "prev startOffset=" + startPosData.startOffset + " vs new startOffset=" + startOffset + " inputPos=" + inputPos;
       }
 
       final int endOffset = offsetAtt.endOffset();
@@ -159,7 +159,7 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
         endPosData.endOffset = endOffset;
       } else {
         // Make sure our input isn't messing up offsets:
-        assert endPosData.endOffset == endOffset;
+        assert endPosData.endOffset == endOffset: "prev endOffset=" + endPosData.endOffset + " vs new endOffset=" + endOffset + " inputPos=" + inputPos;
       }
 
       tokenPending = true;

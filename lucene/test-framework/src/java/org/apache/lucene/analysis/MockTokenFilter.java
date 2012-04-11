@@ -55,7 +55,7 @@ public final class MockTokenFilter extends TokenFilter {
       makeString("with"))));
   
   private final CharacterRunAutomaton filter;
-  private boolean enablePositionIncrements = false;
+  private boolean enablePositionIncrements = true;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
@@ -67,14 +67,16 @@ public final class MockTokenFilter extends TokenFilter {
    * @param filter DFA representing the terms that should be removed.
    * @param enablePositionIncrements true if the removal should accumulate position increments.
    */
-  public MockTokenFilter(TokenStream input, CharacterRunAutomaton filter, boolean enablePositionIncrements) {
+  public MockTokenFilter(TokenStream input, CharacterRunAutomaton filter) {
     super(input);
     this.filter = filter;
-    this.enablePositionIncrements = enablePositionIncrements;
   }
   
   @Override
   public boolean incrementToken() throws IOException {
+    // TODO: fix me when posInc=false, to work like FilteringTokenFilter in that case and not return
+    // initial token with posInc=0 ever
+    
     // return the first non-stop word found
     int skippedPositions = 0;
     while (input.incrementToken()) {

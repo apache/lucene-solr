@@ -31,10 +31,12 @@ public final class MockRandomLookaheadTokenFilter extends LookaheadTokenFilter<L
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final Random random;
+  private final long seed;
 
   public MockRandomLookaheadTokenFilter(Random random, TokenStream in) {
     super(in);
-    this.random = random;
+    this.seed = random.nextLong();
+    this.random = new Random(seed);
   }
 
   @Override
@@ -57,9 +59,6 @@ public final class MockRandomLookaheadTokenFilter extends LookaheadTokenFilter<L
 
     if (!end) {
       while (true) {
-        // We can use un-re-seeded random, because how far
-        // ahead we peek should never alter the resulting
-        // tokens as seen by the consumer:
         if (random.nextInt(3) == 1) {
           if (!peekToken()) {
             if (DEBUG) {
@@ -90,5 +89,11 @@ public final class MockRandomLookaheadTokenFilter extends LookaheadTokenFilter<L
       }
     }
     return result;
+  }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    random.setSeed(seed);
   }
 }

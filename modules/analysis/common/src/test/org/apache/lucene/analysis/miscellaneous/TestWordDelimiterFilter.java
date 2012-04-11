@@ -72,14 +72,16 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(wdf, 
         new String[] { "foo", "bar", "foobar" },
         new int[] { 5, 9, 5 }, 
-        new int[] { 8, 12, 12 });
+        new int[] { 8, 12, 12 },
+        null, null, null, null, false);
 
     wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("foo-bar", 5, 6)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "foo", "bar", "foobar" },
         new int[] { 5, 5, 5 },
-        new int[] { 6, 6, 6 });
+        new int[] { 6, 6, 6 },
+        null, null, null, null, false);
   }
   
   @Test
@@ -123,7 +125,8 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(wdf,
         new String[] { "foo", "bar", "foobar"},
         new int[] { 8, 12, 8 },
-        new int[] { 11, 15, 15 });
+        new int[] { 11, 15, 15 },
+        null, null, null, null, false);
   }
 
   public void doSplit(final String input, String... output) throws Exception {
@@ -230,18 +233,27 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "LUCENE / SOLR", new String[] { "LUCENE", "SOLR" },
         new int[] { 0, 9 },
         new int[] { 6, 13 },
-        new int[] { 1, 1 });
+        null,
+        new int[] { 1, 1 },
+        null,
+        false);
     
     /* only in this case, posInc of 2 ?! */
     assertAnalyzesTo(a, "LUCENE / solR", new String[] { "LUCENE", "sol", "R", "solR" },
         new int[] { 0, 9, 12, 9 },
         new int[] { 6, 12, 13, 13 },
-        new int[] { 1, 1, 1, 0 });
+        null,
+        new int[] { 1, 1, 1, 0 },
+        null,
+        false);
     
     assertAnalyzesTo(a, "LUCENE / NUTCH SOLR", new String[] { "LUCENE", "NUTCH", "SOLR" },
         new int[] { 0, 9, 15 },
         new int[] { 6, 14, 19 },
-        new int[] { 1, 1, 1 });
+        null,
+        new int[] { 1, 1, 1 },
+        null,
+        false);
     
     /* analyzer that will consume tokens with large position increments */
     Analyzer a2 = new Analyzer() {
@@ -258,24 +270,36 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a2, "LUCENE largegap SOLR", new String[] { "LUCENE", "largegap", "SOLR" },
         new int[] { 0, 7, 16 },
         new int[] { 6, 15, 20 },
-        new int[] { 1, 10, 1 });
+        null,
+        new int[] { 1, 10, 1 },
+        null,
+        false);
     
     /* the "/" had a position increment of 10, where did it go?!?!! */
     assertAnalyzesTo(a2, "LUCENE / SOLR", new String[] { "LUCENE", "SOLR" },
         new int[] { 0, 9 },
         new int[] { 6, 13 },
-        new int[] { 1, 11 });
+        null,
+        new int[] { 1, 11 },
+        null,
+        false);
     
     /* in this case, the increment of 10 from the "/" is carried over */
     assertAnalyzesTo(a2, "LUCENE / solR", new String[] { "LUCENE", "sol", "R", "solR" },
         new int[] { 0, 9, 12, 9 },
         new int[] { 6, 12, 13, 13 },
-        new int[] { 1, 11, 1, 0 });
+        null,
+        new int[] { 1, 11, 1, 0 },
+        null,
+        false);
     
     assertAnalyzesTo(a2, "LUCENE / NUTCH SOLR", new String[] { "LUCENE", "NUTCH", "SOLR" },
         new int[] { 0, 9, 15 },
         new int[] { 6, 14, 19 },
-        new int[] { 1, 11, 1 });
+        null,
+        new int[] { 1, 11, 1 },
+        null,
+        false);
 
     Analyzer a3 = new Analyzer() {
       @Override
@@ -292,14 +316,20 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new String[] { "lucene", "solr", "lucenesolr" },
         new int[] { 0, 7, 0 },
         new int[] { 6, 11, 11 },
-        new int[] { 1, 1, 0 });
+        null,
+        new int[] { 1, 1, 0 },
+        null,
+        false);
 
     /* the stopword should add a gap here */
     assertAnalyzesTo(a3, "the lucene.solr", 
         new String[] { "lucene", "solr", "lucenesolr" }, 
         new int[] { 4, 11, 4 }, 
         new int[] { 10, 15, 15 },
-        new int[] { 2, 1, 0 });
+        null,
+        new int[] { 2, 1, 0 },
+        null,
+        false);
   }
   
   /** blast some random strings through the analyzer */
@@ -322,7 +352,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
           return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, protectedWords));
         }
       };
-      checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+      checkRandomData(random, a, 10000*RANDOM_MULTIPLIER, 20, false, false);
     }
   }
   

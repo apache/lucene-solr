@@ -42,6 +42,16 @@ Bug fixes
  * LUCENE-3820: PatternReplaceCharFilter could return invalid token positions. 
    (Dawid Weiss)
 
+ * LUCENE-3969: Throw IAE on bad arguments that could cause confusing errors in
+   CompoundWordTokenFilterBase, PatternTokenizer, PositionFilter,
+   SnowballFilter, PathHierarchyTokenizer, ReversePathHierarchyTokenizer, 
+   WikipediaTokenizer, and KeywordTokenizer. ShingleFilter and 
+   CommonGramsFilter now populate PositionLengthAttribute. Fixed
+   PathHierarchyTokenizer to reset() all state. Protect against AIOOBE in
+   ReversePathHierarchyTokenizer if skip is large. Fixed wrong final
+   offset calculation in PathHierarchyTokenizer. 
+   (Mike McCandless, Uwe Schindler, Robert Muir)
+
 New Features
 
  * LUCENE-2341: A new analyzer/ filter: Morfologik - a dictionary-driven lemmatizer 

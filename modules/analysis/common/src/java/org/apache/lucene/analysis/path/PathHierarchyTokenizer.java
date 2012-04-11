@@ -65,6 +65,12 @@ public class PathHierarchyTokenizer extends Tokenizer {
 
   public PathHierarchyTokenizer(Reader input, int bufferSize, char delimiter, char replacement, int skip) {
     super(input);
+    if (bufferSize < 0) {
+      throw new IllegalArgumentException("bufferSize cannot be negative");
+    }
+    if (skip < 0) {
+      throw new IllegalArgumentException("skip cannot be negative");
+    }
     termAtt.resizeBuffer(bufferSize);
 
     this.delimiter = delimiter;
@@ -85,10 +91,11 @@ public class PathHierarchyTokenizer extends Tokenizer {
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
   private int startPosition = 0;
-  private int finalOffset = 0;
   private int skipped = 0;
   private boolean endDelimiter = false;
   private StringBuilder resultToken;
+  
+  private int charsRead = 0;
 
 
   @Override
@@ -112,12 +119,13 @@ public class PathHierarchyTokenizer extends Tokenizer {
 
     while (true) {
       int c = input.read();
-      if( c < 0 ){
+      if (c >= 0) {
+        charsRead++;
+      } else {
         if( skipped > skip ) {
           length += resultToken.length();
           termAtt.setLength(length);
-          finalOffset = correctOffset(startPosition + length);
-          offsetAtt.setOffset(correctOffset(startPosition), finalOffset);
+           offsetAtt.setOffset(correctOffset(startPosition), correctOffset(startPosition + length));
           if( added ){
             resultToken.setLength(0);
             resultToken.append(termAtt.buffer(), 0, length);
@@ -125,7 +133,6 @@ public class PathHierarchyTokenizer extends Tokenizer {
           return added;
         }
         else{
-          finalOffset = correctOffset(startPosition + length);
           return false;
         }
       }
@@ -168,8 +175,7 @@ public class PathHierarchyTokenizer extends Tokenizer {
     }
     length += resultToken.length();
     termAtt.setLength(length);
-    finalOffset = correctOffset(startPosition + length);
-    offsetAtt.setOffset(correctOffset(startPosition), finalOffset);
+    offsetAtt.setOffset(correctOffset(startPosition), correctOffset(startPosition+length));
     resultToken.setLength(0);
     resultToken.append(termAtt.buffer(), 0, length);
     return true;
@@ -178,15 +184,17 @@ public class PathHierarchyTokenizer extends Tokenizer {
   @Override
   public final void end() {
     // set final offset
+    int finalOffset = correctOffset(charsRead);
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
+  public void reset() throws IOException {
+    super.reset();
     resultToken.setLength(0);
-    finalOffset = 0;
+    charsRead = 0;
     endDelimiter = false;
     skipped = 0;
+    startPosition = 0;
   }
 }

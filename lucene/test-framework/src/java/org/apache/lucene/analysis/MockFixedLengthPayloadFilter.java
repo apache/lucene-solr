@@ -34,6 +34,9 @@ public final class MockFixedLengthPayloadFilter extends TokenFilter {
 
   public MockFixedLengthPayloadFilter(Random random, TokenStream in, int length) {
     super(in);
+    if (length < 0) {
+      throw new IllegalArgumentException("length must be >= 0");
+    }
     this.random = random;
     this.bytes = new byte[length];
     this.payload = new Payload(bytes);

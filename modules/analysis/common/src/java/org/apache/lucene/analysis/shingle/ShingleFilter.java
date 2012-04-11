@@ -23,9 +23,10 @@ import java.util.LinkedList;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
@@ -150,6 +151,7 @@ public final class ShingleFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
 
@@ -319,6 +321,7 @@ public final class ShingleFilter extends TokenFilter {
           noShingleOutput = false;
         }
         offsetAtt.setOffset(offsetAtt.startOffset(), nextToken.offsetAtt.endOffset());
+        posLenAtt.setPositionLength(builtGramSize);
         isOutputHere = true;
         gramSize.advance();
         tokenAvailable = true;
@@ -436,6 +439,8 @@ public final class ShingleFilter extends TokenFilter {
     super.reset();
     gramSize.reset();
     inputWindow.clear();
+    nextInputStreamToken = null;
+    isNextInputStreamToken = false;
     numFillerTokensToInsert = 0;
     isOutputHere = false;
     noShingleOutput = true;

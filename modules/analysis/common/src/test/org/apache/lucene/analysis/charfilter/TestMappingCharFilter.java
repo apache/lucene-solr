@@ -19,6 +19,8 @@ package org.apache.lucene.analysis.charfilter;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -27,6 +29,8 @@ import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util._TestUtil;
+import org.junit.Ignore;
 
 public class TestMappingCharFilter extends BaseTokenStreamTestCase {
 
@@ -189,5 +193,68 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     
     int numRounds = RANDOM_MULTIPLIER * 10000;
     checkRandomData(random, analyzer, numRounds);
+  }
+  
+  @Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
+  public void testFinalOffsetSpecialCase() throws Exception {  
+    final NormalizeCharMap map = new NormalizeCharMap();
+    map.add("t", "");
+    // even though this below rule has no effect, the test passes if you remove it!!
+    map.add("tmakdbl", "c");
+    
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+
+      @Override
+      protected Reader initReader(Reader reader) {
+        return new MappingCharFilter(map, CharReader.get(reader));
+      }
+    };
+    
+    String text = "gzw f quaxot";
+    checkAnalysisConsistency(random, analyzer, false, text);
+  }
+  
+  @Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
+  public void testRandomMaps() throws Exception {
+    for (int i = 0; i < 100; i++) {
+      final NormalizeCharMap map = randomMap();
+      Analyzer analyzer = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+          return new TokenStreamComponents(tokenizer, tokenizer);
+        }
+
+        @Override
+        protected Reader initReader(Reader reader) {
+          return new MappingCharFilter(map, CharReader.get(reader));
+        }
+      };
+      int numRounds = RANDOM_MULTIPLIER * 100;
+      checkRandomData(random, analyzer, numRounds);
+    }
+  }
+  
+  private NormalizeCharMap randomMap() {
+    NormalizeCharMap map = new NormalizeCharMap();
+    // we can't add duplicate keys, or NormalizeCharMap gets angry
+    Set<String> keys = new HashSet<String>();
+    int num = random.nextInt(5);
+    //System.out.println("NormalizeCharMap=");
+    for (int i = 0; i < num; i++) {
+      String key = _TestUtil.randomSimpleString(random);
+      if (!keys.contains(key)) {
+        String value = _TestUtil.randomSimpleString(random);
+        map.add(key, value);
+        keys.add(key);
+        //System.out.println("mapping: '" + key + "' => '" + value + "'");
+      }
+    }
+    return map;
   }
 }
