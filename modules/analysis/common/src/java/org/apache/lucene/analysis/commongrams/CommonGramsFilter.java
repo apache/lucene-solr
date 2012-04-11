@@ -16,6 +16,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
@@ -54,6 +55,7 @@ public final class CommonGramsFilter extends TokenFilter {
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
   private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLenAttribute = addAttribute(PositionLengthAttribute.class);
 
   private int lastStartOffset;
   private boolean lastWasCommon;
@@ -166,6 +168,7 @@ public final class CommonGramsFilter extends TokenFilter {
     buffer.getChars(0, length, termText, 0);
     termAttribute.setLength(length);
     posIncAttribute.setPositionIncrement(0);
+    posLenAttribute.setPositionLength(2); // bigram
     offsetAttribute.setOffset(lastStartOffset, endOffset);
     typeAttribute.setType(GRAM_TYPE);
     buffer.setLength(0);
