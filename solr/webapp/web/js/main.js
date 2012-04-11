@@ -26,6 +26,7 @@ require
     'lib/order!lib/jquery.sammy',
     'lib/order!lib/jquery.sparkline',
     'lib/order!lib/jquery.timeago',
+    'lib/order!lib/jquery.blockUI',
     'lib/order!lib/highlight',
     'lib/order!lib/linker',
     'lib/order!lib/ZeroClipboard',
