@@ -59,6 +59,7 @@ import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.charfilter.CharFilter;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
+import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
@@ -156,7 +157,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       // TODO: it seems to mess up offsets!?
       WikipediaTokenizer.class,
       // TODO: doesn't handle graph inputs
-      ThaiWordFilter.class
+      ThaiWordFilter.class,
+      // TODO: doesn't handle graph inputs
+      CJKBigramFilter.class
     );
   }
   
