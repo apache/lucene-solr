@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -38,7 +37,6 @@ import org.apache.zookeeper.KeeperException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.util.Date;
@@ -88,11 +86,9 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   
   protected Set<String> hiddenFiles;
   
-  private static ShowFileRequestHandler instance;
   public ShowFileRequestHandler()
   {
     super();
-    instance = this; // used so that getFileContents can access hiddenFiles
   }
 
   @Override
@@ -281,30 +277,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     rsp.setHttpCaching(false);
   }
   
-  /**
-   * This is a utility function that lets you get the contents of an admin file
-   * 
-   * It is only used so that we can get rid of "/admin/get-file.jsp" and include
-   * "admin-extra.html" in "/admin/index.html" using jsp scriptlets
-   */
-  public static String getFileContents(SolrCore core, String path )
-  {
-    if( instance != null && instance.hiddenFiles != null ) {
-      if( instance.hiddenFiles.contains( path ) ) {
-        return ""; // ignore it...
-      }
-    }
-    InputStream input = null;
-    try {
-      input = core.getResourceLoader().openResource(path);
-      return IOUtils.toString( input, "UTF-8" );
-    } catch( Exception ex ) {
-    } finally {
-      IOUtils.closeQuietly(input);
-    }
-    return "";
-  }
-
+  
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override

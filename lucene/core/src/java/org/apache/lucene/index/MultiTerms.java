@@ -96,7 +96,7 @@ public final class MultiTerms extends Terms {
   }
 
   @Override
-  public long getUniqueTermCount() throws IOException {
+  public long size() throws IOException {
     return -1;
   }
 

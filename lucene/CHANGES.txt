@@ -259,6 +259,9 @@ Changes in backwards compatibility policy
 
 * LUCENE-2000: clone() now returns covariant types where possible. (ryan)
 
+* LUCENE-3970: Rename Fields.getUniqueFieldCount -> .size() and
+  Terms.getUniqueTermCount -> .size().  (Iulius Curt via Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you

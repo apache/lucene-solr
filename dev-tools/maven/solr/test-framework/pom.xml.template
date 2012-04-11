@@ -63,6 +63,23 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+    <!-- If your tests don't use BaseDistributedSearchTestCase or SolrJettyTestBase,
+         you can exclude the three Jetty dependencies below. -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <scope>runtime</scope>
+    </dependency>
   </dependencies>
   <build>
     <directory>${build-directory}</directory>

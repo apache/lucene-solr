@@ -759,7 +759,7 @@ public class MemoryIndex {
             }
 
             @Override
-            public long getUniqueTermCount() {
+            public long size() {
               return info.sortedTerms.length;
             }
 
@@ -785,7 +785,7 @@ public class MemoryIndex {
       }
 
       @Override
-      public int getUniqueFieldCount() {
+      public int size() {
         return sortedFields.length;
       }
     }

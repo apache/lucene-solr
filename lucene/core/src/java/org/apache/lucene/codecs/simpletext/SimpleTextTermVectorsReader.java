@@ -257,7 +257,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public int getUniqueFieldCount() throws IOException {
+    public int size() throws IOException {
       return fields.size();
     }
   }
@@ -281,7 +281,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public long getUniqueTermCount() throws IOException {
+    public long size() throws IOException {
       return terms.size();
     }
 

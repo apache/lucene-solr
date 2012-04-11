@@ -130,7 +130,7 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public int getUniqueFieldCount() throws IOException {
+    public int size() throws IOException {
       // TODO: add faster implementation!
       int c = 0;
       final FieldsEnum it = iterator();

@@ -202,7 +202,7 @@ public class BlockTermsReader extends FieldsProducer {
   }
 
   @Override
-  public int getUniqueFieldCount() {
+  public int size() {
     return fields.size();
   }
 
@@ -261,7 +261,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
 
     @Override
-    public long getUniqueTermCount() {
+    public long size() {
       return numTerms;
     }
 

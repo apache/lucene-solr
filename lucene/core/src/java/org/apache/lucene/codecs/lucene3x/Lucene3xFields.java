@@ -161,7 +161,7 @@ class Lucene3xFields extends FieldsProducer {
   }
 
   @Override
-  public int getUniqueFieldCount() {
+  public int size() {
     return preTerms.size();
   }
 
@@ -246,7 +246,7 @@ class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public long getUniqueTermCount() throws IOException {
+    public long size() throws IOException {
       return -1;
     }
 

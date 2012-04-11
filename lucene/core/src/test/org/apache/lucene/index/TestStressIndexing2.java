@@ -600,7 +600,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   public static void verifyEquals(Fields d1, Fields d2) throws IOException {
     if (d1 == null) {
-      assertTrue(d2 == null || d2.getUniqueFieldCount() == 0);
+      assertTrue(d2 == null || d2.size() == 0);
       return;
     }
     assertTrue(d2 != null);

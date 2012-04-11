@@ -166,17 +166,17 @@ public abstract class TermVectorsWriter implements Closeable {
   /** Safe (but, slowish) default method to write every
    *  vector field in the document.  This default
    *  implementation requires that the vectors implement
-   *  both Fields.getUniqueFieldCount and
-   *  Terms.getUniqueTermCount. */
+   *  both Fields.size and
+   *  Terms.size. */
   protected final void addAllDocVectors(Fields vectors, FieldInfos fieldInfos) throws IOException {
     if (vectors == null) {
       startDocument(0);
       return;
     }
 
-    final int numFields = vectors.getUniqueFieldCount();
+    final int numFields = vectors.size();
     if (numFields == -1) {
-      throw new IllegalStateException("vectors.getUniqueFieldCount() must be implemented (it returned -1)");
+      throw new IllegalStateException("vectors.size() must be implemented (it returned -1)");
     }
     startDocument(numFields);
     
@@ -195,9 +195,9 @@ public abstract class TermVectorsWriter implements Closeable {
         // FieldsEnum shouldn't lie...
         continue;
       }
-      final int numTerms = (int) terms.getUniqueTermCount();
+      final int numTerms = (int) terms.size();
       if (numTerms == -1) {
-        throw new IllegalStateException("vector.getUniqueTermCount() must be implemented (it returned -1)");
+        throw new IllegalStateException("terms.size() must be implemented (it returned -1)");
       }
       final TermsEnum termsEnum = terms.iterator(null);
 

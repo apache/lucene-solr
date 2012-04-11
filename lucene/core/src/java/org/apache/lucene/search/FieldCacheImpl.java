@@ -1114,7 +1114,7 @@ class FieldCacheImpl implements FieldCache {
         // is fine -- GrowableWriter will reallocate as needed
         long numUniqueTerms = 0;
         try {
-          numUniqueTerms = terms.getUniqueTermCount();
+          numUniqueTerms = terms.size();
         } catch (UnsupportedOperationException uoe) {
           numUniqueTerms = -1;
         }
@@ -1165,7 +1165,7 @@ class FieldCacheImpl implements FieldCache {
           if (termOrd == termOrdToBytesOffset.size()) {
             // NOTE: this code only runs if the incoming
             // reader impl doesn't implement
-            // getUniqueTermCount (which should be uncommon)
+            // size (which should be uncommon)
             termOrdToBytesOffset = termOrdToBytesOffset.resize(ArrayUtil.oversize(1+termOrd, 1));
           }
           termOrdToBytesOffset.set(termOrd, bytes.copyUsingLengthPrefix(term));
@@ -1252,7 +1252,7 @@ class FieldCacheImpl implements FieldCache {
         // is fine -- GrowableWriter will reallocate as needed
         long numUniqueTerms = 0;
         try {
-          numUniqueTerms = terms.getUniqueTermCount();
+          numUniqueTerms = terms.size();
         } catch (UnsupportedOperationException uoe) {
           numUniqueTerms = -1;
         }

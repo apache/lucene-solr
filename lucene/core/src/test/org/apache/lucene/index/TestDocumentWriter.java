@@ -290,11 +290,11 @@ public class TestDocumentWriter extends LuceneTestCase {
     // f1
     Terms tfv1 = reader.getTermVectors(0).terms("f1");
     assertNotNull(tfv1);
-    assertEquals("the 'with_tv' setting should rule!",2,tfv1.getUniqueTermCount());
+    assertEquals("the 'with_tv' setting should rule!",2,tfv1.size());
     // f2
     Terms tfv2 = reader.getTermVectors(0).terms("f2");
     assertNotNull(tfv2);
-    assertEquals("the 'with_tv' setting should rule!",2,tfv2.getUniqueTermCount());
+    assertEquals("the 'with_tv' setting should rule!",2,tfv2.size());
     reader.close();
   }
 

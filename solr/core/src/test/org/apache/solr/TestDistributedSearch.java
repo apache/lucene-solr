@@ -358,7 +358,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // Thread.sleep(10000000000L);
   }
   
-  protected void queryPartialResults(final List<String> upShards, List<SolrServer> upClients, Object... q) throws Exception {
+  protected void queryPartialResults(final List<String> upShards, 
+                                     final List<SolrServer> upClients, 
+                                     Object... q) throws Exception {
     
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -385,8 +387,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           @Override
           public void run() {
             for (int j = 0; j < stress; j++) {
-              int which = r.nextInt(clients.size());
-              SolrServer client = clients.get(which);
+              int which = r.nextInt(upClients.size());
+              SolrServer client = upClients.get(which);
               try {
                 QueryResponse rsp = client.query(new ModifiableSolrParams(params));
                 if (verifyStress) {

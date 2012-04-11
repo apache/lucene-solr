@@ -482,6 +482,9 @@ Other Changes
 * SOLR-3329: Dropped getSourceID() from SolrInfoMBean and using 
   getClass().getPackage().getSpecificationVersion() for Version. (ryan)
 
+* SOLR-3302: Upgraded SLF4j to version 1.6.4 (hossman)
+
+* SOLR-3322: Add more context to IndexReaderFactory.newReader (ab)
 
 Documentation
 ----------------------

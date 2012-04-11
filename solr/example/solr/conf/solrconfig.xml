@@ -933,7 +933,7 @@
   <!-- JSON Update Request Handler
        http://wiki.apache.org/solr/UpdateJSON
     -->
-  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler" startup="lazy">
+  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
      <lst name="defaults">
        <str name="wt">json</str>
        <str name="indent">true</str>

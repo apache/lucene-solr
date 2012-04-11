@@ -244,7 +244,14 @@ Copyright 2001-2005 (C) MetaStuff, Ltd. All Rights Reserved.
 Copyright 2004 Sun Microsystems, Inc. (Rome JAR)
 
 Copyright 2002-2008 by John Cowan (TagSoup -- http://ccil.org/~cowan/XML/tagsoup/)
- 
+
+Copyright (C) 1999-2007 Shigeru Chiba. All Rights Reserved.
+(Javassist, MPL licensed: http://www.csg.ci.i.u-tokyo.ac.jp/~chiba/javassist/)
+
+Copyright (C) 1994-2007 by the Xiph.org Foundation, http://www.xiph.org/ (OggVorbis)
+
+Scannotation (C) Bill Burke
+
 =========================================================================
 ==  Language Detection Notices                                         ==
 =========================================================================

@@ -193,7 +193,7 @@ public class TestSegmentReader extends LuceneTestCase {
   public void testTermVectors() throws IOException {
     Terms result = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(result);
-    assertEquals(3, result.getUniqueTermCount());
+    assertEquals(3, result.size());
     TermsEnum termsEnum = result.iterator(null);
     while(termsEnum.next() != null) {
       String term = termsEnum.term().utf8ToString();
@@ -204,6 +204,6 @@ public class TestSegmentReader extends LuceneTestCase {
 
     Fields results = reader.getTermVectors(0);
     assertTrue(results != null);
-    assertEquals("We do not have 3 term freq vectors", 3, results.getUniqueFieldCount());      
+    assertEquals("We do not have 3 term freq vectors", 3, results.size());
   }    
 }

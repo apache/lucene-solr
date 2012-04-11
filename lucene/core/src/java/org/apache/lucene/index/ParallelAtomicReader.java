@@ -197,7 +197,7 @@ public final class ParallelAtomicReader extends AtomicReader {
     }
     
     @Override
-    public int getUniqueFieldCount() throws IOException {
+    public int size() throws IOException {
       return fields.size();
     }
   }

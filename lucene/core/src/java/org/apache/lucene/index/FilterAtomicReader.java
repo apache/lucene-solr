@@ -56,8 +56,8 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public int getUniqueFieldCount() throws IOException {
-      return in.getUniqueFieldCount();
+    public int size() throws IOException {
+      return in.size();
     }
 
     @Override
@@ -86,8 +86,8 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public long getUniqueTermCount() throws IOException {
-      return in.getUniqueTermCount();
+    public long size() throws IOException {
+      return in.size();
     }
 
     @Override

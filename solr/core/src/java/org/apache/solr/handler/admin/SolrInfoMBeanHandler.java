@@ -177,7 +177,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
           // Something in the category changed
           // Now iterate the real beans
           
-          NamedList<NamedList<Object>> cat = new NamedList<NamedList<Object>>();
+          NamedList<NamedList<Object>> cat = new SimpleOrderedMap<NamedList<Object>>();
           for(int j=0;j<ref_cat.size();j++) {
             String name = ref_cat.getName(j);
             NamedList<Object> ref_bean = ref_cat.get(name);
@@ -205,7 +205,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   }
   
   public NamedList diffNamedList(NamedList ref, NamedList now) {
-    NamedList out = new NamedList();
+    NamedList out = new SimpleOrderedMap();
     for(int i=0; i<ref.size(); i++) {
       String name = ref.getName(i);
       Object r = ref.getVal(i);

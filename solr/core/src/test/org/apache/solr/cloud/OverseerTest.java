@@ -93,7 +93,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     public void close(){
       try {
-        deleteNode(ZkStateReader.LIVE_NODES_ZKNODE + "/" + "node1");
+        deleteNode(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
         zkClient.close();
       } catch (InterruptedException e) {
         //e.printStackTrace();
@@ -127,7 +127,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ZkStateReader.toJSON(coreStates.values().toArray(
               new CoreState[coreStates.size()])), true);
       
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 30; i++) {
         String shardId = getShardId(coreName);
         if (shardId != null) {
           try {
@@ -154,9 +154,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
           collection);
       if (slices != null) {
         for (Slice slice : slices.values()) {
-          if (slice.getShards().containsKey(nodeName + "_" + coreName))
-          ;
-          return slice.getName();
+          if (slice.getShards().containsKey(nodeName + "_" + coreName)) {
+            return slice.getName();
+          }
         }
       }
       return null;

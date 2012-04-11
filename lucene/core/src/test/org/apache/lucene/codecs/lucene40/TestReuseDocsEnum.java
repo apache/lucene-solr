@@ -21,7 +21,6 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
@@ -63,7 +62,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
           enums.put(docs, true);
         }
         
-        assertEquals(terms.getUniqueTermCount(), enums.size());  
+        assertEquals(terms.size(), enums.size());
       }
     }.run();
     IOUtils.close(writer, open, dir);
@@ -100,7 +99,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
         docs = iterator.docs(new Bits.MatchNoBits(open.maxDoc()), docs, random.nextBoolean());
         enums.put(docs, true);
       }
-      assertEquals(terms.getUniqueTermCount(), enums.size());  
+      assertEquals(terms.size(), enums.size());
       
       enums.clear();
       iterator = terms.iterator(null);
@@ -141,7 +140,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
         docs = iterator.docs(null, randomDocsEnum("body", term, sequentialSubReaders2, bits), random.nextBoolean());
         enums.put(docs, true);
       }
-      assertEquals(terms.getUniqueTermCount(), enums.size());  
+      assertEquals(terms.size(), enums.size());
       
       iterator = terms.iterator(null);
       enums.clear();
@@ -150,7 +149,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
         docs = iterator.docs(bits, randomDocsEnum("body", term, sequentialSubReaders2, bits), random.nextBoolean());
         enums.put(docs, true);
       }
-      assertEquals(terms.getUniqueTermCount(), enums.size());  
+      assertEquals(terms.size(), enums.size());
     }
     IOUtils.close(writer, firstReader, secondReader, dir);
   }

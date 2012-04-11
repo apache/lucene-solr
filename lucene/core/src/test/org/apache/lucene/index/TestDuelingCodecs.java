@@ -184,8 +184,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
    * checks that top-level statistics on Fields are the same 
    */
   public void assertFieldStatistics(Fields leftFields, Fields rightFields) throws Exception {
-    if (leftFields.getUniqueFieldCount() != -1 && rightFields.getUniqueFieldCount() != -1) {
-      assertEquals(info, leftFields.getUniqueFieldCount(), rightFields.getUniqueFieldCount());
+    if (leftFields.size() != -1 && rightFields.size() != -1) {
+      assertEquals(info, leftFields.size(), rightFields.size());
     }
     
     if (leftFields.getUniqueTermCount() != -1 && rightFields.getUniqueTermCount() != -1) {
@@ -238,8 +238,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
     if (leftTerms.getSumTotalTermFreq() != -1 && rightTerms.getSumTotalTermFreq() != -1) {
       assertEquals(info, leftTerms.getSumTotalTermFreq(), rightTerms.getSumTotalTermFreq());
     }
-    if (leftTerms.getUniqueTermCount() != -1 && rightTerms.getUniqueTermCount() != -1) {
-      assertEquals(info, leftTerms.getUniqueTermCount(), rightTerms.getUniqueTermCount());
+    if (leftTerms.size() != -1 && rightTerms.size() != -1) {
+      assertEquals(info, leftTerms.size(), rightTerms.size());
     }
   }
 

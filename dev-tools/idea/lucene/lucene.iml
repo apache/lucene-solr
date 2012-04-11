@@ -16,16 +16,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$/test-framework/lib" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-        <jarDirectory url="file://$MODULE_DIR$/test-framework/lib" recursive="false" />
-      </library>
-    </orderEntry>
+    <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
   </component>
 </module>
 

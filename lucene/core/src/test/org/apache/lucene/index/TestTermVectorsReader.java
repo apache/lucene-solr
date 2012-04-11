@@ -204,7 +204,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
-      assertEquals(testTerms.length, vector.getUniqueTermCount());
+      assertEquals(testTerms.length, vector.size());
       TermsEnum termsEnum = vector.iterator(null);
       for (int i = 0; i < testTerms.length; i++) {
         final BytesRef text = termsEnum.next();
@@ -223,7 +223,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
-      assertEquals(testTerms.length, vector.getUniqueTermCount());
+      assertEquals(testTerms.length, vector.size());
       TermsEnum termsEnum = vector.iterator(null);
       DocsEnum docsEnum = null;
       for (int i = 0; i < testTerms.length; i++) {
@@ -250,7 +250,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     BytesRef[] terms;
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
-    assertEquals(testTerms.length, vector.getUniqueTermCount());
+    assertEquals(testTerms.length, vector.size());
     TermsEnum termsEnum = vector.iterator(null);
     DocsAndPositionsEnum dpEnum = null;
     for (int i = 0; i < testTerms.length; i++) {
@@ -287,7 +287,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
     Terms freqVector = reader.get(0).terms(testFields[1]); //no pos, no offset
     assertNotNull(freqVector);
-    assertEquals(testTerms.length, freqVector.getUniqueTermCount());
+    assertEquals(testTerms.length, freqVector.size());
     termsEnum = freqVector.iterator(null);
     assertNotNull(termsEnum);
     for (int i = 0; i < testTerms.length; i++) {
@@ -306,7 +306,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     assertNotNull(vector);
     TermsEnum termsEnum = vector.iterator(null);
     assertNotNull(termsEnum);
-    assertEquals(testTerms.length, vector.getUniqueTermCount());
+    assertEquals(testTerms.length, vector.size());
     DocsAndPositionsEnum dpEnum = null;
     for (int i = 0; i < testTerms.length; i++) {
       final BytesRef text = termsEnum.next();

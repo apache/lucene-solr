@@ -752,7 +752,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     IndexReader reader = IndexReader.open(dir);
     Fields tfv = reader.getTermVectors(0);
     assertNotNull(tfv);
-    assertTrue(tfv.getUniqueFieldCount() > 0);
+    assertTrue(tfv.size() > 0);
     reader.close();
   }
 
