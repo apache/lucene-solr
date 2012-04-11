@@ -24,6 +24,10 @@ Current Version: Tika 1.0 (released 2011-11-07)
 
 $Id$
 
+================== Release 3.6.1 ==================
+
+(No Changes)
+
 ================== Release 3.6.0 ==================
 
 * SOLR-2346: Add a chance to set content encoding explicitly via content type of stream.

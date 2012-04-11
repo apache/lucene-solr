@@ -11,6 +11,11 @@ analyzers for Chinese and Polish.
 
 
 $Id$
+
+==================  3.6.1 ==================
+
+(No Changes)
+
 ==================  3.6.0 ==================
 
 * SOLR-2919: Added parametric tailoring options to ICUCollationKeyFilterFactory.
