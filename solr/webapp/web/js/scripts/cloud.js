@@ -15,8 +15,6 @@
  limitations under the License.
 */
 
-var core_basepath = null;
-
 var init_debug = function( cloud_element )
 {
   var debug_element = $( '#debug', cloud_element );
@@ -73,7 +71,7 @@ var init_debug = function( cloud_element )
         $.ajax
         (
           {
-            url : core_basepath + '/zookeeper?wt=json&dump=true',
+            url : app.config.solr_path + '/zookeeper?wt=json&dump=true',
             dataType : 'text',
             context : debug_element,
             beforeSend : function( xhr, settings )
@@ -243,7 +241,7 @@ var init_graph = function( graph_element )
   $.ajax
   (
     {
-      url : core_basepath + '/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json',
+      url : app.config.solr_path + '/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json',
       dataType : 'json',
       context : graph_element,
       beforeSend : function( xhr, settings )
@@ -318,7 +316,7 @@ var init_tree = function( tree_element )
   $.ajax
   (
     {
-      url : core_basepath + '/zookeeper?wt=json',
+      url : app.config.solr_path + '/zookeeper?wt=json',
       dataType : 'json',
       context : tree_element,
       beforeSend : function( xhr, settings )
@@ -494,7 +492,6 @@ sammy.get
   /^#\/~(cloud)$/,
   function( context )
   {
-    core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );
     var content_element = $( '#content' );
 
     $.get
