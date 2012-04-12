@@ -22,11 +22,13 @@ sammy.get
   function( context )
   {
     var core_basepath = this.active_core.attr( 'data-basepath' );
+	var filetype = context.params.splat[1]; // either schema or config	
+	var filename = this.active_core.attr( filetype );
 
     $.ajax
     (
       {
-        url : core_basepath + app.config[ context.params.splat[1] + '_path' ],
+        url : core_basepath + "/admin/file?file=" + filename + "&contentType=text/xml;charset=utf-8",
         dataType : 'xml',
         context : $( '#content' ),
         beforeSend : function( xhr, settings )

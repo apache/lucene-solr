@@ -809,6 +809,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
         info.add("name", core.getName());
         info.add("instanceDir", normalizePath(core.getResourceLoader().getInstanceDir()));
         info.add("dataDir", normalizePath(core.getDataDir()));
+        info.add("config", core.getConfigResource());
+        info.add("schema", core.getSchemaResource());
         info.add("startTime", new Date(core.getStartTime()));
         info.add("uptime", System.currentTimeMillis() - core.getStartTime());
         RefCounted<SolrIndexSearcher> searcher = core.getSearcher();

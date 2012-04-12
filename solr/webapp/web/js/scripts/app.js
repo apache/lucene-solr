@@ -169,14 +169,16 @@ var solr_admin = function( app_config )
           }
           else
           {
-            self.menu_element
+            self.menu_element 
               .addClass( 'singlecore' );
           }
 
           for( var core_name in response.status )
           {
             var core_path = config.solr_path + '/' + core_name;
-
+            var schema =  response['status'][core_name]['schema'];
+            var solrconfig =  response['status'][core_name]['config'];
+			
             if( !core_name )
             {
               core_name = 'singlecore';
@@ -188,7 +190,7 @@ var solr_admin = function( app_config )
               environment_basepath = core_path;
             }
 
-            var core_tpl = '<li id="' + core_name + '" data-basepath="' + core_path + '">' + "\n"
+            var core_tpl = '<li id="' + core_name + '" data-basepath="' + core_path + '" schema="' + schema + '" config="' + solrconfig + '">' + "\n"
                          + '  <p><a href="#/' + core_name + '">' + core_name + '</a></p>' + "\n"
                          + '  <ul>' + "\n"
 
