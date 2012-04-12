@@ -25,7 +25,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.common.util.XMLErrorLogger;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;

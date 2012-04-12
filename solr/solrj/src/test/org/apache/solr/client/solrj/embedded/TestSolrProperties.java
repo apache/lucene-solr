@@ -28,7 +28,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.FileUtils;
+import org.apache.solr.util.FileUtils;
 import org.apache.solr.core.CoreContainer;
 import org.junit.Rule;
 import org.junit.Test;

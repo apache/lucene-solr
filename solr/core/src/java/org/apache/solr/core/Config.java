@@ -19,8 +19,8 @@ package org.apache.solr.core;
 
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

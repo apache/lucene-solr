@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.FileUtils;
+import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

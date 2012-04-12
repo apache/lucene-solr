@@ -1,4 +1,4 @@
-﻿                      Apache Solr Release Notes
+                      Apache Solr Release Notes
 
 Introduction
 ------------
@@ -485,6 +485,9 @@ Other Changes
 * SOLR-3302: Upgraded SLF4j to version 1.6.4 (hossman)
 
 * SOLR-3322: Add more context to IndexReaderFactory.newReader (ab)
+
+* SOLR-3343: Moved FastWriter, FileUtils, RegexFileFilter, RTimer and SystemIdResolver
+  from org.apache.solr.common to org.apache.solr.util (Chris Male)
 
 Documentation
 ----------------------

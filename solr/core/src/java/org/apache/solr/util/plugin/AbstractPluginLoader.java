@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;

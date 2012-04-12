@@ -24,7 +24,7 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.util.DOMUtil;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.plugin.AbstractPluginLoader;

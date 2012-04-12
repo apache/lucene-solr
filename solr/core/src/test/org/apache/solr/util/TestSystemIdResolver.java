@@ -1,4 +1,6 @@
-/**
+package org.apache.solr.util;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,8 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.common.util;
 
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.common.ResourceLoader;
@@ -38,7 +38,7 @@ public class TestSystemIdResolver extends LuceneTestCase {
   }
   
   public void testResolving() throws Exception {
-    final String testHome = SolrTestCaseJ4.getFile("solrj/solr/conf").getParent();
+    final String testHome = SolrTestCaseJ4.getFile("solr/conf").getParent();
     final ResourceLoader loader = new SolrResourceLoader(testHome, this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     final String fileUri = new File(testHome+"/crazy-path-to-config.xml").toURI().toASCIIString();
@@ -57,10 +57,10 @@ public class TestSystemIdResolver extends LuceneTestCase {
     assertEquals(fileUri, resolver.resolveRelativeURI("solrres:/base.xml", fileUri).toASCIIString());
     assertEquals("solrres:/base.xml", resolver.resolveRelativeURI(fileUri, "solrres:/base.xml").toASCIIString());
     
-    // do some real resolves to I nputStreams with real existing files
+    // do some real resolves to InputStreams with real existing files
     assertEntityResolving(resolver, "solrres:/schema.xml", "solrres:/solrconfig.xml", "schema.xml");
-    assertEntityResolving(resolver, "solrres:/org/apache/solr/common/util/TestSystemIdResolver.class",
-      "solrres:/org/apache/solr/common/ResourceLoader.class", "util/TestSystemIdResolver.class");
+    assertEntityResolving(resolver, "solrres:/org/apache/solr/util/TestSystemIdResolver.class",
+      "solrres:/org/apache/solr/util/RTimer.class", "TestSystemIdResolver.class");
     assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/conf/schema.xml"),
       SystemIdResolver.createSystemIdFromResourceName(testHome+"/conf/solrconfig.xml"), "schema.xml");
     assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-schema.xml"),

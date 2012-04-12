@@ -1,4 +1,6 @@
-/**
+package org.apache.solr.util;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,8 +17,8 @@
  * limitations under the License.
  */
 
-package org.apache.solr.common.util;
-
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.DOMUtilTestBase;
 
 public class DOMUtilTest extends DOMUtilTestBase {

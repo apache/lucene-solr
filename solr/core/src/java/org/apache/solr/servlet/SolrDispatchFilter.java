@@ -51,7 +51,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.util.FastWriter;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.*;
 import org.apache.solr.handler.component.SearchHandler;
