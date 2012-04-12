@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Ant">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lucene/test-framework/lib/ant-1.7.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lucene/test-framework/lib/ant-junit-1.7.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
