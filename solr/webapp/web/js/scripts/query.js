@@ -95,16 +95,7 @@ sammy.get
                 ? fieldset.addClass( 'expanded' )
                 : fieldset.removeClass( 'expanded' );
             }
-          )
-
-        for( var key in context.params )
-        {
-          if( 'string' === typeof context.params[key] )
-          {
-            $( '[name="' + key + '"]', query_form )
-              .val( context.params[key] );
-          }
-        }
+          );
 
         query_form
           .die( 'submit' )
@@ -149,6 +140,23 @@ sammy.get
               return false;
             }
           );
+
+        var fields = 0;
+        for( var key in context.params )
+        {
+          if( 'string' === typeof context.params[key] )
+          {
+            fields++;
+            $( '[name="' + key + '"]', query_form )
+              .val( context.params[key] );
+          }
+        }
+
+        if( 0 !== fields )
+        {
+          query_form
+            .trigger( 'submit' );
+        }
       }
     );
   }
