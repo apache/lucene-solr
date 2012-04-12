@@ -167,47 +167,6 @@ public abstract class AtomicReader extends IndexReader {
     }
     return null;
   }
-  
-  /**
-   * Returns {@link DocsEnum} for the specified field and
-   * {@link TermState}. This may return null, if either the field or the term
-   * does not exists or the {@link TermState} is invalid for the underlying
-   * implementation.*/
-  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsFreqs) throws IOException {
-    assert state != null;
-    assert field != null;
-    final Fields fields = fields();
-    if (fields != null) {
-      final Terms terms = fields.terms(field);
-      if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator(null);
-        termsEnum.seekExact(term, state);
-        return termsEnum.docs(liveDocs, null, needsFreqs);
-      }
-    }
-    return null;
-  }
-  
-  /**
-   * Returns {@link DocsAndPositionsEnum} for the specified field and
-   * {@link TermState}. This may return null, if either the field or the term
-   * does not exists, the {@link TermState} is invalid for the underlying
-   * implementation, or needsOffsets is true but offsets
-   * were not indexed for this field. */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state, boolean needsOffsets) throws IOException {
-    assert state != null;
-    assert field != null;
-    final Fields fields = fields();
-    if (fields != null) {
-      final Terms terms = fields.terms(field);
-      if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator(null);
-        termsEnum.seekExact(term, state);
-        return termsEnum.docsAndPositions(liveDocs, null, needsOffsets);
-      }
-    }
-    return null;
-  }
 
   /** Returns the number of unique terms (across all fields)
    *  in this reader.
