@@ -46,7 +46,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     try {
       termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
     } catch (RuntimeException e) {
-      throw new StringIndexException(field, e);
+      throw new DocTermsIndexException(field, e);
     }
     this.vs = vs;
   }
@@ -155,10 +155,10 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     };
   }
 
-  public static final class StringIndexException extends RuntimeException {
+  public static final class DocTermsIndexException extends RuntimeException {
 
-    public StringIndexException(final String fieldName, final RuntimeException cause) {
-      super("Can't initialize StringIndex to generate (function) FunctionValues for field: " + fieldName, cause);
+    public DocTermsIndexException(final String fieldName, final RuntimeException cause) {
+      super("Can't initialize DocTermsIndex to generate (function) FunctionValues for field: " + fieldName, cause);
     }
 
   }
