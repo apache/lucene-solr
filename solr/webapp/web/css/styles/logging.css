@@ -22,6 +22,15 @@
 #content #logging .jstree .level-severe  { background-color: #fcdcda; }
 #content #logging .jstree .level-off     { background-color: #ffffff; }
 
+/* Log4j */
+#content #logging .jstree .level-all     { background-color: #9EDAFF; }
+#content #logging .jstree .level-trace   { background-color: #d5e5fc; }
+#content #logging .jstree .level-debug   { background-color: #d5fafc; }
+#content #logging .jstree .level-warn    { background-color: #e6fded; }
+#content #logging .jstree .level-error   { background-color: #fcecd5; }
+#content #logging .jstree .level-fatal   { background-color: #fcdcda; }
+
+
 #content #logging .jstree a
 {
   height: 17px;

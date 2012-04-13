@@ -17,8 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,6 +38,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.impl.StaticLoggerBinder;
 
 
 /**
@@ -230,7 +230,6 @@ public class LogLevelHandler extends RequestHandlerBase {
     }
   }
 
-  /****
   //-------------------------------------------------------------------------------------------------
   //
   //   Log4j
@@ -250,12 +249,21 @@ public class LogLevelHandler extends RequestHandlerBase {
       if(logger==null) {
         return null;
       }
-      return logger.getLevel().toString();
+      Object level = logger.getLevel();
+      if(level==null) {
+        return null;
+      }
+      return level.toString();
     }
 
     @Override
     public String getName() {
       return name;
+    }
+
+    @Override
+    public boolean isSet() {
+      return (logger!=null && logger.getLevel()!=null);
     }
   }
 
@@ -286,10 +294,25 @@ public class LogLevelHandler extends RequestHandlerBase {
       }
       org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(category);
       if(level==null||"unset".equals(level)||"null".equals(level)) {
-        log.setLevel(null);
+        setLevelWithReflection(log,null);
       }
       else {
-        log.setLevel(org.apache.log4j.Level.toLevel(level));
+        setLevelWithReflection(log,org.apache.log4j.Level.toLevel(level));
+      }
+    }
+    
+    /**
+     * log.setLevel(level);
+     */
+    private void setLevelWithReflection(org.apache.log4j.Logger log, org.apache.log4j.Level level) {
+      try {
+        Class<?> logclass = Class.forName("org.apache.log4j.Logger");
+        Class<?> levelclass = Class.forName("org.apache.log4j.Level");
+        Method method = logclass.getMethod("setLevel", levelclass);
+        method.invoke(log, level);
+      }
+      catch(Exception ex) {
+        throw new RuntimeException("Unable to set Log4j Level", ex);
       }
     }
 
@@ -321,7 +344,7 @@ public class LogLevelHandler extends RequestHandlerBase {
       return map.values();
     }
   }
-  ***/
+  
 
   //-------------------------------------------------------------------------------------------------
   //
@@ -330,16 +353,32 @@ public class LogLevelHandler extends RequestHandlerBase {
   //-------------------------------------------------------------------------------------------------
 
   LoggerFactoryWrapper factory;
+  String slf4jImpl = null;
 
   @Override
   public void init(NamedList args) {
     String fname = (String)args.get("logger.factory");
-    if(fname == null || "JUL".equalsIgnoreCase(fname)) {
+    try {
+      slf4jImpl = StaticLoggerBinder.getSingleton().getLoggerFactoryClassStr();
+      if(fname == null ) {
+        if( slf4jImpl.indexOf("Log4j") > 0) {
+          fname = "Log4j";
+        }
+        else if( slf4jImpl.indexOf("JDK") > 0) {
+          fname = "JUL";
+        }
+        else {
+          return; // unsuppored
+        }
+      }
+    }
+    catch(Exception ex) {}
+    
+    if("JUL".equalsIgnoreCase(fname)) {
       factory = new LoggerFactoryWrapperJUL();
     }
     else if( "Log4j".equals(fname) ) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Log4j not yet supported");
-      // factory = new LoggerFactoryWrapperLog4j();
+      factory = new LoggerFactoryWrapperLog4j();
     }
     else {
       try {
@@ -353,6 +392,12 @@ public class LogLevelHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    // Don't do anything if the framework is unknown
+    if(factory==null) {
+      rsp.add("error", "Unsupported Logging Framework: "+slf4jImpl);
+      return;
+    }
+    
     SolrParams params = req.getParams();
     String[] set = params.getParams("set");
     if (set != null) {
@@ -371,6 +416,7 @@ public class LogLevelHandler extends RequestHandlerBase {
     }
 
     rsp.add("framework", factory.getName());
+    rsp.add("slfj4", slf4jImpl);
     rsp.add("levels", factory.getAllLevels());
 
     List<LoggerWrapper> loggers = new ArrayList<LogLevelHandler.LoggerWrapper>(factory.getLoggers());
@@ -394,14 +440,5 @@ public class LogLevelHandler extends RequestHandlerBase {
   @Override
   public String getSource() {
     return "$URL$";
-  }
-
-  @Override
-  public URL[] getDocs() {
-    try {
-      return new URL[] { new URL("http://wiki.apache.org/solr/LogLevelHandler") };
-    } catch (MalformedURLException ex) {
-      return null;
-    }
   }
 }
