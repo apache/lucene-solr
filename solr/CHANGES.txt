@@ -295,6 +295,8 @@ Optimizations
 
 Bug Fixes
 ----------------------
+* SOLR-3139: Make ConcurrentUpdateSolrServer send UpdateRequest.getParams()
+  as HTTP request params (siren) 
 
 * SOLR-3165: Cannot use DIH in Solrcloud + Zookeeper (Alexey Serba, 
   Mark Miller, siren)

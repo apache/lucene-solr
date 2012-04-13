@@ -44,6 +44,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
@@ -53,6 +55,10 @@ import org.slf4j.LoggerFactory;
 /**
  * ConcurrentUpdateSolrServer buffers all added documents and writes
  * them into open HTTP connections. This class is thread safe.
+ * 
+ * Params from {@link UpdateRequest} are converted to http request
+ * parameters. When params change between UpdateRequests a new HTTP
+ * request is started.
  * 
  * Although any SolrServer request can be made with this implementation, it is
  * only recommended to use ConcurrentUpdateSolrServer with /update
@@ -66,7 +72,6 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
   private HttpSolrServer server;
   final BlockingQueue<UpdateRequest> queue;
   final ExecutorService scheduler = Executors.newCachedThreadPool();
-  final String updateUrl = "/update";
   final Queue<Runner> runners;
   volatile CountDownLatch lock = null; // used to block everything
   final int threadCount;
@@ -124,19 +129,28 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
             if (updateRequest == null)
               break;
 
+            final boolean isXml = ClientUtils.TEXT_XML.equals(server.requestWriter
+                .getUpdateContentType());
+
+            final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
+
             EntityTemplate template = new EntityTemplate(new ContentProducer() {
 
               public void writeTo(OutputStream out) throws IOException {
                 try {
-                  if (ClientUtils.TEXT_XML.equals(server.requestWriter
-                      .getUpdateContentType())) {
+                  if (isXml) {
                     out.write("<stream>".getBytes("UTF-8")); // can be anything
                   }
                   UpdateRequest req = updateRequest;
                   while (req != null) {
+                    SolrParams currentParams = new ModifiableSolrParams(req.getParams());
+                    if (!origParams.toNamedList().equals(currentParams.toNamedList())) {
+                      queue.add(req); // params are different, push back to queue
+                      break;
+                    }
+                    
                     server.requestWriter.write(req, out);
-                    if (ClientUtils.TEXT_XML.equals(server.requestWriter
-                        .getUpdateContentType())) {
+                    if (isXml) {
                       // check for commit or optimize
                       SolrParams params = req.getParams();
                       if (params != null) {
@@ -158,8 +172,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                     out.flush();
                     req = queue.poll(250, TimeUnit.MILLISECONDS);
                   }
-                  if (ClientUtils.TEXT_XML.equals(server.requestWriter
-                      .getUpdateContentType())) {
+                  if (isXml) {
                     out.write("</stream>".getBytes("UTF-8"));
                   }
 
@@ -168,11 +181,17 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                 }
               }
             });
+            
+            // The parser 'wt=' and 'version=' params are used instead of the
+            // original params
+            ModifiableSolrParams requestParams = new ModifiableSolrParams(origParams);
+            requestParams.set(CommonParams.WT, server.parser.getWriterType());
+            requestParams.set(CommonParams.VERSION, server.parser.getVersion());
 
-            String path = ClientUtils.TEXT_XML.equals(server.requestWriter
-                .getUpdateContentType()) ? "/update" : "/update/javabin";
+            final String path = isXml ? "/update" : "/update/javabin";
 
-            method = new HttpPost(server.getBaseURL() + path);
+            method = new HttpPost(server.getBaseURL() + path
+                + ClientUtils.toQueryString(requestParams, false));
             method.setEntity(template);
             method.addHeader("User-Agent", HttpSolrServer.AGENT);
             response = server.getHttpClient().execute(method);

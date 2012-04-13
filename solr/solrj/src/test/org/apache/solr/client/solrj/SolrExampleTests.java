@@ -553,6 +553,33 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals( 10, ((Integer)out1.get( "ten" )).intValue() );
   }
 
+  @Test
+  public void testUpdateRequestWithParameters() throws Exception {
+    SolrServer server1 = createNewSolrServer();
+    
+    System.out.println("server:" + server1.getClass().toString());
+
+    server1.deleteByQuery( "*:*" );
+    server1.commit();
+    
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "id1");
+    
+    UpdateRequest req = new UpdateRequest();
+    req.setParam("overwrite", "false");
+    req.add(doc);
+    server1.request(req);
+    server1.request(req);
+    server1.commit();
+    
+    SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    QueryResponse rsp = server1.query(query);
+    
+    SolrDocumentList out = rsp.getResults();
+    assertEquals(2, out.getNumFound());
+  }
+  
  @Test
  public void testContentStreamRequest() throws Exception {
     SolrServer server = getSolrServer();
