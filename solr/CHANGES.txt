@@ -370,6 +370,8 @@ Bug Fixes
   
 * SOLR-3214: If you use multiple fl entries rather than a comma separated list, all but the first
   entry can be ignored if you are using distributed search. (Tomas Fernandez Lobbe via Mark Miller)
+ 
+* SOLR-3352: eDismax: pf2 should kick in for a query with 2 terms (janhoy)
 
 Other Changes
 ----------------------

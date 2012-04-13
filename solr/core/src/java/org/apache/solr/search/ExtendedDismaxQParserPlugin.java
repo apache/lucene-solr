@@ -457,7 +457,7 @@ class ExtendedDismaxQParser extends QParser {
     throws ParseException {
     
     if (null == fields || fields.isEmpty() || 
-        null == clauses || clauses.size() <= shingleSize ) 
+        null == clauses || clauses.size() < shingleSize ) 
       return;
     
     if (0 == shingleSize) shingleSize = clauses.size();
