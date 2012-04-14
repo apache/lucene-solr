@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Ignore;
 
 public class TestMappingCharFilter extends BaseTokenStreamTestCase {
 
@@ -194,8 +193,8 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     int numRounds = RANDOM_MULTIPLIER * 10000;
     checkRandomData(random, analyzer, numRounds);
   }
-  
-  @Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
+
+  //@Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
   public void testFinalOffsetSpecialCase() throws Exception {  
     final NormalizeCharMap map = new NormalizeCharMap();
     map.add("t", "");
@@ -219,7 +218,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     checkAnalysisConsistency(random, analyzer, false, text);
   }
   
-  @Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
+  //@Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
   public void testRandomMaps() throws Exception {
     for (int i = 0; i < 100; i++) {
       final NormalizeCharMap map = randomMap();

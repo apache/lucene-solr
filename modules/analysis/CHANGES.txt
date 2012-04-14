@@ -39,6 +39,9 @@ API Changes
 
 Bug fixes
 
+ * LUCENE-3971: MappingCharFilter could return invalid final token position.
+   (Dawid Weiss, Robert Muir)
+
  * LUCENE-3820: PatternReplaceCharFilter could return invalid token positions. 
    (Dawid Weiss)
 
