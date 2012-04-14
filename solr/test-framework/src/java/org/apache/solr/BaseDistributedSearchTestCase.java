@@ -33,6 +33,7 @@ import java.util.Set;
 import junit.framework.Assert;
 import junit.framework.TestCase;
 
+import org.apache.lucene.search.FieldCache;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -175,6 +176,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (!AbstractSolrTestCase.recurseDelete(testDir)) {
       System.err.println("!!!! WARNING: best effort to remove " + testDir.getAbsolutePath() + " FAILED !!!!!");
     }
+    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
     super.tearDown();
   }
 
