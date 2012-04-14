@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.search.FieldCache;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -90,6 +91,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
            tdate_b, "2010-01-05T11:00:00Z",
            t1,"all the kings horses and all the kings men");
     indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
+
+    commit();  // try to ensure there's more than one segment
+
     indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
     indexr(id,11, i1, -987, tlong, 987,
            t1,"An eye for eye only ends up making the whole world blind.");
@@ -356,6 +360,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
     
     // Thread.sleep(10000000000L);
+
+    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
   }
   
   protected void queryPartialResults(final List<String> upShards, 
