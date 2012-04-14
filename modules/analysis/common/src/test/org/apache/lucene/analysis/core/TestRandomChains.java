@@ -57,7 +57,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.charfilter.CharFilter;
-import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
@@ -137,9 +136,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       // broken!
       WordDelimiterFilter.class,
       // broken!
-      TrimFilter.class,
-      // TODO: remove this class after we fix its finalOffset bug
-      MappingCharFilter.class
+      TrimFilter.class
     );
   }
 
