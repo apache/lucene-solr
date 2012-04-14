@@ -51,11 +51,6 @@ public class MappingCharFilter extends BaseCharFilter {
   }
 
   @Override
-  protected int correct(int currentOff) {
-    return super.correct(currentOff);
-  }
-
-  @Override
   public int read() throws IOException {
     while(true) {
       if (replacement != null && charPointer < replacement.length()) {
@@ -121,8 +116,6 @@ public class MappingCharFilter extends BaseCharFilter {
         if (result == null) {
           pushChar(chr);
         }
-      } else {
-        
       }
     }
     if (result == null && map.normStr != null) {
