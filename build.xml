@@ -163,4 +163,11 @@
     </subant>
   </target>
 
+  <target name="jar-checksums" description="Recompute SHA1 checksums for all JAR files.">
+    <checksum algorithm="SHA1">
+      <fileset dir="${basedir}">
+        <include name="**/*.jar"/>
+      </fileset>
+    </checksum>
+  </target>
 </project>
