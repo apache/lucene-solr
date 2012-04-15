@@ -31,7 +31,7 @@
     <property name="working.dir" location="work"/>
 
     <!-- the tests have some parallel problems -->
-    <property name="tests.threadspercpu" value="0"/>
+    <property name="tests.jvms" value="1"/>
 
     <target name="check-files">
         <available file="temp/news20.tar.gz" property="news20.exists"/>

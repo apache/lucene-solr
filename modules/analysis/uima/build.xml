@@ -26,7 +26,7 @@
   <property name="build.dir" location="../build/uima" />
   <property name="dist.dir" location="../dist/uima" />
   <property name="tests.userdir" value="src/test-files"/>
-  <property name="tests.threadspercpu" value="0" />
+  <property name="tests.jvms" value="1" />
 
   <path id="uimajars">
     <pathelement path="lib/uimaj-core-2.3.1.jar"/>

@@ -77,7 +77,7 @@
   <property name="args" value=""/>
 
   <property name="tests.seed" value="" />
-  <property name="tests.threadspercpu" value="auto" />
+  <property name="tests.jvms" value="auto" />
   <property name="tests.multiplier" value="1" />
   <property name="tests.codec" value="random" />
   <property name="tests.postingsformat" value="random" />
@@ -891,12 +891,12 @@ ant -Dtests.slow=[false]      - slow tests (@Slow)
 #
 
 # Run sequentially (one slave JVM).
-ant -Dtests.threadspercpu=1 test
+ant -Dtests.jvms=1 test
 
 # Run with more slave JVMs than the default.
 # Don't count hypercores for CPU-intense tests.
 # Make sure there is enough RAM to handle child JVMs.
-ant -Dtests.threadspercpu=8 test
+ant -Dtests.jvms=8 test
 
 # Use repeatable suite order on slave JVMs (disables job stealing).
 ant -Dtests.dynamicAssignmentRatio=0 test
@@ -944,7 +944,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        jars so we just order it after compile-test to ensure that -->
   <target name="test" depends="compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
-    <test-macro threadNum="${tests.threadspercpu}" />
+    <test-macro threadNum="${tests.jvms}" />
   </target>
 
   <!--
