@@ -27,7 +27,7 @@
 
   <import file="../../module-build.xml"/>
 
-  <target name="init" depends="contrib-build.init,jar-lucene-core"/>
+  <target name="init" depends="module-build.init,jar-lucene-core"/>
   
   <path id="classpath">
 	 <pathelement path="${analyzers-common.jar}"/>

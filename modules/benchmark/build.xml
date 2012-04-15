@@ -251,7 +251,7 @@
       </ant>
     </target>
 
-    <target name="init" depends="contrib-build.init,resolve-icu,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
+    <target name="init" depends="module-build.init,resolve-icu,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet"/>
   
     <target name="clean-javacc">
       <fileset dir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml" includes="*.java">
@@ -265,7 +265,7 @@
 		     />
     </target>
     
-    <target name="compile-test" depends="copy-alg-files-for-testing,contrib-build.compile-test"/>
+    <target name="compile-test" depends="copy-alg-files-for-testing,module-build.compile-test"/>
     <target name="copy-alg-files-for-testing" description="copy .alg files as resources for testing">
       <copy todir="${build.dir}/classes/test/conf">
         <fileset dir="conf"/>

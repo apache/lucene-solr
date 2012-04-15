@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="contrib-build" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+<project name="module-build" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
   <echo>Building ${ant.project.name}...</echo>
 
   <!-- TODO: adjust build.dir/dist.dir appropriately when a contrib project is run individually -->

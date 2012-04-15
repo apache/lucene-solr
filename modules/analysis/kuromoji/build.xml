@@ -135,8 +135,8 @@
     <test-macro dataDir="src/tools/test" junit.classpath="tools.test.classpath"/>
   </target>
 
-  <target name="compile-test" depends="contrib-build.compile-test, compile-tools-tests"/>
+  <target name="compile-test" depends="module-build.compile-test, compile-tools-tests"/>
   <!-- TODO: not until we properly make 'test-tools' work with clover etc
-  <target name="test" depends="contrib-build.test, test-tools"/> -->
+  <target name="test" depends="module-build.test, test-tools"/> -->
 
 </project>
