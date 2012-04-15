@@ -876,6 +876,17 @@ ant test -Dtests.iters=N -Dtestcase=ClassName
 ant test -Dtests.iters=N -Dtestcase=ClassName -Dtests.seed=dead:beef
 
 #
+# Test groups. ----------------------------------------------------
+#
+# test groups can be enabled or disabled (true/false). Default
+# value provided below in [brackets].
+
+ant -Dtests.nightly=[false]   - nightly test group (@Nightly)
+ant -Dtests.weekly=[false]    - weekly tests (@Weekly)
+ant -Dtests.awaitsfix=[false] - known issue (@AwaitsFix)
+ant -Dtests.slow=[false]      - slow tests (@Slow)
+
+#
 # Load balancing and caches. --------------------------------------
 #
 
