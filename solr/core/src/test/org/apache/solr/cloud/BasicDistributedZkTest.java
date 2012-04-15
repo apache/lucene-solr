@@ -34,6 +34,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -56,6 +57,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 /**
  *
  */
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-2161")
 public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
