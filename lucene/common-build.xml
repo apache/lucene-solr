@@ -252,15 +252,7 @@
   </target>
 
   <target name="init" depends="resolve">
-    <!-- JUnit4 taskdef. -->
-    <taskdef resource="com/carrotsearch/junit4/antlib.xml">
-      <classpath>
-         <fileset dir="${common.dir}/test-framework/lib">
-            <include name="junit4-ant-*.jar" />
-            <include name="junit-*.jar" />
-         </fileset>
-      </classpath>
-    </taskdef>    
+    <!-- currently empty -->
   </target>
 
   <target name="resolve" depends="ivy-availability-check,ivy-fail">
@@ -928,7 +920,21 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </echo>
   </target>
 
-  <target name="test" depends="compile-test,validate" description="Runs unit tests">
+  <target name="install-junit4-taskdef">
+    <!-- JUnit4 taskdef. -->
+    <taskdef resource="com/carrotsearch/junit4/antlib.xml">
+      <classpath>
+         <fileset dir="${common.dir}/test-framework/lib">
+            <include name="junit4-ant-*.jar" />
+            <include name="junit-*.jar" />
+         </fileset>
+      </classpath>
+    </taskdef>
+  </target>
+
+  <!-- note: order here is important, the taskdef depends on test-framework
+       jars so we just order it after compile-test to ensure that -->
+  <target name="test" depends="compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.threadspercpu}" />
   </target>

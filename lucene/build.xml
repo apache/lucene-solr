@@ -106,7 +106,7 @@
   Add dependency after 4.0: depends="compile-backwards, backwards-test-warning"
   and uncomment inside of this target.
   -->
-  <target name="test-backwards">
+  <target name="test-backwards" depends="install-junit4-taskdef">
     <!--
     <mkdir dir="${build.dir.backwards}/test"/>
     <backwards-test-macro/>
