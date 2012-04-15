@@ -60,6 +60,10 @@
       <groupId>org.apache.ant</groupId>
       <artifactId>ant-junit</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.carrotsearch.randomizedtesting</groupId>
+      <artifactId>randomizedtesting-runner</artifactId>
+    </dependency>
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
