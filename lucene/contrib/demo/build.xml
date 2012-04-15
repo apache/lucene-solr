@@ -25,7 +25,7 @@
 
   <property name="demo.name" value="lucene-demos-${version}"/>
 
-  <import file="../contrib-build.xml"/>
+  <import file="../../module-build.xml"/>
 
   <target name="init" depends="contrib-build.init,jar-lucene-core"/>
   

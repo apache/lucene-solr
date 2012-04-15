@@ -27,7 +27,7 @@
     <property name="dist.dir" location="dist/" />
     <property name="maven.dist.dir" location="../dist/maven" />
 
-    <import file="../../lucene/contrib/contrib-build.xml"/>
+    <import file="../../lucene/module-build.xml"/>
     <property name="working.dir" location="work"/>
 
     <!-- the tests have some parallel problems -->

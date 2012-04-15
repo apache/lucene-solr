@@ -23,7 +23,7 @@
     Hits highlighter
   </description>
 
-  <import file="../contrib-build.xml"/>
+  <import file="../../module-build.xml"/>
 
   <path id="classpath">
     <pathelement path="${memory.jar}"/>

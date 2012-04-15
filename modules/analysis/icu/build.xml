@@ -27,7 +27,7 @@
   <property name="build.dir" location="../build/icu" />
   <property name="dist.dir" location="../dist/icu" />
 
-  <import file="../../../lucene/contrib/contrib-build.xml"/>
+  <import file="../../../lucene/module-build.xml"/>
 
   <path id="icujar">
      <pathelement location="lib/icu4j-4.8.1.1.jar"/>

@@ -30,7 +30,7 @@
   <!-- prettify.css/js -->
   <property name="rat.excludes" value="**/prettify.css,**/prettify.js"/>
   
-  <import file="../../lucene/contrib/contrib-build.xml"/>
+  <import file="../../lucene/module-build.xml"/>
 
   <property name="examples.dir" location="src/examples"/>
 

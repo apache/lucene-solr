@@ -21,7 +21,7 @@
     Sandbox for odd contrib code
   </description>
 
-  <import file="../contrib-build.xml"/>
+  <import file="../../module-build.xml"/>
 
   <path id="classpath">
     <pathelement path="lib/jakarta-regexp-1.4.jar"/>

@@ -59,7 +59,7 @@
     </and>
   </condition>
 
-  <import file="${common-solr.dir}/../lucene/contrib/contrib-build.xml"/>
+  <import file="${common-solr.dir}/../lucene/module-build.xml"/>
 
   <path id="additional.dependencies">
   	<fileset dir="${common-solr.dir}/lib" excludes="${common.classpath.excludes}"/>

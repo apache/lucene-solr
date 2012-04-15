@@ -29,5 +29,5 @@
 
   <!-- just a list of words for testing suggesters -->
   <property name="rat.excludes" value="**/Top50KWiki.utf8"/>
-  <import file="../../lucene/contrib/contrib-build.xml"/>
+  <import file="../../lucene/module-build.xml"/>
 </project>

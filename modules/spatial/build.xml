@@ -8,7 +8,7 @@
   <property name="dist.dir" location="dist/" />
   <property name="maven.dist.dir" location="../dist/maven" />
 
-  <import file="../../lucene/contrib/contrib-build.xml"/>
+  <import file="../../lucene/module-build.xml"/>
 
   <path id="spatialjar">
      <pathelement path="lib/spatial4j-0.2.jar"/>

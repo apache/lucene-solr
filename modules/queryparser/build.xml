@@ -24,7 +24,7 @@
   <property name="dist.dir" location="dist/"/>
   <property name="maven.dist.dir" location="../dist/maven"/>
 
-  <import file="../../lucene/contrib/contrib-build.xml"/>
+  <import file="../../lucene/module-build.xml"/>
 
   <path id="classpath">
     <pathelement path="${queries.jar}"/>

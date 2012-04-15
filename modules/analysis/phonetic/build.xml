@@ -26,7 +26,7 @@
   <property name="build.dir" location="../build/phonetic" />
   <property name="dist.dir" location="../dist/phonetic" />
 
-  <import file="../../../lucene/contrib/contrib-build.xml"/>
+  <import file="../../../lucene/module-build.xml"/>
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>

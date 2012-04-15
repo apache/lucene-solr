@@ -23,7 +23,7 @@
     High-performance single-document index to compare against Query
   </description>
 
-  <import file="../contrib-build.xml"/>
+  <import file="../../module-build.xml"/>
 
   <path id="test.classpath">
     <pathelement path="${queryparser.jar}"/>

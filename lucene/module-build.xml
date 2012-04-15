@@ -25,7 +25,7 @@
   <property name="dist.dir" location="../../dist/contrib/${ant.project.name}"/>
   <property name="maven.dist.dir" location="../../dist/maven"/>
 
-  <import file="../common-build.xml"/>
+  <import file="common-build.xml"/>
 
   <available property="contrib.has.tests" type="dir" file="src/test" />
   

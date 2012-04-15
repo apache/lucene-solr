@@ -25,7 +25,7 @@
     Miscellaneous Lucene extensions
   </description>
 
-  <import file="../contrib-build.xml"/>
+  <import file="../../module-build.xml"/>
 
   <target name="install-cpptasks" unless="cpptasks.uptodate" depends="ivy-availability-check,ivy-fail">
     <property name="cpptasks.uptodate" value="true"/>
