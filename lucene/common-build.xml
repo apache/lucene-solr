@@ -800,9 +800,7 @@
                 <report-execution-times file="${junit.output.dir}/tests-timehints.txt" historyLength="5" />
 
                 <!-- XML reports compatible with ant-report task. We don't use ant-report anyway so I omit these. -->
-                <!--
                 <report-ant-xml dir="@{junit.output.dir}" />
-                -->
                 <report-json file="${junit.output.dir}/tests-report-${ant.project.name}/index.html" />
             </listeners>
 
