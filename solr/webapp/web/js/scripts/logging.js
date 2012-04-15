@@ -116,10 +116,13 @@ var logging_handler = function( response, text_status, xhr )
     return logger_content;
   };
 
-  var logger_content = logger_tree( null );
+  var logger_content = '<div class="block">' + "\n"
+                     + '<h2><span>' + response.framework.esc() + '<span>' + response.slfj4.esc() + '</span></span></h2>' + "\n"
+                     + '<ul class="tree jstree">' + logger_tree( null ) + '</ul>' + "\n"
+                     + '</div>';
 
   self
-    .html( '<ul class="tree jstree">' + logger_content + '</ul>' );
+    .html( logger_content );
 
   $( 'li:last-child', this )
     .addClass( 'jstree-last' );
@@ -136,8 +139,16 @@ var logging_handler = function( response, text_status, xhr )
         {
           var selector = $( '.selector-holder', element.closest( 'li' ) );
 
-          $( 'a.trigger', selector )
+          var trigger = $( 'a.trigger', selector );
+
+          trigger
             .text( level.esc() );
+
+          if( element.hasClass( 'set' ) )
+          {
+            trigger.first()
+              .addClass( 'set' );
+          }
 
           $( 'ul a[data-level="' + level + '"]', selector ).first()
             .addClass( 'level' );
@@ -217,8 +228,7 @@ sammy.get
   /^#\/~(logging)$/,
   function( context )
   {
-    var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );
-    loglevel_path = core_basepath + '/admin/loglevel';
+    loglevel_path = app_config.solr_path + '/admin/loglevel';
     var content_element = $( '#content' );
         
     content_element

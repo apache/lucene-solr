@@ -4,6 +4,19 @@
   padding-left: 21px;
 }
 
+#content #logging .block h2
+{
+  background-image: url( ../../img/ico/document-text.png );
+  margin-bottom: 10px;
+}
+
+#content #logging .block h2 span span
+{
+  color: #c0c0c0;
+  font-weight: normal;
+  margin-left: 10px;
+}
+
 #content #logging .jstree > li
 {
   margin-left: 0;
