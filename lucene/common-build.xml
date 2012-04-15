@@ -765,7 +765,7 @@
 
                 <!-- Emits full status for all tests, their relative order on slaves. -->
                 <report-text
-                    file="${junit.output.dir}/tests-report.txt"
+                    file="@{junit.output.dir}/tests-report.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
                     showOutputStream="true" 
@@ -781,7 +781,7 @@
 
                 <!-- Emits status on errors and failures only. -->
                 <report-text
-                    file="${junit.output.dir}/tests-failures.txt"
+                    file="@{junit.output.dir}/tests-failures.txt"
                     showThrowable="true" 
                     showStackTraces="true" 
                     showOutputStream="true" 
@@ -797,11 +797,10 @@
                 
                 <!-- Emit the information about tests timings (could be used to determine
                      the slowest tests or for reuse in balancing). -->
-                <report-execution-times file="${junit.output.dir}/tests-timehints.txt" historyLength="5" />
+                <report-execution-times file="@{junit.output.dir}/tests-timehints.txt" historyLength="5" />
 
-                <!-- XML reports compatible with ant-report task. We don't use ant-report anyway so I omit these. -->
                 <report-ant-xml dir="@{junit.output.dir}" />
-                <report-json file="${junit.output.dir}/tests-report-${ant.project.name}/index.html" />
+                <report-json file="@{junit.output.dir}/tests-report-${ant.project.name}/index.html" />
             </listeners>
 
             <!-- Input test classes. -->
@@ -815,7 +814,7 @@
         <!-- Report the 5 slowest tests from this run to the console. -->
         <echo>5 slowest tests:</echo>
         <tophints max="5">
-          <file file="${junit.output.dir}/tests-timehints.txt" />
+          <file file="@{junit.output.dir}/tests-timehints.txt" />
         </tophints>
     </sequential>
   </macrodef>
