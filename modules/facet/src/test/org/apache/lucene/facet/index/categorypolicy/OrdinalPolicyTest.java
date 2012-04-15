@@ -38,7 +38,7 @@ public class OrdinalPolicyTest extends LuceneTestCase {
     assertFalse("default ordinal policy should not match root", ordinalPolicy
         .shouldAdd(TaxonomyReader.ROOT_ORDINAL));
     for (int i = 0; i < 300; i++) {
-      int ordinal = 1 + random.nextInt(Integer.MAX_VALUE - 1);
+      int ordinal = 1 + random().nextInt(Integer.MAX_VALUE - 1);
       assertTrue("default ordinal policy should match " + ordinal,
           ordinalPolicy.shouldAdd(ordinal));
     }
@@ -53,17 +53,17 @@ public class OrdinalPolicyTest extends LuceneTestCase {
     int[] topLevelOrdinals = new int[10];
     String[] topLevelStrings = new String[10];
     for (int i = 0; i < 10; i++) {
-      topLevelStrings[i] = Integer.valueOf(random.nextInt(30)).toString();
+      topLevelStrings[i] = Integer.valueOf(random().nextInt(30)).toString();
       topLevelOrdinals[i] = taxonomy.addCategory(new CategoryPath(
           topLevelStrings[i]));
     }
     int[] nonTopLevelOrdinals = new int[300];
     for (int i = 0; i < 300; i++) {
-      int nComponents = 2 + random.nextInt(10);
+      int nComponents = 2 + random().nextInt(10);
       String[] components = new String[nComponents];
       components[0] = topLevelStrings[i % 10];
       for (int j = 1; j < components.length; j++) {
-        components[j] = (Integer.valueOf(random.nextInt(30))).toString();
+        components[j] = (Integer.valueOf(random().nextInt(30))).toString();
       }
       nonTopLevelOrdinals[i] = taxonomy.addCategory(new CategoryPath(
           components));

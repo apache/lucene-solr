@@ -55,7 +55,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Calendar cal = new GregorianCalendar();
     cal.clear();
     cal.setTimeInMillis(1041397200000L); // 2003 January 01
@@ -189,7 +189,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   
   public void testWithCachingFilter() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     IndexReader reader = writer.getReader();
     writer.close();
   

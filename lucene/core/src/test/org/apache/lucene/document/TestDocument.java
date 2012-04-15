@@ -171,7 +171,7 @@ public class TestDocument extends LuceneTestCase {
    */
   public void testGetValuesForIndexedDocument() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.addDocument(makeDocumentWithFields());
     IndexReader reader = writer.getReader();
     
@@ -256,7 +256,7 @@ public class TestDocument extends LuceneTestCase {
     doc.add(new Field("keyword", "test", StringField.TYPE_STORED));
     
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.addDocument(doc);
     field.setStringValue("id2");
     writer.addDocument(doc);
@@ -299,7 +299,7 @@ public class TestDocument extends LuceneTestCase {
   // LUCENE-3682
   public void testTransitionAPI() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
     doc.add(new Field("stored", "abc", Field.Store.YES, Field.Index.NO));
@@ -363,7 +363,7 @@ public class TestDocument extends LuceneTestCase {
   
   public void testBoost() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iw = new IndexWriter(dir, iwc);
     Document doc = new Document();

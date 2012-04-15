@@ -51,16 +51,16 @@ public class TestPackedInts extends LuceneTestCase {
     for (int iter = 0; iter < num; iter++) {
       long ceil = 2;
       for(int nbits=1;nbits<63;nbits++) {
-        final int valueCount = 100+random.nextInt(500);
+        final int valueCount = 100+random().nextInt(500);
         final Directory d = newDirectory();
 
-        IndexOutput out = d.createOutput("out.bin", newIOContext(random));
+        IndexOutput out = d.createOutput("out.bin", newIOContext(random()));
         PackedInts.Writer w = PackedInts.getWriter(
                 out, valueCount, nbits);
 
         final long[] values = new long[valueCount];
         for(int i=0;i<valueCount;i++) {
-          long v = random.nextLong() % ceil;
+          long v = random().nextLong() % ceil;
           if (v < 0) {
             v = -v;
           }
@@ -71,7 +71,7 @@ public class TestPackedInts extends LuceneTestCase {
         final long fp = out.getFilePointer();
         out.close();
         {// test reader
-          IndexInput in = d.openInput("out.bin", newIOContext(random));
+          IndexInput in = d.openInput("out.bin", newIOContext(random()));
           PackedInts.Reader r = PackedInts.getReader(in);
           assertEquals(fp, in.getFilePointer());
           for(int i=0;i<valueCount;i++) {
@@ -82,7 +82,7 @@ public class TestPackedInts extends LuceneTestCase {
           in.close();
         }
         { // test reader iterator next
-          IndexInput in = d.openInput("out.bin", newIOContext(random));
+          IndexInput in = d.openInput("out.bin", newIOContext(random()));
           PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in);
           for(int i=0;i<valueCount;i++) {
             assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
@@ -93,15 +93,15 @@ public class TestPackedInts extends LuceneTestCase {
           in.close();
         }
         { // test reader iterator next vs. advance
-          IndexInput in = d.openInput("out.bin", newIOContext(random));
+          IndexInput in = d.openInput("out.bin", newIOContext(random()));
           PackedInts.ReaderIterator intsEnum = PackedInts.getReaderIterator(in);
           for (int i = 0; i < valueCount; i += 
-            1 + ((valueCount - i) <= 20 ? random.nextInt(valueCount - i)
-              : random.nextInt(20))) {
+            1 + ((valueCount - i) <= 20 ? random().nextInt(valueCount - i)
+              : random().nextInt(20))) {
             final String msg = "index=" + i + " ceil=" + ceil + " valueCount="
                 + valueCount + " nbits=" + nbits + " for "
                 + intsEnum.getClass().getSimpleName();
-            if (i - intsEnum.ord() == 1 && random.nextBoolean()) {
+            if (i - intsEnum.ord() == 1 && random().nextBoolean()) {
               assertEquals(msg, values[i], intsEnum.next());
             } else {
               assertEquals(msg, values[i], intsEnum.advance(i));
@@ -117,13 +117,13 @@ public class TestPackedInts extends LuceneTestCase {
         }
         
         { // test direct reader get
-          IndexInput in = d.openInput("out.bin", newIOContext(random));
+          IndexInput in = d.openInput("out.bin", newIOContext(random()));
           PackedInts.Reader intsEnum = PackedInts.getDirectReader(in);
           for (int i = 0; i < valueCount; i++) {
             final String msg = "index=" + i + " ceil=" + ceil + " valueCount="
                 + valueCount + " nbits=" + nbits + " for "
                 + intsEnum.getClass().getSimpleName();
-            final int index = random.nextInt(valueCount);
+            final int index = random().nextInt(valueCount);
             long value = intsEnum.get(index);
             assertEquals(msg, value, values[index]);
           }
@@ -158,7 +158,7 @@ public class TestPackedInts extends LuceneTestCase {
       for (int bitsPerValue = MIN_BITS_PER_VALUE ;
            bitsPerValue <= MAX_BITS_PER_VALUE ;
            bitsPerValue++) {
-        assertRandomEquality(valueCount, bitsPerValue, random.nextLong());
+        assertRandomEquality(valueCount, bitsPerValue, random().nextLong());
       }
     }
   }
@@ -243,14 +243,14 @@ public class TestPackedInts extends LuceneTestCase {
 
   public void testSingleValue() throws Exception {
     Directory dir = newDirectory();
-    IndexOutput out = dir.createOutput("out", newIOContext(random));
+    IndexOutput out = dir.createOutput("out", newIOContext(random()));
     PackedInts.Writer w = PackedInts.getWriter(out, 1, 8);
     w.add(17);
     w.finish();
     final long end = out.getFilePointer();
     out.close();
 
-    IndexInput in = dir.openInput("out", newIOContext(random));
+    IndexInput in = dir.openInput("out", newIOContext(random()));
     PackedInts.getReader(in);
     assertEquals(end, in.getFilePointer());
     in.close();

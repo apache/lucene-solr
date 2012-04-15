@@ -54,7 +54,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
    * is performed. The results are compared to non-sampled ones.
    */
   public void testCountUsingSamping() throws Exception, IOException {
-    boolean useRandomSampler = random.nextBoolean();
+    boolean useRandomSampler = random().nextBoolean();
     for (int partitionSize : partitionSizes) {
       try {
         initIndex(partitionSize);
@@ -132,7 +132,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
 
     samplingParams.setSampingThreshold(11000); //force sampling 
     Sampler sampler = useRandomSampler ? 
-        new RandomSampler(samplingParams, new Random(random.nextLong())) :
+        new RandomSampler(samplingParams, new Random(random().nextLong())) :
           new RepeatableSampler(samplingParams);
     assertTrue("must enable sampling for this test!",sampler.shouldSample(scoredDocIDs));
     return sampler;

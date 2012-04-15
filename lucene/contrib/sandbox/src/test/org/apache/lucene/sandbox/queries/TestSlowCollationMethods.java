@@ -47,22 +47,22 @@ public class TestSlowCollationMethods extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    final Locale locale = LuceneTestCase.randomLocale(random);
+    final Locale locale = LuceneTestCase.randomLocale(random());
     collator = Collator.getInstance(locale);
     collator.setStrength(Collator.IDENTICAL);
     collator.setDecomposition(Collator.NO_DECOMPOSITION);
 
     numDocs = 1000 * RANDOM_MULTIPLIER;
     dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      String value = _TestUtil.randomUnicodeString(random);
+      String value = _TestUtil.randomUnicodeString(random());
       Field field = newField("field", value, StringField.TYPE_STORED);
       doc.add(field);
       iw.addDocument(doc);
     }
-    splitDoc = _TestUtil.randomUnicodeString(random);
+    splitDoc = _TestUtil.randomUnicodeString(random());
     reader = iw.getReader();
     iw.close();
 
@@ -97,13 +97,13 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     });
     final Sort sort = new Sort(sf);
     
-    final TopDocs docs1 = searcher.search(TermRangeQuery.newStringRange("field", null, splitDoc, true, true), null, numDocs/(1+random.nextInt(4)), sort);
+    final TopDocs docs1 = searcher.search(TermRangeQuery.newStringRange("field", null, splitDoc, true, true), null, numDocs/(1+random().nextInt(4)), sort);
     doCheckSorting(docs1);
     
-    final TopDocs docs2 = searcher.search(TermRangeQuery.newStringRange("field", splitDoc, null, true, true), null, numDocs/(1+random.nextInt(4)), sort);
+    final TopDocs docs2 = searcher.search(TermRangeQuery.newStringRange("field", splitDoc, null, true, true), null, numDocs/(1+random().nextInt(4)), sort);
     doCheckSorting(docs2);
     
-    final TopDocs docs = TopDocs.merge(sort, numDocs/(1+random.nextInt(4)), new TopDocs[]{docs1, docs2});
+    final TopDocs docs = TopDocs.merge(sort, numDocs/(1+random().nextInt(4)), new TopDocs[]{docs1, docs2});
     doCheckSorting(docs);
   }
   
@@ -130,8 +130,8 @@ public class TestSlowCollationMethods extends LuceneTestCase {
   public void testRangeQuery() throws Exception {
     int numQueries = 50*RANDOM_MULTIPLIER;
     for (int i = 0; i < numQueries; i++) {
-      String startPoint = _TestUtil.randomUnicodeString(random);
-      String endPoint = _TestUtil.randomUnicodeString(random);
+      String startPoint = _TestUtil.randomUnicodeString(random());
+      String endPoint = _TestUtil.randomUnicodeString(random());
       Query query = new SlowCollatedTermRangeQuery("field", startPoint, endPoint, true, true, collator);
       doTestRanges(startPoint, endPoint, query);
     }
@@ -140,8 +140,8 @@ public class TestSlowCollationMethods extends LuceneTestCase {
   public void testRangeFilter() throws Exception {
     int numQueries = 50*RANDOM_MULTIPLIER;
     for (int i = 0; i < numQueries; i++) {
-      String startPoint = _TestUtil.randomUnicodeString(random);
-      String endPoint = _TestUtil.randomUnicodeString(random);
+      String startPoint = _TestUtil.randomUnicodeString(random());
+      String endPoint = _TestUtil.randomUnicodeString(random());
       Query query = new ConstantScoreQuery(new SlowCollatedTermRangeFilter("field", startPoint, endPoint, true, true, collator));
       doTestRanges(startPoint, endPoint, query);
     }

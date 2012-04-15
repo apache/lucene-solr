@@ -347,7 +347,7 @@ public class TestNumericUtils extends LuceneTestCase {
   public void testRandomSplit() throws Exception {
     long num = (long) atLeast(10);
     for (long i=0; i < num; i++) {
-      executeOneRandomSplit(random);
+      executeOneRandomSplit(random());
     }
   }
   

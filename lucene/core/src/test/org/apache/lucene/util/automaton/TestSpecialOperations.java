@@ -26,7 +26,7 @@ public class TestSpecialOperations extends LuceneTestCase {
   public void testIsFinite() {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      Automaton a = AutomatonTestUtil.randomAutomaton(random);
+      Automaton a = AutomatonTestUtil.randomAutomaton(random());
       Automaton b = a.clone();
       assertEquals(AutomatonTestUtil.isFiniteSlow(a), SpecialOperations.isFinite(b));
     }

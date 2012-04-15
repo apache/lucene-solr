@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.charfilter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -191,7 +192,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     };
     
     int numRounds = RANDOM_MULTIPLIER * 10000;
-    checkRandomData(random, analyzer, numRounds);
+    checkRandomData(random(), analyzer, numRounds);
   }
 
   //@Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
@@ -215,7 +216,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     };
     
     String text = "gzw f quaxot";
-    checkAnalysisConsistency(random, analyzer, false, text);
+    checkAnalysisConsistency(random(), analyzer, false, text);
   }
   
   //@Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
@@ -235,11 +236,12 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
         }
       };
       int numRounds = RANDOM_MULTIPLIER * 100;
-      checkRandomData(random, analyzer, numRounds);
+      checkRandomData(random(), analyzer, numRounds);
     }
   }
   
   private NormalizeCharMap randomMap() {
+    Random random = random();
     NormalizeCharMap map = new NormalizeCharMap();
     // we can't add duplicate keys, or NormalizeCharMap gets angry
     Set<String> keys = new HashSet<String>();

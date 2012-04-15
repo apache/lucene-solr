@@ -71,7 +71,7 @@ public class TestBooleanQuery extends LuceneTestCase {
   // LUCENE-1630
   public void testNullOrSubScorer() throws Throwable {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(newField("field", "a b c d", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
@@ -135,7 +135,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
   public void testDeMorgan() throws Exception {
     Directory dir1 = newDirectory();
-    RandomIndexWriter iw1 = new RandomIndexWriter(random, dir1);
+    RandomIndexWriter iw1 = new RandomIndexWriter(random(), dir1);
     Document doc1 = new Document();
     doc1.add(newField("field", "foo bar", TextField.TYPE_UNSTORED));
     iw1.addDocument(doc1);
@@ -143,7 +143,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     iw1.close();
     
     Directory dir2 = newDirectory();
-    RandomIndexWriter iw2 = new RandomIndexWriter(random, dir2);
+    RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2);
     Document doc2 = new Document();
     doc2.add(newField("field", "foo baz", TextField.TYPE_UNSTORED));
     iw2.addDocument(doc2);
@@ -177,23 +177,23 @@ public class TestBooleanQuery extends LuceneTestCase {
 
   public void testBS2DisjunctionNextVsAdvance() throws Exception {
     final Directory d = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random, d);
+    final RandomIndexWriter w = new RandomIndexWriter(random(), d);
     final int numDocs = atLeast(300);
     for(int docUpto=0;docUpto<numDocs;docUpto++) {
       String contents = "a";
-      if (random.nextInt(20) <= 16) {
+      if (random().nextInt(20) <= 16) {
         contents += " b";
       }
-      if (random.nextInt(20) <= 8) {
+      if (random().nextInt(20) <= 8) {
         contents += " c";
       }
-      if (random.nextInt(20) <= 4) {
+      if (random().nextInt(20) <= 4) {
         contents += " d";
       }
-      if (random.nextInt(20) <= 2) {
+      if (random().nextInt(20) <= 2) {
         contents += " e";
       }
-      if (random.nextInt(20) <= 1) {
+      if (random().nextInt(20) <= 1) {
         contents += " f";
       }
       Document doc = new Document();
@@ -210,9 +210,9 @@ public class TestBooleanQuery extends LuceneTestCase {
         System.out.println("iter=" + iter);
       }
       final List<String> terms = new ArrayList<String>(Arrays.asList("a", "b", "c", "d", "e", "f"));
-      final int numTerms = _TestUtil.nextInt(random, 1, terms.size());
+      final int numTerms = _TestUtil.nextInt(random(), 1, terms.size());
       while(terms.size() > numTerms) {
-        terms.remove(random.nextInt(terms.size()));
+        terms.remove(random().nextInt(terms.size()));
       }
 
       if (VERBOSE) {
@@ -256,13 +256,13 @@ public class TestBooleanQuery extends LuceneTestCase {
           final int nextUpto;
           final int nextDoc;
           final int left = hits.size() - upto;
-          if (left == 1 || random.nextBoolean()) {
+          if (left == 1 || random().nextBoolean()) {
             // next
             nextUpto = 1+upto;
             nextDoc = scorer.nextDoc();
           } else {
             // advance
-            int inc = _TestUtil.nextInt(random, 1, left-1);
+            int inc = _TestUtil.nextInt(random(), 1, left-1);
             nextUpto = inc + upto;
             nextDoc = scorer.advance(hits.get(nextUpto).doc);
           }

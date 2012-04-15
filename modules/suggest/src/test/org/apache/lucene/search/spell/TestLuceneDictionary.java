@@ -49,7 +49,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     store = newDirectory();
-    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
 
     Document doc;
 

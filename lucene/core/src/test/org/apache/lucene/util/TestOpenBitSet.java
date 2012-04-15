@@ -65,7 +65,7 @@ public class TestOpenBitSet extends LuceneTestCase {
   }
 
   void doPrevSetBit(BitSet a, OpenBitSet b) {
-    int aa = a.size() + random.nextInt(100);
+    int aa = a.size() + random().nextInt(100);
     int bb = aa;
     do {
       // aa = a.prevSetBit(aa-1);
@@ -79,7 +79,7 @@ public class TestOpenBitSet extends LuceneTestCase {
   }
 
   void doPrevSetBitLong(BitSet a, OpenBitSet b) {
-    int aa = a.size() + random.nextInt(100);
+    int aa = a.size() + random().nextInt(100);
     int bb = aa;
     do {
       // aa = a.prevSetBit(aa-1);
@@ -103,7 +103,7 @@ public class TestOpenBitSet extends LuceneTestCase {
     OpenBitSetIterator iterator = new OpenBitSetIterator(b);
     do {
       aa = a.nextSetBit(aa+1);
-      bb = random.nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
+      bb = random().nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
       assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
     } while (aa>=0);
   }
@@ -113,7 +113,7 @@ public class TestOpenBitSet extends LuceneTestCase {
     OpenBitSetIterator iterator = new OpenBitSetIterator(b);
     do {
       aa = a.nextSetBit(aa+1);
-      bb = random.nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
+      bb = random().nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
       assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
     } while (aa>=0);
   }
@@ -123,33 +123,33 @@ public class TestOpenBitSet extends LuceneTestCase {
     OpenBitSet b0=null;
 
     for (int i=0; i<iter; i++) {
-      int sz = random.nextInt(maxSize);
+      int sz = random().nextInt(maxSize);
       BitSet a = new BitSet(sz);
       OpenBitSet b = new OpenBitSet(sz);
 
       // test the various ways of setting bits
       if (sz>0) {
-        int nOper = random.nextInt(sz);
+        int nOper = random().nextInt(sz);
         for (int j=0; j<nOper; j++) {
           int idx;         
 
-          idx = random.nextInt(sz);
+          idx = random().nextInt(sz);
           a.set(idx);
           b.fastSet(idx);
           
-          idx = random.nextInt(sz);
+          idx = random().nextInt(sz);
           a.set(idx);
           b.fastSet((long) idx);
           
-          idx = random.nextInt(sz);
+          idx = random().nextInt(sz);
           a.clear(idx);
           b.fastClear(idx);
           
-          idx = random.nextInt(sz);
+          idx = random().nextInt(sz);
           a.clear(idx);
           b.fastClear((long) idx);
           
-          idx = random.nextInt(sz);
+          idx = random().nextInt(sz);
           a.flip(idx);
           b.fastFlip(idx);
 
@@ -157,7 +157,7 @@ public class TestOpenBitSet extends LuceneTestCase {
           boolean val2 = b.flipAndGet(idx);
           assertTrue(val != val2);
 
-          idx = random.nextInt(sz);
+          idx = random().nextInt(sz);
           a.flip(idx);
           b.fastFlip((long) idx);
 
@@ -180,15 +180,15 @@ public class TestOpenBitSet extends LuceneTestCase {
 
       // test ranges, including possible extension
       int fromIndex, toIndex;
-      fromIndex = random.nextInt(sz+80);
-      toIndex = fromIndex + random.nextInt((sz>>1)+1);
+      fromIndex = random().nextInt(sz+80);
+      toIndex = fromIndex + random().nextInt((sz>>1)+1);
       BitSet aa = (BitSet)a.clone(); aa.flip(fromIndex,toIndex);
       OpenBitSet bb = b.clone(); bb.flip(fromIndex,toIndex);
 
       doIterate(aa,bb, mode);   // a problem here is from flip or doIterate
 
-      fromIndex = random.nextInt(sz+80);
-      toIndex = fromIndex + random.nextInt((sz>>1)+1);
+      fromIndex = random().nextInt(sz+80);
+      toIndex = fromIndex + random().nextInt((sz>>1)+1);
       aa = (BitSet)a.clone(); aa.clear(fromIndex,toIndex);
       bb = b.clone(); bb.clear(fromIndex,toIndex);
 
@@ -198,8 +198,8 @@ public class TestOpenBitSet extends LuceneTestCase {
       doPrevSetBit(aa,bb);
       doPrevSetBitLong(aa,bb);
 
-      fromIndex = random.nextInt(sz+80);
-      toIndex = fromIndex + random.nextInt((sz>>1)+1);
+      fromIndex = random().nextInt(sz+80);
+      toIndex = fromIndex + random().nextInt((sz>>1)+1);
       aa = (BitSet)a.clone(); aa.set(fromIndex,toIndex);
       bb = b.clone(); bb.set(fromIndex,toIndex);
 

@@ -31,8 +31,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.*;
 
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE;
@@ -336,9 +335,9 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     int numIterations = atLeast(5);
     for (int i = 0; i < numIterations; i++) {
-      final int flags = random.nextInt(512);
+      final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("a", "b", "cd")), false);
       } else {
         protectedWords = null;
@@ -352,11 +351,12 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
           return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, protectedWords));
         }
       };
-      checkRandomData(random, a, 10000*RANDOM_MULTIPLIER, 20, false, false);
+      checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
     }
   }
   
   public void testEmptyTerm() throws IOException {
+    Random random = random();
     for (int i = 0; i < 512; i++) {
       final int flags = i;
       final CharArraySet protectedWords;

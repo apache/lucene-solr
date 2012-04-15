@@ -56,7 +56,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox jumped";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
@@ -98,7 +98,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox jumped";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
 
@@ -169,7 +169,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
 
@@ -212,7 +212,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
 
@@ -252,7 +252,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);

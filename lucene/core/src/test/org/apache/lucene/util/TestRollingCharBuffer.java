@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.StringReader;
+import java.util.Random;
 
 public class TestRollingCharBuffer extends LuceneTestCase {
 
@@ -26,6 +27,7 @@ public class TestRollingCharBuffer extends LuceneTestCase {
     
     RollingCharBuffer buffer = new RollingCharBuffer();
 
+    Random random = random();
     for(int iter=0;iter<ITERS;iter++) {
       final int stringLen = random.nextBoolean() ? random.nextInt(50) : random.nextInt(20000);
       final String s;

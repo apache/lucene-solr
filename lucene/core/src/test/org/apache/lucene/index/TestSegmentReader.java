@@ -41,7 +41,7 @@ public class TestSegmentReader extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
-    SegmentInfo info = DocHelper.writeDoc(random, dir, testDoc);
+    SegmentInfo info = DocHelper.writeDoc(random(), dir, testDoc);
     reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
   }
   
@@ -128,7 +128,7 @@ public class TestSegmentReader extends LuceneTestCase {
       }
     }
     
-    DocsEnum termDocs = _TestUtil.docs(random, reader,
+    DocsEnum termDocs = _TestUtil.docs(random(), reader,
                                        DocHelper.TEXT_FIELD_1_KEY,
                                        new BytesRef("field"),
                                        MultiFields.getLiveDocs(reader),
@@ -136,7 +136,7 @@ public class TestSegmentReader extends LuceneTestCase {
                                        false);
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
-    termDocs = _TestUtil.docs(random, reader,
+    termDocs = _TestUtil.docs(random(), reader,
                               DocHelper.NO_NORMS_KEY,
                               new BytesRef(DocHelper.NO_NORMS_TEXT),
                               MultiFields.getLiveDocs(reader),

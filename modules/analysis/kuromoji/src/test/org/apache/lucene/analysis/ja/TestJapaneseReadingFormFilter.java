@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Random;
 
 /**
  * Tests for {@link TestJapaneseReadingFormFilter}
@@ -59,6 +60,7 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
   }
 
   public void testRandomData() throws IOException {
+    Random random = random();
     checkRandomData(random, katakanaAnalyzer, 1000*RANDOM_MULTIPLIER);
     checkRandomData(random, romajiAnalyzer, 1000*RANDOM_MULTIPLIER);
   }

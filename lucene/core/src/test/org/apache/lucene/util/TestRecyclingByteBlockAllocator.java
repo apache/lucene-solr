@@ -38,8 +38,8 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
   }
 
   private RecyclingByteBlockAllocator newAllocator() {
-    return new RecyclingByteBlockAllocator(1 << (2 + random.nextInt(15)),
-        random.nextInt(97), new AtomicLong());
+    return new RecyclingByteBlockAllocator(1 << (2 + random().nextInt(15)),
+        random().nextInt(97), new AtomicLong());
   }
 
   @Test
@@ -74,7 +74,7 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
 
     int numIters = atLeast(97);
     for (int i = 0; i < numIters; i++) {
-      int num = 1 + random.nextInt(39);
+      int num = 1 + random().nextInt(39);
       for (int j = 0; j < num; j++) {
         block = allocator.getByteBlock();
         assertNotNull(block);
@@ -84,8 +84,8 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
             .bytesUsed());
       }
       byte[][] array = allocated.toArray(new byte[0][]);
-      int begin = random.nextInt(array.length);
-      int end = begin + random.nextInt(array.length - begin);
+      int begin = random().nextInt(array.length);
+      int end = begin + random().nextInt(array.length - begin);
       List<byte[]> selected = new ArrayList<byte[]>();
       for (int j = begin; j < end; j++) {
         selected.add(array[j]);
@@ -111,7 +111,7 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
 
     int numIters = atLeast(97);
     for (int i = 0; i < numIters; i++) {
-      int num = 1 + random.nextInt(39);
+      int num = 1 + random().nextInt(39);
       for (int j = 0; j < num; j++) {
         block = allocator.getByteBlock();
         freeButAllocated = Math.max(0, freeButAllocated - 1);
@@ -123,8 +123,8 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
       }
 
       byte[][] array = allocated.toArray(new byte[0][]);
-      int begin = random.nextInt(array.length);
-      int end = begin + random.nextInt(array.length - begin);
+      int begin = random().nextInt(array.length);
+      int end = begin + random().nextInt(array.length - begin);
       for (int j = begin; j < end; j++) {
         byte[] b = array[j];
         assertTrue(allocated.remove(b));
@@ -135,7 +135,7 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
       }
       // randomly free blocks
       int numFreeBlocks = allocator.numBufferedBlocks();
-      int freeBlocks = allocator.freeBlocks(random.nextInt(7 + allocator
+      int freeBlocks = allocator.freeBlocks(random().nextInt(7 + allocator
           .maxBufferedBlocks()));
       assertEquals(allocator.numBufferedBlocks(), numFreeBlocks - freeBlocks);
     }

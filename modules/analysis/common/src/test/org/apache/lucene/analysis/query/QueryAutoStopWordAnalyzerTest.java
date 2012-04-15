@@ -41,7 +41,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = new RAMDirectory();
-    appAnalyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
+    appAnalyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, appAnalyzer));
     int numDocs = 200;
     for (int i = 0; i < numDocs; i++) {
@@ -132,7 +132,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   public void testTokenStream() throws Exception {
     QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(
         TEST_VERSION_CURRENT,
-        new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), reader, 10);
+        new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), reader, 10);
     TokenStream ts = a.tokenStream("repetitiveField", new StringReader("this boring"));
     assertTokenStreamContents(ts, new String[] { "this" });
   }

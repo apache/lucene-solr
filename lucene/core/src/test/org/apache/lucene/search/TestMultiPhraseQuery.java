@@ -49,7 +49,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   public void testPhrasePrefix() throws IOException {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("blueberry pie", writer);
     add("blueberry strudel", writer);
     add("blueberry pizza", writer);
@@ -141,7 +141,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   // LUCENE-2580
   public void testTall() throws IOException {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("blueberry chocolate pie", writer);
     add("blueberry chocolate tart", writer);
     IndexReader r = writer.getReader();
@@ -160,7 +160,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   @Ignore //LUCENE-3821 fixes sloppy phrase scoring, except for this known problem 
   public void testMultiSloppyWithRepeats() throws IOException {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("a b c d e f g h i k", writer);
     IndexReader r = writer.getReader();
     writer.close();
@@ -180,7 +180,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
 
   public void testMultiExactWithRepeats() throws IOException {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("a b c d e f g h i k", writer);
     IndexReader r = writer.getReader();
     writer.close();
@@ -207,7 +207,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     // and all terms required.
     // The contained PhraseMultiQuery must contain exactly one term array.
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("blueberry pie", writer);
     add("blueberry chewing gum", writer);
     add("blue raspberry pie", writer);
@@ -238,7 +238,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   public void testPhrasePrefixWithBooleanQuery() throws IOException {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("This is a test", "object", writer);
     add("a note", "note", writer);
     
@@ -265,7 +265,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   public void testNoDocs() throws Exception {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("a note", "note", writer);
     
     IndexReader reader = writer.getReader();
@@ -328,7 +328,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   public void testCustomIDF() throws Exception {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     add("This is a test", "object", writer);
     add("a note", "note", writer);
     
@@ -365,7 +365,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     tokens[2].append("c");
     tokens[2].setPositionIncrement(0);
 
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(new TextField("field", new CannedTokenStream(tokens)));
     writer.addDocument(doc);

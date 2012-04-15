@@ -25,7 +25,7 @@ import org.junit.Test;
 public class TestIdentityHashSet extends LuceneTestCase {
   @Test
   public void testCheck() {
-    Random rnd = random;
+    Random rnd = random();
     Set<Object> jdk = Collections.newSetFromMap(
         new IdentityHashMap<Object,Boolean>());
     RamUsageEstimator.IdentityHashSet<Object> us = new RamUsageEstimator.IdentityHashSet<Object>();

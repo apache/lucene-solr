@@ -44,14 +44,14 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Directory indexA = newDirectory();
     Directory indexB = newDirectory();
 
-    fillIndex(random, indexA, 0, num);
+    fillIndex(random(), indexA, 0, num);
     boolean fail = verifyIndex(indexA, 0);
     if (fail)
     {
       fail("Index a is invalid");
     }
 
-    fillIndex(random, indexB, num, num);
+    fillIndex(random(), indexB, num, num);
     fail = verifyIndex(indexB, num);
     if (fail)
     {
@@ -62,7 +62,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     IndexWriter writer = new IndexWriter(
         merged,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMergePolicy(newLogMergePolicy(2))
     );
     writer.addIndexes(indexA, indexB);
@@ -123,7 +123,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
   public void testForceMergeDeletes() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(
                                                   IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document document = new Document();
@@ -154,7 +154,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(10, ir.numDocs());
     ir.close();
 
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
     writer = new IndexWriter(dir, dontMergeConfig);
     writer.deleteDocuments(new Term("id", "0"));
@@ -165,7 +165,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(8, ir.numDocs());
     ir.close();
 
-    writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     assertEquals(8, writer.numDocs());
     assertEquals(10, writer.maxDoc());
     writer.forceMergeDeletes();
@@ -183,7 +183,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMaxBufferedDocs(2).
             setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH).
             setMergePolicy(newLogMergePolicy(50))
@@ -217,7 +217,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(98, ir.numDocs());
     ir.close();
     
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {
@@ -231,7 +231,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMergePolicy(newLogMergePolicy(3))
     );
     assertEquals(49, writer.numDocs());
@@ -250,7 +250,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMaxBufferedDocs(2).
             setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH).
             setMergePolicy(newLogMergePolicy(50))
@@ -283,7 +283,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(98, ir.numDocs());
     ir.close();
     
-    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {
@@ -296,7 +296,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     writer = new IndexWriter(
         dir,
-        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMergePolicy(newLogMergePolicy(3))
     );
     writer.forceMergeDeletes(false);
@@ -335,7 +335,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
   public void testSetMaxMergeDocs() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMergeScheduler(new MyMergeScheduler()).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy());
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
     lmp.setMaxMergeDocs(20);
@@ -369,7 +369,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       }
 
       IndexWriterConfig conf =  newIndexWriterConfig(
-              TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+              TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(2).
               setMergePolicy(newLogMergePolicy());
@@ -442,7 +442,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
         reader.close();
 
         // Reopen
-        writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+        writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
       }
       writer.close();
     }

@@ -35,7 +35,7 @@ public class TestSumDocFreq extends LuceneTestCase {
     final int numDocs = atLeast(500);
     
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     
     Document doc = new Document();
     Field id = newField("id", "", StringField.TYPE_UNSTORED);
@@ -46,11 +46,11 @@ public class TestSumDocFreq extends LuceneTestCase {
     doc.add(field2);
     for (int i = 0; i < numDocs; i++) {
       id.setStringValue("" + i);
-      char ch1 = (char) _TestUtil.nextInt(random, 'a', 'z');
-      char ch2 = (char) _TestUtil.nextInt(random, 'a', 'z');
+      char ch1 = (char) _TestUtil.nextInt(random(), 'a', 'z');
+      char ch2 = (char) _TestUtil.nextInt(random(), 'a', 'z');
       field1.setStringValue("" + ch1 + " " + ch2);
-      ch1 = (char) _TestUtil.nextInt(random, 'a', 'z');
-      ch2 = (char) _TestUtil.nextInt(random, 'a', 'z');
+      ch1 = (char) _TestUtil.nextInt(random(), 'a', 'z');
+      ch2 = (char) _TestUtil.nextInt(random(), 'a', 'z');
       field2.setStringValue("" + ch1 + " " + ch2);
       writer.addDocument(doc);
     }
@@ -62,7 +62,7 @@ public class TestSumDocFreq extends LuceneTestCase {
     
     int numDeletions = atLeast(20);
     for (int i = 0; i < numDeletions; i++) {
-      writer.deleteDocuments(new Term("id", "" + random.nextInt(numDocs)));
+      writer.deleteDocuments(new Term("id", "" + random().nextInt(numDocs)));
     }
     writer.forceMerge(1);
     writer.close();

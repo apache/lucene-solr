@@ -42,7 +42,7 @@ public class TestDateFilter extends LuceneTestCase {
   public void testBefore() throws IOException {
     // create an index
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     
     long now = System.currentTimeMillis();
     
@@ -107,7 +107,7 @@ public class TestDateFilter extends LuceneTestCase {
   public void testAfter() throws IOException {
     // create an index
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     
     long now = System.currentTimeMillis();
     

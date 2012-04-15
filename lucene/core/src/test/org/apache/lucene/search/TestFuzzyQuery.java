@@ -39,7 +39,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     addDoc("aaaaa", writer);
     addDoc("aaaab", writer);
     addDoc("aaabb", writer);
@@ -191,7 +191,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzzinessLong() throws Exception {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     addDoc("aaaaaaa", writer);
     addDoc("segment", writer);
 
@@ -287,14 +287,14 @@ public class TestFuzzyQuery extends LuceneTestCase {
    */
   public void testTieBreaker() throws Exception {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     addDoc("a123456", writer);
     addDoc("c123456", writer);
     addDoc("d123456", writer);
     addDoc("e123456", writer);
     
     Directory directory2 = newDirectory();
-    RandomIndexWriter writer2 = new RandomIndexWriter(random, directory2);
+    RandomIndexWriter writer2 = new RandomIndexWriter(random(), directory2);
     addDoc("a123456", writer2);
     addDoc("b123456", writer2);
     addDoc("b123456", writer2);
@@ -321,7 +321,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testTokenLengthOpt() throws IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     addDoc("12345678911", writer);
     addDoc("segment", writer);
 
@@ -357,7 +357,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   /** Test the TopTermsBoostOnlyBooleanQueryRewrite rewrite method. */
   public void testBoostOnlyRewrite() throws Exception {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     addDoc("Lucene", writer);
     addDoc("Lucene", writer);
     addDoc("Lucenne", writer);
@@ -380,9 +380,9 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testGiga() throws Exception {
 
-    MockAnalyzer analyzer = new MockAnalyzer(random);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
     Directory index = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, index);
+    RandomIndexWriter w = new RandomIndexWriter(random(), index);
 
     addDoc("Lucene in Action", w);
     addDoc("Lucene for Dummies", w);
@@ -417,7 +417,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testDistanceAsEditsSearching() throws Exception {
     Directory index = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, index);
+    RandomIndexWriter w = new RandomIndexWriter(random(), index);
     addDoc("foobar", w);
     addDoc("test", w);
     addDoc("working", w);

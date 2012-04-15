@@ -32,8 +32,7 @@ import org.junit.After;
 import org.junit.Before;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public abstract class SpatialTestCase extends LuceneTestCase {
 
@@ -46,6 +45,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    Random random = random();
 
     directory = newDirectory();
 

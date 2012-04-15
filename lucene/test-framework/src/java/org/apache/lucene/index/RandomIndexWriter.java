@@ -62,10 +62,8 @@ public class RandomIndexWriter implements Closeable {
 
     public MockIndexWriter(Random r, Directory dir, IndexWriterConfig conf) throws IOException {
       super(dir, conf);
-      // must make a private random since our methods are
-      // called from different threads; else test failures may
-      // not be reproducible from the original seed
-      this.r = new Random(r.nextInt());
+      // TODO: this should be solved in a different way; Random should not be shared (!).
+      this.r = new Random(r.nextLong());
     }
 
     @Override
@@ -93,7 +91,8 @@ public class RandomIndexWriter implements Closeable {
   
   /** create a RandomIndexWriter with the provided config */
   public RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c) throws IOException {
-    this.r = r;
+    // TODO: this should be solved in a different way; Random should not be shared (!).
+    this.r = new Random(r.nextLong());
     w = new MockIndexWriter(r, dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
     codec = w.getConfig().getCodec();

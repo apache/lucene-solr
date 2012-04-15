@@ -48,8 +48,8 @@ public class TestPulsingReuse extends LuceneTestCase {
     // we always run this test with pulsing codec.
     Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing40PostingsFormat(1));
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
     Document doc = new Document();
     doc.add(new Field("foo", "a b b c c c d e f g g h i i j j k", TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
@@ -87,8 +87,8 @@ public class TestPulsingReuse extends LuceneTestCase {
     Codec cp = _TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat());
     MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // will do this ourselves, custom codec
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
     Document doc = new Document();
     doc.add(new Field("foo", "a b b c c c d e f g g g h i i j j k l l m m m", TextField.TYPE_UNSTORED));
     // note: the reuse is imperfect, here we would have 4 enums (lost reuse when we get an enum for 'm')

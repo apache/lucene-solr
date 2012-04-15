@@ -81,7 +81,7 @@ public class TestSimilarity2 extends LuceneTestCase {
    */
   public void testEmptyIndex() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
@@ -97,7 +97,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   /** similar to the above, but ORs the query with a real field */
   public void testEmptyField() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(newField("foo", "bar", TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
@@ -119,7 +119,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   /** similar to the above, however the field exists, but we query with a term that doesnt exist too */
   public void testEmptyTerm() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(newField("foo", "bar", TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
@@ -141,7 +141,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   /** make sure we can retrieve when norms are disabled */
   public void testNoNorms() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     ft.setOmitNorms(true);
@@ -165,7 +165,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   /** make sure all sims work if TF is omitted */
   public void testOmitTF() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
@@ -190,7 +190,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   /** make sure all sims work if TF and norms is omitted */
   public void testOmitTFAndNorms() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);
@@ -220,7 +220,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     // however with spans, there is only one scorer for the whole hierarchy:
     // inner queries are not real queries, their boosts are ignored, etc.
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     doc.add(newField("foo", "bar", ft));

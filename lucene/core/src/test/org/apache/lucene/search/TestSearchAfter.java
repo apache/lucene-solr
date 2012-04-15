@@ -39,7 +39,7 @@ public class TestSearchAfter extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(200);
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
@@ -80,7 +80,7 @@ public class TestSearchAfter extends LuceneTestCase {
   void assertQuery(Query query, Filter filter) throws Exception {
     int maxDoc = searcher.getIndexReader().maxDoc();
     TopDocs all = searcher.search(query, filter, maxDoc);
-    int pageSize = _TestUtil.nextInt(random, 1, maxDoc*2);
+    int pageSize = _TestUtil.nextInt(random(), 1, maxDoc*2);
     int pageStart = 0;
     ScoreDoc lastBottom = null;
     while (pageStart < all.totalHits) {

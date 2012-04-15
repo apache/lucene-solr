@@ -47,9 +47,9 @@ public class TestWildcardRandom extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
     
     Document doc = new Document();
     Field field = newField("field", "", StringField.TYPE_UNSTORED);
@@ -70,7 +70,7 @@ public class TestWildcardRandom extends LuceneTestCase {
   }
   
   private char N() {
-    return (char) (0x30 + random.nextInt(10));
+    return (char) (0x30 + random().nextInt(10));
   }
   
   private String fillPattern(String wildcardPattern) {

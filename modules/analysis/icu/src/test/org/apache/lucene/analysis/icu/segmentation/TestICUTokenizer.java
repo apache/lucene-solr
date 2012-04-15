@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
+import java.util.Random;
 
 public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
@@ -234,11 +235,12 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
+    Random random = random();
     checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
   }
 }

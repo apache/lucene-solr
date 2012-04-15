@@ -73,7 +73,7 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testRandom() throws Exception {
-    final int codeLen = _TestUtil.nextInt(random, 1, 8);
+    final int codeLen = _TestUtil.nextInt(random(), 1, 8);
     Analyzer a = new Analyzer() {
 
       @Override
@@ -83,7 +83,7 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
       }
       
     };
-    checkRandomData(random, a, 1000 * RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 1000 * RANDOM_MULTIPLIER);
     
     Analyzer b = new Analyzer() {
 
@@ -94,7 +94,7 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
       }
       
     };
-    checkRandomData(random, b, 1000 * RANDOM_MULTIPLIER); 
+    checkRandomData(random(), b, 1000 * RANDOM_MULTIPLIER); 
   }
   
   public void testEmptyTerm() throws IOException {
@@ -102,7 +102,7 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(tokenizer, new DoubleMetaphoneFilter(tokenizer, 8, random.nextBoolean()));
+        return new TokenStreamComponents(tokenizer, new DoubleMetaphoneFilter(tokenizer, 8, random().nextBoolean()));
       }
     };
     checkOneTermReuse(a, "", "");

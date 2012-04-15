@@ -105,10 +105,10 @@ public class TestAddTaxonomies extends LuceneTestCase {
   public void testmedium() throws Exception {
     int numTests = atLeast(3);
     for (int i = 0; i < numTests; i++) {
-      dotest(_TestUtil.nextInt(random, 1, 10), 
-             _TestUtil.nextInt(random, 1, 100), 
-             _TestUtil.nextInt(random, 100, 1000),
-             random.nextBoolean());
+      dotest(_TestUtil.nextInt(random(), 1, 10), 
+             _TestUtil.nextInt(random(), 1, 100), 
+             _TestUtil.nextInt(random(), 100, 1000),
+             random().nextBoolean());
     }
   }
 
@@ -135,7 +135,7 @@ public class TestAddTaxonomies extends LuceneTestCase {
       DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[i]);
       DirectoryTaxonomyWriter copytw = new DirectoryTaxonomyWriter(copydirs[i]);
       for (int j=0; j<ncats; j++) {
-        String cat = Integer.toString(random.nextInt(range));
+        String cat = Integer.toString(random().nextInt(range));
         tw.addCategory(new CategoryPath("a",cat));
         copytw.addCategory(new CategoryPath("a",cat));
       }

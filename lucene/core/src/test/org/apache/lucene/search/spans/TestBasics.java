@@ -109,9 +109,9 @@ public class TestBasics extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, simplePayloadAnalyzer)
-                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random, 100, 1000)).setMergePolicy(newLogMergePolicy()));
+                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 2000; i++) {
       Document doc = new Document();
@@ -621,6 +621,6 @@ public class TestBasics extends LuceneTestCase {
   }
 
   private void checkHits(Query query, int[] results) throws IOException {
-    CheckHits.checkHits(random, query, "field", searcher, results);
+    CheckHits.checkHits(random(), query, "field", searcher, results);
   }
 }

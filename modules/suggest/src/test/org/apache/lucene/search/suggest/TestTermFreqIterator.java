@@ -20,6 +20,7 @@ package org.apache.lucene.search.suggest;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
@@ -40,6 +41,7 @@ public class TestTermFreqIterator extends LuceneTestCase {
   }
   
   public void testTerms() throws Exception {
+    Random random = random();
     int num = atLeast(10000);
     
     Comparator<BytesRef> comparator = random.nextBoolean() ? BytesRef.getUTF8SortedAsUnicodeComparator() : BytesRef.getUTF8SortedAsUTF16Comparator();
@@ -88,6 +90,7 @@ public class TestTermFreqIterator extends LuceneTestCase {
     byte[] buffer = new byte[0];
     ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
 
+    final Random random = new Random(random().nextLong());
     for (int i = 0; i < num; i++) {
       BytesRef spare;
       long weight;

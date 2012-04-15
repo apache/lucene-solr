@@ -509,16 +509,16 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testRandom() throws Exception {
     int numRounds = RANDOM_MULTIPLIER * 10000;
-    checkRandomData(random, newTestAnalyzer(), numRounds);
+    checkRandomData(random(), newTestAnalyzer(), numRounds);
   }
   
   public void testRandomHugeStrings() throws Exception {
     int numRounds = RANDOM_MULTIPLIER * 200;
-    checkRandomData(random, newTestAnalyzer(), numRounds, 8192);
+    checkRandomData(random(), newTestAnalyzer(), numRounds, 8192);
   }
 
   public void testCloseBR() throws Exception {
-    checkAnalysisConsistency(random, newTestAnalyzer(), random.nextBoolean(), " Secretary)</br> [[M");
+    checkAnalysisConsistency(random(), newTestAnalyzer(), random().nextBoolean(), " Secretary)</br> [[M");
   }
   
   public void testServerSideIncludes() throws Exception {
@@ -787,8 +787,8 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testRandomBrokenHTML() throws Exception {
     int maxNumElements = 10000;
-    String text = _TestUtil.randomHtmlishString(random, maxNumElements);
-    checkAnalysisConsistency(random, newTestAnalyzer(), random.nextBoolean(), text);
+    String text = _TestUtil.randomHtmlishString(random(), maxNumElements);
+    checkAnalysisConsistency(random(), newTestAnalyzer(), random().nextBoolean(), text);
   }
 
   public void testRandomText() throws Exception {
@@ -797,11 +797,11 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     int maxNumWords = 10000;
     int minWordLength = 3;
     int maxWordLength = 20;
-    int numWords = _TestUtil.nextInt(random, minNumWords, maxNumWords);
-    switch (_TestUtil.nextInt(random, 0, 4)) {
+    int numWords = _TestUtil.nextInt(random(), minNumWords, maxNumWords);
+    switch (_TestUtil.nextInt(random(), 0, 4)) {
       case 0: {
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomUnicodeString(random, maxWordLength));
+          text.append(_TestUtil.randomUnicodeString(random(), maxWordLength));
           text.append(' ');
         }
         break;
@@ -809,14 +809,14 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
       case 1: {
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
           text.append(_TestUtil.randomRealisticUnicodeString
-              (random, minWordLength, maxWordLength));
+              (random(), minWordLength, maxWordLength));
           text.append(' ');
         }
         break;
       }
       default: { // ASCII 50% of the time
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomSimpleString(random));
+          text.append(_TestUtil.randomSimpleString(random()));
           text.append(' ');
         }
       }

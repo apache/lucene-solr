@@ -64,7 +64,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
       }
     } else {
       // we are the fork, setup a crashing thread
-      final int crashTime = _TestUtil.nextInt(random, 3000, 4000);
+      final int crashTime = _TestUtil.nextInt(random(), 3000, 4000);
       Thread t = new Thread() {
         @Override
         public void run() {
@@ -96,7 +96,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     // passing NIGHTLY to this test makes it run for much longer, easier to catch it in the act...
     cmd.add("-Dtests.nightly=true");
     cmd.add("-DtempDir=" + tempDir.getPath());
-    cmd.add("-Dtests.seed=" + random.nextLong() + ":" + random.nextLong());
+    cmd.add("-Dtests.seed=" + random().nextLong() + ":" + random().nextLong());
     cmd.add("-ea");
     cmd.add("-cp");
     cmd.add(System.getProperty("java.class.path"));

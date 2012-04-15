@@ -43,7 +43,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
   public void testReadSupplementaryChars() throws IOException {
     StringBuilder builder = new StringBuilder();
     // create random input
-    int num = 1024 + random.nextInt(1024);
+    int num = 1024 + random().nextInt(1024);
     num *= RANDOM_MULTIPLIER;
     for (int i = 1; i < num; i++) {
       builder.append("\ud801\udc1cabc");
@@ -121,7 +121,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     };
     int num = 10000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random);
+      String s = _TestUtil.randomUnicodeString(random());
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
       ts.reset();
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
@@ -136,7 +136,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       ts.close();
     }
     // just for fun
-    checkRandomData(random, analyzer, num);
+    checkRandomData(random(), analyzer, num);
   }
   
   // LUCENE-3642: normalize BMP->SMP and check that offsets are correct
@@ -159,7 +159,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     };
     int num = 10000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random);
+      String s = _TestUtil.randomUnicodeString(random());
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
       ts.reset();
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
@@ -174,6 +174,6 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       ts.close();
     }
     // just for fun
-    checkRandomData(random, analyzer, num);
+    checkRandomData(random(), analyzer, num);
   }
 }

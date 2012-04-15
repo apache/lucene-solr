@@ -100,7 +100,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
   
   public void testGetScores() throws Exception {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     writer.commit();
     IndexReader ir = writer.getReader();
     writer.close();

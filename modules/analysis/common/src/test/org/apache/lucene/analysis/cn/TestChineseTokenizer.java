@@ -120,7 +120,7 @@ public class TestChineseTokenizer extends BaseTokenStreamTestCase
     
     /** blast some random strings through the analyzer */
     public void testRandomStrings() throws Exception {
-      checkRandomData(random, new ChineseAnalyzer(), 10000*RANDOM_MULTIPLIER);
+      checkRandomData(random(), new ChineseAnalyzer(), 10000*RANDOM_MULTIPLIER);
     }
 
 }

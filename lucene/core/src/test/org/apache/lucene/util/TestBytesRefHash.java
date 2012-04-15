@@ -49,13 +49,13 @@ public class TestBytesRefHash extends LuceneTestCase {
   }
   
   private ByteBlockPool newPool(){
-    return  random.nextBoolean() && pool != null ? pool
-        : new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, random.nextInt(25)));
+    return  random().nextBoolean() && pool != null ? pool
+        : new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, random().nextInt(25)));
   }
   
   private BytesRefHash newHash(ByteBlockPool blockPool) {
-    final int initSize = 2 << 1 + random.nextInt(5);
-    return random.nextBoolean() ? new BytesRefHash(blockPool) : new BytesRefHash(
+    final int initSize = 2 << 1 + random().nextInt(5);
+    return random().nextBoolean() ? new BytesRefHash(blockPool) : new BytesRefHash(
         blockPool, initSize, new BytesRefHash.DirectBytesStartArray(initSize));
   }
 
@@ -67,11 +67,11 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRef ref = new BytesRef();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
-      final int mod = 1+random.nextInt(39);
+      final int mod = 1+random().nextInt(39);
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random, 1000);
+          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
@@ -105,7 +105,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random, 1000);
+          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
@@ -144,7 +144,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < size; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random, 1000);
+          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         final int key = hash.add(ref);
@@ -184,7 +184,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random, 1000);
+          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         hash.add(ref);
@@ -223,7 +223,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random, 1000);
+          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();
@@ -251,9 +251,9 @@ public class TestBytesRefHash extends LuceneTestCase {
 
   @Test(expected = MaxBytesLengthExceededException.class)
   public void testLargeValue() {
-    int[] sizes = new int[] { random.nextInt(5),
-        ByteBlockPool.BYTE_BLOCK_SIZE - 33 + random.nextInt(31),
-        ByteBlockPool.BYTE_BLOCK_SIZE - 1 + random.nextInt(37) };
+    int[] sizes = new int[] { random().nextInt(5),
+        ByteBlockPool.BYTE_BLOCK_SIZE - 33 + random().nextInt(31),
+        ByteBlockPool.BYTE_BLOCK_SIZE - 1 + random().nextInt(37) };
     BytesRef ref = new BytesRef();
     for (int i = 0; i < sizes.length; i++) {
       ref.bytes = new byte[sizes[i]];
@@ -286,7 +286,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (int i = 0; i < 797; i++) {
         String str;
         do {
-          str = _TestUtil.randomRealisticUnicodeString(random, 1000);
+          str = _TestUtil.randomRealisticUnicodeString(random(), 1000);
         } while (str.length() == 0);
         ref.copyChars(str);
         int count = hash.size();

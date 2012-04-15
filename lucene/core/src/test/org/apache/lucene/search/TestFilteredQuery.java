@@ -52,7 +52,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter (random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter (random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     Document doc = new Document();
     doc.add (newField("field", "one two three four five", TextField.TYPE_STORED));
@@ -121,7 +121,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (1, hits[0].doc);
-    QueryUtils.check(random, filteredquery,searcher);
+    QueryUtils.check(random(), filteredquery,searcher);
 
     hits = searcher.search (filteredquery, null, 1000, new Sort(new SortField("sorter", SortField.Type.STRING))).scoreDocs;
     assertEquals (1, hits.length);
@@ -130,23 +130,23 @@ public class TestFilteredQuery extends LuceneTestCase {
     filteredquery = new FilteredQueryRA(new TermQuery (new Term ("field", "one")), filter, useRandomAccess);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (2, hits.length);
-    QueryUtils.check(random, filteredquery,searcher);
+    QueryUtils.check(random(), filteredquery,searcher);
 
     filteredquery = new FilteredQueryRA(new MatchAllDocsQuery(), filter, useRandomAccess);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (2, hits.length);
-    QueryUtils.check(random, filteredquery,searcher);
+    QueryUtils.check(random(), filteredquery,searcher);
 
     filteredquery = new FilteredQueryRA(new TermQuery (new Term ("field", "x")), filter, useRandomAccess);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (3, hits[0].doc);
-    QueryUtils.check(random, filteredquery,searcher);
+    QueryUtils.check(random(), filteredquery,searcher);
 
     filteredquery = new FilteredQueryRA(new TermQuery (new Term ("field", "y")), filter, useRandomAccess);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (0, hits.length);
-    QueryUtils.check(random, filteredquery,searcher);
+    QueryUtils.check(random(), filteredquery,searcher);
     
     // test boost
     Filter f = newStaticFilterA();
@@ -213,7 +213,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     Query filteredquery = new FilteredQueryRA(rq, filter, useRandomAccess);
     ScoreDoc[] hits = searcher.search(filteredquery, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
-    QueryUtils.check(random, filteredquery,searcher);
+    QueryUtils.check(random(), filteredquery,searcher);
   }
 
   public void testBooleanMUST() throws Exception {
@@ -231,7 +231,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     bq.add(query, BooleanClause.Occur.MUST);
     ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
-    QueryUtils.check(random, query,searcher);    
+    QueryUtils.check(random(), query,searcher);    
   }
 
   public void testBooleanSHOULD() throws Exception {
@@ -249,7 +249,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     bq.add(query, BooleanClause.Occur.SHOULD);
     ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
-    QueryUtils.check(random, query,searcher);    
+    QueryUtils.check(random(), query,searcher);    
   }
 
   // Make sure BooleanQuery, which does out-of-order
@@ -268,7 +268,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     bq.add(new TermQuery(new Term("field", "two")), BooleanClause.Occur.SHOULD);
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(random, query, searcher);    
+    QueryUtils.check(random(), query, searcher);    
   }
   
   public void testChainedFilters() throws Exception {
@@ -284,14 +284,14 @@ public class TestFilteredQuery extends LuceneTestCase {
       new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "four")))), useRandomAccess);
     ScoreDoc[] hits = searcher.search(query, 10).scoreDocs;
     assertEquals(2, hits.length);
-    QueryUtils.check(random, query, searcher);    
+    QueryUtils.check(random(), query, searcher);    
 
     // one more:
     query = new TestFilteredQuery.FilteredQueryRA(query,
       new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "five")))), useRandomAccess);
     hits = searcher.search(query, 10).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(random, query, searcher);    
+    QueryUtils.check(random(), query, searcher);    
   }
   
   public void testEqualsHashcode() throws Exception {
@@ -337,11 +337,11 @@ public class TestFilteredQuery extends LuceneTestCase {
   
   private void assertRewrite(FilteredQuery fq, Class<? extends Query> clazz) throws Exception {
     // assign crazy boost to FQ
-    final float boost = random.nextFloat() * 100.f;
+    final float boost = random().nextFloat() * 100.f;
     fq.setBoost(boost);
     
     // assign crazy boost to inner
-    final float innerBoost = random.nextFloat() * 100.f;
+    final float innerBoost = random().nextFloat() * 100.f;
     fq.getQuery().setBoost(innerBoost);
     
     // check the class and boosts of rewritten query

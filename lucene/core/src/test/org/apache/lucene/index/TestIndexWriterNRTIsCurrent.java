@@ -40,13 +40,13 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
       LockObtainFailedException, IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random));
+        new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     ReaderHolder holder = new ReaderHolder();
     ReaderThread[] threads = new ReaderThread[atLeast(3)];
     final CountDownLatch latch = new CountDownLatch(1);
     WriterThread writerThread = new WriterThread(holder, writer,
-        atLeast(500), random, latch);
+        atLeast(500), random(), latch);
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new ReaderThread(holder, latch);
       threads[i].start();
@@ -74,7 +74,6 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
     private final ReaderHolder holder;
     private final IndexWriter writer;
     private final int numOps;
-    private final Random random;
     private boolean countdown = true;
     private final CountDownLatch latch;
     Throwable failed;
@@ -85,12 +84,12 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
       this.holder = holder;
       this.writer = writer;
       this.numOps = numOps;
-      this.random = random;
       this.latch = latch;
     }
 
     public void run() {
       DirectoryReader currentReader = null;
+      Random random = LuceneTestCase.random();
       try {
         Document doc = new Document();
         doc.add(new Field("id", "1", TextField.TYPE_UNSTORED));

@@ -38,7 +38,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
-    info = DocHelper.writeDoc(random, dir, testDoc);
+    info = DocHelper.writeDoc(random(), dir, testDoc);
   }
   
   @Override
@@ -57,13 +57,13 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
   public void testTermDocs(int indexDivisor) throws IOException {
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random));
+    SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random()));
     assertTrue(reader != null);
     assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
 
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator(null);
     terms.seekCeil(new BytesRef("field"));
-    DocsEnum termDocs = _TestUtil.docs(random, terms, reader.getLiveDocs(), null, true);
+    DocsEnum termDocs = _TestUtil.docs(random(), terms, reader.getLiveDocs(), null, true);
     if (termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)    {
       int docId = termDocs.docID();
       assertTrue(docId == 0);
@@ -80,9 +80,9 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   public void testBadSeek(int indexDivisor) throws IOException {
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random));
+      SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random()));
       assertTrue(reader != null);
-      DocsEnum termDocs = _TestUtil.docs(random, reader,
+      DocsEnum termDocs = _TestUtil.docs(random(), reader,
                                          "textField2",
                                          new BytesRef("bad"),
                                          reader.getLiveDocs(),
@@ -94,9 +94,9 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     }
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random));
+      SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random()));
       assertTrue(reader != null);
-      DocsEnum termDocs = _TestUtil.docs(random, reader,
+      DocsEnum termDocs = _TestUtil.docs(random(), reader,
                                          "junk",
                                          new BytesRef("bad"),
                                          reader.getLiveDocs(),
@@ -113,7 +113,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
   public void testSkipTo(int indexDivisor) throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     
     Term ta = new Term("content","aaa");
     for(int i = 0; i < 10; i++)
@@ -133,7 +133,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     
     IndexReader reader = IndexReader.open(dir, indexDivisor);
 
-    DocsEnum tdocs = _TestUtil.docs(random, reader,
+    DocsEnum tdocs = _TestUtil.docs(random(), reader,
                                     ta.field(),
                                     new BytesRef(ta.text()),
                                     MultiFields.getLiveDocs(reader),
@@ -158,7 +158,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertFalse(tdocs.advance(10) != DocIdSetIterator.NO_MORE_DOCS);
     
     // without next
-    tdocs = _TestUtil.docs(random, reader,
+    tdocs = _TestUtil.docs(random(), reader,
                            ta.field(),
                            new BytesRef(ta.text()),
                            MultiFields.getLiveDocs(reader),
@@ -176,7 +176,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     // exactly skipInterval documents and therefore with optimization
     
     // with next
-    tdocs = _TestUtil.docs(random, reader,
+    tdocs = _TestUtil.docs(random(), reader,
                            tb.field(),
                            new BytesRef(tb.text()),
                            MultiFields.getLiveDocs(reader),
@@ -200,7 +200,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertFalse(tdocs.advance(26) != DocIdSetIterator.NO_MORE_DOCS);
     
     // without next
-    tdocs = _TestUtil.docs(random, reader,
+    tdocs = _TestUtil.docs(random(), reader,
                            tb.field(),
                            new BytesRef(tb.text()),
                            MultiFields.getLiveDocs(reader),
@@ -220,7 +220,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     // much more than skipInterval documents and therefore with optimization
     
     // with next
-    tdocs = _TestUtil.docs(random, reader,
+    tdocs = _TestUtil.docs(random(), reader,
                            tc.field(),
                            new BytesRef(tc.text()),
                            MultiFields.getLiveDocs(reader),
@@ -246,7 +246,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertFalse(tdocs.advance(76) != DocIdSetIterator.NO_MORE_DOCS);
     
     //without next
-    tdocs = _TestUtil.docs(random, reader,
+    tdocs = _TestUtil.docs(random(), reader,
                            tc.field(),
                            new BytesRef(tc.text()),
                            MultiFields.getLiveDocs(reader),
@@ -271,7 +271,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   public void testIndexDivisor() throws IOException {
     testDoc = new Document();
     DocHelper.setupDoc(testDoc);
-    DocHelper.writeDoc(random, dir, testDoc);
+    DocHelper.writeDoc(random(), dir, testDoc);
     testTermDocs(2);
     testBadSeek(2);
     testSkipTo(2);

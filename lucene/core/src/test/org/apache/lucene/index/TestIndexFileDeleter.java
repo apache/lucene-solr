@@ -52,7 +52,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMaxBufferedDocs(10).
             setMergePolicy(mergePolicy)
     );
@@ -70,7 +70,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // Delete one doc so we get a .del file:
     writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
     );
     Term searchTerm = new Term("id", "7");
@@ -123,7 +123,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     // Open & close a writer: it should delete the above 4
     // files and nothing more:
-    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     writer.close();
 
     String[] files2 = dir.listAll();
@@ -179,8 +179,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   }
 
   public void copyFile(Directory dir, String src, String dest) throws IOException {
-    IndexInput in = dir.openInput(src, newIOContext(random));
-    IndexOutput out = dir.createOutput(dest, newIOContext(random));
+    IndexInput in = dir.openInput(src, newIOContext(random()));
+    IndexOutput out = dir.createOutput(dest, newIOContext(random()));
     byte[] b = new byte[1024];
     long remainder = in.length();
     while(remainder > 0) {

@@ -35,7 +35,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(newField("field", "value", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
@@ -87,14 +87,14 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
   public void testRandom() throws Exception {
     final Directory d = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random, d);
+    final RandomIndexWriter w = new RandomIndexWriter(random(), d);
     w.w.getConfig().setMaxBufferedDocs(17);
     final int numDocs = atLeast(100);
     final Set<String> aDocs = new HashSet<String>();
     for(int i=0;i<numDocs;i++) {
       final Document doc = new Document();
       final String v;
-      if (random.nextInt(5) == 4) {
+      if (random().nextInt(5) == 4) {
         v = "a";
         aDocs.add(""+i);
       } else {
@@ -108,7 +108,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
     final int numDelDocs = atLeast(10);
     for(int i=0;i<numDelDocs;i++) {
-      final String delID = ""+random.nextInt(numDocs);
+      final String delID = ""+random().nextInt(numDocs);
       w.deleteDocuments(new Term("id", delID));
       aDocs.remove(delID);
     }
@@ -128,7 +128,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
   
   public void testThousandDocuments() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
       doc.add(newField("field", English.intToEnglish(i), StringField.TYPE_UNSTORED));

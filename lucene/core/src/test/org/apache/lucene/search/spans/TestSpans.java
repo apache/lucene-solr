@@ -53,7 +53,7 @@ public class TestSpans extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(field, docFields[i], TextField.TYPE_STORED));
@@ -91,7 +91,7 @@ public class TestSpans extends LuceneTestCase {
   }
   
   private void checkHits(Query query, int[] results) throws IOException {
-    CheckHits.checkHits(random, query, field, searcher, results);
+    CheckHits.checkHits(random(), query, field, searcher, results);
   }
   
   private void orderedSlopTest3SQ(
@@ -474,7 +474,7 @@ public class TestSpans extends LuceneTestCase {
   public void testNPESpanQuery() throws Throwable {
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     // Add documents
     addDoc(writer, "1", "the big dogs went running to the market");

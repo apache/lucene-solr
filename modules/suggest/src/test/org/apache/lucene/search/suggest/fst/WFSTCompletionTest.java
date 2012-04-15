@@ -17,13 +17,7 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.TermFreq;
@@ -41,6 +35,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
         new TermFreq("barbara", 6)
     };
     
+    Random random = new Random(random().nextLong());
     WFSTCompletionLookup suggester = new WFSTCompletionLookup();
     suggester.build(new TermFreqArrayIterator(keys));
     
@@ -88,7 +83,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
       while (true) {
         // TODO: would be nice to fix this slowCompletor/comparator to
         // use full range, but we might lose some coverage too...
-        s = _TestUtil.randomSimpleString(random);
+        s = _TestUtil.randomSimpleString(random());
         if (!slowCompletor.containsKey(s)) {
           break;
         }
@@ -98,16 +93,16 @@ public class WFSTCompletionTest extends LuceneTestCase {
         allPrefixes.add(s.substring(0, j));
       }
       // we can probably do Integer.MAX_VALUE here, but why worry.
-      int weight = random.nextInt(1<<24);
+      int weight = random().nextInt(1<<24);
       slowCompletor.put(s, (long)weight);
       keys[i] = new TermFreq(s, weight);
     }
 
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
     suggester.build(new TermFreqArrayIterator(keys));
-    
+
+    Random random = new Random(random().nextLong());
     for (String prefix : allPrefixes) {
-    
       final int topN = _TestUtil.nextInt(random, 1, 10);
       List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence(prefix, random), false, topN);
 

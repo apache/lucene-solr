@@ -50,7 +50,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     Field field = newField("field", "", TextField.TYPE_UNSTORED);
     doc.add(field);
@@ -96,7 +96,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final int NUM_TERMS = atLeast(20);
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
-      final String s = _TestUtil.randomRealisticUnicodeString(random);
+      final String s = _TestUtil.randomRealisticUnicodeString(random());
       //final String s = _TestUtil.randomSimpleString(random);
       if (s.length() > 0) {
         terms.add(new BytesRef(s));
@@ -107,16 +107,16 @@ public class TestDocTermOrds extends LuceneTestCase {
     
     final int NUM_DOCS = atLeast(100);
 
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
 
     // Sometimes swap in codec that impls ord():
-    if (random.nextInt(10) == 7) {
+    if (random().nextInt(10) == 7) {
       // Make sure terms index has ords:
       Codec codec = _TestUtil.alwaysPostingsFormat(PostingsFormat.forName("Lucene40WithOrds"));
       conf.setCodec(codec);
     }
     
-    final RandomIndexWriter w = new RandomIndexWriter(random, dir, conf);
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, conf);
 
     final int[][] idToOrds = new int[NUM_DOCS][];
     final Set<Integer> ordsForDocSet = new HashSet<Integer>();
@@ -126,9 +126,9 @@ public class TestDocTermOrds extends LuceneTestCase {
 
       doc.add(new IntField("id", id));
       
-      final int termCount = _TestUtil.nextInt(random, 0, 20*RANDOM_MULTIPLIER);
+      final int termCount = _TestUtil.nextInt(random(), 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
-        ordsForDocSet.add(random.nextInt(termsArray.length));
+        ordsForDocSet.add(random().nextInt(termsArray.length));
       }
       final int[] ordsForDoc = new int[termCount];
       int upto = 0;
@@ -181,12 +181,12 @@ public class TestDocTermOrds extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
 
     final Set<String> prefixes = new HashSet<String>();
-    final int numPrefix = _TestUtil.nextInt(random, 2, 7);
+    final int numPrefix = _TestUtil.nextInt(random(), 2, 7);
     if (VERBOSE) {
       System.out.println("TEST: use " + numPrefix + " prefixes");
     }
     while(prefixes.size() < numPrefix) {
-      prefixes.add(_TestUtil.randomRealisticUnicodeString(random));
+      prefixes.add(_TestUtil.randomRealisticUnicodeString(random()));
       //prefixes.add(_TestUtil.randomSimpleString(random));
     }
     final String[] prefixesArray = prefixes.toArray(new String[prefixes.size()]);
@@ -194,7 +194,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final int NUM_TERMS = atLeast(20);
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
-      final String s = prefixesArray[random.nextInt(prefixesArray.length)] + _TestUtil.randomRealisticUnicodeString(random);
+      final String s = prefixesArray[random().nextInt(prefixesArray.length)] + _TestUtil.randomRealisticUnicodeString(random());
       //final String s = prefixesArray[random.nextInt(prefixesArray.length)] + _TestUtil.randomSimpleString(random);
       if (s.length() > 0) {
         terms.add(new BytesRef(s));
@@ -205,15 +205,15 @@ public class TestDocTermOrds extends LuceneTestCase {
     
     final int NUM_DOCS = atLeast(100);
 
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
 
     // Sometimes swap in codec that impls ord():
-    if (random.nextInt(10) == 7) {
+    if (random().nextInt(10) == 7) {
       Codec codec = _TestUtil.alwaysPostingsFormat(PostingsFormat.forName("Lucene40WithOrds"));
       conf.setCodec(codec);
     }
     
-    final RandomIndexWriter w = new RandomIndexWriter(random, dir, conf);
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, conf);
 
     final int[][] idToOrds = new int[NUM_DOCS][];
     final Set<Integer> ordsForDocSet = new HashSet<Integer>();
@@ -223,9 +223,9 @@ public class TestDocTermOrds extends LuceneTestCase {
 
       doc.add(new IntField("id", id));
       
-      final int termCount = _TestUtil.nextInt(random, 0, 20*RANDOM_MULTIPLIER);
+      final int termCount = _TestUtil.nextInt(random(), 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
-        ordsForDocSet.add(random.nextInt(termsArray.length));
+        ordsForDocSet.add(random().nextInt(termsArray.length));
       }
       final int[] ordsForDoc = new int[termCount];
       int upto = 0;
@@ -302,7 +302,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                             "field",
                                             prefixRef,
                                             Integer.MAX_VALUE,
-                                            _TestUtil.nextInt(random, 2, 10));
+                                            _TestUtil.nextInt(random(), 2, 10));
                                             
 
     final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);

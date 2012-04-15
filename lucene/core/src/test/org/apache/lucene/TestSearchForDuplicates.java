@@ -50,7 +50,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
       final int MAX_DOCS = atLeast(225);
-      doTest(random, pw, false, MAX_DOCS);
+      doTest(random(), pw, false, MAX_DOCS);
       pw.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
@@ -58,7 +58,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       sw = new StringWriter();
       pw = new PrintWriter(sw, true);
-      doTest(random, pw, true, MAX_DOCS);
+      doTest(random(), pw, true, MAX_DOCS);
       pw.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();

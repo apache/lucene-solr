@@ -48,7 +48,7 @@ public class TestDateSort extends LuceneTestCase {
     super.setUp();
     // Create an index writer.
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
 
     // oldest doc:
     // Add the first document.  text = "Document 1"  dateTime = Oct 10 03:25:22 EDT 2007

@@ -114,9 +114,9 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
   public void testGeneralSynchronization() throws Exception {
     int numIters = atLeast(2);
     for (int i = 0; i < numIters; i++) {
-      doTestGeneralSynchronization(_TestUtil.nextInt(random, 2, 4),
-                                  random.nextBoolean() ? -1 : _TestUtil.nextInt(random, 1, 10),
-                                  _TestUtil.nextInt(random, 0, 3));
+      doTestGeneralSynchronization(_TestUtil.nextInt(random(), 2, 4),
+                                  random().nextBoolean() ? -1 : _TestUtil.nextInt(random(), 1, 10),
+                                  _TestUtil.nextInt(random(), 0, 3));
     }
   }
 
@@ -143,10 +143,10 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
       int cacheSize) throws Exception, CorruptIndexException, IOException,
       InterruptedException {
     TFC.setCacheSize(cacheSize);
-    SlowRAMDirectory slowIndexDir = new SlowRAMDirectory(-1, random);
-    MockDirectoryWrapper indexDir = new MockDirectoryWrapper(random, slowIndexDir);
-    SlowRAMDirectory slowTaxoDir = new SlowRAMDirectory(-1, random);
-    MockDirectoryWrapper taxoDir = new MockDirectoryWrapper(random, slowTaxoDir);
+    SlowRAMDirectory slowIndexDir = new SlowRAMDirectory(-1, random());
+    MockDirectoryWrapper indexDir = new MockDirectoryWrapper(random(), slowIndexDir);
+    SlowRAMDirectory slowTaxoDir = new SlowRAMDirectory(-1, random());
+    MockDirectoryWrapper taxoDir = new MockDirectoryWrapper(random(), slowTaxoDir);
     
 
     // Index documents without the "slowness"
@@ -408,7 +408,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
 
     // Write index using 'normal' directories
     IndexWriter w = new IndexWriter(indexDir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
     DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams();
     // Add documents and facets

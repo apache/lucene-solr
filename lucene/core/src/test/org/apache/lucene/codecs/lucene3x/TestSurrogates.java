@@ -287,12 +287,12 @@ public class TestSurrogates extends LuceneTestCase {
   @Test
   public void testSurrogatesOrder() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random,
+    RandomIndexWriter w = new RandomIndexWriter(random(),
                                                 dir,
                                                 newIndexWriterConfig( TEST_VERSION_CURRENT,
-                                                                      new MockAnalyzer(random)).setCodec(new PreFlexRWCodec()));
+                                                                      new MockAnalyzer(random())).setCodec(new PreFlexRWCodec()));
 
-    final int numField = _TestUtil.nextInt(random, 2, 5);
+    final int numField = _TestUtil.nextInt(random(), 2, 5);
 
     int uniqueTermCount = 0;
 
@@ -307,7 +307,7 @@ public class TestSurrogates extends LuceneTestCase {
       final Set<String> uniqueTerms = new HashSet<String>();
 
       for(int i=0;i<numTerms;i++) {
-        String term = getRandomString(random) + "_ " + (tc++);
+        String term = getRandomString(random()) + "_ " + (tc++);
         uniqueTerms.add(term);
         fieldTerms.add(new Term(field, term));
         Document doc = new Document();
@@ -346,8 +346,8 @@ public class TestSurrogates extends LuceneTestCase {
     //assertNotNull(fields);
 
     doTestStraightEnum(fieldTerms, reader, uniqueTermCount);
-    doTestSeekExists(random, fieldTerms, reader);
-    doTestSeekDoesNotExist(random, numField, fieldTerms, fieldTermsArray, reader);
+    doTestSeekExists(random(), fieldTerms, reader);
+    doTestSeekDoesNotExist(random(), numField, fieldTerms, fieldTermsArray, reader);
 
     reader.close();
     w.close();

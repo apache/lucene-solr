@@ -51,8 +51,8 @@ public class TestArrayUtil extends LuceneTestCase {
   public void testInvalidElementSizes() {
     int num = atLeast(10000);
     for (int iter = 0; iter < num; iter++) {
-      final int minTargetSize = random.nextInt(Integer.MAX_VALUE);
-      final int elemSize = random.nextInt(11);
+      final int minTargetSize = random().nextInt(Integer.MAX_VALUE);
+      final int elemSize = random().nextInt(11);
       final int v = ArrayUtil.oversize(minTargetSize, elemSize);
       assertTrue(v >= minTargetSize);
     }
@@ -118,9 +118,9 @@ public class TestArrayUtil extends LuceneTestCase {
   }
   
   private Integer[] createRandomArray(int maxSize) {
-    final Integer[] a = new Integer[random.nextInt(maxSize) + 1];
+    final Integer[] a = new Integer[random().nextInt(maxSize) + 1];
     for (int i = 0; i < a.length; i++) {
-      a[i] = Integer.valueOf(random.nextInt(a.length));
+      a[i] = Integer.valueOf(random().nextInt(a.length));
     }
     return a;
   }
@@ -146,9 +146,9 @@ public class TestArrayUtil extends LuceneTestCase {
   }
   
   private Integer[] createSparseRandomArray(int maxSize) {
-    final Integer[] a = new Integer[random.nextInt(maxSize) + 1];
+    final Integer[] a = new Integer[random().nextInt(maxSize) + 1];
     for (int i = 0; i < a.length; i++) {
-      a[i] = Integer.valueOf(random.nextInt(2));
+      a[i] = Integer.valueOf(random().nextInt(2));
     }
     return a;
   }
@@ -228,8 +228,8 @@ public class TestArrayUtil extends LuceneTestCase {
       // so they should always be in order after sorting.
       // The other half has defined order, but no (-1) value (they should appear after
       // all above, when sorted).
-      final boolean equal = random.nextBoolean();
-      items[i] = new Item(equal ? (i+1) : -1, equal ? 0 : (random.nextInt(1000)+1));
+      final boolean equal = random().nextBoolean();
+      items[i] = new Item(equal ? (i+1) : -1, equal ? 0 : (random().nextInt(1000)+1));
     }
     
     if (VERBOSE) System.out.println("Before: " + Arrays.toString(items));

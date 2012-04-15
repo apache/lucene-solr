@@ -41,7 +41,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, directory);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
     Field field = newField("field", "", TextField.TYPE_UNSTORED);
     doc.add(field);

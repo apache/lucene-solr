@@ -39,7 +39,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
     DirectoryReader r = IndexReader.open(writer, true);
 
     while (System.currentTimeMillis() < stopTime && !failed.get()) {
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         if (VERBOSE) {
           System.out.println("TEST: now reopen r=" + r);
         }
@@ -106,7 +106,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
   @Override
   protected IndexSearcher getFinalSearcher() throws Exception {
     final IndexReader r2;
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       r2 = writer.getReader();
     } else {
       writer.commit();

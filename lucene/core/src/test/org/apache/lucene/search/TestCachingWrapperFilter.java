@@ -39,7 +39,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   public void testCachingWorks() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
@@ -65,7 +65,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   public void testNullDocIdSet() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
@@ -88,7 +88,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   public void testNullDocIdSetIterator() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.close();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
@@ -132,7 +132,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   public void testIsCacheAble() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.addDocument(new Document());
     writer.close();
 
@@ -159,9 +159,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testEnforceDeletions() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(
-        random,
+        random(),
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMergeScheduler(new SerialMergeScheduler()).
             // asserts below requires no unexpected merges:
             setMergePolicy(newLogMergePolicy(10))

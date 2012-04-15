@@ -40,7 +40,7 @@ public class TestBinaryTerms extends LuceneTestCase {
         Codec.getDefault().getName().equals("Lucene3x"));
     
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     BytesRef bytes = new BytesRef(2);
     BinaryTokenStream tokenStream = new BinaryTokenStream(bytes);
     

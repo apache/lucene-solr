@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Random;
 
 /**
  * Tests {@link NGramTokenFilter} for correctness.
@@ -131,10 +132,11 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
             new NGramTokenFilter(tokenizer, 2, 15));
       }    
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
   }
   
   public void testEmptyTerm() throws Exception {
+    Random random = random();
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

@@ -129,7 +129,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   }
 
   public void testRandomRanges() throws Exception {
-    final Random r = random;
+    final Random r = random();
     int ITERS = atLeast(10);
     int ITERS_PER_DFA = atLeast(100);
     for(int iter=0;iter<ITERS;iter++) {
@@ -204,7 +204,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   public void testRandomRegexes() throws Exception {
     int num = atLeast(250);
     for (int i = 0; i < num; i++) {
-      assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton());
+      assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toAutomaton());
     }
   }
   
@@ -216,12 +216,12 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     int num = atLeast(1000);
     for (int i = 0; i < num; i++) {
       final String string;
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         // likely not accepted
-        string = _TestUtil.randomUnicodeString(random);
+        string = _TestUtil.randomUnicodeString(random());
       } else {
         // will be accepted
-        int[] codepoints = ras.getRandomAcceptedString(random);
+        int[] codepoints = ras.getRandomAcceptedString(random());
         try {
           string = UnicodeUtil.newString(codepoints, 0, codepoints.length);
         } catch (Exception e) {

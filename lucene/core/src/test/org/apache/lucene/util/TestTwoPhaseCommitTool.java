@@ -91,13 +91,13 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
 
   public void testRollback() throws Exception {
     // tests that rollback is called if failure occurs at any stage
-    int numObjects = random.nextInt(8) + 3; // between [3, 10]
+    int numObjects = random().nextInt(8) + 3; // between [3, 10]
     TwoPhaseCommitImpl[] objects = new TwoPhaseCommitImpl[numObjects];
     for (int i = 0; i < objects.length; i++) {
-      boolean failOnPrepare = random.nextBoolean();
+      boolean failOnPrepare = random().nextBoolean();
       // we should not hit failures on commit usually
-      boolean failOnCommit = random.nextDouble() < 0.05;
-      boolean railOnRollback = random.nextBoolean();
+      boolean failOnCommit = random().nextDouble() < 0.05;
+      boolean railOnRollback = random().nextBoolean();
       objects[i] = new TwoPhaseCommitImpl(failOnPrepare, failOnCommit, railOnRollback);
     }
 
@@ -138,11 +138,11 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
   }
 
   public void testNullTPCs() throws Exception {
-    int numObjects = random.nextInt(4) + 3; // between [3, 6]
+    int numObjects = random().nextInt(4) + 3; // between [3, 6]
     TwoPhaseCommit[] tpcs = new TwoPhaseCommit[numObjects];
     boolean setNull = false;
     for (int i = 0; i < tpcs.length; i++) {
-      boolean isNull = random.nextDouble() < 0.3;
+      boolean isNull = random().nextDouble() < 0.3;
       if (isNull) {
         setNull = true;
         tpcs[i] = null;
@@ -153,7 +153,7 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
 
     if (!setNull) {
       // none of the TPCs were picked to be null, pick one at random
-      int idx = random.nextInt(numObjects);
+      int idx = random().nextInt(numObjects);
       tpcs[idx] = null;
     }
 

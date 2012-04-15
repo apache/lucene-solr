@@ -35,7 +35,7 @@ public class TestCheckIndex extends LuceneTestCase {
 
   public void testDeletedDocs() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
     for(int i=0;i<19;i++) {
       Document doc = new Document();
       FieldType customType = new FieldType(TextField.TYPE_STORED);

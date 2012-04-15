@@ -43,16 +43,16 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     fileExtensions.add(Lucene40StoredFieldsWriter.FIELDS_EXTENSION);
     fileExtensions.add(Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION);
     
-    MockDirectoryWrapper primaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+    MockDirectoryWrapper primaryDir = new MockDirectoryWrapper(random(), new RAMDirectory());
     primaryDir.setCheckIndexOnClose(false); // only part of an index
-    MockDirectoryWrapper secondaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+    MockDirectoryWrapper secondaryDir = new MockDirectoryWrapper(random(), new RAMDirectory());
     secondaryDir.setCheckIndexOnClose(false); // only part of an index
     
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
     // for now we wire Lucene40Codec because we rely upon its specific impl
     IndexWriter writer = new IndexWriter(
         fsd,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMergePolicy(newLogMergePolicy(false)).setCodec(Codec.forName("Lucene40"))
     );
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
@@ -87,7 +87,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     Directory a = new SimpleFSDirectory(_TestUtil.getTempDir("foo"));
     Directory b = new SimpleFSDirectory(_TestUtil.getTempDir("bar"));
     FileSwitchDirectory switchDir = new FileSwitchDirectory(primaryExtensions, a, b, true);
-    return new MockDirectoryWrapper(random, switchDir);
+    return new MockDirectoryWrapper(random(), switchDir);
   }
   
   // LUCENE-3380 -- make sure we get exception if the directory really does not exist.
@@ -107,7 +107,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     Directory dir = newFSSwitchDirectory(Collections.<String>emptySet());
     String name = "file";
     try {
-      dir.createOutput(name, newIOContext(random)).close();
+      dir.createOutput(name, newIOContext(random())).close();
       assertTrue(dir.fileExists(name));
       assertTrue(Arrays.asList(dir.listAll()).contains(name));
     } finally {
@@ -118,12 +118,12 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
   // LUCENE-3380 test that delegate compound files correctly.
   public void testCompoundFileAppendTwice() throws IOException {
     Directory newDir = newFSSwitchDirectory(Collections.singleton("cfs"));
-    CompoundFileDirectory csw = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random), true);
+    CompoundFileDirectory csw = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random()), true);
     createSequenceFile(newDir, "d1", (byte) 0, 15);
-    IndexOutput out = csw.createOutput("d.xyz", newIOContext(random));
+    IndexOutput out = csw.createOutput("d.xyz", newIOContext(random()));
     out.writeInt(0);
     try {
-      newDir.copy(csw, "d1", "d1", newIOContext(random));
+      newDir.copy(csw, "d1", "d1", newIOContext(random()));
       fail("file does already exist");
     } catch (IllegalArgumentException e) {
       //
@@ -134,7 +134,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
    
     csw.close();
 
-    CompoundFileDirectory cfr = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random), false);
+    CompoundFileDirectory cfr = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random()), false);
     assertEquals(1, cfr.listAll().length);
     assertEquals("d.xyz", cfr.listAll()[0]);
     cfr.close();
@@ -146,7 +146,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
    *  computed as start + offset where offset is the number of the byte.
    */
   private void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
-      IndexOutput os = dir.createOutput(name, newIOContext(random));
+      IndexOutput os = dir.createOutput(name, newIOContext(random()));
       for (int i=0; i < size; i++) {
           os.writeByte(start);
           start ++;

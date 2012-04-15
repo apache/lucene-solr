@@ -38,7 +38,7 @@ public class TestPrefixQuery extends LuceneTestCase {
     String[] categories = new String[] {"/Computers",
                                         "/Computers/Mac",
                                         "/Computers/Windows"};
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
       doc.add(newField("category", categories[i], StringField.TYPE_STORED));

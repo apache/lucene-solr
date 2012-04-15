@@ -221,25 +221,25 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
   @Test
   public void testAddIndexes() throws Exception {
     // addIndexes - single commit in each
-    doTest(random, true, 0, false);
+    doTest(random(), true, 0, false);
 
     // addIndexes - multiple commits in each
-    doTest(random, true, 0, true);
+    doTest(random(), true, 0, true);
   }
 
   @Test
   public void testAddIndexesIntoExisting() throws Exception {
     // addIndexes - single commit in each
-    doTest(random, false, NUM_DOCS, false);
+    doTest(random(), false, NUM_DOCS, false);
 
     // addIndexes - multiple commits in each
-    doTest(random, false, NUM_DOCS, true);
+    doTest(random(), false, NUM_DOCS, true);
   }
 
   @Test
   public void testRegularMerges() throws Exception {
     Directory dir = newDirectory();
-    populateDocs(random, dir, true);
+    populateDocs(random(), dir, true);
     verifyPayloadExists(dir, "p", new BytesRef("p1"), NUM_DOCS);
     verifyPayloadExists(dir, "p", new BytesRef("p2"), NUM_DOCS);
 
@@ -247,7 +247,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     // won't get processed.
     Map<Directory, ReaderPayloadProcessor> processors = new HashMap<Directory, ReaderPayloadProcessor>();
     processors.put(dir, new PerTermPayloadProcessor());
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
     writer.forceMerge(1);
     writer.close();

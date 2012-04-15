@@ -70,7 +70,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   Directory ramDir;
   public IndexSearcher searcher = null;
   int numHighlights = 0;
-  final Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+  Analyzer analyzer;
   TopDocs hits;
 
   String[] texts = {
@@ -79,9 +79,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       "JFK has been shot", "John Kennedy has been shot",
       "This text has a typo in referring to Keneddy",
       "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b", "lets is a the lets is a the lets is a the lets" };
-
+  
   public void testQueryScorerHits() throws Exception {
-    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
 
     PhraseQuery phraseQuery = new PhraseQuery();
     phraseQuery.add(new Term(FIELD_NAME, "very"));
@@ -153,9 +153,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    * This method intended for use with <tt>testHighlightingWithDefaultField()</tt>
  * @throws InvalidTokenOffsetsException 
    */
-  private static String highlightField(Query query, String fieldName, String text)
+  private String highlightField(Query query, String fieldName, String text)
       throws IOException, InvalidTokenOffsetsException {
-    TokenStream tokenStream = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)
+    TokenStream tokenStream = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)
         .tokenStream(fieldName, new StringReader(text));
     // Assuming "<B>", "</B>" used to highlight
     SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
@@ -234,7 +234,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     Highlighter h = new Highlighter(this, scorer);
 
-    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
 
     h.getBestFragment(analyzer, f1, content);
 
@@ -1166,7 +1166,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void testMaxSizeHighlight() throws Exception {
-    final MockAnalyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    final MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
     // we disable MockTokenizer checks because we will forcefully limit the 
     // tokenstream and call end() before incrementToken() returns false.
     analyzer.setEnableChecks(false);
@@ -1201,7 +1201,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeString("stoppedtoken"));
         // we disable MockTokenizer checks because we will forcefully limit the 
         // tokenstream and call end() before incrementToken() returns false.
-        final MockAnalyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true);
+        final MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords, true);
         analyzer.setEnableChecks(false);
         TermQuery query = new TermQuery(new Term("data", goodWord));
 
@@ -1252,7 +1252,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         Highlighter hg = getHighlighter(query, "text", fm);
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocCharsToAnalyze(36);
-        String match = hg.getBestFragment(new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true), "text", text);
+        String match = hg.getBestFragment(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords, true), "text", text);
         assertTrue(
             "Matched text should contain remainder of text after highlighted query ",
             match.endsWith("in it"));
@@ -1269,7 +1269,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         numHighlights = 0;
         // test to show how rewritten query can still be used
         searcher = new IndexSearcher(reader);
-        Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+        Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
         
         BooleanQuery query = new BooleanQuery();
         query.add(new WildcardQuery(new Term(FIELD_NAME, "jf?")), Occur.SHOULD);
@@ -1611,7 +1611,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   private Directory dir;
-  private Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
+  private Analyzer a;
   
   public void testWeightedTermsWithDeletes() throws IOException, InvalidTokenOffsetsException {
     makeIndex();
@@ -1626,7 +1626,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   private void makeIndex() throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
     writer.addDocument( doc( "t_text1", "more random words for second field del" ) );
     writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
@@ -1636,7 +1636,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   private void deleteDocument() throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
     writer.deleteDocuments( new Term( "t_text1", "del" ) );
     // To see negative idf, keep comment the following line
     //writer.forceMerge(1);
@@ -1728,10 +1728,13 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   @Override
   public void setUp() throws Exception {
     super.setUp();
+
+    a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
     dir = newDirectory();
     ramDir = newDirectory();
     IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
     for (String text : texts) {
       addDoc(writer, text);
     }

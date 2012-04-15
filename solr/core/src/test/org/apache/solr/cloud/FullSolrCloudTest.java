@@ -185,7 +185,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       
       chaosMonkey = new ChaosMonkey(zkServer, zkStateReader,
           DEFAULT_COLLECTION, shardToJetty, shardToClient, shardToLeaderClient,
-          shardToLeaderJetty, random);
+          shardToLeaderJetty, random());
     }
     
     // wait until shards have started registering...
@@ -1270,7 +1270,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
       while (true && !stop) {
         ++i;
         
-        if (doDeletes && random.nextBoolean() && deletes.size() > 0) {
+        if (doDeletes && random().nextBoolean() && deletes.size() > 0) {
           Integer delete = deletes.remove(0);
           try {
             numDeletes++;
@@ -1293,7 +1293,7 @@ public class FullSolrCloudTest extends AbstractDistributedZkTestCase {
           fails.incrementAndGet();
         }
         
-        if (doDeletes && random.nextBoolean()) {
+        if (doDeletes && random().nextBoolean()) {
           deletes.add(i);
         }
         

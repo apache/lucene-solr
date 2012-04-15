@@ -46,7 +46,7 @@ public class TestTermVectors extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {                  
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy()));
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
@@ -107,7 +107,7 @@ public class TestTermVectors extends LuceneTestCase {
   
   public void testTermVectorsFieldOrder() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setStoreTermVectors(true);
@@ -238,8 +238,8 @@ public class TestTermVectors extends LuceneTestCase {
     
     Directory dir = newDirectory();
     
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true))
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true))
           .setOpenMode(OpenMode.CREATE)
           .setMergePolicy(newLogMergePolicy())
           .setSimilarity(new DefaultSimilarity()));
@@ -261,7 +261,7 @@ public class TestTermVectors extends LuceneTestCase {
 
       while (termsEnum.next() != null) {
         String text = termsEnum.term().utf8ToString();
-        docs = _TestUtil.docs(random, termsEnum, MultiFields.getLiveDocs(knownSearcher.reader), docs, true);
+        docs = _TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(knownSearcher.reader), docs, true);
         
         while (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           int docId = docs.docID();
@@ -333,8 +333,8 @@ public class TestTermVectors extends LuceneTestCase {
 
   // Test only a few docs having vectors
   public void testRareVectors() throws IOException {
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true))
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true))
         .setOpenMode(OpenMode.CREATE));
     if (VERBOSE) {
       System.out.println("TEST: now add non-vectors");
@@ -380,9 +380,9 @@ public class TestTermVectors extends LuceneTestCase {
   // In a single doc, for the same field, mix the term
   // vectors up
   public void testMixedVectrosVectors() throws IOException {
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
+        new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     
     FieldType ft2 = new FieldType(TextField.TYPE_STORED);
@@ -448,7 +448,7 @@ public class TestTermVectors extends LuceneTestCase {
 
   private IndexWriter createWriter(Directory dir) throws IOException {
     return new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setMaxBufferedDocs(2));
+        new MockAnalyzer(random())).setMaxBufferedDocs(2));
   }
 
   private void createDir(Directory dir) throws IOException {

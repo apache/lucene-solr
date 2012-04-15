@@ -108,7 +108,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     // populate an index with 30 documents, this should be enough for the test.
     // The documents have no content - the test uses MatchAllDocsQuery().
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < 30; i++) {
       writer.addDocument(new Document());
     }

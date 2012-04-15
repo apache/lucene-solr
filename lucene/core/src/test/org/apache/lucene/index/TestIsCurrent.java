@@ -38,7 +38,7 @@ public class TestIsCurrent extends LuceneTestCase {
 
     // initialize directory
     directory = newDirectory();
-    writer = new RandomIndexWriter(random, directory);
+    writer = new RandomIndexWriter(random(), directory);
 
     // write document
     Document doc = new Document();

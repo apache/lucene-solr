@@ -41,7 +41,7 @@ public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
     "s(100000004,2,'king''s meany',n,1,1).\n";
   
   public void testSynonyms() throws Exception {
-    WordnetSynonymParser parser = new WordnetSynonymParser(true, true, new MockAnalyzer(random));
+    WordnetSynonymParser parser = new WordnetSynonymParser(true, true, new MockAnalyzer(random()));
     parser.add(new StringReader(synonymsFile));
     final SynonymMap map = parser.build();
     

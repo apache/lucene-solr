@@ -91,8 +91,8 @@ public class FacetsPayloadProcessorProviderTest extends LuceneTestCase {
 
   private void buildIndexWithFacets(Directory dir, Directory taxDir, boolean asc) throws IOException {
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
+        new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     
     DirectoryTaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxDir);
     for (int i = 1; i <= NUM_DOCS; i++) {

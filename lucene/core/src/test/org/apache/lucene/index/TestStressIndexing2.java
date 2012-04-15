@@ -56,7 +56,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     @Override
     boolean testPoint(String name) {
       //      if (name.equals("startCommit")) {
-      if (random.nextInt(4) == 2)
+      if (random().nextInt(4) == 2)
         Thread.yield();
       return true;
     }
@@ -69,7 +69,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     DocsAndWriter dw = indexRandomIWReader(5, 3, 100, dir);
     DirectoryReader reader = dw.writer.getReader();
     dw.writer.commit();
-    verifyEquals(random, reader, dir, "id");
+    verifyEquals(random(), reader, dir, "id");
     reader.close();
     dw.writer.close();
     dir.close();
@@ -79,10 +79,10 @@ public class TestStressIndexing2 extends LuceneTestCase {
     Directory dir1 = newDirectory();
     Directory dir2 = newDirectory();
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
-    int maxThreadStates = 1+random.nextInt(10);
-    boolean doReaderPooling = random.nextBoolean();
+    int maxThreadStates = 1+random().nextInt(10);
+    boolean doReaderPooling = random().nextBoolean();
     Map<String,Document> docs = indexRandom(5, 3, 100, dir1, maxThreadStates, doReaderPooling);
-    indexSerial(random, docs, dir2);
+    indexSerial(random(), docs, dir2);
 
     // verifying verify
     // verifyEquals(dir1, dir1, "id");
@@ -101,16 +101,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\n\nTEST: top iter=" + i);
       }
-      sameFieldOrder=random.nextBoolean();
-      mergeFactor=random.nextInt(3)+2;
-      maxBufferedDocs=random.nextInt(3)+2;
-      int maxThreadStates = 1+random.nextInt(10);
-      boolean doReaderPooling = random.nextBoolean();
+      sameFieldOrder=random().nextBoolean();
+      mergeFactor=random().nextInt(3)+2;
+      maxBufferedDocs=random().nextInt(3)+2;
+      int maxThreadStates = 1+random().nextInt(10);
+      boolean doReaderPooling = random().nextBoolean();
       seed++;
 
-      int nThreads=random.nextInt(5)+1;
-      int iter=random.nextInt(5)+1;
-      int range=random.nextInt(20)+1;
+      int nThreads=random().nextInt(5)+1;
+      int iter=random().nextInt(5)+1;
+      int range=random().nextInt(20)+1;
       Directory dir1 = newDirectory();
       Directory dir2 = newDirectory();
       if (VERBOSE) {
@@ -120,7 +120,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: index serial");
       }
-      indexSerial(random, docs, dir2);
+      indexSerial(random(), docs, dir2);
       if (VERBOSE) {
         System.out.println("TEST: verify");
       }
@@ -151,7 +151,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public DocsAndWriter indexRandomIWReader(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
     IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setRAMBufferSizeMB(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setRAMBufferSizeMB(
                                                                                                   0.1).setMaxBufferedDocs(maxBufferedDocs).setMergePolicy(newLogMergePolicy()));
     w.commit();
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
@@ -202,7 +202,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                                           boolean doReaderPooling) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
     IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE)
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE)
              .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(maxThreadStates))
              .setReaderPooling(doReaderPooling).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
@@ -266,13 +266,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
     w.close();
   }
   
-  public static void verifyEquals(Random r, DirectoryReader r1, Directory dir2, String idField) throws Throwable {
+  public void verifyEquals(Random r, DirectoryReader r1, Directory dir2, String idField) throws Throwable {
     DirectoryReader r2 = IndexReader.open(dir2);
     verifyEquals(r1, r2, idField);
     r2.close();
   }
 
-  public static void verifyEquals(Directory dir1, Directory dir2, String idField) throws Throwable {
+  public void verifyEquals(Directory dir1, Directory dir2, String idField) throws Throwable {
     DirectoryReader r1 = IndexReader.open(dir1);
     DirectoryReader r2 = IndexReader.open(dir2);
     verifyEquals(r1, r2, idField);
@@ -298,7 +298,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
 
 
-  public static void verifyEquals(DirectoryReader r1, DirectoryReader r2, String idField) throws Throwable {
+  public void verifyEquals(DirectoryReader r1, DirectoryReader r2, String idField) throws Throwable {
     if (VERBOSE) {
       System.out.println("\nr1 docs:");
       printDocs(r1);
@@ -336,7 +336,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       // deleted docs):
       DocsEnum docs = null;
       while(termsEnum.next() != null) {
-        docs = _TestUtil.docs(random, termsEnum, null, docs, false);
+        docs = _TestUtil.docs(random(), termsEnum, null, docs, false);
         while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           fail("r1 is not empty but r2 is");
         }
@@ -356,9 +356,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
         break;
       }
 
-      termDocs1 = _TestUtil.docs(random, termsEnum, liveDocs1, termDocs1, false);
+      termDocs1 = _TestUtil.docs(random(), termsEnum, liveDocs1, termDocs1, false);
       if (termsEnum2.seekExact(term, false)) {
-        termDocs2 = _TestUtil.docs(random, termsEnum2, liveDocs2, termDocs2, false);
+        termDocs2 = _TestUtil.docs(random(), termsEnum2, liveDocs2, termDocs2, false);
       } else {
         termDocs2 = null;
       }
@@ -417,7 +417,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                   System.out.println("          pos=" + dpEnum.nextPosition());
                 }
               } else {
-                dEnum = _TestUtil.docs(random, termsEnum3, null, dEnum, true);
+                dEnum = _TestUtil.docs(random(), termsEnum3, null, dEnum, true);
                 assertNotNull(dEnum);
                 assertTrue(dEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
                 final int freq = dEnum.freq();
@@ -451,7 +451,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
                   System.out.println("          pos=" + dpEnum.nextPosition());
                 }
               } else {
-                dEnum = _TestUtil.docs(random, termsEnum3, null, dEnum, true);
+                dEnum = _TestUtil.docs(random(), termsEnum3, null, dEnum, true);
                 assertNotNull(dEnum);
                 assertTrue(dEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
                 final int freq = dEnum.freq();
@@ -508,7 +508,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         }
         
         //System.out.println("TEST: term1=" + term1);
-        docs1 = _TestUtil.docs(random, termsEnum1, liveDocs1, docs1, true);
+        docs1 = _TestUtil.docs(random(), termsEnum1, liveDocs1, docs1, true);
         while (docs1.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           int d = docs1.docID();
           int f = docs1.freq();
@@ -542,7 +542,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         }
         
         //System.out.println("TEST: term1=" + term1);
-        docs2 = _TestUtil.docs(random, termsEnum2, liveDocs2, docs2, true);
+        docs2 = _TestUtil.docs(random(), termsEnum2, liveDocs2, docs2, true);
         while (docs2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           int d = r2r1[docs2.docID()];
           int f = docs2.freq();
@@ -669,8 +669,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
           assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum1.nextDoc());
           assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum2.nextDoc());
         } else {
-          dEnum1 = _TestUtil.docs(random, termsEnum1, null, dEnum1, true);
-          dEnum2 = _TestUtil.docs(random, termsEnum2, null, dEnum2, true);
+          dEnum1 = _TestUtil.docs(random(), termsEnum1, null, dEnum1, true);
+          dEnum2 = _TestUtil.docs(random(), termsEnum2, null, dEnum2, true);
           assertNotNull(dEnum1);
           assertNotNull(dEnum2);
           int docID1 = dEnum1.nextDoc();

@@ -56,8 +56,8 @@ public class TwoEnhancementsTest extends LuceneTestCase {
     List<CategoryPath> categoryPaths = new ArrayList<CategoryPath>();
     categoryPaths.add(new CategoryPath("a", "b"));
 
-    RandomIndexWriter indexWriter = new RandomIndexWriter(random, indexDir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    RandomIndexWriter indexWriter = new RandomIndexWriter(random(), indexDir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir);
 
     // a category document builder will add the categories to a document
@@ -101,8 +101,8 @@ public class TwoEnhancementsTest extends LuceneTestCase {
     List<CategoryPath> categoryPaths = new ArrayList<CategoryPath>();
     categoryPaths.add(new CategoryPath("a", "b"));
 
-    RandomIndexWriter indexWriter = new RandomIndexWriter(random, indexDir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    RandomIndexWriter indexWriter = new RandomIndexWriter(random(), indexDir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir);
 
     // a category document builder will add the categories to a document

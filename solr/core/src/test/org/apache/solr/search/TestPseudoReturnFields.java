@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Random;
 
 public class TestPseudoReturnFields extends SolrTestCaseJ4 {
 
@@ -405,6 +406,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
 
   @Test
   public void testAugmentersGlobsExplicitAndScoreOhMy() throws Exception {
+    Random random = random();
 
     // NOTE: 'ssto' is the missing one
     final List<String> fl = Arrays.asList

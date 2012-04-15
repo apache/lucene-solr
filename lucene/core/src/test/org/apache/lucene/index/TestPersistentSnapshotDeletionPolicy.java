@@ -79,7 +79,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     int numSnapshots = 3;
     Directory dir = newDirectory();
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random, psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), psdp));
     prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");
     writer.close();
     psdp.close();
@@ -88,7 +88,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     psdp = new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
         TEST_VERSION_CURRENT);
-    new IndexWriter(dir, getConfig(random, psdp)).close();
+    new IndexWriter(dir, getConfig(random(), psdp)).close();
 
     assertSnapshotExists(dir, psdp, numSnapshots);
     assertEquals(numSnapshots, psdp.getSnapshots().size());
@@ -104,7 +104,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testInvalidSnapshotInfos() throws Exception {
     // Add the correct number of documents (1), but without snapshot information
-    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(random, null));
+    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(random(), null));
     writer.addDocument(new Document());
     writer.close();
     try {
@@ -119,7 +119,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testNoSnapshotInfos() throws Exception {
     // Initialize an empty index in snapshotDir - PSDP should initialize successfully.
-    new IndexWriter(snapshotDir, getConfig(random, null)).close();
+    new IndexWriter(snapshotDir, getConfig(random(), null)).close();
     new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
         TEST_VERSION_CURRENT).close();
@@ -128,7 +128,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test(expected=IllegalStateException.class)
   public void testTooManySnapshotInfos() throws Exception {
     // Write two documents to the snapshots directory - illegal.
-    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(random, null));
+    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(random(), null));
     writer.addDocument(new Document());
     writer.addDocument(new Document());
     writer.close();
@@ -143,7 +143,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   public void testSnapshotRelease() throws Exception {
     Directory dir = newDirectory();
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random, psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), psdp));
     prepareIndexAndSnapshots(psdp, writer, 1, "snapshot");
     writer.close();
 
@@ -166,7 +166,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     int numSnapshots = 1;
     Directory dir = newDirectory();
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random, psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), psdp));
     prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");
     writer.close();
     dir.close();

@@ -53,11 +53,11 @@ public class TestPostingsOffsets extends LuceneTestCase {
     super.setUp();
     // Currently only SimpleText and Lucene40 can index offsets into postings:
     assumeTrue("codec does not support offsets", Codec.getDefault().getName().equals("SimpleText") || Codec.getDefault().getName().equals("Lucene40"));
-    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     
     if (Codec.getDefault().getName().equals("Lucene40")) {
       // pulsing etc are not implemented
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
       } else {
         iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
@@ -68,7 +68,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
     
-    RandomIndexWriter w = new RandomIndexWriter(random, dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
 
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
@@ -129,25 +129,25 @@ public class TestPostingsOffsets extends LuceneTestCase {
   
   public void doTestNumbers(boolean withPayloads) throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = withPayloads ? new MockPayloadAnalyzer() : new MockAnalyzer(random);
+    Analyzer analyzer = withPayloads ? new MockPayloadAnalyzer() : new MockAnalyzer(random());
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     if (Codec.getDefault().getName().equals("Lucene40")) {
       // pulsing etc are not implemented
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
       } else {
         iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
       }
     }
     iwc.setMergePolicy(newLogMergePolicy()); // will rely on docids a bit for skipping
-    RandomIndexWriter w = new RandomIndexWriter(random, dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     
     FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       ft.setStoreTermVectors(true);
-      ft.setStoreTermVectorOffsets(random.nextBoolean());
-      ft.setStoreTermVectorPositions(random.nextBoolean());
+      ft.setStoreTermVectorOffsets(random().nextBoolean());
+      ft.setStoreTermVectorPositions(random().nextBoolean());
     }
     
     int numDocs = atLeast(500);
@@ -192,7 +192,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     int numSkippingTests = atLeast(50);
     
     for (int j = 0; j < numSkippingTests; j++) {
-      int num = _TestUtil.nextInt(random, 100, Math.min(numDocs-1, 999));
+      int num = _TestUtil.nextInt(random(), 100, Math.min(numDocs-1, 999));
       DocsAndPositionsEnum dp = MultiFields.getTermPositionsEnum(reader, null, "numbers", new BytesRef("hundred"), true);
       int doc = dp.advance(num);
       assertEquals(num, doc);
@@ -232,7 +232,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     final Map<String,Map<Integer,List<Token>>> actualTokens = new HashMap<String,Map<Integer,List<Token>>>();
 
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, dir, iwc);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     final int numDocs = atLeast(20);
     //final int numDocs = atLeast(5);
@@ -242,10 +242,10 @@ public class TestPostingsOffsets extends LuceneTestCase {
     // TODO: randomize what IndexOptions we use; also test
     // changing this up in one IW buffered segment...:
     ft.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       ft.setStoreTermVectors(true);
-      ft.setStoreTermVectorOffsets(random.nextBoolean());
-      ft.setStoreTermVectorPositions(random.nextBoolean());
+      ft.setStoreTermVectorOffsets(random().nextBoolean());
+      ft.setStoreTermVectorPositions(random().nextBoolean());
     }
 
     for(int docCount=0;docCount<numDocs;docCount++) {
@@ -259,22 +259,22 @@ public class TestPostingsOffsets extends LuceneTestCase {
       //System.out.println("doc id=" + docCount);
       for(int tokenCount=0;tokenCount<numTokens;tokenCount++) {
         final String text;
-        if (random.nextBoolean()) {
+        if (random().nextBoolean()) {
           text = "a";
-        } else if (random.nextBoolean()) {
+        } else if (random().nextBoolean()) {
           text = "b";
-        } else if (random.nextBoolean()) {
+        } else if (random().nextBoolean()) {
           text = "c";
         } else {
           text = "d";
         }       
         
-        int posIncr = random.nextBoolean() ? 1 : random.nextInt(5);
+        int posIncr = random().nextBoolean() ? 1 : random().nextInt(5);
         if (tokenCount == 0 && posIncr == 0) {
           posIncr = 1;
         }
-        final int offIncr = random.nextBoolean() ? 0 : random.nextInt(5);
-        final int tokenOffset = random.nextInt(5);
+        final int offIncr = random().nextBoolean() ? 0 : random().nextInt(5);
+        final int tokenOffset = random().nextInt(5);
 
         final Token token = makeToken(text, posIncr, offset+offIncr, offset+offIncr+tokenOffset);
         if (!actualTokens.containsKey(text)) {
@@ -310,7 +310,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       final int docIDToID[] = FieldCache.DEFAULT.getInts(sub, "id", false);
       for(String term : terms) {
         //System.out.println("  term=" + term);
-        if (termsEnum.seekExact(new BytesRef(term), random.nextBoolean())) {
+        if (termsEnum.seekExact(new BytesRef(term), random().nextBoolean())) {
           docs = termsEnum.docs(null, docs, true);
           assertNotNull(docs);
           int doc;

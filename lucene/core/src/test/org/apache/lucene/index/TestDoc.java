@@ -110,7 +110,7 @@ public class TestDoc extends LuceneTestCase {
       Directory directory = newFSDirectory(indexDir, null);
       IndexWriter writer = new IndexWriter(
           directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(-1).
               setMergePolicy(newLogMergePolicy(10))
@@ -145,7 +145,7 @@ public class TestDoc extends LuceneTestCase {
       directory = newFSDirectory(indexDir, null);
       writer = new IndexWriter(
           directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(-1).
               setMergePolicy(newLogMergePolicy(10))
@@ -189,7 +189,7 @@ public class TestDoc extends LuceneTestCase {
 
    private SegmentInfo merge(Directory dir, SegmentInfo si1, SegmentInfo si2, String merged, boolean useCompoundFile)
    throws Exception {
-      IOContext context = newIOContext(random);
+      IOContext context = newIOContext(random());
       SegmentReader r1 = new SegmentReader(si1, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
       SegmentReader r2 = new SegmentReader(si2, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
 
@@ -206,7 +206,7 @@ public class TestDoc extends LuceneTestCase {
                                                false, codec, fieldInfos);
       
       if (useCompoundFile) {
-        Collection<String> filesToDelete = IndexWriter.createCompoundFile(dir, merged + ".cfs", MergeState.CheckAbort.NONE, info, newIOContext(random));
+        Collection<String> filesToDelete = IndexWriter.createCompoundFile(dir, merged + ".cfs", MergeState.CheckAbort.NONE, info, newIOContext(random()));
         info.setUseCompoundFile(true);
         for (final String fileToDelete : filesToDelete) 
           si1.dir.deleteFile(fileToDelete);
@@ -218,7 +218,7 @@ public class TestDoc extends LuceneTestCase {
 
    private void printSegment(PrintWriter out, SegmentInfo si)
    throws Exception {
-      SegmentReader reader = new SegmentReader(si, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+      SegmentReader reader = new SegmentReader(si, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
 
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));

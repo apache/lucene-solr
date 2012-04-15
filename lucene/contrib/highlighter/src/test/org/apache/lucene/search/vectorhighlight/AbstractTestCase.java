@@ -84,9 +84,9 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzerW = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
+    analyzerW = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     analyzerB = new BigramAnalyzer();
-    analyzerK = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
+    analyzerK = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
     dir = newDirectory();
   }
   

@@ -33,8 +33,8 @@ public class TestDirectSpellChecker extends LuceneTestCase {
   public void testInternalLevenshteinDistance() throws Exception {
     DirectSpellChecker spellchecker = new DirectSpellChecker();
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new MockAnalyzer(random, MockTokenizer.KEYWORD, true));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        new MockAnalyzer(random(), MockTokenizer.KEYWORD, true));
 
     String[] termsToAdd = { "metanoia", "metanoian", "metanoiai", "metanoias", "metanoi𐑍" };
     for (int i = 0; i < termsToAdd.length; i++) {
@@ -63,8 +63,8 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     DirectSpellChecker spellChecker = new DirectSpellChecker();
     spellChecker.setMinQueryLength(0);
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
@@ -128,8 +128,8 @@ public class TestDirectSpellChecker extends LuceneTestCase {
   
   public void testOptions() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
 
     Document doc = new Document();
     doc.add(newField("text", "foobar", TextField.TYPE_UNSTORED));
@@ -195,8 +195,8 @@ public class TestDirectSpellChecker extends LuceneTestCase {
   public void testBogusField() throws Exception {
     DirectSpellChecker spellChecker = new DirectSpellChecker();
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
@@ -219,8 +219,8 @@ public class TestDirectSpellChecker extends LuceneTestCase {
   public void testTransposition() throws Exception {
     DirectSpellChecker spellChecker = new DirectSpellChecker();
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
@@ -244,8 +244,8 @@ public class TestDirectSpellChecker extends LuceneTestCase {
   public void testTransposition2() throws Exception {
     DirectSpellChecker spellChecker = new DirectSpellChecker();
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();

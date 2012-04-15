@@ -35,8 +35,8 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestComplexPhraseQuery extends LuceneTestCase {
   Directory rd;
-  Analyzer analyzer = new MockAnalyzer(random);
-
+  Analyzer analyzer;
+  
   DocData docsContent[] = { new DocData("john smith", "1"),
       new DocData("johathon smith", "2"),
       new DocData("john percival smith", "3"),
@@ -113,6 +113,8 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    
+    analyzer = new MockAnalyzer(random());
     rd = newDirectory();
     IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     for (int i = 0; i < docsContent.length; i++) {

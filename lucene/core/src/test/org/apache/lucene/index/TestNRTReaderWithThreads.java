@@ -32,7 +32,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
     Directory mainDir = newDirectory();
     IndexWriter writer = new IndexWriter(
         mainDir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMaxBufferedDocs(10).
             setMergePolicy(newLogMergePolicy(false,2))
     );
@@ -76,7 +76,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
     int delCount = 0;
     int addCount = 0;
     int type;
-    final Random r = new Random(random.nextLong());
+    final Random r = new Random(random().nextLong());
     
     public RunThread(int type, IndexWriter writer) {
       this.type = type;

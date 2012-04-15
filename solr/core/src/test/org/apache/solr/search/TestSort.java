@@ -45,13 +45,19 @@ public class TestSort extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema-minimal.xml");
   }
 
-  final Random r = random;
+  Random r;
 
   int ndocs = 77;
   int iter = 50;
   int qiter = 1000;
   int commitCount = ndocs/5 + 1;
   int maxval = ndocs*2;
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    r = random();
+  }
 
   static class MyDoc {
     int doc;

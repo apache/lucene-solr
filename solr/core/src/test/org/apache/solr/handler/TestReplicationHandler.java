@@ -773,7 +773,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     String configFile = "solrconfig-master1.xml";
     boolean addNumberToKeepInRequest = true;
     String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;
-    if(random.nextBoolean()) {
+    if(random().nextBoolean()) {
       configFile = "solrconfig-master1-keepOneBackup.xml";
       addNumberToKeepInRequest = false;
       backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;

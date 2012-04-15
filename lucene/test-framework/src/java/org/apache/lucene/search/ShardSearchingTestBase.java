@@ -518,29 +518,29 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     @Override
     public void run() {
       try {
-        final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
+        final LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
         int numDocs = 0;
         while (System.nanoTime() < endTimeNanos) {
-          final int what = random.nextInt(3);
-          final NodeState node = nodes[random.nextInt(nodes.length)];
+          final int what = random().nextInt(3);
+          final NodeState node = nodes[random().nextInt(nodes.length)];
           if (numDocs == 0 || what == 0) {
             node.writer.addDocument(docs.nextDoc());
             numDocs++;
           } else if (what == 1) {
-            node.writer.updateDocument(new Term("docid", ""+random.nextInt(numDocs)),
+            node.writer.updateDocument(new Term("docid", ""+random().nextInt(numDocs)),
                                         docs.nextDoc());
             numDocs++;
           } else {
-            node.writer.deleteDocuments(new Term("docid", ""+random.nextInt(numDocs)));
+            node.writer.deleteDocuments(new Term("docid", ""+random().nextInt(numDocs)));
           }
           // TODO: doc blocks too
 
-          if (random.nextInt(17) == 12) {
+          if (random().nextInt(17) == 12) {
             node.writer.commit();
           }
 
-          if (random.nextInt(17) == 12) {
-            nodes[random.nextInt(nodes.length)].reopen();
+          if (random().nextInt(17) == 12) {
+            nodes[random().nextInt(nodes.length)].reopen();
           }
         }
       } catch (Throwable t) {
@@ -563,7 +563,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
     nodes = new NodeState[numNodes];
     for(int nodeID=0;nodeID<numNodes;nodeID++) {
-      nodes[nodeID] = new NodeState(random, baseDirName, nodeID, numNodes);
+      nodes[nodeID] = new NodeState(random(), baseDirName, nodeID, numNodes);
     }
 
     long[] nodeVersions = new long[nodes.length];

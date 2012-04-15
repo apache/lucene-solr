@@ -43,8 +43,8 @@ public class TestCompactLabelToOrdinal extends LuceneTestCase {
     byte[] buffer = new byte[50];
 
     for (int i = 0; i < numUniqueValues;) {
-      random.nextBytes(buffer);
-      int size = 1 + random.nextInt(50);
+      random().nextBytes(buffer);
+      int size = 1 + random().nextInt(50);
 
       uniqueValues[i] = new String(buffer, 0, size);
       if (uniqueValues[i].indexOf(CompactLabelToOrdinal.TerminatorChar) == -1) {
@@ -66,7 +66,7 @@ public class TestCompactLabelToOrdinal extends LuceneTestCase {
         }
       }
 
-      int index = random.nextInt(numUniqueValues);
+      int index = random().nextInt(numUniqueValues);
       CategoryPath label = new CategoryPath(uniqueValues[index], '/');
 
       int ord1 = map.getOrdinal(label);

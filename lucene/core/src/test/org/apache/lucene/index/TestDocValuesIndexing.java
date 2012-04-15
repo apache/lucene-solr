@@ -18,16 +18,9 @@ package org.apache.lucene.index;
  */
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -109,30 +102,30 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testIndexBytesNoDeletes() throws IOException {
-    runTestIndexBytes(writerConfig(random.nextBoolean()), false);
+    runTestIndexBytes(writerConfig(random().nextBoolean()), false);
   }
 
   public void testIndexBytesDeletes() throws IOException {
-    runTestIndexBytes(writerConfig(random.nextBoolean()), true);
+    runTestIndexBytes(writerConfig(random().nextBoolean()), true);
   }
 
   public void testIndexNumericsNoDeletes() throws IOException {
-    runTestNumerics(writerConfig(random.nextBoolean()), false);
+    runTestNumerics(writerConfig(random().nextBoolean()), false);
   }
 
   public void testIndexNumericsDeletes() throws IOException {
-    runTestNumerics(writerConfig(random.nextBoolean()), true);
+    runTestNumerics(writerConfig(random().nextBoolean()), true);
   }
 
   public void testAddIndexes() throws IOException {
     int valuesPerIndex = 10;
     List<Type> values = Arrays.asList(Type.values());
-    Collections.shuffle(values, random);
+    Collections.shuffle(values, random());
     Type first = values.get(0);
     Type second = values.get(1);
     // index first index
     Directory d_1 = newDirectory();
-    IndexWriter w_1 = new IndexWriter(d_1, writerConfig(random.nextBoolean()));
+    IndexWriter w_1 = new IndexWriter(d_1, writerConfig(random().nextBoolean()));
     indexValues(w_1, valuesPerIndex, first, values, false, 7);
     w_1.commit();
     assertEquals(valuesPerIndex, w_1.maxDoc());
@@ -140,17 +133,17 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     // index second index
     Directory d_2 = newDirectory();
-    IndexWriter w_2 = new IndexWriter(d_2, writerConfig(random.nextBoolean()));
+    IndexWriter w_2 = new IndexWriter(d_2, writerConfig(random().nextBoolean()));
     indexValues(w_2, valuesPerIndex, second, values, false, 7);
     w_2.commit();
     assertEquals(valuesPerIndex, w_2.maxDoc());
     _TestUtil.checkIndex(d_2);
 
     Directory target = newDirectory();
-    IndexWriter w = new IndexWriter(target, writerConfig(random.nextBoolean()));
+    IndexWriter w = new IndexWriter(target, writerConfig(random().nextBoolean()));
     DirectoryReader r_1 = DirectoryReader.open(w_1, true);
     DirectoryReader r_2 = DirectoryReader.open(w_2, true);
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       w.addIndexes(d_1, d_2);
     } else {
       w.addIndexes(r_1, r_2);
@@ -238,8 +231,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   private IndexWriterConfig writerConfig(boolean useCompoundFile) {
     final IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random));
-    cfg.setMergePolicy(newLogMergePolicy(random));
+        new MockAnalyzer(random()));
+    cfg.setMergePolicy(newLogMergePolicy(random()));
     LogMergePolicy policy = new LogDocMergePolicy();
     cfg.setMergePolicy(policy);
     policy.setUseCompoundFile(useCompoundFile);
@@ -255,7 +248,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     final List<Type> numVariantList = new ArrayList<Type>(NUMERICS);
 
     // run in random order to test if fill works correctly during merges
-    Collections.shuffle(numVariantList, random);
+    Collections.shuffle(numVariantList, random());
     for (Type val : numVariantList) {
       FixedBitSet deleted = indexValues(w, numValues, val, numVariantList,
           withDeletions, 7);
@@ -331,7 +324,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriter w = new IndexWriter(d, cfg);
     final List<Type> byteVariantList = new ArrayList<Type>(BYTES);
     // run in random order to test if fill works correctly during merges
-    Collections.shuffle(byteVariantList, random);
+    Collections.shuffle(byteVariantList, random());
     final int numValues = 50 + atLeast(10);
     for (Type byteIndexValue : byteVariantList) {
       List<Closeable> closeables = new ArrayList<Closeable>();
@@ -414,11 +407,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   
   public void testGetArrayNumerics() throws CorruptIndexException, IOException {
     Directory d = newDirectory();
-    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(d, cfg);
     final int numValues = 50 + atLeast(10);
     final List<Type> numVariantList = new ArrayList<Type>(NUMERICS);
-    Collections.shuffle(numVariantList, random);
+    Collections.shuffle(numVariantList, random());
     for (Type val : numVariantList) {
       indexValues(w, numValues, val, numVariantList,
           false, 7);
@@ -502,7 +495,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void testGetArrayBytes() throws CorruptIndexException, IOException {
     Directory d = newDirectory();
     IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random));
+        new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(d, cfg);
     final int numValues = 50 + atLeast(10);
     // only single byte fixed straight supports getArray()
@@ -542,7 +535,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   @SuppressWarnings("fallthrough")
   private Source getSource(DocValues values) throws IOException {
     // getSource uses cache internally
-    switch(random.nextInt(5)) {
+    switch(random().nextInt(5)) {
     case 3:
       return values.load();
     case 2:
@@ -656,17 +649,17 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       w.addDocument(doc);
 
       if (i % 7 == 0) {
-        if (withDeletions && random.nextBoolean()) {
-          Type val = valueVarList.get(random.nextInt(1 + valueVarList
+        if (withDeletions && random().nextBoolean()) {
+          Type val = valueVarList.get(random().nextInt(1 + valueVarList
               .indexOf(valueType)));
-          final int randInt = val == valueType ? random.nextInt(1 + i) : random
+          final int randInt = val == valueType ? random().nextInt(1 + i) : random()
               .nextInt(numValues);
           w.deleteDocuments(new Term("id", val.name() + "_" + randInt));
           if (val == valueType) {
             deleted.set(randInt);
           }
         }
-        if (random.nextInt(10) == 0) {
+        if (random().nextInt(10) == 0) {
           w.commit();
         }
       }
@@ -674,7 +667,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.commit();
 
     // TODO test multi seg with deletions
-    if (withDeletions || random.nextBoolean()) {
+    if (withDeletions || random().nextBoolean()) {
       w.forceMerge(1, true);
     }
     return deleted;
@@ -682,7 +675,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   public void testMultiValuedDocValuesField() throws Exception {
     Directory d = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, d);
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
     DocValuesField f = new DocValuesField("field", 17, Type.VAR_INTS);
     // Index doc values are single-valued so we should not
@@ -709,7 +702,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   public void testDifferentTypedDocValuesField() throws Exception {
     Directory d = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, d);
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
     // Index doc values are single-valued so we should not
     // be able to add same field more than once:
@@ -740,17 +733,17 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       boolean fixed = type == Type.BYTES_FIXED_SORTED;
       final Directory d = newDirectory();
       IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer(random));
+          new MockAnalyzer(random()));
       IndexWriter w = new IndexWriter(d, cfg);
       int numDocs = atLeast(100);
       BytesRefHash hash = new BytesRefHash();
       Map<String, String> docToString = new HashMap<String, String>();
-      int len = 1 + random.nextInt(50);
+      int len = 1 + random().nextInt(50);
       for (int i = 0; i < numDocs; i++) {
         Document doc = new Document();
         doc.add(newField("id", "" + i, TextField.TYPE_STORED));
-        String string =fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random,
-            len) : _TestUtil.randomRealisticUnicodeString(random, 1, len);
+        String string =fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random(),
+            len) : _TestUtil.randomRealisticUnicodeString(random(), 1, len);
         BytesRef br = new BytesRef(string);
         doc.add(new DocValuesField("field", br, type));
         hash.add(br);
@@ -777,8 +770,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         Document doc = new Document();
         String id = "" + i + numDocs;
         doc.add(newField("id", id, TextField.TYPE_STORED));
-        String string = fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random,
-            len) : _TestUtil.randomRealisticUnicodeString(random, 1, len);
+        String string = fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random(),
+            len) : _TestUtil.randomRealisticUnicodeString(random(), 1, len);
         BytesRef br = new BytesRef(string);
         hash.add(br);
         docToString.put(id, string);
@@ -826,6 +819,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testWithThreads() throws Exception {
+    Random random = random();
     final int NUM_DOCS = atLeast(100);
     final Directory dir = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
@@ -883,12 +877,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     final DocValues.Source docIDToID = sr.docValues("id").getSource();
 
-    final int NUM_THREADS = _TestUtil.nextInt(random, 1, 10);
+    final int NUM_THREADS = _TestUtil.nextInt(random(), 1, 10);
     Thread[] threads = new Thread[NUM_THREADS];
     for(int thread=0;thread<NUM_THREADS;thread++) {
       threads[thread] = new Thread() {
           @Override
           public void run() {
+            Random random = random();            
             final DocValues.Source stringDVSource;
             final DocValues.Source stringDVDirectSource;
             try {
@@ -934,7 +929,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   // LUCENE-3870
   public void testLengthPrefixAcrossTwoPages() throws Exception {
     Directory d = newDirectory();
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
     byte[] bytes = new byte[32764];
     BytesRef b = new BytesRef();

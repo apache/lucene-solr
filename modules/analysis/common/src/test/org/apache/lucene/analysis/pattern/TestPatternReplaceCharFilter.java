@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.pattern;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -303,6 +304,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
     int numPatterns = atLeast(100);
     long start = System.currentTimeMillis();
     long maxTime = 1000 * 2;
+    Random random = new Random(random().nextLong());
     for (int i = 0; i < numPatterns && start + maxTime > System.currentTimeMillis(); i++) {
       final Pattern p = randomPattern();
       final String replacement = _TestUtil.randomSimpleString(random);
@@ -324,10 +326,10 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
     }
   }
   
-  public static Pattern randomPattern() {
+  public Pattern randomPattern() {
     while (true) {
       try {
-        return Pattern.compile(_TestUtil.randomRegexpishString(random));
+        return Pattern.compile(_TestUtil.randomRegexpishString(random()));
       } catch (PatternSyntaxException ignored) {
         // if at first you don't succeed...
       }

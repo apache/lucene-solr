@@ -69,18 +69,18 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
     char[] encoded2 = new char[MAX_RANDOM_BINARY_LENGTH * 10];
 
     for (int testNum = 0; testNum < NUM_RANDOM_TESTS; ++testNum) {
-      int numBytes1 = random.nextInt(MAX_RANDOM_BINARY_LENGTH - 1) + 1; // Min == 1
+      int numBytes1 = random().nextInt(MAX_RANDOM_BINARY_LENGTH - 1) + 1; // Min == 1
 
       for (int byteNum = 0; byteNum < numBytes1; ++byteNum) {
-        int randomInt = random.nextInt(0x100);
+        int randomInt = random().nextInt(0x100);
         originalArray1[byteNum] = (byte) randomInt;
         originalString1[byteNum] = (char) randomInt;
       }
 
-      int numBytes2 = random.nextInt(MAX_RANDOM_BINARY_LENGTH - 1) + 1; // Min == 1
+      int numBytes2 = random().nextInt(MAX_RANDOM_BINARY_LENGTH - 1) + 1; // Min == 1
 
       for (int byteNum = 0; byteNum < numBytes2; ++byteNum) {
-        int randomInt = random.nextInt(0x100);
+        int randomInt = random().nextInt(0x100);
         original2[byteNum] = (byte) randomInt;
         originalString2[byteNum] = (char) randomInt;
       }
@@ -169,10 +169,10 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
     char[] encoded = new char[MAX_RANDOM_BINARY_LENGTH * 10];
     byte[] decoded = new byte[MAX_RANDOM_BINARY_LENGTH];
     for (int testNum = 0; testNum < NUM_RANDOM_TESTS; ++testNum) {
-      int numBytes = random.nextInt(MAX_RANDOM_BINARY_LENGTH - 1) + 1; // Min == 1                                                                   
+      int numBytes = random().nextInt(MAX_RANDOM_BINARY_LENGTH - 1) + 1; // Min == 1                                                                   
 
       for (int byteNum = 0; byteNum < numBytes; ++byteNum) {
-        binary[byteNum] = (byte) random.nextInt(0x100);
+        binary[byteNum] = (byte) random().nextInt(0x100);
       }
 
       int encodedLen = IndexableBinaryStringTools.getEncodedLength(binary, 0,

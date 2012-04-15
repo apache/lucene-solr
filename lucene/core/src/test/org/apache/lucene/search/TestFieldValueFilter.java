@@ -35,8 +35,8 @@ public class TestFieldValueFilter extends LuceneTestCase {
 
   public void testFieldValueFilterNoValue() throws IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     int docs = atLeast(10);
     int[] docStates = buildIndex(writer, docs);
     int numDocsNoValue = 0;
@@ -63,8 +63,8 @@ public class TestFieldValueFilter extends LuceneTestCase {
   
   public void testFieldValueFilter() throws IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     int docs = atLeast(10);
     int[] docStates = buildIndex(writer, docs);
     int numDocsWithValue = 0;
@@ -93,7 +93,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
     int[] docStates = new int[docs];
     for (int i = 0; i < docs; i++) {
       Document doc = new Document();
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         docStates[i] = 1;
         doc.add(newField("some", "value", TextField.TYPE_STORED));
       }
@@ -102,9 +102,9 @@ public class TestFieldValueFilter extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.commit();
-    int numDeletes = random.nextInt(docs);
+    int numDeletes = random().nextInt(docs);
     for (int i = 0; i < numDeletes; i++) {
-      int docID = random.nextInt(docs);
+      int docID = random().nextInt(docs);
       writer.deleteDocuments(new Term("id", "" + docID));
       docStates[docID] = 2;
     }

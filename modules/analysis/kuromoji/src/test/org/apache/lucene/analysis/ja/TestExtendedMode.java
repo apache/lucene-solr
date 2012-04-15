@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.ja;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -50,7 +51,7 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
   public void testSurrogates2() throws IOException {
     int numIterations = atLeast(10000);
     for (int i = 0; i < numIterations; i++) {
-      String s = _TestUtil.randomUnicodeString(random, 100);
+      String s = _TestUtil.randomUnicodeString(random(), 100);
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       ts.reset();
@@ -62,11 +63,13 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
+    Random random = random();
     checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
+    Random random = random();
     checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER, 8192);
   }
 }

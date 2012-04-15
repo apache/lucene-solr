@@ -46,9 +46,9 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-                                                    new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy());
+                                                    new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy());
     config.setSimilarity(new TestSimilarity());
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
     doc.add(foo);
@@ -81,16 +81,16 @@ public class TestMaxTermFrequency extends LuceneTestCase {
    */
   private String addValue() {
     List<String> terms = new ArrayList<String>();
-    int maxCeiling = _TestUtil.nextInt(random, 0, 255);
+    int maxCeiling = _TestUtil.nextInt(random(), 0, 255);
     int max = 0;
     for (char ch = 'a'; ch <= 'z'; ch++) {
-      int num = _TestUtil.nextInt(random, 0, maxCeiling);
+      int num = _TestUtil.nextInt(random(), 0, maxCeiling);
       for (int i = 0; i < num; i++)
         terms.add(Character.toString(ch));
       max = Math.max(max, num);
     }
     expected.add(max);
-    Collections.shuffle(terms, random);
+    Collections.shuffle(terms, random());
     return Arrays.toString(terms.toArray(new String[terms.size()]));
   }
   

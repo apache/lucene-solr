@@ -134,7 +134,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
     String topLev="";
     if (!cache || exclude) {
-      topLev = "" + (cache || random.nextBoolean() ? " cache="+cache : "")
+      topLev = "" + (cache || random().nextBoolean() ? " cache="+cache : "")
         + (cost!=0 ? " cost="+cost : "")
         + ((exclude) ? " tag=t" : "");
     }
@@ -154,15 +154,15 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
   String makeRandomQuery(Model model, boolean mainQuery, boolean facetQuery) {
 
-    boolean cache = random.nextBoolean();
-    int cost = cache ? 0 : random.nextBoolean() ? random.nextInt(200) : 0;
-    boolean positive = random.nextBoolean();
-    boolean exclude = facetQuery ? false : random.nextBoolean();    // can't exclude a facet query from faceting
+    boolean cache = random().nextBoolean();
+    int cost = cache ? 0 : random().nextBoolean() ? random().nextInt(200) : 0;
+    boolean positive = random().nextBoolean();
+    boolean exclude = facetQuery ? false : random().nextBoolean();    // can't exclude a facet query from faceting
 
     OpenBitSet[] sets = facetQuery ? new OpenBitSet[]{model.facetQuery} :
         (exclude ? new OpenBitSet[]{model.answer, model.facetQuery} : new OpenBitSet[]{model.answer, model.multiSelect, model.facetQuery});
 
-    if (random.nextInt(100) < 50) {
+    if (random().nextInt(100) < 50) {
       // frange
       int l=0;
       int u=0;
@@ -172,8 +172,8 @@ public class TestFiltering extends SolrTestCaseJ4 {
         int n=-1;
 
         for (int i=0; i<4; i++) {
-          int ll = random.nextInt(model.indexSize);
-          int uu = ll + ((ll==model.indexSize-1) ? 0 : random.nextInt(model.indexSize-l));
+          int ll = random().nextInt(model.indexSize);
+          int uu = ll + ((ll==model.indexSize-1) ? 0 : random().nextInt(model.indexSize-l));
           if (uu-ll+1 > n) {
             n = uu-ll+1;
             u = uu;
@@ -187,8 +187,8 @@ public class TestFiltering extends SolrTestCaseJ4 {
         }
       } else {
         // negative frange.. make it relatively small
-        l = random.nextInt(model.indexSize);
-        u = Math.max(model.indexSize-1, l+random.nextInt(Math.max(model.indexSize / 10, 2)));
+        l = random().nextInt(model.indexSize);
+        u = Math.max(model.indexSize-1, l+random().nextInt(Math.max(model.indexSize / 10, 2)));
 
         for (OpenBitSet set : sets) {
           set.clear(l,u+1);
@@ -200,7 +200,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
       // term or boolean query
       OpenBitSet pset = new OpenBitSet(model.indexSize);
       for (int i=0; i<pset.getBits().length; i++) {
-        pset.getBits()[i] = random.nextLong();    // set 50% of the bits on average
+        pset.getBits()[i] = random().nextLong();    // set 50% of the bits on average
       }
       if (positive) {
         for (OpenBitSet set : sets) {
@@ -223,7 +223,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
       String ret = sb.toString();
       if (ret.length()==0) ret = (positive ? "":"-") + "id:99999999";
 
-      if (!cache || exclude || random.nextBoolean()) {
+      if (!cache || exclude || random().nextBoolean()) {
         ret = "{!cache=" + cache
             + ((cost != 0) ? " cost="+cost : "")
             + ((exclude) ? " tag=t" : "")
@@ -241,18 +241,18 @@ public class TestFiltering extends SolrTestCaseJ4 {
     Model model = new Model();
 
     for (int iiter = 0; iiter<indexIter; iiter++) {
-      model.indexSize = random.nextInt(20 * RANDOM_MULTIPLIER) + 1;
+      model.indexSize = random().nextInt(20 * RANDOM_MULTIPLIER) + 1;
       clearIndex();
 
       for (int i=0; i<model.indexSize; i++) {
         String val = Integer.toString(i);
 
         assertU(adoc("id",val,f,val));
-        if (random.nextInt(100) < 20) {
+        if (random().nextInt(100) < 20) {
           // duplicate doc 20% of the time (makes deletions)
           assertU(adoc("id",val,f,val));
         }
-        if (random.nextInt(100) < 10) {
+        if (random().nextInt(100) < 10) {
           // commit 10% of the time (forces a new segment)
           assertU(commit());
         }
@@ -266,12 +266,12 @@ public class TestFiltering extends SolrTestCaseJ4 {
         List<String> params = new ArrayList<String>();
         params.add("q"); params.add(makeRandomQuery(model, true, false));
 
-        int nFilters = random.nextInt(5);
+        int nFilters = random().nextInt(5);
         for (int i=0; i<nFilters; i++) {
           params.add("fq");  params.add(makeRandomQuery(model, false, false));
         }
 
-        boolean facet = random.nextBoolean();
+        boolean facet = random().nextBoolean();
         if (facet) {
           // basic facet.query tests getDocListAndSet
           params.add("facet"); params.add("true");
@@ -287,11 +287,11 @@ public class TestFiltering extends SolrTestCaseJ4 {
           params.add("facet.query"); params.add(facetQuery);
         }
 
-        if (random.nextInt(100) < 10) {
+        if (random().nextInt(100) < 10) {
           params.add("group"); params.add("true");
           params.add("group.main"); params.add("true");
           params.add("group.field"); params.add("id");
-          if (random.nextBoolean()) {
+          if (random().nextBoolean()) {
             params.add("group.cache.percent"); params.add("100");
           }
         }

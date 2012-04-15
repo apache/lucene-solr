@@ -53,7 +53,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
     final int n = atLeast(10000);
     final OpenBitSet bits = new OpenBitSet(n);
     for (int i = 0; i < 5 * n; i++) {
-      bits.flip(random.nextInt(n));
+      bits.flip(random().nextInt(n));
     }
     
     OpenBitSet verify = new OpenBitSet(n);
@@ -62,7 +62,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
     ScoredDocIDs scoredDocIDs = ScoredDocIdsUtils.createScoredDocIds(bits, n); 
 
     Directory dir = newDirectory();
-    IndexReader reader = createReaderWithNDocs(random, n, dir);
+    IndexReader reader = createReaderWithNDocs(random(), n, dir);
     try { 
       assertEquals(n - verify.cardinality(), ScoredDocIdsUtils.getComplementSet(scoredDocIDs, 
         reader).size());
@@ -76,7 +76,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
   public void testAllDocs() throws Exception {
     int maxDoc = 3;
     Directory dir = newDirectory();
-    IndexReader reader = createReaderWithNDocs(random, maxDoc, dir);
+    IndexReader reader = createReaderWithNDocs(random(), maxDoc, dir);
     try {
       ScoredDocIDs all = ScoredDocIdsUtils.createAllDocsScoredDocIDs(reader);
       assertEquals("invalid size", maxDoc, all.size());
@@ -124,7 +124,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
     };
     
     Directory dir = newDirectory();
-    IndexReader reader = createReaderWithNDocs(random, N_DOCS, docFactory, dir);
+    IndexReader reader = createReaderWithNDocs(random(), N_DOCS, docFactory, dir);
     try {
       ScoredDocIDs allDocs = ScoredDocIdsUtils.createAllDocsScoredDocIDs(reader);
       ScoredDocIDsIterator it = allDocs.iterator();

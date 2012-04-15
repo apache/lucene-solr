@@ -17,9 +17,7 @@
 
 package org.apache.lucene.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -27,21 +25,22 @@ import org.apache.lucene.store.DataOutput;
 public class TestPagedBytes extends LuceneTestCase {
 
   public void testDataInputOutput() throws Exception {
+    Random random = random();
     for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
       final int blockBits = _TestUtil.nextInt(random, 1, 20);
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);
       final DataOutput out = p.getDataOutput();
-      final int numBytes = random.nextInt(10000000);
+      final int numBytes = random().nextInt(10000000);
 
       final byte[] answer = new byte[numBytes];
-      random.nextBytes(answer);
+      random().nextBytes(answer);
       int written = 0;
       while(written < numBytes) {
-        if (random.nextInt(10) == 7) {
+        if (random().nextInt(10) == 7) {
           out.writeByte(answer[written++]);
         } else {
-          int chunk = Math.min(random.nextInt(1000), numBytes - written);
+          int chunk = Math.min(random().nextInt(1000), numBytes - written);
           out.writeBytes(answer, written, chunk);
           written += chunk;
         }
@@ -54,10 +53,10 @@ public class TestPagedBytes extends LuceneTestCase {
       final byte[] verify = new byte[numBytes];
       int read = 0;
       while(read < numBytes) {
-        if (random.nextInt(10) == 7) {
+        if (random().nextInt(10) == 7) {
           verify[read++] = in.readByte();
         } else {
-          int chunk = Math.min(random.nextInt(1000), numBytes - read);
+          int chunk = Math.min(random().nextInt(1000), numBytes - read);
           in.readBytes(verify, read, chunk);
           read += chunk;
         }
@@ -77,6 +76,7 @@ public class TestPagedBytes extends LuceneTestCase {
   }
 
   public void testLengthPrefix() throws Exception {
+    Random random = random();
     for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
       final int blockBits = _TestUtil.nextInt(random, 2, 20);
       final int blockSize = 1 << blockBits;
@@ -113,6 +113,7 @@ public class TestPagedBytes extends LuceneTestCase {
   // sure if caller writes their own prefix followed by the
   // bytes, it still works:
   public void testLengthPrefixAcrossTwoBlocks() throws Exception {
+    Random random = random();
     final PagedBytes p = new PagedBytes(10);
     final DataOutput out = p.getDataOutput();
     final byte[] bytes1 = new byte[1000];

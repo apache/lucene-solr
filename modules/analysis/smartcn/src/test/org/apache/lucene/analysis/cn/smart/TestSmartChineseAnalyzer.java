@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.cn.smart;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
@@ -223,15 +224,17 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random, new SmartChineseAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new SmartChineseAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
+    Random random = random();
     checkRandomData(random, new SmartChineseAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
   }
   
   public void testEmptyTerm() throws IOException {
+    Random random = random();
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

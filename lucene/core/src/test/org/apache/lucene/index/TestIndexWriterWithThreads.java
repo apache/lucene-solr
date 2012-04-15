@@ -126,7 +126,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setMaxBufferedDocs(2).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(4))
@@ -170,7 +170,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setMaxBufferedDocs(10).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(4))
@@ -211,7 +211,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       // Quick test to make sure index is not corrupt:
       IndexReader reader = IndexReader.open(dir);
-      DocsEnum tdocs = _TestUtil.docs(random, reader,
+      DocsEnum tdocs = _TestUtil.docs(random(), reader,
                                       "field",
                                       new BytesRef("aaa"),
                                       MultiFields.getLiveDocs(reader),
@@ -242,7 +242,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setMaxBufferedDocs(2).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(4))
@@ -297,7 +297,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   public void _testSingleThreadFailure(MockDirectoryWrapper.Failure failure) throws IOException {
     MockDirectoryWrapper dir = newDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
     final Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -480,7 +480,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
          Field field = newField("field", "testData", TextField.TYPE_STORED);
          doc.add(field);
          IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-             TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+             TEST_VERSION_CURRENT, new MockAnalyzer(random())));
          iwConstructed.countDown();
          startIndexing.await();
          writer.addDocument(doc);

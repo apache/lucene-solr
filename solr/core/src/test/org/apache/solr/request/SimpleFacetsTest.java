@@ -42,7 +42,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   static int random_dupe_percent = 25;   // some duplicates in the index to create deleted docs
 
   static void randomCommit(int percent_chance) {
-    if (random.nextInt(100) <= percent_chance)
+    if (random().nextInt(100) <= percent_chance)
       assertU(commit());
   }
 
@@ -52,7 +52,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   static void add_doc(String... fieldsAndValues) {
     do {
       pendingDocs.add(fieldsAndValues);      
-    } while (random.nextInt(100) <= random_dupe_percent);
+    } while (random().nextInt(100) <= random_dupe_percent);
 
     // assertU(adoc(fieldsAndValues));
     // randomCommit(random_commit_percent);
@@ -69,7 +69,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     indexFacetPrefixSingleValued();
     indexSimpleGroupedFacetCounts();
 
-    Collections.shuffle(pendingDocs, random);
+    Collections.shuffle(pendingDocs, random());
     for (String[] doc : pendingDocs) {
       assertU(adoc(doc));
       randomCommit(random_commit_percent);

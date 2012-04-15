@@ -36,7 +36,7 @@ public class TestPKIndexSplitter extends LuceneTestCase {
     NumberFormat format = new DecimalFormat("000000000");
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false))
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
         .setOpenMode(OpenMode.CREATE).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
     for (int x = 0; x < 11; x++) {
       Document doc = createDocument(x, "1", 3, format);
@@ -56,7 +56,7 @@ public class TestPKIndexSplitter extends LuceneTestCase {
     
     // delete some documents
     w = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false))
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
         .setOpenMode(OpenMode.APPEND).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
     w.deleteDocuments(midTerm);
     w.deleteDocuments(new Term("id", format.format(2)));
@@ -71,8 +71,8 @@ public class TestPKIndexSplitter extends LuceneTestCase {
     Directory dir1 = newDirectory();
     Directory dir2 = newDirectory();
     PKIndexSplitter splitter = new PKIndexSplitter(dir, dir1, dir2, splitTerm,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)),
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())),
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     splitter.split();
     
     IndexReader ir1 = IndexReader.open(dir1);

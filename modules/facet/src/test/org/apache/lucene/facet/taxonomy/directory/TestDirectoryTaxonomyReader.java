@@ -120,7 +120,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
    */
   @Test
   public void testFreshReadRecreatedTaxonomy() throws Exception {
-    doTestReadRecreatedTaxono(random, true);
+    doTestReadRecreatedTaxono(random(), true);
   }
   
   /**
@@ -128,7 +128,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
    */
   @Test
   public void testRefreshReadRecreatedTaxonomy() throws Exception {
-    doTestReadRecreatedTaxono(random, false);
+    doTestReadRecreatedTaxono(random(), false);
   }
   
   private void doTestReadRecreatedTaxono(Random random, boolean closeReader) throws Exception {

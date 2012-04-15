@@ -206,7 +206,7 @@ public class ArrayHashMapTest extends LuceneTestCase {
     int length = RANDOM_TEST_NUM_ITERATIONS;
     
     // for a repeatable random sequence
-    long seed = random.nextLong();
+    long seed = random().nextLong();
     Random random = new Random(seed);
 
     for (int i = 0; i < length; ++i) {

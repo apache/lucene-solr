@@ -45,7 +45,7 @@ public class TestEphemeralCache extends AbstractDataImportHandlerTestCase {
   public void test() throws Exception {
     assertFullImport(getDataConfigDotXml());
   }
-   
+
   @SuppressWarnings("unchecked")
   private void setupMockData() {
     List parentRows = new ArrayList();

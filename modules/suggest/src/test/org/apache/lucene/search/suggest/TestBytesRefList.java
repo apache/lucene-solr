@@ -18,9 +18,7 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import org.apache.lucene.search.suggest.BytesRefList;
 import org.apache.lucene.util.BytesRef;
@@ -29,8 +27,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestBytesRefList extends LuceneTestCase {
-  
+
   public void testAppend() throws IOException {
+    Random random = random();
     BytesRefList list = new BytesRefList();
     List<String> stringList = new ArrayList<String>();
     for (int j = 0; j < 2; j++) {
@@ -69,8 +68,9 @@ public class TestBytesRefList extends LuceneTestCase {
       }
     }
   }
-  
+
   public void testSort() throws IOException {
+    Random random = random();
     BytesRefList list = new BytesRefList();
     List<String> stringList = new ArrayList<String>();
 

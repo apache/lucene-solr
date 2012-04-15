@@ -324,7 +324,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       public void run() {
         int count = atLeast(5);
         for (int i = 1; i < count; i++) {
-          int launchIn = random.nextInt(500);
+          int launchIn = random().nextInt(500);
           ClientThread thread = null;
           try {
             thread = new ClientThread(i);
@@ -348,7 +348,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             int j;
             try {
               // always 1 we won't kill...
-              j = random.nextInt(threads.size() - 2);
+              j = random().nextInt(threads.size() - 2);
             } catch(IllegalArgumentException e) {
               continue;
             }
@@ -378,7 +378,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
           try {
             Thread.sleep(50);
             int j;
-            j = random.nextInt(threads.size());
+            j = random().nextInt(threads.size());
             try {
               threads.get(j).zkClient.getSolrZooKeeper().pauseCnxn(
                   ZkTestServer.TICK_TIME * 2);

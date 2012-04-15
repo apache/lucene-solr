@@ -101,7 +101,7 @@ public class TestDocIdSet extends LuceneTestCase {
     // Tests that if a Filter produces a null DocIdSet, which is given to
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(newField("c", "val", StringField.TYPE_UNSTORED));
     writer.addDocument(doc);
@@ -127,7 +127,7 @@ public class TestDocIdSet extends LuceneTestCase {
 
   public void testNullIteratorFilteredDocIdSet() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(newField("c", "val", StringField.TYPE_UNSTORED));
     writer.addDocument(doc);

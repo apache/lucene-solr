@@ -25,9 +25,6 @@
 
   <target name="compile-core" depends="compile-solr-core,compile-solrj,common-solr.compile-core"/>
 
-  <!-- redefine common-solr.test, and exclude 'validate-solr' dependency, since it should only run at solr/ level -->
-  <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
-
   <dirname file="${ant.file}" property="antfile.dir"/>
 
   <available property="contrib.has.webapp" type="dir" file="${antfile.dir}/src/webapp" />

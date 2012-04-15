@@ -102,7 +102,7 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER, 20, false, false);
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192, false, false);
+    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192, false, false);
   }
 }

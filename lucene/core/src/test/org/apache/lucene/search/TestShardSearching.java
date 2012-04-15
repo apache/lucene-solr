@@ -65,13 +65,13 @@ public class TestShardSearching extends ShardSearchingTestBase {
   }
 
   public void testSimple() throws Exception {
-    final int numNodes = _TestUtil.nextInt(random, 1, 10);
+    final int numNodes = _TestUtil.nextInt(random(), 1, 10);
 
     final double runTimeSec = atLeast(3);
 
-    final int minDocsToMakeTerms = _TestUtil.nextInt(random, 5, 20);
+    final int minDocsToMakeTerms = _TestUtil.nextInt(random(), 5, 20);
 
-    final int maxSearcherAgeSeconds = _TestUtil.nextInt(random, 1, 3);
+    final int maxSearcherAgeSeconds = _TestUtil.nextInt(random(), 1, 3);
 
     if (VERBOSE) {
       System.out.println("TEST: numNodes=" + numNodes + " runTimeSec=" + runTimeSec + " maxSearcherAgeSeconds=" + maxSearcherAgeSeconds);
@@ -87,10 +87,10 @@ public class TestShardSearching extends ShardSearchingTestBase {
     List<BytesRef> terms = null;
     while (System.nanoTime() < endTimeNanos) {
 
-      final boolean doFollowon = priorSearches.size() > 0 && random.nextInt(7) == 1;
+      final boolean doFollowon = priorSearches.size() > 0 && random().nextInt(7) == 1;
 
       // Pick a random node; we will run the query on this node:
-      final int myNodeID = random.nextInt(numNodes);
+      final int myNodeID = random().nextInt(numNodes);
 
       final NodeState.ShardIndexSearcher localShardSearcher;
 
@@ -98,7 +98,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
 
       if (doFollowon) {
         // Pretend user issued a followon query:
-        prevSearchState = priorSearches.get(random.nextInt(priorSearches.size()));
+        prevSearchState = priorSearches.get(random().nextInt(priorSearches.size()));
 
         if (VERBOSE) {
           System.out.println("\nTEST: follow-on query age=" + ((System.nanoTime() - prevSearchState.searchTimeNanos)/1000000000.0));
@@ -193,24 +193,24 @@ public class TestShardSearching extends ShardSearchingTestBase {
           }
 
           if (terms != null) {
-            if (random.nextBoolean()) {
-              query = new TermQuery(new Term("body", terms.get(random.nextInt(terms.size()))));
+            if (random().nextBoolean()) {
+              query = new TermQuery(new Term("body", terms.get(random().nextInt(terms.size()))));
             } else {
-              final String t = terms.get(random.nextInt(terms.size())).utf8ToString();
+              final String t = terms.get(random().nextInt(terms.size())).utf8ToString();
               final String prefix;
               if (t.length() <= 1) {
                 prefix = t;
               } else {
-                prefix = t.substring(0, _TestUtil.nextInt(random, 1, 2));
+                prefix = t.substring(0, _TestUtil.nextInt(random(), 1, 2));
               }
               query = new PrefixQuery(new Term("body", prefix));
             }
             
-            if (random.nextBoolean()) {
+            if (random().nextBoolean()) {
               sort = null;
             } else {
               // TODO: sort by more than 1 field
-              final int what = random.nextInt(3);
+              final int what = random().nextInt(3);
               if (what == 0) {
                 sort = new Sort(SortField.FIELD_SCORE);
               } else if (what == 1) {
@@ -220,9 +220,9 @@ public class TestShardSearching extends ShardSearchingTestBase {
                 //sort = new Sort(SortField.FIELD_DOC);
                 sort = null;
               } else if (what == 2) {
-                sort = new Sort(new SortField[] {new SortField("docid", SortField.Type.INT, random.nextBoolean())});
+                sort = new Sort(new SortField[] {new SortField("docid", SortField.Type.INT, random().nextBoolean())});
               } else {
-                sort = new Sort(new SortField[] {new SortField("title", SortField.Type.STRING, random.nextBoolean())});
+                sort = new Sort(new SortField[] {new SortField("title", SortField.Type.STRING, random().nextBoolean())});
               }
             }
           } else {
@@ -258,10 +258,10 @@ public class TestShardSearching extends ShardSearchingTestBase {
         }
       }
 
-      if (searchState != null && searchState.searchAfterLocal != null && random.nextInt(5) == 3) {
+      if (searchState != null && searchState.searchAfterLocal != null && random().nextInt(5) == 3) {
         priorSearches.add(searchState);
         if (priorSearches.size() > 200) {
-          Collections.shuffle(priorSearches, random);
+          Collections.shuffle(priorSearches, random());
           priorSearches.subList(100, priorSearches.size()).clear();
         }
       }
@@ -272,7 +272,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
 
   private PreviousSearchState assertSame(IndexSearcher mockSearcher, NodeState.ShardIndexSearcher shardSearcher, Query q, Sort sort, PreviousSearchState state) throws IOException {
 
-    int numHits = _TestUtil.nextInt(random, 1, 100);
+    int numHits = _TestUtil.nextInt(random(), 1, 100);
     if (state != null && state.searchAfterLocal == null) {
       // In addition to what we last searched:
       numHits += state.numHitsPaged;

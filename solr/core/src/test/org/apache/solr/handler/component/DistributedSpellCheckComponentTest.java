@@ -46,12 +46,13 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
 	}
 	
   private String saveProp;
+
   @Override
   public void setUp() throws Exception {
     // this test requires FSDir
     saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");    
-    requestHandlerName = random.nextBoolean() ? "spellCheckCompRH" : "spellCheckCompRH_Direct"; 
+    requestHandlerName = random().nextBoolean() ? "spellCheckCompRH" : "spellCheckCompRH_Direct"; 
     super.setUp();
   }
   

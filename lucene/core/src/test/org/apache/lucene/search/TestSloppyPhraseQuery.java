@@ -137,7 +137,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     query.setSlop(slop);
 
     Directory ramDir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     writer.addDocument(doc);
 
     IndexReader reader = writer.getReader();
@@ -227,13 +227,13 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
         return false;
       }
     });
-    QueryUtils.check(random, pq, searcher);
+    QueryUtils.check(random(), pq, searcher);
   }
 
   // LUCENE-3215
   public void testSlopWithHoles() throws Exception {  
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
     customType.setOmitNorms(true);
     Field f = new Field("lyrics", "", customType);
@@ -270,7 +270,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     String document = "drug druggy drug drug drug";
     
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_UNSTORED)));
     iw.addDocument(doc);
@@ -323,7 +323,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
         
      Directory dir = newDirectory();
 
-     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
      Document doc = new Document();
      doc.add(newField("lyrics", document, new FieldType(TextField.TYPE_UNSTORED)));
      iw.addDocument(doc);

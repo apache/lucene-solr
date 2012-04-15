@@ -49,11 +49,11 @@ public class TestSegmentMerger extends LuceneTestCase {
     merge1Dir = newDirectory();
     merge2Dir = newDirectory();
     DocHelper.setupDoc(doc1);
-    SegmentInfo info1 = DocHelper.writeDoc(random, merge1Dir, doc1);
+    SegmentInfo info1 = DocHelper.writeDoc(random(), merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
-    SegmentInfo info2 = DocHelper.writeDoc(random, merge2Dir, doc2);
-    reader1 = new SegmentReader(info1, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
-    reader2 = new SegmentReader(info2, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentInfo info2 = DocHelper.writeDoc(random(), merge2Dir, doc2);
+    reader1 = new SegmentReader(info1, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
+    reader2 = new SegmentReader(info2, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
   }
 
   @Override
@@ -76,7 +76,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
   public void testMerge() throws IOException {
     final Codec codec = Codec.getDefault();
-    SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, MergeState.CheckAbort.NONE, null, new FieldInfos(new FieldInfos.FieldNumberBiMap()), codec, newIOContext(random));
+    SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, MergeState.CheckAbort.NONE, null, new FieldInfos(new FieldInfos.FieldNumberBiMap()), codec, newIOContext(random()));
     merger.add(reader1);
     merger.add(reader2);
     MergeState mergeState = merger.merge();
@@ -86,7 +86,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     //Should be able to open a new SegmentReader against the new directory
     SegmentReader mergedReader = new SegmentReader(new SegmentInfo(mergedSegment, docsMerged, mergedDir, false,
                                                                                      codec, fieldInfos),
-                                                   DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+                                                   DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
     Document newDoc1 = mergedReader.document(0);
@@ -97,7 +97,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
 
-    DocsEnum termDocs = _TestUtil.docs(random, mergedReader,
+    DocsEnum termDocs = _TestUtil.docs(random(), mergedReader,
                                        DocHelper.TEXT_FIELD_2_KEY,
                                        new BytesRef("field"),
                                        MultiFields.getLiveDocs(mergedReader),

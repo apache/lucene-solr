@@ -303,11 +303,11 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     assertEquals("queries should have same #hits",h1.size(),h4CustomAdd.size());
     assertEquals("queries should have same #hits",h1.size(),h5CustomMulAdd.size());
 
-    QueryUtils.check(random, q1, s, rarely());
-    QueryUtils.check(random, q2, s, rarely());
-    QueryUtils.check(random, q3, s, rarely());
-    QueryUtils.check(random, q4, s, rarely());
-    QueryUtils.check(random, q5, s, rarely());
+    QueryUtils.check(random(), q1, s, rarely());
+    QueryUtils.check(random(), q2, s, rarely());
+    QueryUtils.check(random(), q3, s, rarely());
+    QueryUtils.check(random(), q4, s, rarely());
+    QueryUtils.check(random(), q5, s, rarely());
 
     // verify scores ratios
     for (final Integer doc : h1.keySet()) {

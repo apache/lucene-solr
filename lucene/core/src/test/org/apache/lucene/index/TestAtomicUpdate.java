@@ -16,29 +16,23 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.*;
-import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.analysis.MockAnalyzer;
-
-import java.util.Random;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.*;
+import org.apache.lucene.store.*;
+import org.apache.lucene.util.*;
+
 public class TestAtomicUpdate extends LuceneTestCase {
-  
   private static final class MockIndexWriter extends IndexWriter {
-
-    static Random RANDOM;
-
     public MockIndexWriter(Directory dir, IndexWriterConfig conf) throws IOException {
       super(dir, conf);
     }
 
     @Override
     boolean testPoint(String name) {
-      //      if (name.equals("startCommit")) {
-      if (RANDOM.nextInt(4) == 2)
+      if (LuceneTestCase.random().nextInt(4) == 2)
         Thread.yield();
       return true;
     }
@@ -127,7 +121,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     TimedThread[] threads = new TimedThread[4];
 
     IndexWriterConfig conf = new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(7);
     ((TieredMergePolicy) conf.getMergePolicy()).setMaxMergeAtOnce(3);
     IndexWriter writer = new MockIndexWriter(directory, conf);
@@ -185,11 +179,10 @@ public class TestAtomicUpdate extends LuceneTestCase {
     FSDirectory.
   */
   public void testAtomicUpdates() throws Exception {
-    MockIndexWriter.RANDOM = random;
     Directory directory;
 
     // First in a RAM directory:
-    directory = new MockDirectoryWrapper(random, new RAMDirectory());
+    directory = new MockDirectoryWrapper(random(), new RAMDirectory());
     runTest(directory);
     directory.close();
 

@@ -43,10 +43,10 @@ public class TestReuseDocsEnum extends LuceneTestCase {
   public void testReuseDocsEnumNoReuse() throws IOException {
     Directory dir = newDirectory();
     Codec cp = _TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat());
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
     int numdocs = atLeast(20);
-    createRandomIndex(numdocs, writer, random);
+    createRandomIndex(numdocs, writer, random());
     writer.commit();
 
     DirectoryReader open = DirectoryReader.open(dir);
@@ -58,7 +58,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
         IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
         MatchNoBits bits = new Bits.MatchNoBits(r.maxDoc());
         while ((iterator.next()) != null) {
-          DocsEnum docs = iterator.docs(random.nextBoolean() ? bits : new Bits.MatchNoBits(r.maxDoc()), null, random.nextBoolean());
+          DocsEnum docs = iterator.docs(random().nextBoolean() ? bits : new Bits.MatchNoBits(r.maxDoc()), null, random().nextBoolean());
           enums.put(docs, true);
         }
         
@@ -72,10 +72,10 @@ public class TestReuseDocsEnum extends LuceneTestCase {
   public void testReuseDocsEnumSameBitsOrNull() throws IOException {
     Directory dir = newDirectory();
     Codec cp = _TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat());
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
     int numdocs = atLeast(20);
-    createRandomIndex(numdocs, writer, random);
+    createRandomIndex(numdocs, writer, random());
     writer.commit();
 
     DirectoryReader open = DirectoryReader.open(dir);
@@ -87,7 +87,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       MatchNoBits bits = new Bits.MatchNoBits(open.maxDoc());
       DocsEnum docs = null;
       while ((iterator.next()) != null) {
-        docs = iterator.docs(bits, docs, random.nextBoolean());
+        docs = iterator.docs(bits, docs, random().nextBoolean());
         enums.put(docs, true);
       }
       
@@ -96,7 +96,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       iterator = terms.iterator(null);
       docs = null;
       while ((iterator.next()) != null) {
-        docs = iterator.docs(new Bits.MatchNoBits(open.maxDoc()), docs, random.nextBoolean());
+        docs = iterator.docs(new Bits.MatchNoBits(open.maxDoc()), docs, random().nextBoolean());
         enums.put(docs, true);
       }
       assertEquals(terms.size(), enums.size());
@@ -105,7 +105,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       iterator = terms.iterator(null);
       docs = null;
       while ((iterator.next()) != null) {
-        docs = iterator.docs(null, docs, random.nextBoolean());
+        docs = iterator.docs(null, docs, random().nextBoolean());
         enums.put(docs, true);
       }
       assertEquals(1, enums.size());  
@@ -117,10 +117,10 @@ public class TestReuseDocsEnum extends LuceneTestCase {
   public void testReuseDocsEnumDifferentReader() throws IOException {
     Directory dir = newDirectory();
     Codec cp = _TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat());
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodec(cp));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
     int numdocs = atLeast(20);
-    createRandomIndex(numdocs, writer, random);
+    createRandomIndex(numdocs, writer, random());
     writer.commit();
 
     DirectoryReader firstReader = DirectoryReader.open(dir);
@@ -137,7 +137,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       DocsEnum docs = null;
       BytesRef term = null;
       while ((term = iterator.next()) != null) {
-        docs = iterator.docs(null, randomDocsEnum("body", term, sequentialSubReaders2, bits), random.nextBoolean());
+        docs = iterator.docs(null, randomDocsEnum("body", term, sequentialSubReaders2, bits), random().nextBoolean());
         enums.put(docs, true);
       }
       assertEquals(terms.size(), enums.size());
@@ -146,7 +146,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       enums.clear();
       docs = null;
       while ((term = iterator.next()) != null) {
-        docs = iterator.docs(bits, randomDocsEnum("body", term, sequentialSubReaders2, bits), random.nextBoolean());
+        docs = iterator.docs(bits, randomDocsEnum("body", term, sequentialSubReaders2, bits), random().nextBoolean());
         enums.put(docs, true);
       }
       assertEquals(terms.size(), enums.size());
@@ -155,11 +155,11 @@ public class TestReuseDocsEnum extends LuceneTestCase {
   }
   
   public DocsEnum randomDocsEnum(String field, BytesRef term, IndexReader[] readers, Bits bits) throws IOException {
-    if (random.nextInt(10) == 0) {
+    if (random().nextInt(10) == 0) {
       return null;
     }
-    AtomicReader indexReader = (AtomicReader) readers[random.nextInt(readers.length)];
-    return indexReader.termDocsEnum(bits, field, term, random.nextBoolean());
+    AtomicReader indexReader = (AtomicReader) readers[random().nextInt(readers.length)];
+    return indexReader.termDocsEnum(bits, field, term, random().nextBoolean());
   }
 
   /**

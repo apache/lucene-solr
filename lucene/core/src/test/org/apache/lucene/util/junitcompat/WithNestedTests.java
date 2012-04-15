@@ -30,6 +30,8 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+
 /**
  * An abstract test class that prepares nested test classes to run.
  * A nested test class will assume it's executed under control of this
@@ -43,12 +45,11 @@ import org.junit.runners.model.Statement;
  * cause havoc (static fields).
  */
 public abstract class WithNestedTests {
-  public static ThreadLocal<Boolean> runsAsNested = new ThreadLocal<Boolean>() {
-    @Override
-    protected Boolean initialValue() {
-      return false;
-    }
-  };
+  /**
+   * This can no longer be thread local because {@link RandomizedRunner} runs
+   * suites in an isolated threadgroup/thread.
+   */
+  public static volatile boolean runsAsNested;
 
   public static abstract class AbstractNestedTest extends LuceneTestCase {
     @ClassRule
@@ -65,7 +66,7 @@ public abstract class WithNestedTests {
     };
 
     protected static boolean isRunningNested() {
-      return runsAsNested.get() != null && runsAsNested.get();
+      return runsAsNested;
     }
   }
 
@@ -96,13 +97,13 @@ public abstract class WithNestedTests {
       }
     }
 
-    runsAsNested.set(true);
+    runsAsNested = true;
   }
 
   @After
   public final void after() {
-    runsAsNested.set(false);
-    
+    runsAsNested = false;
+
     if (suppressOutputStreams) {
       System.out.flush();
       System.err.flush();

@@ -52,7 +52,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
         "Lucene3x".equals(Codec.getDefault().getName()));
     
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     Field field = newField("foo", "", TextField.TYPE_UNSTORED);
     doc.add(field);
@@ -98,8 +98,8 @@ public class TestDocValuesScoring extends LuceneTestCase {
     
     // in this case, we searched on field "foo". first document should have 2x the score.
     TermQuery tq = new TermQuery(new Term("foo", "quick"));
-    QueryUtils.check(random, tq, searcher1);
-    QueryUtils.check(random, tq, searcher2);
+    QueryUtils.check(random(), tq, searcher1);
+    QueryUtils.check(random(), tq, searcher2);
     
     TopDocs noboost = searcher1.search(tq, 10);
     TopDocs boost = searcher2.search(tq, 10);
@@ -111,8 +111,8 @@ public class TestDocValuesScoring extends LuceneTestCase {
     
     // this query matches only the second document, which should have 4x the score.
     tq = new TermQuery(new Term("foo", "jumps"));
-    QueryUtils.check(random, tq, searcher1);
-    QueryUtils.check(random, tq, searcher2);
+    QueryUtils.check(random(), tq, searcher1);
+    QueryUtils.check(random(), tq, searcher2);
     
     noboost = searcher1.search(tq, 10);
     boost = searcher2.search(tq, 10);
@@ -124,8 +124,8 @@ public class TestDocValuesScoring extends LuceneTestCase {
     // search on on field bar just for kicks, nothing should happen, since we setup
     // our sim provider to only use foo_boost for field foo.
     tq = new TermQuery(new Term("bar", "quick"));
-    QueryUtils.check(random, tq, searcher1);
-    QueryUtils.check(random, tq, searcher2);
+    QueryUtils.check(random(), tq, searcher1);
+    QueryUtils.check(random(), tq, searcher2);
     
     noboost = searcher1.search(tq, 10);
     boost = searcher2.search(tq, 10);

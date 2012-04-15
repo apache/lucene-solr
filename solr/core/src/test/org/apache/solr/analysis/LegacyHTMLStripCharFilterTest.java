@@ -273,12 +273,12 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     };
     
     int numRounds = RANDOM_MULTIPLIER * 10000;
-    checkRandomData(random, analyzer, numRounds);
+    checkRandomData(random(), analyzer, numRounds);
   }
 
   public void testRandomBrokenHTML() throws Exception {
     int maxNumElements = 10000;
-    String text = _TestUtil.randomHtmlishString(random, maxNumElements);
+    String text = _TestUtil.randomHtmlishString(random(), maxNumElements);
     Reader reader
         = new LegacyHTMLStripCharFilter(CharReader.get(new StringReader(text)));
     while (reader.read() != -1);
@@ -290,11 +290,11 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
     int maxNumWords = 10000;
     int minWordLength = 3;
     int maxWordLength = 20;
-    int numWords = _TestUtil.nextInt(random, minNumWords, maxNumWords);
-    switch (_TestUtil.nextInt(random, 0, 4)) {
+    int numWords = _TestUtil.nextInt(random(), minNumWords, maxNumWords);
+    switch (_TestUtil.nextInt(random(), 0, 4)) {
       case 0: {
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomUnicodeString(random, maxWordLength));
+          text.append(_TestUtil.randomUnicodeString(random(), maxWordLength));
           text.append(' ');
         }
         break;
@@ -302,14 +302,14 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
       case 1: {
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
           text.append(_TestUtil.randomRealisticUnicodeString
-              (random, minWordLength, maxWordLength));
+              (random(), minWordLength, maxWordLength));
           text.append(' ');
         }
         break;
       }
       default: { // ASCII 50% of the time
         for (int wordNum = 0 ; wordNum < numWords ; ++wordNum) {
-          text.append(_TestUtil.randomSimpleString(random));
+          text.append(_TestUtil.randomSimpleString(random()));
           text.append(' ');
         }
       }

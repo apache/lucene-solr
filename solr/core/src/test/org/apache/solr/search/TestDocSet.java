@@ -42,9 +42,15 @@ import org.apache.lucene.util.OpenBitSetIterator;
  *
  */
 public class TestDocSet extends LuceneTestCase {
-  Random rand = random;
+  Random rand;
   float loadfactor;
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    rand = random();
+  }
+  
   public OpenBitSet getRandomSet(int sz, int bitsToSet) {
     OpenBitSet bs = new OpenBitSet(sz);
     if (sz==0) return bs;

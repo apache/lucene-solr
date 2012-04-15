@@ -17,6 +17,7 @@
 package org.apache.lucene.search.suggest;
 
 import java.io.File;
+import java.util.Random;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.List;
@@ -78,6 +79,7 @@ public class PersistenceTest extends LuceneTestCase {
     lookup.load(new FileInputStream(new File(storeDir, "lookup.dat")));
 
     // Assert validity.
+    Random random = random();
     long previous = Long.MIN_VALUE;
     for (TermFreq k : keys) {
       List<LookupResult> list = lookup.lookup(_TestUtil.bytesToCharSequence(k.term, random), false, 1);

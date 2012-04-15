@@ -98,47 +98,45 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     org.apache.lucene.search.Query q = qp.parse(s);
     return q.toString("field");
   }
+  
+  final static class FoldingFilter extends TokenFilter {
+    final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-}
+    public FoldingFilter(TokenStream input) {
+      super(input);
+    }
 
-final class TestFoldingFilter extends TokenFilter {
-  final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-
-  public TestFoldingFilter(TokenStream input) {
-    super(input);
-  }
-
-  @Override
-  public boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      char term[] = termAtt.buffer();
-      for (int i = 0; i < term.length; i++)
-        switch(term[i]) {
-          case 'ü':
-            term[i] = 'u'; 
-            break;
-          case 'ö': 
-            term[i] = 'o'; 
-            break;
-          case 'é': 
-            term[i] = 'e'; 
-            break;
-          case 'ï': 
-            term[i] = 'i'; 
-            break;
-        }
-      return true;
-    } else {
-      return false;
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        char term[] = termAtt.buffer();
+        for (int i = 0; i < term.length; i++)
+          switch(term[i]) {
+            case 'ü':
+              term[i] = 'u'; 
+              break;
+            case 'ö': 
+              term[i] = 'o'; 
+              break;
+            case 'é': 
+              term[i] = 'e'; 
+              break;
+            case 'ï': 
+              term[i] = 'i'; 
+              break;
+          }
+        return true;
+      } else {
+        return false;
+      }
     }
   }
-}
 
-final class ASCIIAnalyzer extends Analyzer {
-
-  @Override
-  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-    return new TokenStreamComponents(result, new TestFoldingFilter(result));
-  }
+  final static class ASCIIAnalyzer extends Analyzer {
+    @Override
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      return new TokenStreamComponents(result, new FoldingFilter(result));
+    }
+  }  
 }

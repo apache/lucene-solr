@@ -381,3 +381,5 @@
 /modules/suggest/*.iml
 /modules/suggest/pom.xml
 /modules/suggest/dist
+
+/modules/spatial/build/

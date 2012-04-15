@@ -67,6 +67,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4.
  * Unlike AbstractSolrTestCase, a new core is not created for each test method.
@@ -247,7 +249,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   protected static String getClassName() {
     return getTestClass().getName();
-      }
+  }
 
   protected static String getSimpleClassName() {
     return getTestClass().getSimpleName();
@@ -317,6 +319,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     dataDir = new File(TEMP_DIR,
             "solrtest-" + cname + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
+    System.err.println("Creating dataDir: " + dataDir.getAbsolutePath());
   }
 
   public static void initCore() throws Exception {
@@ -937,7 +940,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
 
     protected int between(int min, int max) {
-      return min != max ? random.nextInt(max-min+1) + min : min;
+      return min != max ? random().nextInt(max-min+1) + min : min;
     }
   }
 
@@ -974,7 +977,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
     public float getFloat() {
       if (min >= max) return min;
-      return min + random.nextFloat() *  (max - min);
+      return min + random().nextFloat() *  (max - min);
     }
 
     @Override
@@ -1136,19 +1139,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       model.put(doc.id, doc);
 
       // commit 10% of the time
-      if (random.nextInt(commitOneOutOf)==0) {
+      if (random().nextInt(commitOneOutOf)==0) {
         assertU(commit());
       }
 
       // duplicate 10% of the docs
-      if (random.nextInt(10)==0) {
+      if (random().nextInt(10)==0) {
         updateJ(toJSON(doc), null);
         model.put(doc.id, doc);        
       }
     }
 
     // optimize 10% of the time
-    if (random.nextInt(10)==0) {
+    if (random().nextInt(10)==0) {
       assertU(optimize());
     } else {
       assertU(commit());
@@ -1192,13 +1195,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static Comparator<Doc> createSort(IndexSchema schema, List<FldType> fieldTypes, String[] out) {
     StringBuilder sortSpec = new StringBuilder();
-    int nSorts = random.nextInt(4);
+    int nSorts = random().nextInt(4);
     List<Comparator<Doc>> comparators = new ArrayList<Comparator<Doc>>();
     for (int i=0; i<nSorts; i++) {
       if (i>0) sortSpec.append(',');
 
-      int which = random.nextInt(fieldTypes.size()+2);
-      boolean asc = random.nextBoolean();
+      int which = random().nextInt(fieldTypes.size()+2);
+      boolean asc = random().nextBoolean();
       if (which == fieldTypes.size()) {
         // sort by score
         sortSpec.append("score").append(asc ? " asc" : " desc");

@@ -100,7 +100,7 @@ public class TestIndexableField extends LuceneTestCase {
 
     @Override
     public float boost() {
-      return 1.0f + random.nextFloat();
+      return 1.0f + random().nextFloat();
     }
 
     @Override
@@ -157,7 +157,7 @@ public class TestIndexableField extends LuceneTestCase {
   public void testArbitraryFields() throws Exception {
 
     final Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
     final int NUM_DOCS = atLeast(27);
     if (VERBOSE) {
@@ -167,7 +167,7 @@ public class TestIndexableField extends LuceneTestCase {
     int baseCount = 0;
 
     for(int docCount=0;docCount<NUM_DOCS;docCount++) {
-      final int fieldCount = _TestUtil.nextInt(random, 1, 17);
+      final int fieldCount = _TestUtil.nextInt(random(), 1, 17);
       fieldsPerDoc[docCount] = fieldCount-1;
 
       final int finalDocCount = docCount;

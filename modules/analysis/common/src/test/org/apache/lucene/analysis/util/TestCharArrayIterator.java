@@ -35,7 +35,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
     BreakIterator bi = BreakIterator.getWordInstance();
     CharArrayIterator ci = CharArrayIterator.newWordInstance();
     for (int i = 0; i < 10000; i++) {
-      char text[] = _TestUtil.randomUnicodeString(random).toCharArray();
+      char text[] = _TestUtil.randomUnicodeString(random()).toCharArray();
       ci.setText(text, 0, text.length);
       consume(bi, ci);
     }
@@ -63,7 +63,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
     BreakIterator bi = BreakIterator.getSentenceInstance();
     CharArrayIterator ci = CharArrayIterator.newSentenceInstance();
     for (int i = 0; i < 10000; i++) {
-      char text[] = _TestUtil.randomUnicodeString(random).toCharArray();
+      char text[] = _TestUtil.randomUnicodeString(random()).toCharArray();
       ci.setText(text, 0, text.length);
       consume(bi, ci);
     }

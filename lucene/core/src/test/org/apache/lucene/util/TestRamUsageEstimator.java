@@ -44,7 +44,7 @@ public class TestRamUsageEstimator extends LuceneTestCase {
   }
 
   public void testStaticOverloads() {
-    Random rnd = random;
+    Random rnd = random();
     {
       byte[] array = new byte[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));

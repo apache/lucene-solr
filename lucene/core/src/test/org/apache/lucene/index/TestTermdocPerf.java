@@ -109,7 +109,7 @@ public class TestTermdocPerf extends LuceneTestCase {
     Directory dir = newDirectory();
 
     long start = System.currentTimeMillis();
-    addDocs(random, dir, ndocs, "foo", "val", maxTF, percentDocs);
+    addDocs(random(), dir, ndocs, "foo", "val", maxTF, percentDocs);
     long end = System.currentTimeMillis();
     if (VERBOSE) System.out.println("milliseconds for creation of " + ndocs + " docs = " + (end-start));
 
@@ -121,6 +121,7 @@ public class TestTermdocPerf extends LuceneTestCase {
 
     int ret=0;
     DocsEnum tdocs = null;
+    final Random random = new Random(random().nextLong());
     for (int i=0; i<iter; i++) {
       tenum.seekCeil(new BytesRef("val"));
       tdocs = _TestUtil.docs(random, tenum, MultiFields.getLiveDocs(reader), tdocs, false);

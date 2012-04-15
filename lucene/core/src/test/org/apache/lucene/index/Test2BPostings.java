@@ -46,7 +46,7 @@ public class Test2BPostings extends LuceneTestCase {
     dir.setCheckIndexOnClose(false); // don't double-checkindex
     
     IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setRAMBufferSizeMB(256.0)
         .setMergeScheduler(new ConcurrentMergeScheduler())

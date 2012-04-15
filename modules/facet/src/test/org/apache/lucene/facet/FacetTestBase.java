@@ -157,7 +157,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
         pair.taxoDir = newDirectory();
       }
       
-      RandomIndexWriter iw = new RandomIndexWriter(random, pair.searchDir, getIndexWriterConfig(getAnalyzer()));
+      RandomIndexWriter iw = new RandomIndexWriter(random(), pair.searchDir, getIndexWriterConfig(getAnalyzer()));
       TaxonomyWriter taxo = new DirectoryTaxonomyWriter(pair.taxoDir, OpenMode.CREATE);
       
       populateIndex(iw, taxo, getFacetIndexingParams(partitionSize));
@@ -242,7 +242,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
    * Sub classes should override in order to test with different analyzer.
    */
   protected Analyzer getAnalyzer() {
-    return new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
+    return new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
   }
   
   /** convenience method: convert sub results to an array */  
@@ -285,7 +285,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
       TermsEnum te = terms.iterator(null);
       DocsEnum de = null;
       while (te.next() != null) {
-        de = _TestUtil.docs(random, te, liveDocs, de, false);
+        de = _TestUtil.docs(random(), te, liveDocs, de, false);
         int cnt = 0;
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           cnt++;

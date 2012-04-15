@@ -94,7 +94,7 @@ public class TestBasicOperations extends LuceneTestCase {
     final int ITER2 = atLeast(100);
     for(int i=0;i<ITER1;i++) {
 
-      final RegExp re = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE);
+      final RegExp re = new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE);
       final Automaton a = re.toAutomaton();
       assertFalse(BasicOperations.isEmpty(a));
 
@@ -102,7 +102,7 @@ public class TestBasicOperations extends LuceneTestCase {
       for(int j=0;j<ITER2;j++) {
         int[] acc = null;
         try {
-          acc = rx.getRandomAcceptedString(random);
+          acc = rx.getRandomAcceptedString(random());
           final String s = UnicodeUtil.newString(acc, 0, acc.length);
           assertTrue(BasicOperations.run(a, s));
         } catch (Throwable t) {

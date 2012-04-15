@@ -153,7 +153,7 @@ public class TestCachingCollector extends LuceneTestCase {
     // caching would terminate even if a smaller length would suffice.
     
     // set RAM limit enough for 150 docs + random(10000)
-    int numDocs = random.nextInt(10000) + 150;
+    int numDocs = random().nextInt(10000) + 150;
     for (boolean cacheScores : new boolean[] { false, true }) {
       int bytesPerDoc = cacheScores ? 8 : 4;
       CachingCollector cc = CachingCollector.create(new NoOpCollector(false),

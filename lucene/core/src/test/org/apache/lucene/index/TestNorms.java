@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -59,9 +60,9 @@ public class TestNorms extends LuceneTestCase {
   // LUCENE-1260
   public void testCustomEncoder() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     config.setSimilarity(new CustomNormEncodingSimilarity());
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
     Field bar = newField("bar", "", TextField.TYPE_UNSTORED);
@@ -115,11 +116,11 @@ public class TestNorms extends LuceneTestCase {
    */
   public void testNormsNotPresent() throws IOException {
     Directory dir = newDirectory();
-    boolean firstWriteNorm = random.nextBoolean();
+    boolean firstWriteNorm = random().nextBoolean();
     buildIndex(dir, firstWriteNorm);
 
     Directory otherDir = newDirectory();
-    boolean secondWriteNorm = random.nextBoolean();
+    boolean secondWriteNorm = random().nextBoolean();
     buildIndex(otherDir, secondWriteNorm);
 
     AtomicReader reader = SlowCompositeReaderWrapper.wrap(IndexReader.open(otherDir));
@@ -134,8 +135,8 @@ public class TestNorms extends LuceneTestCase {
     }
     
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random));
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
+        new MockAnalyzer(random()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     writer.addIndexes(reader);
     AtomicReader mergedReader = SlowCompositeReaderWrapper.wrap(writer.getReader());
     if (!firstWriteNorm && !secondWriteNorm) {
@@ -173,8 +174,9 @@ public class TestNorms extends LuceneTestCase {
 
   public void buildIndex(Directory dir, boolean writeNorms) throws IOException,
       CorruptIndexException {
+    Random random = random();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random));
+        new MockAnalyzer(random()));
     Similarity provider = new MySimProvider(writeNorms);
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
@@ -182,7 +184,7 @@ public class TestNorms extends LuceneTestCase {
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
-      int boost = writeNorms ? 1 + random.nextInt(255) : 0;
+      int boost = writeNorms ? 1 + random().nextInt(255) : 0;
       Field f = new Field(byteTestField, "" + boost,
           TextField.TYPE_STORED);
       f.setBoost(boost);

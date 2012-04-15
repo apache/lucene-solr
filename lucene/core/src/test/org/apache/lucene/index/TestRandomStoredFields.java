@@ -41,8 +41,8 @@ public class TestRandomStoredFields extends LuceneTestCase {
 
   public void testRandomStoredFields() throws IOException {
     Directory dir = newDirectory();
-    Random rand = random;
-    RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
+    Random rand = random();
+    RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
     //w.w.setUseCompoundFile(false);
     final int docCount = atLeast(200);
     final int fieldCount = _TestUtil.nextInt(rand, 1, 5);

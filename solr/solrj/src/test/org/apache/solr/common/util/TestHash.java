@@ -72,7 +72,7 @@ public class TestHash extends LuceneTestCase {
 
 
   public void testHash() {
-    Random r = random;
+    Random r = random();
     int[] utf32 = new int[20];
     tstEquiv(utf32,0);
 

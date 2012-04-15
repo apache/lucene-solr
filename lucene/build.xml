@@ -74,9 +74,6 @@
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <!-- remove this -->
-  <target name="test-tag" depends="test-backwards" description="deprecated"/>
-  
   <target name="compile-backwards" depends="compile-core"
   	description="Runs tests of a previous Lucene version.">
 	<sequential>
@@ -98,10 +95,22 @@
   	</sequential>
   </target>	
 
-  <target name="test-backwards" /><!--add here after 4.0: depends="compile-backwards, backwards-test-warning, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel"-->
+  <target name="backwards-test-warning" depends="check-backwards-params" if="backwards.ignoring.params">
+    <echo>
+       Warning: Ignoring your multiplier and nightly settings for backwards tests.
+       These tests are for API compatibility only!
+    </echo>
+  </target>
 
-  <target name="junit-backwards-mkdir">
+  <!--
+  Add dependency after 4.0: depends="compile-backwards, backwards-test-warning"
+  and uncomment inside of this target.
+  -->
+  <target name="test-backwards">
+    <!--
     <mkdir dir="${build.dir.backwards}/test"/>
+    <backwards-test-macro/>
+    -->
   </target>
 
   <target name="check-backwards-params">
@@ -113,13 +122,6 @@
     </condition>
   </target>
 
-  <target name="backwards-test-warning" depends="check-backwards-params" if="backwards.ignoring.params">
-    <echo>
-       Warning: Ignoring your multiplier and nightly settings for backwards tests.
-       These tests are for API compatibility only!
-    </echo>
-  </target>
-
   <macrodef name="backwards-test-macro">
   	<attribute name="threadNum" default="1"/>
   	<attribute name="threadTotal" default="1"/>
@@ -128,29 +130,16 @@
           Note: we disable multiplier/nightly because the purpose is to find API breaks
           -->
       <test-macro 
-    	dataDir="${backwards.dir}/core/src/test" 
-    	tempDir="${build.dir.backwards}/test" 
-    	junit.classpath="backwards.junit.classpath" 
-    	junit.output.dir="${junit.output.dir.backwards}" 
+        dataDir="${backwards.dir}/core/src/test" 
+        tempDir="${build.dir.backwards}/test" 
+        junit.classpath="backwards.junit.classpath" 
+        junit.output.dir="${junit.output.dir.backwards}" 
         tests.nightly="false"
         tests.multiplier="1"
         threadNum="@{threadNum}" 
         threadTotal="@{threadTotal}"/>
-  	</sequential>
+    </sequential>
   </macrodef>
-
-  <target name="junit-backwards-sequential" if="tests.sequential">
-    <backwards-test-macro/>
-  </target>
-
-  <target name="junit-backwards-parallel" unless="tests.sequential">
-    <parallel threadsPerProcessor="${tests.threadspercpu}">
-     <backwards-test-macro threadNum="1" threadTotal="4"/>
-     <backwards-test-macro threadNum="2" threadTotal="4"/>
-     <backwards-test-macro threadNum="3" threadTotal="4"/>
-     <backwards-test-macro threadNum="4" threadTotal="4"/>
-    </parallel>
-  </target>
 
   <target name="compile-core" depends="compile-lucene-core"/>
 

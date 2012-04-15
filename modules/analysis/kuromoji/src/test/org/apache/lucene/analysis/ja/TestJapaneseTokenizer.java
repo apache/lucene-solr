@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -182,24 +183,26 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random, analyzerNoPunct, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerNoPunct, 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
+    Random random = random();
     checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER, 8192);
     checkRandomData(random, analyzerNoPunct, 200*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testRandomHugeStringsMockGraphAfter() throws Exception {
     // Randomly inject graph tokens after JapaneseTokenizer:
+    Random random = random();
     checkRandomData(random,
                     new Analyzer() {
                       @Override
                       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
                         Tokenizer tokenizer = new JapaneseTokenizer(reader, readDict(), false, Mode.SEARCH);
-                        TokenStream graph = new MockGraphTokenFilter(random, tokenizer);
+                        TokenStream graph = new MockGraphTokenFilter(random(), tokenizer);
                         return new TokenStreamComponents(tokenizer, graph);
                       }
                     },
@@ -208,7 +211,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
 
   public void testLargeDocReliability() throws Exception {
     for (int i = 0; i < 100; i++) {
-      String s = _TestUtil.randomUnicodeString(random, 10000);
+      String s = _TestUtil.randomUnicodeString(random(), 10000);
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
       ts.reset();
       while (ts.incrementToken()) {
@@ -229,7 +232,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + i);
       }
-      String s = _TestUtil.randomUnicodeString(random, 100);
+      String s = _TestUtil.randomUnicodeString(random(), 100);
       TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       ts.reset();

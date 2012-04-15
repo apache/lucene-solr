@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
@@ -32,20 +34,21 @@ public class TestRollingUpdates extends LuceneTestCase {
 
   @Test
   public void testRollingUpdates() throws Exception {
+    Random random = new Random(random().nextLong());
     final MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
     final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
 
     //provider.register(new MemoryCodec());
-    if ( (!"Lucene3x".equals(Codec.getDefault().getName())) && random.nextBoolean()) {
-      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random.nextBoolean())));
+    if ( (!"Lucene3x".equals(Codec.getDefault().getName())) && random().nextBoolean()) {
+      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean())));
     }
 
-    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     final int SIZE = atLeast(20);
     int id = 0;
     IndexReader r = null;
-    final int numUpdates = (int) (SIZE * (2+(TEST_NIGHTLY ? 200*random.nextDouble() : 5*random.nextDouble())));
+    final int numUpdates = (int) (SIZE * (2+(TEST_NIGHTLY ? 200*random().nextDouble() : 5*random().nextDouble())));
     if (VERBOSE) {
       System.out.println("TEST: numUpdates=" + numUpdates);
     }
@@ -60,11 +63,11 @@ public class TestRollingUpdates extends LuceneTestCase {
       ((Field) doc.getField("docid")).setStringValue(myID);
       w.updateDocument(new Term("docid", myID), doc);
 
-      if (docIter >= SIZE && random.nextInt(50) == 17) {
+      if (docIter >= SIZE && random().nextInt(50) == 17) {
         if (r != null) {
           r.close();
         }
-        final boolean applyDeletions = random.nextBoolean();
+        final boolean applyDeletions = random().nextBoolean();
         r = w.getReader(applyDeletions);
         assertTrue("applyDeletions=" + applyDeletions + " r.numDocs()=" + r.numDocs() + " vs SIZE=" + SIZE, !applyDeletions || r.numDocs() == SIZE);
       }
@@ -88,12 +91,12 @@ public class TestRollingUpdates extends LuceneTestCase {
   public void testUpdateSameDoc() throws Exception {
     final Directory dir = newDirectory();
 
-    final LineFileDocs docs = new LineFileDocs(random);
+    final LineFileDocs docs = new LineFileDocs(random());
     for (int r = 0; r < 3; r++) {
       final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
       final int numUpdates = atLeast(20);
-      int numThreads = _TestUtil.nextInt(random, 2, 6);
+      int numThreads = _TestUtil.nextInt(random(), 2, 6);
       IndexingThread[] threads = new IndexingThread[numThreads];
       for (int i = 0; i < numThreads; i++) {
         threads[i] = new IndexingThread(docs, w, numUpdates);
@@ -133,7 +136,7 @@ public class TestRollingUpdates extends LuceneTestCase {
           Document doc = new Document();// docs.nextDoc();
           doc.add(newField("id", "test", StringField.TYPE_UNSTORED));
           writer.updateDocument(new Term("id", "test"), doc);
-          if (random.nextInt(3) == 0) {
+          if (random().nextInt(3) == 0) {
             if (open == null) {
               open = IndexReader.open(writer, true);
             }

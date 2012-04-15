@@ -45,7 +45,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     //Add series of docs with filterable fields : url, text and dates  flags
     addDoc(writer, "http://lucene.apache.org", "lucene 1.4.3 available", "20040101");
@@ -135,7 +135,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = _TestUtil.docs(random, reader,
+      DocsEnum td = _TestUtil.docs(random(), reader,
                                    KEY_FIELD,
                                    new BytesRef(url),
                                    MultiFields.getLiveDocs(reader),
@@ -159,7 +159,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     for (ScoreDoc hit : hits) {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
-      DocsEnum td = _TestUtil.docs(random, reader,
+      DocsEnum td = _TestUtil.docs(random(), reader,
                                    KEY_FIELD,
                                    new BytesRef(url),
                                    MultiFields.getLiveDocs(reader),

@@ -87,7 +87,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     IndexSearcher searcher = null;
     try {
       directory = newDirectory();
-      RandomIndexWriter writer = new RandomIndexWriter (random, directory);
+      RandomIndexWriter writer = new RandomIndexWriter (random(), directory);
 
       Document doc = new Document();
       doc.add(newField("field", "term", StringField.TYPE_UNSTORED));
@@ -132,7 +132,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
 
   public void testConstantScoreQueryAndFilter() throws Exception {
     Directory d = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, d);
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
     doc.add(newField("field", "a", StringField.TYPE_UNSTORED));
     w.addDocument(doc);

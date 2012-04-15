@@ -92,10 +92,10 @@ public class DefaultFacetIndexingParamsTest extends LuceneTestCase {
         + seed + ")", pathPolicy.shouldAdd(cp), dfip.getPathPolicy()
         .shouldAdd(cp));
     for (int i = 0; i < 30; i++) {
-      int nComponents = random.nextInt(10);
+      int nComponents = random().nextInt(10);
       String[] components = new String[nComponents];
       for (int j = 0; j < components.length; j++) {
-        components[j] = (Integer.valueOf(random.nextInt(30))).toString();
+        components[j] = (Integer.valueOf(random().nextInt(30))).toString();
       }
       cp = new CategoryPath(components);
       assertEquals("path policy does not match default for "
@@ -110,7 +110,7 @@ public class DefaultFacetIndexingParamsTest extends LuceneTestCase {
         .shouldAdd(TaxonomyReader.ROOT_ORDINAL), dfip
         .getOrdinalPolicy().shouldAdd(TaxonomyReader.ROOT_ORDINAL));
     for (int i = 0; i < 30; i++) {
-      int ordinal = random.nextInt();
+      int ordinal = random().nextInt();
       assertEquals("ordinal policy does not match default for " + ordinal
           + "(seed " + seed + ")", ordinalPolicy.shouldAdd(ordinal),
           dfip.getOrdinalPolicy().shouldAdd(ordinal));

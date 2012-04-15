@@ -40,7 +40,7 @@ public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
   
   public void testSimple() throws Exception {
     // lowercases only!
-    converter.setAnalyzer(new MockAnalyzer(random, MockTokenizer.KEYWORD, true));
+    converter.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.KEYWORD, true));
     assertConvertsTo("This is a test", new String[] { "this is a test" });
   }
   

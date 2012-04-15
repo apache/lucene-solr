@@ -108,14 +108,14 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     StringBuilder termField = new StringBuilder();
  
     // add up to 250 terms to field "foo"
-    final int numFooTerms = random.nextInt(250 * RANDOM_MULTIPLIER);
+    final int numFooTerms = random().nextInt(250 * RANDOM_MULTIPLIER);
     for (int i = 0; i < numFooTerms; i++) {
       fooField.append(" ");
       fooField.append(randomTerm());
     }
 
     // add up to 250 terms to field "term"
-    final int numTermTerms = random.nextInt(250 * RANDOM_MULTIPLIER);
+    final int numTermTerms = random().nextInt(250 * RANDOM_MULTIPLIER);
     for (int i = 0; i < numTermTerms; i++) {
       termField.append(" ");
       termField.append(randomTerm());
@@ -170,10 +170,10 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    * Return a random analyzer (Simple, Stop, Standard) to analyze the terms.
    */
   private Analyzer randomAnalyzer() {
-    switch(random.nextInt(3)) {
-      case 0: return new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
-      case 1: return new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
-      default: return new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
+    switch(random().nextInt(3)) {
+      case 0: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+      case 1: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+      default: return new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     }
   }
   
@@ -192,21 +192,21 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    * the other half of the time, returns a random unicode string.
    */
   private String randomTerm() {
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       // return a random TEST_TERM
-      return TEST_TERMS[random.nextInt(TEST_TERMS.length)];
+      return TEST_TERMS[random().nextInt(TEST_TERMS.length)];
     } else {
       // return a random unicode term
-      return _TestUtil.randomUnicodeString(random);
+      return _TestUtil.randomUnicodeString(random());
     }
   }
   
   public void testDocsEnumStart() throws Exception {
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     MemoryIndex memory = new MemoryIndex();
     memory.addField("foo", "bar", analyzer);
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
-    DocsEnum disi = _TestUtil.docs(random, reader, "foo", new BytesRef("bar"), null, null, false);
+    DocsEnum disi = _TestUtil.docs(random(), reader, "foo", new BytesRef("bar"), null, null, false);
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -222,7 +222,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   }
   
   public void testDocsAndPositionsEnumStart() throws Exception {
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     MemoryIndex memory = new MemoryIndex(true);
     memory.addField("foo", "bar", analyzer);
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
@@ -250,7 +250,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     SpanQuery wrappedquery = new SpanMultiTermQueryWrapper<RegexpQuery>(regex);
         
     MemoryIndex mindex = new MemoryIndex();
-    mindex.addField("field", new MockAnalyzer(random).tokenStream("field", new StringReader("hello there")));
+    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", new StringReader("hello there")));
 
     // This throws an NPE
     assertEquals(0, mindex.search(wrappedquery), 0.00001f);
@@ -262,7 +262,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     SpanQuery wrappedquery = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexpQuery>(regex));
 
     MemoryIndex mindex = new MemoryIndex();
-    mindex.addField("field", new MockAnalyzer(random).tokenStream("field", new StringReader("hello there")));
+    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", new StringReader("hello there")));
 
     // This passes though
     assertEquals(0, mindex.search(wrappedquery), 0.00001f);

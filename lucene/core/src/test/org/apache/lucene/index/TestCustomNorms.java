@@ -57,15 +57,15 @@ public class TestCustomNorms extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // can't set sim to checkindex yet
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random));
+        new MockAnalyzer(random()));
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
-    final LineFileDocs docs = new LineFileDocs(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
+    final LineFileDocs docs = new LineFileDocs(random());
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
-      float nextFloat = random.nextFloat();
+      float nextFloat = random().nextFloat();
       Field f = new Field(floatTestField, "" + nextFloat, TextField.TYPE_STORED);
       f.setBoost(nextFloat);
 
@@ -98,16 +98,16 @@ public class TestCustomNorms extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // can't set sim to checkindex yet
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random));
+        new MockAnalyzer(random()));
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
-    final LineFileDocs docs = new LineFileDocs(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
+    final LineFileDocs docs = new LineFileDocs(random());
     int num = atLeast(100);
     try {
       for (int i = 0; i < num; i++) {
         Document doc = docs.nextDoc();
-        float nextFloat = random.nextFloat();
+        float nextFloat = random().nextFloat();
         Field f = new Field(exceptionTestField, "" + nextFloat,
             TextField.TYPE_STORED);
         f.setBoost(nextFloat);
@@ -142,7 +142,7 @@ public class TestCustomNorms extends LuceneTestCase {
       if (floatTestField.equals(field)) {
         return new FloatEncodingBoostSimilarity();
       } else if (exceptionTestField.equals(field)) {
-        return new RandomTypeSimilarity(random);
+        return new RandomTypeSimilarity(random());
       } else {
         return delegate;
       }

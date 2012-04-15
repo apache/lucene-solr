@@ -41,17 +41,17 @@ public class TestWindowsMMap extends LuceneTestCase {
   }
   
   private String randomToken() {
-    int tl = 1 + random.nextInt(7);
+    int tl = 1 + random().nextInt(7);
     StringBuilder sb = new StringBuilder();
     for(int cx = 0; cx < tl; cx ++) {
-      int c = random.nextInt(25);
+      int c = random().nextInt(25);
       sb.append(alphabet.substring(c, c+1));
     }
     return sb.toString();
   }
   
   private String randomField() {
-    int fl = 1 + random.nextInt(3);
+    int fl = 1 + random().nextInt(3);
     StringBuilder fb = new StringBuilder();
     for(int fx = 0; fx < fl; fx ++) {
       fb.append(randomToken());
@@ -73,7 +73,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     
     // plan to add a set of useful stopwords, consider changing some of the
     // interior filters.
-    MockAnalyzer analyzer = new MockAnalyzer(random);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
     // TODO: something about lock timeouts and leftover locks.
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer)

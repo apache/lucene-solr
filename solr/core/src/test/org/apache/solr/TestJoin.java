@@ -151,7 +151,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
 
     while (--indexIter >= 0) {
-      int indexSize = random.nextInt(20 * RANDOM_MULTIPLIER);
+      int indexSize = random().nextInt(20 * RANDOM_MULTIPLIER);
 
       List<FldType> types = new ArrayList<FldType>();
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
@@ -172,16 +172,16 @@ public class TestJoin extends SolrTestCaseJ4 {
       for (int qiter=0; qiter<queryIter; qiter++) {
         String fromField;
         String toField;
-        if (random.nextInt(100) < 5) {
+        if (random().nextInt(100) < 5) {
           // pick random fields 5% of the time
-          fromField = types.get(random.nextInt(types.size())).fname;
+          fromField = types.get(random().nextInt(types.size())).fname;
           // pick the same field 50% of the time we pick a random field (since other fields won't match anything)
-          toField = (random.nextInt(100) < 50) ? fromField : types.get(random.nextInt(types.size())).fname;
+          toField = (random().nextInt(100) < 50) ? fromField : types.get(random().nextInt(types.size())).fname;
         } else {
           // otherwise, pick compatible fields that have a chance of matching indexed tokens
-          String[] group = compat[random.nextInt(compat.length)];
-          fromField = group[random.nextInt(group.length)];
-          toField = group[random.nextInt(group.length)];
+          String[] group = compat[random().nextInt(compat.length)];
+          fromField = group[random().nextInt(group.length)];
+          toField = group[random().nextInt(group.length)];
         }
 
         Map<Comparable, Set<Comparable>> pivot = pivots.get(fromField+"/"+toField);
@@ -210,7 +210,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
         SolrQueryRequest req = req("wt","json","indent","true", "echoParams","all",
             "q","{!join from="+fromField+" to="+toField
-                + (random.nextInt(4)==0 ? " fromIndex=collection1" : "")
+                + (random().nextInt(4)==0 ? " fromIndex=collection1" : "")
                 +"}*:*"
         );
 

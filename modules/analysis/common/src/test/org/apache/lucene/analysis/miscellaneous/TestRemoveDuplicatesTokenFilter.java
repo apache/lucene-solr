@@ -129,7 +129,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
   // some helper methods for the below test with synonyms
   private String randomNonEmptyString() {
     while(true) {
-      final String s = _TestUtil.randomUnicodeString(random).trim();
+      final String s = _TestUtil.randomUnicodeString(random()).trim();
       if (s.length() != 0 && s.indexOf('\u0000') == -1) {
         return s;
       }
@@ -146,13 +146,13 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
   public void testRandomStrings() throws Exception {
     final int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
-      SynonymMap.Builder b = new SynonymMap.Builder(random.nextBoolean());
+      SynonymMap.Builder b = new SynonymMap.Builder(random().nextBoolean());
       final int numEntries = atLeast(10);
       for (int j = 0; j < numEntries; j++) {
-        add(b, randomNonEmptyString(), randomNonEmptyString(), random.nextBoolean());
+        add(b, randomNonEmptyString(), randomNonEmptyString(), random().nextBoolean());
       }
       final SynonymMap map = b.build();
-      final boolean ignoreCase = random.nextBoolean();
+      final boolean ignoreCase = random().nextBoolean();
       
       final Analyzer analyzer = new Analyzer() {
         @Override
@@ -163,7 +163,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
         }
       };
 
-      checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
+      checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
     }
   }
   

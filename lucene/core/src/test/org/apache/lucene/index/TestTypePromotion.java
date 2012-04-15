@@ -69,28 +69,28 @@ public class TestTypePromotion extends LuceneTestCase {
       throws CorruptIndexException, IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     int num_1 = atLeast(200);
     int num_2 = atLeast(200);
     int num_3 = atLeast(200);
     long[] values = new long[num_1 + num_2 + num_3];
     index(writer,
-        randomValueType(types, random), values, 0, num_1);
+        randomValueType(types, random()), values, 0, num_1);
     writer.commit();
     
     index(writer,
-        randomValueType(types, random), values, num_1, num_2);
+        randomValueType(types, random()), values, num_1, num_2);
     writer.commit();
     
-    if (random.nextInt(4) == 0) {
+    if (random().nextInt(4) == 0) {
       // once in a while use addIndexes
       writer.forceMerge(1);
       
       Directory dir_2 = newDirectory() ;
       IndexWriter writer_2 = new IndexWriter(dir_2,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       index(writer_2,
-          randomValueType(types, random), values, num_1 + num_2, num_3);
+          randomValueType(types, random()), values, num_1 + num_2, num_3);
       writer_2.commit();
       writer_2.close();
       if (rarely()) {
@@ -104,7 +104,7 @@ public class TestTypePromotion extends LuceneTestCase {
       dir_2.close();
     } else {
       index(writer,
-          randomValueType(types, random), values, num_1 + num_2, num_3);
+          randomValueType(types, random()), values, num_1 + num_2, num_3);
     }
 
     writer.forceMerge(1);
@@ -214,28 +214,28 @@ public class TestTypePromotion extends LuceneTestCase {
       doc.add(new Field("id", i + "", TextField.TYPE_STORED));
       switch (valueType) {
       case VAR_INTS:
-        values[i] = random.nextInt();
+        values[i] = random().nextInt();
         valField.setLongValue(values[i]);
         break;
       case FIXED_INTS_16:
-        values[i] = random.nextInt(Short.MAX_VALUE);
+        values[i] = random().nextInt(Short.MAX_VALUE);
         valField.setIntValue((short) values[i]);
         break;
       case FIXED_INTS_32:
-        values[i] = random.nextInt();
+        values[i] = random().nextInt();
         valField.setIntValue((int) values[i]);
         break;
       case FIXED_INTS_64:
-        values[i] = random.nextLong();
+        values[i] = random().nextLong();
         valField.setLongValue(values[i]);
         break;
       case FLOAT_64:
-        double nextDouble = random.nextDouble();
+        double nextDouble = random().nextDouble();
         values[i] = Double.doubleToRawLongBits(nextDouble);
         valField.setDoubleValue(nextDouble);
         break;
       case FLOAT_32:
-        final float nextFloat = random.nextFloat();
+        final float nextFloat = random().nextFloat();
         values[i] = Double.doubleToRawLongBits(nextFloat);
         valField.setFloatValue(nextFloat);
         break;
@@ -246,7 +246,7 @@ public class TestTypePromotion extends LuceneTestCase {
       case BYTES_FIXED_DEREF:
       case BYTES_FIXED_SORTED:
       case BYTES_FIXED_STRAIGHT:
-        values[i] = random.nextLong();
+        values[i] = random().nextLong();
         byte bytes[] = new byte[8];
         ByteArrayDataOutput out = new ByteArrayDataOutput(bytes, 0, 8);
         out.writeLong(values[i]);
@@ -258,12 +258,12 @@ public class TestTypePromotion extends LuceneTestCase {
         byte lbytes[] = new byte[8];
         ByteArrayDataOutput lout = new ByteArrayDataOutput(lbytes, 0, 8);
         final int len;
-        if (random.nextBoolean()) {
-          values[i] = random.nextInt();
+        if (random().nextBoolean()) {
+          values[i] = random().nextInt();
           lout.writeInt((int)values[i]);
           len = 4;
         } else {
-          values[i] = random.nextLong();
+          values[i] = random().nextLong();
           lout.writeLong(values[i]);
           len = 8;
         }
@@ -275,7 +275,7 @@ public class TestTypePromotion extends LuceneTestCase {
       }
       doc.add(valField);
       writer.addDocument(doc);
-      if (random.nextInt(10) == 0) {
+      if (random().nextInt(10) == 0) {
         writer.commit();
       }
     }
@@ -300,26 +300,26 @@ public class TestTypePromotion extends LuceneTestCase {
   
   public void testMergeIncompatibleTypes() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig writerConfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig writerConfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     writerConfig.setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES); // no merges until we are done with adding values
     IndexWriter writer = new IndexWriter(dir, writerConfig);
     int num_1 = atLeast(200);
     int num_2 = atLeast(200);
     long[] values = new long[num_1 + num_2];
     index(writer,
-        randomValueType(INTEGERS, random), values, 0, num_1);
+        randomValueType(INTEGERS, random()), values, 0, num_1);
     writer.commit();
     
-    if (random.nextInt(4) == 0) {
+    if (random().nextInt(4) == 0) {
       // once in a while use addIndexes
       Directory dir_2 = newDirectory() ;
       IndexWriter writer_2 = new IndexWriter(dir_2,
-                       newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+                       newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       index(writer_2,
-          randomValueType(random.nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random), values, num_1, num_2);
+          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, num_1, num_2);
       writer_2.commit();
       writer_2.close();
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         writer.addIndexes(dir_2);
       } else {
         // do a real merge here
@@ -330,11 +330,11 @@ public class TestTypePromotion extends LuceneTestCase {
       dir_2.close();
     } else {
       index(writer,
-          randomValueType(random.nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random), values, num_1, num_2);
+          randomValueType(random().nextBoolean() ? UNSORTED_BYTES : SORTED_BYTES, random()), values, num_1, num_2);
       writer.commit();
     }
     writer.close();
-    writerConfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    writerConfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     if (writerConfig.getMergePolicy() instanceof NoMergePolicy) {
       writerConfig.setMergePolicy(newLogMergePolicy()); // make sure we merge to one segment (merge everything together)
     }

@@ -149,7 +149,7 @@ public class Test2BTerms extends LuceneTestCase {
     System.out.println("Starting Test2B");
     final long TERM_COUNT = ((long) Integer.MAX_VALUE) + 100000000;
 
-    final int TERMS_PER_DOC = _TestUtil.nextInt(random, 100000, 1000000);
+    final int TERMS_PER_DOC = _TestUtil.nextInt(random(), 100000, 1000000);
 
     List<BytesRef> savedTerms = null;
 
@@ -161,7 +161,7 @@ public class Test2BTerms extends LuceneTestCase {
     if (true) {
 
       IndexWriter w = new IndexWriter(dir,
-                                      new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+                                      new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
                                       .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
                                       .setRAMBufferSizeMB(256.0)
                                       .setMergeScheduler(new ConcurrentMergeScheduler())
@@ -175,7 +175,7 @@ public class Test2BTerms extends LuceneTestCase {
       }
 
       Document doc = new Document();
-      final MyTokenStream ts = new MyTokenStream(random, TERMS_PER_DOC);
+      final MyTokenStream ts = new MyTokenStream(random(), TERMS_PER_DOC);
 
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setIndexOptions(IndexOptions.DOCS_ONLY);
@@ -227,13 +227,13 @@ public class Test2BTerms extends LuceneTestCase {
     System.out.println("TEST: findTerms");
     final TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator(null);
     final List<BytesRef> savedTerms = new ArrayList<BytesRef>();
-    int nextSave = _TestUtil.nextInt(random, 500000, 1000000);
+    int nextSave = _TestUtil.nextInt(random(), 500000, 1000000);
     BytesRef term;
     while((term = termsEnum.next()) != null) {
       if (--nextSave == 0) {
         savedTerms.add(BytesRef.deepCopyOf(term));
         System.out.println("TEST: add " + term);
-        nextSave = _TestUtil.nextInt(random, 500000, 1000000);
+        nextSave = _TestUtil.nextInt(random(), 500000, 1000000);
       }
     }
     return savedTerms;
@@ -246,7 +246,7 @@ public class Test2BTerms extends LuceneTestCase {
     TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator(null);
     boolean failed = false;
     for(int iter=0;iter<10*terms.size();iter++) {
-      final BytesRef term = terms.get(random.nextInt(terms.size()));
+      final BytesRef term = terms.get(random().nextInt(terms.size()));
       System.out.println("TEST: search " + term);
       final long t0 = System.currentTimeMillis();
       final int count = s.search(new TermQuery(new Term("field", term)), 1).totalHits;

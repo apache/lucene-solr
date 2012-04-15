@@ -36,10 +36,10 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
 
   public void testUpdateDelteSlices() {
     DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
-    final int size = 200 + random.nextInt(500) * RANDOM_MULTIPLIER;
+    final int size = 200 + random().nextInt(500) * RANDOM_MULTIPLIER;
     Integer[] ids = new Integer[size];
     for (int i = 0; i < ids.length; i++) {
-      ids[i] = random.nextInt();
+      ids[i] = random().nextInt();
     }
     DeleteSlice slice1 = queue.newSlice();
     DeleteSlice slice2 = queue.newSlice();
@@ -54,14 +54,14 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       Term[] term = new Term[] {new Term("id", i.toString())};
       uniqueValues.add(term[0]);
       queue.addDelete(term);
-      if (random.nextInt(20) == 0 || j == ids.length - 1) {
+      if (random().nextInt(20) == 0 || j == ids.length - 1) {
         queue.updateSlice(slice1);
         assertTrue(slice1.isTailItem(term));
         slice1.apply(bd1, j);
         assertAllBetween(last1, j, bd1, ids);
         last1 = j + 1;
       }
-      if (random.nextInt(10) == 5 || j == ids.length - 1) {
+      if (random().nextInt(10) == 5 || j == ids.length - 1) {
         queue.updateSlice(slice2);
         assertTrue(slice2.isTailItem(term));
         slice2.apply(bd2, j);
@@ -96,12 +96,12 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     assertFalse(queue.anyChanges());
     queue.clear();
     assertFalse(queue.anyChanges());
-    final int size = 200 + random.nextInt(500) * RANDOM_MULTIPLIER;
+    final int size = 200 + random().nextInt(500) * RANDOM_MULTIPLIER;
     int termsSinceFreeze = 0;
     int queriesSinceFreeze = 0;
     for (int i = 0; i < size; i++) {
       Term term = new Term("id", "" + i);
-      if (random.nextInt(10) == 0) {
+      if (random().nextInt(10) == 0) {
         queue.addDelete(new TermQuery(term));
         queriesSinceFreeze++;
       } else {
@@ -109,7 +109,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
         termsSinceFreeze++;
       }
       assertTrue(queue.anyChanges());
-      if (random.nextInt(10) == 0) {
+      if (random().nextInt(10) == 0) {
         queue.clear();
         queue.tryApplyGlobalSlice();
         assertFalse(queue.anyChanges());
@@ -120,12 +120,12 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
 
   public void testAnyChanges() {
     DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
-    final int size = 200 + random.nextInt(500) * RANDOM_MULTIPLIER;
+    final int size = 200 + random().nextInt(500) * RANDOM_MULTIPLIER;
     int termsSinceFreeze = 0;
     int queriesSinceFreeze = 0;
     for (int i = 0; i < size; i++) {
       Term term = new Term("id", "" + i);
-      if (random.nextInt(10) == 0) {
+      if (random().nextInt(10) == 0) {
         queue.addDelete(new TermQuery(term));
         queriesSinceFreeze++;
       } else {
@@ -133,7 +133,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
         termsSinceFreeze++;
       }
       assertTrue(queue.anyChanges());
-      if (random.nextInt(5) == 0) {
+      if (random().nextInt(5) == 0) {
         FrozenBufferedDeletes freezeGlobalBuffer = queue
             .freezeGlobalBuffer(null);
         assertEquals(termsSinceFreeze, freezeGlobalBuffer.termCount);
@@ -174,15 +174,15 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
   public void testStressDeleteQueue() throws InterruptedException {
     DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
     Set<Term> uniqueValues = new HashSet<Term>();
-    final int size = 10000 + random.nextInt(500) * RANDOM_MULTIPLIER;
+    final int size = 10000 + random().nextInt(500) * RANDOM_MULTIPLIER;
     Integer[] ids = new Integer[size];
     for (int i = 0; i < ids.length; i++) {
-      ids[i] = random.nextInt();
+      ids[i] = random().nextInt();
       uniqueValues.add(new Term("id", ids[i].toString()));
     }
     CountDownLatch latch = new CountDownLatch(1);
     AtomicInteger index = new AtomicInteger(0);
-    final int numThreads = 2 + random.nextInt(5);
+    final int numThreads = 2 + random().nextInt(5);
     UpdateThread[] threads = new UpdateThread[numThreads];
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new UpdateThread(queue, index, ids, latch);

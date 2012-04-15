@@ -44,12 +44,12 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
-        random,
+        random(),
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
-    boolean useDv = canUseDV && random.nextBoolean();
+    boolean useDv = canUseDV && random().nextBoolean();
 
     // 0
     Document doc = new Document();
@@ -225,6 +225,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
   }
 
   public void testRandom() throws Exception {
+    Random random = random();
     int numberOfRuns = _TestUtil.nextInt(random, 3, 6);
     for (int indexIter = 0; indexIter < numberOfRuns; indexIter++) {
       boolean multipleFacetsPerDocument = random.nextBoolean();
@@ -322,6 +323,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
   }
 
   private IndexContext createIndexContext(boolean multipleFacetValuesPerDocument) throws IOException {
+    final Random random = random();
     final int numDocs = _TestUtil.nextInt(random, 138, 1145) * RANDOM_MULTIPLIER;
     final int numGroups = _TestUtil.nextInt(random, 1, numDocs / 4);
     final int numFacets = _TestUtil.nextInt(random, 1, numDocs / 6);
@@ -574,9 +576,9 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     BytesRef facetPrefixBR = facetPrefix == null ? null : new BytesRef(facetPrefix);
     if (useDv) {
       return DVGroupFacetCollector.createDvGroupFacetCollector(groupField, DocValues.Type.BYTES_VAR_SORTED,
-          random.nextBoolean(), facetField, DocValues.Type.BYTES_VAR_SORTED, random.nextBoolean(), facetPrefixBR, random.nextInt(1024));
+          random().nextBoolean(), facetField, DocValues.Type.BYTES_VAR_SORTED, random().nextBoolean(), facetPrefixBR, random().nextInt(1024));
     } else {
-      return TermGroupFacetCollector.createTermGroupFacetCollector(groupField, facetField, multipleFacetsPerDocument, facetPrefixBR, random.nextInt(1024));
+      return TermGroupFacetCollector.createTermGroupFacetCollector(groupField, facetField, multipleFacetsPerDocument, facetPrefixBR, random().nextInt(1024));
     }
   }
 

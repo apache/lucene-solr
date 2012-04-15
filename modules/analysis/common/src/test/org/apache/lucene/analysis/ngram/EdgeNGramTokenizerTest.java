@@ -109,8 +109,8 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER, 20, false, false);
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192, false, false);
+    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192, false, false);
     
     Analyzer b = new Analyzer() {
       @Override
@@ -119,7 +119,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER, 20, false, false);
-    checkRandomData(random, b, 200*RANDOM_MULTIPLIER, 8192, false, false);
+    checkRandomData(random(), b, 10000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), b, 200*RANDOM_MULTIPLIER, 8192, false, false);
   }
 }

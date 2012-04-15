@@ -39,8 +39,8 @@ public class TestCharBlockArray extends LuceneTestCase {
     byte[] buffer = new byte[50];
 
     for (int i = 0; i < n; i++) {
-      random.nextBytes(buffer);
-      int size = 1 + random.nextInt(50);
+      random().nextBytes(buffer);
+      int size = 1 + random().nextInt(50);
 
       String s = new String(buffer, 0, size);
       array.append(s);
@@ -48,8 +48,8 @@ public class TestCharBlockArray extends LuceneTestCase {
     }
 
     for (int i = 0; i < n; i++) {
-      random.nextBytes(buffer);
-      int size = 1 + random.nextInt(50);
+      random().nextBytes(buffer);
+      int size = 1 + random().nextInt(50);
 
       String s = new String(buffer, 0, size);
       array.append((CharSequence)s);
@@ -57,8 +57,8 @@ public class TestCharBlockArray extends LuceneTestCase {
     }
 
     for (int i = 0; i < n; i++) {
-      random.nextBytes(buffer);
-      int size = 1 + random.nextInt(50);
+      random().nextBytes(buffer);
+      int size = 1 + random().nextInt(50);
 
       String s = new String(buffer, 0, size);
       for (int j = 0; j < s.length(); j++) {

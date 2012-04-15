@@ -56,7 +56,6 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 /**
  *
  */
-
 public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   private static final String DEFAULT_COLLECTION = "collection1";

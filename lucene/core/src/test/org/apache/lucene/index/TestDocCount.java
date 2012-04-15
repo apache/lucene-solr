@@ -34,7 +34,7 @@ public class TestDocCount extends LuceneTestCase {
     assumeFalse("PreFlex codec does not support docCount statistic!", 
         "Lucene3x".equals(Codec.getDefault().getName()));
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(100);
     for (int i = 0; i < numDocs; i++) {
       iw.addDocument(doc());
@@ -52,9 +52,9 @@ public class TestDocCount extends LuceneTestCase {
   
   private Document doc() {
     Document doc = new Document();
-    int numFields = _TestUtil.nextInt(random, 1, 10);
+    int numFields = _TestUtil.nextInt(random(), 1, 10);
     for (int i = 0; i < numFields; i++) {
-      doc.add(newField("" + _TestUtil.nextInt(random, 'a', 'z'), "" + _TestUtil.nextInt(random, 'a', 'z'), StringField.TYPE_UNSTORED));
+      doc.add(newField("" + _TestUtil.nextInt(random(), 'a', 'z'), "" + _TestUtil.nextInt(random(), 'a', 'z'), StringField.TYPE_UNSTORED));
     }
     return doc;
   }
@@ -75,7 +75,7 @@ public class TestDocCount extends LuceneTestCase {
       FixedBitSet visited = new FixedBitSet(ir.maxDoc());
       TermsEnum te = terms.iterator(null);
       while (te.next() != null) {
-        DocsEnum de = _TestUtil.docs(random, te, null, null, false);
+        DocsEnum de = _TestUtil.docs(random(), te, null, null, false);
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           visited.set(de.docID());
         }

@@ -62,14 +62,14 @@ public abstract class BaseTestTopK extends FacetTestBase {
       return;
     }
     currDoc = doc;
-    nextInt = random.nextInt(categoriesPow2);
+    nextInt = random().nextInt(categoriesPow2);
     nextInt = (int)Math.sqrt(nextInt);
   }
   
   @Override
   protected String getContent(int doc) {
     nextInt(doc);
-    if (random.nextDouble() > 0.1) {
+    if (random().nextDouble() > 0.1) {
       return ALPHA + ' ' + BETA;
     }
     return ALPHA;
@@ -109,6 +109,6 @@ public abstract class BaseTestTopK extends FacetTestBase {
 
   @Override
   protected IndexWriterConfig getIndexWriterConfig(Analyzer analyzer) {
-    return super.getIndexWriterConfig(analyzer).setMaxBufferedDocs(_TestUtil.nextInt(random, 500, 10000));
+    return super.getIndexWriterConfig(analyzer).setMaxBufferedDocs(_TestUtil.nextInt(random(), 500, 10000));
   }
 }

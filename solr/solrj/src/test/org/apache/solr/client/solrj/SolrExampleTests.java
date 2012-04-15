@@ -23,6 +23,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.Assert;
 
@@ -260,10 +261,10 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     // we can't just use _TestUtil.randomUnicodeString() or we might get 0xfffe etc
     // (considered invalid by XML)
     
-    int size = random.nextInt(maxLength);
+    int size = random().nextInt(maxLength);
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < size; i++) {
-      switch(random.nextInt(4)) {
+      switch(random().nextInt(4)) {
         case 0: /* single byte */ 
           sb.append('a'); 
           break;
@@ -281,6 +282,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
   }
   
   public void testUnicode() throws Exception {
+    Random random = random();
     int numIterations = atLeast(3);
     
     SolrServer server = getSolrServer();
@@ -303,7 +305,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
           }
         }
 
-        int numDocs = _TestUtil.nextInt(random, 1, 10*RANDOM_MULTIPLIER);
+        int numDocs = _TestUtil.nextInt(random(), 1, 10*RANDOM_MULTIPLIER);
         
         // Empty the database...
         server.deleteByQuery("*:*");// delete everything!

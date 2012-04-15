@@ -49,7 +49,7 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     Set<Term> terms = new TreeSet<Term>();
     int nterms = atLeast(10000);
     for (int i = 0; i < nterms; i++) {
-      Term term = new Term(_TestUtil.randomUnicodeString(random, 2), _TestUtil.randomUnicodeString(random));
+      Term term = new Term(_TestUtil.randomUnicodeString(random(), 2), _TestUtil.randomUnicodeString(random()));
       terms.add(term);
     }    
     
@@ -101,14 +101,14 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
   }
 
   public void testMergeRandom() {
-    PrefixCodedTerms pb[] = new PrefixCodedTerms[_TestUtil.nextInt(random, 2, 10)];
+    PrefixCodedTerms pb[] = new PrefixCodedTerms[_TestUtil.nextInt(random(), 2, 10)];
     Set<Term> superSet = new TreeSet<Term>();
     
     for (int i = 0; i < pb.length; i++) {
       Set<Term> terms = new TreeSet<Term>();
-      int nterms = _TestUtil.nextInt(random, 0, 10000);
+      int nterms = _TestUtil.nextInt(random(), 0, 10000);
       for (int j = 0; j < nterms; j++) {
-        Term term = new Term(_TestUtil.randomUnicodeString(random, 2), _TestUtil.randomUnicodeString(random, 4));
+        Term term = new Term(_TestUtil.randomUnicodeString(random(), 2), _TestUtil.randomUnicodeString(random(), 4));
         terms.add(term);
       }
       superSet.addAll(terms);

@@ -67,11 +67,12 @@ public class DrillDownTest extends LuceneTestCase {
     
     nonDefaultParams = new FacetSearchParams(iParams);
   }
+
   @BeforeClass
   public static void createIndexes() throws CorruptIndexException, LockObtainFailedException, IOException {
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)));
     
     taxoDir = newDirectory();
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);

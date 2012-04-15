@@ -45,7 +45,7 @@ public class TestRegexQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
     doc.add(newField(FN, "the quick brown fox jumps over the lazy dog", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);

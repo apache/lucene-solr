@@ -48,7 +48,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   
   class CountingRAMDirectory extends MockDirectoryWrapper {
     public CountingRAMDirectory(Directory delegate) {
-      super(random, delegate);
+      super(random(), delegate);
     }
 
     @Override

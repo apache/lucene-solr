@@ -17,8 +17,6 @@ package org.apache.lucene.queryparser.surround.query;
  * limitations under the License.
  */
 
-import junit.framework.Assert;
-
 import org.apache.lucene.queryparser.surround.parser.QueryParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;

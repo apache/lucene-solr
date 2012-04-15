@@ -45,7 +45,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     
     // Add series of docs with specific information for MoreLikeThis
     addDoc(writer, "lucene");
@@ -73,7 +73,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     Map<String,Float> originalValues = getOriginalValues();
     
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
+    mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
@@ -107,7 +107,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   private Map<String,Float> getOriginalValues() throws IOException {
     Map<String,Float> originalValues = new HashMap<String,Float>();
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
+    mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
@@ -127,7 +127,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   // LUCENE-3326
   public void testMultiFields() throws Exception {
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
+    mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);

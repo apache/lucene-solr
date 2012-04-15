@@ -34,8 +34,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   private Directory dir, dir1, dir2;
 
   public void testQueries() throws Exception {
-    single = single(random, false);
-    parallel = parallel(random, false);
+    single = single(random(), false);
+    parallel = parallel(random(), false);
     
     queries();
     
@@ -47,8 +47,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   }
 
   public void testQueriesCompositeComposite() throws Exception {
-    single = single(random, true);
-    parallel = parallel(random, true);
+    single = single(random(), true);
+    parallel = parallel(random(), true);
     
     queries();
     
@@ -76,8 +76,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   }
 
   public void testRefCounts1() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
+    Directory dir1 = getDir1(random());
+    Directory dir2 = getDir2(random());
     DirectoryReader ir1, ir2;
     // close subreaders, ParallelReader will not change refCounts, but close on its own close
     ParallelCompositeReader pr = new ParallelCompositeReader(ir1 = DirectoryReader.open(dir1),
@@ -93,8 +93,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   }
   
   public void testRefCounts2() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
+    Directory dir1 = getDir1(random());
+    Directory dir2 = getDir2(random());
     DirectoryReader ir1 = DirectoryReader.open(dir1);
     DirectoryReader ir2 = DirectoryReader.open(dir2);
 
@@ -116,11 +116,11 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   
   public void testIncompatibleIndexes1() throws IOException {
     // two documents:
-    Directory dir1 = getDir1(random);
+    Directory dir1 = getDir1(random());
 
     // one document only:
     Directory dir2 = newDirectory();
-    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document d3 = new Document();
 
     d3.add(newField("f3", "v1", TextField.TYPE_STORED));
@@ -136,7 +136,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
       // expected exception
     }
     try {
-      new ParallelCompositeReader(random.nextBoolean(), ir1, ir2);
+      new ParallelCompositeReader(random().nextBoolean(), ir1, ir2);
       fail("didn't get expected exception: indexes don't have same number of documents");
     } catch (IllegalArgumentException e) {
       // expected exception
@@ -152,8 +152,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   }
   
   public void testIncompatibleIndexes2() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getInvalidStructuredDir2(random);
+    Directory dir1 = getDir1(random());
+    Directory dir2 = getInvalidStructuredDir2(random());
 
     DirectoryReader ir1 = DirectoryReader.open(dir1),
         ir2 = DirectoryReader.open(dir2);
@@ -165,7 +165,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
       // expected exception
     }
     try {
-      new ParallelCompositeReader(random.nextBoolean(), readers, readers);
+      new ParallelCompositeReader(random().nextBoolean(), readers, readers);
       fail("didn't get expected exception: indexes don't have same subreader structure");
     } catch (IllegalArgumentException e) {
       // expected exception
@@ -181,8 +181,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   }
   
   public void testIncompatibleIndexes3() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
+    Directory dir1 = getDir1(random());
+    Directory dir2 = getDir2(random());
 
     CompositeReader ir1 = new MultiReader(DirectoryReader.open(dir1), SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1))),
         ir2 = new MultiReader(DirectoryReader.open(dir2), DirectoryReader.open(dir2));
@@ -194,7 +194,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
       // expected exception
     }
     try {
-      new ParallelCompositeReader(random.nextBoolean(), readers, readers);
+      new ParallelCompositeReader(random().nextBoolean(), readers, readers);
       fail("didn't get expected exception: indexes don't have same subreader structure");
     } catch (IllegalArgumentException e) {
       // expected exception
@@ -210,8 +210,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   }
   
   public void testIgnoreStoredFields() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
+    Directory dir1 = getDir1(random());
+    Directory dir2 = getDir2(random());
     CompositeReader ir1 = DirectoryReader.open(dir1);
     CompositeReader ir2 = DirectoryReader.open(dir2);
     

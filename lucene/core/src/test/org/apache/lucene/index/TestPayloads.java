@@ -243,7 +243,7 @@ public class TestPayloads extends LuceneTestCase {
                       // handle a caller that mucks with the
                       // returned payload:
                       if (rarely()) {
-                        br.bytes = new byte[random.nextInt(5)];
+                        br.bytes = new byte[random().nextInt(5)];
                       }
                       br.length = 0;
                       br.offset = 0;
@@ -351,7 +351,7 @@ public class TestPayloads extends LuceneTestCase {
     static final Charset utf8 = Charset.forName("UTF-8");
     private void generateRandomData(byte[] data) {
       // this test needs the random data to be valid unicode
-      String s = _TestUtil.randomFixedByteLengthUnicodeString(random, data.length);
+      String s = _TestUtil.randomFixedByteLengthUnicodeString(random(), data.length);
       byte b[] = s.getBytes(utf8);
       assert b.length == data.length;
       System.arraycopy(b, 0, data, 0, b.length);
@@ -503,7 +503,7 @@ public class TestPayloads extends LuceneTestCase {
         
         Directory dir = newDirectory();
         final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-            TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+            TEST_VERSION_CURRENT, new MockAnalyzer(random())));
         final String field = "test";
         
         Thread[] ingesters = new Thread[numThreads];
@@ -612,15 +612,15 @@ public class TestPayloads extends LuceneTestCase {
 
   public void testAcrossFields() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-                                                     new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
+                                                     new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
     Document doc = new Document();
     doc.add(new Field("hasMaybepayload", "here we go", TextField.TYPE_STORED));
     writer.addDocument(doc);
     writer.close();
 
-    writer = new RandomIndexWriter(random, dir,
-                                   new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
+    writer = new RandomIndexWriter(random(), dir,
+                                   new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
     doc = new Document();
     doc.add(new Field("hasMaybepayload2", "here we go", TextField.TYPE_STORED));
     writer.addDocument(doc);

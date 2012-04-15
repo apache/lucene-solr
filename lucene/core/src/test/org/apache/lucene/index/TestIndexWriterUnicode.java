@@ -64,7 +64,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   };
   
   private int nextInt(int lim) {
-    return random.nextInt(lim);
+    return random().nextInt(lim);
   }
 
   private int nextInt(int start, int end) {
@@ -98,7 +98,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
       else if (5 == t && i < len-1) {
         // Illegal unpaired surrogate
         if (nextInt(10) == 7) {
-          if (random.nextBoolean())
+          if (random().nextBoolean())
             buffer[i] = (char) nextInt(0xd800, 0xdc00);
           else
             buffer[i] = (char) nextInt(0xdc00, 0xe000);
@@ -235,7 +235,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   
   public void testEmbeddedFFFF() throws Throwable {
     Directory d = newDirectory();
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
     doc.add(newField("field", "a a\uffffb", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
@@ -274,7 +274,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   // Make sure terms, including ones with surrogate pairs,
   // sort in codepoint sort order by default
   public void testTermUTF16SortOrder() throws Throwable {
-    Random rnd = random;
+    Random rnd = random();
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(rnd, dir);
     Document d = new Document();

@@ -59,10 +59,10 @@ public class TestTermsEnum2 extends LuceneTestCase {
     // but for preflex codec, the test can be very slow, so use less iterations.
     numIterations = Codec.getDefault().getName().equals("Lucene3x") ? 10 * RANDOM_MULTIPLIER : atLeast(50);
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
-            .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+            new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+            .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
     Field field = newField("field", "", StringField.TYPE_STORED);
     doc.add(field);
@@ -70,7 +70,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
  
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random);
+      String s = _TestUtil.randomUnicodeString(random());
       field.setStringValue(s);
       terms.add(new BytesRef(s));
       writer.addDocument(doc);
@@ -92,7 +92,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
   /** tests a pre-intersected automaton against the original */
   public void testFiniteVersusInfinite() throws Exception {
     for (int i = 0; i < numIterations; i++) {
-      String reg = AutomatonTestUtil.randomRegexp(random);
+      String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
       final List<BytesRef> matchedTerms = new ArrayList<BytesRef>();
       for(BytesRef t : terms) {
@@ -114,21 +114,21 @@ public class TestTermsEnum2 extends LuceneTestCase {
   /** seeks to every term accepted by some automata */
   public void testSeeking() throws Exception {
     for (int i = 0; i < numIterations; i++) {
-      String reg = AutomatonTestUtil.randomRegexp(random);
+      String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
       TermsEnum te = MultiFields.getTerms(reader, "field").iterator(null);
       ArrayList<BytesRef> unsortedTerms = new ArrayList<BytesRef>(terms);
-      Collections.shuffle(unsortedTerms, random);
+      Collections.shuffle(unsortedTerms, random());
 
       for (BytesRef term : unsortedTerms) {
         if (BasicOperations.run(automaton, term.utf8ToString())) {
           // term is accepted
-          if (random.nextBoolean()) {
+          if (random().nextBoolean()) {
             // seek exact
-            assertTrue(te.seekExact(term, random.nextBoolean()));
+            assertTrue(te.seekExact(term, random().nextBoolean()));
           } else {
             // seek ceil
-            assertEquals(SeekStatus.FOUND, te.seekCeil(term, random.nextBoolean()));
+            assertEquals(SeekStatus.FOUND, te.seekCeil(term, random().nextBoolean()));
             assertEquals(term, te.term());
           }
         }
@@ -142,14 +142,14 @@ public class TestTermsEnum2 extends LuceneTestCase {
       TermsEnum te = MultiFields.getTerms(reader, "field").iterator(null);
 
       for (BytesRef term : terms) {
-        int c = random.nextInt(3);
+        int c = random().nextInt(3);
         if (c == 0) {
           assertEquals(term, te.next());
         } else if (c == 1) {
-          assertEquals(SeekStatus.FOUND, te.seekCeil(term, random.nextBoolean()));
+          assertEquals(SeekStatus.FOUND, te.seekCeil(term, random().nextBoolean()));
           assertEquals(term, te.term());
         } else {
-          assertTrue(te.seekExact(term, random.nextBoolean()));
+          assertTrue(te.seekExact(term, random().nextBoolean()));
         }
       }
     }
@@ -158,7 +158,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
   /** tests intersect: TODO start at a random term! */
   public void testIntersect() throws Exception {
     for (int i = 0; i < numIterations; i++) {
-      String reg = AutomatonTestUtil.randomRegexp(random);
+      String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
       CompiledAutomaton ca = new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton), false);
       TermsEnum te = MultiFields.getTerms(reader, "field").intersect(ca, null);

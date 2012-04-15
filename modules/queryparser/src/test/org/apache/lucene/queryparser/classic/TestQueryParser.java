@@ -30,7 +30,7 @@ public class TestQueryParser extends QueryParserTestBase {
   @Override
   public QueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
+      a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", a);
     qp.setDefaultOperator(QueryParserBase.OR_OPERATOR);
     return qp;

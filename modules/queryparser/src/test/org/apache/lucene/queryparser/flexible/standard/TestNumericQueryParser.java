@@ -96,7 +96,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    ANALYZER = new MockAnalyzer(random);
+    ANALYZER = new MockAnalyzer(random());
     
     qp = new StandardQueryParser(ANALYZER);
     
@@ -112,10 +112,10 @@ public class TestNumericQueryParser extends LuceneTestCase {
       }
       
       dateFormatSanityCheckPass = true;
-      LOCALE = randomLocale(random);
-      TIMEZONE = randomTimeZone(random);
-      DATE_STYLE = randomDateStyle(random);
-      TIME_STYLE = randomDateStyle(random);
+      LOCALE = randomLocale(random());
+      TIMEZONE = randomTimeZone(random());
+      DATE_STYLE = randomDateStyle(random());
+      TIME_STYLE = randomDateStyle(random());
       
       // assumes localized date pattern will have at least year, month, day,
       // hour, minute
@@ -130,7 +130,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
       DATE_FORMAT = new NumberDateFormat(dateFormat);
       
       do {
-        randomDate = random.nextLong();
+        randomDate = random().nextLong();
         
         // prune date value so it doesn't pass in insane values to some
         // calendars.
@@ -154,26 +154,26 @@ public class TestNumericQueryParser extends LuceneTestCase {
     } while (!dateFormatSanityCheckPass);
     
     NUMBER_FORMAT = NumberFormat.getNumberInstance(LOCALE);
-    NUMBER_FORMAT.setMaximumFractionDigits((random.nextInt() & 20) + 1);
-    NUMBER_FORMAT.setMinimumFractionDigits((random.nextInt() & 20) + 1);
-    NUMBER_FORMAT.setMaximumIntegerDigits((random.nextInt() & 20) + 1);
-    NUMBER_FORMAT.setMinimumIntegerDigits((random.nextInt() & 20) + 1);
+    NUMBER_FORMAT.setMaximumFractionDigits((random().nextInt() & 20) + 1);
+    NUMBER_FORMAT.setMinimumFractionDigits((random().nextInt() & 20) + 1);
+    NUMBER_FORMAT.setMaximumIntegerDigits((random().nextInt() & 20) + 1);
+    NUMBER_FORMAT.setMinimumIntegerDigits((random().nextInt() & 20) + 1);
     
     double randomDouble;
     long randomLong;
     int randomInt;
     float randomFloat;
     
-    while ((randomLong = normalizeNumber(Math.abs(random.nextLong()))
+    while ((randomLong = normalizeNumber(Math.abs(random().nextLong()))
         .longValue()) == 0L)
       ;
-    while ((randomDouble = normalizeNumber(Math.abs(random.nextDouble()))
+    while ((randomDouble = normalizeNumber(Math.abs(random().nextDouble()))
         .doubleValue()) == 0.0)
       ;
-    while ((randomFloat = normalizeNumber(Math.abs(random.nextFloat()))
+    while ((randomFloat = normalizeNumber(Math.abs(random().nextFloat()))
         .floatValue()) == 0.0f)
       ;
-    while ((randomInt = normalizeNumber(Math.abs(random.nextInt())).intValue()) == 0)
+    while ((randomInt = normalizeNumber(Math.abs(random().nextInt())).intValue()) == 0)
       ;
     
     randomNumberMap.put(NumericType.LONG.name(), randomLong);
@@ -185,9 +185,9 @@ public class TestNumericQueryParser extends LuceneTestCase {
     RANDOM_NUMBER_MAP = Collections.unmodifiableMap(randomNumberMap);
     
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
-            .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000))
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+            .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000))
             .setMergePolicy(newLogMergePolicy()));
     
     Document doc = new Document();

@@ -29,6 +29,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class TestIndexInput extends LuceneTestCase {
 
@@ -85,6 +86,7 @@ public class TestIndexInput extends LuceneTestCase {
   
   @BeforeClass
   public static void beforeClass() throws IOException {
+    Random random = random();
     INTS = new int[COUNT];
     LONGS = new long[COUNT];
     RANDOM_TEST_BYTES = new byte[COUNT * (5 + 4 + 9 + 8)];
@@ -177,6 +179,7 @@ public class TestIndexInput extends LuceneTestCase {
 
   // this test checks the raw IndexInput methods as it uses RAMIndexInput which extends IndexInput directly
   public void testRawIndexInputRead() throws IOException {
+    Random random = random();
     final RAMDirectory dir = new RAMDirectory();
     IndexOutput os = dir.createOutput("foo", newIOContext(random));
     os.writeBytes(READ_TEST_BYTES, READ_TEST_BYTES.length);

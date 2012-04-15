@@ -34,7 +34,7 @@ public class TestNot extends LuceneTestCase {
 
   public void testNot() throws Exception {
     Directory store = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, store);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), store);
 
     Document d1 = new Document();
     d1.add(newField("field", "a b", TextField.TYPE_STORED));

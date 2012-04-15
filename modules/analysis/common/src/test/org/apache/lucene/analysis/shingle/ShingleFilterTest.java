@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.shingle;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -1143,11 +1144,12 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
+    Random random = random();
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

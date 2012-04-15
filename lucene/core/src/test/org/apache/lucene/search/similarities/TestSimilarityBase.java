@@ -105,7 +105,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     super.setUp();
 
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     for (int i = 0; i < docs.length; i++) {
       Document d = new Document();

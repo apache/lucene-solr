@@ -26,6 +26,7 @@ public class Test03Distance extends LuceneTestCase {
   public static void main(String args[]) {
     TestRunner.run(new TestSuite(Test03Distance.class));
   }
+
   boolean verbose = false;
   int maxBasicQueries = 16;
   
@@ -58,8 +59,16 @@ public class Test03Distance extends LuceneTestCase {
     "a c e a b c"
   };
 
-  SingleFieldTestDb db1 = new SingleFieldTestDb(random, docs1, fieldName);
+  SingleFieldTestDb db1;
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    db1 = new SingleFieldTestDb(random(), docs1, fieldName);
+    db2 = new SingleFieldTestDb(random(), docs2, fieldName);
+    db3 = new SingleFieldTestDb(random(), docs3, fieldName);
+  }
+  
   private void distanceTst(String query, int[] expdnrs, SingleFieldTestDb db) throws Exception {
     BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db, fieldName, this,
                                                 new BasicQueryFactory(maxBasicQueries));
@@ -179,7 +188,7 @@ public class Test03Distance extends LuceneTestCase {
     ""
   };
 
-  SingleFieldTestDb db2 = new SingleFieldTestDb(random, docs2, fieldName);
+  SingleFieldTestDb db2;
   
   public void distanceTest2(String query, int[] expdnrs) throws Exception {
     distanceTst(query, expdnrs, db2);
@@ -227,7 +236,7 @@ public class Test03Distance extends LuceneTestCase {
     ""
   };
 
-  SingleFieldTestDb db3 = new SingleFieldTestDb(random, docs3, fieldName);
+  SingleFieldTestDb db3;
 
   public void distanceTest3(String query, int[] expdnrs) throws Exception {
     distanceTst(query, expdnrs, db3);

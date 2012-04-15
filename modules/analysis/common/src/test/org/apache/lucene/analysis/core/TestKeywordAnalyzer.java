@@ -96,7 +96,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.close();
 
     IndexReader reader = IndexReader.open(dir);
-    DocsEnum td = _TestUtil.docs(random,
+    DocsEnum td = _TestUtil.docs(random(),
                                  reader,
                                  "partnum",
                                  new BytesRef("Q36"),
@@ -104,7 +104,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
                                  null,
                                  false);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    td = _TestUtil.docs(random,
+    td = _TestUtil.docs(random(),
                         reader,
                         "partnum",
                         new BytesRef("Q37"),
@@ -126,6 +126,6 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random, new KeywordAnalyzer(), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new KeywordAnalyzer(), 10000*RANDOM_MULTIPLIER);
   }
 }

@@ -39,7 +39,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    lineDocFile = new LineFileDocs(random, defaultCodecSupportsDocValues());
+    lineDocFile = new LineFileDocs(random(), defaultCodecSupportsDocValues());
   }
   
   @AfterClass
@@ -51,14 +51,14 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
   public void testFlushByRam() throws CorruptIndexException,
       LockObtainFailedException, IOException, InterruptedException {
     final double ramBuffer = (TEST_NIGHTLY ? 1 : 10) + atLeast(2)
-        + random.nextDouble();
-    runFlushByRam(1 + random.nextInt(TEST_NIGHTLY ? 5 : 1), ramBuffer, false);
+        + random().nextDouble();
+    runFlushByRam(1 + random().nextInt(TEST_NIGHTLY ? 5 : 1), ramBuffer, false);
   }
   
   public void testFlushByRamLargeBuffer() throws CorruptIndexException,
       LockObtainFailedException, IOException, InterruptedException {
     // with a 256 mb ram buffer we should never stall
-    runFlushByRam(1 + random.nextInt(TEST_NIGHTLY ? 5 : 1), 256.d, true);
+    runFlushByRam(1 + random().nextInt(TEST_NIGHTLY ? 5 : 1), 256.d, true);
   }
 
   protected void runFlushByRam(int numThreads, double maxRamMB,
@@ -69,7 +69,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     Directory dir = newDirectory();
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setFlushPolicy(flushPolicy);
+        new MockAnalyzer(random())).setFlushPolicy(flushPolicy);
     final int numDWPT = 1 + atLeast(2);
     DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
         numDWPT);
@@ -125,7 +125,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       Directory dir = newDirectory();
       MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer(random)).setFlushPolicy(flushPolicy);
+          new MockAnalyzer(random())).setFlushPolicy(flushPolicy);
 
       final int numDWPT = 1 + atLeast(2);
       DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
@@ -168,16 +168,16 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
   }
 
   public void testRandom() throws IOException, InterruptedException {
-    final int numThreads = 1 + random.nextInt(8);
+    final int numThreads = 1 + random().nextInt(8);
     final int numDocumentsToIndex = 50 + atLeast(70);
     AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random));
+        new MockAnalyzer(random()));
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
     iwc.setFlushPolicy(flushPolicy);
 
-    final int numDWPT = 1 + random.nextInt(8);
+    final int numDWPT = 1 + random().nextInt(8);
     DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
         numDWPT);
     iwc.setIndexerThreadPool(threadPool);
@@ -230,15 +230,15 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
   public void testStallControl() throws InterruptedException,
       CorruptIndexException, LockObtainFailedException, IOException {
 
-    int[] numThreads = new int[] { 4 + random.nextInt(8), 1 };
-    final int numDocumentsToIndex = 50 + random.nextInt(50);
+    int[] numThreads = new int[] { 4 + random().nextInt(8), 1 };
+    final int numDocumentsToIndex = 50 + random().nextInt(50);
     for (int i = 0; i < numThreads.length; i++) {
       AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
       MockDirectoryWrapper dir = newDirectory();
       // mock a very slow harddisk sometimes here so that flushing is very slow
       dir.setThrottling(MockDirectoryWrapper.Throttling.SOMETIMES);
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer(random));
+          new MockAnalyzer(random()));
       iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       FlushPolicy flushPolicy = new FlushByRamOrCountsPolicy();

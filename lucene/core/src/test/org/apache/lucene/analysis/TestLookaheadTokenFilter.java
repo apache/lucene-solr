@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
@@ -28,12 +29,13 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Random random = random();
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, random.nextBoolean());
         TokenStream output = new MockRandomLookaheadTokenFilter(random, tokenizer);
         return new TokenStreamComponents(tokenizer, output);
       }
       };
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192);
   }
 
   private static class NeverPeeksLookaheadTokenFilter extends LookaheadTokenFilter<LookaheadTokenFilter.Position> {
@@ -56,11 +58,11 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, random.nextBoolean());
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, random().nextBoolean());
         TokenStream output = new NeverPeeksLookaheadTokenFilter(tokenizer);
         return new TokenStreamComponents(tokenizer, output);
       }
       };
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192);
   }
 }

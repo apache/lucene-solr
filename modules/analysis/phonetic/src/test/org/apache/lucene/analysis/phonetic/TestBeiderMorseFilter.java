@@ -91,7 +91,7 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
   
   @Ignore("broken: causes OOM on some strings (https://issues.apache.org/jira/browse/CODEC-132)")
   public void testRandom() throws Exception {
-    checkRandomData(random, analyzer, 1000 * RANDOM_MULTIPLIER); 
+    checkRandomData(random(), analyzer, 1000 * RANDOM_MULTIPLIER); 
   }
   
   public void testEmptyTerm() throws IOException {

@@ -49,8 +49,8 @@ public class TestMixedCodecs extends LuceneTestCase {
         System.out.println("TEST: " + docUpto + " of " + NUM_DOCS);
       }
       if (docsLeftInThisSegment == 0) {
-        final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
-        if (random.nextBoolean()) {
+        final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+        if (random().nextBoolean()) {
           // Make sure we aggressively mix in SimpleText
           // since it has different impls for all codec
           // formats...
@@ -59,8 +59,8 @@ public class TestMixedCodecs extends LuceneTestCase {
         if (w != null) {
           w.close();
         }
-        w = new RandomIndexWriter(random, dir, iwc);
-        docsLeftInThisSegment = _TestUtil.nextInt(random, 10, 100);
+        w = new RandomIndexWriter(random(), dir, iwc);
+        docsLeftInThisSegment = _TestUtil.nextInt(random(), 10, 100);
       }
       final Document doc = new Document();
       doc.add(newField("id", String.valueOf(docUpto), StringField.TYPE_STORED));
@@ -76,11 +76,11 @@ public class TestMixedCodecs extends LuceneTestCase {
     // Random delete half the docs:
     final Set<Integer> deleted = new HashSet<Integer>();
     while(deleted.size() < NUM_DOCS/2) {
-      final Integer toDelete = random.nextInt(NUM_DOCS);
+      final Integer toDelete = random().nextInt(NUM_DOCS);
       if (!deleted.contains(toDelete)) {
         deleted.add(toDelete);
         w.deleteDocuments(new Term("id", String.valueOf(toDelete)));
-        if (random.nextInt(17) == 6) {
+        if (random().nextInt(17) == 6) {
           final IndexReader r = w.getReader();
           assertEquals(NUM_DOCS - deleted.size(), r.numDocs());
           r.close();

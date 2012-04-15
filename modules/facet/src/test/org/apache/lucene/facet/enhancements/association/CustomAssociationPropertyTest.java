@@ -57,8 +57,8 @@ public class CustomAssociationPropertyTest extends LuceneTestCase {
     Directory iDir = newDirectory();
     Directory tDir = newDirectory();
     
-    RandomIndexWriter w = new RandomIndexWriter(random, iDir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
+    RandomIndexWriter w = new RandomIndexWriter(random(), iDir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)));
     DirectoryTaxonomyWriter taxoW = new DirectoryTaxonomyWriter(tDir);
     
     CategoryContainer cc = new CategoryContainer();

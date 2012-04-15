@@ -54,7 +54,7 @@ public class TestSpellChecker extends LuceneTestCase {
     //create a user index
     userindex = newDirectory();
     IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -412,7 +412,7 @@ public class TestSpellChecker extends LuceneTestCase {
     assertEquals(4, searchers.size());
     int num_field2 = this.numdoc();
     assertEquals(num_field2, num_field1 + 1);
-    int numThreads = 5 + LuceneTestCase.random.nextInt(5);
+    int numThreads = 5 + random().nextInt(5);
     ExecutorService executor = Executors.newFixedThreadPool(numThreads);
     SpellCheckWorker[] workers = new SpellCheckWorker[numThreads];
     for (int i = 0; i < numThreads; i++) {
@@ -421,7 +421,7 @@ public class TestSpellChecker extends LuceneTestCase {
       workers[i] = spellCheckWorker;
       
     }
-    int iterations = 5 + random.nextInt(5);
+    int iterations = 5 + random().nextInt(5);
     for (int i = 0; i < iterations; i++) {
       Thread.sleep(100);
       // concurrently reset the spell index

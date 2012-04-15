@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -165,12 +166,12 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
           @Override
           protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
             final Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-            final TokenStream t2 = new MockGraphTokenFilter(random, t);
+            final TokenStream t2 = new MockGraphTokenFilter(random(), t);
             return new TokenStreamComponents(t, t2);
           }
         };
       
-      checkAnalysisConsistency(random, a, false, "a b c d e f g h i j k");
+      checkAnalysisConsistency(random(), a, false, "a b c d e f g h i j k");
     }
   }
 
@@ -187,12 +188,12 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
           @Override
           protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
             final Tokenizer t = new GraphTokenizer(reader);
-            final TokenStream t2 = new MockGraphTokenFilter(random, t);
+            final TokenStream t2 = new MockGraphTokenFilter(random(), t);
             return new TokenStreamComponents(t, t2);
           }
         };
       
-      checkAnalysisConsistency(random, a, false, "a/x:3 c/y:2 d e f/z:4 g h i j k");
+      checkAnalysisConsistency(random(), a, false, "a/x:3 c/y:2 d e f/z:4 g h i j k");
     }
   }
 
@@ -249,12 +250,13 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
           @Override
           protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
             final Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-            final TokenStream t2 = new MockGraphTokenFilter(random, t);
+            final TokenStream t2 = new MockGraphTokenFilter(random(), t);
             final TokenStream t3 = new RemoveATokens(t2);
             return new TokenStreamComponents(t, t3);
           }
         };
 
+      Random random = random();
       checkAnalysisConsistency(random, a, false, "a b c d e f g h i j k");
       checkAnalysisConsistency(random, a, false, "x y a b c d e f g h i j k");
       checkAnalysisConsistency(random, a, false, "a b c d e f g h i j k a");
@@ -276,11 +278,12 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
           protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
             final Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
             final TokenStream t2 = new RemoveATokens(t);
-            final TokenStream t3 = new MockGraphTokenFilter(random, t2);
+            final TokenStream t3 = new MockGraphTokenFilter(random(), t2);
             return new TokenStreamComponents(t, t3);
           }
         };
 
+      Random random = random();
       checkAnalysisConsistency(random, a, false, "a b c d e f g h i j k");
       checkAnalysisConsistency(random, a, false, "x y a b c d e f g h i j k");
       checkAnalysisConsistency(random, a, false, "a b c d e f g h i j k a");
@@ -301,11 +304,12 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
           @Override
           protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
             final Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-            final TokenStream t2 = new MockGraphTokenFilter(random, t);
+            final TokenStream t2 = new MockGraphTokenFilter(random(), t);
             return new TokenStreamComponents(t, t2);
           }
         };
       
+      Random random = random();
       checkRandomData(random, a, 5, atLeast(1000));
     }
   }
@@ -324,12 +328,13 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
           @Override
           protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
             final Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-            final TokenStream t1 = new MockGraphTokenFilter(random, t);
-            final TokenStream t2 = new MockGraphTokenFilter(random, t1);
+            final TokenStream t1 = new MockGraphTokenFilter(random(), t);
+            final TokenStream t2 = new MockGraphTokenFilter(random(), t1);
             return new TokenStreamComponents(t, t2);
           }
         };
       
+      Random random = random();
       checkRandomData(random, a, 5, atLeast(1000));
     }
   }
@@ -347,12 +352,13 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
           @Override
           protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
             final Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-            final TokenStream t1 = new MockGraphTokenFilter(random, t);
-            final TokenStream t2 = new MockHoleInjectingTokenFilter(random, t1);
+            final TokenStream t1 = new MockGraphTokenFilter(random(), t);
+            final TokenStream t2 = new MockHoleInjectingTokenFilter(random(), t1);
             return new TokenStreamComponents(t, t2);
           }
         };
       
+      Random random = random();
       checkRandomData(random, a, 5, atLeast(1000));
     }
   }
@@ -370,12 +376,13 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
           @Override
           protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
             final Tokenizer t = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-            final TokenStream t1 = new MockHoleInjectingTokenFilter(random, t);
-            final TokenStream t2 = new MockGraphTokenFilter(random, t1);
+            final TokenStream t1 = new MockHoleInjectingTokenFilter(random(), t);
+            final TokenStream t2 = new MockGraphTokenFilter(random(), t1);
             return new TokenStreamComponents(t, t2);
           }
         };
       
+      Random random = random();
       checkRandomData(random, a, 5, atLeast(1000));
     }
   }

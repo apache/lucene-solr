@@ -123,20 +123,20 @@ public class TestSort extends LuceneTestCase {
   throws IOException {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     final DocValues.Type stringDVType;
     if (dvStringSorted) {
       // Index sorted
-      stringDVType = random.nextBoolean() ? DocValues.Type.BYTES_VAR_SORTED : DocValues.Type.BYTES_FIXED_SORTED;
+      stringDVType = random().nextBoolean() ? DocValues.Type.BYTES_VAR_SORTED : DocValues.Type.BYTES_FIXED_SORTED;
     } else {
       // Index non-sorted
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         // Fixed
-        stringDVType = random.nextBoolean() ? DocValues.Type.BYTES_FIXED_STRAIGHT : DocValues.Type.BYTES_FIXED_DEREF;
+        stringDVType = random().nextBoolean() ? DocValues.Type.BYTES_FIXED_STRAIGHT : DocValues.Type.BYTES_FIXED_DEREF;
       } else {
         // Var
-        stringDVType = random.nextBoolean() ? DocValues.Type.BYTES_VAR_STRAIGHT : DocValues.Type.BYTES_VAR_DEREF;
+        stringDVType = random().nextBoolean() ? DocValues.Type.BYTES_VAR_STRAIGHT : DocValues.Type.BYTES_VAR_DEREF;
       }
     }
 
@@ -206,7 +206,7 @@ public class TestSort extends LuceneTestCase {
     dirs.add(indexStore);
     IndexWriter writer = new IndexWriter(
         indexStore,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
             setMergePolicy(newLogMergePolicy(97))
     );
     FieldType onlyStored = new FieldType();
@@ -285,7 +285,7 @@ public class TestSort extends LuceneTestCase {
   
   public int getRandomNumber(final int low, final int high) {
   
-    int randInt = (Math.abs(random.nextInt()) % (high - low)) + low;
+    int randInt = (Math.abs(random().nextInt()) % (high - low)) + low;
 
     return randInt;
   }
@@ -313,7 +313,7 @@ public class TestSort extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     
-    dvStringSorted = random.nextBoolean();
+    dvStringSorted = random().nextBoolean();
     full = getFullIndex();
     searchX = getXIndex();
     searchY = getYIndex();
@@ -408,7 +408,7 @@ public class TestSort extends LuceneTestCase {
     if (dvStringSorted) {
       // If you index as sorted source you can still sort by
       // value instead:
-      return random.nextBoolean() ? SortField.Type.STRING : SortField.Type.STRING_VAL;
+      return random().nextBoolean() ? SortField.Type.STRING : SortField.Type.STRING_VAL;
     } else {
       return SortField.Type.STRING_VAL;
     }
@@ -511,7 +511,7 @@ public class TestSort extends LuceneTestCase {
 
   private void verifyStringSort(Sort sort) throws Exception {
     final IndexSearcher searcher = getFullStrings();
-    final ScoreDoc[] result = searcher.search(new MatchAllDocsQuery(), null, _TestUtil.nextInt(random, 500, searcher.getIndexReader().maxDoc()), sort).scoreDocs;
+    final ScoreDoc[] result = searcher.search(new MatchAllDocsQuery(), null, _TestUtil.nextInt(random(), 500, searcher.getIndexReader().maxDoc()), sort).scoreDocs;
     StringBuilder buff = new StringBuilder();
     int n = result.length;
     String last = null;
@@ -801,7 +801,7 @@ public class TestSort extends LuceneTestCase {
     assertMatches (full, queryG, sort, "ZYXW");
 
     // Do the same for a ParallelMultiSearcher
-    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random, 2, 8));
+    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random(), 2, 8));
     IndexSearcher parallelSearcher=new IndexSearcher (full.getIndexReader(), exec);
 
     sort.setSort (new SortField ("int", SortField.Type.INT),
@@ -845,7 +845,7 @@ public class TestSort extends LuceneTestCase {
 
   // test a variety of sorts using a parallel multisearcher
   public void testParallelMultiSort() throws Exception {
-    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random, 2, 8));
+    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random(), 2, 8));
     IndexSearcher searcher = new IndexSearcher(
                                   new MultiReader(searchX.getIndexReader(),
                                                   searchY.getIndexReader()), exec);
@@ -1236,7 +1236,7 @@ public class TestSort extends LuceneTestCase {
   public void testEmptyStringVsNullStringSort() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
-                        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+                        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
     doc.add(newField("f", "", StringField.TYPE_UNSTORED));
     doc.add(newField("t", "1", StringField.TYPE_UNSTORED));
@@ -1261,7 +1261,7 @@ public class TestSort extends LuceneTestCase {
   public void testLUCENE2142() throws IOException {
     Directory indexStore = newDirectory();
     IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     for (int i=0; i<5; i++) {
         Document doc = new Document();
         doc.add (new StringField ("string", "a"+i));
@@ -1283,7 +1283,7 @@ public class TestSort extends LuceneTestCase {
 
   public void testCountingCollector() throws Exception {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     for (int i=0; i<5; i++) {
       Document doc = new Document();
       doc.add (new StringField ("string", "a"+i));
@@ -1333,6 +1333,7 @@ public class TestSort extends LuceneTestCase {
   }
 
   public void testRandomStringSort() throws Exception {
+    Random random = new Random(random().nextLong());
     assumeTrue("cannot work with Lucene3x codec",
                defaultCodecSupportsDocValues());
 

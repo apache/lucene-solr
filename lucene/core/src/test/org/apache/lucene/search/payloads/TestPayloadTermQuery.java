@@ -118,7 +118,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
                                                      .setSimilarity(similarity).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
@@ -291,7 +291,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 1, hits.totalHits == 1);
     int[] results = new int[1];
     results[0] = 0;//hits.scoreDocs[0].doc;
-    CheckHits.checkHitCollector(random, query, PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
+    CheckHits.checkHitCollector(random(), query, PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
   }
 
   static class BoostingSimilarity extends DefaultSimilarity {

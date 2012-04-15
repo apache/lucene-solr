@@ -21,6 +21,7 @@ package org.apache.lucene.analysis.wikipedia;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.IOException;
+import java.util.Random;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -183,11 +184,12 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       } 
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
+    Random random = random();
     Analyzer a = new Analyzer() {
 
       @Override

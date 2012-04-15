@@ -34,7 +34,7 @@ public class TestStressAdvance extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter);
       }
       Directory dir = newDirectory();
-      RandomIndexWriter w = new RandomIndexWriter(random, dir);
+      RandomIndexWriter w = new RandomIndexWriter(random(), dir);
       final Set<Integer> aDocs = new HashSet<Integer>();
       final Document doc = new Document();
       final Field f = newField("field", "", StringField.TYPE_UNSTORED);
@@ -43,7 +43,7 @@ public class TestStressAdvance extends LuceneTestCase {
       doc.add(idField);
       int num = atLeast(4097);
       for(int id=0;id<num;id++) {
-        if (random.nextInt(4) == 3) {
+        if (random().nextInt(4) == 3) {
           f.setStringValue("a");
           aDocs.add(id);
         } else {
@@ -76,11 +76,11 @@ public class TestStressAdvance extends LuceneTestCase {
           System.out.println("\nTEST: iter=" + iter + " iter2=" + iter2);
         }
         assertEquals(TermsEnum.SeekStatus.FOUND, te.seekCeil(new BytesRef("a")));
-        de = _TestUtil.docs(random, te, null, de, false);
+        de = _TestUtil.docs(random(), te, null, de, false);
         testOne(de, aDocIDs);
 
         assertEquals(TermsEnum.SeekStatus.FOUND, te.seekCeil(new BytesRef("b")));
-        de = _TestUtil.docs(random, te, null, de, false);
+        de = _TestUtil.docs(random(), te, null, de, false);
         testOne(de, bDocIDs);
       }
 
@@ -100,7 +100,7 @@ public class TestStressAdvance extends LuceneTestCase {
         System.out.println("  cycle upto=" + upto + " of " + expected.size());
       }
       final int docID;
-      if (random.nextInt(4) == 1 || upto == expected.size()-1) {
+      if (random().nextInt(4) == 1 || upto == expected.size()-1) {
         // test nextDoc()
         if (VERBOSE) {
           System.out.println("    do nextDoc");
@@ -109,7 +109,7 @@ public class TestStressAdvance extends LuceneTestCase {
         docID = docs.nextDoc();
       } else {
         // test advance()
-        final int inc = _TestUtil.nextInt(random, 1, expected.size()-1-upto);
+        final int inc = _TestUtil.nextInt(random(), 1, expected.size()-1-upto);
         if (VERBOSE) {
           System.out.println("    do advance inc=" + inc);
         }

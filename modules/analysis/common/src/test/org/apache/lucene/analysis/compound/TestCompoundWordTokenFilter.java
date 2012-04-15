@@ -347,7 +347,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, tokenizer, dict));
       }
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
     
     InputSource is = new InputSource(getClass().getResource("da_UTF8.xml").toExternalForm());
     final HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
@@ -360,7 +360,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, filter);
       }
     };
-    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), b, 10000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws Exception {

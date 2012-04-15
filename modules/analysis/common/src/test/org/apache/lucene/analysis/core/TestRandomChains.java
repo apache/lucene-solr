@@ -810,6 +810,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   
   public void testRandomChains() throws Throwable {
     int numIterations = atLeast(20);
+    Random random = random();
     for (int i = 0; i < numIterations; i++) {
       MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
       if (VERBOSE) {

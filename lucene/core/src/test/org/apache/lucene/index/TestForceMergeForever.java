@@ -54,12 +54,12 @@ public class TestForceMergeForever extends LuceneTestCase {
 
   public void test() throws Exception {
     final Directory d = newDirectory();
-    final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     // Try to make an index that requires merging:
-    w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 11));
+    w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random(), 2, 11));
     final int numStartDocs = atLeast(20);
-    final LineFileDocs docs = new LineFileDocs(random, defaultCodecSupportsDocValues());
+    final LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
     for(int docIDX=0;docIDX<numStartDocs;docIDX++) {
       w.addDocument(docs.nextDoc());
     }
@@ -83,7 +83,7 @@ public class TestForceMergeForever extends LuceneTestCase {
       public void run() {
         try {
           while (!doStop.get()) {
-            w.updateDocument(new Term("docid", "" + random.nextInt(numStartDocs)),
+            w.updateDocument(new Term("docid", "" + random().nextInt(numStartDocs)),
                              docs.nextDoc());
             // Force deletes to apply
             w.getReader().close();

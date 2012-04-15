@@ -77,9 +77,9 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
         }
       };
 
-      RandomIndexWriter iw = new RandomIndexWriter(random, iDir,
+      RandomIndexWriter iw = new RandomIndexWriter(random(), iDir,
           newIndexWriterConfig(TEST_VERSION_CURRENT,
-              new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
+              new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
       TaxonomyWriter tw = new DirectoryTaxonomyWriter(tDir);
       prvt_add(iParams, iw, tw, "a", "b");
       prvt_add(iParams, iw, tw, "a", "b", "1");

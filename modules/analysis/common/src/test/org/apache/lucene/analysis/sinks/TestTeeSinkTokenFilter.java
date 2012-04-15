@@ -86,7 +86,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   // with BaseTokenStreamTestCase now...
   public void testEndOffsetPositionWithTeeSinkTokenFilter() throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     TokenStream tokenStream = analyzer.tokenStream("field", new StringReader("abcd   "));

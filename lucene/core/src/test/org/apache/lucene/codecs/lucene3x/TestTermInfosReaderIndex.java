@@ -71,10 +71,10 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE = true;
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random, MockTokenizer.KEYWORD, false));
+        new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
     
     termIndexInterval = config.getTermIndexInterval();
-    indexDivisor = _TestUtil.nextInt(random, 1, 10);
+    indexDivisor = _TestUtil.nextInt(random(), 1, 10);
     NUMBER_OF_DOCUMENTS = atLeast(100);
     NUMBER_OF_FIELDS = atLeast(Math.max(10, 3*termIndexInterval*indexDivisor/NUMBER_OF_DOCUMENTS));
     
@@ -98,8 +98,8 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     FieldInfos fieldInfos = infosReader.read(directory, segment, IOContext.READONCE);
     String segmentFileName = IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_INDEX_EXTENSION);
     long tiiFileLength = directory.fileLength(segmentFileName);
-    IndexInput input = directory.openInput(segmentFileName, newIOContext(random));
-    termEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_EXTENSION), newIOContext(random)), fieldInfos, false);
+    IndexInput input = directory.openInput(segmentFileName, newIOContext(random()));
+    termEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", Lucene3xPostingsFormat.TERMS_EXTENSION), newIOContext(random())), fieldInfos, false);
     int totalIndexInterval = termEnum.indexInterval * indexDivisor;
     
     SegmentTermEnum indexEnum = new SegmentTermEnum(input, fieldInfos, true);
@@ -134,7 +134,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
   }
   
   public void testCompareTo() throws IOException {
-    Term term = new Term("field" + random.nextInt(NUMBER_OF_FIELDS) ,getText());
+    Term term = new Term("field" + random().nextInt(NUMBER_OF_FIELDS) ,getText());
     for (int i = 0; i < index.length(); i++) {
       Term t = index.getTerm(i);
       int compareTo = term.compareTo(t);
@@ -190,7 +190,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
   }
 
   private static void populate(Directory directory, IndexWriterConfig config) throws CorruptIndexException, LockObtainFailedException, IOException {
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, config);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, config);
     for (int i = 0; i < NUMBER_OF_DOCUMENTS; i++) {
       Document document = new Document();
       for (int f = 0; f < NUMBER_OF_FIELDS; f++) {
@@ -201,8 +201,8 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
   }
-  
+
   private static String getText() {
-    return Long.toString(random.nextLong(),Character.MAX_RADIX);
+    return Long.toString(random().nextLong(),Character.MAX_RADIX);
   }
 }

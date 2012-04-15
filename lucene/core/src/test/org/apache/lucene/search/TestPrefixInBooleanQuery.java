@@ -48,7 +48,7 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
 
     Document doc = new Document();
     Field field = newField(FIELD, "meaninglessnames", StringField.TYPE_UNSTORED);

@@ -53,7 +53,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         };
 
         index = newDirectory();
-        RandomIndexWriter w = new RandomIndexWriter(random, index);
+        RandomIndexWriter w = new RandomIndexWriter(random(), index);
 
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();
@@ -88,7 +88,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         }
         assertEquals("result count", expected, h.length);
         //System.out.println("TEST: now check");
-        QueryUtils.check(random, q,s);
+        QueryUtils.check(random(), q,s);
     }
 
     public void testAllOptional() throws Exception {
@@ -308,7 +308,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
           for (int i=0; i<c.length;i++) {
             if (c[i].getOccur() == BooleanClause.Occur.SHOULD) opt++;
           }
-          q.setMinimumNumberShouldMatch(random.nextInt(opt+2));
+          q.setMinimumNumberShouldMatch(random().nextInt(opt+2));
         }
       };
 
@@ -317,8 +317,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
       // increase number of iterations for more complete testing      
       int num = atLeast(10);
       for (int i=0; i<num; i++) {
-        int lev = random.nextInt(maxLev);
-        final long seed = random.nextLong();
+        int lev = random().nextInt(maxLev);
+        final long seed = random().nextLong();
         BooleanQuery q1 = TestBoolean2.randBoolQuery(new Random(seed), true, lev, field, vals, null);
         // BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(seed), lev, field, vals, minNrCB);
         BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(seed), true, lev, field, vals, null);
@@ -332,8 +332,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         TopDocs top1 = s.search(q1,null,100);
         TopDocs top2 = s.search(q2,null,100);
         if (i < 100) {
-          QueryUtils.check(random, q1,s);
-          QueryUtils.check(random, q2,s);
+          QueryUtils.check(random(), q1,s);
+          QueryUtils.check(random(), q2,s);
         }
         // The constrained query
         // should be a superset to the unconstrained query.

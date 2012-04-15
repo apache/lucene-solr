@@ -46,7 +46,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
     Field titleField = newField("title", "some title", TextField.TYPE_UNSTORED);
     Field field = newField(FN, "this is document one 2345", TextField.TYPE_UNSTORED);

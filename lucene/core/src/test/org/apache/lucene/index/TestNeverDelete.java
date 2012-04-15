@@ -42,15 +42,15 @@ public class TestNeverDelete extends LuceneTestCase {
     // them.  This is still worth running on Windows since
     // some files the IR opens and closes.
     d.setNoDeleteOpenFile(false);
-    final RandomIndexWriter w = new RandomIndexWriter(random,
+    final RandomIndexWriter w = new RandomIndexWriter(random(),
                                                       d,
                                                       newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                                           new MockAnalyzer(random))
+                                                                           new MockAnalyzer(random()))
                                                       .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
-    w.w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random, 5, 30));
+    w.w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random(), 5, 30));
 
     w.commit();
-    Thread[] indexThreads = new Thread[random.nextInt(4)];
+    Thread[] indexThreads = new Thread[random().nextInt(4)];
     final long stopTime = System.currentTimeMillis() + atLeast(1000);
     for (int x=0; x < indexThreads.length; x++) {
       indexThreads[x] = new Thread() {

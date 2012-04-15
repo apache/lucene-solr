@@ -50,12 +50,12 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     final String groupField = "author";
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
-        random,
+        random(),
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
-    Type valueType = vts[random.nextInt(vts.length)];
+    Type valueType = vts[random().nextInt(vts.length)];
 
     // 0
     Document doc = new Document();
@@ -156,14 +156,14 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numberOfRuns = _TestUtil.nextInt(random, 3, 6);
+    int numberOfRuns = _TestUtil.nextInt(random(), 3, 6);
     for (int iter = 0; iter < numberOfRuns; iter++) {
       if (VERBOSE) {
         System.out.println(String.format("TEST: iter=%d total=%d", iter, numberOfRuns));
       }
 
-      final int numDocs = _TestUtil.nextInt(random, 100, 1000) * RANDOM_MULTIPLIER;
-      final int numGroups = _TestUtil.nextInt(random, 1, numDocs);
+      final int numDocs = _TestUtil.nextInt(random(), 100, 1000) * RANDOM_MULTIPLIER;
+      final int numGroups = _TestUtil.nextInt(random(), 1, numDocs);
 
       if (VERBOSE) {
         System.out.println("TEST: numDocs=" + numDocs + " numGroups=" + numGroups);
@@ -175,18 +175,18 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         do {
           // B/c of DV based impl we can't see the difference between an empty string and a null value.
           // For that reason we don't generate empty string groups.
-          randomValue = _TestUtil.randomRealisticUnicodeString(random);
+          randomValue = _TestUtil.randomRealisticUnicodeString(random());
         } while ("".equals(randomValue));
         groups.add(new BytesRef(randomValue));
       }
-      final String[] contentStrings = new String[_TestUtil.nextInt(random, 2, 20)];
+      final String[] contentStrings = new String[_TestUtil.nextInt(random(), 2, 20)];
       if (VERBOSE) {
         System.out.println("TEST: create fake content");
       }
       for (int contentIDX = 0; contentIDX < contentStrings.length; contentIDX++) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("real").append(random.nextInt(3)).append(' ');
-        final int fakeCount = random.nextInt(10);
+        sb.append("real").append(random().nextInt(3)).append(' ');
+        final int fakeCount = random().nextInt(10);
         for (int fakeIDX = 0; fakeIDX < fakeCount; fakeIDX++) {
           sb.append("fake ");
         }
@@ -198,13 +198,13 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
       Directory dir = newDirectory();
       RandomIndexWriter w = new RandomIndexWriter(
-          random,
+          random(),
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT,
-              new MockAnalyzer(random)));
+              new MockAnalyzer(random())));
       boolean preFlex = "Lucene3x".equals(w.w.getConfig().getCodec().getName());
       boolean canUseIDV = !preFlex;
-      Type valueType = vts[random.nextInt(vts.length)];
+      Type valueType = vts[random().nextInt(vts.length)];
 
       Document doc = new Document();
       Document docNoGroup = new Document();
@@ -233,21 +233,21 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
       for (int i = 0; i < numDocs; i++) {
         final BytesRef groupValue;
-        if (random.nextInt(24) == 17) {
+        if (random().nextInt(24) == 17) {
           // So we test the "doc doesn't have the group'd
           // field" case:
           groupValue = null;
         } else {
-          groupValue = groups.get(random.nextInt(groups.size()));
+          groupValue = groups.get(random().nextInt(groups.size()));
         }
 
         final GroupDoc groupDoc = new GroupDoc(
             i,
             groupValue,
-            groups.get(random.nextInt(groups.size())),
-            groups.get(random.nextInt(groups.size())),
+            groups.get(random().nextInt(groups.size())),
+            groups.get(random().nextInt(groups.size())),
             new BytesRef(String.format("%05d", i)),
-            contentStrings[random.nextInt(contentStrings.length)]
+            contentStrings[random().nextInt(contentStrings.length)]
         );
 
         if (VERBOSE) {
@@ -313,8 +313,8 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
             System.out.println("TEST: searchIter=" + searchIter);
           }
 
-          final String searchTerm = "real" + random.nextInt(3);
-          boolean sortByScoreOnly = random.nextBoolean();
+          final String searchTerm = "real" + random().nextInt(3);
+          boolean sortByScoreOnly = random().nextBoolean();
           Sort sortWithinGroup = getRandomSort(sortByScoreOnly);
           AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup, canUseIDV, valueType);
           s.search(new TermQuery(new Term("content", searchTerm)), allGroupHeadsCollector);
@@ -447,22 +447,22 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
   private Sort getRandomSort(boolean scoreOnly) {
     final List<SortField> sortFields = new ArrayList<SortField>();
-    if (random.nextInt(7) == 2 || scoreOnly) {
+    if (random().nextInt(7) == 2 || scoreOnly) {
       sortFields.add(SortField.FIELD_SCORE);
     } else {
-      if (random.nextBoolean()) {
-        if (random.nextBoolean()) {
-          sortFields.add(new SortField("sort1", SortField.Type.STRING, random.nextBoolean()));
+      if (random().nextBoolean()) {
+        if (random().nextBoolean()) {
+          sortFields.add(new SortField("sort1", SortField.Type.STRING, random().nextBoolean()));
         } else {
-          sortFields.add(new SortField("sort2", SortField.Type.STRING, random.nextBoolean()));
+          sortFields.add(new SortField("sort2", SortField.Type.STRING, random().nextBoolean()));
         }
-      } else if (random.nextBoolean()) {
-        sortFields.add(new SortField("sort1", SortField.Type.STRING, random.nextBoolean()));
-        sortFields.add(new SortField("sort2", SortField.Type.STRING, random.nextBoolean()));
+      } else if (random().nextBoolean()) {
+        sortFields.add(new SortField("sort1", SortField.Type.STRING, random().nextBoolean()));
+        sortFields.add(new SortField("sort2", SortField.Type.STRING, random().nextBoolean()));
       }
     }
     // Break ties:
-    if (random.nextBoolean() && !scoreOnly) {
+    if (random().nextBoolean() && !scoreOnly) {
       sortFields.add(new SortField("sort3", SortField.Type.STRING));
     } else if (!scoreOnly) {
       sortFields.add(new SortField("id", SortField.Type.INT));
@@ -509,11 +509,11 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   @SuppressWarnings({"unchecked","rawtypes"})
   private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, Type valueType) throws IOException {
     AbstractAllGroupHeadsCollector<? extends AbstractAllGroupHeadsCollector.GroupHead> collector;
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
       collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap<Object, Object>(), sortWithinGroup);
-    } else if (canUseIDV && random.nextBoolean()) {
-      boolean diskResident = random.nextBoolean();
+    } else if (canUseIDV && random().nextBoolean()) {
+      boolean diskResident = random().nextBoolean();
       collector =  DVAllGroupHeadsCollector.create(groupField, sortWithinGroup, valueType, diskResident);
     } else {
       collector =  TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);

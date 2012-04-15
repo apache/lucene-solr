@@ -81,7 +81,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     String[] fields = { "b", "t" };
     StandardQueryParser mfqp = new StandardQueryParser();
     mfqp.setMultiFields(fields);
-    mfqp.setAnalyzer(new MockAnalyzer(random));
+    mfqp.setAnalyzer(new MockAnalyzer(random()));
 
     Query q = mfqp.parse("one", null);
     assertEquals("b:one t:one", q.toString());
@@ -151,7 +151,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     StandardQueryParser mfqp = new StandardQueryParser();
     mfqp.setMultiFields(fields);
     mfqp.setFieldsBoost(boosts);
-    mfqp.setAnalyzer(new MockAnalyzer(random));
+    mfqp.setAnalyzer(new MockAnalyzer(random()));
 
     // Check for simple
     Query q = mfqp.parse("one", null);
@@ -179,24 +179,24 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
   public void testStaticMethod1() throws QueryNodeException {
     String[] fields = { "b", "t" };
     String[] queries = { "one", "two" };
-    Query q = QueryParserUtil.parse(queries, fields, new MockAnalyzer(random));
+    Query q = QueryParserUtil.parse(queries, fields, new MockAnalyzer(random()));
     assertEquals("b:one t:two", q.toString());
 
     String[] queries2 = { "+one", "+two" };
-    q = QueryParserUtil.parse(queries2, fields, new MockAnalyzer(random));
+    q = QueryParserUtil.parse(queries2, fields, new MockAnalyzer(random()));
     assertEquals("(+b:one) (+t:two)", q.toString());
 
     String[] queries3 = { "one", "+two" };
-    q = QueryParserUtil.parse(queries3, fields, new MockAnalyzer(random));
+    q = QueryParserUtil.parse(queries3, fields, new MockAnalyzer(random()));
     assertEquals("b:one (+t:two)", q.toString());
 
     String[] queries4 = { "one +more", "+two" };
-    q = QueryParserUtil.parse(queries4, fields, new MockAnalyzer(random));
+    q = QueryParserUtil.parse(queries4, fields, new MockAnalyzer(random()));
     assertEquals("(b:one +b:more) (+t:two)", q.toString());
 
     String[] queries5 = { "blah" };
     try {
-      q = QueryParserUtil.parse(queries5, fields, new MockAnalyzer(random));
+      q = QueryParserUtil.parse(queries5, fields, new MockAnalyzer(random()));
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception, array length differs
@@ -220,15 +220,15 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     BooleanClause.Occur[] flags = { BooleanClause.Occur.MUST,
         BooleanClause.Occur.MUST_NOT };
     Query q = QueryParserUtil.parse("one", fields, flags,
-        new MockAnalyzer(random));
+        new MockAnalyzer(random()));
     assertEquals("+b:one -t:one", q.toString());
 
-    q = QueryParserUtil.parse("one two", fields, flags, new MockAnalyzer(random));
+    q = QueryParserUtil.parse("one two", fields, flags, new MockAnalyzer(random()));
     assertEquals("+(b:one b:two) -(t:one t:two)", q.toString());
 
     try {
       BooleanClause.Occur[] flags2 = { BooleanClause.Occur.MUST };
-      q = QueryParserUtil.parse("blah", fields, flags2, new MockAnalyzer(random));
+      q = QueryParserUtil.parse("blah", fields, flags2, new MockAnalyzer(random()));
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception, array length differs
@@ -241,19 +241,19 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
         BooleanClause.Occur.MUST_NOT };
     StandardQueryParser parser = new StandardQueryParser();
     parser.setMultiFields(fields);
-    parser.setAnalyzer(new MockAnalyzer(random));
+    parser.setAnalyzer(new MockAnalyzer(random()));
 
     Query q = QueryParserUtil.parse("one", fields, flags,
-        new MockAnalyzer(random));// , fields, flags, new
+        new MockAnalyzer(random()));// , fields, flags, new
     // MockAnalyzer());
     assertEquals("+b:one -t:one", q.toString());
 
-    q = QueryParserUtil.parse("one two", fields, flags, new MockAnalyzer(random));
+    q = QueryParserUtil.parse("one two", fields, flags, new MockAnalyzer(random()));
     assertEquals("+(b:one b:two) -(t:one t:two)", q.toString());
 
     try {
       BooleanClause.Occur[] flags2 = { BooleanClause.Occur.MUST };
-      q = QueryParserUtil.parse("blah", fields, flags2, new MockAnalyzer(random));
+      q = QueryParserUtil.parse("blah", fields, flags2, new MockAnalyzer(random()));
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception, array length differs
@@ -266,13 +266,13 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     BooleanClause.Occur[] flags = { BooleanClause.Occur.MUST,
         BooleanClause.Occur.MUST_NOT, BooleanClause.Occur.SHOULD };
     Query q = QueryParserUtil.parse(queries, fields, flags,
-        new MockAnalyzer(random));
+        new MockAnalyzer(random()));
     assertEquals("+f1:one -f2:two f3:three", q.toString());
 
     try {
       BooleanClause.Occur[] flags2 = { BooleanClause.Occur.MUST };
       q = QueryParserUtil
-          .parse(queries, fields, flags2, new MockAnalyzer(random));
+          .parse(queries, fields, flags2, new MockAnalyzer(random()));
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception, array length differs
@@ -285,13 +285,13 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     BooleanClause.Occur[] flags = { BooleanClause.Occur.MUST,
         BooleanClause.Occur.MUST_NOT };
     Query q = QueryParserUtil.parse(queries, fields, flags,
-        new MockAnalyzer(random));
+        new MockAnalyzer(random()));
     assertEquals("+b:one -t:two", q.toString());
 
     try {
       BooleanClause.Occur[] flags2 = { BooleanClause.Occur.MUST };
       q = QueryParserUtil
-          .parse(queries, fields, flags2, new MockAnalyzer(random));
+          .parse(queries, fields, flags2, new MockAnalyzer(random()));
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception, array length differs
@@ -317,7 +317,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
   }
 
   public void testStopWordSearching() throws Exception {
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     Directory ramDir = newDirectory();
     IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -343,7 +343,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
    * Return empty tokens for field "f1".
    */
   private static final class AnalyzerReturningNull extends Analyzer {
-    MockAnalyzer stdAnalyzer = new MockAnalyzer(random);
+    MockAnalyzer stdAnalyzer = new MockAnalyzer(random());
 
     public AnalyzerReturningNull() {
       super(new PerFieldReuseStrategy());

@@ -27,7 +27,7 @@ public class TestMinimize extends LuceneTestCase {
   public void test() {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      Automaton a = AutomatonTestUtil.randomAutomaton(random);
+      Automaton a = AutomatonTestUtil.randomAutomaton(random());
       Automaton b = a.clone();
       MinimizationOperations.minimize(b);
       assertTrue(BasicOperations.sameLanguage(a, b));
@@ -40,7 +40,7 @@ public class TestMinimize extends LuceneTestCase {
   public void testAgainstBrzozowski() {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      Automaton a = AutomatonTestUtil.randomAutomaton(random);
+      Automaton a = AutomatonTestUtil.randomAutomaton(random());
       AutomatonTestUtil.minimizeSimple(a);
       Automaton b = a.clone();
       MinimizationOperations.minimize(b);

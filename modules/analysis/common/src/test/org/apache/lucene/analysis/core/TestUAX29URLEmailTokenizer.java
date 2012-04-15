@@ -18,6 +18,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -472,11 +473,12 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
+    Random random = random();
     checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
   }
 }

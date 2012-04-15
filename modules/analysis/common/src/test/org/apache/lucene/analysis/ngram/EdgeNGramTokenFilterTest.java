@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Random;
 
 /**
  * Tests {@link EdgeNGramTokenFilter} for correctness.
@@ -149,7 +150,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
             new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.FRONT, 2, 15));
       }    
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
     
     Analyzer b = new Analyzer() {
       @Override
@@ -159,10 +160,11 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
             new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.BACK, 2, 15));
       }    
     };
-    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), b, 10000*RANDOM_MULTIPLIER, 20, false, false);
   }
   
   public void testEmptyTerm() throws Exception {
+    Random random = random();
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

@@ -62,8 +62,8 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   public void testDefault() throws Exception {
     Directory[][] dirs = getDirs();
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
 
@@ -89,7 +89,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     // Obtain facets results and hand-test them
     assertCorrectResults(facetsCollector);
 
-    DocsEnum td = _TestUtil.docs(random, ir, "$facets", new BytesRef("$fulltree$"), MultiFields.getLiveDocs(ir), null, false);
+    DocsEnum td = _TestUtil.docs(random(), ir, "$facets", new BytesRef("$fulltree$"), MultiFields.getLiveDocs(ir), null, false);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     tr.close();
@@ -103,8 +103,8 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   public void testCustom() throws Exception {
     Directory[][] dirs = getDirs();
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1],
         OpenMode.CREATE);
@@ -143,8 +143,8 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   public void testTwoCustomsSameField() throws Exception {
     Directory[][] dirs = getDirs();
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1],
         OpenMode.CREATE);
@@ -183,7 +183,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   }
 
   private void assertPostingListExists(String field, String text, IndexReader ir) throws IOException {
-    DocsEnum de = _TestUtil.docs(random, ir, field, new BytesRef(text), null, null, false);
+    DocsEnum de = _TestUtil.docs(random(), ir, field, new BytesRef(text), null, null, false);
     assertTrue(de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
   }
 
@@ -191,8 +191,8 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   public void testDifferentFieldsAndText() throws Exception {
     Directory[][] dirs = getDirs();
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
 
@@ -231,8 +231,8 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   public void testSomeSameSomeDifferent() throws Exception {
     Directory[][] dirs = getDirs();
     // create and open an index writer
-    RandomIndexWriter iw = new RandomIndexWriter(random, dirs[0][0], newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dirs[0][0], newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1],
         OpenMode.CREATE);

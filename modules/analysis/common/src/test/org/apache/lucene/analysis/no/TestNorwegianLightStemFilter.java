@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.no;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -49,6 +50,7 @@ public class TestNorwegianLightStemFilter extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
+    Random random = random();
     checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
   }
   

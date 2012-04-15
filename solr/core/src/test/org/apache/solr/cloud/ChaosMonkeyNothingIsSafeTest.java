@@ -42,15 +42,12 @@ import org.junit.Ignore;
 @Ignore("ignore while investigating jenkins fails")
 public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
 
-  
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-    
   }
   
   @AfterClass
   public static void afterSuperClass() throws Exception {
-    
   }
   
   @Before
@@ -237,7 +234,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
       while (true && !stop) {
         ++i;
         
-        if (doDeletes && random.nextBoolean() && deletes.size() > 0) {
+        if (doDeletes && random().nextBoolean() && deletes.size() > 0) {
           Integer delete = deletes.remove(0);
           try {
             numDeletes++;
@@ -271,7 +268,7 @@ public class ChaosMonkeyNothingIsSafeTest extends FullSolrCloudTest {
           fails.incrementAndGet();
         }
         
-        if (doDeletes && random.nextBoolean()) {
+        if (doDeletes && random().nextBoolean()) {
           deletes.add(i);
         }
         

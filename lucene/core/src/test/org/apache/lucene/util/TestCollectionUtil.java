@@ -26,9 +26,9 @@ import java.util.List;
 public class TestCollectionUtil extends LuceneTestCase {
 
   private List<Integer> createRandomList(int maxSize) {
-    final Integer[] a = new Integer[random.nextInt(maxSize) + 1];
+    final Integer[] a = new Integer[random().nextInt(maxSize) + 1];
     for (int i = 0; i < a.length; i++) {
-      a[i] = Integer.valueOf(random.nextInt(a.length));
+      a[i] = Integer.valueOf(random().nextInt(a.length));
     }
     return Arrays.asList(a);
   }

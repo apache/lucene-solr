@@ -91,7 +91,7 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
         }   
       };
       
-      checkRandomData(random, a, 1000*RANDOM_MULTIPLIER);
+      checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
       
       Analyzer b = new Analyzer() {
         @Override
@@ -101,7 +101,7 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
         }   
       };
       
-      checkRandomData(random, b, 1000*RANDOM_MULTIPLIER);
+      checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
     }
   }
   
@@ -114,7 +114,7 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
         @Override
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
           Tokenizer tokenizer = new KeywordTokenizer(reader);
-          return new TokenStreamComponents(tokenizer, new PhoneticFilter(tokenizer, e, random.nextBoolean()));
+          return new TokenStreamComponents(tokenizer, new PhoneticFilter(tokenizer, e, random().nextBoolean()));
         }
       };
       checkOneTermReuse(a, "", "");

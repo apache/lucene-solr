@@ -176,7 +176,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       try {
         writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
         fail("IndexWriter creation should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
         // pass
@@ -217,7 +217,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       w.forceMerge(1);
       w.close();
       
@@ -229,7 +229,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       w.addIndexes(oldIndexDirs.get(name));
       w.close();
       
@@ -243,7 +243,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       w.addIndexes(reader);
       w.close();
       reader.close();
@@ -261,7 +261,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public void testIndexOldIndexNoAdds() throws IOException {
     for (String name : oldNames) {
       Directory dir = newDirectory(oldIndexDirs.get(name));
-      changeIndexNoAdds(random, dir);
+      changeIndexNoAdds(random(), dir);
       dir.close();
     }
   }
@@ -272,7 +272,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("TEST: oldName=" + name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
-      changeIndexWithAdds(random, dir, name);
+      changeIndexWithAdds(random(), dir, name);
       dir.close();
     }
   }
@@ -426,7 +426,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     mp.setUseCompoundFile(doCFS);
     mp.setNoCFSRatio(1.0);
     // TODO: remove randomness
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMaxBufferedDocs(10).setMergePolicy(mp);
     IndexWriter writer = new IndexWriter(dir, conf);
     
@@ -445,7 +445,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       mp.setUseCompoundFile(doCFS);
       mp.setNoCFSRatio(1.0);
       // TODO: remove randomness
-      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(10).setMergePolicy(mp);
       writer = new IndexWriter(dir, conf);
       addNoProxDoc(writer);
@@ -480,7 +480,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setMaxBufferedDocs(-1).
               setRAMBufferSizeMB(16.0).
               setMergePolicy(mergePolicy)
@@ -494,7 +494,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // Delete one doc so we get a .del file:
       writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
       );
       Term searchTerm = new Term("id", "7");
@@ -597,7 +597,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // should be found exactly
       assertEquals(TermsEnum.SeekStatus.FOUND,
                    terms.seekCeil(aaaTerm));
-      assertEquals(35, countDocs(_TestUtil.docs(random, terms, null, null, false)));
+      assertEquals(35, countDocs(_TestUtil.docs(random(), terms, null, null, false)));
       assertNull(terms.next());
 
       // should hit end of field
@@ -609,12 +609,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(TermsEnum.SeekStatus.NOT_FOUND,
                    terms.seekCeil(new BytesRef("a")));
       assertTrue(terms.term().bytesEquals(aaaTerm));
-      assertEquals(35, countDocs(_TestUtil.docs(random, terms, null, null, false)));
+      assertEquals(35, countDocs(_TestUtil.docs(random(), terms, null, null, false)));
       assertNull(terms.next());
 
       assertEquals(TermsEnum.SeekStatus.FOUND,
                    terms.seekCeil(aaaTerm));
-      assertEquals(35, countDocs(_TestUtil.docs(random, terms,null, null, false)));
+      assertEquals(35, countDocs(_TestUtil.docs(random(), terms,null, null, false)));
       assertNull(terms.next());
 
       r.close();
@@ -713,12 +713,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       RAMDirectory ramDir = new RAMDirectory();
       for (int i = 0; i < 3; i++) {
         // only use Log- or TieredMergePolicy, to make document addition predictable and not suddenly merge:
-        MergePolicy mp = random.nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
-        IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        MergePolicy mp = random().nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
+        IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
           .setMergePolicy(mp);
         IndexWriter w = new IndexWriter(ramDir, iwc);
         // add few more docs:
-        for(int j = 0; j < RANDOM_MULTIPLIER * random.nextInt(30); j++) {
+        for(int j = 0; j < RANDOM_MULTIPLIER * random().nextInt(30); j++) {
           addDoc(w, id++);
         }
         w.close(false);
@@ -726,7 +726,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       // add dummy segments (which are all in current
       // version) to single segment index
-      MergePolicy mp = random.nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
+      MergePolicy mp = random().nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
       IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null)
         .setMergePolicy(mp);
       IndexWriter w = new IndexWriter(dir, iwc);

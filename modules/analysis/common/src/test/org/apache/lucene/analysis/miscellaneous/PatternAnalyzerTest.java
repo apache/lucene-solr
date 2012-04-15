@@ -152,7 +152,7 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
     
     try {
       Thread.getDefaultUncaughtExceptionHandler();
-      checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+      checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER);
     } catch (ArrayIndexOutOfBoundsException ex) {
       assumeTrue("not failing due to jre bug ", !isJREBug7104012(ex));
       throw ex; // otherwise rethrow

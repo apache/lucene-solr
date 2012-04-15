@@ -36,7 +36,7 @@ public class TestDocBoost extends LuceneTestCase {
 
   public void testDocBoost() throws Exception {
     Directory store = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, store, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), store, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     Field f1 = newField("field", "word", TextField.TYPE_STORED);
     Field f2 = newField("field", "word", TextField.TYPE_STORED);

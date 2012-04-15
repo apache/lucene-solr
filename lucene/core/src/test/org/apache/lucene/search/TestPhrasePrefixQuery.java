@@ -41,7 +41,7 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
      */
   public void testPhrasePrefix() throws IOException {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     Document doc1 = new Document();
     Document doc2 = new Document();
     Document doc3 = new Document();

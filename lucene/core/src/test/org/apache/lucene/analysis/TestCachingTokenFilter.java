@@ -37,7 +37,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   
   public void testCaching() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     TokenStream stream = new TokenStream() {
       private int index = 0;

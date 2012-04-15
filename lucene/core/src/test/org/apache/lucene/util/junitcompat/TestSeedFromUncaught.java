@@ -22,6 +22,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
 /**
  * Check that uncaught exceptions result in seed info being dumped to
@@ -53,9 +54,9 @@ public class TestSeedFromUncaught extends WithNestedTests {
   public void testUncaughtDumpsSeed() {
     Result result = JUnitCore.runClasses(ThrowInUncaught.class);
     Assert.assertEquals(1, result.getFailureCount());
-    String consoleOut = super.getSysErr() + "\n\n" + super.getSysOut();
-    Assert.assertTrue(consoleOut.contains("-Dtests.seed="));
-    Assert.assertTrue(consoleOut.contains("-Dtestmethod=testFoo"));
-    Assert.assertTrue(consoleOut.contains("foobar"));
+    Failure f = result.getFailures().get(0);
+    String trace = f.getTrace();
+    Assert.assertTrue(trace.contains("SeedInfo.seed("));
+    Assert.assertTrue(trace.contains("foobar"));
   }
 }

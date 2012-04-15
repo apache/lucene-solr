@@ -47,10 +47,10 @@ public class GroupingSearchTest extends LuceneTestCase {
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
-        random,
+        random(),
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
     List<Document> documents = new ArrayList<Document>();
     // 0
@@ -197,12 +197,12 @@ public class GroupingSearchTest extends LuceneTestCase {
 
   private GroupingSearch createRandomGroupingSearch(String groupField, Sort groupSort, int docsInGroup, boolean canUseIDV) throws IOException {
     GroupingSearch groupingSearch;
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
       groupingSearch = new GroupingSearch(vs, new HashMap<Object, Object>());
     } else {
-      if (canUseIDV && random.nextBoolean()) {
-        boolean diskResident = random.nextBoolean();
+      if (canUseIDV && random().nextBoolean()) {
+        boolean diskResident = random().nextBoolean();
         groupingSearch = new GroupingSearch(groupField, DocValues.Type.BYTES_VAR_SORTED, diskResident);
       } else {
         groupingSearch = new GroupingSearch(groupField);  
@@ -212,7 +212,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     groupingSearch.setGroupSort(groupSort);
     groupingSearch.setGroupDocsLimit(docsInGroup);
 
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       groupingSearch.setCachingInMB(4.0, true);
     }
 

@@ -52,15 +52,15 @@ public class TestSentinelIntSet extends LuceneTestCase {
   @Test
   public void testRandom() throws Exception {
     for (int i=0; i<10000; i++) {
-      int initSz = random.nextInt(20);
-      int num = random.nextInt(30);
-      int maxVal = (random.nextBoolean() ? random.nextInt(50) : random.nextInt(Integer.MAX_VALUE)) + 1;
+      int initSz = random().nextInt(20);
+      int num = random().nextInt(30);
+      int maxVal = (random().nextBoolean() ? random().nextInt(50) : random().nextInt(Integer.MAX_VALUE)) + 1;
 
       HashSet<Integer> a = new HashSet<Integer>(initSz);
       SentinelIntSet b = new SentinelIntSet(initSz, -1);
       
       for (int j=0; j<num; j++) {
-        int val = random.nextInt(maxVal);
+        int val = random().nextInt(maxVal);
         boolean exists = !a.add(val);
         boolean existsB = b.exists(val);
         assertEquals(exists, existsB);

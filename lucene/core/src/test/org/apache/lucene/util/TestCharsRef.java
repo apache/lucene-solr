@@ -26,7 +26,7 @@ public class TestCharsRef extends LuceneTestCase {
     CharsRef utf16[] = new CharsRef[numStrings];
     
     for (int i = 0; i < numStrings; i++) {
-      String s = _TestUtil.randomUnicodeString(random);
+      String s = _TestUtil.randomUnicodeString(random());
       utf8[i] = new BytesRef(s);
       utf16[i] = new CharsRef(s);
     }
@@ -44,8 +44,8 @@ public class TestCharsRef extends LuceneTestCase {
     StringBuilder builder = new StringBuilder();
     int numStrings = atLeast(10);
     for (int i = 0; i < numStrings; i++) {
-      char[] charArray = _TestUtil.randomRealisticUnicodeString(random, 1, 100).toCharArray();
-      int offset = random.nextInt(charArray.length);
+      char[] charArray = _TestUtil.randomRealisticUnicodeString(random(), 1, 100).toCharArray();
+      int offset = random().nextInt(charArray.length);
       int length = charArray.length - offset;
       builder.append(charArray, offset, length);
       ref.append(charArray, offset, length);  
@@ -58,8 +58,8 @@ public class TestCharsRef extends LuceneTestCase {
     int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
       CharsRef ref = new CharsRef();
-      char[] charArray = _TestUtil.randomRealisticUnicodeString(random, 1, 100).toCharArray();
-      int offset = random.nextInt(charArray.length);
+      char[] charArray = _TestUtil.randomRealisticUnicodeString(random(), 1, 100).toCharArray();
+      int offset = random().nextInt(charArray.length);
       int length = charArray.length - offset;
       String str = new String(charArray, offset, length);
       ref.copyChars(charArray, offset, length);

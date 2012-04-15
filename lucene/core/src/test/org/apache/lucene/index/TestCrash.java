@@ -65,7 +65,7 @@ public class TestCrash extends LuceneTestCase {
     // This test relies on being able to open a reader before any commit
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
-    IndexWriter writer = initIndex(random, true);
+    IndexWriter writer = initIndex(random(), true);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     crash(writer);
     IndexReader reader = IndexReader.open(dir);
@@ -78,11 +78,11 @@ public class TestCrash extends LuceneTestCase {
     // This test relies on being able to open a reader before any commit
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
-    IndexWriter writer = initIndex(random, true);
+    IndexWriter writer = initIndex(random(), true);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     dir.setPreventDoubleWrite(false);
     crash(writer);
-    writer = initIndex(random, dir, false);
+    writer = initIndex(random(), dir, false);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir);
@@ -92,10 +92,10 @@ public class TestCrash extends LuceneTestCase {
   }
 
   public void testCrashAfterReopen() throws IOException {
-    IndexWriter writer = initIndex(random, false);
+    IndexWriter writer = initIndex(random(), false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     writer.close();
-    writer = initIndex(random, dir, false);
+    writer = initIndex(random(), dir, false);
     assertEquals(314, writer.maxDoc());
     crash(writer);
 
@@ -116,7 +116,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashAfterClose() throws IOException {
     
-    IndexWriter writer = initIndex(random, false);
+    IndexWriter writer = initIndex(random(), false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close();
@@ -137,7 +137,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashAfterCloseNoWait() throws IOException {
     
-    IndexWriter writer = initIndex(random, false);
+    IndexWriter writer = initIndex(random(), false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);

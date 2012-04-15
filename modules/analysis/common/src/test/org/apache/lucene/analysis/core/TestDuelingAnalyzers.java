@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.core;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -64,6 +65,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
   }
   
   public void testLetterAscii() throws Exception {
+    Random random = random();
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
@@ -81,6 +83,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
   
   // not so useful since its all one token?!
   public void testLetterAsciiHuge() throws Exception {
+    Random random = random();
     int maxLength = 8192; // CharTokenizer.IO_BUFFER_SIZE*2
     MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
@@ -100,6 +103,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
   }
   
   public void testLetterHtmlish() throws Exception {
+    Random random = random();
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
@@ -116,6 +120,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
   }
   
   public void testLetterHtmlishHuge() throws Exception {
+    Random random = random();
     int maxLength = 2048; // this is number of elements, not chars!
     MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
@@ -135,7 +140,8 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
   }
   
   public void testLetterUnicode() throws Exception {
-    Analyzer left = new MockAnalyzer(random, jvmLetter, false);
+    Random random = random();
+    Analyzer left = new MockAnalyzer(random(), jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
@@ -151,6 +157,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
   }
   
   public void testLetterUnicodeHuge() throws Exception {
+    Random random = random();
     int maxLength = 8192; // CharTokenizer.IO_BUFFER_SIZE*2
     MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
@@ -198,6 +205,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
   
   // TODO: maybe push this out to _TestUtil or LuceneTestCase and always use it instead?
   private static Reader newStringReader(String s) {
+    Random random = random();
     Reader r = new StringReader(s);
     if (random.nextBoolean()) {
       r = new MockReaderWrapper(random, r);

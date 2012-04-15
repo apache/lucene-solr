@@ -49,7 +49,6 @@ public class FullSolrCloudDistribCmdsTest extends FullSolrCloudTest {
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-    
   }
   
   public FullSolrCloudDistribCmdsTest() {

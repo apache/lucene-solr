@@ -57,7 +57,7 @@ public class TestFieldsReader extends LuceneTestCase {
     DocHelper.setupDoc(testDoc);
     _TestUtil.add(testDoc, fieldInfos);
     dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
@@ -195,7 +195,7 @@ public class TestFieldsReader extends LuceneTestCase {
     try {
       Directory dir = new FaultyFSDirectory(indexDir);
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);
       writer.forceMerge(1);
@@ -232,7 +232,7 @@ public class TestFieldsReader extends LuceneTestCase {
   
   public void testNumericField() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final int numDocs = atLeast(500);
     final Number[] answers = new Number[numDocs];
     final NumericType[] typeAnswers = new NumericType[numDocs];
@@ -242,16 +242,16 @@ public class TestFieldsReader extends LuceneTestCase {
       final Field sf;
       final Number answer;
       final NumericType typeAnswer;
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         // float/double
-        if (random.nextBoolean()) {
-          final float f = random.nextFloat();
+        if (random().nextBoolean()) {
+          final float f = random().nextFloat();
           answer = Float.valueOf(f);
           nf = new FloatField("nf", f);
           sf = new StoredField("nf", f);
           typeAnswer = NumericType.FLOAT;
         } else {
-          final double d = random.nextDouble();
+          final double d = random().nextDouble();
           answer = Double.valueOf(d);
           nf = new DoubleField("nf", d);
           sf = new StoredField("nf", d);
@@ -259,14 +259,14 @@ public class TestFieldsReader extends LuceneTestCase {
         }
       } else {
         // int/long
-        if (random.nextBoolean()) {
-          final int i = random.nextInt();
+        if (random().nextBoolean()) {
+          final int i = random().nextInt();
           answer = Integer.valueOf(i);
           nf = new IntField("nf", i);
           sf = new StoredField("nf", i);
           typeAnswer = NumericType.INT;
         } else {
-          final long l = random.nextLong();
+          final long l = random().nextLong();
           answer = Long.valueOf(l);
           nf = new LongField("nf", l);
           sf = new StoredField("nf", l);
@@ -302,7 +302,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
   public void testIndexedBit() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     FieldType onlyStored = new FieldType();
     onlyStored.setStored(true);

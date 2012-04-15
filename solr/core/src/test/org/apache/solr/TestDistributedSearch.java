@@ -221,20 +221,20 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     stress=0;  // turn off stress... we want to tex max combos in min time
     for (int i=0; i<25*RANDOM_MULTIPLIER; i++) {
-      String f = fieldNames[random.nextInt(fieldNames.length)];
-      if (random.nextBoolean()) f = t1;  // the text field is a really interesting one to facet on (and it's multi-valued too)
+      String f = fieldNames[random().nextInt(fieldNames.length)];
+      if (random().nextBoolean()) f = t1;  // the text field is a really interesting one to facet on (and it's multi-valued too)
 
       // we want a random query and not just *:* so we'll get zero counts in facets also
       // TODO: do a better random query
-      String q = random.nextBoolean() ? "*:*" : "id:(1 3 5 7 9 11 13) OR id:[100 TO " + random.nextInt(50) + "]";
+      String q = random().nextBoolean() ? "*:*" : "id:(1 3 5 7 9 11 13) OR id:[100 TO " + random().nextInt(50) + "]";
 
-      int nolimit = random.nextBoolean() ? -1 : 10000;  // these should be equivalent
+      int nolimit = random().nextBoolean() ? -1 : 10000;  // these should be equivalent
 
       // if limit==-1, we should always get exact matches
-      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.limit",nolimit, "facet.sort","count", "facet.mincount",random.nextInt(5), "facet.offset",random.nextInt(10));
-      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.limit",nolimit, "facet.sort","index", "facet.mincount",random.nextInt(5), "facet.offset",random.nextInt(10));
+      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.limit",nolimit, "facet.sort","count", "facet.mincount",random().nextInt(5), "facet.offset",random().nextInt(10));
+      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.limit",nolimit, "facet.sort","index", "facet.mincount",random().nextInt(5), "facet.offset",random().nextInt(10));
       // for index sort, we should get exact results for mincount <= 1
-      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.sort","index", "facet.mincount",random.nextInt(2), "facet.offset",random.nextInt(10), "facet.limit",random.nextInt(11)-1);
+      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.sort","index", "facet.mincount",random().nextInt(2), "facet.offset",random().nextInt(10), "facet.limit",random().nextInt(11)-1);
     }
     stress = backupStress;  // restore stress
 

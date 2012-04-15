@@ -246,7 +246,7 @@ public class TestWildcard
   private Directory getIndexStore(String field, String[] contents)
       throws IOException {
     Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
       doc.add(newField(field, contents[i], TextField.TYPE_STORED));
@@ -344,8 +344,8 @@ public class TestWildcard
 
     // prepare the index
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();

@@ -96,8 +96,8 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     Directory dir = newDirectory();
     DataTokenStream dts = new DataTokenStream("1",new SortingIntEncoder(
         new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random, MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
+        new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < data.length; i++) {
       dts.setIdx(i);
       Document doc = new Document();
@@ -144,7 +144,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
       }
     };
     // NOTE: test is wired to LogMP... because test relies on certain docids having payloads
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, noPayloadsAnalyzer).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();

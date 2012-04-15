@@ -66,8 +66,8 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     dir = newDirectory();
     taxoDir = newDirectory();
     // preparations - index, taxonomy, content
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
+        new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)));
     
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     

@@ -19,6 +19,7 @@ import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 
 /**
@@ -314,11 +315,12 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random, new ClassicAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), new ClassicAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
   }
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
+    Random random = random();
     checkRandomData(random, new ClassicAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
   }
 }

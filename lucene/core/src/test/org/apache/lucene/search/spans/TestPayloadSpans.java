@@ -56,7 +56,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     PayloadHelper helper = new PayloadHelper();
-    searcher = helper.setUp(random, similarity, 1000);
+    searcher = helper.setUp(random(), similarity, 1000);
     indexReader = searcher.getIndexReader();
   }
 
@@ -106,7 +106,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
 
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = new Document();
@@ -250,7 +250,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void testShrinkToAfterShortestMatch() throws CorruptIndexException,
       LockObtainFailedException, IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
     Document doc = new Document();
@@ -288,7 +288,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void testShrinkToAfterShortestMatch2() throws CorruptIndexException,
       LockObtainFailedException, IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
     Document doc = new Document();
@@ -324,7 +324,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void testShrinkToAfterShortestMatch3() throws CorruptIndexException,
       LockObtainFailedException, IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
     Document doc = new Document();
@@ -365,7 +365,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public void testPayloadSpanUtil() throws Exception {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = new Document();
@@ -425,7 +425,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   private IndexSearcher getSearcher() throws Exception {
     directory = newDirectory();
     String[] docs = new String[]{"xx rr yy mm  pp","xx yy mm rr pp", "nopayload qq ss pp np", "one two three four five six seven eight nine ten eleven", "nine one two three four five six seven eight eleven ten"};
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = null;

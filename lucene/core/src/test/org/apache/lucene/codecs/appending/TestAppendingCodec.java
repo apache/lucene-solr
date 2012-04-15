@@ -108,8 +108,8 @@ public class TestAppendingCodec extends LuceneTestCase {
   private static final String text = "the quick brown fox jumped over the lazy dog";
 
   public void testCodec() throws Exception {
-    Directory dir = new AppendingRAMDirectory(random, new RAMDirectory());
-    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer(random));
+    Directory dir = new AppendingRAMDirectory(random(), new RAMDirectory());
+    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer(random()));
     
     cfg.setCodec(new AppendingCodec());
     ((TieredMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);
@@ -150,8 +150,8 @@ public class TestAppendingCodec extends LuceneTestCase {
   }
   
   public void testCompoundFile() throws Exception {
-    Directory dir = new AppendingRAMDirectory(random, new RAMDirectory());
-    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer(random));
+    Directory dir = new AppendingRAMDirectory(random(), new RAMDirectory());
+    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer(random()));
     TieredMergePolicy mp = new TieredMergePolicy();
     mp.setUseCompoundFile(true);
     mp.setNoCFSRatio(1.0);

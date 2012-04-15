@@ -35,8 +35,8 @@ public class BytesRefSortersTest extends LuceneTestCase {
 
   private void check(BytesRefSorter sorter) throws Exception {
     for (int i = 0; i < 100; i++) {
-      byte [] current = new byte [random.nextInt(256)];
-      random.nextBytes(current);
+      byte [] current = new byte [random().nextInt(256)];
+      random().nextBytes(current);
       sorter.add(new BytesRef(current));
     }
 

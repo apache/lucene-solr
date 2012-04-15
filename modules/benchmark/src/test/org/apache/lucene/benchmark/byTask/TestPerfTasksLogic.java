@@ -102,7 +102,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
@@ -189,7 +189,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     assertEquals("100 docs were added to the index, this is what we expect to find!",100,ir.numDocs());
@@ -228,7 +228,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
@@ -301,7 +301,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertEquals("TestSearchTask was supposed to be called!",139,CountingSearchTestTask.numSearches);
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
@@ -431,7 +431,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setOpenMode(OpenMode.APPEND));
     iw.close();
 
@@ -497,7 +497,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       TermsEnum termsEnum = terms.iterator(null);
       DocsEnum docs = null;
       while(termsEnum.next() != null) {
-        docs = _TestUtil.docs(random, termsEnum, MultiFields.getLiveDocs(reader), docs, true);
+        docs = _TestUtil.docs(random(), termsEnum, MultiFields.getLiveDocs(reader), docs, true);
         while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           totalTokenCount2 += docs.freq();
         }

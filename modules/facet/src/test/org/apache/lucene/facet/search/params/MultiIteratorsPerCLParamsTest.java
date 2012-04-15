@@ -166,8 +166,8 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
 
   private void populateIndex(FacetIndexingParams iParams, Directory indexDir,
       Directory taxoDir) throws Exception {
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexDir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), indexDir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)));
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
     for (CategoryPath[] categories : perDocCategories) {

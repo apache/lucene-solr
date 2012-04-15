@@ -49,6 +49,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +60,16 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.5
  */
 public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
-  public static Random r = random;
+  // TODO: this shouldn't be static. get the random when you need it to avoid sharing.
+  public static Random r;
+
+  @BeforeClass
+  public static void initialize() {
+    r = new Random(random().nextLong());
+  }
 
   protected int shardCount = 4;
+
   /**
    * Sub classes can set this flag in their constructor to true if they
    * want to fix the number of shards to 'shardCount'
@@ -704,7 +712,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   public static abstract class RandVal {
-    public static Random r = random;
     public static Set uniqueValues = new HashSet();
 
     public abstract Object val();

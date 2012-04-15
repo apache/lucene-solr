@@ -84,7 +84,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     IndexReader r = IndexReader.open(dir);
     IndexSearcher s = new IndexSearcher(r);
     log("test: "+ functionQuery);
-    QueryUtils.check(random, functionQuery,s);
+    QueryUtils.check(random(), functionQuery,s);
     ScoreDoc[] h = s.search(functionQuery, null, 1000).scoreDocs;
     assertEquals("All docs should be matched!",N_DOCS,h.length);
     String prevID = "ID"+(N_DOCS+1); // greater than all ids of docs in this test

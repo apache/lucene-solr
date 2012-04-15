@@ -71,12 +71,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       if (field!=null) assertU(adoc("id", s, field, s));
       else assertU(adoc("id", s));
 
-      if (random.nextInt(100) < 20) {
+      if (random().nextInt(100) < 20) {
         if (field!=null) assertU(adoc("id", s, field, s));
         else assertU(adoc("id", s));
       }
 
-      if (random.nextInt(100) < 20) {
+      if (random().nextInt(100) < 20) {
         assertU(commit());
 
       }
@@ -233,7 +233,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertTrue(orig != FileFloatSource.onlyForTesting);
 
 
-    Random r = random;
+    Random r = random();
     for (int i=0; i<10; i++) {   // do more iterations for a thorough test
       int len = r.nextInt(ids.length+1);
       boolean sorted = r.nextBoolean();

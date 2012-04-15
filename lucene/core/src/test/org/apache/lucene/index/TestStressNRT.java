@@ -66,20 +66,20 @@ public class TestStressNRT extends LuceneTestCase {
 
   public void test() throws Exception {
     // update variables
-    final int commitPercent = random.nextInt(20);
-    final int softCommitPercent = random.nextInt(100); // what percent of the commits are soft
-    final int deletePercent = random.nextInt(50);
-    final int deleteByQueryPercent = random.nextInt(25);
+    final int commitPercent = random().nextInt(20);
+    final int softCommitPercent = random().nextInt(100); // what percent of the commits are soft
+    final int deletePercent = random().nextInt(50);
+    final int deleteByQueryPercent = random().nextInt(25);
     final int ndocs = atLeast(50);
-    final int nWriteThreads = _TestUtil.nextInt(random, 1, TEST_NIGHTLY ? 10 : 5);
-    final int maxConcurrentCommits = _TestUtil.nextInt(random, 1, TEST_NIGHTLY ? 10 : 5);   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
+    final int nWriteThreads = _TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
+    final int maxConcurrentCommits = _TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
     
-    final boolean tombstones = random.nextBoolean();
+    final boolean tombstones = random().nextBoolean();
 
     // query variables
     final AtomicLong operations = new AtomicLong(atLeast(10000));  // number of query operations to perform in total
 
-    final int nReadThreads = _TestUtil.nextInt(random, 1, TEST_NIGHTLY ? 10 : 5);
+    final int nReadThreads = _TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
     initModel(ndocs);
 
     final FieldType storedOnlyType = new FieldType();
@@ -106,14 +106,14 @@ public class TestStressNRT extends LuceneTestCase {
 
     Directory dir = newDirectory();
 
-    final RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.setDoRandomForceMergeAssert(false);
     writer.commit();
     reader = IndexReader.open(dir);
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
@@ -137,7 +137,7 @@ public class TestStressNRT extends LuceneTestCase {
                   DirectoryReader newReader;
                   if (rand.nextInt(100) < softCommitPercent) {
                     // assertU(h.commit("softCommit","true"));
-                    if (random.nextBoolean()) {
+                    if (random().nextBoolean()) {
                       if (VERBOSE) {
                         System.out.println("TEST: " + Thread.currentThread().getName() + ": call writer.getReader");
                       }
@@ -215,7 +215,7 @@ public class TestStressNRT extends LuceneTestCase {
 
                 // set the lastId before we actually change it sometimes to try and
                 // uncover more race conditions between writing and reading
-                boolean before = random.nextBoolean();
+                boolean before = random().nextBoolean();
                 if (before) {
                   lastId = id;
                 }
@@ -293,7 +293,7 @@ public class TestStressNRT extends LuceneTestCase {
 
     for (int i=0; i<nReadThreads; i++) {
       Thread thread = new Thread("READER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {

@@ -33,6 +33,7 @@ public class TestSetupTeardownChaining extends WithNestedTests {
     @Override
     public void setUp() throws Exception {
       // missing call.
+      System.out.println("Hello.");
     }
 
     @Test

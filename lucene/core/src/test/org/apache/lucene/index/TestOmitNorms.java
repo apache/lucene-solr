@@ -34,7 +34,7 @@ public class TestOmitNorms extends LuceneTestCase {
   // omitNorms bit in the FieldInfo
   public void testOmitNorms() throws Exception {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document d = new Document();
         
@@ -79,7 +79,7 @@ public class TestOmitNorms extends LuceneTestCase {
   // omitNorms for the same field works
   public void testMixedMerge() throws Exception {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(
         ram,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
@@ -134,7 +134,7 @@ public class TestOmitNorms extends LuceneTestCase {
   // field, 
   public void testMixedRAM() throws Exception {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(
         ram,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
@@ -188,7 +188,7 @@ public class TestOmitNorms extends LuceneTestCase {
   // Verifies no *.nrm exists when all fields omit norms:
   public void testNoNrmFile() throws Throwable {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
@@ -265,10 +265,10 @@ public class TestOmitNorms extends LuceneTestCase {
    * Indexes at least 1 document with f1, and at least 1 document with f2.
    * returns the norms for "field".
    */
-  static byte[] getNorms(String field, Field f1, Field f2) throws IOException {
+  byte[] getNorms(String field, Field f1, Field f2) throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy());
-    RandomIndexWriter riw = new RandomIndexWriter(random, dir, iwc);
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
     
     // add f1
     Document d = new Document();
@@ -281,10 +281,10 @@ public class TestOmitNorms extends LuceneTestCase {
     riw.addDocument(d);
     
     // add a mix of f1's and f2's
-    int numExtraDocs = _TestUtil.nextInt(random, 1, 1000);
+    int numExtraDocs = _TestUtil.nextInt(random(), 1, 1000);
     for (int i = 0; i < numExtraDocs; i++) {
       d = new Document();
-      d.add(random.nextBoolean() ? f1 : f2);
+      d.add(random().nextBoolean() ? f1 : f2);
       riw.addDocument(d);
     }
 

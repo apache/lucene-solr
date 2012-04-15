@@ -71,7 +71,7 @@ public class TestExplanations extends LuceneTestCase {
   @BeforeClass
   public static void beforeClassTestExplanations() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(KEY, ""+i, StringField.TYPE_UNSTORED));
@@ -95,7 +95,7 @@ public class TestExplanations extends LuceneTestCase {
   
   /** check the expDocNrs first, then check the query (and the explanations) */
   public void qtest(Query q, int[] expDocNrs) throws Exception {
-    CheckHits.checkHitCollector(random, q, FIELD, searcher, expDocNrs);
+    CheckHits.checkHitCollector(random(), q, FIELD, searcher, expDocNrs);
   }
 
   /**

@@ -31,7 +31,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
 
   /** Test a configuration that behaves a lot like WhitespaceAnalyzer */
   public void testWhitespace() throws Exception {
-    Analyzer a = new MockAnalyzer(random);
+    Analyzer a = new MockAnalyzer(random());
     assertAnalyzesTo(a, "A bc defg hiJklmn opqrstuv wxy z ",
         new String[] { "a", "bc", "defg", "hijklmn", "opqrstuv", "wxy", "z" });
     assertAnalyzesToReuse(a, "aba cadaba shazam",
@@ -42,7 +42,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   
   /** Test a configuration that behaves a lot like SimpleAnalyzer */
   public void testSimple() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
     assertAnalyzesTo(a, "a-bc123 defg+hijklmn567opqrstuv78wxy_z ",
         new String[] { "a", "bc", "defg", "hijklmn", "opqrstuv", "wxy", "z" });
     assertAnalyzesToReuse(a, "aba4cadaba-Shazam",
@@ -53,7 +53,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   
   /** Test a configuration that behaves a lot like KeywordAnalyzer */
   public void testKeyword() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
     assertAnalyzesTo(a, "a-bc123 defg+hijklmn567opqrstuv78wxy_z ",
         new String[] { "a-bc123 defg+hijklmn567opqrstuv78wxy_z " });
     assertAnalyzesToReuse(a, "aba4cadaba-Shazam",
@@ -64,13 +64,13 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   
   /** Test a configuration that behaves a lot like StopAnalyzer */
   public void testStop() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
     assertAnalyzesTo(a, "the quick brown a fox",
         new String[] { "quick", "brown", "fox" },
         new int[] { 2, 1, 2 });
     
     // disable positions
-    a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
     assertAnalyzesTo(a, "the quick brown a fox",
         new String[] { "quick", "brown", "fox" },
         new int[] { 1, 1, 1 });
@@ -83,7 +83,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
           BasicOperations.complement(
               Automaton.union(
                   Arrays.asList(BasicAutomata.makeString("foo"), BasicAutomata.makeString("bar")))));
-    Analyzer a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, keepWords, true);
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, keepWords, true);
     assertAnalyzesTo(a, "quick foo brown bar bar fox foo",
         new String[] { "foo", "bar", "bar", "foo" },
         new int[] { 2, 2, 1, 2 });
@@ -92,7 +92,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   /** Test a configuration that behaves a lot like LengthFilter */
   public void testLength() throws Exception {
     CharacterRunAutomaton length5 = new CharacterRunAutomaton(new RegExp(".{5,}").toAutomaton());
-    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, true, length5, true);
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, length5, true);
     assertAnalyzesTo(a, "ok toolong fine notfine",
         new String[] { "ok", "fine" },
         new int[] { 1, 2 });
@@ -101,7 +101,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   public void testLUCENE_3042() throws Exception {
     String testString = "t";
     
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     TokenStream stream = analyzer.tokenStream("dummy", new StringReader(testString));
     stream.reset();
     while (stream.incrementToken()) {
@@ -115,16 +115,16 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random, new MockAnalyzer(random), atLeast(1000));
+    checkRandomData(random(), new MockAnalyzer(random()), atLeast(1000));
   }
   
   public void testForwardOffsets() throws Exception {
     int num = atLeast(10000);
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomHtmlishString(random, 20);
+      String s = _TestUtil.randomHtmlishString(random(), 20);
       StringReader reader = new StringReader(s);
       MockCharFilter charfilter = new MockCharFilter(CharReader.get(reader), 2);
-      MockAnalyzer analyzer = new MockAnalyzer(random);
+      MockAnalyzer analyzer = new MockAnalyzer(random());
       TokenStream ts = analyzer.tokenStream("bogus", charfilter);
       ts.reset();
       while (ts.incrementToken()) {

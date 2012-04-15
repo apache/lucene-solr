@@ -48,6 +48,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   private final String countField = "publisher";
 
   public void testSimple() throws Exception {
+    Random random = random();
     DocValues.Type[] dvTypes = new DocValues.Type[]{
         DocValues.Type.VAR_INTS,
         DocValues.Type.FLOAT_64,
@@ -223,6 +224,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   }
 
   public void testRandom() throws Exception {
+    Random random = random();
     int numberOfRuns = _TestUtil.nextInt(random, 3, 6);
     for (int indexIter = 0; indexIter < numberOfRuns; indexIter++) {
       IndexContext context = createIndexContext();
@@ -340,6 +342,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
                                                                       String groupField,
                                                                       String countField,
                                                                       DocValues.Type dvType) {
+    Random random = random();
     Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(0, false);
     if (DVFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
       boolean diskResident = random.nextBoolean();
@@ -353,6 +356,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
   @SuppressWarnings({"unchecked","rawtypes"})
   private <T> AbstractFirstPassGroupingCollector<T> createRandomFirstPassCollector(DocValues.Type dvType, Sort groupSort, String groupField, int topNGroups) throws IOException {
+    Random random = random();
     if (dvType != null) {
       if (random.nextBoolean()) {
         boolean diskResident = random.nextBoolean();
@@ -397,6 +401,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   }
 
   private IndexContext createIndexContext() throws Exception {
+    Random random = random();
     DocValues.Type[] dvTypes = new DocValues.Type[]{
         DocValues.Type.BYTES_VAR_STRAIGHT,
         DocValues.Type.BYTES_VAR_SORTED

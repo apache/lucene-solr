@@ -34,8 +34,8 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   private Directory dir, dir1, dir2;
 
   public void testQueries() throws Exception {
-    single = single(random);
-    parallel = parallel(random);
+    single = single(random());
+    parallel = parallel(random());
     
     queryTest(new TermQuery(new Term("f1", "v1")));
     queryTest(new TermQuery(new Term("f1", "v2")));
@@ -59,8 +59,8 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   }
 
   public void testFieldNames() throws Exception {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
+    Directory dir1 = getDir1(random());
+    Directory dir2 = getDir2(random());
     ParallelAtomicReader pr = new ParallelAtomicReader(SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
                                                        SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
     FieldInfos fieldInfos = pr.getFieldInfos();
@@ -75,8 +75,8 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   }
   
   public void testRefCounts1() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
+    Directory dir1 = getDir1(random());
+    Directory dir2 = getDir2(random());
     AtomicReader ir1, ir2;
     // close subreaders, ParallelReader will not change refCounts, but close on its own close
     ParallelAtomicReader pr = new ParallelAtomicReader(ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
@@ -93,8 +93,8 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   }
   
   public void testRefCounts2() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
+    Directory dir1 = getDir1(random());
+    Directory dir2 = getDir2(random());
     AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
     AtomicReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
     // don't close subreaders, so ParallelReader will increment refcounts
@@ -115,11 +115,11 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   
   public void testIncompatibleIndexes() throws IOException {
     // two documents:
-    Directory dir1 = getDir1(random);
+    Directory dir1 = getDir1(random());
 
     // one document only:
     Directory dir2 = newDirectory();
-    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document d3 = new Document();
 
     d3.add(newField("f3", "v1", TextField.TYPE_STORED));
@@ -137,7 +137,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     }
 
     try {
-      new ParallelAtomicReader(random.nextBoolean(),
+      new ParallelAtomicReader(random().nextBoolean(),
                                new AtomicReader[] {ir1, ir2},
                                new AtomicReader[] {ir1, ir2});
       fail("didn't get expected exception: indexes don't have same number of documents");
@@ -154,8 +154,8 @@ public class TestParallelAtomicReader extends LuceneTestCase {
   }
 
   public void testIgnoreStoredFields() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
+    Directory dir1 = getDir1(random());
+    Directory dir2 = getDir2(random());
     AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
     AtomicReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
     

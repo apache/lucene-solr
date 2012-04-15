@@ -45,9 +45,9 @@ public class TestUniqueTermCount extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-                                                    new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy());
+                                                    new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy());
     config.setSimilarity(new TestSimilarity());
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
     doc.add(foo);
@@ -79,10 +79,10 @@ public class TestUniqueTermCount extends LuceneTestCase {
   private String addValue() {
     StringBuilder sb = new StringBuilder();
     HashSet<String> terms = new HashSet<String>();
-    int num = _TestUtil.nextInt(random, 0, 255);
+    int num = _TestUtil.nextInt(random(), 0, 255);
     for (int i = 0; i < num; i++) {
       sb.append(' ');
-      char term = (char) _TestUtil.nextInt(random, 'a', 'z');
+      char term = (char) _TestUtil.nextInt(random(), 'a', 'z');
       sb.append(term);
       terms.add("" + term);
     }

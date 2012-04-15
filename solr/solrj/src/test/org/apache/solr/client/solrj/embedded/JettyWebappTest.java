@@ -63,7 +63,7 @@ public class JettyWebappTest extends LuceneTestCase
 
     server = new Server(port);
     // insecure: only use for tests!!!!
-    server.setSessionIdManager(new HashSessionIdManager(new Random(random.nextLong())));
+    server.setSessionIdManager(new HashSessionIdManager(new Random(random().nextLong())));
     new WebAppContext(server, path, context );
 
     SocketConnector connector = new SocketConnector();

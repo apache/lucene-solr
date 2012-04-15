@@ -240,7 +240,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void initializeIndex(String[] values) throws IOException {
-    initializeIndex(values, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
+    initializeIndex(values, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
   }
 
   private void initializeIndex(String[] values, Analyzer analyzer) throws IOException {
@@ -254,7 +254,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
 
   // shouldnt create an analyzer for every doc?
   private void addDoc(String content) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
     insertDoc(writer, content);
     writer.close();
   }

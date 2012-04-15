@@ -85,8 +85,8 @@ public class TestSort extends LuceneTestCase {
   private byte[][] generateRandom(int howMuchData) {
     ArrayList<byte[]> data = new ArrayList<byte[]>(); 
     while (howMuchData > 0) {
-      byte [] current = new byte [random.nextInt(256)];
-      random.nextBytes(current);
+      byte [] current = new byte [random().nextInt(256)];
+      random().nextBytes(current);
       data.add(current);
       howMuchData -= current.length;
     }

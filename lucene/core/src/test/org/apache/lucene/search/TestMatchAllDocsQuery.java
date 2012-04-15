@@ -35,8 +35,14 @@ import org.apache.lucene.util.LuceneTestCase;
  *
  */
 public class TestMatchAllDocsQuery extends LuceneTestCase {
-  private Analyzer analyzer = new MockAnalyzer(random);
+  private Analyzer analyzer;
   
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    analyzer = new MockAnalyzer(random());
+  }
+
   public void testQuery() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(

@@ -75,7 +75,7 @@ public class TestSetOnce extends LuceneTestCase {
     final SetOnce<Integer> set = new SetOnce<Integer>();
     SetOnceThread[] threads = new SetOnceThread[10];
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new SetOnceThread(random);
+      threads[i] = new SetOnceThread(random());
       threads[i].setName("t-" + (i+1));
       threads[i].set = set;
     }

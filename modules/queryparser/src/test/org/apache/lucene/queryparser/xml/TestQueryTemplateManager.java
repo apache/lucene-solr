@@ -45,7 +45,7 @@ import java.util.StringTokenizer;
 public class TestQueryTemplateManager extends LuceneTestCase {
 
   private CoreParser builder;
-  private final Analyzer analyzer = new MockAnalyzer(random);
+  private Analyzer analyzer;
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory dir;
@@ -141,6 +141,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
+    analyzer = new MockAnalyzer(random());
     //Create an index
     dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));

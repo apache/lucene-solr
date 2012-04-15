@@ -69,10 +69,10 @@ public class TestGrouping extends LuceneTestCase {
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
-                               random,
+                               random(),
                                dir,
                                newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                    new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+                                                    new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
     // 0
     Document doc = new Document();
@@ -181,10 +181,10 @@ public class TestGrouping extends LuceneTestCase {
 
   private AbstractFirstPassGroupingCollector<?> createRandomFirstPassCollector(String groupField, Sort groupSort, int topDocs, boolean canUseIDV) throws IOException {
     AbstractFirstPassGroupingCollector<?> selected;
-    if (canUseIDV && random.nextBoolean()) {
-      boolean diskResident = random.nextBoolean();
+    if (canUseIDV && random().nextBoolean()) {
+      boolean diskResident = random().nextBoolean();
       selected = DVFirstPassGroupingCollector.create(groupSort, topDocs, groupField, Type.BYTES_VAR_SORTED, diskResident);
-    } else if (random.nextBoolean()) {
+    } else if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
       selected = new FunctionFirstPassGroupingCollector(vs, new HashMap<Object, Object>(), groupSort, topDocs);
     } else {
@@ -198,7 +198,7 @@ public class TestGrouping extends LuceneTestCase {
 
   private AbstractFirstPassGroupingCollector<?> createFirstPassCollector(String groupField, Sort groupSort, int topDocs, AbstractFirstPassGroupingCollector<?> firstPassGroupingCollector) throws IOException {
     if (DVFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
-      boolean diskResident = random.nextBoolean();
+      boolean diskResident = random().nextBoolean();
       return DVFirstPassGroupingCollector.create(groupSort, topDocs, groupField, Type.BYTES_VAR_SORTED, diskResident);
     } else if (TermFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
       ValueSource vs = new BytesRefFieldSource(groupField);
@@ -220,7 +220,7 @@ public class TestGrouping extends LuceneTestCase {
                                                                         boolean fillSortFields) throws IOException {
 
     if (DVFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
-      boolean diskResident = random.nextBoolean();
+      boolean diskResident = random().nextBoolean();
       Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(groupOffset, fillSortFields);
       return DVSecondPassGroupingCollector.create(groupField, diskResident, Type.BYTES_VAR_SORTED, searchGroups, groupSort, sortWithinGroup, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
     } else if (TermFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
@@ -245,7 +245,7 @@ public class TestGrouping extends LuceneTestCase {
                                                                         boolean getMaxScores,
                                                                         boolean fillSortFields) throws IOException {
     if (DVFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
-      boolean diskResident = random.nextBoolean();
+      boolean diskResident = random().nextBoolean();
       return DVSecondPassGroupingCollector.create(groupField, diskResident, Type.BYTES_VAR_SORTED, (Collection) searchGroups, groupSort, sortWithinGroup, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
     } else if (firstPassGroupingCollector.getClass().isAssignableFrom(TermFirstPassGroupingCollector.class)) {
       return new TermSecondPassGroupingCollector(groupField, searchGroups, groupSort, sortWithinGroup, maxDocsPerGroup , getScores, getMaxScores, fillSortFields);
@@ -275,7 +275,7 @@ public class TestGrouping extends LuceneTestCase {
     if (firstPassGroupingCollector.getClass().isAssignableFrom(TermFirstPassGroupingCollector.class)) {
       return new TermAllGroupsCollector(groupField);
     } else if (firstPassGroupingCollector.getClass().isAssignableFrom(DVFirstPassGroupingCollector.class)) {
-      boolean diskResident = random.nextBoolean();
+      boolean diskResident = random().nextBoolean();
       return DVAllGroupsCollector.create(groupField, Type.BYTES_VAR_SORTED, diskResident);
     } else {
       ValueSource vs = new BytesRefFieldSource(groupField);
@@ -372,18 +372,18 @@ public class TestGrouping extends LuceneTestCase {
 
   private Sort getRandomSort() {
     final List<SortField> sortFields = new ArrayList<SortField>();
-    if (random.nextInt(7) == 2) {
+    if (random().nextInt(7) == 2) {
       sortFields.add(SortField.FIELD_SCORE);
     } else {
-      if (random.nextBoolean()) {
-        if (random.nextBoolean()) {
-          sortFields.add(new SortField("sort1", SortField.Type.STRING, random.nextBoolean()));
+      if (random().nextBoolean()) {
+        if (random().nextBoolean()) {
+          sortFields.add(new SortField("sort1", SortField.Type.STRING, random().nextBoolean()));
         } else {
-          sortFields.add(new SortField("sort2", SortField.Type.STRING, random.nextBoolean()));
+          sortFields.add(new SortField("sort2", SortField.Type.STRING, random().nextBoolean()));
         }
-      } else if (random.nextBoolean()) {
-        sortFields.add(new SortField("sort1", SortField.Type.STRING, random.nextBoolean()));
-        sortFields.add(new SortField("sort2", SortField.Type.STRING, random.nextBoolean()));
+      } else if (random().nextBoolean()) {
+        sortFields.add(new SortField("sort1", SortField.Type.STRING, random().nextBoolean()));
+        sortFields.add(new SortField("sort2", SortField.Type.STRING, random().nextBoolean()));
       }
     }
     // Break ties:
@@ -560,7 +560,7 @@ public class TestGrouping extends LuceneTestCase {
 
   private DirectoryReader getDocBlockReader(Directory dir, GroupDoc[] groupDocs) throws IOException {
     // Coalesce by group, but in random order:
-    Collections.shuffle(Arrays.asList(groupDocs), random);
+    Collections.shuffle(Arrays.asList(groupDocs), random());
     final Map<BytesRef,List<GroupDoc>> groupMap = new HashMap<BytesRef,List<GroupDoc>>();
     final List<BytesRef> groupValues = new ArrayList<BytesRef>();
 
@@ -573,10 +573,10 @@ public class TestGrouping extends LuceneTestCase {
     }
 
     RandomIndexWriter w = new RandomIndexWriter(
-                                                random,
+                                                random(),
                                                 dir,
                                                 newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                                     new MockAnalyzer(random)));
+                                                                     new MockAnalyzer(random())));
 
     final List<List<Document>> updateDocs = new ArrayList<List<Document>>();
 
@@ -605,7 +605,7 @@ public class TestGrouping extends LuceneTestCase {
       docs.get(docs.size()-1).add(groupEnd);
       // Add as a doc block:
       w.addDocuments(docs);
-      if (group != null && random.nextInt(7) == 4) {
+      if (group != null && random().nextInt(7) == 4) {
         updateDocs.add(docs);
       }
     }
@@ -652,16 +652,16 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numberOfRuns = _TestUtil.nextInt(random, 3, 6);
+    int numberOfRuns = _TestUtil.nextInt(random(), 3, 6);
     for (int iter=0; iter<numberOfRuns; iter++) {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }
 
-      final int numDocs = _TestUtil.nextInt(random, 100, 1000) * RANDOM_MULTIPLIER;
+      final int numDocs = _TestUtil.nextInt(random(), 100, 1000) * RANDOM_MULTIPLIER;
       //final int numDocs = _TestUtil.nextInt(random, 5, 20);
 
-      final int numGroups = _TestUtil.nextInt(random, 1, numDocs);
+      final int numGroups = _TestUtil.nextInt(random(), 1, numDocs);
 
       if (VERBOSE) {
         System.out.println("TEST: numDocs=" + numDocs + " numGroups=" + numGroups);
@@ -673,19 +673,19 @@ public class TestGrouping extends LuceneTestCase {
         do {
           // B/c of DV based impl we can't see the difference between an empty string and a null value.
           // For that reason we don't generate empty string groups.
-          randomValue = _TestUtil.randomRealisticUnicodeString(random);
+          randomValue = _TestUtil.randomRealisticUnicodeString(random());
         } while ("".equals(randomValue));
 
         groups.add(new BytesRef(randomValue));
       }
-      final String[] contentStrings = new String[_TestUtil.nextInt(random, 2, 20)];
+      final String[] contentStrings = new String[_TestUtil.nextInt(random(), 2, 20)];
       if (VERBOSE) {
         System.out.println("TEST: create fake content");
       }
       for(int contentIDX=0;contentIDX<contentStrings.length;contentIDX++) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("real").append(random.nextInt(3)).append(' ');
-        final int fakeCount = random.nextInt(10);
+        sb.append("real").append(random().nextInt(3)).append(' ');
+        final int fakeCount = random().nextInt(10);
         for(int fakeIDX=0;fakeIDX<fakeCount;fakeIDX++) {
           sb.append("fake ");
         }
@@ -697,10 +697,10 @@ public class TestGrouping extends LuceneTestCase {
 
       Directory dir = newDirectory();
       RandomIndexWriter w = new RandomIndexWriter(
-                                                  random,
+                                                  random(),
                                                   dir,
                                                   newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                                       new MockAnalyzer(random)));
+                                                                       new MockAnalyzer(random())));
       final boolean preFlex = "Lucene3x".equals(w.w.getConfig().getCodec().getName());
       boolean canUseIDV = !preFlex;
 
@@ -728,18 +728,18 @@ public class TestGrouping extends LuceneTestCase {
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
       for(int i=0;i<numDocs;i++) {
         final BytesRef groupValue;
-        if (random.nextInt(24) == 17) {
+        if (random().nextInt(24) == 17) {
           // So we test the "doc doesn't have the group'd
           // field" case:
           groupValue = null;
         } else {
-          groupValue = groups.get(random.nextInt(groups.size()));
+          groupValue = groups.get(random().nextInt(groups.size()));
         }
         final GroupDoc groupDoc = new GroupDoc(i,
                                                groupValue,
-                                               groups.get(random.nextInt(groups.size())),
-                                               groups.get(random.nextInt(groups.size())),
-                                               contentStrings[random.nextInt(contentStrings.length)]);
+                                               groups.get(random().nextInt(groups.size())),
+                                               groups.get(random().nextInt(groups.size())),
+                                               contentStrings[random().nextInt(contentStrings.length)]);
         if (VERBOSE) {
           System.out.println("  doc content=" + groupDoc.content + " id=" + i + " group=" + (groupDoc.group == null ? "null" : groupDoc.group.utf8ToString()) + " sort1=" + groupDoc.sort1.utf8ToString() + " sort2=" + groupDoc.sort2.utf8ToString());
         }
@@ -838,10 +838,10 @@ public class TestGrouping extends LuceneTestCase {
             System.out.println("\nTEST: searchIter=" + searchIter);
           }
 
-          final String searchTerm = "real" + random.nextInt(3);
-          final boolean fillFields = random.nextBoolean();
-          boolean getScores = random.nextBoolean();
-          final boolean getMaxScores = random.nextBoolean();
+          final String searchTerm = "real" + random().nextInt(3);
+          final boolean fillFields = random().nextBoolean();
+          boolean getScores = random().nextBoolean();
+          final boolean getMaxScores = random().nextBoolean();
           final Sort groupSort = getRandomSort();
           //final Sort groupSort = new Sort(new SortField[] {new SortField("sort1", SortField.STRING), new SortField("id", SortField.INT)});
           // TODO: also test null (= sort by relevance)
@@ -859,18 +859,18 @@ public class TestGrouping extends LuceneTestCase {
             }
           }
 
-          final int topNGroups = _TestUtil.nextInt(random, 1, 30);
+          final int topNGroups = _TestUtil.nextInt(random(), 1, 30);
           //final int topNGroups = 10;
-          final int docsPerGroup = _TestUtil.nextInt(random, 1, 50);
+          final int docsPerGroup = _TestUtil.nextInt(random(), 1, 50);
 
-          final int groupOffset = _TestUtil.nextInt(random, 0, (topNGroups-1)/2);
+          final int groupOffset = _TestUtil.nextInt(random(), 0, (topNGroups-1)/2);
           //final int groupOffset = 0;
 
-          final int docOffset = _TestUtil.nextInt(random, 0, docsPerGroup-1);
+          final int docOffset = _TestUtil.nextInt(random(), 0, docsPerGroup-1);
           //final int docOffset = 0;
 
-          final boolean doCache = random.nextBoolean();
-          final boolean doAllGroups = random.nextBoolean();
+          final boolean doCache = random().nextBoolean();
+          final boolean doAllGroups = random().nextBoolean();
           if (VERBOSE) {
             System.out.println("TEST: groupSort=" + groupSort + " docSort=" + docSort + " searchTerm=" + searchTerm + " dF=" + r.docFreq("content", new BytesRef(searchTerm))  +" dFBlock=" + rBlocks.docFreq("content", new BytesRef(searchTerm)) + " topNGroups=" + topNGroups + " groupOffset=" + groupOffset + " docOffset=" + docOffset + " doCache=" + doCache + " docsPerGroup=" + docsPerGroup + " doAllGroups=" + doAllGroups + " getScores=" + getScores + " getMaxScores=" + getMaxScores);
           }
@@ -886,10 +886,10 @@ public class TestGrouping extends LuceneTestCase {
             allGroupsCollector = null;
           }
 
-          final boolean useWrappingCollector = random.nextBoolean();
+          final boolean useWrappingCollector = random().nextBoolean();
 
           if (doCache) {
-            final double maxCacheMB = random.nextDouble();
+            final double maxCacheMB = random().nextDouble();
             if (VERBOSE) {
               System.out.println("TEST: maxCacheMB=" + maxCacheMB);
             }

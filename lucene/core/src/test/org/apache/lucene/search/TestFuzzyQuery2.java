@@ -73,7 +73,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
   };
   public void testFromTestData() throws Exception {
     // TODO: randomize!
-    assertFromTestData(mappings[random.nextInt(mappings.length)]);
+    assertFromTestData(mappings[random().nextInt(mappings.length)]);
   }
 
   public void assertFromTestData(int codePointTable[]) throws Exception {
@@ -87,7 +87,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     int terms = (int) Math.pow(2, bits);
     
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
 
     Document doc = new Document();
     Field field = newField("field", "", TextField.TYPE_UNSTORED);

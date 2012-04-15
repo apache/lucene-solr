@@ -65,7 +65,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   @Override
   protected Directory getDirectory(Directory in) {
     // Randomly swap in NRTCachingDir
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       if (VERBOSE) {
         System.out.println("TEST: wrap NRTCachingDir");
       }
@@ -81,7 +81,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     final long gen = genWriter.updateDocuments(id, docs);
 
     // Randomly verify the update "took":
-    if (random.nextInt(20) == 2) {
+    if (random().nextInt(20) == 2) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
       }
@@ -104,7 +104,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   protected void addDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
     final long gen = genWriter.addDocuments(docs);
     // Randomly verify the add "took":
-    if (random.nextInt(20) == 2) {
+    if (random().nextInt(20) == 2) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
       }
@@ -127,7 +127,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     final long gen = genWriter.addDocument(doc);
 
     // Randomly verify the add "took":
-    if (random.nextInt(20) == 2) {
+    if (random().nextInt(20) == 2) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
       }
@@ -149,7 +149,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   protected void updateDocument(Term id, Iterable<? extends IndexableField> doc) throws Exception {
     final long gen = genWriter.updateDocument(id, doc);
     // Randomly verify the udpate "took":
-    if (random.nextInt(20) == 2) {
+    if (random().nextInt(20) == 2) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
       }
@@ -171,7 +171,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
   protected void deleteDocuments(Term id) throws Exception {
     final long gen = genWriter.deleteDocuments(id);
     // randomly verify the delete "took":
-    if (random.nextInt(20) == 7) {
+    if (random().nextInt(20) == 7) {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": nrt: verify del " + id);
       }
@@ -202,8 +202,8 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
   @Override
   protected void doAfterWriter(final ExecutorService es) throws Exception {
-    final double minReopenSec = 0.01 + 0.05 * random.nextDouble();
-    final double maxReopenSec = minReopenSec * (1.0 + 10 * random.nextDouble());
+    final double minReopenSec = 0.01 + 0.05 * random().nextDouble();
+    final double maxReopenSec = minReopenSec * (1.0 + 10 * random().nextDouble());
 
     if (VERBOSE) {
       System.out.println("TEST: make NRTManager maxReopenSec=" + maxReopenSec + " minReopenSec=" + minReopenSec);
@@ -261,7 +261,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     // Test doesn't assert deletions until the end, so we
     // can randomize whether dels must be applied
     final NRTManager nrt;
-    if (random.nextBoolean()) {
+    if (random().nextBoolean()) {
       nrt = nrtDeletes;
     } else {
       nrt = nrtNoDeletes;
@@ -295,7 +295,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
    * LUCENE-3528 - NRTManager hangs in certain situations 
    */
   public void testThreadStarvationNoDeleteNRTReader() throws IOException, InterruptedException {
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     Directory d = newDirectory();
     final CountDownLatch latch = new CountDownLatch(1);
     final CountDownLatch signal = new CountDownLatch(1);
@@ -391,7 +391,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
   public void testEvilSearcherFactory() throws Exception {
     final Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     w.commit();
 
     final IndexReader other = DirectoryReader.open(dir);

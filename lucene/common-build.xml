@@ -61,8 +61,12 @@
 
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" value="${common.dir}/test-framework/lib/${junit.jar}"/>
+
   <path id="junit-path">
-    <pathelement location="${junit-location.jar}"/>
+    <fileset dir="${common.dir}/test-framework/lib">
+      <include name="junit-*.jar" />
+      <include name="randomizedtesting-runner-*.jar" />
+    </fileset>
   </path>
 
   <path id="ant-path">
@@ -70,15 +74,10 @@
   </path>
 
   <!-- default arguments to pass to JVM executing tests -->
-  <property name="testmethod" value=""/>
   <property name="args" value=""/>
-  <property name="tests.threadspercpu" value="1" />
-  <condition property="tests.sequential">
-    <or>
-      <isset property="testcase"/>
-      <equals arg1="${tests.threadspercpu}" arg2="0"/>
-    </or>
-  </condition>
+
+  <property name="tests.seed" value="" />
+  <property name="tests.threadspercpu" value="auto" />
   <property name="tests.multiplier" value="1" />
   <property name="tests.codec" value="random" />
   <property name="tests.postingsformat" value="random" />
@@ -86,9 +85,6 @@
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
   <property name="tests.linedocsfile" value="europarl.lines.txt.gz" />
-  <property name="tests.iter" value="1" />
-  <property name="tests.iter.min" value="${tests.iter}" />
-  <property name="tests.seed" value="random" />
   <property name="tests.loggingfile" value="/dev/null"/>
   <property name="tests.nightly" value="false" />
   <property name="tests.weekly" value="false" />
@@ -171,13 +167,6 @@
   <property name="junit.output.dir.backwards" location="${build.dir.backwards}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
   <property name="junit.reports.backwards" location="${build.dir.backwards}/test/reports"/>
-  <property name="junit.excludes" value="**/Abstract*"/>
-  <condition property="junit.details.formatter" 
-      value="org.apache.tools.ant.taskdefs.optional.junit.BriefJUnitResultFormatter"
-      else="org.apache.lucene.util.LuceneJUnitResultFormatter">
-    <isset property="tests.sequential"/>
-  </condition>
-  <property name="junit.parallel.selector" value="org.apache.lucene.util.LuceneJUnitDividingSelector"/>
 
   <property name="manifest.file" location="${build.dir}/MANIFEST.MF"/>
 
@@ -263,7 +252,15 @@
   </target>
 
   <target name="init" depends="resolve">
-    <!-- currently empty -->
+    <!-- JUnit4 taskdef. -->
+    <taskdef resource="com/carrotsearch/junit4/antlib.xml">
+      <classpath>
+         <fileset dir="${common.dir}/test-framework/lib">
+            <include name="junit4-ant-*.jar" />
+            <include name="junit-*.jar" />
+         </fileset>
+      </classpath>
+    </taskdef>    
   </target>
 
   <target name="resolve" depends="ivy-availability-check,ivy-fail">
@@ -271,6 +268,7 @@
          only special cases need bundles -->
     <ivy:retrieve type="jar,bundle" log="download-only"/>
   </target>
+
   <target name="ivy-availability-check" unless="ivy.available">
    <echo>
      This build requires Ivy and Ivy could not be found in your ant classpath.
@@ -622,152 +620,332 @@
       </copy>
   	</sequential>
   </macrodef>
-	
+
+  <target name="test-updatecache" description="Overwrite tests' timings cache for balancing." depends="init">
+    <mergehints file="${common.dir}/tools/junit4/cached-timehints.txt">
+      <resources>
+        <!-- The order is important. Include previous stats first, then append new stats. -->
+        <fileset dir="${common.dir}/tools/junit4">
+          <include name="*.txt" />
+        </fileset>
+        <fileset dir="${common.dir}/..">
+          <include name="**/tests-timehints.txt" />
+          <exclude name="lucene/tools/junit4/**" />
+        </fileset>
+      </resources>
+    </mergehints>
+  </target>
+
+  <!-- Aliases for tests filters -->
+  <condition property="tests.class" value="*.${testcase}">
+    <isset property="testcase" />
+  </condition>
+  <condition property="tests.method" value="${testmethod}">
+    <isset property="testmethod" />
+  </condition>
+
+  <!-- Test macro using junit4. -->
   <macrodef name="test-macro" description="Executes junit tests.">
-  	<attribute name="junit.output.dir" default="${junit.output.dir}"/>
-  	<attribute name="junit.classpath" default="junit.classpath"/>
-  	<attribute name="dataDir" default="${tests.src.dir}"/>
-  	<attribute name="tempDir" default="${build.dir}/test"/>
-  	<attribute name="threadNum" default="1"/>
-  	<attribute name="threadTotal" default="1"/>
+    <attribute name="junit.output.dir" default="${junit.output.dir}"/>
+    <attribute name="junit.classpath" default="junit.classpath"/>
+    <attribute name="testsDir" default="${build.dir}/classes/test"/>
+    <attribute name="tempDir" default="${build.dir}/test"/>
+    <attribute name="threadNum" default="1"/>
     <attribute name="tests.nightly" default="${tests.nightly}"/>
     <attribute name="tests.weekly" default="${tests.weekly}"/>
     <attribute name="tests.slow" default="${tests.slow}"/>
     <attribute name="tests.multiplier" default="${tests.multiplier}"/>
-
+      
     <sequential>
-	    <condition property="runall">
-	      <not><or>
-	        <isset property="testcase" />
-	      	<isset property="testpackage" />
-	      	<isset property="testpackageroot" />
-	      </or></not>
-	    </condition>
-	    <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
-	    This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
-	    -->
-    	<touch file="@{tempDir}/@{threadNum}/quiet.ant" verbose="false" mkdirs="true"/>
-	    <junit printsummary="off" haltonfailure="no" maxmemory="${tests.heapsize}" tempdir="@{tempDir}/@{threadNum}"
-	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir="@{tempDir}/@{threadNum}"
-	        filtertrace="false">
-	      <classpath refid="@{junit.classpath}"/>
-	      <assertions>
-	        <enable package="org.apache.lucene"/>
-	        <enable package="org.apache.solr"/>
-	      </assertions>
-	      
-	      <jvmarg line="${args}"/>
-	
-	      <!-- allow tests to control debug prints -->
-	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
-	      <!-- even more debugging -->
-	      <sysproperty key="tests.infostream" value="${tests.infostream}"/>
-              <!-- directory for formatter lock -->
-	      <sysproperty key="tests.lockdir" value="${tests.lockdir}"/>
-              <!-- set the codec tests should run with -->
-	      <sysproperty key="tests.codec" value="${tests.codec}"/>
-              <!-- set the postingsformat tests should run with -->
-	      <sysproperty key="tests.postingsformat" value="${tests.postingsformat}"/>
-              <!-- set the locale tests should run with -->
-	      <sysproperty key="tests.locale" value="${tests.locale}"/>
-              <!-- set the timezone tests should run with -->
-	      <sysproperty key="tests.timezone" value="${tests.timezone}"/>
-              <!-- set the directory tests should run with -->
-              <sysproperty key="tests.directory" value="${tests.directory}"/>
-              <!-- set the line file source for oal.util.LineFileDocs -->
-              <sysproperty key="tests.linedocsfile" value="${tests.linedocsfile}"/>
-              <!-- set the number of times tests should run -->
-              <sysproperty key="tests.iter" value="${tests.iter}"/>
-              <!-- set the minimum number of times tests should run unless failure -->
-              <sysproperty key="tests.iter.min" value="${tests.iter.min}"/>
-              <!-- set the test seed -->
-              <sysproperty key="tests.seed" value="${tests.seed}"/>
-              <!-- set the Version that tests should run against -->
-              <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
-              <!-- for lucene we can be strict, and we don't want false fails even across methods -->
-              <sysproperty key="tests.cleanthreads" value="${tests.cleanthreads.sysprop}"/>
-              <!-- logging config file -->
-              <sysproperty key="java.util.logging.config.file" value="${tests.loggingfile}"/>
-          <!-- set whether or not nightly tests should run -->
-          <sysproperty key="tests.nightly" value="@{tests.nightly}"/>
-        <!-- set whether or not weekly tests should run -->
-          <sysproperty key="tests.weekly" value="@{tests.weekly}"/>
-        <!-- set whether or not slow tests should run -->
-          <sysproperty key="tests.slow" value="@{tests.slow}"/>
-	    	
-          <!-- set whether tests framework should not require java assertions enabled -->
-          <sysproperty key="tests.asserts.gracious" value="${tests.asserts.gracious}"/>
+        <!-- Warn if somebody uses removed properties. -->
+        <fail message="This property has been removed: tests.iter, use -Dtests.iters=N.">
+          <condition>
+            <isset property="tests.iter" />
+          </condition>
+        </fail>
 
-	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
-              <sysproperty key="tests.multiplier" value="@{tests.multiplier}"/>
-	      <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
+        <!-- Defaults. -->
+        <property name="tests.class"  value="" />
+        <property name="tests.method" value="" />
+        <property name="tests.dynamicAssignmentRatio" value="0.25" /> <!-- 25% of suites -->
+        <property name="tests.haltonfailure" value="true" />
+        <property name="tests.iters" value="" />
 
-	      <sysproperty key="lucene.version" value="${dev.version}"/>
+        <junit4
+            dir="@{tempDir}"
+            tempdir="@{tempDir}"
+            maxmemory="${tests.heapsize}" 
+            
+            parallelism="@{threadNum}"
+
+            printSummary="true"
+            haltonfailure="${tests.haltonfailure}" 
+            failureProperty="tests.failed"
+
+            dynamicAssignmentRatio="${tests.dynamicAssignmentRatio}"
+            shuffleOnSlave="true"
+            leaveTemporary="false"
+            seed="${tests.seed}"
+        >
+            <!-- Classpaths. -->
+            <classpath refid="@{junit.classpath}"/>
+
+            <!-- Assertions. -->
+            <assertions>
+              <enable package="org.apache.lucene"/>
+              <enable package="org.apache.solr"/>
+            </assertions>
+
+            <!-- JVM arguments and system properties. -->
+            <jvmarg line="${args}"/>
+
+            <!-- set the number of times tests should run -->
+            <sysproperty key="tests.iters" value="${tests.iters}"/>
+            <!-- allow tests to control debug prints -->
+            <sysproperty key="tests.verbose" value="${tests.verbose}"/>
+            <!-- even more debugging -->
+            <sysproperty key="tests.infostream" value="${tests.infostream}"/>
+            <!-- directory for formatter lock -->
+            <sysproperty key="tests.lockdir" value="${tests.lockdir}"/>
+            <!-- set the codec tests should run with -->
+            <sysproperty key="tests.codec" value="${tests.codec}"/>
+            <!-- set the postingsformat tests should run with -->
+            <sysproperty key="tests.postingsformat" value="${tests.postingsformat}"/>
+            <!-- set the locale tests should run with -->
+            <sysproperty key="tests.locale" value="${tests.locale}"/>
+            <!-- set the timezone tests should run with -->
+            <sysproperty key="tests.timezone" value="${tests.timezone}"/>
+            <!-- set the directory tests should run with -->
+            <sysproperty key="tests.directory" value="${tests.directory}"/>
+            <!-- set the line file source for oal.util.LineFileDocs -->
+            <sysproperty key="tests.linedocsfile" value="${tests.linedocsfile}"/>
+            <!-- set the Version that tests should run against -->
+            <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
+            <!-- for lucene we can be strict, and we don't want false fails even across methods -->
+            <sysproperty key="tests.cleanthreads" value="${tests.cleanthreads.sysprop}"/>
+            <!-- logging config file -->
+            <sysproperty key="java.util.logging.config.file" value="${tests.loggingfile}"/>
+            <!-- set whether or not nightly tests should run -->
+            <sysproperty key="tests.nightly" value="@{tests.nightly}"/>
+              <!-- set whether or not weekly tests should run -->
+            <sysproperty key="tests.weekly" value="@{tests.weekly}"/>
+              <!-- set whether or not slow tests should run -->
+            <sysproperty key="tests.slow" value="@{tests.slow}"/>
               
-              <sysproperty key="testmethod" value="${testmethod}"/>
-              <sysproperty key="jetty.testMode" value="1"/>
-              <sysproperty key="jetty.insecurerandom" value="1"/>
-    	      <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
-	    	
-	      <formatter type="xml"/>
-	      <formatter classname="${junit.details.formatter}" usefile="false"/>
-	      <batchtest fork="yes" todir="@{junit.output.dir}" if="runall">
-	        <fileset dir="@{dataDir}" includes="**/Test*.java,**/*Test.java" excludes="${junit.excludes}">
-	          <custom classname="${junit.parallel.selector}" classpathref="@{junit.classpath}">
-	            <param name="divisor" value="@{threadTotal}" />
-	            <param name="part" value="@{threadNum}" />
-	          </custom>
-	        </fileset>
-	      </batchtest>
-	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackage">
-	        <fileset dir="@{dataDir}" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java" excludes="${junit.excludes}">
-		      <custom classname="${junit.parallel.selector}" classpathref="@{junit.classpath}">
-		        <param name="divisor" value="@{threadTotal}" />
-		        <param name="part" value="@{threadNum}" />
-		      </custom>
-	        </fileset>
-	      </batchtest>
-	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackageroot">
-	        <fileset dir="@{dataDir}" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java" excludes="${junit.excludes}">
-			  <custom classname="${junit.parallel.selector}" classpathref="@{junit.classpath}">
-			    <param name="divisor" value="@{threadTotal}" />
-			    <param name="part" value="@{threadNum}" />
-			  </custom>
-	        </fileset>
-	      </batchtest>
-	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testcase">
-	        <fileset dir="@{dataDir}" includes="**/${testcase}.java"/>
-	      </batchtest>
-	    </junit>
-	    <fail if="tests.failed">Tests failed!</fail>
-  	</sequential>
+            <!-- set whether tests framework should not require java assertions enabled -->
+            <sysproperty key="tests.asserts.gracious" value="${tests.asserts.gracious}"/>
+
+            <!-- TODO: create propertyset for test properties, so each project can have its own set -->
+            <sysproperty key="tests.multiplier" value="@{tests.multiplier}"/>
+            
+            <!-- Temporary directory in the cwd. -->
+            <sysproperty key="tempDir" value="."/>
+
+            <sysproperty key="lucene.version" value="${dev.version}"/>
+
+            <sysproperty key="jetty.testMode" value="1"/>
+            <sysproperty key="jetty.insecurerandom" value="1"/>
+            <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
+
+            <!-- Use static cached test balancing statistcs. -->
+            <balancers>
+                <execution-times>
+                    <fileset dir="${common.dir}/tools/junit4" includes="**/*.txt" />
+                </execution-times>
+            </balancers>            
+            
+            <!-- Reporting listeners. -->
+            <listeners>
+                <!-- A simplified console output (maven-like). -->
+                <report-text
+                    showThrowable="true" 
+                    showStackTraces="true" 
+                    showOutputStream="true" 
+                    showErrorStream="true"
+
+                    showStatusOk="false"
+                    showStatusError="true"
+                    showStatusFailure="true"
+                    showStatusIgnored="true"
+
+                    showSuiteSummary="true"
+                />
+
+                <!-- Emits full status for all tests, their relative order on slaves. -->
+                <report-text
+                    file="${junit.output.dir}/tests-report.txt"
+                    showThrowable="true" 
+                    showStackTraces="true" 
+                    showOutputStream="true" 
+                    showErrorStream="true"
+
+                    showStatusOk="true"
+                    showStatusError="true"
+                    showStatusFailure="true"
+                    showStatusIgnored="true"
+
+                    showSuiteSummary="true"
+                />
+
+                <!-- Emits status on errors and failures only. -->
+                <report-text
+                    file="${junit.output.dir}/tests-failures.txt"
+                    showThrowable="true" 
+                    showStackTraces="true" 
+                    showOutputStream="true" 
+                    showErrorStream="true"
+
+                    showStatusOk="false"
+                    showStatusError="true"
+                    showStatusFailure="true"
+                    showStatusIgnored="false"
+
+                    showSuiteSummary="false"
+                />
+                
+                <!-- Emit the information about tests timings (could be used to determine
+                     the slowest tests or for reuse in balancing). -->
+                <report-execution-times file="${junit.output.dir}/tests-timehints.txt" historyLength="5" />
+
+                <!-- XML reports compatible with ant-report task. We don't use ant-report anyway so I omit these. -->
+                <!--
+                <report-ant-xml dir="@{junit.output.dir}" />
+                -->
+                <report-json file="${junit.output.dir}/tests-report-${ant.project.name}/index.html" />
+            </listeners>
+
+            <!-- Input test classes. -->
+            <fileset dir="@{testsDir}">
+              <include name="**/Test*.class" />
+              <include name="**/*Test.class" />
+              <exclude name="**/*$*" />
+            </fileset>
+        </junit4>
+
+        <!-- Report the 5 slowest tests from this run to the console. -->
+        <echo>5 slowest tests:</echo>
+        <tophints max="5">
+          <file file="${junit.output.dir}/tests-timehints.txt" />
+        </tophints>
+    </sequential>
   </macrodef>
 
-  <target name="test" depends="compile-test,validate,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
+  <target name="test-times" description="Show the slowest tests (averages)." depends="init">
+    <property name="max" value="10" />
+    <echo>Showing ${max} slowest tests according to local stats. (change with -Dmax=...).</echo>
+    <tophints max="${max}">
+      <fileset dir="${basedir}" includes="**/tests-timehints.txt" />
+    </tophints>
 
-  <target name="junit-mkdir">
+    <echo>Showing ${max} slowest tests in cached stats. (change with -Dmax=...).</echo>
+    <tophints max="${max}">
+        <fileset dir="${common.dir}/tools/junit4">
+          <include name="*.txt" />
+        </fileset>
+    </tophints>
+  </target>
+
+  <target name="test-help" description="Help on 'ant test' syntax.">
+      <echo>
+#
+# Test case filtering. --------------------------------------------
+#
+# - 'tests.class' is a class-filtering shell-like glob pattern,
+#   'testcase' is an alias of "tests.class=*.${testcase}"
+# - 'tests.method' is a method-filtering glob pattern.
+#   'testmethod' is an alias of "tests.method=${testmethod}"
+#
+
+# Run a single test case (variants)
+ant test -Dtests.class=org.apache.lucene.package.ClassName
+ant test "-Dtests.class=*.ClassName"
+ant test -Dtestcase=ClassName
+
+# Run all tests in a package and sub-packages
+ant test "-Dtests.class=org.apache.lucene.package.*"
+
+# Run any test methods that contain 'esi' (like: ...r*esi*ze...).
+ant test "-Dtests.method=*esi*"
+
+#
+# Seed and repetitions. -------------------------------------------
+#
+
+# Run with a given seed (seed is a hex-encoded long).
+ant test -Dtests.seed=DEADBEEF
+
+# Repeats a given test N times (note filters).
+ant test -Dtests.iters=N -Dtestcase=ClassName -Dtestmethod=mytest
+
+# Repeats _all_ tests of ClassName N times. Every test repetition
+# will have a different seed.
+ant test -Dtests.iters=N -Dtestcase=ClassName
+
+# Repeats _all_ tests of ClassName N times. Every test repetition
+# will have exactly the same master (dead) and method-level (beef)
+# seed.
+ant test -Dtests.iters=N -Dtestcase=ClassName -Dtests.seed=dead:beef
+
+#
+# Load balancing and caches. --------------------------------------
+#
+
+# Run sequentially (one slave JVM).
+ant -Dtests.threadspercpu=1 test
+
+# Run with more slave JVMs than the default.
+# Don't count hypercores for CPU-intense tests.
+# Make sure there is enough RAM to handle child JVMs.
+ant -Dtests.threadspercpu=8 test
+
+# Use repeatable suite order on slave JVMs (disables job stealing).
+ant -Dtests.dynamicAssignmentRatio=0 test
+
+# Update global (versioned!) execution times cache (top level).
+ant clean test
+ant -f lucene/build.xml test-updatecache
+
+#
+# Miscellaneous. --------------------------------------------------
+#
+
+# Run all tests without stopping on errors (inspect log files!).
+ant -Dtests.haltonfailure=false test
+
+# Run more verbose output (slave JVM parameters, etc.).
+ant -verbose test
+
+# Display local averaged stats, if any (30 slowest tests).
+ant test-times -Dmax=30
+
+# Output test files and reports.
+${tests-output}/tests-report.txt    - full ASCII tests report
+${tests-output}/tests-failures.txt  - failures only (if any)
+${tests-output}/tests-timehints.txt - execution times (see above)
+${tests-output}/tests-report-*      - HTML5 report with results
+${tests-output}/junit4-*.suites     - per-JVM executed suites
+                                      (important if job stealing).
+      </echo>
+  </target>
+
+  <target name="test" depends="compile-test,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
+    <test-macro threadNum="${tests.threadspercpu}" />
   </target>
 
-  <target name="junit-sequential" if="tests.sequential">
-    <test-macro/>
+  <target name="refresh-checksums">
+    <checksum algorithm="SHA1">
+      <fileset dir="${basedir}">
+        <include name="**/*.jar"/>
+      </fileset>
+    </checksum>
   </target>
 
-  <target name="junit-parallel" unless="tests.sequential">
-    <parallel threadsPerProcessor="${tests.threadspercpu}">
-     <test-macro threadNum="1" threadTotal="4"/>
-     <test-macro threadNum="2" threadTotal="4"/>
-     <test-macro threadNum="3" threadTotal="4"/>
-     <test-macro threadNum="4" threadTotal="4"/>
-    </parallel>
-  </target>
+  <!--
+   If you want clover test code coverage, run this before the tests.  You need clover.jar and the license in your ANT classspath and you need to specify -Drun.clover=true on the command line.
 
-
-    <!--
-     If you want clover test code coverage, run this before the tests.  You need clover.jar and the license in your ANT classspath and you need to specify -Drun.clover=true on the command line.
-
-     See http://issues.apache.org/jira/browse/LUCENE-721
-     -->
+   See http://issues.apache.org/jira/browse/LUCENE-721
+   -->
   <target name="clover" depends="clover.setup, clover.info" description="Instrument the Unit tests using Clover.  Requires a Clover 2.x license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
 
   <target name="clover.setup" if="clover.enabled">

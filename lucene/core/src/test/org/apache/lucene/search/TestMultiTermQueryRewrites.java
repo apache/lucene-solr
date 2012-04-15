@@ -46,9 +46,9 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     dir = newDirectory();
     sdir1 = newDirectory();
     sdir2 = newDirectory();
-    final RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(random));
-    final RandomIndexWriter swriter1 = new RandomIndexWriter(random, sdir1, new MockAnalyzer(random));
-    final RandomIndexWriter swriter2 = new RandomIndexWriter(random, sdir2, new MockAnalyzer(random));
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockAnalyzer(random()));
+    final RandomIndexWriter swriter1 = new RandomIndexWriter(random(), sdir1, new MockAnalyzer(random()));
+    final RandomIndexWriter swriter2 = new RandomIndexWriter(random(), sdir2, new MockAnalyzer(random()));
 
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();

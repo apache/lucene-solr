@@ -42,7 +42,7 @@ public class TestByteSlices extends LuceneTestCase {
       
       int num = atLeast(10000);
       for (int iter = 0; iter < num; iter++) {
-        int stream = random.nextInt(NUM_STREAM);
+        int stream = random().nextInt(NUM_STREAM);
         if (VERBOSE)
           System.out.println("write stream=" + stream);
 
@@ -54,12 +54,12 @@ public class TestByteSlices extends LuceneTestCase {
         }
 
         writer.init(uptos[stream]);
-        int numValue = random.nextInt(20);
+        int numValue = random().nextInt(20);
         for(int j=0;j<numValue;j++) {
           if (VERBOSE)
             System.out.println("    write " + (counters[stream]+j));
           // write some large (incl. negative) ints:
-          writer.writeVInt(random.nextInt());
+          writer.writeVInt(random().nextInt());
           writer.writeVInt(counters[stream]+j);
         }
         counters[stream] += numValue;

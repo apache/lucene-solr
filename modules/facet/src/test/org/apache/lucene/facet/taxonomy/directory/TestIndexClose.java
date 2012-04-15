@@ -146,7 +146,7 @@ public class TestIndexClose extends LuceneTestCase {
       }
       @Override
       protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
-        return newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
+        return newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
             .setOpenMode(openMode).setMergePolicy(newLogMergePolicy());
       }
 

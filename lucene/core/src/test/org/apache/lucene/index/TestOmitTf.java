@@ -61,7 +61,7 @@ public class TestOmitTf extends LuceneTestCase {
   // omitTermFreqAndPositions bit in the FieldInfo
   public void testOmitTermFreqAndPositions() throws Exception {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
     Document d = new Document();
         
@@ -106,7 +106,7 @@ public class TestOmitTf extends LuceneTestCase {
   // omitTermFreqAndPositions for the same field works
   public void testMixedMerge() throws Exception {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(
         ram,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
@@ -159,7 +159,7 @@ public class TestOmitTf extends LuceneTestCase {
   // field, 
   public void testMixedRAM() throws Exception {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(
         ram,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
@@ -208,7 +208,7 @@ public class TestOmitTf extends LuceneTestCase {
   // Verifies no *.prx exists when all fields omit term freq:
   public void testNoPrxFile() throws Throwable {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(
                                                                    TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
@@ -247,7 +247,7 @@ public class TestOmitTf extends LuceneTestCase {
   // Test scores with one field with Term Freqs and one without, otherwise with equal content 
   public void testBasic() throws Exception {
     Directory dir = newDirectory();  
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
@@ -427,8 +427,8 @@ public class TestOmitTf extends LuceneTestCase {
   /** test that when freqs are omitted, that totalTermFreq and sumTotalTermFreq are -1 */
   public void testStats() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     ft.setIndexOptions(IndexOptions.DOCS_ONLY);

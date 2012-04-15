@@ -37,7 +37,7 @@ public class TestTransactions extends LuceneTestCase {
   private class RandomFailure extends MockDirectoryWrapper.Failure {
     @Override
     public void eval(MockDirectoryWrapper dir) throws IOException {
-      if (TestTransactions.doFail && random.nextInt() % 10 <= 3) {
+      if (TestTransactions.doFail && random().nextInt() % 10 <= 3) {
         throw new IOException("now failing randomly but on purpose");
       }
     }
@@ -96,7 +96,7 @@ public class TestTransactions extends LuceneTestCase {
 
       IndexWriter writer1 = new IndexWriter(
           dir1,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setMaxBufferedDocs(3).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(2))
@@ -107,7 +107,7 @@ public class TestTransactions extends LuceneTestCase {
       // happen @ different times
       IndexWriter writer2 = new IndexWriter(
           dir2,
-          newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+          newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setMaxBufferedDocs(2).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(3))
@@ -152,7 +152,7 @@ public class TestTransactions extends LuceneTestCase {
       customType.setStoreTermVectors(true);
       for(int j=0; j<10; j++) {
         Document d = new Document();
-        int n = random.nextInt();
+        int n = random().nextInt();
         d.add(newField("id", Integer.toString(nextID++), customType));
         d.add(newField("contents", English.intToEnglish(n), TextField.TYPE_UNSTORED));
         writer.addDocument(d);
@@ -194,10 +194,10 @@ public class TestTransactions extends LuceneTestCase {
   }
 
   public void initIndex(Directory dir) throws Throwable {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     for(int j=0; j<7; j++) {
       Document d = new Document();
-      int n = random.nextInt();
+      int n = random().nextInt();
       d.add(newField("contents", English.intToEnglish(n), TextField.TYPE_UNSTORED));
       writer.addDocument(d);
     }
@@ -206,8 +206,8 @@ public class TestTransactions extends LuceneTestCase {
 
   public void testTransactions() throws Throwable {
     // we cant use non-ramdir on windows, because this test needs to double-write.
-    MockDirectoryWrapper dir1 = new MockDirectoryWrapper(random, new RAMDirectory());
-    MockDirectoryWrapper dir2 = new MockDirectoryWrapper(random, new RAMDirectory());
+    MockDirectoryWrapper dir1 = new MockDirectoryWrapper(random(), new RAMDirectory());
+    MockDirectoryWrapper dir2 = new MockDirectoryWrapper(random(), new RAMDirectory());
     dir1.setPreventDoubleWrite(false);
     dir2.setPreventDoubleWrite(false);
     dir1.failOn(new RandomFailure());

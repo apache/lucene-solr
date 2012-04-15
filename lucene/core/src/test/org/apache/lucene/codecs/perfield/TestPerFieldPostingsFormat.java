@@ -96,7 +96,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
   public void testMergeUnusedPerFieldCodec() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
+        new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
     IndexWriter writer = newWriter(dir, iwconf);
     addDocs(writer, 10);
     writer.commit();
@@ -123,7 +123,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
       System.out.println("TEST: make new index");
     }
     IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-             new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
+             new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     IndexWriter writer = newWriter(dir, iwconf);
@@ -142,7 +142,7 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
     assertQuery(new Term("content", "aaa"), dir, 10);
     Lucene40Codec codec = (Lucene40Codec)iwconf.getCodec();
 
-    iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setOpenMode(OpenMode.APPEND).setCodec(codec);
     //((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundFile(false);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
@@ -234,28 +234,28 @@ public class TestPerFieldPostingsFormat extends LuceneTestCase {
    */
   @Test
   public void testStressPerFieldCodec() throws IOException {
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory(random());
     final int docsPerRound = 97;
     int numRounds = atLeast(1);
     for (int i = 0; i < numRounds; i++) {
-      int num = _TestUtil.nextInt(random, 30, 60);
-      IndexWriterConfig config = newIndexWriterConfig(random,
-          TEST_VERSION_CURRENT, new MockAnalyzer(random));
+      int num = _TestUtil.nextInt(random(), 30, 60);
+      IndexWriterConfig config = newIndexWriterConfig(random(),
+          TEST_VERSION_CURRENT, new MockAnalyzer(random()));
       config.setOpenMode(OpenMode.CREATE_OR_APPEND);
       IndexWriter writer = newWriter(dir, config);
       for (int j = 0; j < docsPerRound; j++) {
         final Document doc = new Document();
         for (int k = 0; k < num; k++) {
           FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-          customType.setTokenized(random.nextBoolean());
-          customType.setOmitNorms(random.nextBoolean());
+          customType.setTokenized(random().nextBoolean());
+          customType.setOmitNorms(random().nextBoolean());
           Field field = newField("" + k, _TestUtil
-              .randomRealisticUnicodeString(random, 128), customType);
+              .randomRealisticUnicodeString(random(), 128), customType);
           doc.add(field);
         }
         writer.addDocument(doc);
       }
-      if (random.nextBoolean()) {
+      if (random().nextBoolean()) {
         writer.forceMerge(1);
       }
       writer.commit();

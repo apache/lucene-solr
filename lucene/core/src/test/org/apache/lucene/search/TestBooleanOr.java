@@ -42,7 +42,7 @@ public class TestBooleanOr extends LuceneTestCase {
   
 
   private int search(Query q) throws IOException {
-    QueryUtils.check(random, q,searcher);
+    QueryUtils.check(random(), q,searcher);
     return searcher.search(q, null, 1000).totalHits;
   }
 
@@ -134,7 +134,7 @@ public class TestBooleanOr extends LuceneTestCase {
 
 
     //
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     //
     Document d = new Document();

@@ -58,9 +58,9 @@ public class TestSpansAdvanced extends LuceneTestCase {
     super.setUp();
     // create test index
     mDirectory = newDirectory();
-    final RandomIndexWriter writer = new RandomIndexWriter(random, mDirectory, 
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), mDirectory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, 
-            new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true))
+            new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true))
             .setMergePolicy(newLogMergePolicy()).setSimilarity(new DefaultSimilarity()));
     addDocument(writer, "1", "I think it should work.");
     addDocument(writer, "2", "I think it should work.");
@@ -138,7 +138,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
   protected static void assertHits(IndexSearcher s, Query query,
       final String description, final String[] expectedIds,
       final float[] expectedScores) throws IOException {
-    QueryUtils.check(random, query, s);
+    QueryUtils.check(random(), query, s);
     
     final float tolerance = 1e-5f;
     

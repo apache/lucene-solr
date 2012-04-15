@@ -35,18 +35,18 @@ public class TestByteBlockPool extends LuceneTestCase {
     final int numValues = atLeast(100);
     BytesRef ref = new BytesRef();
     for (int i = 0; i < numValues; i++) {
-      final String value = _TestUtil.randomRealisticUnicodeString(random,
+      final String value = _TestUtil.randomRealisticUnicodeString(random(),
           maxLength);
       list.add(value);
       ref.copyChars(value);
       pool.copy(ref);
     }
     RAMDirectory dir = new RAMDirectory();
-    IndexOutput stream = dir.createOutput("foo.txt", newIOContext(random));
+    IndexOutput stream = dir.createOutput("foo.txt", newIOContext(random()));
     pool.writePool(stream);
     stream.flush();
     stream.close();
-    IndexInput input = dir.openInput("foo.txt", newIOContext(random));
+    IndexInput input = dir.openInput("foo.txt", newIOContext(random()));
     assertEquals(pool.byteOffset + pool.byteUpto, stream.length());
     BytesRef expected = new BytesRef();
     BytesRef actual = new BytesRef();

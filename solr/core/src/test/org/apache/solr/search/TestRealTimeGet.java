@@ -300,19 +300,19 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     // req().getCore().getUpdateHandler().getIndexWriterProvider().getIndexWriter(req().getCore()).setInfoStream(System.out);
 
-    final int commitPercent = 5 + random.nextInt(20);
-    final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
-    final int deletePercent = 4+random.nextInt(25);
-    final int deleteByQueryPercent = 1+random.nextInt(5);
-    final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
-    int nWriteThreads = 5 + random.nextInt(25);
+    final int commitPercent = 5 + random().nextInt(20);
+    final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
+    final int deletePercent = 4+random().nextInt(25);
+    final int deleteByQueryPercent = 1+random().nextInt(5);
+    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
+    int nWriteThreads = 5 + random().nextInt(25);
 
     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
 
         // query variables
     final int percentRealtimeQuery = 60;
     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
-    int nReadThreads = 5 + random.nextInt(25);
+    int nReadThreads = 5 + random().nextInt(25);
 
 
     verbose("commitPercent=", commitPercent);
@@ -335,7 +335,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
@@ -455,7 +455,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     for (int i=0; i<nReadThreads; i++) {
       Thread thread = new Thread("READER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
@@ -534,19 +534,19 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random.nextInt(20);
-    final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
-    final int deletePercent = 4+random.nextInt(25);
-    final int deleteByQueryPercent = 1 + random.nextInt(5);
-    final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
-    int nWriteThreads = 5 + random.nextInt(25);
+    final int commitPercent = 5 + random().nextInt(20);
+    final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
+    final int deletePercent = 4+random().nextInt(25);
+    final int deleteByQueryPercent = 1 + random().nextInt(5);
+    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
+    int nWriteThreads = 5 + random().nextInt(25);
 
     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
 
         // query variables
     final int percentRealtimeQuery = 75;
     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
-    int nReadThreads = 5 + random.nextInt(25);
+    int nReadThreads = 5 + random().nextInt(25);
 
 
 
@@ -558,7 +558,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
@@ -693,7 +693,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     for (int i=0; i<nReadThreads; i++) {
       Thread thread = new Thread("READER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
@@ -771,19 +771,19 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random.nextInt(20);
-    final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
-    final int deletePercent = 4+random.nextInt(25);
+    final int commitPercent = 5 + random().nextInt(20);
+    final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
+    final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = 0;  // delete-by-query can't be reordered on replicas
-    final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
-    int nWriteThreads = 5 + random.nextInt(25);
+    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
+    int nWriteThreads = 5 + random().nextInt(25);
 
     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
 
         // query variables
     final int percentRealtimeQuery = 75;
     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
-    int nReadThreads = 5 + random.nextInt(25);
+    int nReadThreads = 5 + random().nextInt(25);
 
     initModel(ndocs);
 
@@ -796,7 +796,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
@@ -931,7 +931,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     for (int i=0; i<nReadThreads; i++) {
       Thread thread = new Thread("READER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
@@ -1020,20 +1020,20 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random.nextInt(10);
-    final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
-    final int deletePercent = 4+random.nextInt(25);
+    final int commitPercent = 5 + random().nextInt(10);
+    final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
+    final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = 0;  // real-time get isn't currently supported with delete-by-query
-    final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
-    int nWriteThreads = 2 + random.nextInt(10);  // fewer write threads to give recovery thread more of a chance
+    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
+    int nWriteThreads = 2 + random().nextInt(10);  // fewer write threads to give recovery thread more of a chance
 
     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
 
         // query variables
     final int percentRealtimeQuery = 75;
-    final int percentGetLatestVersions = random.nextInt(4);
+    final int percentGetLatestVersions = random().nextInt(4);
     final AtomicLong operations = new AtomicLong(atLeast(75));  // number of recovery loops to perform
-    int nReadThreads = 2 + random.nextInt(10);  // fewer read threads to give writers more of a chance
+    int nReadThreads = 2 + random().nextInt(10);  // fewer read threads to give writers more of a chance
 
     initModel(ndocs);
 
@@ -1059,7 +1059,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
       final int threadNum = i;
 
       Thread thread = new Thread("WRITER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
         Semaphore writePermission = writePermissions[threadNum];
 
         @Override
@@ -1203,7 +1203,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     for (int i=0; i<nReadThreads; i++) {
       Thread thread = new Thread("READER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
@@ -1297,7 +1297,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
       assertTrue(uLog.getState() == UpdateLog.State.BUFFERING);
 
       // sometimes wait for a second to allow time for writers to write something
-      if (random.nextBoolean()) Thread.sleep(random.nextInt(10)+1);
+      if (random().nextBoolean()) Thread.sleep(random().nextInt(10)+1);
 
       Future<UpdateLog.RecoveryInfo> recoveryInfoF = uLog.applyBufferedUpdates();
       if (recoveryInfoF != null) {
@@ -1307,7 +1307,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
         while (recInfo == null) {
           try {
             // wait a short period of time for recovery to complete (and to give a chance for more writers to concurrently add docs)
-            recInfo = recoveryInfoF.get(random.nextInt(100/nWriteThreads), TimeUnit.MILLISECONDS);
+            recInfo = recoveryInfoF.get(random().nextInt(100/nWriteThreads), TimeUnit.MILLISECONDS);
           } catch (TimeoutException e) {
             // idle one more write thread
             verbose("Operation",operations.get(),"Draining permits for write thread",writeThreadNumber);
@@ -1315,7 +1315,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
             if (writeThreadNumber >= nWriteThreads) {
               // if we hit the end, back up and give a few write permits
               writeThreadNumber--;
-              writePermissions[writeThreadNumber].release(random.nextInt(2) + 1);
+              writePermissions[writeThreadNumber].release(random().nextInt(2) + 1);
             }
 
             // throttle readers so they don't steal too much CPU from the recovery thread
@@ -1370,19 +1370,19 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   DirectoryReader reader;
   @Test
   public void testStressLuceneNRT() throws Exception {
-    final int commitPercent = 5 + random.nextInt(20);
-    final int softCommitPercent = 30+random.nextInt(75); // what percent of the commits are soft
-    final int deletePercent = 4+random.nextInt(25);
-    final int deleteByQueryPercent = 1+random.nextInt(5);
-    final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
-    int nWriteThreads = 5 + random.nextInt(25);
+    final int commitPercent = 5 + random().nextInt(20);
+    final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
+    final int deletePercent = 4+random().nextInt(25);
+    final int deleteByQueryPercent = 1+random().nextInt(5);
+    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
+    int nWriteThreads = 5 + random().nextInt(25);
 
     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
 
     final AtomicLong operations = new AtomicLong(1000);  // number of query operations to perform in total - crank up if
-    int nReadThreads = 5 + random.nextInt(25);
-    final boolean tombstones = random.nextBoolean();
-    final boolean syncCommits = random.nextBoolean();
+    int nReadThreads = 5 + random().nextInt(25);
+    final boolean tombstones = random().nextBoolean();
+    final boolean syncCommits = random().nextBoolean();
 
     verbose("commitPercent=", commitPercent);
     verbose("softCommitPercent=",softCommitPercent);
@@ -1426,7 +1426,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     Directory dir = newDirectory();
 
-    final RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.setDoRandomForceMergeAssert(false);
 
     // writer.commit();
@@ -1437,7 +1437,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
@@ -1613,7 +1613,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     for (int i=0; i<nReadThreads; i++) {
       Thread thread = new Thread("READER"+i) {
-        Random rand = new Random(random.nextInt());
+        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {

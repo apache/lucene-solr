@@ -59,13 +59,13 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testAddDocument() throws Exception {
     Document testDoc = new Document();
     DocHelper.setupDoc(testDoc);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.addDocument(testDoc);
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
@@ -126,7 +126,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
                                                                           "repeated", new BytesRef("repeated"), false);
@@ -198,7 +198,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"), false);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -216,7 +216,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
   public void testPreAnalyzedField() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
 
     doc.add(new TextField("preanalyzed", new TokenStream() {
@@ -242,7 +242,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = reader.termPositionsEnum(reader.getLiveDocs(), "preanalyzed", new BytesRef("term1"), false);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -280,7 +280,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(newField("f2", "v2", StringField.TYPE_STORED));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.addDocument(doc);
     writer.close();
 
@@ -320,7 +320,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(newField("f2", "v2", customType2));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.addDocument(doc);
     writer.forceMerge(1); // be sure to have a single segment
     writer.close();

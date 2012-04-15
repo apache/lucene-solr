@@ -39,13 +39,13 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestDemo extends LuceneTestCase {
 
   public void testDemo() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random);
+    Analyzer analyzer = new MockAnalyzer(random());
 
     // Store the index in memory:
     Directory directory = newDirectory();
     // To store an index on disk, use this instead:
     //Directory directory = FSDirectory.open("/tmp/testindex");
-    RandomIndexWriter iwriter = new RandomIndexWriter(random, directory, analyzer);
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, analyzer);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;

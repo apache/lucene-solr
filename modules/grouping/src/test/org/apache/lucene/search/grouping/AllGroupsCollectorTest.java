@@ -46,10 +46,10 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
-        random,
+        random(),
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = !"Lucene3x".equals(w.w.getConfig().getCodec().getName());
 
     // 0
@@ -129,10 +129,10 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
 
   private AbstractAllGroupsCollector<?> createRandomCollector(String groupField, boolean canUseIDV) throws IOException {
     AbstractAllGroupsCollector<?> selected;
-    if (random.nextBoolean() && canUseIDV) {
-      boolean diskResident = random.nextBoolean();
+    if (random().nextBoolean() && canUseIDV) {
+      boolean diskResident = random().nextBoolean();
       selected = DVAllGroupsCollector.create(groupField, Type.BYTES_VAR_SORTED, diskResident);
-    } else if (random.nextBoolean()) {
+    } else if (random().nextBoolean()) {
       selected = new TermAllGroupsCollector(groupField);
     } else {
       ValueSource vs = new BytesRefFieldSource(groupField);

@@ -51,7 +51,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 
@@ -85,7 +85,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 

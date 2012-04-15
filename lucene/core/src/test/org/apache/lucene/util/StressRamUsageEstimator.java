@@ -52,7 +52,7 @@ public class StressRamUsageEstimator extends LuceneTestCase {
   public void testChainedEstimation() {
     MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
 
-    Random rnd = random;
+    Random rnd = random();
     Entry first = new Entry();
     try {
       while (true) {
@@ -82,7 +82,7 @@ public class StressRamUsageEstimator extends LuceneTestCase {
     long before = memoryMXBean.getHeapMemoryUsage().getUsed(); 
     Object [] all = new Object [1000000]; 
     for (int i = 0; i < all.length; i++) {
-      all[i] = new byte[random.nextInt(3)];
+      all[i] = new byte[random().nextInt(3)];
     }
     causeGc();
     long after = memoryMXBean.getHeapMemoryUsage().getUsed();
@@ -135,7 +135,7 @@ public class StressRamUsageEstimator extends LuceneTestCase {
         all = Arrays.copyOf(all, all.length + 1);
         all[all.length - 1] = seg;
         for (int i = 0; i < seg.length; i++) {
-          seg[i] = new byte[random.nextInt(7)];
+          seg[i] = new byte[random().nextInt(7)];
         }
       }
     } catch (OutOfMemoryError e) {

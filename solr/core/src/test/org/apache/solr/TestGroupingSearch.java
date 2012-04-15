@@ -555,7 +555,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     while (--indexIter >= 0) {
 
-      int indexSize = random.nextInt(25 * RANDOM_MULTIPLIER);
+      int indexSize = random().nextInt(25 * RANDOM_MULTIPLIER);
 //indexSize=2;
       List<FldType> types = new ArrayList<FldType>();
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
@@ -611,17 +611,17 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
 
       for (int qiter=0; qiter<queryIter; qiter++) {
-        String groupField = types.get(random.nextInt(types.size())).fname;
+        String groupField = types.get(random().nextInt(types.size())).fname;
 
-        int rows = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;
-        int start = random.nextInt(5)==0 ? random.nextInt(model.size()+2) : random.nextInt(5); // pick a small start normally for better coverage
-        int group_limit = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;    
-        int group_offset = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(2); // pick a small start normally for better coverage
+        int rows = random().nextInt(10)==0 ? random().nextInt(model.size()+2) : random().nextInt(11)-1;
+        int start = random().nextInt(5)==0 ? random().nextInt(model.size()+2) : random().nextInt(5); // pick a small start normally for better coverage
+        int group_limit = random().nextInt(10)==0 ? random().nextInt(model.size()+2) : random().nextInt(11)-1;    
+        int group_offset = random().nextInt(10)==0 ? random().nextInt(model.size()+2) : random().nextInt(2); // pick a small start normally for better coverage
 
         String[] stringSortA = new String[1];
         Comparator<Doc> sortComparator = createSort(h.getCore().getSchema(), types, stringSortA);
         String sortStr = stringSortA[0];
-        Comparator<Doc> groupComparator = random.nextBoolean() ? sortComparator : createSort(h.getCore().getSchema(), types, stringSortA);
+        Comparator<Doc> groupComparator = random().nextBoolean() ? sortComparator : createSort(h.getCore().getSchema(), types, stringSortA);
         String groupSortStr = stringSortA[0];
 
         // since groupSortStr defaults to sortStr, we need to normalize null to "score desc" if
@@ -657,10 +657,10 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         List<Grp> sortedGroups = new ArrayList<Grp>(groups.values());
         Collections.sort(sortedGroups,  groupComparator==sortComparator ? createFirstDocComparator(sortComparator) : createMaxDocComparator(sortComparator));
 
-        boolean includeNGroups = random.nextBoolean();
+        boolean includeNGroups = random().nextBoolean();
         Object modelResponse = buildGroupedResult(h.getCore().getSchema(), sortedGroups, start, rows, group_offset, group_limit, includeNGroups);
 
-        boolean truncateGroups = random.nextBoolean();
+        boolean truncateGroups = random().nextBoolean();
         Map<String, Integer> facetCounts = new TreeMap<String, Integer>();
         if (truncateGroups) {
           for (Grp grp : sortedGroups) {
@@ -694,7 +694,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
           expectedFacetResponse.add(stringIntegerEntry.getValue());
         }
 
-        int randomPercentage = random.nextInt(101);
+        int randomPercentage = random().nextInt(101);
         // TODO: create a random filter too
         SolrQueryRequest req = req("group","true","wt","json","indent","true", "echoParams","all", "q","{!func}score_f", "group.field",groupField
             ,sortStr==null ? "nosort":"sort", sortStr ==null ? "": sortStr

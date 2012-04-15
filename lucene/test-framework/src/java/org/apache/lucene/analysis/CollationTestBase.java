@@ -189,7 +189,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                    String dkResult) throws Exception {
     Directory indexStore = newDirectory();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
 
     // document data:
     // the tracer field is used to determine which document was hit
@@ -267,7 +267,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
   public void assertThreadSafe(final Analyzer analyzer) throws Exception {
     int numTestPoints = 100;
-    int numThreads = _TestUtil.nextInt(random, 3, 5);
+    int numThreads = _TestUtil.nextInt(random(), 3, 5);
     final HashMap<String,BytesRef> map = new HashMap<String,BytesRef>();
     
     // create a map<String,SortKey> up front.
@@ -275,7 +275,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // and ensure they are the same as the ones we produced in serial fashion.
 
     for (int i = 0; i < numTestPoints; i++) {
-      String term = _TestUtil.randomSimpleString(random);
+      String term = _TestUtil.randomSimpleString(random());
       TokenStream ts = analyzer.tokenStream("fake", new StringReader(term));
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       BytesRef bytes = termAtt.getBytesRef();

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -202,7 +203,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     assert alphabetSize <= 26;
     char[] s = new char[2*length];
     for(int charIDX=0;charIDX<length;charIDX++) {
-      s[2*charIDX] = (char) (start + random.nextInt(alphabetSize));
+      s[2*charIDX] = (char) (start + random().nextInt(alphabetSize));
       s[2*charIDX+1] = ' ';
     }
     return new String(s);
@@ -326,7 +327,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
 
   public void testRandom() throws Exception {
     
-    final int alphabetSize = _TestUtil.nextInt(random, 2, 7);
+    final int alphabetSize = _TestUtil.nextInt(random(), 2, 7);
 
     final int docLen = atLeast(3000);
     //final int docLen = 50;
@@ -342,13 +343,13 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
 
     final Map<String,OneSyn> synMap = new HashMap<String,OneSyn>();
     final List<OneSyn> syns = new ArrayList<OneSyn>();
-    final boolean dedup = random.nextBoolean();
+    final boolean dedup = random().nextBoolean();
     if (VERBOSE) {
       System.out.println("  dedup=" + dedup);
     }
     b = new SynonymMap.Builder(dedup);
     for(int synIDX=0;synIDX<numSyn;synIDX++) {
-      final String synIn = getRandomString('a', alphabetSize, _TestUtil.nextInt(random, 1, 5)).trim();
+      final String synIn = getRandomString('a', alphabetSize, _TestUtil.nextInt(random(), 1, 5)).trim();
       OneSyn s = synMap.get(synIn);
       if (s == null) {
         s = new OneSyn();
@@ -356,9 +357,9 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         syns.add(s);
         s.out = new ArrayList<String>();
         synMap.put(synIn, s);
-        s.keepOrig = random.nextBoolean();
+        s.keepOrig = random().nextBoolean();
       }
-      final String synOut = getRandomString('0', 10, _TestUtil.nextInt(random, 1, 5)).trim();
+      final String synOut = getRandomString('0', 10, _TestUtil.nextInt(random(), 1, 5)).trim();
       s.out.add(synOut);
       add(synIn, synOut, s.keepOrig);
       if (VERBOSE) {
@@ -415,7 +416,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
 
   private String randomNonEmptyString() {
     while(true) {
-      final String s = _TestUtil.randomUnicodeString(random).trim();
+      final String s = _TestUtil.randomUnicodeString(random()).trim();
       if (s.length() != 0 && s.indexOf('\u0000') == -1) {
         return s;
       }
@@ -428,13 +429,13 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   public void testRandom2() throws Exception {
     final int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
-      b = new SynonymMap.Builder(random.nextBoolean());
+      b = new SynonymMap.Builder(random().nextBoolean());
       final int numEntries = atLeast(10);
       for (int j = 0; j < numEntries; j++) {
-        add(randomNonEmptyString(), randomNonEmptyString(), random.nextBoolean());
+        add(randomNonEmptyString(), randomNonEmptyString(), random().nextBoolean());
       }
       final SynonymMap map = b.build();
-      final boolean ignoreCase = random.nextBoolean();
+      final boolean ignoreCase = random().nextBoolean();
       
       final Analyzer analyzer = new Analyzer() {
         @Override
@@ -444,7 +445,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         }
       };
 
-      checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
+      checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
     }
   }
 
@@ -455,6 +456,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   // Adds MockGraphTokenFilter before SynFilter:
   public void testRandom2GraphBefore() throws Exception {
     final int numIters = atLeast(10);
+    Random random = random();
     for (int i = 0; i < numIters; i++) {
       b = new SynonymMap.Builder(random.nextBoolean());
       final int numEntries = atLeast(10);
@@ -468,7 +470,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         @Override
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
           Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-          TokenStream graph = new MockGraphTokenFilter(random, tokenizer);
+          TokenStream graph = new MockGraphTokenFilter(random(), tokenizer);
           return new TokenStreamComponents(tokenizer, new SynonymFilter(graph, map, ignoreCase));
         }
       };
@@ -481,6 +483,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   // Adds MockGraphTokenFilter after SynFilter:
   public void testRandom2GraphAfter() throws Exception {
     final int numIters = atLeast(10);
+    Random random = random();
     for (int i = 0; i < numIters; i++) {
       b = new SynonymMap.Builder(random.nextBoolean());
       final int numEntries = atLeast(10);
@@ -495,7 +498,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
           Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
           TokenStream syns = new SynonymFilter(tokenizer, map, ignoreCase);
-          TokenStream graph = new MockGraphTokenFilter(random, syns);
+          TokenStream graph = new MockGraphTokenFilter(random(), syns);
           return new TokenStreamComponents(tokenizer, graph);
         }
       };
@@ -505,6 +508,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   }
   
   public void testEmptyTerm() throws IOException {
+    Random random = random();
     final int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
       b = new SynonymMap.Builder(random.nextBoolean());
@@ -530,6 +534,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   /** simple random test like testRandom2, but for large docs
    */
   public void testRandomHuge() throws Exception {
+    Random random = random();
     final int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
       b = new SynonymMap.Builder(random.nextBoolean());
@@ -558,7 +563,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       "aaa => aaaa1 aaaa2 aaaa3\n" + 
       "bbb => bbbb1 bbbb2\n";
       
-    SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random));
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, new MockAnalyzer(random()));
     parser.add(new StringReader(testFile));
     final SynonymMap map = parser.build();
       

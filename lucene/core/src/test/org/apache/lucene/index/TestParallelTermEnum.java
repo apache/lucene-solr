@@ -40,7 +40,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
     super.setUp();
     Document doc;
     rd1 = newDirectory();
-    IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig( 
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     doc = new Document();
     doc.add(newField("field1", "the quick brown fox jumps", TextField.TYPE_STORED));
@@ -49,7 +50,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
     iw1.close();
     rd2 = newDirectory();
-    IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     doc = new Document();
     doc.add(newField("field1", "the fox jumps over the lazy dog", TextField.TYPE_STORED));
@@ -79,7 +81,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
       BytesRef b = te.next();
       assertNotNull(b);
       assertEquals(t, b.utf8ToString());
-      DocsEnum td = _TestUtil.docs(random, te, liveDocs, null, false);
+      DocsEnum td = _TestUtil.docs(random(), te, liveDocs, null, false);
       assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(0, td.docID());
       assertEquals(td.nextDoc(), DocIdSetIterator.NO_MORE_DOCS);

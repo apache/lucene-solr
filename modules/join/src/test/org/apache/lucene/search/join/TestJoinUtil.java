@@ -42,10 +42,10 @@ public class TestJoinUtil extends LuceneTestCase {
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
-        random,
+        random(),
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
     Document doc = new Document();
@@ -120,16 +120,16 @@ public class TestJoinUtil extends LuceneTestCase {
 
   @Test
   public void testSingleValueRandomJoin() throws Exception {
-    int maxIndexIter = _TestUtil.nextInt(random, 6, 12);
-    int maxSearchIter = _TestUtil.nextInt(random, 13, 26);
+    int maxIndexIter = _TestUtil.nextInt(random(), 6, 12);
+    int maxSearchIter = _TestUtil.nextInt(random(), 13, 26);
     executeRandomJoin(false, maxIndexIter, maxSearchIter);
   }
 
   @Test
   // This test really takes more time, that is why the number of iterations are smaller.
   public void testMultiValueRandomJoin() throws Exception {
-    int maxIndexIter = _TestUtil.nextInt(random, 3, 6);
-    int maxSearchIter = _TestUtil.nextInt(random, 6, 12);
+    int maxIndexIter = _TestUtil.nextInt(random(), 3, 6);
+    int maxSearchIter = _TestUtil.nextInt(random(), 6, 12);
     executeRandomJoin(true, maxIndexIter, maxSearchIter);
   }
 
@@ -140,11 +140,11 @@ public class TestJoinUtil extends LuceneTestCase {
       }
       Directory dir = newDirectory();
       RandomIndexWriter w = new RandomIndexWriter(
-          random,
+          random(),
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy())
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy())
       );
-      int numberOfDocumentsToIndex = _TestUtil.nextInt(random, 87, 764);
+      int numberOfDocumentsToIndex = _TestUtil.nextInt(random(), 87, 764);
       IndexIterationContext context = createContext(numberOfDocumentsToIndex, w, multipleValuesPerDocument);
 
       IndexReader topLevelReader = w.getReader();
@@ -155,7 +155,7 @@ public class TestJoinUtil extends LuceneTestCase {
         }
         IndexSearcher indexSearcher = newSearcher(topLevelReader);
 
-        int r = random.nextInt(context.randomUniqueValues.length);
+        int r = random().nextInt(context.randomUniqueValues.length);
         boolean from = context.randomFrom[r];
         String randomValue = context.randomUniqueValues[r];
         FixedBitSet expectedResult = createExpectedResult(randomValue, from, indexSearcher.getIndexReader(), context);
@@ -229,28 +229,28 @@ public class TestJoinUtil extends LuceneTestCase {
     for (int i = 0; i < numRandomValues; i++) {
       String uniqueRandomValue;
       do {
-        uniqueRandomValue = _TestUtil.randomRealisticUnicodeString(random);
+        uniqueRandomValue = _TestUtil.randomRealisticUnicodeString(random());
 //        uniqueRandomValue = _TestUtil.randomSimpleString(random);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
       // Generate unique values and empty strings aren't allowed.
       trackSet.add(uniqueRandomValue);
-      context.randomFrom[i] = random.nextBoolean();
+      context.randomFrom[i] = random().nextBoolean();
       context.randomUniqueValues[i] = uniqueRandomValue;
     }
 
     for (int i = 0; i < nDocs; i++) {
       String id = Integer.toString(i);
-      int randomI = random.nextInt(context.randomUniqueValues.length);
+      int randomI = random().nextInt(context.randomUniqueValues.length);
       String value = context.randomUniqueValues[randomI];
       Document document = new Document();
-      document.add(newField(random, "id", id, TextField.TYPE_STORED));
-      document.add(newField(random, "value", value, TextField.TYPE_STORED));
+      document.add(newField(random(), "id", id, TextField.TYPE_STORED));
+      document.add(newField(random(), "value", value, TextField.TYPE_STORED));
 
       boolean from = context.randomFrom[randomI];
-      int numberOfLinkValues = multipleValuesPerDocument ? 2 + random.nextInt(10) : 1;
+      int numberOfLinkValues = multipleValuesPerDocument ? 2 + random().nextInt(10) : 1;
       RandomDoc doc = new RandomDoc(id, numberOfLinkValues, value);
       for (int j = 0; j < numberOfLinkValues; j++) {
-        String linkValue = context.randomUniqueValues[random.nextInt(context.randomUniqueValues.length)];
+        String linkValue = context.randomUniqueValues[random().nextInt(context.randomUniqueValues.length)];
         doc.linkValues.add(linkValue);
         if (from) {
           if (!context.fromDocuments.containsKey(linkValue)) {
@@ -262,7 +262,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
           context.fromDocuments.get(linkValue).add(doc);
           context.randomValueFromDocs.get(value).add(doc);
-          document.add(newField(random, "from", linkValue, TextField.TYPE_STORED));
+          document.add(newField(random(), "from", linkValue, TextField.TYPE_STORED));
         } else {
           if (!context.toDocuments.containsKey(linkValue)) {
             context.toDocuments.put(linkValue, new ArrayList<RandomDoc>());
@@ -273,7 +273,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
           context.toDocuments.get(linkValue).add(doc);
           context.randomValueToDocs.get(value).add(doc);
-          document.add(newField(random, "to", linkValue, TextField.TYPE_STORED));
+          document.add(newField(random(), "to", linkValue, TextField.TYPE_STORED));
         }
       }
 
@@ -285,7 +285,7 @@ public class TestJoinUtil extends LuceneTestCase {
       }
 
       w.addDocument(document);
-      if (random.nextInt(10) == 4) {
+      if (random().nextInt(10) == 4) {
         w.commit();
       }
       if (VERBOSE) {

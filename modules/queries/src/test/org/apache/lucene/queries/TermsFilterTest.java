@@ -54,7 +54,7 @@ public class TermsFilterTest extends LuceneTestCase {
   public void testMissingTerms() throws Exception {
     String fieldName = "field1";
     Directory rd = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random, rd);
+    RandomIndexWriter w = new RandomIndexWriter(random(), rd);
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       int term = i * 10; //terms are units of 10;
@@ -90,7 +90,7 @@ public class TermsFilterTest extends LuceneTestCase {
   public void testMissingField() throws Exception {
     String fieldName = "field1";
     Directory rd1 = newDirectory();
-    RandomIndexWriter w1 = new RandomIndexWriter(random, rd1);
+    RandomIndexWriter w1 = new RandomIndexWriter(random(), rd1);
     Document doc = new Document();
     doc.add(newField(fieldName, "content1", StringField.TYPE_STORED));
     w1.addDocument(doc);
@@ -99,7 +99,7 @@ public class TermsFilterTest extends LuceneTestCase {
     
     fieldName = "field2";
     Directory rd2 = newDirectory();
-    RandomIndexWriter w2 = new RandomIndexWriter(random, rd2);
+    RandomIndexWriter w2 = new RandomIndexWriter(random(), rd2);
     doc = new Document();
     doc.add(newField(fieldName, "content2", StringField.TYPE_STORED));
     w2.addDocument(doc);

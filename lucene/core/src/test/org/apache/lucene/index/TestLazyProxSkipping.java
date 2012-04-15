@@ -50,7 +50,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
 
     private class SeekCountingDirectory extends MockDirectoryWrapper {
       public SeekCountingDirectory(Directory delegate) {
-        super(random, delegate);
+        super(random(), delegate);
       }
 
       @Override
@@ -143,7 +143,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     
     public void testSeek() throws IOException {
         Directory directory = newDirectory();
-        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
             doc.add(newField(this.field, "a b", TextField.TYPE_STORED));

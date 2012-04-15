@@ -37,9 +37,9 @@ public class TestReaderClosed extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
     
     Document doc = new Document();
     Field field = newField("field", "", StringField.TYPE_UNSTORED);
@@ -49,7 +49,7 @@ public class TestReaderClosed extends LuceneTestCase {
     // but for preflex codec, the test can be very slow, so use less iterations.
     int num = atLeast(10);
     for (int i = 0; i < num; i++) {
-      field.setStringValue(_TestUtil.randomUnicodeString(random, 10));
+      field.setStringValue(_TestUtil.randomUnicodeString(random(), 10));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

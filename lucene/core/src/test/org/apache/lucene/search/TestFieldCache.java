@@ -53,7 +53,7 @@ public class TestFieldCache extends LuceneTestCase {
     NUM_DOCS = atLeast(500);
     NUM_ORDS = atLeast(2);
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
     byte theByte = Byte.MAX_VALUE;
@@ -82,13 +82,13 @@ public class TestFieldCache extends LuceneTestCase {
       }
 
       // sometimes skip the field:
-      if (random.nextInt(40) != 17) {
+      if (random().nextInt(40) != 17) {
         unicodeStrings[i] = generateString(i);
         doc.add(newField("theRandomUnicodeString", unicodeStrings[i], StringField.TYPE_STORED));
       }
 
       // sometimes skip the field:
-      if (random.nextInt(10) != 8) {
+      if (random().nextInt(10) != 8) {
         for (int j = 0; j < NUM_ORDS; j++) {
           String newValue = generateString(i);
           multiValued[i][j] = new BytesRef(newValue);
@@ -128,54 +128,54 @@ public class TestFieldCache extends LuceneTestCase {
 
   public void test() throws IOException {
     FieldCache cache = FieldCache.DEFAULT;
-    double [] doubles = cache.getDoubles(reader, "theDouble", random.nextBoolean());
-    assertSame("Second request to cache return same array", doubles, cache.getDoubles(reader, "theDouble", random.nextBoolean()));
-    assertSame("Second request with explicit parser return same array", doubles, cache.getDoubles(reader, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, random.nextBoolean()));
+    double [] doubles = cache.getDoubles(reader, "theDouble", random().nextBoolean());
+    assertSame("Second request to cache return same array", doubles, cache.getDoubles(reader, "theDouble", random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", doubles, cache.getDoubles(reader, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, random().nextBoolean()));
     assertTrue("doubles Size: " + doubles.length + " is not: " + NUM_DOCS, doubles.length == NUM_DOCS);
     for (int i = 0; i < doubles.length; i++) {
       assertTrue(doubles[i] + " does not equal: " + (Double.MAX_VALUE - i), doubles[i] == (Double.MAX_VALUE - i));
 
     }
     
-    long [] longs = cache.getLongs(reader, "theLong", random.nextBoolean());
-    assertSame("Second request to cache return same array", longs, cache.getLongs(reader, "theLong", random.nextBoolean()));
-    assertSame("Second request with explicit parser return same array", longs, cache.getLongs(reader, "theLong", FieldCache.DEFAULT_LONG_PARSER, random.nextBoolean()));
+    long [] longs = cache.getLongs(reader, "theLong", random().nextBoolean());
+    assertSame("Second request to cache return same array", longs, cache.getLongs(reader, "theLong", random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", longs, cache.getLongs(reader, "theLong", FieldCache.DEFAULT_LONG_PARSER, random().nextBoolean()));
     assertTrue("longs Size: " + longs.length + " is not: " + NUM_DOCS, longs.length == NUM_DOCS);
     for (int i = 0; i < longs.length; i++) {
       assertTrue(longs[i] + " does not equal: " + (Long.MAX_VALUE - i) + " i=" + i, longs[i] == (Long.MAX_VALUE - i));
 
     }
     
-    byte [] bytes = cache.getBytes(reader, "theByte", random.nextBoolean());
-    assertSame("Second request to cache return same array", bytes, cache.getBytes(reader, "theByte", random.nextBoolean()));
-    assertSame("Second request with explicit parser return same array", bytes, cache.getBytes(reader, "theByte", FieldCache.DEFAULT_BYTE_PARSER, random.nextBoolean()));
+    byte [] bytes = cache.getBytes(reader, "theByte", random().nextBoolean());
+    assertSame("Second request to cache return same array", bytes, cache.getBytes(reader, "theByte", random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", bytes, cache.getBytes(reader, "theByte", FieldCache.DEFAULT_BYTE_PARSER, random().nextBoolean()));
     assertTrue("bytes Size: " + bytes.length + " is not: " + NUM_DOCS, bytes.length == NUM_DOCS);
     for (int i = 0; i < bytes.length; i++) {
       assertTrue(bytes[i] + " does not equal: " + (Byte.MAX_VALUE - i), bytes[i] == (byte) (Byte.MAX_VALUE - i));
 
     }
     
-    short [] shorts = cache.getShorts(reader, "theShort", random.nextBoolean());
-    assertSame("Second request to cache return same array", shorts, cache.getShorts(reader, "theShort", random.nextBoolean()));
-    assertSame("Second request with explicit parser return same array", shorts, cache.getShorts(reader, "theShort", FieldCache.DEFAULT_SHORT_PARSER, random.nextBoolean()));
+    short [] shorts = cache.getShorts(reader, "theShort", random().nextBoolean());
+    assertSame("Second request to cache return same array", shorts, cache.getShorts(reader, "theShort", random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", shorts, cache.getShorts(reader, "theShort", FieldCache.DEFAULT_SHORT_PARSER, random().nextBoolean()));
     assertTrue("shorts Size: " + shorts.length + " is not: " + NUM_DOCS, shorts.length == NUM_DOCS);
     for (int i = 0; i < shorts.length; i++) {
       assertTrue(shorts[i] + " does not equal: " + (Short.MAX_VALUE - i), shorts[i] == (short) (Short.MAX_VALUE - i));
 
     }
     
-    int [] ints = cache.getInts(reader, "theInt", random.nextBoolean());
-    assertSame("Second request to cache return same array", ints, cache.getInts(reader, "theInt", random.nextBoolean()));
-    assertSame("Second request with explicit parser return same array", ints, cache.getInts(reader, "theInt", FieldCache.DEFAULT_INT_PARSER, random.nextBoolean()));
+    int [] ints = cache.getInts(reader, "theInt", random().nextBoolean());
+    assertSame("Second request to cache return same array", ints, cache.getInts(reader, "theInt", random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", ints, cache.getInts(reader, "theInt", FieldCache.DEFAULT_INT_PARSER, random().nextBoolean()));
     assertTrue("ints Size: " + ints.length + " is not: " + NUM_DOCS, ints.length == NUM_DOCS);
     for (int i = 0; i < ints.length; i++) {
       assertTrue(ints[i] + " does not equal: " + (Integer.MAX_VALUE - i), ints[i] == (Integer.MAX_VALUE - i));
 
     }
     
-    float [] floats = cache.getFloats(reader, "theFloat", random.nextBoolean());
-    assertSame("Second request to cache return same array", floats, cache.getFloats(reader, "theFloat", random.nextBoolean()));
-    assertSame("Second request with explicit parser return same array", floats, cache.getFloats(reader, "theFloat", FieldCache.DEFAULT_FLOAT_PARSER, random.nextBoolean()));
+    float [] floats = cache.getFloats(reader, "theFloat", random().nextBoolean());
+    assertSame("Second request to cache return same array", floats, cache.getFloats(reader, "theFloat", random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", floats, cache.getFloats(reader, "theFloat", FieldCache.DEFAULT_FLOAT_PARSER, random().nextBoolean()));
     assertTrue("floats Size: " + floats.length + " is not: " + NUM_DOCS, floats.length == NUM_DOCS);
     for (int i = 0; i < floats.length; i++) {
       assertTrue(floats[i] + " does not equal: " + (Float.MAX_VALUE - i), floats[i] == (Float.MAX_VALUE - i));
@@ -224,7 +224,7 @@ public class TestFieldCache extends LuceneTestCase {
     // seek the enum around (note this isn't a great test here)
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
-      int k = _TestUtil.nextInt(random, 1, nTerms-1);
+      int k = _TestUtil.nextInt(random(), 1, nTerms-1);
       BytesRef val1 = termsIndex.lookup(k, val);
       assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val1));
       assertEquals(val1, tenum.term());
@@ -292,7 +292,7 @@ public class TestFieldCache extends LuceneTestCase {
 
   public void testEmptyIndex() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(500));
+    IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(500));
     writer.close();
     IndexReader r = DirectoryReader.open(dir);
     AtomicReader reader = SlowCompositeReaderWrapper.wrap(r);
@@ -305,16 +305,16 @@ public class TestFieldCache extends LuceneTestCase {
 
   private static String generateString(int i) {
     String s = null;
-    if (i > 0 && random.nextInt(3) == 1) {
+    if (i > 0 && random().nextInt(3) == 1) {
       // reuse past string -- try to find one that's not null
       for(int iter = 0; iter < 10 && s == null;iter++) {
-        s = unicodeStrings[random.nextInt(i)];
+        s = unicodeStrings[random().nextInt(i)];
       }
       if (s == null) {
-        s = _TestUtil.randomUnicodeString(random);
+        s = _TestUtil.randomUnicodeString(random());
       }
     } else {
-      s = _TestUtil.randomUnicodeString(random);
+      s = _TestUtil.randomUnicodeString(random());
     }
     return s;
   }
@@ -348,7 +348,7 @@ public class TestFieldCache extends LuceneTestCase {
       }
     }
 
-    int[] numInts = cache.getInts(reader, "numInt", random.nextBoolean());
+    int[] numInts = cache.getInts(reader, "numInt", random().nextBoolean());
     docsWithField = cache.getDocsWithField(reader, "numInt");
     for (int i = 0; i < docsWithField.length(); i++) {
       if (i%2 == 0) {
@@ -384,7 +384,7 @@ public class TestFieldCache extends LuceneTestCase {
 
             try {
               while(!failed.get()) {
-                final int op = random.nextInt(3);
+                final int op = random().nextInt(3);
                 if (op == 0) {
                   // Purge all caches & resume, once all
                   // threads get here:

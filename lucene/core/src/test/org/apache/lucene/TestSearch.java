@@ -46,7 +46,7 @@ public class TestSearch extends LuceneTestCase {
     public void testSearch() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
-      doTestSearch(random, pw, false);
+      doTestSearch(random(), pw, false);
       pw.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
@@ -54,7 +54,7 @@ public class TestSearch extends LuceneTestCase {
 
       sw = new StringWriter();
       pw = new PrintWriter(sw, true);
-      doTestSearch(random, pw, true);
+      doTestSearch(random(), pw, true);
       pw.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();

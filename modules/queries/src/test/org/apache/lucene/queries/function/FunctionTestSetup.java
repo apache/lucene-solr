@@ -92,12 +92,12 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     }
     // prepare a small index with just a few documents.
     dir = newDirectory();
-    anlzr = new MockAnalyzer(random);
+    anlzr = new MockAnalyzer(random());
     IndexWriterConfig iwc = newIndexWriterConfig( TEST_VERSION_CURRENT, anlzr).setMergePolicy(newLogMergePolicy());
     if (doMultiSegment) {
-      iwc.setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 7));
+      iwc.setMaxBufferedDocs(_TestUtil.nextInt(random(), 2, 7));
     }
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir, iwc);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];

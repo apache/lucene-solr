@@ -110,8 +110,8 @@ public class IntHashSetTest extends LuceneTestCase {
     IntHashSet set1 = new IntHashSet();
     HashSet<Integer> set2 = new HashSet<Integer>();
     for (int i = 0; i < ArrayHashMapTest.RANDOM_TEST_NUM_ITERATIONS; ++i) {
-      int value = random.nextInt() % 500;
-      boolean shouldAdd = random.nextBoolean();
+      int value = random().nextInt() % 500;
+      boolean shouldAdd = random().nextBoolean();
       if (shouldAdd) {
         set1.add(value);
         set2.add(value);
@@ -133,8 +133,8 @@ public class IntHashSetTest extends LuceneTestCase {
     HashSet<Integer> set = new HashSet<Integer>();
     for (int j = 0; j < 100; ++j) {
       for (int i = 0; i < ArrayHashMapTest.RANDOM_TEST_NUM_ITERATIONS; ++i) {
-        int value = random.nextInt() % 5000;
-        boolean shouldAdd = random.nextBoolean();
+        int value = random().nextInt() % 5000;
+        boolean shouldAdd = random().nextBoolean();
         if (shouldAdd) {
           set.add(value);
         } else {
@@ -150,8 +150,8 @@ public class IntHashSetTest extends LuceneTestCase {
     IntHashSet set = new IntHashSet();
     for (int j = 0; j < 100; ++j) {
       for (int i = 0; i < ArrayHashMapTest.RANDOM_TEST_NUM_ITERATIONS; ++i) {
-        int value = random.nextInt() % 5000;
-        boolean shouldAdd = random.nextBoolean();
+        int value = random().nextInt() % 5000;
+        boolean shouldAdd = random().nextBoolean();
         if (shouldAdd) {
           set.add(value);
         } else {
@@ -167,8 +167,8 @@ public class IntHashSetTest extends LuceneTestCase {
     IntHashSet set = new IntHashSet();
     for (int j = 0; j < 100; ++j) {
       for (int i = 0; i < ArrayHashMapTest.RANDOM_TEST_NUM_ITERATIONS; ++i) {
-        int value = random.nextInt() % 5000;
-        boolean shouldAdd = random.nextBoolean();
+        int value = random().nextInt() % 5000;
+        boolean shouldAdd = random().nextBoolean();
         if (shouldAdd) {
           set.add(value);
         } else {
@@ -195,8 +195,8 @@ public class IntHashSetTest extends LuceneTestCase {
     HashSet<Integer> set = new HashSet<Integer>();
     for (int j = 0; j < 100; ++j) {
       for (int i = 0; i < ArrayHashMapTest.RANDOM_TEST_NUM_ITERATIONS; ++i) {
-        int value = random.nextInt() % 5000;
-        boolean shouldAdd = random.nextBoolean();
+        int value = random().nextInt() % 5000;
+        boolean shouldAdd = random().nextBoolean();
         if (shouldAdd) {
           set.add(value);
         } else {
@@ -212,8 +212,8 @@ public class IntHashSetTest extends LuceneTestCase {
     IntHashSet set = new IntHashSet();
     for (int j = 0; j < 100; ++j) {
       for (int i = 0; i < ArrayHashMapTest.RANDOM_TEST_NUM_ITERATIONS; ++i) {
-        int value = random.nextInt() % 5000;
-        boolean shouldAdd = random.nextBoolean();
+        int value = random().nextInt() % 5000;
+        boolean shouldAdd = random().nextBoolean();
         if (shouldAdd) {
           set.add(value);
         } else {

@@ -61,17 +61,17 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    fieldName = random.nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+    fieldName = random().nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
     Field field = newField(fieldName, "", StringField.TYPE_UNSTORED);
     doc.add(field);
     List<String> terms = new ArrayList<String>();
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random);
+      String s = _TestUtil.randomUnicodeString(random());
       field.setStringValue(s);
       terms.add(s);
       writer.addDocument(doc);
@@ -143,7 +143,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     // but for preflex codec, the test can be very slow, so use less iterations.
     int num = Codec.getDefault().getName().equals("Lucene3x") ? 100 * RANDOM_MULTIPLIER : atLeast(1000);
     for (int i = 0; i < num; i++) {
-      String reg = AutomatonTestUtil.randomRegexp(random);
+      String reg = AutomatonTestUtil.randomRegexp(random());
       if (VERBOSE) {
         System.out.println("TEST: regexp=" + reg);
       }
