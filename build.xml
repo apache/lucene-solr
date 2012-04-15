@@ -164,10 +164,21 @@
   </target>
 
   <target name="jar-checksums" description="Recompute SHA1 checksums for all JAR files.">
+    <delete>
+      <fileset dir="${basedir}">
+        <include name="**/*.jar.sha1"/>
+      </fileset>
+    </delete>
+
     <checksum algorithm="SHA1" fileext=".sha1">
       <fileset dir="${basedir}">
         <include name="**/*.jar"/>
       </fileset>
     </checksum>
+
+    <fixcrlf 
+      srcdir="${basedir}"
+      includes="**/*.jar.sha1"
+      eol="lf" fixlast="true" encoding="US-ASCII" />
   </target>
 </project>
