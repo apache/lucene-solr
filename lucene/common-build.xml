@@ -613,7 +613,7 @@
   	</sequential>
   </macrodef>
 
-  <target name="test-updatecache" description="Overwrite tests' timings cache for balancing." depends="init">
+  <target name="test-updatecache" description="Overwrite tests' timings cache for balancing." depends="install-junit4-taskdef">
     <mergehints file="${common.dir}/tools/junit4/cached-timehints.txt">
       <resources>
         <!-- The order is important. Include previous stats first, then append new stats. -->
@@ -819,7 +819,7 @@
     </sequential>
   </macrodef>
 
-  <target name="test-times" description="Show the slowest tests (averages)." depends="init">
+  <target name="test-times" description="Show the slowest tests (averages)." depends="install-junit4-taskdef">
     <property name="max" value="10" />
     <echo>Showing ${max} slowest tests according to local stats. (change with -Dmax=...).</echo>
     <tophints max="${max}">
@@ -934,14 +934,6 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <target name="test" depends="compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.threadspercpu}" />
-  </target>
-
-  <target name="refresh-checksums">
-    <checksum algorithm="SHA1">
-      <fileset dir="${basedir}">
-        <include name="**/*.jar"/>
-      </fileset>
-    </checksum>
   </target>
 
   <!--
