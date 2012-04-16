@@ -86,11 +86,36 @@ sammy.get
               this
                 .html( content );
 
-              $( 'option[value="fieldname\=' + response.schema.defaultSearchField + '"]', this )
+              var defaultSearchField = 'fieldname\=' + ( context.params['analysis.fieldname'] || response.schema.defaultSearchField );
+
+              if( context.params['analysis.fieldtype'] )
+              {
+                defaultSearchField = 'fieldtype\=' + context.params['analysis.fieldtype'];
+              }
+
+              $( 'option[value="' + defaultSearchField + '"]', this )
                 .attr( 'selected', 'selected' );
 
               this
-                .chosen();
+                .chosen()
+                .trigger( 'change' );
+
+              var fields = 0;
+              for( var key in context.params )
+              {
+                if( 'string' === typeof context.params[key] )
+                {
+                  fields++;
+                  $( '[name="' + key + '"]', analysis_form )
+                    .val( context.params[key] );
+                }
+              }
+
+              if( 0 !== fields )
+              {
+                analysis_form
+                  .trigger( 'execute' );
+              }
             },
             error : function( xhr, text_status, error_thrown)
             {
@@ -164,79 +189,104 @@ sammy.get
         }
 
         var button = $( 'button', analysis_form )
+
+        var compute_analysis_params = function()
+        {
+          var params = analysis_form.formToArray();
+                          
+          var type_or_name = $( '#type_or_name', analysis_form ).val().split( '=' );
+          params.push( { name: 'analysis.' + type_or_name[0], value: type_or_name[1] } );
+
+          return params;
+        }
                 
         analysis_form
-          .ajaxForm
+          .die( 'submit' )
+          .live
           (
+            'submit',
+            function( event )
             {
-              url : core_basepath + '/analysis/field?wt=json',
-              dataType : 'json',
-              beforeSubmit : function( array, form, options )
-              {
-                loader.show( button );
-                button.attr( 'disabled', true );
-                                
-                array.push( { name: 'analysis.showmatch', value: 'true' } );
-                                
-                var type_or_name = $( '#type_or_name', form ).val().split( '=' );
-                array.push( { name: 'analysis.' + type_or_name[0], value: type_or_name[1] } );
-              },
-              success : function( response, status_text, xhr, form )
-              {
-                $( '.analysis-error', analysis_element )
-                  .hide();
-                                
-                analysis_result
-                  .empty()
-                  .show();
-                                
-                for( var name in response.analysis.field_names )
-                {
-                  build_analysis_table( 'name', name, response.analysis.field_names[name] );
-                }
-                                
-                for( var name in response.analysis.field_types )
-                {
-                  build_analysis_table( 'type', name, response.analysis.field_types[name] );
-                }
+              var params = compute_analysis_params();
 
-                check_empty_spacer();
-              },
-              error : function( xhr, text_status, error_thrown )
-              {
-                analysis_result
-                  .empty()
-                  .hide();
-
-                if( 404 === xhr.status )
+              context.redirect( context.path.split( '?' ).shift() + '?' + $.param( params ) );
+              return false;
+            }
+          )
+          .die( 'execute' )
+          .live
+          (
+            'execute',
+            function( event )
+            {
+              $.ajax
+              (
                 {
-                  $( '#analysis-handler-missing', analysis_element )
-                    .show();
-                }
-                else
-                {
-                  $( '#analysis-error', analysis_element )
-                    .show();
-
-                  var response = null;
-                  try
+                  url : core_basepath + '/analysis/field?wt=json&analysis.showmatch=true&' + context.path.split( '?' ).pop(),
+                  dataType : 'json',
+                  beforeSend : function( xhr, settings )
                   {
-                    eval( 'response = ' + xhr.responseText + ';' );
-                  }
-                  catch( e )
+                    loader.show( button );
+                    button.attr( 'disabled', true );
+                  },
+                  success : function( response, status_text, xhr, form )
                   {
-                    console.error( e );
-                  }
+                    $( '.analysis-error', analysis_element )
+                      .hide();
+                                    
+                    analysis_result
+                      .empty()
+                      .show();
+                                    
+                    for( var name in response.analysis.field_names )
+                    {
+                      build_analysis_table( 'name', name, response.analysis.field_names[name] );
+                    }
+                                    
+                    for( var name in response.analysis.field_types )
+                    {
+                      build_analysis_table( 'type', name, response.analysis.field_types[name] );
+                    }
 
-                  $( '#analysis-error .body', analysis_element )
-                    .text( response ? response.error.msg : xhr.responseText );
+                    check_empty_spacer();
+                  },
+                  error : function( xhr, text_status, error_thrown )
+                  {
+                    analysis_result
+                      .empty()
+                      .hide();
+
+                    if( 404 === xhr.status )
+                    {
+                      $( '#analysis-handler-missing', analysis_element )
+                        .show();
+                    }
+                    else
+                    {
+                      $( '#analysis-error', analysis_element )
+                        .show();
+
+                      var response = null;
+                      try
+                      {
+                        eval( 'response = ' + xhr.responseText + ';' );
+                      }
+                      catch( e )
+                      {
+                        console.error( e );
+                      }
+
+                      $( '#analysis-error .body', analysis_element )
+                        .text( response ? response.error.msg : xhr.responseText );
+                    }
+                  },
+                  complete : function()
+                  {
+                    loader.hide( $( 'button', analysis_form ) );
+                    button.removeAttr( 'disabled' );
+                  }
                 }
-              },
-              complete : function()
-              {
-                loader.hide( $( 'button', analysis_form ) );
-                button.removeAttr( 'disabled' );
-              }
+              );
             }
           );
 
