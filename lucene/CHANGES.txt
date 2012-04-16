@@ -726,6 +726,9 @@ Documentation
 
 Build
 
+* LUCENE-3808: Refactoring of testing infrastructure to use randomizedtesting
+  package: http://labs.carrotsearch.com/randomizedtesting.html (Dawid Weiss)
+
 * LUCENE-3964: Added target stage-maven-artifacts, which stages
   Maven release artifacts to a Maven staging repository in preparation
   for release.  (Steve Rowe)
