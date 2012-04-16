@@ -66,6 +66,11 @@ public abstract class CharFilter extends CharStream {
   }
 
   @Override
+  public int read() throws IOException {
+    return input.read();
+  }
+
+  @Override
   public boolean markSupported(){
     return input.markSupported();
   }
