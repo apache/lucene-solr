@@ -74,6 +74,11 @@
   padding-right: 21px;
 }
 
+#content #logging .jstree a.trigger.set
+{
+  font-weight: bold;
+}
+
 #content #logging .jstree a:hover span.name
 {
   background-image: url( ../../img/ico/pencil-small.png );
