@@ -94,7 +94,20 @@
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
   <property name="tests.heapsize" value="512M"/>
-    
+
+  <!-- Override these in your local properties to your desire. -->
+  <!-- Show simple class names (no package) in test suites. -->
+  <property name="tests.useSimpleNames" value="false" />
+  <!-- Max width for class name truncation.  -->
+  <property name="tests.maxClassNameColumns" value="10000" />
+  <!-- Show suite summaries for tests. -->
+  <property name="tests.showSuiteSummary" value="true" />
+  <!-- Configure test emission to console for each type of status -->
+  <property name="tests.showSuccess" value="false" />
+  <property name="tests.showError" value="true" />
+  <property name="tests.showFailure" value="true" />
+  <property name="tests.showIgnored" value="true" />
+
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
   <property name="javac.source" value="1.6"/>
@@ -745,7 +758,7 @@
                     <fileset dir="${common.dir}/tools/junit4" includes="**/*.txt" />
                 </execution-times>
             </balancers>            
-            
+
             <!-- Reporting listeners. -->
             <listeners>
                 <!-- A simplified console output (maven-like). -->
@@ -755,15 +768,15 @@
                     showOutputStream="true" 
                     showErrorStream="true"
 
-                    showStatusOk="false"
-                    showStatusError="true"
-                    showStatusFailure="true"
-                    showStatusIgnored="true"
+                    showStatusOk="${tests.showSuccess}"
+                    showStatusError="${tests.showError}"
+                    showStatusFailure="${tests.showFailure}"
+                    showStatusIgnored="${tests.showIgnored}"
 
-                    showSuiteSummary="true"
+                    showSuiteSummary="${tests.showSuiteSummary}"
 
-                    useSimpleNames="true"
-                    maxClassNameColumns="70"
+                    useSimpleNames="${tests.useSimpleNames}"
+                    maxClassNameColumns="${tests.maxClassNameColumns}"
                 />
 
                 <!-- Emits full status for all tests, their relative order on slaves. -->
