@@ -100,6 +100,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     }
     r.close();
     cachedDir.close();
+    docs.close();
   }
 
   // NOTE: not a test; just here to make sure the code frag

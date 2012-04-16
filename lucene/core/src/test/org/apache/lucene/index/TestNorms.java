@@ -197,6 +197,7 @@ public class TestNorms extends LuceneTestCase {
     }
     writer.commit();
     writer.close();
+    docs.close();
   }
 
 

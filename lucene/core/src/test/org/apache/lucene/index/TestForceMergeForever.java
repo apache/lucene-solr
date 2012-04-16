@@ -100,5 +100,6 @@ public class TestForceMergeForever extends LuceneTestCase {
     assertTrue("merge count is " + w.mergeCount.get(), w.mergeCount.get() <= 1);
     w.close();
     d.close();
+    docs.close();
   }
 }

@@ -92,6 +92,7 @@ public class TestCustomNorms extends LuceneTestCase {
     }
     open.close();
     dir.close();
+    docs.close();
   }
 
   public void testExceptionOnRandomType() throws IOException {
@@ -126,6 +127,7 @@ public class TestCustomNorms extends LuceneTestCase {
     writer.commit();
     writer.close();
     dir.close();
+    docs.close();
 
   }
 

@@ -153,6 +153,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     r.close();
     d.close();
+    docs.close();
   }
 
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {

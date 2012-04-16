@@ -129,6 +129,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
     for (int i = 0; i < numdocs; i++) {
       writer.addDocument(lineFileDocs.nextDoc());
     }
+    
+    lineFileDocs.close();
   }
   
   /**
