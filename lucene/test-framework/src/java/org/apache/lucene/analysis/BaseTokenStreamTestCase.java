@@ -34,6 +34,7 @@ import java.util.HashMap;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util._TestUtil;
@@ -454,42 +455,46 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   private static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect) throws IOException {
 
     final LineFileDocs docs = new LineFileDocs(random);
-
-    for (int i = 0; i < iterations; i++) {
-      String text;
-      
-      if (random.nextInt(10) == 7) {
-        // real data from linedocs
-        text = docs.nextDoc().get("body");
-        if (text.length() > maxWordLength) {
-
-          // Take a random slice from the text...:
-          int startPos = random.nextInt(text.length() - maxWordLength);
-          if (startPos > 0 && Character.isLowSurrogate(text.charAt(startPos))) {
-            // Take care not to split up a surrogate pair:
-            startPos--;
-            assert Character.isHighSurrogate(text.charAt(startPos));
+    
+    try {
+      for (int i = 0; i < iterations; i++) {
+        String text;
+        
+        if (random.nextInt(10) == 7) {
+          // real data from linedocs
+          text = docs.nextDoc().get("body");
+          if (text.length() > maxWordLength) {
+            
+            // Take a random slice from the text...:
+            int startPos = random.nextInt(text.length() - maxWordLength);
+            if (startPos > 0 && Character.isLowSurrogate(text.charAt(startPos))) {
+              // Take care not to split up a surrogate pair:
+              startPos--;
+              assert Character.isHighSurrogate(text.charAt(startPos));
+            }
+            int endPos = startPos + maxWordLength - 1;
+            if (Character.isHighSurrogate(text.charAt(endPos))) {
+              // Take care not to split up a surrogate pair:
+              endPos--;
+            }
+            text = text.substring(startPos, 1+endPos);
           }
-          int endPos = startPos + maxWordLength - 1;
-          if (Character.isHighSurrogate(text.charAt(endPos))) {
-            // Take care not to split up a surrogate pair:
-            endPos--;
-          }
-          text = text.substring(startPos, 1+endPos);
+        } else {
+          // synthetic
+          text = randomAnalysisString(random, maxWordLength, simple);
         }
-      } else {
-        // synthetic
-        text = randomAnalysisString(random, maxWordLength, simple);
+        
+        try {
+          checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect);
+        } catch (Throwable t) {
+          // TODO: really we should pass a random seed to
+          // checkAnalysisConsistency then print it here too:
+          System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text='" + escape(text) + "'");
+          Rethrow.rethrow(t);
+        }
       }
-
-      try {
-        checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect);
-      } catch (Throwable t) {
-        // TODO: really we should pass a random seed to
-        // checkAnalysisConsistency then print it here too:
-        System.err.println("TEST FAIL: useCharFilter=" + useCharFilter + " text='" + escape(text) + "'");
-        Rethrow.rethrow(t);
-      }
+    } finally {
+      IOUtils.closeWhileHandlingException(docs);
     }
   }
 
