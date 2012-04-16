@@ -756,74 +756,29 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
   }
   
-  // wants charfilter to be a filterreader...
-  // do *NOT*, do *NOT* refactor me to be a charfilter: LUCENE-3990
-  static class CheckThatYouDidntReadAnythingReaderWrapper extends CharStream {
-    boolean readSomething;
-    CharStream in;
+  static final class CheckThatYouDidntReadAnythingReaderWrapper extends CharFilter {
+    boolean readSomething = false;
     
     CheckThatYouDidntReadAnythingReaderWrapper(Reader in) {
-      this.in = CharReader.get(in);
-    }
-    
-    @Override
-    public int correctOffset(int currentOff) {
-      return in.correctOffset(currentOff);
-    }
-
-    @Override
-    public void close() throws IOException {
-      in.close();
+      super(CharReader.get(in));
     }
 
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
       readSomething = true;
-      return in.read(cbuf, off, len);
+      return input.read(cbuf, off, len);
     }
 
     @Override
     public int read() throws IOException {
       readSomething = true;
-      return in.read();
-    }
-
-    @Override
-    public int read(CharBuffer target) throws IOException {
-      readSomething = true;
-      return in.read(target);
-    }
-
-    @Override
-    public void mark(int readAheadLimit) throws IOException {
-      in.mark(readAheadLimit);
-    }
-
-    @Override
-    public boolean markSupported() {
-      return in.markSupported();
-    }
-
-    @Override
-    public int read(char[] cbuf) throws IOException {
-      readSomething = true;
-      return in.read(cbuf);
-    }
-
-    @Override
-    public boolean ready() throws IOException {
-      return in.ready();
-    }
-
-    @Override
-    public void reset() throws IOException {
-      in.reset();
+      return input.read();
     }
 
     @Override
     public long skip(long n) throws IOException {
       readSomething = true;
-      return in.skip(n);
+      return input.skip(n);
     }
   }
   
