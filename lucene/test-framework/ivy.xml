@@ -23,8 +23,8 @@
       <dependency org="org.apache.ant" name="ant-junit" rev="1.7.1" transitive="false"/>
       <dependency org="junit" name="junit" rev="4.10" transitive="false"/>
 
-      <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="1.1.0" transitive="false" />
-      <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="1.1.0" transitive="false"/>
+      <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="1.2.0" transitive="false" />
+      <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="1.2.0" transitive="false"/>
 
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>

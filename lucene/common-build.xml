@@ -761,6 +761,9 @@
                     showStatusIgnored="true"
 
                     showSuiteSummary="true"
+
+                    useSimpleNames="true"
+                    maxClassNameColumns="70"
                 />
 
                 <!-- Emits full status for all tests, their relative order on slaves. -->
