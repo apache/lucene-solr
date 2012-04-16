@@ -27,11 +27,13 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util._TestUtil;
 
+import com.carrotsearch.randomizedtesting.SeedUtils;
 /**
  * Runs TestNRTThreads in a separate process, crashes the JRE in the middle
  * of execution, then runs checkindex to make sure its not corrupt.
@@ -63,6 +65,9 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
           return;
       }
     } else {
+      // TODO: the non-fork code could simply enable impersonation?
+      assumeFalse("does not support PreFlex, see LUCENE-3992", 
+          Codec.getDefault().getName().equals("Lucene3x"));
       // we are the fork, setup a crashing thread
       final int crashTime = _TestUtil.nextInt(random(), 3000, 4000);
       Thread t = new Thread() {
@@ -96,7 +101,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     // passing NIGHTLY to this test makes it run for much longer, easier to catch it in the act...
     cmd.add("-Dtests.nightly=true");
     cmd.add("-DtempDir=" + tempDir.getPath());
-    cmd.add("-Dtests.seed=" + random().nextLong() + ":" + random().nextLong());
+    cmd.add("-Dtests.seed=" + SeedUtils.formatSeed(random().nextLong()));
     cmd.add("-ea");
     cmd.add("-cp");
     cmd.add(System.getProperty("java.class.path"));
