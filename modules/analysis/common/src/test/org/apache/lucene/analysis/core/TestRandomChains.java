@@ -766,19 +766,19 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
       readSomething = true;
-      return super.read(cbuf, off, len);
+      return input.read(cbuf, off, len);
     }
 
     @Override
     public int read() throws IOException {
       readSomething = true;
-      return super.read();
+      return input.read();
     }
 
     @Override
     public long skip(long n) throws IOException {
       readSomething = true;
-      return super.skip(n);
+      return input.skip(n);
     }
   }
   
