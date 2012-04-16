@@ -600,7 +600,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
       Random random = new Random(seed);
       TokenizerSpec tokenizerSpec = newTokenizer(random, reader);
+      //System.out.println("seed=" + seed + ",create tokenizer=" + tokenizerSpec.toString);
       TokenFilterSpec filterSpec = newFilterChain(random, tokenizerSpec.tokenizer, tokenizerSpec.offsetsAreCorrect);
+      //System.out.println("seed=" + seed + ",create filter=" + filterSpec.toString);
       return new TokenStreamComponents(tokenizerSpec.tokenizer, filterSpec.stream);
     }
 
@@ -676,13 +678,14 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         final CheckThatYouDidntReadAnythingReaderWrapper wrapper = new CheckThatYouDidntReadAnythingReaderWrapper(reader);
         final Object args[] = newTokenizerArgs(random, wrapper, ctor.getParameterTypes());
         spec.tokenizer = createComponent(ctor, args, descr);
-        if (brokenOffsetsComponents.contains(ctor.getDeclaringClass())) {
-          spec.offsetsAreCorrect = false;
-        }
-        if (spec.tokenizer == null) {
+        if (spec.tokenizer != null) {
+          if (brokenOffsetsComponents.contains(ctor.getDeclaringClass())) {
+            spec.offsetsAreCorrect = false;
+          }
+          spec.toString = descr.toString();
+        } else {
           assertFalse(ctor.getDeclaringClass().getName() + " has read something in ctor but failed with UOE/IAE", wrapper.readSomething);
         }
-        spec.toString = descr.toString();
       }
       return spec;
     }
