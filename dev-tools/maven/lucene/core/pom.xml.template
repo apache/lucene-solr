@@ -62,6 +62,11 @@
       <artifactId>ant-junit</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.carrotsearch.randomizedtesting</groupId>
+      <artifactId>randomizedtesting-runner</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
