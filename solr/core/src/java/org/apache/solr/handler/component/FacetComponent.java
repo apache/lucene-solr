@@ -30,6 +30,8 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QueryParsing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -43,6 +45,8 @@ import java.util.*;
  */
 public class FacetComponent extends SearchComponent
 {
+  public static Logger log = LoggerFactory.getLogger(FacetComponent.class);
+
   public static final String COMPONENT_NAME = "facet";
 
   static final String PIVOT_KEY = "facet_pivot";
@@ -486,6 +490,15 @@ public class FacetComponent extends SearchComponent
           String name = shardCounts.getName(j);
           long count = ((Number)shardCounts.getVal(j)).longValue();
           ShardFacetCount sfc = dff.counts.get(name);
+          if (sfc == null) {
+            // we got back a term we didn't ask for?
+            log.error("Unexpected term returned for facet refining. key=" + key + " term='" + name + "'"
+              + "\n\trequest params=" + sreq.params
+              + "\n\ttoRefine=" + dff._toRefine
+              + "\n\tresponse=" + shardCounts
+            );
+            continue;
+          }
           sfc.count += count;
         }
       }
