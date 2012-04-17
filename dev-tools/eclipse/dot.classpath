@@ -50,6 +50,7 @@
 	<classpathentry kind="src" path="modules/queries/src/java"/>
 	<classpathentry kind="src" path="modules/queries/src/test"/>
 	<classpathentry kind="src" path="modules/queryparser/src/java"/>
+	<classpathentry kind="src" path="modules/queryparser/src/resources"/>
 	<classpathentry kind="src" path="modules/queryparser/src/test"/>
 	<classpathentry kind="src" path="modules/suggest/src/java"/>
 	<classpathentry kind="src" path="modules/suggest/src/test"/>
