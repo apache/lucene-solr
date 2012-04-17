@@ -353,9 +353,9 @@
   <target name="package-tgz" depends="package"
     description="--> Generates the lucene distribution as .tgz">
 
-    <delete file="${build.dir}/lucene-${version}.tar"/>
     <delete file="${dist.dir}/lucene-${version}.tgz"/>
-    <tar tarfile="${build.dir}/lucene-${version}.tar" longfile="gnu">
+    <tar tarfile="${dist.dir}/lucene-${version}.tgz"
+      longfile="gnu" compression="gzip">
       <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </tarfileset>
@@ -363,11 +363,7 @@
         <patternset refid="binary.build.dist.patterns"/>
       </tarfileset>
     </tar>
-
-    <gzip zipfile="${dist.dir}/lucene-${version}.tgz"
-      src="${build.dir}/lucene-${version}.tar"
-      />
-	  <make-checksums file="${dist.dir}/lucene-${version}.tgz"/>
+    <make-checksums file="${dist.dir}/lucene-${version}.tgz"/>
   </target>
 
   <!-- ================================================================== -->
