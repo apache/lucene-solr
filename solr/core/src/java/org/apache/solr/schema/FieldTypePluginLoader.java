@@ -61,7 +61,7 @@ public final class FieldTypePluginLoader
   public FieldTypePluginLoader(final IndexSchema schema,
                                final Map<String, FieldType> fieldTypes,
                                final Collection<SchemaAware> schemaAware) {
-    super("[schema.xml] fieldType", true, true);
+    super("[schema.xml] fieldType", FieldType.class, true, true);
     this.schema = schema;
     this.fieldTypes = fieldTypes;
     this.schemaAware = schemaAware;
@@ -78,7 +78,7 @@ public final class FieldTypePluginLoader
                               String className, 
                               Node node ) throws Exception {
 
-    FieldType ft = (FieldType)loader.newInstance(className);
+    FieldType ft = loader.newInstance(className, FieldType.class);
     ft.setTypeName(name);
     
     String expression = "./analyzer[@type='query']";
@@ -228,8 +228,7 @@ public final class FieldTypePluginLoader
     if (analyzerName != null) {
       try {
         // No need to be core-aware as Analyzers are not in the core-aware list
-        final Class<? extends Analyzer> clazz = loader.findClass
-          (analyzerName).asSubclass(Analyzer.class);
+        final Class<? extends Analyzer> clazz = loader.findClass(analyzerName, Analyzer.class);
         
         try {
           // first try to use a ctor with version parameter 
@@ -265,7 +264,7 @@ public final class FieldTypePluginLoader
       = new ArrayList<CharFilterFactory>();
     AbstractPluginLoader<CharFilterFactory> charFilterLoader =
       new AbstractPluginLoader<CharFilterFactory>
-      ( "[schema.xml] analyzer/charFilter", false, false ) {
+      ("[schema.xml] analyzer/charFilter", CharFilterFactory.class, false, false) {
 
       @Override
       protected void init(CharFilterFactory plugin, Node node) throws Exception {
@@ -298,7 +297,7 @@ public final class FieldTypePluginLoader
       = new ArrayList<TokenizerFactory>(1);
     AbstractPluginLoader<TokenizerFactory> tokenizerLoader =
       new AbstractPluginLoader<TokenizerFactory>
-      ( "[schema.xml] analyzer/tokenizer", false, false ) {
+      ("[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
       @Override
       protected void init(TokenizerFactory plugin, Node node) throws Exception {
         if( !tokenizers.isEmpty() ) {
@@ -335,7 +334,7 @@ public final class FieldTypePluginLoader
       = new ArrayList<TokenFilterFactory>();
 
     AbstractPluginLoader<TokenFilterFactory> filterLoader = 
-      new AbstractPluginLoader<TokenFilterFactory>( "[schema.xml] analyzer/filter", false, false )
+      new AbstractPluginLoader<TokenFilterFactory>("[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false)
     {
       @Override
       protected void init(TokenFilterFactory plugin, Node node) throws Exception {

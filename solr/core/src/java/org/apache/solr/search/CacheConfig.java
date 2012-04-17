@@ -39,7 +39,7 @@ import javax.xml.xpath.XPathConstants;
 public class CacheConfig {
   private String nodeName;
 
-  private Class clazz;
+  private Class<? extends SolrCache> clazz;
   private Map<String,String> args;
   private CacheRegenerator regenerator;
 
@@ -51,7 +51,7 @@ public class CacheConfig {
 
   public CacheConfig() {}
 
-  public CacheConfig(Class clazz, Map<String,String> args, CacheRegenerator regenerator) {
+  public CacheConfig(Class<? extends SolrCache> clazz, Map<String,String> args, CacheRegenerator regenerator) {
     this.clazz = clazz;
     this.args = args;
     this.regenerator = regenerator;
@@ -95,9 +95,9 @@ public class CacheConfig {
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");
     config.regenImpl = config.args.get("regenerator");
-    config.clazz = loader.findClass(config.cacheImpl);
+    config.clazz = loader.findClass(config.cacheImpl, SolrCache.class);
     if (config.regenImpl != null) {
-      config.regenerator = (CacheRegenerator) loader.newInstance(config.regenImpl);
+      config.regenerator = loader.newInstance(config.regenImpl, CacheRegenerator.class);
     }
     
     return config;
@@ -105,7 +105,7 @@ public class CacheConfig {
 
   public SolrCache newInstance() {
     try {
-      SolrCache cache = (SolrCache)clazz.newInstance();
+      SolrCache cache = clazz.newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {

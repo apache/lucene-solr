@@ -331,7 +331,7 @@ public final class SolrCore implements SolrInfoMBean {
     DirectoryFactory dirFactory;
     PluginInfo info = solrConfig.getPluginInfo(DirectoryFactory.class.getName());
     if (info != null) {
-      dirFactory = (DirectoryFactory) getResourceLoader().newInstance(info.className);
+      dirFactory = getResourceLoader().newInstance(info.className, DirectoryFactory.class);
       dirFactory.init(info.initArgs);
     } else {
       dirFactory = new StandardDirectoryFactory();
@@ -344,7 +344,7 @@ public final class SolrCore implements SolrInfoMBean {
     IndexReaderFactory indexReaderFactory;
     PluginInfo info = solrConfig.getPluginInfo(IndexReaderFactory.class.getName());
     if (info != null) {
-      indexReaderFactory = (IndexReaderFactory) resourceLoader.newInstance(info.className);
+      indexReaderFactory = resourceLoader.newInstance(info.className, IndexReaderFactory.class);
       indexReaderFactory.init(info.initArgs);
     } else {
       indexReaderFactory = new StandardIndexReaderFactory();
@@ -407,14 +407,11 @@ public final class SolrCore implements SolrInfoMBean {
    *@return the desired instance
    *@throws SolrException if the object could not be instantiated
    */
-  private <T extends Object> T createInstance(String className, Class<T> cast, String msg) {
-    Class clazz = null;
+  private <T> T createInstance(String className, Class<T> cast, String msg) {
+    Class<? extends T> clazz = null;
     if (msg == null) msg = "SolrCore Object";
     try {
-        clazz = getResourceLoader().findClass(className);
-        if (cast != null && !cast.isAssignableFrom(clazz)) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +cast.getName());
-        }
+        clazz = getResourceLoader().findClass(className, cast);
       //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
       // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
         Constructor[] cons =  clazz.getConstructors();
@@ -424,7 +421,7 @@ public final class SolrCore implements SolrInfoMBean {
             return (T)con.newInstance(this);
           }
         }
-        return (T) getResourceLoader().newInstance(className);//use the empty constructor      
+        return getResourceLoader().newInstance(className, cast);//use the empty constructor
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
@@ -432,14 +429,11 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
   
-  private <T extends Object> T createReloadedUpdateHandler(String className, Class<UpdateHandler> class1, String msg, UpdateHandler updateHandler) {
-    Class clazz = null;
+  private UpdateHandler createReloadedUpdateHandler(String className, String msg, UpdateHandler updateHandler) {
+    Class<? extends UpdateHandler> clazz = null;
     if (msg == null) msg = "SolrCore Object";
     try {
-        clazz = getResourceLoader().findClass(className);
-        if (class1 != null && !class1.isAssignableFrom(clazz)) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +class1.getName());
-        }
+        clazz = getResourceLoader().findClass(className, UpdateHandler.class);
       //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
       // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
         Constructor justSolrCoreCon = null;
@@ -447,14 +441,14 @@ public final class SolrCore implements SolrInfoMBean {
         for (Constructor con : cons) {
           Class[] types = con.getParameterTypes();
           if(types.length == 2 && types[0] == SolrCore.class && types[1] == UpdateHandler.class){
-            return (T)con.newInstance(this, updateHandler);
+            return (UpdateHandler) con.newInstance(this, updateHandler);
           } 
         }
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " could not find proper constructor for " +class1.getName());
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " could not find proper constructor for " + UpdateHandler.class.getName());
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +class1.getName(), e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " + UpdateHandler.class.getName(), e);
     }
   }
 
@@ -482,7 +476,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
   
   private UpdateHandler createUpdateHandler(String className, UpdateHandler updateHandler) {
-    return createReloadedUpdateHandler(className, UpdateHandler.class, "Update Handler", updateHandler);
+    return createReloadedUpdateHandler(className, "Update Handler", updateHandler);
   }
 
   private QueryResponseWriter createQueryResponseWriter(String className) {
@@ -642,7 +636,7 @@ public final class SolrCore implements SolrInfoMBean {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = (CodecFactory) schema.getResourceLoader().newInstance(info.className);
+      factory = schema.getResourceLoader().newInstance(info.className, CodecFactory.class);
       factory.init(info.initArgs);
     } else {
       factory = new DefaultCodecFactory();
@@ -925,7 +919,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
   private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){
     if(!registry.containsKey(name)){
-      T searchComp = (T) resourceLoader.newInstance(c.getName());
+      T searchComp = resourceLoader.newInstance(c.getName(), c);
       if (searchComp instanceof NamedListInitializedPlugin){
         ((NamedListInitializedPlugin)searchComp).init( new NamedList() );
       }

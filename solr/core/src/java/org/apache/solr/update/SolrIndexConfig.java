@@ -180,7 +180,7 @@ public class SolrIndexConfig {
   private MergePolicy buildMergePolicy(IndexSchema schema) {
     String mpClassName = mergePolicyInfo == null ? defaultMergePolicyClassName : mergePolicyInfo.className;
 
-    MergePolicy policy = (MergePolicy) schema.getResourceLoader().newInstance(mpClassName);
+    MergePolicy policy = schema.getResourceLoader().newInstance(mpClassName, MergePolicy.class);
 
     if (policy instanceof LogMergePolicy) {
       LogMergePolicy logMergePolicy = (LogMergePolicy) policy;
@@ -213,7 +213,7 @@ public class SolrIndexConfig {
 
   private MergeScheduler buildMergeScheduler(IndexSchema schema) {
     String msClassName = mergeSchedulerInfo == null ? SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME : mergeSchedulerInfo.className;
-    MergeScheduler scheduler = (MergeScheduler) schema.getResourceLoader().newInstance(msClassName);
+    MergeScheduler scheduler = schema.getResourceLoader().newInstance(msClassName, MergeScheduler.class);
 
     if (mergeSchedulerInfo != null)
       SolrPluginUtils.invokeSetters(scheduler, mergeSchedulerInfo.initArgs);

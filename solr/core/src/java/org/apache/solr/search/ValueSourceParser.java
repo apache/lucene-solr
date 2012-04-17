@@ -344,7 +344,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
           dist = new NGramDistance(ngram);
         } else {
-          dist = (StringDistance) fp.req.getCore().getResourceLoader().newInstance(distClass);
+          dist = fp.req.getCore().getResourceLoader().newInstance(distClass, StringDistance.class);
         }
         return new StringDistanceFunction(str1, str2, dist);
       }

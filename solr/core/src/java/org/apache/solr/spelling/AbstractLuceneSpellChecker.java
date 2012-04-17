@@ -109,14 +109,14 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       } else if (compClass.equalsIgnoreCase(FREQ_COMP)){
         comp = new SuggestWordFrequencyComparator();
       } else{//must be a FQCN
-        comp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass);
+        comp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass, Comparator.class);
       }
     } else {
       comp = SuggestWordQueue.DEFAULT_COMPARATOR;
     }
     String strDistanceName = (String)config.get(STRING_DISTANCE);
     if (strDistanceName != null) {
-      sd = (StringDistance) core.getResourceLoader().newInstance(strDistanceName);
+      sd = core.getResourceLoader().newInstance(strDistanceName, StringDistance.class);
       //TODO: Figure out how to configure options.  Where's Spring when you need it?  Or at least BeanUtils...
     } else {
       sd = new LevensteinDistance();

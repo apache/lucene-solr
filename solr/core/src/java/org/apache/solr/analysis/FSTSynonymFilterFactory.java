@@ -155,7 +155,7 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
   }
   
   private static TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname, Map<String,String> args){
-    TokenizerFactory tokFactory = (TokenizerFactory) loader.newInstance(cname);
+    TokenizerFactory tokFactory = loader.newInstance(cname, TokenizerFactory.class);
     tokFactory.init(args);
     if (tokFactory instanceof ResourceLoaderAware) {
       ((ResourceLoaderAware) tokFactory).inform(loader);

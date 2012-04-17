@@ -142,7 +142,7 @@ public class SignatureUpdateProcessorFactory
           currDocSigFields = sigFields;
         }
 
-        Signature sig = (Signature) req.getCore().getResourceLoader().newInstance(signatureClass); 
+        Signature sig = req.getCore().getResourceLoader().newInstance(signatureClass, Signature.class);
         sig.init(params);
 
         for (String field : currDocSigFields) {

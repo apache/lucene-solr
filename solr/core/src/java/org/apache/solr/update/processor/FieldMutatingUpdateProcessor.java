@@ -205,7 +205,7 @@ public abstract class FieldMutatingUpdateProcessor
     
     for (String t : typeClasses) {
       try {
-        classes.add(loader.findClass(t));
+        classes.add(loader.findClass(t, Object.class));
       } catch (Exception e) {
         throw new SolrException(SERVER_ERROR,
                                 "Can't resolve typeClass: " + t, e);

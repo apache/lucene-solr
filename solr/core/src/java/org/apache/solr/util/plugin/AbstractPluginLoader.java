@@ -43,21 +43,23 @@ public abstract class AbstractPluginLoader<T>
   private final String type;
   private final boolean preRegister;
   private final boolean requireName;
+  private final Class<T> pluginClassType;
   
   /**
    * @param type is the 'type' name included in error messages.
    * @param preRegister if true, this will first register all Plugins, then it will initialize them.
    */
-  public AbstractPluginLoader( String type, boolean preRegister, boolean requireName )
+  public AbstractPluginLoader(String type, Class<T> pluginClassType, boolean preRegister, boolean requireName )
   {
     this.type = type;
+    this.pluginClassType = pluginClassType;
     this.preRegister = preRegister;
     this.requireName = requireName;
   }
 
-  public AbstractPluginLoader( String type )
+  public AbstractPluginLoader(String type, Class<T> pluginClassType)
   {
-    this( type, false, true );
+    this(type, pluginClassType, false, true);
   }
   
   /**
@@ -81,7 +83,7 @@ public abstract class AbstractPluginLoader<T>
   @SuppressWarnings("unchecked")
   protected T create( ResourceLoader loader, String name, String className, Node node ) throws Exception
   {
-    return (T) loader.newInstance( className, getDefaultPackages() );
+    return loader.newInstance(className, pluginClassType, getDefaultPackages());
   }
   
   /**

@@ -108,7 +108,7 @@ public class TestSynonymFilterFactory extends BaseTokenTestCase {
       return Arrays.asList(text.split("\n"));
     }
 
-    public Object newInstance(String cname, String... subpackages) {
+    public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
       return null;
     }
 

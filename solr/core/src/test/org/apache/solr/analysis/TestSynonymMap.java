@@ -282,7 +282,7 @@ public class TestSynonymMap extends LuceneTestCase {
       }
 
       @Override
-      public Object newInstance(String cname, String... subpackages) {
+      public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
         throw new RuntimeException("stub");
       }
 

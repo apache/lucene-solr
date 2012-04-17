@@ -493,6 +493,9 @@ Other Changes
 * SOLR-3343: Moved FastWriter, FileUtils, RegexFileFilter, RTimer and SystemIdResolver
   from org.apache.solr.common to org.apache.solr.util (Chris Male)
 
+* SOLR-3357: ResourceLoader.newInstance now accepts a Class representation of the expected
+instance type (Chris Male)
+
 Documentation
 ----------------------
 

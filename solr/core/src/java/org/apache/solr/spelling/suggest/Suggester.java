@@ -96,7 +96,7 @@ public class Suggester extends SolrSpellChecker {
       lookupImpl = FSTLookupFactory.class.getName();
     }
 
-    factory = (LookupFactory) core.getResourceLoader().newInstance(lookupImpl);
+    factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);
     
     lookup = factory.create(config, core);
     String store = (String)config.get(STORE_DIR);

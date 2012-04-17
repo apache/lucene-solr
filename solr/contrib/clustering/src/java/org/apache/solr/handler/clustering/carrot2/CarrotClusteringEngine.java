@@ -283,14 +283,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
     // Make sure the requested Carrot2 clustering algorithm class is available
     String carrotAlgorithmClassName = initParams.get(CarrotParams.ALGORITHM);
-    Class<?> algorithmClass = core.getResourceLoader().findClass(carrotAlgorithmClassName);
-    if (!IClusteringAlgorithm.class.isAssignableFrom(algorithmClass)) {
-      throw new IllegalArgumentException("Class provided as "
-              + CarrotParams.ALGORITHM + " must implement "
-              + IClusteringAlgorithm.class.getName());
-    }
-    this.clusteringAlgorithmClass = (Class<? extends IClusteringAlgorithm>) algorithmClass;
-
+    this.clusteringAlgorithmClass = core.getResourceLoader().findClass(carrotAlgorithmClassName, IClusteringAlgorithm.class);
     return result;
   }
 

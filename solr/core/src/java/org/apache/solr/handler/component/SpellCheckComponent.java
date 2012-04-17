@@ -525,7 +525,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           if (className == null)
             className = IndexBasedSpellChecker.class.getName();
           SolrResourceLoader loader = core.getResourceLoader();
-          SolrSpellChecker checker = (SolrSpellChecker) loader.newInstance(className);
+          SolrSpellChecker checker = loader.newInstance(className, SolrSpellChecker.class);
           if (checker != null) {
             String dictionary = checker.init(spellchecker, core);
             if (dictionary != null) {

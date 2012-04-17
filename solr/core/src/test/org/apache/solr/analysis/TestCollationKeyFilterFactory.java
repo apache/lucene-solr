@@ -166,7 +166,7 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
       return null;
     }
 
-    public Object newInstance(String cname, String... subpackages) {
+    public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
       return null;
     }
 

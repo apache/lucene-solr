@@ -863,13 +863,13 @@ public class DocBuilder {
   static Class loadClass(String name, SolrCore core) throws ClassNotFoundException {
     try {
       return core != null ?
-              core.getResourceLoader().findClass(name) :
+              core.getResourceLoader().findClass(name, Object.class) :
               Class.forName(name);
     } catch (Exception e) {
       try {
         String n = DocBuilder.class.getPackage().getName() + "." + name;
         return core != null ?
-                core.getResourceLoader().findClass(n) :
+                core.getResourceLoader().findClass(n, Object.class) :
                 Class.forName(n);
       } catch (Exception e1) {
         throw new ClassNotFoundException("Unable to load " + name + " or " + DocBuilder.class.getPackage().getName() + "." + name, e);

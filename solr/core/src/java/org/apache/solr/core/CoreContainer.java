@@ -976,14 +976,7 @@ public class CoreContainer
   protected CoreAdminHandler createMultiCoreHandler(final String adminHandlerClass) {
     // :TODO: why create a new SolrResourceLoader? why not use this.loader ???
     SolrResourceLoader loader = new SolrResourceLoader(solrHome, libLoader, null);
-    Object obj = loader.newAdminHandlerInstance(CoreContainer.this, adminHandlerClass);
-    if ( !(obj instanceof CoreAdminHandler))
-    {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "adminHandlerClass is not of type "+ CoreAdminHandler.class );
-      
-    }
-    return (CoreAdminHandler) obj;
+    return loader.newAdminHandlerInstance(CoreContainer.this, adminHandlerClass);
   }
 
   public CoreAdminHandler getMultiCoreHandler() {

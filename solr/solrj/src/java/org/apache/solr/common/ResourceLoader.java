@@ -1,4 +1,6 @@
-/**
+package org.apache.solr.common;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,8 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.common;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,5 +43,5 @@ public interface ResourceLoader
    */
   public List<String> getLines(String resource) throws IOException;
   
-  public Object newInstance(String cname, String ... subpackages);
+  public <T> T newInstance(String cname, Class<T> expectedType, String ... subpackages);
 }

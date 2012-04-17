@@ -117,14 +117,9 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     args.remove(PARAM_PRECISION_STEP);
 
     try {
-      Class<?> c = schema.getResourceLoader().findClass(exchangeRateProviderClass);
-      Object clazz = c.newInstance();
-      if (clazz instanceof ExchangeRateProvider) {
-        provider = (ExchangeRateProvider) clazz;
-        provider.init(args);
-      } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "exchangeRateProvider "+exchangeRateProviderClass+" needs to implement ExchangeRateProvider");
-      }
+      Class<? extends ExchangeRateProvider> c = schema.getResourceLoader().findClass(exchangeRateProviderClass, ExchangeRateProvider.class);
+      provider = c.newInstance();
+      provider.init(args);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Error instansiating exhange rate provider "+exchangeRateProviderClass+". Please check your FieldType configuration", e);
     }

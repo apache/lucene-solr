@@ -67,7 +67,7 @@ public class DelimitedPayloadTokenFilterFactory extends BaseTokenFilterFactory i
     } else if (encoderClass.equals("identity")){
       encoder = new IdentityEncoder();
     } else {
-      encoder = (PayloadEncoder) loader.newInstance(encoderClass);
+      encoder = loader.newInstance(encoderClass, PayloadEncoder.class);
     }
 
     String delim = args.get(DELIMITER_ATTR);

@@ -110,13 +110,13 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
       else if (compClass.equalsIgnoreCase(FREQ_COMP))
         comp = new SuggestWordFrequencyComparator();
       else //must be a FQCN
-        comp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass);
+        comp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass, Comparator.class);
     }
     
     StringDistance sd = DirectSpellChecker.INTERNAL_LEVENSHTEIN;
     String distClass = (String) config.get(STRING_DISTANCE);
     if (distClass != null && !distClass.equalsIgnoreCase(INTERNAL_DISTANCE))
-      sd = (StringDistance) core.getResourceLoader().newInstance(distClass);
+      sd = core.getResourceLoader().newInstance(distClass, StringDistance.class);
 
     float minAccuracy = DEFAULT_ACCURACY;
     Float accuracy = (Float) config.get(ACCURACY);
