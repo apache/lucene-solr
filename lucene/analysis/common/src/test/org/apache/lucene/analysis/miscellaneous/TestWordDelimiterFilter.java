@@ -351,7 +351,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
           return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, protectedWords));
         }
       };
-      checkRandomData(random(), a, 10000*RANDOM_MULTIPLIER, 20, false, false);
+      checkRandomData(random(), a, 200, 20, false, false);
     }
   }
   

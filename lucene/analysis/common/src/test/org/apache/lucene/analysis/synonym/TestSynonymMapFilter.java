@@ -445,7 +445,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         }
       };
 
-      checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+      checkRandomData(random(), analyzer, 200);
     }
   }
 
@@ -503,7 +503,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         }
       };
 
-      checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
+      checkRandomData(random, analyzer, 200);
     }
   }
   
@@ -553,7 +553,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         }
       };
 
-      checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER, 8192);
+      checkRandomData(random, analyzer, 100, 8192);
     }
   }
   

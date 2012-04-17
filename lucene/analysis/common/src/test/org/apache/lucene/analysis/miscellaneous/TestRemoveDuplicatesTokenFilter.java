@@ -163,7 +163,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
         }
       };
 
-      checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+      checkRandomData(random(), analyzer, 200);
     }
   }
   

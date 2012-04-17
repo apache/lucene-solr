@@ -221,7 +221,8 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
   
   //@Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
   public void testRandomMaps() throws Exception {
-    for (int i = 0; i < 100; i++) {
+    int numIterations = atLeast(10);
+    for (int i = 0; i < numIterations; i++) {
       final NormalizeCharMap map = randomMap();
       Analyzer analyzer = new Analyzer() {
         @Override
@@ -235,7 +236,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
           return new MappingCharFilter(map, CharReader.get(reader));
         }
       };
-      int numRounds = RANDOM_MULTIPLIER * 100;
+      int numRounds = 100;
       checkRandomData(random(), analyzer, numRounds);
     }
   }

@@ -430,7 +430,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect);
     // now test with multiple threads: note we do the EXACT same thing we did before in each thread,
     // so this should only really fail from another thread if its an actual thread problem
-    int numThreads = _TestUtil.nextInt(random, 4, 8);
+    int numThreads = _TestUtil.nextInt(random, 2, 4);
     AnalysisThread threads[] = new AnalysisThread[numThreads];
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new AnalysisThread(seed, a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect);

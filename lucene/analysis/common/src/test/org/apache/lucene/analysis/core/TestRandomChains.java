@@ -845,7 +845,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
   
   public void testRandomChains() throws Throwable {
-    int numIterations = atLeast(20);
+    int numIterations = atLeast(10);
     Random random = random();
     for (int i = 0; i < numIterations; i++) {
       MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
@@ -853,7 +853,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         System.out.println("Creating random analyzer:" + a);
       }
       try {
-        checkRandomData(random, a, 1000, 20, false,
+        checkRandomData(random, a, 200, 20, false,
                         false /* We already validate our own offsets... */);
       } catch (Throwable e) {
         System.err.println("Exception from random analyzer: " + a);
