@@ -49,7 +49,7 @@ See http://forrest.apache.org/docs/linking.html for more info
          <javadoc-core label="Core" href="ext:javadocs-core"/>
          <javadoc-analyzers-common label="Analysis: Common" href="ext:javadocs-analyzers-common"/>
          <javadoc-analyzers-kuromoji label="Analysis: Kuromoji (Japanese)" href="ext:javadocs-analyzers-kuromoji"/>
-         <javadoc-analyzers-kuromoji label="Analysis: Morfologik (Polish)" href="ext:javadocs-analyzers-morfologik"/>
+         <javadoc-analyzers-morfologik label="Analysis: Morfologik (Polish)" href="ext:javadocs-analyzers-morfologik"/>
          <javadoc-analyzers-phonetic label="Analysis: Phonetic" href="ext:javadocs-analyzers-phonetic"/>
          <javadoc-analyzers-smartcn label="Analysis: Smart Chinese" href="ext:javadocs-analyzers-smartcn"/>
          <javadoc-analyzers-stempel label="Analysis: Stempel (Polish)" href="ext:javadocs-analyzers-stempel"/>

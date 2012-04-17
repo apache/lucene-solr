@@ -344,7 +344,7 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   customizations won't run for certain MultiTermQuerys.
 
 * LUCENE-2413: Lucene's core and contrib analyzers, along with Solr's analyzers,
-  were consolidated into modules/analysis. During the refactoring some
+  were consolidated into lucene/analysis. During the refactoring some
   package names have changed:
     - o.a.l.analysis.KeywordAnalyzer -> o.a.l.analysis.core.KeywordAnalyzer
     - o.a.l.analysis.KeywordTokenizer -> o.a.l.analysis.core.KeywordTokenizer
@@ -422,7 +422,7 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   during indexing.
 
 * LUCENE-2883: Lucene's o.a.l.search.function ValueSource based functionality, was consolidated
-  into module/queries along with Solr's similar functionality.  The following classes were moved:
+  into lucene/queries along with Solr's similar functionality.  The following classes were moved:
    - o.a.l.search.function.CustomScoreQuery -> o.a.l.queries.CustomScoreQuery
    - o.a.l.search.function.CustomScoreProvider -> o.a.l.queries.CustomScoreProvider
    - o.a.l.search.function.NumericIndexDocValueSource -> o.a.l.queries.function.valuesource.NumericIndexDocValueSource
@@ -467,7 +467,7 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   scoring, override IndexSearcher's termStatistics() and collectionStatistics()
   methods instead.
 
-* LUCENE-3283: Lucene's core o.a.l.queryParser QueryParsers have been consolidated into module/queryparser,
+* LUCENE-3283: Lucene's core o.a.l.queryParser QueryParsers have been consolidated into lucene/queryparser,
   where other QueryParsers from the codebase will also be placed.  The following classes were moved:
   - o.a.l.queryParser.CharStream -> o.a.l.queryparser.classic.CharStream
   - o.a.l.queryParser.FastCharStream -> o.a.l.queryparser.classic.FastCharStream

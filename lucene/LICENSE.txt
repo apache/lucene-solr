@@ -203,7 +203,7 @@
 
 
 
-Some code in src/java/org/apache/lucene/util/UnicodeUtil.java was
+Some code in core/src/java/org/apache/lucene/util/UnicodeUtil.java was
 derived from unicode conversion examples available at
 http://www.unicode.org/Public/PROGRAMS/CVTUTF.  Here is the copyright
 from those sources:
@@ -231,19 +231,19 @@ from those sources:
  */
 
 
-Some code in src/java/org/apache/lucene/util/ArrayUtil.java was
+Some code in core/src/java/org/apache/lucene/util/ArrayUtil.java was
 derived from Python 2.4.2 sources available at
 http://www.python.org. Full license is here:
 
   http://www.python.org/download/releases/2.4.2/license/
 
-Some code in src/java/org/apache/lucene/util/UnicodeUtil.java was
+Some code in core/src/java/org/apache/lucene/util/UnicodeUtil.java was
 derived from Python 3.1.2 sources available at
 http://www.python.org. Full license is here:
 
   http://www.python.org/download/releases/3.1.2/license/
 
-Some code in src/java/org/apache/lucene/util/automaton was
+Some code in core/src/java/org/apache/lucene/util/automaton was
 derived from Brics automaton sources available at
 www.brics.dk/automaton/. Here is the copyright from those sources:
 
@@ -274,7 +274,7 @@ www.brics.dk/automaton/. Here is the copyright from those sources:
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
  
-The levenshtein automata tables in src/java/org/apache/lucene/util/automaton 
+The levenshtein automata tables in core/src/java/org/apache/lucene/util/automaton 
 were automatically generated with the moman/finenight FSA package.
 Here is the copyright for those sources:
 
@@ -301,7 +301,7 @@ Here is the copyright for those sources:
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-Some code in src/java/org/apache/lucene/util/UnicodeUtil.java was
+Some code in core/src/java/org/apache/lucene/util/UnicodeUtil.java was
 derived from ICU (http://www.icu-project.org)
 The full license is available here: 
   http://source.icu-project.org/repos/icu/icu/trunk/license.html

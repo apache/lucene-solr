@@ -14,30 +14,41 @@ Please join the Lucene-User mailing list by sending a message to:
 
 Files in a binary distribution:
 
-lucene-core-XX.jar
-  The compiled Lucene library.
+Files are organized by module, for example in core/:
 
-lucene-core-XX-javadoc.jar
-  The Javadoc jar for the compiled Lucene library.
+core/lucene-core-XX.jar
+  The compiled core Lucene library.
+
+core/lucene-core-XX-javadoc.jar
+  The Javadoc jar for the compiled core Lucene library.
+
+Additional modules contain the same structure:
+
+analysis/common/: Analyzers for indexing content in different languages and domains
+analysis/kuromoji/: Analyzer for indexing Japanese
+analysis/morfologik/: Analyzer for indexing Polish
+analysis/phonetic/: Analyzer for indexing phonetic signatures (for sounds-alike search)
+analysis/smartcn/: Analyzer for indexing Chinese
+analysis/stempel/: Analyzer for indexing Polish
+analysis/uima/: Analyzer that integrates with Apache UIMA
+benchmark/: System for benchmarking Lucene
+demo/: Simple example code
+facet/: Faceted indexing and search capabilities
+grouping/: Search result grouping
+highlighter/: Highlights search keywords in results
+join/: Index-time and Query-time joins for normalized content
+memory/: Single-document in memory index implementation
+misc/: Index tools and other miscellaneous code
+queries/: Filters and Queries that add to core Lucene
+queryparser/: Query parsers and parsing framework
+sandbox/: Various third party contributions and new ideas.
+spatial/: Geospatial search
+suggest/: Auto-suggest and Spellchecking support
+test-framework/:  Test Framework for testing Lucene-based applications
   
-lucene-test-framework-XX.jar
-  The compiled Lucene test-framework library.
-  Depends on junit 4.10.x (not 4.9.x, not 4.11.x), and Apache Ant 1.7.x (not 1.6.x, not 1.8.x)
-
-lucene-test-framework-XX-javadoc.jar
-  The Javadoc jar for the compiled Lucene test-framework library.
-
-contrib/demo/lucene-demo-XX.jar
-  The compiled simple example code.
-
-contrib/*
-  Contributed code which extends and enhances Lucene, but is not
-  part of the core library.  Of special note are the JAR files in the analyzers directory which
-  contain various analyzers that people may find useful in place of the StandardAnalyzer.
-
 docs/index.html
   The contents of the Lucene website.
 
 docs/api/index.html
   The Javadoc Lucene API documentation.  This includes the core library, 
-  the test framework, and the demo, as well as all of the contrib modules.
+  the test framework, and the demo, as well as all other modules.
