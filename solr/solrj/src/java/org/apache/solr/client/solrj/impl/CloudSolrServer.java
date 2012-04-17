@@ -47,6 +47,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.KeeperException;
 
+/**
+ * SolrJ client class to communicate with SolrCloud.
+ * Instances of this class communicate with Zookeeper to discover
+ * Solr endpoints for SolrCloud collections, and then use the 
+ * {@link LBHttpSolrServer} to issue requests.
+ */
 public class CloudSolrServer extends SolrServer {
   private volatile ZkStateReader zkStateReader;
   private String zkHost; // the zk server address
@@ -57,7 +63,8 @@ public class CloudSolrServer extends SolrServer {
   Random rand = new Random();
   private ThreadSafeClientConnManager connManager;
   /**
-   * @param zkHost The address of the zookeeper quorum containing the cloud state
+   * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
+   * in the form HOST:PORT.
    */
   public CloudSolrServer(String zkHost) throws MalformedURLException {
       connManager = new ThreadSafeClientConnManager();
@@ -66,7 +73,9 @@ public class CloudSolrServer extends SolrServer {
   }
 
   /**
-   * @param zkHost The address of the zookeeper quorum containing the cloud state
+   * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
+   * in the form HOST:PORT.
+   * @param lbServer LBHttpSolrServer instance for requests. 
    */
   public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer) {
     this.zkHost = zkHost;
