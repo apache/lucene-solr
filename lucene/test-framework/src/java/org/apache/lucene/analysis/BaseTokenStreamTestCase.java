@@ -784,7 +784,15 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         sb.setLength(wordLength-1);
       }
     }
-    return sb.toString();
+    
+    if (random.nextInt(17) == 0) {
+      // mix up case
+      String mixedUp = _TestUtil.randomlyRecaseCodePoints(random, sb.toString());
+      assert mixedUp.length() == sb.length();
+      return mixedUp;
+    } else {
+      return sb.toString();
+    }
   }
 
   protected String toDot(Analyzer a, String inputText) throws IOException {
