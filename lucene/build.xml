@@ -27,21 +27,19 @@
   </path>
 
   <patternset id="binary.build.dist.patterns"
-              includes="docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
-              excludes="*-src.jar"
+              includes="docs/,**/*.jar,**/*.war"
+              excludes="poms/**,**/*-src.jar"
   />
   <patternset id="binary.root.dist.patterns"
               includes="LICENSE.txt,NOTICE.txt,README.txt,
                         MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
                         CHANGES.txt,
-                        test-framework/**/CHANGES.txt,contrib/**/CHANGES.txt,
-                        lib/*.jar,
-                        test-framework/**/lib/*.jar,contrib/**/lib/*.jar,
-                        lib/*LICENSE*.txt,
-                        test-framework/**/lib/*LICENSE*.txt,contrib/**/lib/*LICENSE*.txt,
-                        lib/*NOTICE*.txt,
-                        test-framework/**/lib/*NOTICE*.txt,contrib/**/lib/*NOTICE*.txt
-                        contrib/**/*.sh contrib/**/docs/,contrib/**/README*"
+                        contrib/**/CHANGES.txt,
+                        **/lib/*.jar,
+                        **/lib/*LICENSE*.txt,
+                        **/lib/*NOTICE*.txt,
+                        */docs/,**/README*"
+              excludes="build/**,site/**"
   />
 
 
@@ -194,7 +192,7 @@
       <ant dir="test-framework" target="resolve" inheritall="false">
          <propertyset refid="uptodate.and.compiled.properties"/>
       </ant>
-      <contrib-crawl target="resolve" failonerror="true"/>
+      <modules-crawl target="resolve" failonerror="true"/>
     </sequential>
   </target>
 
@@ -209,12 +207,9 @@
   <li><a href="all/index.html">All</a></li>
   <li><a href="core/index.html">Core</a></li>
   <li><a href="test-framework/index.html">Test Framework</a></li>
-  <li>Contrib packages:</li>
-  <ul>
 ]]></echo>
-    <contrib-crawl target="javadocs-index.html" failonerror="false"/>
+    <modules-crawl target="javadocs-index.html" failonerror="false"/>
     <echo file="${javadoc.dir}/index.html" append="true"><![CDATA[
-  </ul>
 </ul></body>]]></echo>
   </target>
 	
@@ -231,12 +226,12 @@
   </target>
 
   <target name="javadocs-contrib" description="Generate javadoc for contrib classes">
-    <contrib-crawl target="javadocs"
+    <modules-crawl target="javadocs"
                    failonerror="false"/>
   </target>
 
   <!-- call resolve to force dependencies to be in lib/ for javadocs -->
-  <target name="javadocs-all" depends="resolve,jar-analyzers-common,jar-queryparser,jar-queries" 
+  <target name="javadocs-all" depends="resolve"
           description="Generate javadoc for core and contrib classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
@@ -244,10 +239,7 @@
       <path id="javadoc.classpath">
         <path refid="classpath"/>
         <pathelement location="${ant.home}/lib/ant.jar"/>
-        <fileset dir="." includes="test-framework/lib/,contrib/demo/lib/,contrib/sandbox/lib/" excludes="**/lib/*.txt"/>
-        <pathelement location="${analyzers-common.jar}"/>
-        <pathelement location="${queryparser.jar}"/>
-        <pathelement location="${queries.jar}"/>
+        <fileset dir="." includes="**/lib/" excludes="**/lib/*.txt"/>
       </path>
 
       <invoke-javadoc overview="${common.dir}/core/src/java/overview.html"
@@ -264,27 +256,49 @@
           <!-- if you make changes to the list of package sets, also -->
           <!-- make sure the group list below is updated.            -->
           <!-- Also remember to keep site.xml in sync.            -->		  
-
-          <packageset dir="contrib/demo/src/java"/>
-          <packageset dir="contrib/highlighter/src/java"/>
-          <packageset dir="contrib/memory/src/java"/>
-          <packageset dir="contrib/misc/src/java"/>
-          <packageset dir="contrib/sandbox/src/java"/>
+          <packageset dir="analysis/common/src/java"/>
+          <packageset dir="analysis/icu/src/java"/>
+          <packageset dir="analysis/kuromoji/src/java"/>
+          <packageset dir="analysis/morfologik/src/java"/>
+          <packageset dir="analysis/phonetic/src/java"/>
+          <packageset dir="analysis/smartcn/src/java"/>
+          <packageset dir="analysis/stempel/src/java"/>
+          <packageset dir="analysis/uima/src/java"/>
+          <packageset dir="benchmark/src/java"/>
+          <packageset dir="demo/src/java"/>
+          <packageset dir="facet/src/java"/>
+          <packageset dir="grouping/src/java"/>
+          <packageset dir="highlighter/src/java"/>
+          <packageset dir="join/src/java"/>
+          <packageset dir="memory/src/java"/>
+          <packageset dir="misc/src/java"/>
+          <packageset dir="queries/src/java"/>
+          <packageset dir="queryparser/src/java"/>
+          <packageset dir="sandbox/src/java"/>
+          <packageset dir="spatial/src/java"/>
+          <packageset dir="suggest/src/java"/>
           <!-- end alpha sort -->
 
           <!-- If the main javadoc Group listing includes an "Other   -->
           <!-- Packages" group after the ones listed here, then those -->
           <!-- packages are not being matched by any of these rules   -->
   
-          <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*:org.apache.lucene.analysis.tokenattributes*"/>
-    
-          <group title="contrib: Demo" packages="org.apache.lucene.demo*"/>
-          <group title="contrib: ICU" packages="org.apache.lucene.collation*"/>
-          <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*:org.apache.lucene.search.vectorhighlight*"/>
-          <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
-          <group title="contrib: Misc " packages="org.apache.lucene.misc*"/>
-          <group title="contrib: Sandbox" packages="org.apache.lucene.sandbox*"/>
-          
+          <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.tokenattributes*"/>
+          <group title="Analysis" packages="org.apache.lucene.analysis.*:org.apache.lucene.collation*:org.tartarus.snowball*:org.egothor.stemmer*"/>
+          <group title="Benchmark" packages="org.apache.lucene.benchmark*"/>
+          <group title="Demo" packages="org.apache.lucene.demo*"/>
+          <group title="Facet" packages="org.apache.lucene.facet*:org.apache.lucene.util.encoding*:org.apache.lucene.util.collections*"/>
+          <group title="Grouping" packages="org.apache.lucene.search.grouping*"/>
+          <group title="Highlighter" packages="org.apache.lucene.search.highlight*:org.apache.lucene.search.vectorhighlight*"/>
+          <group title="Join" packages="org.apache.lucene.search.join*"/>
+          <group title="Memory" packages="org.apache.lucene.index.memory*"/>
+          <group title="Misc" packages="org.apache.lucene.misc*"/>
+          <group title="Queries" packages="org.apache.lucene.queries*"/>
+          <group title="Query Parser" packages="org.apache.lucene.queryparser*"/>
+          <group title="Sandbox" packages="org.apache.lucene.sandbox*"/>
+          <group title="Spatial" packages="org.apache.lucene.spatial*"/>
+          <group title="Suggest" packages="org.apache.lucene.search.spell*:org.apache.lucene.search.suggest*"/>
+
         </sources>
       </invoke-javadoc>
   	</sequential>
@@ -295,7 +309,7 @@
        <ant dir="core" target="rat-sources" inheritall="false"/>
        <ant dir="test-framework" target="rat-sources" inheritall="false"/>
        <ant dir="tools" target="rat-sources" inheritall="false"/>
-       <contrib-crawl target="rat-sources" failonerror="true"/>
+       <modules-crawl target="rat-sources" failonerror="true"/>
     </sequential>
   </target>
 
@@ -321,13 +335,6 @@
     <zip destfile="${dist.dir}/lucene-${version}.zip">
       <zipfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
-      </zipfileset>
-      <zipfileset dir="${build.dir}" includes="build-demo.xml" fullpath="lucene-${version}/build.xml"/>
-      <zipfileset prefix="lucene-${version}" dir="${build.dir}/core">
-        <patternset includes="lucene-core*.jar" excludes="*-src.jar"/>
-      </zipfileset>
-      <zipfileset prefix="lucene-${version}" dir="${build.dir}/test-framework">
-        <patternset includes="lucene-test-framework*.jar" excludes="*-src.jar"/>
       </zipfileset>
       <zipfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
@@ -457,7 +464,7 @@
         <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
       </subant>
       
-      <contrib-crawl target="dist-maven"/>
+      <modules-crawl target="dist-maven"/>
     </sequential>
   </target>
 	
@@ -483,16 +490,16 @@
   
   <target name="build-contrib" depends="compile-test"
           description="Builds all contrib modules and their tests">
-    <contrib-crawl target="build-artifacts-and-tests"/>
+    <modules-crawl target="build-artifacts-and-tests"/>
   </target>
 
   <target name="compile-test" depends="compile-lucene-core,compile-test-framework"
           description="Builds core, test-framework, and contrib tests">
-    <contrib-crawl target="compile-test" failonerror="true"/>
+    <modules-crawl target="compile-test" failonerror="true"/>
   </target>
   
   <target name="test-contrib" depends="compile-test">
-    <contrib-crawl target="test" failonerror="true"/>
+    <modules-crawl target="test" failonerror="true"/>
   </target>
 
   <!--

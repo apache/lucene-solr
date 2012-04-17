@@ -3,61 +3,61 @@
 	<classpathentry kind="src" path="lucene/core/src/java"/>
 	<classpathentry kind="src" path="lucene/core/src/resources"/>
 	<classpathentry kind="src" path="lucene/core/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/demo/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/demo/src/resources"/>
-	<classpathentry kind="src" path="lucene/contrib/demo/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/highlighter/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/highlighter/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/memory/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/memory/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/misc/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/misc/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/sandbox/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/sandbox/src/test"/>
+	<classpathentry kind="src" path="lucene/demo/src/java"/>
+	<classpathentry kind="src" path="lucene/demo/src/resources"/>
+	<classpathentry kind="src" path="lucene/demo/src/test"/>
+	<classpathentry kind="src" path="lucene/highlighter/src/java"/>
+	<classpathentry kind="src" path="lucene/highlighter/src/test"/>
+	<classpathentry kind="src" path="lucene/memory/src/java"/>
+	<classpathentry kind="src" path="lucene/memory/src/test"/>
+	<classpathentry kind="src" path="lucene/misc/src/java"/>
+	<classpathentry kind="src" path="lucene/misc/src/test"/>
+	<classpathentry kind="src" path="lucene/sandbox/src/java"/>
+	<classpathentry kind="src" path="lucene/sandbox/src/test"/>
 	<classpathentry kind="src" path="lucene/test-framework/src/java"/>
   <classpathentry kind="src" output="bin.tests-framework" path="lucene/test-framework/src/resources"/>
-	<classpathentry kind="src" path="modules/analysis/common/src/java"/>
-	<classpathentry kind="src" path="modules/analysis/common/src/resources"/>
-	<classpathentry kind="src" path="modules/analysis/common/src/test"/>
-	<classpathentry kind="src" path="modules/analysis/icu/src/java"/>
-	<classpathentry kind="src" path="modules/analysis/icu/src/resources"/>
-	<classpathentry kind="src" path="modules/analysis/icu/src/test"/>
-	<classpathentry kind="src" path="modules/analysis/kuromoji/src/java"/>
-	<classpathentry kind="src" path="modules/analysis/kuromoji/src/resources"/>
-	<classpathentry kind="src" path="modules/analysis/kuromoji/src/test"/>
-	<classpathentry kind="src" path="modules/analysis/phonetic/src/java"/>
-	<classpathentry kind="src" path="modules/analysis/phonetic/src/test"/>
-	<classpathentry kind="src" path="modules/analysis/smartcn/src/java"/>
-	<classpathentry kind="src" path="modules/analysis/smartcn/src/resources"/>
-	<classpathentry kind="src" path="modules/analysis/smartcn/src/test"/>
-	<classpathentry kind="src" path="modules/analysis/stempel/src/java"/>
-	<classpathentry kind="src" path="modules/analysis/stempel/src/resources"/>
-	<classpathentry kind="src" path="modules/analysis/stempel/src/test"/>
-	<classpathentry kind="src" path="modules/analysis/morfologik/src/java"/>
-	<classpathentry kind="src" path="modules/analysis/morfologik/src/test"/>
-	<classpathentry kind="src" path="modules/analysis/uima/src/java"/>
-	<classpathentry kind="src" path="modules/analysis/uima/src/test"/>
-	<classpathentry kind="src" path="modules/benchmark/src/java"/>
-	<classpathentry kind="src" path="modules/benchmark/src/test"/>
-        <classpathentry excluding="src" including="conf/**" kind="src" path="modules/benchmark"/>
-	<classpathentry kind="src" path="modules/facet/src/java"/>
-	<classpathentry kind="src" path="modules/facet/src/examples"/>
-	<classpathentry kind="src" path="modules/facet/src/test"/>
-	<classpathentry kind="src" path="modules/grouping/src/java"/>
-	<classpathentry kind="src" path="modules/grouping/src/test"/>
-	<classpathentry kind="src" path="modules/join/src/java"/>
-	<classpathentry kind="src" path="modules/join/src/test"/>
-	<classpathentry kind="src" path="modules/queries/src/java"/>
-	<classpathentry kind="src" path="modules/queries/src/test"/>
-	<classpathentry kind="src" path="modules/queryparser/src/java"/>
-	<classpathentry kind="src" path="modules/queryparser/src/resources"/>
-	<classpathentry kind="src" path="modules/queryparser/src/test"/>
-	<classpathentry kind="src" path="modules/suggest/src/java"/>
-	<classpathentry kind="src" path="modules/suggest/src/test"/>
-	<classpathentry kind="src" path="modules/spatial/src/java"/>
-	<classpathentry kind="src" path="modules/spatial/src/test"/>
-	<classpathentry kind="src" path="modules/spatial/src/test-files"/>
-	<classpathentry kind="lib" path="modules/spatial/lib/spatial4j-0.2.jar"/>
+	<classpathentry kind="src" path="lucene/analysis/common/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/common/src/resources"/>
+	<classpathentry kind="src" path="lucene/analysis/common/src/test"/>
+	<classpathentry kind="src" path="lucene/analysis/icu/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/icu/src/resources"/>
+	<classpathentry kind="src" path="lucene/analysis/icu/src/test"/>
+	<classpathentry kind="src" path="lucene/analysis/kuromoji/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/kuromoji/src/resources"/>
+	<classpathentry kind="src" path="lucene/analysis/kuromoji/src/test"/>
+	<classpathentry kind="src" path="lucene/analysis/phonetic/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/phonetic/src/test"/>
+	<classpathentry kind="src" path="lucene/analysis/smartcn/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/smartcn/src/resources"/>
+	<classpathentry kind="src" path="lucene/analysis/smartcn/src/test"/>
+	<classpathentry kind="src" path="lucene/analysis/stempel/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/stempel/src/resources"/>
+	<classpathentry kind="src" path="lucene/analysis/stempel/src/test"/>
+	<classpathentry kind="src" path="lucene/analysis/morfologik/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/morfologik/src/test"/>
+	<classpathentry kind="src" path="lucene/analysis/uima/src/java"/>
+	<classpathentry kind="src" path="lucene/analysis/uima/src/test"/>
+	<classpathentry kind="src" path="lucene/benchmark/src/java"/>
+	<classpathentry kind="src" path="lucene/benchmark/src/test"/>
+        <classpathentry excluding="src" including="conf/**" kind="src" path="lucene/benchmark"/>
+	<classpathentry kind="src" path="lucene/facet/src/java"/>
+	<classpathentry kind="src" path="lucene/facet/src/examples"/>
+	<classpathentry kind="src" path="lucene/facet/src/test"/>
+	<classpathentry kind="src" path="lucene/grouping/src/java"/>
+	<classpathentry kind="src" path="lucene/grouping/src/test"/>
+	<classpathentry kind="src" path="lucene/join/src/java"/>
+	<classpathentry kind="src" path="lucene/join/src/test"/>
+	<classpathentry kind="src" path="lucene/queries/src/java"/>
+	<classpathentry kind="src" path="lucene/queries/src/test"/>
+	<classpathentry kind="src" path="lucene/queryparser/src/java"/>
+	<classpathentry kind="src" path="lucene/queryparser/src/resources"/>
+	<classpathentry kind="src" path="lucene/queryparser/src/test"/>
+	<classpathentry kind="src" path="lucene/suggest/src/java"/>
+	<classpathentry kind="src" path="lucene/suggest/src/test"/>
+	<classpathentry kind="src" path="lucene/spatial/src/java"/>
+	<classpathentry kind="src" path="lucene/spatial/src/test"/>
+	<classpathentry kind="src" path="lucene/spatial/src/test-files"/>
+	<classpathentry kind="lib" path="lucene/spatial/lib/spatial4j-0.2.jar"/>
 	<classpathentry kind="src" path="solr/core/src/java"/>
 	<classpathentry kind="src" path="solr/core/src/test"/>
 	<classpathentry kind="src" path="solr/core/src/test-files"/>
@@ -94,14 +94,14 @@
 	<classpathentry kind="lib" path="lucene/test-framework/lib/ant-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/test-framework/lib/ant-junit-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/test-framework/lib/junit-4.10.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/sandbox/lib/jakarta-regexp-1.4.jar"/>
-	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4.8.1.1.jar"/>
-	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.6.jar"/>
-	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-fsa-1.5.2.jar"/>
-	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-polish-1.5.2.jar"/>
-	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-stemming-1.5.2.jar"/>
-	<classpathentry kind="lib" path="modules/benchmark/lib/commons-compress-1.2.jar"/>
-	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1.jar"/>
+	<classpathentry kind="lib" path="lucene/sandbox/lib/jakarta-regexp-1.4.jar"/>
+	<classpathentry kind="lib" path="lucene/analysis/icu/lib/icu4j-4.8.1.1.jar"/>
+	<classpathentry kind="lib" path="lucene/analysis/phonetic/lib/commons-codec-1.6.jar"/>
+	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-fsa-1.5.2.jar"/>
+	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-polish-1.5.2.jar"/>
+	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-stemming-1.5.2.jar"/>
+	<classpathentry kind="lib" path="lucene/benchmark/lib/commons-compress-1.2.jar"/>
+	<classpathentry kind="lib" path="lucene/benchmark/lib/xercesImpl-2.9.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/httpclient-4.1.3.jar"/>
 	<classpathentry kind="lib" path="solr/lib/httpcore-4.1.4.jar"/>

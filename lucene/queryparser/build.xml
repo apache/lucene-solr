@@ -1,0 +1,132 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<project name="queryparser" default="default">
+  <description>
+    Lucene QueryParsers
+  </description>
+
+  <import file="../module-build.xml"/>
+
+  <path id="classpath">
+    <pathelement path="${queries.jar}"/>
+    <pathelement path="${sandbox.jar}"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <target name="compile-core" depends="jar-queries,jar-sandbox,common.compile-core"/>
+
+  <target name="javacc" depends="init,javacc-check,javacc-QueryParser,javacc-surround,javacc-flexible"/>
+
+  <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
+    <sequential>
+      <delete>
+        <fileset dir="src/java/org/apache/lucene/queryparser/classic" includes="*.java">
+          <containsregexp expression="Generated.*By.*JavaCC"/>
+        </fileset>
+      </delete>
+      <invoke-javacc target="src/java/org/apache/lucene/queryparser/classic/QueryParser.jj"
+                     outputDir="src/java/org/apache/lucene/queryparser/classic"/>
+
+      <!-- Change the incorrect public ctors for QueryParser to be protected instead -->
+      <replaceregexp file="src/java/org/apache/lucene/queryparser/classic/QueryParser.java"
+		     byline="true"
+		     match="public QueryParser\(CharStream "
+		     replace="protected QueryParser(CharStream "/>
+      <replaceregexp file="src/java/org/apache/lucene/queryparser/classic/QueryParser.java"
+		     byline="true"
+		     match="public QueryParser\(QueryParserTokenManager "
+		     replace="protected QueryParser(QueryParserTokenManager "/>
+
+    </sequential>
+  </target>
+
+  <target name="javacc-surround" depends="javacc-check" description="generate surround query parser from jj (requires javacc 4.1">
+    <delete>
+      <fileset dir="src/java/org/apache/lucene/queryparser/surround/parser" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
+    </delete>
+  	<invoke-javacc target="src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj"
+                   outputDir="src/java/org/apache/lucene/queryparser/surround/parser"
+    />
+  </target>
+
+  <target name="javacc-flexible" depends="javacc-check">
+    <delete>
+      <fileset dir="src/java/org/apache/lucene/queryparser/flexible/standard/parser" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
+    </delete>
+    <invoke-javacc target="src/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParser.jj"
+                   outputDir="src/java/org/apache/lucene/queryparser/flexible/standard/parser"
+    />
+        <replaceregexp file="src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java"
+                             match="public class ParseException extends Exception"
+                             replace="public class ParseException extends QueryNodeParseException"
+                             flags="g"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java"
+                             match="package org.apache.lucene.queryparser.flexible.standard.parser;"
+                             replace="package org.apache.lucene.queryparser.flexible.standard.parser;${line.separator}
+${line.separator}
+import org.apache.lucene.queryparser.flexible.messages.Message;${line.separator}
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;${line.separator}
+import org.apache.lucene.queryparser.flexible.core.*;${line.separator}
+import org.apache.lucene.queryparser.flexible.core.messages.*;"
+                             flags="g"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java"
+                             match="^  public ParseException\(Token currentTokenVal.*$(\s\s[^}].*\n)*  \}"
+                             replace="  public ParseException(Token currentTokenVal,${line.separator}
+    int[][] expectedTokenSequencesVal, String[] tokenImageVal) {${line.separator}
+    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(${line.separator}
+    currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));${line.separator}
+    this.currentToken = currentTokenVal;${line.separator}
+    this.expectedTokenSequences = expectedTokenSequencesVal;${line.separator}
+    this.tokenImage = tokenImageVal;${line.separator}
+  }"
+                             flags="gm"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java"
+                             match="^  public ParseException\(String message.*$(\s\s[^}].*\n)*  \}"
+                             replace="  public ParseException(Message message) {${line.separator}
+    super(message);${line.separator}
+  }"
+                             flags="gm"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java"
+                             match="^  public ParseException\(\).*$(\s\s[^}].*\n)*  \}"
+                             replace="  public ParseException() {${line.separator}
+    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, &quot;Error&quot;));${line.separator}
+  }"
+                             flags="gm"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java"
+                             match="^  public String getMessage\(\).*$(\s\s\s\s[^}].*\n)*    \}"
+                             replace="  private static String initialise(Token currentToken, int[][] expectedTokenSequences, String[] tokenImage) {${line.separator}
+    String eol = System.getProperty(&quot;line.separator&quot;, &quot;\n&quot;);"
+                             flags="gm"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java"
+                             match="\s*protected String add_escapes.*"
+                             replace="  static private String add_escapes(String str) {"
+                             flags="g"
+                             byline="true"/>
+  </target>
+
+</project>

@@ -22,48 +22,34 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.lucene</groupId>
-    <artifactId>lucene-solr-grandparent</artifactId>
+    <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-parent</artifactId>
+  <artifactId>lucene-analysis-modules-aggregator</artifactId>
+  <name>Lucene Analysis Modules aggregator POM</name>
   <packaging>pom</packaging>
-  <name>Lucene parent POM</name>
-  <description>Lucene parent POM</description>
-  <properties>
-    <module-directory>lucene</module-directory>
-  </properties>
-  <scm>
-    <connection>
-      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
-    </connection>
-    <developerConnection>
-      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/trunk/${module-directory}
-    </developerConnection>
-    <url>
-      http://svn.apache.org/viewvc/lucene/dev/trunk/${module-directory}
-    </url>
-  </scm>
   <modules>
-    <module>core</module>
-    <module>test-framework</module>
-    <module>analysis</module>
-    <module>benchmark</module>
-    <module>demo</module>
-    <module>facet</module>
-    <module>grouping</module>
-    <module>highlighter</module>
-    <module>join</module>
-    <module>memory</module>
-    <module>misc</module>
-    <module>queries</module>
-    <module>queryparser</module>
-    <module>sandbox</module>
-    <module>spatial</module>
-    <module>suggest</module>
+    <module>common</module>
+    <module>icu</module>
+    <module>kuromoji</module>
+    <module>morfologik</module>
+    <module>phonetic</module>
+    <module>smartcn</module>
+    <module>stempel</module>
+    <module>uima</module>
   </modules>
   <build>
-    <directory>build/lucene-parent</directory>
+    <directory>build/lucene-analysis-modules-aggregator</directory>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>

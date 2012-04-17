@@ -99,7 +99,7 @@
   <!--LUCENE-3286: Luke is incompatible with new XML QP location and target is not flexible
   when it comes to incompatible changes.  Update when Luke has updated.
   <target name="compile-xml-query-parser">
-  	<ant dir="${common.dir}/../modules/queryparser" target="compile-core" inheritAll="false">
+  	<ant dir="${common.dir}/queryparser" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -113,7 +113,7 @@
   </target>
   <path id="luke.classpath">
     <pathelement location="${common.dir}/build/core/classes/java" />
-    <pathelement location="${common.dir}/../modules/queryparser/build/classes/java" />
+    <pathelement location="${common.dir}/queryparser/build/classes/java" />
   </path>
   <target name="luke" depends="luke-download">
     <java fork="true"
@@ -370,7 +370,6 @@
     <delete file="${source.package.file}" failonerror="false" />
 
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
-      <tarfileset dir="../modules" prefix="${fullnamever}/modules" excludes="**/build/" />
       <tarfileset dir=".." prefix="${fullnamever}" includes="*.txt *.xml dev-tools/" />
       <tarfileset dir="." prefix="${fullnamever}" includes="LICENSE.txt NOTICE.txt"/>
       <tarfileset dir="." prefix="${fullnamever}/solr"
@@ -602,7 +601,7 @@
       typically it is  colon seperated in Unix, semi-colon seperated
       on windows, ie:
  
-      ant stub-factories -Dstub.src.path="core/src:../lucene/contrib:../lucene/core/src/java:../modules/analysis"
+      ant stub-factories -Dstub.src.path="core/src:../lucene/contrib:../lucene/core/src/java:../lucene/analysis"
  
       FYI: The file ${stub.list} contains a list of classes
       that seem to need stub factories. (if java files can be found to
@@ -661,8 +660,8 @@
     </exec>
   </target>
 
-  <property name="analysis-common.res.dir"  value="../modules/analysis/common/src/resources/org/apache/lucene/analysis"/>
-  <property name="analysis-kuromoji.res.dir"  value="../modules/analysis/kuromoji/src/resources/org/apache/lucene/analysis"/>
+  <property name="analysis-common.res.dir"  value="../lucene/analysis/common/src/resources/org/apache/lucene/analysis"/>
+  <property name="analysis-kuromoji.res.dir"  value="../lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis"/>
   <property name="analysis.conf.dest" value="${example}/solr/conf/lang"/>
 
   <target name="sync-analyzers"

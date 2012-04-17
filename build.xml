@@ -28,7 +28,6 @@
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant>
     </sequential>
@@ -38,7 +37,6 @@
     <sequential>
       <subant target="javadocs" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant>
     </sequential>
@@ -47,7 +45,6 @@
   <target name="validate" description="Validate dependencies, licenses, etc.">
     <sequential><subant target="validate" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant></sequential>
   </target>
@@ -55,7 +52,6 @@
   <target name="rat-sources" description="Runs rat across all sources and tests">
     <sequential><subant target="rat-sources" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
     </subant></sequential>
   </target>
@@ -63,7 +59,6 @@
   <target name="resolve" description="Resolves all dependencies">
     <sequential><subant target="resolve" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant></sequential>
   </target>
@@ -73,7 +68,6 @@
 
       <subant target="compile" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant>
     </sequential>
@@ -102,7 +96,6 @@
         <property name="maven.dist.dir"  location="${maven.dist.dir}" />
         <property name="filtered.pom.templates.uptodate" value="true"/>
         <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant>
     </sequential>
@@ -137,7 +130,6 @@
       <fileset dir="." includes="*.iml,*.ipr,*.iws"/>
       <fileset dir="solr" includes="**/*.iml"/>
       <fileset dir="lucene" includes="**/*.iml"/>
-      <fileset dir="modules" includes="**/*.iml"/>
     </delete>
   </target>
 
@@ -146,7 +138,6 @@
     <sequential>
       <subant target="clean" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant>
       <delete dir="dist" failonerror="false" />

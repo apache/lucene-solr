@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * <queryParser name="surround"
  * class="org.apache.solr.search.SurroundQParserPlugin" />
  * 
- * Examples of query syntax can be found in modules/queryparser/docs/surround
+ * Examples of query syntax can be found in lucene/queryparser/docs/surround
  * 
  * Note that the query string is not analyzed in any way
  * 

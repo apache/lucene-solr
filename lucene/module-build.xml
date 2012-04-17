@@ -21,13 +21,14 @@
   <echo>Building ${ant.project.name}...</echo>
 
   <!-- TODO: adjust build.dir/dist.dir appropriately when a contrib project is run individually -->
-  <property name="build.dir" location="../../build/contrib/${ant.project.name}"/>
-  <property name="dist.dir" location="../../dist/contrib/${ant.project.name}"/>
-  <property name="maven.dist.dir" location="../../dist/maven"/>
+  <dirname file="${ant.file.module-build}" property="module-build.dir"/>
+  <property name="build.dir" location="${module-build.dir}/build/${ant.project.name}"/>
+  <property name="dist.dir" location="${module-build.dir}/dist/${ant.project.name}"/>
+  <property name="maven.dist.dir" location="${module-build.dir}/dist/maven"/>
 
   <import file="common-build.xml"/>
 
-  <available property="contrib.has.tests" type="dir" file="src/test" />
+  <available property="module.has.tests" type="dir" file="src/test" />
   
   <!-- if you extend the classpath refid in one contrib's build.xml (add JARs), use this as basis: -->
   <path id="base.classpath">
@@ -54,214 +55,235 @@
   </path>
 
   <target name="init" depends="common.init,compile-lucene-core"/>
-  <target name="compile-test" depends="init" if="contrib.has.tests">
+  <target name="compile-test" depends="init" if="module.has.tests">
     <antcall target="common.compile-test" inheritRefs="true" />
   </target>
-  <target name="test" depends="init" if="contrib.has.tests">
+  <target name="test" depends="init" if="module.has.tests">
     <antcall target="common.test" inheritRefs="true" />
   </target>
   <target name="build-artifacts-and-tests" depends="jar, compile-test" />
 	
   <target name="javadocs" depends="compile-core">
    	<sequential>
-       <mkdir dir="${javadoc.dir}/contrib-${name}"/>
+       <mkdir dir="${javadoc.dir}/${name}"/>
        <invoke-javadoc
-         destdir="${javadoc.dir}/contrib-${name}"
-       	title="${Name} ${version} contrib-${name} API">
+         destdir="${javadoc.dir}/${name}"
+       	title="${Name} ${version} ${name} API">
          <sources>
            <link href=""/>
            <packageset dir="${src.dir}"/>
         </sources>
       </invoke-javadoc>
-      <jarify basedir="${javadoc.dir}/contrib-${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+      <jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
     </sequential>
   </target>	
 
   <target name="javadocs-index.html" description="Generate line for index.html of JavaDocs">
     <echo file="${javadoc.dir}/index.html" append="true">
 <![CDATA[
-  <li><a href="contrib-${name}/index.html">${name}</a></li>
+  <li><a href="${name}/index.html">${name}</a></li>
 ]]></echo>
   </target>
-  
-  <macrodef name="contrib-uptodate">
-    <attribute name="name"/>
-    <attribute name="property"/>
-    <attribute name="jarfile"/>
-    <attribute name="contrib-src-name" default="@{name}"/>
-    <sequential>
-      <uptodate property="@{property}" targetfile="@{jarfile}">
-        <srcfiles dir="${common.dir}/contrib/@{contrib-src-name}/src/java" includes="**/*.java"/>
-      </uptodate>
-    </sequential>
-  </macrodef>
 
-  <property name="facet.jar" value="${common.dir}/../modules/facet/build/lucene-facet-${version}.jar"/>
+  <property name="queryparser.jar" value="${common.dir}/build/queryparser/lucene-queryparser-${version}.jar"/>
+  <target name="check-queryparser-uptodate" unless="queryparser.uptodate">
+    <module-uptodate name="queryparser" jarfile="${queryparser.jar}" property="queryparser.uptodate"/>
+  </target>
+  <target name="jar-queryparser" unless="queryparser.uptodate" depends="check-queryparser-uptodate">
+    <ant dir="${common.dir}/queryparser" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queryparser.uptodate" value="true"/>
+  </target>
+  
+  <property name="analyzers-common.jar" value="${common.dir}/build/analysis/common/lucene-analyzers-common-${version}.jar"/>
+  <target name="check-analyzers-common-uptodate" unless="analyzers-common.uptodate">
+    <module-uptodate name="analysis/common" jarfile="${analyzers-common.jar}" property="analyzers-common.uptodate"/>
+  </target>
+  <target name="jar-analyzers-common" unless="analyzers-common.uptodate" depends="check-analyzers-common-uptodate">
+    <ant dir="${common.dir}/analysis/common" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-common.uptodate" value="true"/>
+  </target>
+
+  <property name="queries.jar" value="${common.dir}/build/queries/lucene-queries-${version}.jar"/>
+  <target name="check-queries-uptodate" unless="queries.uptodate">
+    <module-uptodate name="queries" jarfile="${queries.jar}" property="queries.uptodate"/>
+  </target>
+  <target name="jar-queries" unless="queries.uptodate" depends="check-queries-uptodate">
+  	<ant dir="${common.dir}/queries" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queries.uptodate" value="true"/>
+  </target>
+  
+  <property name="facet.jar" value="${common.dir}/build/facet/lucene-facet-${version}.jar"/>
   <target name="check-facet-uptodate" unless="facet.uptodate">
     <module-uptodate name="facet" jarfile="${facet.jar}" property="facet.uptodate"/>
   </target>
   <target name="jar-facet" unless="facet.uptodate" depends="check-facet-uptodate">
-    <ant dir="${common.dir}/../modules/facet" target="jar-core" inheritall="false">
+    <ant dir="${common.dir}/facet" target="jar-core" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="facet.uptodate" value="true"/>
   </target>
 
-  <property name="analyzers-icu.jar" value="${common.dir}/../modules/analysis/build/icu/lucene-analyzers-icu-${version}.jar"/>
+  <property name="analyzers-icu.jar" value="${common.dir}/build/analysis/icu/lucene-analyzers-icu-${version}.jar"/>
   <target name="check-analyzers-icu-uptodate" unless="analyzers-icu.uptodate">
     <module-uptodate name="analysis/icu" jarfile="${analyzers-icu.jar}" property="analyzers-icu.uptodate"/>
   </target>
   <target name="jar-analyzers-icu" unless="analyzers-icu.uptodate" depends="check-analyzers-icu-uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/icu" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/analysis/icu" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-icu.uptodate" value="true"/>
   </target>
 
-  <property name="analyzers-phonetic.jar" value="${common.dir}/../modules/analysis/build/phonetic/lucene-analyzers-phonetic-${version}.jar"/>
+  <property name="analyzers-phonetic.jar" value="${common.dir}/build/analysis/phonetic/lucene-analyzers-phonetic-${version}.jar"/>
   <target name="check-analyzers-phonetic-uptodate" unless="analyzers-phonetic.uptodate">
     <module-uptodate name="analysis/phonetic" jarfile="${analyzers-phonetic.jar}" property="analyzers-phonetic.uptodate"/>
   </target>
   <target name="jar-analyzers-phonetic" unless="analyzers-phonetic.uptodate" depends="check-analyzers-phonetic-uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/phonetic" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/analysis/phonetic" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
 
 
-  <property name="analyzers-smartcn.jar" value="${common.dir}/../modules/analysis/build/smartcn/lucene-analyzers-smartcn-${version}.jar"/>
+  <property name="analyzers-smartcn.jar" value="${common.dir}/build/analysis/smartcn/lucene-analyzers-smartcn-${version}.jar"/>
   <target name="check-analyzers-smartcn-uptodate" unless="analyzers-smartcn.uptodate">
     <module-uptodate name="analysis/smartcn" jarfile="${analyzers-smartcn.jar}" property="analyzers-smartcn.uptodate"/>
   </target>
   <target name="jar-analyzers-smartcn" unless="analyzers-smartcn.uptodate" depends="check-analyzers-smartcn-uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/smartcn" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/analysis/smartcn" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-smartcn.uptodate" value="true"/>
   </target>
 
-  <property name="analyzers-stempel.jar" value="${common.dir}/../modules/analysis/build/stempel/lucene-analyzers-stempel-${version}.jar"/>
+  <property name="analyzers-stempel.jar" value="${common.dir}/build/analysis/stempel/lucene-analyzers-stempel-${version}.jar"/>
   <target name="check-analyzers-stempel-uptodate" unless="analyzers-stempel.uptodate">
     <module-uptodate name="analysis/stempel" jarfile="${analyzers-stempel.jar}" property="analyzers-stempel.uptodate"/>
   </target>
   <target name="jar-analyzers-stempel" unless="analyzers-stempel.uptodate" depends="check-analyzers-stempel-uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/stempel" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/analysis/stempel" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-stempel.uptodate" value="true"/>
   </target>
 
-  <property name="analyzers-kuromoji.jar" value="${common.dir}/../modules/analysis/build/kuromoji/lucene-analyzers-kuromoji-${version}.jar"/>
+  <property name="analyzers-kuromoji.jar" value="${common.dir}/build/analysis/kuromoji/lucene-analyzers-kuromoji-${version}.jar"/>
   <target name="check-analyzers-kuromoji-uptodate" unless="analyzers-kuromoji.uptodate">
     <module-uptodate name="analysis/kuromoji" jarfile="${analyzers-kuromoji.jar}" property="analyzers-kuromoji.uptodate"/>
   </target>
   <target name="jar-analyzers-kuromoji" unless="analyzers-kuromoji.uptodate" depends="check-analyzers-kuromoji-uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/kuromoji" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/analysis/kuromoji" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-kuromoji.uptodate" value="true"/>
   </target>
 
-  <property name="analyzers-uima.jar" value="${common.dir}/../modules/analysis/build/uima/lucene-analyzers-uima-${version}.jar"/>
+  <property name="analyzers-uima.jar" value="${common.dir}/build/analysis/uima/lucene-analyzers-uima-${version}.jar"/>
   <target name="check-analyzers-uima-uptodate" unless="analyzers-uima.uptodate">
     <module-uptodate name="analysis/uima" jarfile="${analyzers-uima.jar}" property="analyzers-uima.uptodate"/>
   </target>
   <target name="jar-analyzers-uima" unless="analyzers-uima.uptodate" depends="check-analyzers-uima-uptodate">
-    <ant dir="${common.dir}/../modules/analysis/uima" target="jar-core" inheritAll="false">
+    <ant dir="${common.dir}/analysis/uima" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-uima.uptodate" value="true"/>
   </target>
 
-  <property name="analyzers-morfologik.jar" value="${common.dir}/../modules/analysis/build/morfologik/lucene-analyzers-morfologik-${version}.jar"/>
-  <fileset id="analyzers-morfologik.fileset" dir="${common.dir}/../modules/analysis">
-    <include name="build/morfologik/lucene-analyzers-morfologik-${version}.jar" />
-    <include name="morfologik/lib/morfologik-fsa-1.5.2.jar" />
-    <include name="morfologik/lib/morfologik-polish-1.5.2.jar" />
-    <include name="morfologik/lib/morfologik-stemming-1.5.2.jar" />
+  <property name="analyzers-morfologik.jar" value="${common.dir}/build/analysis/morfologik/lucene-analyzers-morfologik-${version}.jar"/>
+  <fileset id="analyzers-morfologik.fileset" dir="${common.dir}">
+    <include name="build/analysis/morfologik/lucene-analyzers-morfologik-${version}.jar" />
+    <include name="analysis/morfologik/lib/morfologik-fsa-1.5.2.jar" />
+    <include name="analysis/morfologik/lib/morfologik-polish-1.5.2.jar" />
+    <include name="analysis/morfologik/lib/morfologik-stemming-1.5.2.jar" />
   </fileset>
   <target name="check-analyzers-morfologik-uptodate" unless="analyzers-morfologik.uptodate">
     <module-uptodate name="analysis/morfologik" jarfile="${analyzers-morfologik.jar}" property="analyzers-morfologik.uptodate"/>
   </target>
   <target name="jar-analyzers-morfologik" unless="analyzers-morfologik.uptodate" depends="check-analyzers-morfologik-uptodate">
-    <ant dir="${common.dir}/../modules/analysis/morfologik" target="jar-core" inheritAll="false">
+    <ant dir="${common.dir}/analysis/morfologik" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-morfologik.uptodate" value="true"/>
   </target>
 
-  <property name="grouping.jar" value="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"/>
+  <property name="grouping.jar" value="${common.dir}/build/grouping/lucene-grouping-${version}.jar"/>
   <target name="check-grouping-uptodate" unless="grouping.uptodate">
     <module-uptodate name="grouping" jarfile="${grouping.jar}" property="grouping.uptodate"/>
   </target>
   <target name="jar-grouping" unless="grouping.uptodate" depends="check-grouping-uptodate">
-  	<ant dir="${common.dir}/../modules/grouping" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/grouping" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="grouping.uptodate" value="true"/>
   </target>
 
-  <property name="highlighter.jar" value="${common.dir}/build/contrib/highlighter/lucene-highlighter-${version}.jar"/>
+  <property name="highlighter.jar" value="${common.dir}/build/highlighter/lucene-highlighter-${version}.jar"/>
   <target name="check-highlighter-uptodate" unless="highlighter.uptodate">
-    <contrib-uptodate name="highlighter" jarfile="${highlighter.jar}" property="highlighter.uptodate"/>
+    <module-uptodate name="highlighter" jarfile="${highlighter.jar}" property="highlighter.uptodate"/>
   </target>
   <target name="jar-highlighter" unless="highlighter.uptodate" depends="check-highlighter-uptodate">
-    <ant dir="${common.dir}/contrib/highlighter" target="jar-core" inheritall="false">
+    <ant dir="${common.dir}/highlighter" target="jar-core" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="highlighter.uptodate" value="true"/>
   </target>
 
-  <property name="memory.jar" value="${common.dir}/build/contrib/memory/lucene-memory-${version}.jar"/>
+  <property name="memory.jar" value="${common.dir}/build/memory/lucene-memory-${version}.jar"/>
   <target name="check-memory-uptodate" unless="memory.uptodate">
-    <contrib-uptodate name="memory" jarfile="${memory.jar}" property="memory.uptodate"/>
+    <module-uptodate name="memory" jarfile="${memory.jar}" property="memory.uptodate"/>
   </target>
   <target name="jar-memory" unless="memory.uptodate" depends="check-memory-uptodate">
-    <ant dir="${common.dir}/contrib/memory" target="jar-core" inheritall="false">
+    <ant dir="${common.dir}/memory" target="jar-core" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="memory.uptodate" value="true"/>
   </target>
 
-  <property name="misc.jar" value="${common.dir}/build/contrib/misc/lucene-misc-${version}.jar"/>
+  <property name="misc.jar" value="${common.dir}/build/misc/lucene-misc-${version}.jar"/>
   <target name="check-misc-uptodate" unless="misc.uptodate">
-    <contrib-uptodate name="misc" jarfile="${misc.jar}" property="misc.uptodate"/>
+    <module-uptodate name="misc" jarfile="${misc.jar}" property="misc.uptodate"/>
   </target>
   <target name="jar-misc" unless="misc.uptodate" depends="check-misc-uptodate">
-  	<ant dir="${common.dir}/contrib/misc" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/misc" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="misc.uptodate" value="true"/>
   </target>
 
-  <property name="sandbox.jar" value="${common.dir}/build/contrib/sandbox/lucene-sandbox-${version}.jar"/>
+  <property name="sandbox.jar" value="${common.dir}/build/sandbox/lucene-sandbox-${version}.jar"/>
   <target name="check-sandbox-uptodate" unless="sandbox.uptodate">
-    <contrib-uptodate name="sandbox" jarfile="${sandbox.jar}" property="sandbox.uptodate"/>
+    <module-uptodate name="sandbox" jarfile="${sandbox.jar}" property="sandbox.uptodate"/>
   </target>
   <target name="jar-sandbox" unless="sandbox.uptodate" depends="check-sandbox-uptodate">
-  	<ant dir="${common.dir}/contrib/sandbox" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/sandbox" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="sandbox.uptodate" value="true"/>
   </target>
 
-  <property name="spatial.jar" value="${common.dir}/../modules/spatial/build/lucene-spatial-${version}.jar"/>
+  <property name="spatial.jar" value="${common.dir}/build/spatial/lucene-spatial-${version}.jar"/>
   <target name="check-spatial-uptodate" unless="spatial.uptodate">
     <module-uptodate name="spatial" jarfile="${spatial.jar}" property="spatial.uptodate"/>
   </target>
   <target name="jar-spatial" unless="spatial.uptodate" depends="check-spatial-uptodate">
-  	<ant dir="${common.dir}/../modules/spatial" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/spatial" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="spatial.uptodate" value="true"/>
   </target>
 
-  <property name="suggest.jar" value="${common.dir}/../modules/suggest/build/lucene-suggest-${version}.jar"/>
+  <property name="suggest.jar" value="${common.dir}/build/suggest/lucene-suggest-${version}.jar"/>
   <target name="check-suggest-uptodate" unless="suggest.uptodate">
     <module-uptodate name="suggest" jarfile="${suggest.jar}" property="suggest.uptodate"/>
   </target>
   <target name="jar-suggest" unless="suggest.uptodate" depends="check-suggest-uptodate">
-  	<ant dir="${common.dir}/../modules/suggest" target="jar-core" inheritAll="false">
+  	<ant dir="${common.dir}/suggest" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="suggest.uptodate" value="true"/>

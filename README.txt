@@ -2,7 +2,6 @@ Apache Lucene/Solr
 
 lucene/ is a search engine library
 solr/ is a search engine server that uses lucene
-modules/ is shared code
 
 To compile the sources run 'ant compile'
 To run all the tests run 'ant test'

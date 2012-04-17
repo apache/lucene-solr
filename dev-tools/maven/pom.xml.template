@@ -35,7 +35,6 @@
   <url>http://lucene.apache.org/java</url>
   <modules>
     <module>lucene</module>
-    <module>modules</module>
     <module>solr</module>
   </modules>
   <properties>

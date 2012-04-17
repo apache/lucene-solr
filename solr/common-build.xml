@@ -312,6 +312,17 @@
     <property name="jetty.libs.uptodate" value="true"/>
   </target>
 
+  <macrodef name="contrib-crawl">
+    <attribute name="target" default=""/>
+    <attribute name="failonerror" default="true"/>
+    <sequential>
+      <subant target="@{target}" failonerror="@{failonerror}" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="." includes="contrib/*/build.xml"/>
+      </subant>
+    </sequential>
+  </macrodef>
+
   <!-- Solr contrib targets -->
   <target name="compile-contrib" description="Compile contrib modules">
   	<contrib-crawl target="compile-core"/>
