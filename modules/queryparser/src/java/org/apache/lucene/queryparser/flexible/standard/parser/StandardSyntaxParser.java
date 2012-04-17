@@ -572,7 +572,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
          }
          q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
        } else if (regexp) {
-         q = new RegexpQueryNode(field, term.image, term.beginColumn, term.endColumn-1);
+         String re = term.image.substring(1, term.image.length()-1);
+         q = new RegexpQueryNode(field, re, 0, re.length());
        }
       break;
     case RANGEIN_START:
@@ -763,18 +764,28 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     return false;
   }
 
-  private boolean jj_3R_10() {
-    if (jj_scan_token(TERM)) return true;
-    return false;
-  }
-
   private boolean jj_3R_12() {
     if (jj_scan_token(RANGEIN_START)) return true;
     return false;
   }
 
+  private boolean jj_3R_10() {
+    if (jj_scan_token(TERM)) return true;
+    return false;
+  }
+
   private boolean jj_3R_11() {
     if (jj_scan_token(REGEXPTERM)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_8() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_12()) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(27)) return true;
+    }
     return false;
   }
 
@@ -789,13 +800,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     return false;
   }
 
-  private boolean jj_3R_8() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_12()) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(27)) return true;
-    }
+  private boolean jj_3R_9() {
+    if (jj_scan_token(QUOTED)) return true;
     return false;
   }
 
@@ -833,11 +839,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     if (jj_scan_token(28)) return true;
     }
     }
-    return false;
-  }
-
-  private boolean jj_3R_9() {
-    if (jj_scan_token(QUOTED)) return true;
     return false;
   }
 

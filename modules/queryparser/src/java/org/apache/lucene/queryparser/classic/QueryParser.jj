@@ -137,7 +137,7 @@ PARSER_END(QueryParser)
 // every character that follows a backslash is considered as an escaped character
 | <#_ESCAPED_CHAR: "\\" ~[] >
 | <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "\u3000", "+", "-", "!", "(", ")", ":", "^",
-                           "[", "]", "\"", "{", "}", "~", "*", "?", "\\" ]
+                           "[", "]", "\"", "{", "}", "~", "*", "?", "\\", "/" ]
                        | <_ESCAPED_CHAR> ) >
 | <#_TERM_CHAR: ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> | "-" | "+" ) >
 | <#_WHITESPACE: ( " " | "\t" | "\n" | "\r" | "\u3000") >

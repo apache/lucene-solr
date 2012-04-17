@@ -100,7 +100,7 @@ PARSER_END(StandardSyntaxParser)
 // every character that follows a backslash is considered as an escaped character
 | <#_ESCAPED_CHAR: "\\" ~[] >
 | <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "\u3000", "+", "-", "!", "(", ")", ":", "^",
-                           "<", ">", "=", "[", "]", "\"", "{", "}", "~", "\\" ]
+                           "<", ">", "=", "[", "]", "\"", "{", "}", "~", "\\", "/" ]
                        | <_ESCAPED_CHAR> ) >
 | <#_TERM_CHAR: ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> | "-" | "+" ) >
 | <#_WHITESPACE: ( " " | "\t" | "\n" | "\r" | "\u3000") >
@@ -449,7 +449,8 @@ QueryNode Term(CharSequence field) : {
        	 }
        	 q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
        } else if (regexp) {
-         q = new RegexpQueryNode(field, term.image, term.beginColumn, term.endColumn-1);
+         String re = term.image.substring(1, term.image.length()-1);
+         q = new RegexpQueryNode(field, re, 0, re.length());
        }
      }
      | ( ( <RANGEIN_START> {startInc=true;} | <RANGEEX_START> )

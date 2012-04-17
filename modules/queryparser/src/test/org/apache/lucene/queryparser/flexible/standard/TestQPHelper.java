@@ -77,6 +77,7 @@ import org.junit.Ignore;
  * 
  * Tests QueryParser.
  */
+// TODO: really this should extend QueryParserTestBase too!
 public class TestQPHelper extends LuceneTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
@@ -1139,7 +1140,28 @@ public class TestQPHelper extends LuceneTestCase {
     complex.add(new RegexpQuery(new Term("field", "[a-z]\\/[123]")), Occur.MUST);
     complex.add(new TermQuery(new Term("path", "/etc/init.d/")), Occur.MUST);
     complex.add(new TermQuery(new Term("field", "/etc/init[.]d/lucene/")), Occur.SHOULD);
-    assertEquals(complex, qp.parse("/[a-z]\\/[123]/ AND path:/etc/init.d/ OR /etc\\/init\\[.\\]d/lucene/ ", df));
+    assertEquals(complex, qp.parse("/[a-z]\\/[123]/ AND path:\"/etc/init.d/\" OR \"/etc\\/init\\[.\\]d/lucene/\" ", df));
+    
+    Query re = new RegexpQuery(new Term("field", "http.*"));
+    assertEquals(re, qp.parse("field:/http.*/", df));
+    assertEquals(re, qp.parse("/http.*/", df));
+    
+    re = new RegexpQuery(new Term("field", "http~0.5"));
+    assertEquals(re, qp.parse("field:/http~0.5/", df));
+    assertEquals(re, qp.parse("/http~0.5/", df));
+    
+    re = new RegexpQuery(new Term("field", "boo"));
+    assertEquals(re, qp.parse("field:/boo/", df));
+    assertEquals(re, qp.parse("/boo/", df));
+    
+    assertEquals(new TermQuery(new Term("field", "/boo/")), qp.parse("\"/boo/\"", df));
+    assertEquals(new TermQuery(new Term("field", "/boo/")), qp.parse("\\/boo\\/", df));
+    
+    BooleanQuery two = new BooleanQuery();
+    two.add(new RegexpQuery(new Term("field", "foo")), Occur.SHOULD);
+    two.add(new RegexpQuery(new Term("field", "bar")), Occur.SHOULD);
+    assertEquals(two, qp.parse("field:/foo/ field:/bar/", df));
+    assertEquals(two, qp.parse("/foo/ /bar/", df));
   }
 
   public void testStopwords() throws Exception {

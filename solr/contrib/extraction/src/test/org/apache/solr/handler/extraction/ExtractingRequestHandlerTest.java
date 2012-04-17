@@ -180,7 +180,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       "commit", "true"  // test immediate commit
     );
     assertQ(req("id:simple2"), "//*[@numFound='1']");
-    assertQ(req("defaultExtr:http\\://www.apache.org"), "//*[@numFound='1']");
+    assertQ(req("defaultExtr:http\\:\\/\\/www.apache.org"), "//*[@numFound='1']");
 
     //Test when both uprefix and default are specified.
     loadLocal("extraction/simple.html",

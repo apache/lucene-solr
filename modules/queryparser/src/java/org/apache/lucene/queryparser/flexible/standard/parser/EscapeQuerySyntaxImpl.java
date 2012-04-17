@@ -33,7 +33,7 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
   private static final String[] escapableTermExtraFirstChars = { "+", "-", "@" };
 
   private static final String[] escapableTermChars = { "\"", "<", ">", "=",
-      "!", "(", ")", "^", "[", "{", ":", "]", "}", "~" };
+      "!", "(", ")", "^", "[", "{", ":", "]", "}", "~", "/" };
 
   // TODO: check what to do with these "*", "?", "\\"
   private static final String[] escapableQuotedChars = { "\"" };
