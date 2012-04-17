@@ -348,18 +348,14 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
+
+  <!-- TODO: fix this stuff to not be a duplicate of the zip logic above! -->
   <target name="package-tgz" depends="package"
     description="--> Generates the lucene distribution as .tgz">
 
     <delete file="${build.dir}/lucene-${version}.tar"/>
     <delete file="${dist.dir}/lucene-${version}.tgz"/>
     <tar tarfile="${build.dir}/lucene-${version}.tar" longfile="gnu">
-      <tarfileset prefix="lucene-${version}" dir="${build.dir}/core">
-        <patternset includes="lucene-core*.jar" excludes="*-src.jar"/>
-      </tarfileset>
-      <tarfileset prefix="lucene-${version}" dir="${build.dir}/test-framework">
-        <patternset includes="lucene-test-framework*.jar" excludes="*-src.jar"/>
-      </tarfileset>
       <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </tarfileset>
