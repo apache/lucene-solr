@@ -33,6 +33,11 @@
   sharedLib: path to a lib directory that will be shared across all cores
 -->
 <solr persistent="false">
+	<!-- by default, this is 50 @ WARN
+  <logging enabled="true">
+  	<watcher size="100" threshold="INFO" />
+  </logging>
+   -->
 
   <!--
   adminPath: RequestHandler path to manage cores.  

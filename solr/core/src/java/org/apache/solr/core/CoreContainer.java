@@ -65,11 +65,16 @@ import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.logging.ListenerConfig;
+import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.logging.jul.JulWatcher;
+import org.apache.solr.logging.log4j.Log4jWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -114,7 +119,7 @@ public class CoreContainer
   private ZkController zkController;
   private SolrZkServer zkServer;
   private ShardHandlerFactory shardHandlerFactory;
-
+  protected LogWatcher logging = null;
   private String zkHost;
   private Map<SolrCore,String> coreToOrigName = new ConcurrentHashMap<SolrCore,String>();
 
@@ -382,6 +387,55 @@ public class CoreContainer
     }
     
     cfg.substituteProperties();
+    
+    // Initialize Logging
+    if(cfg.getBool("solr/logging/@enabled",true)) {
+      String slf4jImpl = null;
+      String fname = cfg.get("solr/logging/watcher/@class", null);
+      try {
+        slf4jImpl = StaticLoggerBinder.getSingleton().getLoggerFactoryClassStr();
+        if(fname==null) {
+          if( slf4jImpl.indexOf("Log4j") > 0) {
+            fname = "Log4j";
+          }
+          else if( slf4jImpl.indexOf("JDK") > 0) {
+            fname = "JUL";
+          }
+        }
+      }
+      catch(Exception ex) {
+        log.warn("Unable to read SLF4J version", ex);
+      }
+      
+      // Now load the framework
+      if(fname!=null) {
+        if("JUL".equalsIgnoreCase(fname)) {
+          logging = new JulWatcher(slf4jImpl);
+        }
+        else if( "Log4j".equals(fname) ) {
+          logging = new Log4jWatcher(slf4jImpl);
+        }
+        else {
+          try {
+            logging = loader.newInstance(fname, LogWatcher.class);
+          }
+          catch (Exception e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        }
+        
+        if( logging != null ) {
+          ListenerConfig v = new ListenerConfig();
+          v.size = cfg.getInt("solr/logging/watcher/@size",50);
+          v.threshold = cfg.get("solr/logging/watcher/@threshold",null);
+          if(v.size>0) {
+            log.info("Registering Log Listener");
+            logging.registerListener(v, this);
+          }
+        }
+      }
+    }
+    
     
     String dcoreName = cfg.get("solr/cores/@defaultCoreName", null);
     if(dcoreName != null) {
@@ -1020,6 +1074,13 @@ public class CoreContainer
    */
   public void setManagementPath(String path) {
     this.managementPath = path;
+  }
+  
+  public LogWatcher getLogging() {
+    return logging;
+  }
+  public void setLogging(LogWatcher v) {
+    logging = v;
   }
   
   public File getConfigFile() {

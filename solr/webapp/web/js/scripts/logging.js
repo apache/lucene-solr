@@ -117,7 +117,7 @@ var logging_handler = function( response, text_status, xhr )
   };
 
   var logger_content = '<div class="block">' + "\n"
-                     + '<h2><span>' + response.framework.esc() + '<span>' + response.slfj4.esc() + '</span></span></h2>' + "\n"
+                     + '<h2><span>' + response.watcher.esc() + '</span></h2>' + "\n"
                      + '<ul class="tree jstree">' + logger_tree( null ) + '</ul>' + "\n"
                      + '</div>';
 
@@ -228,7 +228,7 @@ sammy.get
   /^#\/~(logging)$/,
   function( context )
   {
-    loglevel_path = app_config.solr_path + '/admin/loglevel';
+    loglevel_path = app_config.solr_path + '/admin/logging';
     var content_element = $( '#content' );
         
     content_element

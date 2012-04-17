@@ -215,6 +215,12 @@
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
     </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.16</version>
+      <scope>provided</scope><!-- we only want this for compilation, at runtime use whatever you want -->
+    </dependency>
   </dependencies>
   <build>
     <directory>${build-directory}</directory>

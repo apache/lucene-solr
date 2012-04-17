@@ -27,6 +27,9 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
+import org.apache.solr.logging.ListenerConfig;
+import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -207,6 +210,9 @@ public class TestHarness {
           initZooKeeper(System.getProperty("zkHost"), 10000);
         }
       };
+      LogWatcher<?> logging = new JulWatcher("test");
+      logging.registerListener(new ListenerConfig(), container);
+      container.setLogging(logging);
       
       CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());
       dcore.setConfigName(solrConfig.getResourceName());
@@ -219,7 +225,6 @@ public class TestHarness {
         // always kick off recovery if we are in standalone mode.
         core.getUpdateHandler().getUpdateLog().recoverFromLog();
       }
-      
       return container;
     }
   }

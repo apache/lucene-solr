@@ -31,7 +31,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 /**
  * A special Handler that registers all standard admin handlers
  * 
- *
  * @since solr 1.3
  */
 public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
@@ -86,7 +85,7 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
       new StandardHandler( "plugins", new PluginInfoHandler() ),
       new StandardHandler( "threads", new ThreadDumpHandler() ),
       new StandardHandler( "properties", new PropertiesRequestHandler() ),
-      new StandardHandler( "loglevel", new LogLevelHandler() ),
+      new StandardHandler( "logging", new LoggingHandler() ),
       new StandardHandler( "file", new ShowFileRequestHandler() )
     };
     
@@ -95,7 +94,7 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
         handler.handler.init( initArgs );
         core.registerRequestHandler( path+handler.name, handler.handler );
         if( handler.handler instanceof SolrCoreAware ) {
-          ((SolrCoreAware)handler).inform(core);
+          ((SolrCoreAware)handler.handler).inform(core);
         }
       }
     }

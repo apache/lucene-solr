@@ -204,7 +204,6 @@ New Features
 * SOLR-2134 Trie* fields should support sortMissingLast=true, and deprecate Sortable* Field Types
   (Ryan McKinley, Mike McCandless, Uwe Schindler, Erick Erickson)
     
-  
 * SOLR-2438 added MultiTermAwareComponent to the various classes to allow automatic lowercasing
   for multiterm queries (wildcards, regex, prefix, range, etc). You can now optionally specify a
   "multiterm" analyzer in our schema.xml, but Solr should "do the right thing" if you don't
@@ -264,6 +263,10 @@ New Features
   (James Dyer)
 
 * SOLR-3255: OpenExchangeRates.Org Exchange Rate Provider for CurrencyField (janhoy)
+
+* SOLR-3358: Logging events are captured and available from the /admin/logging 
+  request handler. (ryan)
+  
 
 Optimizations
 ----------------------

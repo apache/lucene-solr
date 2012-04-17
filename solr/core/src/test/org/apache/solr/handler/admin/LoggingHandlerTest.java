@@ -17,15 +17,15 @@
 
 package org.apache.solr.handler.admin;
 
-
 import java.util.logging.Logger;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.logging.jul.JulInfo;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class LogLevelHandlerTest extends SolrTestCaseJ4 {
+public class LoggingHandlerTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -34,17 +34,17 @@ public class LogLevelHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testLogLevelHandlerOutput() throws Exception {
-    Logger log = Logger.getLogger("org.apache.solr.SolrTestCaseJ4");
-    LogLevelHandler.LoggerWrapperJUL wrap = new LogLevelHandler.LoggerWrapperJUL(log.getName(), log);
+    Logger tst = Logger.getLogger("org.apache.solr.SolrTestCaseJ4");
+    JulInfo wrap = new JulInfo(tst.getName(), tst);
     
     assertQ("Show Log Levels OK",
-            req(CommonParams.QT,"/admin/loglevel")
+            req(CommonParams.QT,"/admin/logging")
             ,"//arr[@name='loggers']/lst/str[.='"+wrap.getName()+"']/../str[@name='level'][.='"+wrap.getLevel()+"']"
             ,"//arr[@name='loggers']/lst/str[.='org.apache']/../null[@name='level']"
             );
 
     assertQ("Set and remove a level",
-            req(CommonParams.QT,"/admin/loglevel",  
+            req(CommonParams.QT,"/admin/logging",  
                 "set", "org.xxx.yyy.abc:null",
                 "set", "org.xxx.yyy.zzz:FINEST")
             ,"//arr[@name='loggers']/lst/str[.='org.xxx.yyy.zzz']/../str[@name='level'][.='FINEST']"
