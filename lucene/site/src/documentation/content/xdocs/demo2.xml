@@ -28,7 +28,7 @@ Lucene: (lucene-{version}-src.zip).
 
 <p>
 Relative to the directory created when you extracted Lucene, you
-should see a directory called <code>lucene/contrib/demo/</code>.  This is the root for the Lucene
+should see a directory called <code>lucene/demo/</code>.  This is the root for the Lucene
 demo.  Under this directory is <code>src/java/org/apache/lucene/demo/</code>.  This is where all
 the Java sources for the demo live.
 </p>
@@ -44,7 +44,7 @@ Bring it up in <code>vi</code> or your editor of choice and let's take a look at
 
 <p>
 As we discussed in the previous walk-through, the <a
-href="api/contrib-demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates a Lucene
+href="api/demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates a Lucene
 Index. Let's take a look at how it does this.
 </p>
 
@@ -52,7 +52,7 @@ Index. Let's take a look at how it does this.
 The <code>main()</code> method parses the command-line parameters, then in preparation for
 instantiating <a href="api/core/org/apache/lucene/index/IndexWriter.html">IndexWriter</a>, opens a 
 <a href="api/core/org/apache/lucene/store/Directory.html">Directory</a> and instantiates
-<a href="api/module-analysis-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html"
+<a href="api/analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html"
 >StandardAnalyzer</a> and
 <a href="api/core/org/apache/lucene/index/IndexWriterConfig.html">IndexWriterConfig</a>.
 </p>
@@ -96,8 +96,8 @@ common language words such as articles (a, an, the, etc.) and other tokens that 
 searching.  It should be noted that there are different rules for every language, and you should use the
 proper analyzer for each.  Lucene currently provides Analyzers for a number of different languages (see
 the javadocs under 
-<a href="api/module-analysis-common/org/apache/lucene/analysis/"
->modules/analysis/common/src/java/org/apache/lucene/analysis</a>).
+<a href="api/analyzers-common/org/apache/lucene/analysis/"
+>lucene/analysis/common/src/java/org/apache/lucene/analysis</a>).
 </p>
 
 <p>
@@ -125,12 +125,12 @@ adding the new document to the index.
 <section id="Searching Files"><title>Searching Files</title>
 
 <p>
-The <a href="api/contrib-demo/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
+The <a href="api/demo/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
 quite simple.  It primarily collaborates with an 
 <a href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>, 
-<a href="api/modules-analysis-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html"
+<a href="api/analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html"
 >StandardAnalyzer</a> (which is used in the
-<a href="api/contrib-demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well)
+<a href="api/demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well)
 and a <a href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>.  The
 query parser is constructed with an analyzer used to interpret your query text in the same way the
 documents are interpreted: finding word boundaries, downcasing, and removing useless words like

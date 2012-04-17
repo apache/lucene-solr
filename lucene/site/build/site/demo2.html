@@ -112,14 +112,8 @@ document.write("Last Published: " + document.lastModified);
 <div class="menuitem">
 <a href="index.html">Overview</a>
 </div>
-<div onclick="SwitchMenu('menu_1.1.2', 'skin/')" id="menu_1.1.2Title" class="menutitle">Changes</div>
-<div id="menu_1.1.2" class="menuitemgroup">
 <div class="menuitem">
-<a href="changes/Changes.html">Core</a>
-</div>
-<div class="menuitem">
-<a href="changes/Contrib-Changes.html">Contrib</a>
-</div>
+<a href="changes/Changes.html">Changes</a>
 </div>
 <div onclick="SwitchMenu('menu_1.1.3', 'skin/')" id="menu_1.1.3Title" class="menutitle">Javadocs</div>
 <div id="menu_1.1.3" class="menuitemgroup">
@@ -130,46 +124,67 @@ document.write("Last Published: " + document.lastModified);
 <a href="api/core/index.html">Core</a>
 </div>
 <div class="menuitem">
+<a href="api/analyzers-common/index.html">Analysis: Common</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-kuromoji/index.html">Analysis: Kuromoji (Japanese)</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-morfologik/index.html">Analysis: Morfologik (Polish)</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-phonetic/index.html">Analysis: Phonetic</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-smartcn/index.html">Analysis: Smart Chinese</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-stempel/index.html">Analysis: Stempel (Polish)</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-uima/index.html">Analysis: UIMA</a>
+</div>
+<div class="menuitem">
+<a href="api/benchmark/index.html">Benchmark</a>
+</div>
+<div class="menuitem">
+<a href="api/demo/index.html">Demo</a>
+</div>
+<div class="menuitem">
+<a href="api/facet/index.html">Faceting</a>
+</div>
+<div class="menuitem">
+<a href="api/grouping/index.html">Grouping</a>
+</div>
+<div class="menuitem">
+<a href="api/highlighter/index.html">Highlighter</a>
+</div>
+<div class="menuitem">
+<a href="api/join/index.html">Join</a>
+</div>
+<div class="menuitem">
+<a href="api/memory/index.html">Memory</a>
+</div>
+<div class="menuitem">
+<a href="api/misc/index.html">Miscellaneous</a>
+</div>
+<div class="menuitem">
+<a href="api/queries/index.html">Queries</a>
+</div>
+<div class="menuitem">
+<a href="api/queryparser/index.html">Query Parsers</a>
+</div>
+<div class="menuitem">
+<a href="api/sandbox/index.html">Sandbox</a>
+</div>
+<div class="menuitem">
+<a href="api/spatial/index.html">Spatial</a>
+</div>
+<div class="menuitem">
+<a href="api/suggest/index.html">Suggest / Spellcheck</a>
+</div>
+<div class="menuitem">
 <a href="api/test-framework/index.html">Test Framework</a>
-</div>
-<div onclick="SwitchMenu('menu_1.1.3.4', 'skin/')" id="menu_1.1.3.4Title" class="menutitle">Contrib</div>
-<div id="menu_1.1.3.4" class="menuitemgroup">
-<div class="menuitem">
-<a href="api/contrib-benchmark/index.html">Benchmark</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-demo/index.html">Demo</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-highlighter/index.html">Highlighter</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-instantiated/index.html">Instantiated</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-memory/index.html">Memory</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-misc/index.html">Miscellaneous</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-queries/index.html">Queries</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-queryparser/index.html">Query Parser Framework</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-remote/index.html">Remote</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-spatial/index.html">Spatial</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-spellchecker/index.html">Spellchecker</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-xml-query-parser/index.html">XML Query Parser</a>
-</div>
 </div>
 </div>
 <div class="menuitem">
@@ -186,9 +201,6 @@ document.write("Last Published: " + document.lastModified);
 </div>
 <div class="menuitem">
 <a href="gettingstarted.html">Getting Started</a>
-</div>
-<div class="menuitem">
-<a href="lucene-contrib/index.html">Lucene Contrib</a>
 </div>
 <div class="menuitem">
 <a href="queryparsersyntax.html">Query Syntax</a>
@@ -260,7 +272,7 @@ Lucene: (lucene-{version}-src.zip).
 </p>
 <p>
 Relative to the directory created when you extracted Lucene, you
-should see a directory called <span class="codefrag">lucene/contrib/demo/</span>.  This is the root for the Lucene
+should see a directory called <span class="codefrag">lucene/demo/</span>.  This is the root for the Lucene
 demo.  Under this directory is <span class="codefrag">src/java/org/apache/lucene/demo/</span>.  This is where all
 the Java sources for the demo live.
 </p>
@@ -275,14 +287,14 @@ Bring it up in <span class="codefrag">vi</span> or your editor of choice and let
 <h2 class="boxed">IndexFiles</h2>
 <div class="section">
 <p>
-As we discussed in the previous walk-through, the <a href="api/contrib-demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates a Lucene
+As we discussed in the previous walk-through, the <a href="api/demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates a Lucene
 Index. Let's take a look at how it does this.
 </p>
 <p>
 The <span class="codefrag">main()</span> method parses the command-line parameters, then in preparation for
 instantiating <a href="api/core/org/apache/lucene/index/IndexWriter.html">IndexWriter</a>, opens a 
 <a href="api/core/org/apache/lucene/store/Directory.html">Directory</a> and instantiates
-<a href="api/module-analysis-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a> and
+<a href="api/analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a> and
 <a href="api/core/org/apache/lucene/index/IndexWriterConfig.html">IndexWriterConfig</a>.
 </p>
 <p>
@@ -320,7 +332,7 @@ common language words such as articles (a, an, the, etc.) and other tokens that 
 searching.  It should be noted that there are different rules for every language, and you should use the
 proper analyzer for each.  Lucene currently provides Analyzers for a number of different languages (see
 the javadocs under 
-<a href="api/module-analysis-common/org/apache/lucene/analysis/">modules/analysis/common/src/java/org/apache/lucene/analysis</a>).
+<a href="api/analyzers-common/org/apache/lucene/analysis/">lucene/analysis/common/src/java/org/apache/lucene/analysis</a>).
 </p>
 <p>
 The <span class="codefrag">IndexWriterConfig</span> instance holds all configuration for <span class="codefrag">IndexWriter</span>.  For
@@ -347,11 +359,11 @@ adding the new document to the index.
 <h2 class="boxed">Searching Files</h2>
 <div class="section">
 <p>
-The <a href="api/contrib-demo/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
+The <a href="api/demo/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
 quite simple.  It primarily collaborates with an 
 <a href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>, 
-<a href="api/modules-analysis-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a> (which is used in the
-<a href="api/contrib-demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well)
+<a href="api/analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a> (which is used in the
+<a href="api/demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well)
 and a <a href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>.  The
 query parser is constructed with an analyzer used to interpret your query text in the same way the
 documents are interpreted: finding word boundaries, downcasing, and removing useless words like

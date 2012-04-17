@@ -110,14 +110,8 @@ document.write("Last Published: " + document.lastModified);
 <div class="menuitem">
 <a href="index.html">Overview</a>
 </div>
-<div onclick="SwitchMenu('menu_1.1.2', 'skin/')" id="menu_1.1.2Title" class="menutitle">Changes</div>
-<div id="menu_1.1.2" class="menuitemgroup">
 <div class="menuitem">
-<a href="changes/Changes.html">Core</a>
-</div>
-<div class="menuitem">
-<a href="changes/Contrib-Changes.html">Contrib</a>
-</div>
+<a href="changes/Changes.html">Changes</a>
 </div>
 <div onclick="SwitchMenu('menu_1.1.3', 'skin/')" id="menu_1.1.3Title" class="menutitle">Javadocs</div>
 <div id="menu_1.1.3" class="menuitemgroup">
@@ -128,46 +122,67 @@ document.write("Last Published: " + document.lastModified);
 <a href="api/core/index.html">Core</a>
 </div>
 <div class="menuitem">
+<a href="api/analyzers-common/index.html">Analysis: Common</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-kuromoji/index.html">Analysis: Kuromoji (Japanese)</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-morfologik/index.html">Analysis: Morfologik (Polish)</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-phonetic/index.html">Analysis: Phonetic</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-smartcn/index.html">Analysis: Smart Chinese</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-stempel/index.html">Analysis: Stempel (Polish)</a>
+</div>
+<div class="menuitem">
+<a href="api/analyzers-uima/index.html">Analysis: UIMA</a>
+</div>
+<div class="menuitem">
+<a href="api/benchmark/index.html">Benchmark</a>
+</div>
+<div class="menuitem">
+<a href="api/demo/index.html">Demo</a>
+</div>
+<div class="menuitem">
+<a href="api/facet/index.html">Faceting</a>
+</div>
+<div class="menuitem">
+<a href="api/grouping/index.html">Grouping</a>
+</div>
+<div class="menuitem">
+<a href="api/highlighter/index.html">Highlighter</a>
+</div>
+<div class="menuitem">
+<a href="api/join/index.html">Join</a>
+</div>
+<div class="menuitem">
+<a href="api/memory/index.html">Memory</a>
+</div>
+<div class="menuitem">
+<a href="api/misc/index.html">Miscellaneous</a>
+</div>
+<div class="menuitem">
+<a href="api/queries/index.html">Queries</a>
+</div>
+<div class="menuitem">
+<a href="api/queryparser/index.html">Query Parsers</a>
+</div>
+<div class="menuitem">
+<a href="api/sandbox/index.html">Sandbox</a>
+</div>
+<div class="menuitem">
+<a href="api/spatial/index.html">Spatial</a>
+</div>
+<div class="menuitem">
+<a href="api/suggest/index.html">Suggest / Spellcheck</a>
+</div>
+<div class="menuitem">
 <a href="api/test-framework/index.html">Test Framework</a>
-</div>
-<div onclick="SwitchMenu('menu_1.1.3.4', 'skin/')" id="menu_1.1.3.4Title" class="menutitle">Contrib</div>
-<div id="menu_1.1.3.4" class="menuitemgroup">
-<div class="menuitem">
-<a href="api/contrib-benchmark/index.html">Benchmark</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-demo/index.html">Demo</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-highlighter/index.html">Highlighter</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-instantiated/index.html">Instantiated</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-memory/index.html">Memory</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-misc/index.html">Miscellaneous</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-queries/index.html">Queries</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-queryparser/index.html">Query Parser Framework</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-remote/index.html">Remote</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-spatial/index.html">Spatial</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-spellchecker/index.html">Spellchecker</a>
-</div>
-<div class="menuitem">
-<a href="api/contrib-xml-query-parser/index.html">XML Query Parser</a>
-</div>
 </div>
 </div>
 <div class="menuitem">
@@ -184,9 +199,6 @@ document.write("Last Published: " + document.lastModified);
 </div>
 <div class="menuitem">
 <a href="gettingstarted.html">Getting Started</a>
-</div>
-<div class="menuitem">
-<a href="lucene-contrib/index.html">Lucene Contrib</a>
 </div>
 <div class="menuitem">
 <a href="queryparsersyntax.html">Query Syntax</a>
@@ -243,23 +255,8 @@ document.write("Last Published: " + document.lastModified);
       
 <ul>
 <li>
-<a>Changes</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>changes</em>
+<a href="changes/Changes.html">Changes</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>changes</em>
 </li>
-<ul>
-        
-<ul>
-<li>
-<a href="changes/Changes.html">Core</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>changes-core</em>
-</li>
-</ul>
-        
-<ul>
-<li>
-<a href="changes/Contrib-Changes.html">Contrib</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>changes-contrib</em>
-</li>
-</ul>
-      
-</ul>
 </ul>
       
 <ul>
@@ -273,100 +270,138 @@ document.write("Last Published: " + document.lastModified);
 <a href="api/all/index.html">All</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-all</em>
 </li>
 </ul>
-		 
+         
 <ul>
 <li>
 <a href="api/core/index.html">Core</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-core</em>
 </li>
 </ul>
-		 
+         
+<ul>
+<li>
+<a href="api/analyzers-common/index.html">Analysis: Common</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-analyzers-common</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/analyzers-kuromoji/index.html">Analysis: Kuromoji (Japanese)</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-analyzers-kuromoji</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/analyzers-morfologik/index.html">Analysis: Morfologik (Polish)</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-analyzers-kuromoji</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/analyzers-phonetic/index.html">Analysis: Phonetic</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-analyzers-phonetic</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/analyzers-smartcn/index.html">Analysis: Smart Chinese</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-analyzers-smartcn</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/analyzers-stempel/index.html">Analysis: Stempel (Polish)</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-analyzers-stempel</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/analyzers-uima/index.html">Analysis: UIMA</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-analyzers-uima</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/benchmark/index.html">Benchmark</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-benchmark</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/demo/index.html">Demo</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-demo</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/facet/index.html">Faceting</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-facet</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/grouping/index.html">Grouping</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-grouping</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/highlighter/index.html">Highlighter</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-highlighter</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/join/index.html">Join</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-join</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/memory/index.html">Memory</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-memory</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/misc/index.html">Miscellaneous</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-misc</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/queries/index.html">Queries</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-queries</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/queryparser/index.html">Query Parsers</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-queryparser</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/sandbox/index.html">Sandbox</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-sandbox</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/spatial/index.html">Spatial</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-spatial</em>
+</li>
+</ul>
+         
+<ul>
+<li>
+<a href="api/suggest/index.html">Suggest / Spellcheck</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-suggest</em>
+</li>
+</ul>						    
+         
 <ul>
 <li>
 <a href="api/test-framework/index.html">Test Framework</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-test-framework</em>
 </li>
-</ul>
-		 
-<ul>
-<li>
-<a>Contrib</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib</em>
-</li>
-<ul>
-		    
-<ul>
-<li>
-<a href="api/contrib-benchmark/index.html">Benchmark</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-benchmark</em>
-</li>
-</ul>
-        
-<ul>
-<li>
-<a href="api/contrib-demo/index.html">Demo</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-demo</em>
-</li>
-</ul>
-		    
-<ul>
-<li>
-<a href="api/contrib-highlighter/index.html">Highlighter</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-highlighter</em>
-</li>
-</ul>
-		    
-<ul>
-<li>
-<a href="api/contrib-instantiated/index.html">Instantiated</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-instantiated</em>
-</li>
-</ul>
-		    
-<ul>
-<li>
-<a href="api/contrib-memory/index.html">Memory</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-memory</em>
-</li>
-</ul>
-		    
-<ul>
-<li>
-<a href="api/contrib-misc/index.html">Miscellaneous</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-misc</em>
-</li>
-</ul>
-		    
-<ul>
-<li>
-<a href="api/contrib-queries/index.html">Queries</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-queries</em>
-</li>
-</ul>
-                    
-<ul>
-<li>
-<a href="api/contrib-queryparser/index.html">Query Parser Framework</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-queryparser</em>
-</li>
-</ul>
-			
-		    
-<ul>
-<li>
-<a href="api/contrib-remote/index.html">Remote</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-remote</em>
-</li>
-</ul>
-		    
-<ul>
-<li>
-<a href="api/contrib-spatial/index.html">Spatial</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-spatial</em>
-</li>
-</ul>
-		    
-<ul>
-<li>
-<a href="api/contrib-spellchecker/index.html">Spellchecker</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-spellchecker</em>
-</li>
-</ul>						    
-		    
-<ul>
-<li>
-<a href="api/contrib-xml-query-parser/index.html">XML Query Parser</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>javadoc-contrib-xml-query-parser</em>
-</li>
-</ul>			
-		 
-</ul>
-</ul>
+</ul>	
 	  
 </ul>
 </ul>
@@ -398,12 +433,6 @@ document.write("Last Published: " + document.lastModified);
 <ul>
 <li>
 <a href="gettingstarted.html">Getting Started</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>tutorial</em>
-</li>
-</ul>
-      
-<ul>
-<li>
-<a href="lucene-contrib/index.html">Lucene Contrib</a>&nbsp;&nbsp;___________________&nbsp;&nbsp;<em>lucene-contrib</em>
 </li>
 </ul>
       

@@ -32,9 +32,10 @@ latest Lucene distribution and then extract it to a working directory.
 </p>
 <p>
 You need three JARs: the Lucene JAR, the common analysis JAR, and the Lucene demo JAR.  You should
-see the Lucene JAR file in the directory you created when you extracted the archive -- it
+see the Lucene JAR file in the core/ directory you created when you extracted the archive -- it
 should be named something like <code>lucene-core-{version}.jar</code>.  You should also see files
-called <code>lucene-analyzers-common-{version}.jar</code> and <code>lucene-demo-{version}.jar</code>.
+called <code>lucene-analyzers-common-{version}.jar</code> and <code>lucene-demo-{version}.jar</code>
+under analysis/common/ and demo/, respectively.
 </p>
 <p>
 Put all three of these files in your Java CLASSPATH.
