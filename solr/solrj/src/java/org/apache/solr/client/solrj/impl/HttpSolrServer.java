@@ -20,8 +20,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -34,7 +37,10 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
+import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -45,6 +51,7 @@ import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.HttpEntityWrapper;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
@@ -52,6 +59,8 @@ import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
@@ -64,7 +73,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -132,6 +140,7 @@ public class HttpSolrServer extends SolrServer {
   private int maxRetries = 0;
   
   private ThreadSafeClientConnManager ccm;
+  private boolean useMultiPartPost;
   
   /**
    * @param baseURL
@@ -210,9 +219,11 @@ public class HttpSolrServer extends SolrServer {
   }
   
   public NamedList<Object> request(final SolrRequest request,
-      final ResponseParser processor) throws SolrServerException {
+      final ResponseParser processor) throws SolrServerException, IOException {
     HttpRequestBase method = null;
+    InputStream is = null;
     SolrParams params = request.getParams();
+    Collection<ContentStream> streams = requestWriter.getContentStreams(request);
     String path = requestWriter.getPath(request);
     if (path == null || !path.startsWith("/")) {
       path = DEFAULT_PATH;
@@ -235,55 +246,122 @@ public class HttpSolrServer extends SolrServer {
     
     int tries = maxRetries + 1;
     try {
-      while (tries-- > 0) { // XXX this retry thing seems noop to me
-        Collection<ContentStream> streams = requestWriter
-            .getContentStreams(request);
-        // Note: since we aren't doing intermittent time keeping
+      while( tries-- > 0 ) {
+        // Note: since we aren't do intermittent time keeping
         // ourselves, the potential non-timeout latency could be as
         // much as tries-times (plus scheduling effects) the given
         // timeAllowed.
         try {
-          if (SolrRequest.METHOD.GET == request.getMethod()) {
-            if (streams != null) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                  "GET can't send streams!");
+          if( SolrRequest.METHOD.GET == request.getMethod() ) {
+            if( streams != null ) {
+              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!" );
             }
-            method = new HttpGet(baseUrl + path
-                + ClientUtils.toQueryString(params, false));
-          } else if (SolrRequest.METHOD.POST == request.getMethod()) {
+            method = new HttpGet( baseUrl + path + ClientUtils.toQueryString( params, false ) );
+          }
+          else if( SolrRequest.METHOD.POST == request.getMethod() ) {
+
             String url = baseUrl + path;
-            
-            MultipartEntity entity = new MultipartEntity(
-                HttpMultipartMode.BROWSER_COMPATIBLE);
-            
-            final HttpPost post = new HttpPost(url);
-            
-            final Iterator<String> iter = params.getParameterNamesIterator();
-            if (iter.hasNext()) {
-              
+            boolean isMultipart = ( streams != null && streams.size() > 1 );
+
+            LinkedList<NameValuePair> postParams = new LinkedList<NameValuePair>();
+            if (streams == null || isMultipart) {
+              HttpPost post = new HttpPost(url);
+              post.setHeader("Content-Charset", "UTF-8");
+              if (!this.useMultiPartPost && !isMultipart) {
+                post.addHeader("Content-Type",
+                    "application/x-www-form-urlencoded; charset=UTF-8");
+              }
+
+              List<FormBodyPart> parts = new LinkedList<FormBodyPart>();
+              Iterator<String> iter = params.getParameterNamesIterator();
               while (iter.hasNext()) {
-                final String name = iter.next();
-                final String[] vals = params.getParams(name);
+                String p = iter.next();
+                String[] vals = params.getParams(p);
                 if (vals != null) {
-                  for (String value : vals) {
-                    entity.addPart(name, new StringBody(value));
+                  for (String v : vals) {
+                    if (this.useMultiPartPost || isMultipart) {
+                      parts.add(new FormBodyPart(p, new StringBody(v, Charset.forName("UTF-8"))));
+                    } else {
+                      postParams.add(new BasicNameValuePair(p, v));
+                    }
                   }
                 }
               }
+
+              if (isMultipart) {
+                for (ContentStream content : streams) {
+                   parts.add(new FormBodyPart(content.getName(), new InputStreamBody(content.getStream(), content.getName())));
+                }
+              }
+              
+              if (parts.size() > 0) {
+                MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
+                for(FormBodyPart p: parts) {
+                  entity.addPart(p);
+                }
+                post.setEntity(entity);
+              } else {
+                //not using multipart
+                HttpEntity e;
+                post.setEntity(new UrlEncodedFormEntity(postParams, "UTF-8"));
+              }
+
+              method = post;
             }
-            addParts(streams, entity);
-            post.setEntity(entity);
-            method = post;
-          } else {
-            throw new SolrServerException("Unsupported method: "
-                + request.getMethod());
+            // It is has one stream, it is the post body, put the params in the URL
+            else {
+              String pstr = ClientUtils.toQueryString(params, false);
+              HttpPost post = new HttpPost(url + pstr);
+
+              // Single stream as body
+              // Using a loop just to get the first one
+              final ContentStream[] contentStream = new ContentStream[1];
+              for (ContentStream content : streams) {
+                contentStream[0] = content;
+                break;
+              }
+              if (contentStream[0] instanceof RequestWriter.LazyContentStream) {
+                post.setEntity(new InputStreamEntity(contentStream[0].getStream(), -1) {
+                  @Override
+                  public Header getContentType() {
+                    return new BasicHeader("Content-Type", contentStream[0].getContentType());
+                  }
+                  
+                  @Override
+                  public boolean isRepeatable() {
+                    return false;
+                  }
+                  
+                });
+              } else {
+                post.setEntity(new InputStreamEntity(contentStream[0].getStream(), -1) {
+                  @Override
+                  public Header getContentType() {
+                    return new BasicHeader("Content-Type", contentStream[0].getContentType());
+                  }
+                  
+                  @Override
+                  public boolean isRepeatable() {
+                    return false;
+                  }
+                });
+              }
+              method = post;
+            }
           }
-        } catch (RuntimeException r) {
+          else {
+            throw new SolrServerException("Unsupported method: "+request.getMethod() );
+          }
+        }
+        catch( NoHttpResponseException r ) {
+          method = null;
+          if(is != null) {
+            is.close();
+          }
           // If out of tries then just rethrow (as normal error).
-          if ((tries < 1)) {
+          if (tries < 1) {
             throw r;
           }
-          // log.warn( "Caught: " + r + ". Retrying..." );
         }
       }
     } catch (IOException ex) {
@@ -294,8 +372,6 @@ public class HttpSolrServer extends SolrServer {
     method.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS,
         followRedirects);
     method.addHeader("User-Agent", AGENT);
-    method.setHeader("Content-Charset", UTF_8);
-    method.setHeader("Accept-Charset", UTF_8);
     
     InputStream respBody = null;
     
@@ -365,16 +441,6 @@ public class HttpSolrServer extends SolrServer {
         try {
           respBody.close();
         } catch (Throwable t) {} // ignore
-      }
-    }
-  }
-  
-  private void addParts(Collection<ContentStream> streams,
-      MultipartEntity entity) throws IOException {
-    if (streams != null) {
-      for (ContentStream content : streams) {
-        entity.addPart(new FormBodyPart(CommonParams.STREAM_BODY,
-            new InputStreamBody(content.getStream(), "")));
       }
     }
   }
