@@ -228,7 +228,8 @@ sammy.get
   /^#\/~(logging)$/,
   function( context )
   {
-    loglevel_path = app_config.solr_path + '/admin/logging';
+    var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );
+    loglevel_path = core_basepath + '/admin/logging';
     var content_element = $( '#content' );
         
     content_element
