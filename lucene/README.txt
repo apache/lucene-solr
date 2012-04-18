@@ -19,9 +19,6 @@ Files are organized by module, for example in core/:
 core/lucene-core-XX.jar
   The compiled core Lucene library.
 
-core/lucene-core-XX-javadoc.jar
-  The Javadoc jar for the compiled core Lucene library.
-
 Additional modules contain the same structure:
 
 analysis/common/: Analyzers for indexing content in different languages and domains

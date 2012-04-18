@@ -28,7 +28,7 @@
 
   <patternset id="binary.build.dist.patterns"
               includes="docs/,**/*.jar,**/*.war"
-              excludes="poms/**,**/*-src.jar"
+              excludes="poms/**,**/*-src.jar,**/*-javadoc.jar"
   />
   <patternset id="binary.root.dist.patterns"
               includes="LICENSE.txt,NOTICE.txt,README.txt,
