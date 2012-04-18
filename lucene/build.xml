@@ -447,6 +447,9 @@
   </target>
 
 
+  <!-- TODO: these dependencies are bogus: we only
+       call this from prepare-release so it shouldn't require
+       'package' and 'javadocs' again -->
   <target name="generate-maven-artifacts"
           depends="install-maven-tasks, filter-pom-templates, package, javadocs">
     <sequential>
