@@ -408,7 +408,6 @@ public abstract class LuceneTestCase extends Assert {
     savedCodec = Codec.getDefault();
     final Codec codec;
     int randomVal = random().nextInt(10);
-    System.out.println("randomVal: " + randomVal);
     
     if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2)) { // preflex-only setup
       codec = Codec.forName("Lucene3x");
