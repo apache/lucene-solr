@@ -246,7 +246,18 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       if((ref instanceof Double) || (ref instanceof Float)) {
         nf = NumberFormat.getInstance(Locale.ENGLISH);
       }
-      double diff = ((Number)now).doubleValue() - ((Number)ref).doubleValue();
+      double dref = ((Number)ref).doubleValue();
+      double dnow = ((Number)now).doubleValue();
+      double diff = Double.NaN;
+      if(Double.isNaN(dref)) {
+        diff = dnow;
+      }
+      else if(Double.isNaN(dnow)) {
+        diff = dref;
+      }
+      else {
+        diff = dnow-dref;
+      }
       str.append( ", Delta: ").append(nf.format(diff));
     }
     return str.toString();
