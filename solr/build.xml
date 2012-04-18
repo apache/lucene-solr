@@ -317,7 +317,7 @@
   <target name="dist-war"
           description="Creates the Solr WAR Distribution file.">
     <ant dir="webapp" target="dist" inheritall="false">
-      <property name="exclude.from.war" value="log4j-*" />
+      <property name="exclude.from.war" value="log4j-1.*" />
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
