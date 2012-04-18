@@ -172,6 +172,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "rows",0, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
     query("q","*:*", "rows",0, "facet","true", "facet.field",t1, "facet.mincount",2);
 
+    // a facet query to test out chars out of the ascii range
+    query("q","*:*", "rows",0, "facet","true", "facet.query","{!term f=foo_s}international\u00ff\u01ff\u2222\u3333");
+
     // simple date facet on one field
     query("q","*:*", "rows",100, "facet","true", 
           "facet.date",tdate_a, 
