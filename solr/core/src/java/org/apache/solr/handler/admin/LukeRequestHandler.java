@@ -63,15 +63,9 @@ import static org.apache.lucene.index.FieldInfo.IndexOptions.DOCS_ONLY;
  * This handler exposes the internal lucene index.  It is inspired by and 
  * modeled on Luke, the Lucene Index Browser by Andrzej Bialecki.
  *   http://www.getopt.org/luke/
- * <p>
- * NOTE: the response format is still likely to change.  It should be designed so
- * that it works nicely with an XSLT transformation.  Until we have a nice
- * XSLT front end for /admin, the format is still open to change.
- * </p>
  *
  * For more documentation see:
  *  http://wiki.apache.org/solr/LukeRequestHandler
- *
  *
  * @since solr 1.2
  */
@@ -300,7 +294,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     return finfo;
   }
 
-  @SuppressWarnings("unchecked")
   private static SimpleOrderedMap<Object> getIndexedFieldsInfo(SolrQueryRequest req)
       throws Exception {
 
@@ -565,6 +558,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   // Get terribly detailed information about a particular field. This is a very expensive call, use it with caution
   // especially on large indexes!
+  @SuppressWarnings("unchecked")
   private static void getDetailedFieldInfo(SolrQueryRequest req, String field, SimpleOrderedMap<Object> fieldMap)
       throws IOException {
 
