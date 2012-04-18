@@ -193,8 +193,6 @@ public class TestReproduceMessage extends WithNestedTests {
 
     final String syserr = runAndReturnSyserr();
     
-    super.prevSysOut.println(getSysErr() + "\n" + getSysOut());
-    
     Assert.assertTrue(syserr.contains("NOTE: reproduce with:"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.method=test"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.class=*." + Nested.class.getSimpleName()));

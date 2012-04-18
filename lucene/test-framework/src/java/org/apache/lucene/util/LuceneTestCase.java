@@ -110,6 +110,7 @@ import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
+import com.carrotsearch.randomizedtesting.MixWithSuiteName;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import com.carrotsearch.randomizedtesting.annotations.*;
@@ -140,6 +141,7 @@ import com.carrotsearch.randomizedtesting.annotations.*;
  * if you annotate your derived class correctly with the annotations above
  * @see #assertSaneFieldCaches(String)
  */
+@RunWith(RandomizedRunner.class)
 @TestMethodProviders({
   LuceneJUnit3MethodProvider.class,
   JUnit4MethodProvider.class
@@ -148,11 +150,11 @@ import com.carrotsearch.randomizedtesting.annotations.*;
   RequireAssertions.class,
   NoStaticHooksShadowing.class
 })
-@RunWith(RandomizedRunner.class)
+@SeedDecorators({MixWithSuiteName.class}) // See LUCENE-3995 for rationale.
 @ThreadLeaks(failTestIfLeaking = false)
 public abstract class LuceneTestCase extends Assert {
   /**
-   * true iff tests are run in verbose mode. Note: if it is false, tests are not
+   * true if and only if tests are run in verbose mode. Note: if it is false, tests are not
    * expected to print any messages.
    */
   public static final boolean VERBOSE = Boolean.getBoolean("tests.verbose");
@@ -406,6 +408,7 @@ public abstract class LuceneTestCase extends Assert {
     savedCodec = Codec.getDefault();
     final Codec codec;
     int randomVal = random().nextInt(10);
+    System.out.println("randomVal: " + randomVal);
     
     if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2)) { // preflex-only setup
       codec = Codec.forName("Lucene3x");
