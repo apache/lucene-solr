@@ -124,6 +124,18 @@ var logging_handler = function( response, text_status, xhr )
   self
     .html( logger_content );
 
+  self
+    .die( 'clear' )
+    .live
+    (
+      'clear',
+      function( event )
+      {
+        $( '.open', this )
+          .removeClass( 'open' );
+      }
+    );
+
   $( 'li:last-child', this )
     .addClass( 'jstree-last' );
 
@@ -156,16 +168,30 @@ var logging_handler = function( response, text_status, xhr )
       }
     )
 
-  $( '.trigger, .selector .close', this )
+  $( '.trigger', this )
     .die( 'click' )
     .live
     (
       'click',
       function( event )
       {
+        self.trigger( 'clear' );
+
         $( '.selector-holder', $( this ).parents( 'li' ).first() ).first()
           .trigger( 'toggle' );
 
+        return false;
+      }
+    );
+
+  $( '.selector .close', this )
+    .die( 'click' )
+    .live
+    (
+      'click',
+      function( event )
+      {
+        self.trigger( 'clear' );
         return false;
       }
     );
