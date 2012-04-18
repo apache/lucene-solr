@@ -68,7 +68,6 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.ListenerConfig;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.jul.JulWatcher;
-import org.apache.solr.logging.log4j.Log4jWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.zookeeper.KeeperException;
@@ -412,9 +411,9 @@ public class CoreContainer
         if("JUL".equalsIgnoreCase(fname)) {
           logging = new JulWatcher(slf4jImpl);
         }
-        else if( "Log4j".equals(fname) ) {
-          logging = new Log4jWatcher(slf4jImpl);
-        }
+//        else if( "Log4j".equals(fname) ) {
+//          logging = new Log4jWatcher(slf4jImpl);
+//        }
         else {
           try {
             logging = loader.newInstance(fname, LogWatcher.class);
