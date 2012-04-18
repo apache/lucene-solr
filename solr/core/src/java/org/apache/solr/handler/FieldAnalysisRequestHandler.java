@@ -35,8 +35,7 @@ import java.io.Reader;
 import java.io.IOException;
 
 /**
- * RequestHandler that provides much the same functionality as analysis.jsp.  Provides the ability to specify multiple
- * field types and field names in the same request. Expected parameters:
+ * Provides the ability to specify multiple field types and field names in the same request. Expected parameters:
  * <table border="1">
  * <tr>
  * <th align="left">Name</th>

@@ -29,13 +29,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * Copied from "admin/threaddump.jsp"
  * 
- * NOTE: the response format is still likely to change.  It should be designed so
- * that it works nicely with an XSLT transformation.  Until we have a nice
- * XSLT front end for /admin, the format is still open to change.
- * 
- *
  * @since solr 1.2
  */
 public class ThreadDumpHandler extends RequestHandlerBase
