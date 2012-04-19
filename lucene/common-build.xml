@@ -147,7 +147,7 @@
   <property name="tests.src.dir" location="src/test"/>
   <property name="tests-framework.src.dir" location="${common.dir}/test-framework/src/java"/>
   <property name="build.dir" location="build"/>
-  <!-- Needed in case a contrib needs the original build, also for compile-tools to be called from contrib -->
+  <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
   <property name="tests.lockdir" location="${common.build.dir}"/>
   <property name="dist.dir" location="${common.dir}/dist"/>
@@ -226,7 +226,7 @@
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
-              includes="src/,index.html,*build*.xml,docs/,*.txt,contrib/,lib/,backwards/"
+              includes="src/,index.html,*build*.xml,docs/,*.txt,lib/,backwards/"
               excludes="**/pom.xml,**/*.iml,site/build/"
   />
 
@@ -248,7 +248,7 @@
   </target>
 
   <!-- TODO: maybe make JavaCC checking specific to only the projects
-             that use it (Lucene core and contrib/misc
+             that use it (Lucene core and queryparsers)
   -->
   <target name="javacc-uptodate-check">
     <uptodate property="javacc.files.uptodate">
@@ -971,7 +971,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <target name="generate-test-reports" description="Generates test reports">
     <mkdir dir="${junit.reports}"/>
     <junitreport todir="${junit.output.dir}">
-      <!-- this fileset let's the task work for individual contribs,
+      <!-- this fileset let's the task work for individual modules,
            as well as the project as a whole
        -->
       <fileset dir="${build.dir}">
@@ -982,7 +982,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     
     <mkdir dir="${junit.reports.backwards}"/>
     <junitreport todir="${junit.output.dir.backwards}">
-      <!-- this fileset let's the task work for individual contribs,
+      <!-- this fileset let's the task work for individual modules,
            as well as the project as a whole
        -->
       <fileset dir="${build.dir.backwards}">
