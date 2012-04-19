@@ -34,7 +34,6 @@
               includes="LICENSE.txt,NOTICE.txt,README.txt,
                         MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
                         CHANGES.txt,
-                        contrib/**/CHANGES.txt,
                         **/lib/*.jar,
                         **/lib/*LICENSE*.txt,
                         **/lib/*NOTICE*.txt,
@@ -53,8 +52,8 @@
     </ant>
   </target>
 
-  <target name="test" depends="test-core, test-contrib, test-backwards"
-          description="Runs all unit tests (core, contrib and back-compat)"
+  <target name="test" depends="test-core, test-modules, test-backwards"
+          description="Runs all unit tests (core, modules and back-compat)"
   />
 
   <path id="backwards.test.compile.classpath">
@@ -198,7 +197,7 @@
 
   <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" 
-          depends="javadocs-all, javadocs-core, javadocs-contrib, javadocs-test-framework">
+          depends="javadocs-all, javadocs-core, javadocs-modules, javadocs-test-framework">
     <echo file="${javadoc.dir}/index.html" append="false">
 <![CDATA[<html><head><title>${Name} ${version} Javadoc Index</title></head>
 <body>
@@ -225,14 +224,14 @@
     </ant>
   </target>
 
-  <target name="javadocs-contrib" description="Generate javadoc for contrib classes">
+  <target name="javadocs-modules" description="Generate javadoc for modules classes">
     <modules-crawl target="javadocs"
                    failonerror="false"/>
   </target>
 
   <!-- call resolve to force dependencies to be in lib/ for javadocs -->
   <target name="javadocs-all" depends="resolve"
-          description="Generate javadoc for core and contrib classes">
+          description="Generate javadoc for all classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
       
@@ -251,7 +250,7 @@
 
           <!-- please keep this list up to date, and in alpha order...   -->
         
-          <!-- ie: `find contrib/* -path \*src/java | sort` -->
+          <!-- ie: `find ./* -path \*src/java | sort` -->
 
           <!-- if you make changes to the list of package sets, also -->
           <!-- make sure the group list below is updated.            -->
@@ -318,7 +317,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, jar-test-framework, docs, javadocs, build-contrib, init-dist, changes-to-html"/>
+  <target name="package" depends="jar-core, jar-test-framework, docs, javadocs, build-modules, init-dist, changes-to-html"/>
 
   <target name="nightly" depends="test, package-tgz">
   </target>
@@ -474,26 +473,23 @@
   <!-- Build the JavaCC files into the source tree                        -->
   <!-- ================================================================== -->
 
-  <target name="javacc" depends="javacc-check,javacc-contrib-demo"/>
-
-  <target name="javacc-contrib-demo" depends="javacc-check" if="javacc.present">
-	<ant target="javacc"
-	  dir="contrib/demo"
-	  antfile="build.xml" 
-	/>
+  <target name="javacc" depends="javacc-check">
+  	<subant target="javacc" failonerror="true" inheritall="false">
+  	  <fileset dir="${common.dir}/queryparser" includes="build.xml"/>
+  	</subant>
   </target>
-  
-  <target name="build-contrib" depends="compile-test"
-          description="Builds all contrib modules and their tests">
+
+  <target name="build-modules" depends="compile-test"
+          description="Builds all additional modules and their tests">
     <modules-crawl target="build-artifacts-and-tests"/>
   </target>
 
   <target name="compile-test" depends="compile-lucene-core,compile-test-framework"
-          description="Builds core, test-framework, and contrib tests">
+          description="Builds core, test-framework, and modules tests">
     <modules-crawl target="compile-test" failonerror="true"/>
   </target>
   
-  <target name="test-contrib" depends="compile-test">
+  <target name="test-modules" depends="compile-test">
     <modules-crawl target="test" failonerror="true"/>
   </target>
 
@@ -506,10 +502,6 @@
     <sequential>
       <mkdir dir="@{changes.target.dir}"/>
       <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
-            failonerror="true" logError="true">
-        <arg value="@{changes.src.dir}/changes2html.pl"/>
-      </exec>
-      <exec executable="perl" input="contrib/CHANGES.txt" output="@{changes.target.dir}/Contrib-Changes.html"
             failonerror="true" logError="true">
         <arg value="@{changes.src.dir}/changes2html.pl"/>
       </exec>
