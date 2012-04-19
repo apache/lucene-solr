@@ -3,6 +3,9 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+For "contrib" changes prior to 4.0, please see:
+http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
+
 ======================= Trunk (not yet released) =======================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
@@ -354,7 +357,15 @@ Changes in Runtime Behavior
   tokenized or not.  In general you should not rely on stored fields
   to record any "metadata" from indexing (tokenized, omitNorms,
   IndexOptions, boost, etc.)  (Mike McCandless)
-  
+
+ * LUCENE-3309: Fast vector highlighter now inserts the
+   MultiValuedSeparator for NOT_ANALYZED fields (in addition to
+   ANALYZED fields).  To ensure your offsets are correct you should
+   provide an analyzer that returns 1 from the offsetGap method.
+   (Mike McCandless)
+
+ * LUCENE-2621: Removed contrib/instantiated.  (Robert Muir)
+
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
@@ -421,6 +432,33 @@ API Changes
 * LUCENE-3859: AtomicReader.hasNorms(field) is deprecated, instead you
   can inspect the FieldInfo yourself to see if norms are present, which
   also allows you to get the type.  (Robert Muir)
+
+* LUCENE-2606: Changed RegexCapabilities interface to fix thread 
+  safety, serialization, and performance problems. If you have
+  written a custom RegexCapabilities it will need to be updated
+  to the new API.  (Robert Muir, Uwe Schindler)
+
+* LUCENE-2638 MakeHighFreqTerms.TermStats public to make it more useful
+  for API use. (Andrzej Bialecki)
+
+* LUCENE-2912: The field-specific hashmaps in SweetSpotSimilarity were removed.
+  Instead, use PerFieldSimilarityWrapper to return different SweetSpotSimilaritys
+  for different fields, this way all parameters (such as TF factors) can be 
+  customized on a per-field basis.  (Robert Muir)
+
+* LUCENE-3308: DuplicateFilter keepMode and processingMode have been converted to
+  enums DuplicateFilter.KeepMode and DuplicateFilter.ProcessingMode repsectively.
+
+* LUCENE-3483: Move Function grouping collectors from Solr to grouping module.
+  (Martijn van Groningen)
+   
+* LUCENE-3606: FieldNormModifier was deprecated, because IndexReader's
+  setNorm() was deprecated. Furthermore, this class is broken, as it does
+  not take position overlaps into account while recalculating norms.
+  (Uwe Schindler, Robert Muir)
+
+* LUCENE-3936: Renamed StringIndexDocValues to DocTermsIndexDocValues.
+  (Martijn van Groningen)
 
 New features
 
@@ -656,6 +694,49 @@ New features
   value, custom similarities can now set a integer, float or byte value to the
   given Norm object. (Simon Willnauer)  
 
+* LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
+  (Simon Willnauer, Robert Muir)
+
+* LUCENE-2373: Added a Codec implementation that works with append-only
+  filesystems (such as e.g. Hadoop DFS). SegmentInfos writing/reading
+  code is refactored to support append-only FS, and to allow for future
+  customization of per-segment information. (Andrzej Bialecki)
+
+* LUCENE-2479: Added ability to provide a sort comparator for spelling suggestions along
+  with two implementations.  The existing comparator (score, then frequency) is the default (Grant Ingersoll)
+
+* LUCENE-2608: Added the ability to specify the accuracy at method time in the SpellChecker.  The per class
+  method is also still available.  (Grant Ingersoll)
+    
+* LUCENE-2507: Added DirectSpellChecker, which retrieves correction candidates directly 
+  from the term dictionary using levenshtein automata.  (Robert Muir)
+
+* LUCENE-3527: Add LuceneLevenshteinDistance, which computes string distance in a compatible
+  way as DirectSpellChecker. This can be used to merge top-N results from more than one
+  SpellChecker.  (James Dyer via Robert Muir)
+
+* LUCENE-3496: Support grouping by DocValues. (Martijn van Groningen)
+
+* LUCENE-2795: Generified DirectIOLinuxDirectory to work across any
+  unix supporting the O_DIRECT flag when opening a file (tested on
+  Linux and OS X but likely other Unixes will work), and improved it
+  so it can be used for indexing and searching.  The directory uses
+  direct IO when doing large merges to avoid  unnecessarily evicting
+  cached IO pages due to large merges.  (Varun Thacker, Mike
+  McCandless)
+
+* LUCENE-3827: DocsAndPositionsEnum from MemoryIndex implements
+  start/endOffset, if offsets are indexed. (Alan Woodward via Mike
+  McCandless)
+
+* LUCENE-3802, LUCENE-3856: Support for grouped faceting. (Martijn van Groningen)
+
+* LUCENE-3444: Added a second pass grouping collector that keeps track of distinct
+  values for a specified field for the top N group. (Martijn van Groningen)
+
+* LUCENE-3778: Added a grouping utility class that makes it easier to use result
+  grouping for pure Lucene apps. (Martijn van Groningen)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
@@ -696,7 +777,10 @@ Optimizations
 * LUCENE-3932: Lucene3x codec loads terms index faster, by
   pre-allocating the packed ints array based on the .tii file size
   (Sean Bridges via Mike McCandless)
-  
+
+* LUCENE-3468: Replaced last() and remove() with pollLast() in
+  FirstPassGroupingCollector (Martijn van Groningen)
+             
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
@@ -719,6 +803,12 @@ Bug fixes
 * LUCENE-3589: BytesRef copy(short) didnt set length.
   (Peter Chang via Robert Muir)
 
+* LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
+  not lowercasing the key before checking for the tag (Adriano Crestani)
+
+* LUCENE-3890: Fixed NPE for grouped faceting on multi-valued fields.
+  (Michael McCandless, Martijn van Groningen)
+
 Documentation
 
 * LUCENE-3958: Javadocs corrections for IndexWriter.
@@ -732,6 +822,24 @@ Build
 * LUCENE-3964: Added target stage-maven-artifacts, which stages
   Maven release artifacts to a Maven staging repository in preparation
   for release.  (Steve Rowe)
+
+* LUCENE-2845: Moved contrib/benchmark to lucene/benchmark.
+
+* LUCENE-2995: Moved contrib/spellchecker into lucene/suggest.
+
+* LUCENE-3285: Moved contrib/queryparser into lucene/queryparser
+
+* LUCENE-3285: Moved contrib/xml-query-parser's demo into lucene/demo
+
+* LUCENE-3271: Moved contrib/queries BooleanFilter, BoostingQuery, 
+  ChainedFilter, FilterClause and TermsFilter into lucene/queries
+
+* LUCENE-3381: Moved contrib/queries regex.*, DuplicateFilter,
+  FuzzyLikeThisQuery and SlowCollated* into lucene/sandbox.
+  Removed contrib/queries.
+
+* LUCENE-3286: Moved remainder of contrib/xml-query-parser to lucene/queryparser.
+  Classes now found at org.apache.lucene.queryparser.xml.*
 
 ======================= Lucene 3.6.0 =======================
 
