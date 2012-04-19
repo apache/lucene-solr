@@ -103,7 +103,6 @@
   <!-- Show suite summaries for tests. -->
   <property name="tests.showSuiteSummary" value="true" />
   <!-- Configure test emission to console for each type of status -->
-  <property name="tests.showSuccess" value="false" />
   <property name="tests.showError" value="true" />
   <property name="tests.showFailure" value="true" />
   <property name="tests.showIgnored" value="true" />
@@ -614,6 +613,12 @@
   <condition property="tests.method" value="${testmethod}">
     <isset property="testmethod" />
   </condition>
+  <condition property="tests.showSuccess" value="true">
+    <isset property="tests.class" />
+  </condition>
+  <!-- default -->
+  <property name="tests.showSuccess" value="false"/>
+  
 
   <!-- Test macro using junit4. -->
   <macrodef name="test-macro" description="Executes junit tests.">
@@ -896,6 +901,11 @@ ant -Dtests.haltonfailure=false test
 
 # Run more verbose output (slave JVM parameters, etc.).
 ant -verbose test
+
+# Include additional information like what is printed to 
+# sysout/syserr, even if the test passes.
+# Enabled automatically when running for a single test case.
+ant -Dtests.showSuccess=true test
 
 # Display local averaged stats, if any (30 slowest tests).
 ant test-times -Dmax=30
