@@ -1138,4 +1138,17 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals("hello", out.get("name"));
     assertEquals("aaa", out.get("aaa"));
   }
+  
+  @Test
+  public void testQueryWithParams() throws SolrServerException {
+    SolrServer server = getSolrServer();
+    SolrQuery q = new SolrQuery("query");
+    q.setParam("debug", true);
+    QueryResponse resp = server.query(q);
+    assertEquals(
+        "server didn't respond with debug=true, didn't we pass in the parameter?",
+        "true",
+        ((NamedList) resp.getResponseHeader().get("params")).get("debug"));
+  }
+  
 }
