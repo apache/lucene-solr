@@ -358,13 +358,23 @@ Changes in Runtime Behavior
   to record any "metadata" from indexing (tokenized, omitNorms,
   IndexOptions, boost, etc.)  (Mike McCandless)
 
- * LUCENE-3309: Fast vector highlighter now inserts the
-   MultiValuedSeparator for NOT_ANALYZED fields (in addition to
-   ANALYZED fields).  To ensure your offsets are correct you should
-   provide an analyzer that returns 1 from the offsetGap method.
-   (Mike McCandless)
+* LUCENE-3309: Fast vector highlighter now inserts the
+  MultiValuedSeparator for NOT_ANALYZED fields (in addition to
+  ANALYZED fields).  To ensure your offsets are correct you should
+  provide an analyzer that returns 1 from the offsetGap method.
+  (Mike McCandless)
 
- * LUCENE-2621: Removed contrib/instantiated.  (Robert Muir)
+* LUCENE-2621: Removed contrib/instantiated.  (Robert Muir)
+ 
+* LUCENE-1768: StandardQueryTreeBuilder no longer uses RangeQueryNodeBuilder
+  for RangeQueryNodes, since theses two classes were removed;
+  TermRangeQueryNodeProcessor now creates TermRangeQueryNode,
+  instead of RangeQueryNode; the same applies for numeric nodes;
+  (Vinicius Barros via Uwe Schindler)
+
+* LUCENE-3455: QueryParserBase.newFieldQuery() will throw a ParseException if
+  any of the calls to the Analyzer throw an IOException.  QueryParseBase.analyzeRangePart()
+  will throw a RuntimException if an IOException is thrown by the Analyzer.
 
 API Changes
 
@@ -459,6 +469,39 @@ API Changes
 
 * LUCENE-3936: Renamed StringIndexDocValues to DocTermsIndexDocValues.
   (Martijn van Groningen)
+
+* LUCENE-1768: Deprecated Parametric(Range)QueryNode, RangeQueryNode(Builder),
+  ParametricRangeQueryNodeProcessor were removed. (Vinicius Barros via Uwe Schindler)
+
+* LUCENE-3820: Deprecated constructors accepting pattern matching bounds. The input
+  is buffered and matched in one pass. (Dawid Weiss)
+
+* LUCENE-2413: Deprecated PatternAnalyzer in common/miscellaneous, in favor 
+  of the pattern package (CharFilter, Tokenizer, TokenFilter).  (Robert Muir)
+
+* LUCENE-2413: Removed the AnalyzerUtil in common/miscellaneous.  (Robert Muir)
+
+* LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
+  can be generated. (Chris Harris via Steven Rowe)
+   
+* LUCENE-2514, LUCENE-2551: JDK and ICU CollationKeyAnalyzers were changed to
+  use pure byte keys when Version >= 4.0. This cuts sort key size approximately
+  in half. (Robert Muir)
+
+* LUCENE-3400: Removed DutchAnalyzer.setStemDictionary (Chris Male)
+
+* LUCENE-3431: Removed QueryAutoStopWordAnalyzer.addStopWords* deprecated methods
+  since they prevented reuse.  Stopwords are now generated at instantiation through
+  the Analyzer's constructors. (Chris Male)
+
+* LUCENE-3434: Removed ShingleAnalyzerWrapper.set* and PerFieldAnalyzerWrapper.addAnalyzer
+  since they prevent reuse.  Both Analyzers should be configured at instantiation.
+  (Chris Male)
+
+* LUCENE-3765: Stopset ctors that previously took Set<?> or Map<?,String> now take
+  CharArraySet and CharArrayMap respectively. Previously the behavior was confusing,
+  and sometimes different depending on the type of set, and ultimately a CharArraySet
+  or CharArrayMap was always used anyway.  (Robert Muir)
 
 New features
 
@@ -737,6 +780,69 @@ New features
 * LUCENE-3778: Added a grouping utility class that makes it easier to use result
   grouping for pure Lucene apps. (Martijn van Groningen)
 
+* LUCENE-2341: A new analysis/ filter: Morfologik - a dictionary-driven lemmatizer 
+  (accurate stemmer) for Polish (includes morphosyntactic annotations).
+  (Michał Dybizbański, Dawid Weiss)
+
+* LUCENE-2413: Consolidated Lucene/Solr analysis components into analysis/common. 
+  New features from Solr now available to Lucene users include:
+   - o.a.l.analysis.commongrams: Constructs n-grams for frequently occurring terms
+     and phrases. 
+   - o.a.l.analysis.charfilter.HTMLStripCharFilter: CharFilter that strips HTML 
+     constructs.
+   - o.a.l.analysis.miscellaneous.WordDelimiterFilter: TokenFilter that splits words 
+     into subwords and performs optional transformations on subword groups.
+   - o.a.l.analysis.miscellaneous.RemoveDuplicatesTokenFilter: TokenFilter which 
+     filters out Tokens at the same position and Term text as the previous token.
+   - o.a.l.analysis.miscellaneous.TrimFilter: Trims leading and trailing whitespace 
+     from Tokens in the stream.
+   - o.a.l.analysis.miscellaneous.KeepWordFilter: A TokenFilter that only keeps tokens 
+     with text contained in the required words (inverse of StopFilter).
+   - o.a.l.analysis.miscellaneous.HyphenatedWordsFilter: A TokenFilter that puts 
+     hyphenated words broken into two lines back together.
+   - o.a.l.analysis.miscellaneous.CapitalizationFilter: A TokenFilter that applies
+     capitalization rules to tokens.
+   - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
+     CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
+   - o.a.l.analysis.synonym.SynonymFilter: A synonym filter that supports multi-word
+     synonyms.
+   - o.a.l.analysis.phonetic: Package for phonetic search, containing various
+     phonetic encoders such as Double Metaphone.
+
+   Some existing analysis components changed packages:
+    - o.a.l.analysis.KeywordAnalyzer -> o.a.l.analysis.core.KeywordAnalyzer
+    - o.a.l.analysis.KeywordTokenizer -> o.a.l.analysis.core.KeywordTokenizer
+    - o.a.l.analysis.LetterTokenizer -> o.a.l.analysis.core.LetterTokenizer
+    - o.a.l.analysis.LowerCaseFilter -> o.a.l.analysis.core.LowerCaseFilter
+    - o.a.l.analysis.LowerCaseTokenizer -> o.a.l.analysis.core.LowerCaseTokenizer
+    - o.a.l.analysis.SimpleAnalyzer -> o.a.l.analysis.core.SimpleAnalyzer
+    - o.a.l.analysis.StopAnalyzer -> o.a.l.analysis.core.StopAnalyzer
+    - o.a.l.analysis.StopFilter -> o.a.l.analysis.core.StopFilter
+    - o.a.l.analysis.WhitespaceAnalyzer -> o.a.l.analysis.core.WhitespaceAnalyzer
+    - o.a.l.analysis.WhitespaceTokenizer -> o.a.l.analysis.core.WhitespaceTokenizer
+    - o.a.l.analysis.PorterStemFilter -> o.a.l.analysis.en.PorterStemFilter
+    - o.a.l.analysis.ASCIIFoldingFilter -> o.a.l.analysis.miscellaneous.ASCIIFoldingFilter
+    - o.a.l.analysis.ISOLatin1AccentFilter -> o.a.l.analysis.miscellaneous.ISOLatin1AccentFilter
+    - o.a.l.analysis.KeywordMarkerFilter -> o.a.l.analysis.miscellaneous.KeywordMarkerFilter
+    - o.a.l.analysis.LengthFilter -> o.a.l.analysis.miscellaneous.LengthFilter
+    - o.a.l.analysis.PerFieldAnalyzerWrapper -> o.a.l.analysis.miscellaneous.PerFieldAnalyzerWrapper
+    - o.a.l.analysis.TeeSinkTokenFilter -> o.a.l.analysis.sinks.TeeSinkTokenFilter
+    - o.a.l.analysis.CharFilter -> o.a.l.analysis.charfilter.CharFilter
+    - o.a.l.analysis.BaseCharFilter -> o.a.l.analysis.charfilter.BaseCharFilter
+    - o.a.l.analysis.MappingCharFilter -> o.a.l.analysis.charfilter.MappingCharFilter
+    - o.a.l.analysis.NormalizeCharMap -> o.a.l.analysis.charfilter.NormalizeCharMap
+    - o.a.l.analysis.CharArraySet -> o.a.l.analysis.util.CharArraySet
+    - o.a.l.analysis.CharArrayMap -> o.a.l.analysis.util.CharArrayMap
+    - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
+    - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
+    - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
+    - o.a.l.analysis.CharTokenizer -> o.a.l.analysis.util.CharTokenizer
+    - o.a.l.util.CharacterUtils -> o.a.l.analysis.util.CharacterUtils
+
+   All analyzers in contrib/analyzers and contrib/icu were moved to the
+   analysis/ module.  The 'smartcn' and 'stempel' components now depend on 'common'.
+   (Chris Male, Robert Muir)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
@@ -808,6 +914,25 @@ Bug fixes
 
 * LUCENE-3890: Fixed NPE for grouped faceting on multi-valued fields.
   (Michael McCandless, Martijn van Groningen)
+
+* LUCENE-2945: Fix hashCode/equals for surround query parser generated queries.
+  (Paul Elschot, Simon Rosenthal, gsingers via ehatcher)
+
+* LUCENE-3971: MappingCharFilter could return invalid final token position.
+  (Dawid Weiss, Robert Muir)
+
+* LUCENE-3820: PatternReplaceCharFilter could return invalid token positions. 
+  (Dawid Weiss)
+
+* LUCENE-3969: Throw IAE on bad arguments that could cause confusing errors in
+  CompoundWordTokenFilterBase, PatternTokenizer, PositionFilter,
+  SnowballFilter, PathHierarchyTokenizer, ReversePathHierarchyTokenizer, 
+  WikipediaTokenizer, and KeywordTokenizer. ShingleFilter and 
+  CommonGramsFilter now populate PositionLengthAttribute. Fixed
+  PathHierarchyTokenizer to reset() all state. Protect against AIOOBE in
+  ReversePathHierarchyTokenizer if skip is large. Fixed wrong final
+  offset calculation in PathHierarchyTokenizer. 
+  (Mike McCandless, Uwe Schindler, Robert Muir)
 
 Documentation
 
