@@ -25,6 +25,7 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <updateRequestProcessorChain name="comprehensive">
     <processor class="solr.FieldLengthUpdateProcessorFactory">
