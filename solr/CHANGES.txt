@@ -267,6 +267,9 @@ New Features
 * SOLR-3358: Logging events are captured and available from the /admin/logging 
   request handler. (ryan)
   
+* SOLR-1535: PreAnalyzedField type provides a functionality to index (and optionally store)
+  field content that was already processed and split into tokens using some external processing
+  chain. Serialization format is pluggable, and defaults to JSON. (ab)
 
 Optimizations
 ----------------------
