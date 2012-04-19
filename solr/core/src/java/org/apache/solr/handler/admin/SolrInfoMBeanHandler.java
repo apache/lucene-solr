@@ -87,7 +87,8 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       cats = normalize(cats);
       
       // Only the changes
-      rsp.add("solr-mbeans", getDiff(ref,cats));
+      boolean showAll = req.getParams().getBool("all", false);
+      rsp.add("solr-mbeans", getDiff(ref,cats, showAll));
     }
     else {
       rsp.add("solr-mbeans", cats);
@@ -162,7 +163,11 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     return cats;
   }
 
-  protected NamedList<NamedList<NamedList<Object>>> getDiff(NamedList<NamedList<NamedList<Object>>> ref, NamedList<NamedList<NamedList<Object>>> now) {
+  protected NamedList<NamedList<NamedList<Object>>> getDiff(
+      NamedList<NamedList<NamedList<Object>>> ref, 
+      NamedList<NamedList<NamedList<Object>>> now,
+      boolean includeAll ) {
+    
     NamedList<NamedList<NamedList<Object>>> changed = new NamedList<NamedList<NamedList<Object>>>();
     
     // Cycle through each category
@@ -192,12 +197,20 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
 //              System.out.println( "NOW: " + now_txt );
               
               // Calculate the differences
-              cat.add(name, diffNamedList(ref_bean,now_bean));
+              NamedList diff = diffNamedList(ref_bean,now_bean);
+              diff.add( "_changed_", true ); // flag the changed thing
+              cat.add(name, diff);
+            }
+            else if(includeAll) {
+              cat.add(name, ref_bean);
             }
           }
           if(cat.size()>0) {
             changed.add(category, cat);
           }
+        }
+        else if(includeAll) {
+          changed.add(category, ref_cat);
         }
       }
     }
