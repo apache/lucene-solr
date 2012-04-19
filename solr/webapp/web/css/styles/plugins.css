@@ -22,9 +22,9 @@
 
 #content #plugins #navigation a span
 {
-  background-color: #f0f0f0;
+  background-color: #bba500;
   border-radius: 5px;
-  color: #c0c0c0;
+  color: #fff;
   font-size: 10px;
   font-weight: normal;
   line-height: 1.4em;
@@ -33,12 +33,6 @@
   position: absolute;
   right: 5px;
   top: 7px;
-}
-
-#content #plugins #navigation .current a span,
-#content #plugins #navigation a:hover span
-{
-  background-color: #fff;
 }
 
 #content #plugins #frame
@@ -68,10 +62,7 @@
 
 #content #plugins #frame .entry.changed a span
 {
-  background-image: url( ../../img/ico/new-text.png );
-  background-position: 100% 50%;
   color: #bba500;
-  padding-right: 21px;
 }
 
 #content #plugins #frame .entry.expanded a
