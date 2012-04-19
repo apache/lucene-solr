@@ -27,6 +27,7 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
@@ -191,7 +192,21 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
     checkRandomData(random, analyzer, 200*RANDOM_MULTIPLIER, 8192);
     checkRandomData(random, analyzerNoPunct, 200*RANDOM_MULTIPLIER, 8192);
   }
-  
+
+  public void testRandomHugeStringsMockGraphAfter() throws Exception {
+    // Randomly inject graph tokens after JapaneseTokenizer:
+    checkRandomData(random,
+                    new ReusableAnalyzerBase() {
+                      @Override
+                      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+                        Tokenizer tokenizer = new JapaneseTokenizer(reader, readDict(), false, Mode.SEARCH);
+                        TokenStream graph = new MockGraphTokenFilter(random, tokenizer);
+                        return new TokenStreamComponents(tokenizer, graph);
+                      }
+                    },
+                    200*RANDOM_MULTIPLIER, 8192);
+  }
+
   public void testLargeDocReliability() throws Exception {
     for (int i = 0; i < 100; i++) {
       String s = _TestUtil.randomUnicodeString(random, 10000);
@@ -629,5 +644,18 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
     if (VERBOSE) {
       System.out.println("Total time : " + (System.currentTimeMillis() - totalStart));
     }
+  }
+
+  public void testWithPunctuation() throws Exception {
+    assertAnalyzesTo(analyzerNoPunct, "羽田。空港",
+                     new String[] { "羽田", "空港" },
+                     new int[] { 1, 1 });
+  }
+
+  public void testCompoundOverPunctuation() throws Exception {
+    assertAnalyzesToPositions(analyzerNoPunct, "dεε϶ϢϏΎϷΞͺ羽田",
+                              new String[] { "d", "ε", "ε", "ϢϏΎϷΞͺ", "羽田" },
+                              new int[] { 1, 1, 1, 1, 1},
+                              new int[] { 1, 1, 1, 1, 1});
   }
 }

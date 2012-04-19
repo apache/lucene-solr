@@ -42,6 +42,10 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
   /** Set the starting and ending offset.
     @see #startOffset() and #endOffset()*/
   public void setOffset(int startOffset, int endOffset) {
+    // TODO: check that these are valid!  IE, each should be
+    // >= 0, and endOffset should be >= startOffset.
+    // Problem is this could "break" existing
+    // tokenizers/filters.
     this.startOffset = startOffset;
     this.endOffset = endOffset;
   }

@@ -5,8 +5,27 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 3.6.1 ================
 
-(No Changes)
+Bug Fixes
 
+ * LUCENE-3940: fix Kuromoji to not produce invalid token graph due to UNK 
+   with punctuation being decompounded.  (Mike McCandless)
+
+ * LUCENE-3942: SynonymFilter sets PositionLength correctly when possible.  
+   (Mike McCandless)
+
+ * LUCENE-3969: Throw IAE on bad arguments that could cause confusing errors in 
+   CompoundWordTokenFilterBase, PositionFilter, SnowballFilter, 
+   PathHierarchyTokenizer, ReversePathHierarchyTokenizer and WikipediaTokenizer.
+   ShingleFilter populates PositionLengthAttribute. Fixed PathHierarchyTokenizer 
+   to reset() all state. Protect against AIOOBE in ReversePathHierarchyTokenizer 
+   if skip is large. Fixed wrong final offset calculation in 
+   PathHierarchyTokenizer. (Uwe Schindler, Mike McCandless, Robert Muir)
+
+Tests
+ 
+ * LUCENE-3919, LUCENE-3969, LUCENE-3990: more thorough testing of analysis 
+   chains.  (Uwe Schindler, Mike McCandless, Robert Muir)
+ 
 ======================= Lucene 3.6.0 ================
 
 Changes in backwards compatibility policy

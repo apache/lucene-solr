@@ -78,7 +78,8 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter,
         new String[]{"a","b","c","d","e", "ab","bc","cd","de", "abc","bcd","cde"}, 
         new int[]{0,1,2,3,4, 0,1,2,3, 0,1,2},
-        new int[]{1,2,3,4,5, 2,3,4,5, 3,4,5}
+        new int[]{1,2,3,4,5, 2,3,4,5, 3,4,5},
+        null, null, null, null, false
       );
     }
     
@@ -131,7 +132,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
             new NGramTokenFilter(tokenizer, 2, 15));
       }    
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER, 20, false, false);
   }
   
   public void testEmptyTerm() throws Exception {

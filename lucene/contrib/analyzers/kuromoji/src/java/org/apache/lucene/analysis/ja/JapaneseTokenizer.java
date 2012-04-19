@@ -603,10 +603,10 @@ public final class JapaneseTokenizer extends Tokenizer {
 
       if (posData.count == 0) {
         // No arcs arrive here; move to next position:
-        pos++;
         if (VERBOSE) {
-          System.out.println("    no arcs in; skip");
+          System.out.println("    no arcs in; skip pos=" + pos);
         }
+        pos++;
         continue;
       }
 
@@ -785,6 +785,7 @@ public final class JapaneseTokenizer extends Tokenizer {
 
         // Find unknown match:
         final int characterId = characterDefinition.getCharacterClass(firstCharacter);
+        final boolean isPunct = isPunctuation(firstCharacter);
 
         // NOTE: copied from UnknownDictionary.lookup:
         int unknownWordLength;
@@ -798,7 +799,8 @@ public final class JapaneseTokenizer extends Tokenizer {
             if (ch == -1) {
               break;
             }
-            if (characterId == characterDefinition.getCharacterClass((char) ch)) {
+            if (characterId == characterDefinition.getCharacterClass((char) ch) &&
+                isPunctuation((char) ch) == isPunct) {
               unknownWordLength++;    			
             } else {
               break;
@@ -1099,18 +1101,26 @@ public final class JapaneseTokenizer extends Tokenizer {
         // The pruning we did when we created the altToken
         // ensures that the back trace will align back with
         // the start of the altToken:
-        // cannot assert...
-        //assert altToken.getPosition() == backPos: altToken.getPosition() + " vs " + backPos;
+        assert altToken.getPosition() == backPos: altToken.getPosition() + " vs " + backPos;
 
-        if (VERBOSE) {
-          System.out.println("    add altToken=" + altToken);
-        }
+        // NOTE: not quite right: the compound token may
+        // have had all punctuation back traced so far, but
+        // then the decompounded token at this position is
+        // not punctuation.  In this case backCount is 0,
+        // but we should maybe add the altToken anyway...?
+
         if (backCount > 0) {
           backCount++;
           altToken.setPositionLength(backCount);
+          if (VERBOSE) {
+            System.out.println("    add altToken=" + altToken);
+          }
           pending.add(altToken);
         } else {
           // This means alt token was all punct tokens:
+          if (VERBOSE) {
+            System.out.println("    discard all-punctuation altToken=" + altToken);
+          }
           assert discardPunctuation;
         }
         altToken = null;

@@ -353,6 +353,8 @@ public class HyphenationCompoundWordTokenFilter extends
         // we only put subwords to the token stream
         // that are longer than minPartSize
         if (partLength < this.minSubwordSize) {
+          // BOGUS/BROKEN/FUNKY/WACKO: somehow we have negative 'parts' according to the 
+          // calculation above, and we rely upon minSubwordSize being >=0 to filter them out...
           continue;
         }
 

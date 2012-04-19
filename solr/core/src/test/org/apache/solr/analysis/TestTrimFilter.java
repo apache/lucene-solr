@@ -80,7 +80,11 @@ public class TestTrimFilter extends BaseTokenTestCase {
         new String[] { "a", "b", "c", "" },
         new int[] { 1, 0, 1, 3 },
         new int[] { 2, 1, 2, 3 },
-        new int[] { 1, 1, 1, 1 });
+        null,
+        new int[] { 1, 1, 1, 1 },
+        null,
+        null,
+        false);
   }
   
   /**

@@ -1,14 +1,5 @@
 package org.apache.lucene.analysis;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.Arrays;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,6 +16,20 @@ import java.util.Arrays;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Arrays;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockGraphTokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.Version;
 
 public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   
@@ -243,5 +248,19 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     checkRandomData(random, new StandardAnalyzer(TEST_VERSION_CURRENT), 200*RANDOM_MULTIPLIER, 8192);
+  }
+
+  // Adds random graph after:
+  public void testRandomHugeStringsGraphAfter() throws Exception {
+    checkRandomData(random,
+                    new ReusableAnalyzerBase() {
+                      @Override
+                      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+                        Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+                        TokenStream tokenStream = new MockGraphTokenFilter(random, tokenizer);
+                        return new TokenStreamComponents(tokenizer, tokenStream);
+                      }
+                    },
+                    200*RANDOM_MULTIPLIER, 8192);
   }
 }

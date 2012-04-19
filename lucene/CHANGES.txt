@@ -5,7 +5,22 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 3.6.1 =======================
 
-(No Changes)
+Bug Fixes:
+
+* LUCENE-3969: Throw IAE on bad arguments that could cause confusing 
+  errors in KeywordTokenizer. 
+  (Uwe Schindler, Mike McCandless, Robert Muir)
+
+* LUCENE-3971: MappingCharFilter could return invalid final token position.
+  (Dawid Weiss, Robert Muir)
+
+Tests:
+
+* LUCENE-3873: add MockGraphTokenFilter, testing analyzers with
+  random graph tokens.  (Mike McCandless)
+
+* LUCENE-3968: factor out LookaheadTokenFilter from 
+  MockGraphTokenFilter (Mike Mccandless)
 
 ======================= Lucene 3.6.0 =======================
 More information about this release, including any errata related to the 

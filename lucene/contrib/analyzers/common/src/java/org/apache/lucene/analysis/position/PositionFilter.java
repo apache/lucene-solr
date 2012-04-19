@@ -57,6 +57,9 @@ public final class PositionFilter extends TokenFilter {
    */
   public PositionFilter(final TokenStream input, final int positionIncrement) {
     super(input);
+    if (positionIncrement < 0) {
+      throw new IllegalArgumentException("positionIncrement may not be negative");
+    }
     this.positionIncrement = positionIncrement;
   }
 

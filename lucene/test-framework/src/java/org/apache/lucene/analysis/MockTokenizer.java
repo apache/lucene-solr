@@ -74,6 +74,9 @@ public class MockTokenizer extends Tokenizer {
   
   public MockTokenizer(AttributeFactory factory, Reader input, int pattern, boolean lowerCase, int maxTokenLength) {
     super(factory, input);
+    if (pattern != WHITESPACE && pattern != KEYWORD && pattern != SIMPLE) {
+      throw new IllegalArgumentException("invalid pattern constant: " + pattern);
+    }
     this.pattern = pattern;
     this.lowerCase = lowerCase;
     this.streamState = State.SETREADER;
@@ -86,6 +89,11 @@ public class MockTokenizer extends Tokenizer {
 
   public MockTokenizer(Reader input, int pattern, boolean lowerCase) {
     this(input, pattern, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
+  }
+  
+  /** Calls {@link #MockTokenizer(Reader, int, boolean) MockTokenizer(Reader, WHITESPACE, true)} */
+  public MockTokenizer(Reader input) {
+    this(input, WHITESPACE, true);
   }
   
   @Override

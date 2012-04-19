@@ -152,8 +152,17 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     super(input);
     
     this.tokens=new LinkedList<CompoundToken>();
+    if (minWordSize < 0) {
+      throw new IllegalArgumentException("minWordSize cannot be negative");
+    }
     this.minWordSize=minWordSize;
+    if (minSubwordSize < 0) {
+      throw new IllegalArgumentException("minSubwordSize cannot be negative");
+    }
     this.minSubwordSize=minSubwordSize;
+    if (maxSubwordSize < 0) {
+      throw new IllegalArgumentException("maxSubwordSize cannot be negative");
+    }
     this.maxSubwordSize=maxSubwordSize;
     this.onlyLongestMatch=onlyLongestMatch;
     

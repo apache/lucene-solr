@@ -95,7 +95,15 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void testBackRangeOfNgrams() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.BACK, 1, 3);
-    assertTokenStreamContents(tokenizer, new String[]{"e","de","cde"}, new int[]{4,3,2}, new int[]{5,5,5});
+    assertTokenStreamContents(tokenizer,
+                              new String[]{"e","de","cde"},
+                              new int[]{4,3,2},
+                              new int[]{5,5,5},
+                              null,
+                              null,
+                              null,
+                              null,
+                              false);
   }
   
   public void testSmallTokenInStream() throws Exception {
@@ -152,7 +160,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
             new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.BACK, 2, 15));
       }    
     };
-    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER, 20, false, false);
   }
   
   public void testEmptyTerm() throws Exception {

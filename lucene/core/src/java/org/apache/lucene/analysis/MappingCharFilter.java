@@ -76,11 +76,15 @@ public class MappingCharFilter extends BaseCharFilter {
   }
 
   private int nextChar() throws IOException {
-    nextCharCounter++;
     if (buffer != null && !buffer.isEmpty()) {
+      nextCharCounter++;
       return buffer.removeFirst().charValue();
     }
-    return input.read();
+    int nextChar = input.read();
+    if (nextChar != -1) {
+      nextCharCounter++;
+    }
+    return nextChar;
   }
 
   private void pushChar(int c) {

@@ -77,6 +77,12 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
 
   public ReversePathHierarchyTokenizer(Reader input, int bufferSize, char delimiter, char replacement, int skip) {
     super(input);
+    if (bufferSize < 0) {
+      throw new IllegalArgumentException("bufferSize cannot be negative");
+    }
+    if (skip < 0) {
+      throw new IllegalArgumentException("skip cannot be negative");
+    }
     termAtt.resizeBuffer(bufferSize);
     this.delimiter = delimiter;
     this.replacement = replacement;
@@ -137,7 +143,11 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
       }
       resultToken.getChars(0, resultToken.length(), resultTokenBuffer, 0);
       resultToken.setLength(0);
-      endPosition = delimiterPositions.get(delimitersCount-1 - skip);
+      int idx = delimitersCount-1 - skip;
+      if (idx >= 0) {
+        // otherwise its ok, because we will skip and return false
+        endPosition = delimiterPositions.get(idx);
+      }
       finalOffset = correctOffset(length);
       posAtt.setPositionIncrement(1);
     }
@@ -163,10 +173,11 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
   }
 
   @Override
-  public void reset(Reader input) throws IOException {
-    super.reset(input);
+  public void reset() throws IOException {
+    super.reset();
     resultToken.setLength(0);
     finalOffset = 0;
+    endPosition = 0;
     skipped = 0;
     delimitersCount = -1;
     delimiterPositions.clear();

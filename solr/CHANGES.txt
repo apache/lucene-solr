@@ -22,7 +22,11 @@ on how to get started.
 
 ==================  3.6.1  ==================
 
-(No Changes)
+Bug Fixes:
+
+* LUCENE-3969: Throw IAE on bad arguments that could cause confusing errors in
+  PatternTokenizer. CommonGrams populates PositionLengthAttribute correctly.
+  (Uwe Schindler, Mike McCandless, Robert Muir)
 
 ==================  3.6.0  ==================
 More information about this release, including any errata related to the 

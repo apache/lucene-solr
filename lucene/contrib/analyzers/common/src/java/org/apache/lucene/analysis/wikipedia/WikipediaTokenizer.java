@@ -177,6 +177,12 @@ public final class WikipediaTokenizer extends Tokenizer {
   }
   
   private void init(int tokenOutput, Set<String> untokenizedTypes) {
+    // TODO: cutover to enum
+    if (tokenOutput != TOKENS_ONLY &&
+        tokenOutput != UNTOKENIZED_ONLY &&
+        tokenOutput != BOTH) {
+      throw new IllegalArgumentException("tokenOutput must be TOKENS_ONLY, UNTOKENIZED_ONLY or BOTH");
+    }
     this.tokenOutput = tokenOutput;
     this.untokenizedTypes = untokenizedTypes;    
   }

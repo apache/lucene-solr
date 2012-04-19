@@ -46,6 +46,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   private SynonymFilter tokensOut;
   private CharTermAttribute termAtt;
   private PositionIncrementAttribute posIncrAtt;
+  private PositionLengthAttribute posLenAtt;
   private OffsetAttribute offsetAtt;
 
   private void add(String input, String output, boolean keepOrig) {
@@ -97,14 +98,23 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
           }
         }
         final int colonIndex = expectedAtPos[atPos].indexOf(':');
+        final int underbarIndex = expectedAtPos[atPos].indexOf('_');
         final String expectedToken;
         final int expectedEndOffset;
+        final int expectedPosLen;
         if (colonIndex != -1) {
           expectedToken = expectedAtPos[atPos].substring(0, colonIndex);
-          expectedEndOffset = Integer.parseInt(expectedAtPos[atPos].substring(1+colonIndex));
+          if (underbarIndex != -1) {
+            expectedEndOffset = Integer.parseInt(expectedAtPos[atPos].substring(1+colonIndex, underbarIndex));
+            expectedPosLen = Integer.parseInt(expectedAtPos[atPos].substring(1+underbarIndex));
+          } else {
+            expectedEndOffset = Integer.parseInt(expectedAtPos[atPos].substring(1+colonIndex));
+            expectedPosLen = 1;
+          }
         } else {
           expectedToken = expectedAtPos[atPos];
           expectedEndOffset = endOffset;
+          expectedPosLen = 1;
         }
         assertEquals(expectedToken, termAtt.toString());
         assertEquals(atPos == 0 ? 1 : 0,
@@ -113,6 +123,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         // be the same:
         assertEquals(startOffset, offsetAtt.startOffset());
         assertEquals(expectedEndOffset, offsetAtt.endOffset());
+        assertEquals(expectedPosLen, posLenAtt.getPositionLength());
       }
     }
     tokensOut.end();
@@ -152,6 +163,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
                                      true);
     termAtt = tokensOut.addAttribute(CharTermAttribute.class);
     posIncrAtt = tokensOut.addAttribute(PositionIncrementAttribute.class);
+    posLenAtt = tokensOut.addAttribute(PositionLengthAttribute.class);
     offsetAtt = tokensOut.addAttribute(OffsetAttribute.class);
 
     verify("a b c", "a/bar b/fee c");
@@ -168,7 +180,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     verify("e f", "foo/baz bar/bee");
 
     // verify multi-word / single-output offsets:
-    verify("g i j k g", "g i/feep:7 j k g");
+    verify("g i j k g", "g i/feep:7_3 j k g");
 
     // mixed keepOrig true/false:
     verify("a m c e x", "a/foo dog barks loudly x");
@@ -265,14 +277,17 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
           }
           final int endOffset;
           if (matchIDX < numInputs) {
+            final int posLen;
             if (synOutputs.length == 1) {
               // Add full endOffset
               endOffset = (inputIDX*2) + syn.in.length();
+              posLen = (1+syn.in.length())/2;
             } else {
               // Add endOffset matching input token's
               endOffset = (matchIDX*2) + 1;
+              posLen = 1;
             }
-            outputs[matchIDX] = outputs[matchIDX] + ":" + endOffset;
+            outputs[matchIDX] = outputs[matchIDX] + ":" + endOffset + "_" + posLen;
           }
         }
       }
@@ -364,6 +379,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
                                      true);
     termAtt = tokensOut.addAttribute(CharTermAttribute.class);
     posIncrAtt = tokensOut.addAttribute(PositionIncrementAttribute.class);
+    posLenAtt = tokensOut.addAttribute(PositionLengthAttribute.class);
     offsetAtt = tokensOut.addAttribute(OffsetAttribute.class);
 
     if (dedup) {
@@ -430,7 +446,37 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
     }
   }
-  
+
+  // NOTE: this is an invalid test... SynFilter today can't
+  // properly consume a graph... we can re-enable this once
+  // we fix that...
+  /*
+  // Adds MockGraphTokenFilter before SynFilter:
+  public void testRandom2GraphBefore() throws Exception {
+    final int numIters = atLeast(10);
+    for (int i = 0; i < numIters; i++) {
+      b = new SynonymMap.Builder(random.nextBoolean());
+      final int numEntries = atLeast(10);
+      for (int j = 0; j < numEntries; j++) {
+        add(randomNonEmptyString(), randomNonEmptyString(), random.nextBoolean());
+      }
+      final SynonymMap map = b.build();
+      final boolean ignoreCase = random.nextBoolean();
+      
+      final Analyzer analyzer = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+          TokenStream graph = new MockGraphTokenFilter(random, tokenizer);
+          return new TokenStreamComponents(tokenizer, new SynonymFilter(graph, map, ignoreCase));
+        }
+      };
+
+      checkRandomData(random, analyzer, 1000*RANDOM_MULTIPLIER);
+    }
+  }
+  */
+
   public void testEmptyTerm() throws IOException {
     final int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
@@ -526,6 +572,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
                                      true);
     termAtt = tokensOut.addAttribute(CharTermAttribute.class);
     posIncrAtt = tokensOut.addAttribute(PositionIncrementAttribute.class);
+    posLenAtt = tokensOut.addAttribute(PositionLengthAttribute.class);
     offsetAtt = tokensOut.addAttribute(OffsetAttribute.class);
 
     if (keepOrig) {
@@ -679,6 +726,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     termAtt = tokensOut.addAttribute(CharTermAttribute.class);
     posIncrAtt = tokensOut.addAttribute(PositionIncrementAttribute.class);
     offsetAtt = tokensOut.addAttribute(OffsetAttribute.class);
+    posLenAtt = tokensOut.addAttribute(PositionLengthAttribute.class);
 
     // Make sure endOffset inherits from previous input token:
     verify("a", "a b:1");

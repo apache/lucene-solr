@@ -90,7 +90,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
 
   public void testBackRangeOfNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.BACK, 1, 3);
-    assertTokenStreamContents(tokenizer, new String[]{"e","de","cde"}, new int[]{4,3,2}, new int[]{5,5,5}, 5 /* abcde */);
+    assertTokenStreamContents(tokenizer, new String[]{"e","de","cde"}, new int[]{4,3,2}, new int[]{5,5,5}, null, null, null, 5 /* abcde */, false);
   }
   
   public void testReset() throws Exception {
@@ -109,8 +109,8 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192, false, false);
     
     Analyzer b = new ReusableAnalyzerBase() {
       @Override
@@ -119,7 +119,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random, b, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, b, 10000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random, b, 200*RANDOM_MULTIPLIER, 8192, false, false);
   }
 }

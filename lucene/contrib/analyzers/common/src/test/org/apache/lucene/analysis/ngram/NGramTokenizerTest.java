@@ -74,7 +74,11 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
         new String[]{"a","b","c","d","e", "ab","bc","cd","de", "abc","bcd","cde"}, 
         new int[]{0,1,2,3,4, 0,1,2,3, 0,1,2},
         new int[]{1,2,3,4,5, 2,3,4,5, 3,4,5},
-        5 /* abcde */
+        null,
+        null,
+        null,
+        5 /* abcde */,
+        false
         );
   }
   
@@ -99,7 +103,7 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
-    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random, a, 200*RANDOM_MULTIPLIER, 8192, false, false);
   }
 }

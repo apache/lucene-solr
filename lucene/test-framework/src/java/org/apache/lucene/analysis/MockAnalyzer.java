@@ -71,10 +71,10 @@ public final class MockAnalyzer extends Analyzer {
 
   /**
    * Calls {@link #MockAnalyzer(Random, int, boolean, CharArraySet, boolean) 
-   * MockAnalyzer(random, pattern, lowerCase, CharArraySet.EMPTY_STOPSET, false}).
+   * MockAnalyzer(random, pattern, lowerCase, CharArraySet.EMPTY_STOPSET, true}).
    */
   public MockAnalyzer(Random random, int pattern, boolean lowerCase) {
-    this(random, pattern, lowerCase, CharArraySet.EMPTY_SET, false);
+    this(random, pattern, lowerCase, CharArraySet.EMPTY_SET, true);
   }
 
   /** 

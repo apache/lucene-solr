@@ -22,17 +22,26 @@ import java.io.Reader;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-// the purpose of this charfilter is to send offsets out of bounds
-// if the analyzer doesn't use correctOffset or does incorrect offset math.
-class MockCharFilter extends CharStream {
-  final Reader in;
+/** the purpose of this charfilter is to send offsets out of bounds
+  if the analyzer doesn't use correctOffset or does incorrect offset math. */
+public class MockCharFilter extends CharStream {
+  final CharStream in;
   final int remainder;
   
   // for testing only
   public MockCharFilter(Reader in, int remainder) {
-    this.in = in;
+    this.in = CharReader.get(in);
+    // TODO: instead of fixed remainder... maybe a fixed
+    // random seed?
     this.remainder = remainder;
-    assert remainder >= 0 && remainder < 10 : "invalid parameter";
+    if (remainder < 0 || remainder >= 10) {
+      throw new IllegalArgumentException("invalid remainder parameter (must be 0..10): " + remainder);
+    }
+  }
+  
+  // for testing only, uses a remainder of 0
+  public MockCharFilter(Reader in) {
+    this(in, 0);
   }
 
   @Override
@@ -89,7 +98,7 @@ class MockCharFilter extends CharStream {
     SortedMap<Integer,Integer> subMap = corrections.subMap(0, currentOff+1);
     int ret = subMap.isEmpty() ? currentOff : currentOff + subMap.get(subMap.lastKey());
     assert ret >= 0 : "currentOff=" + currentOff + ",diff=" + (ret-currentOff);
-    return ret;
+    return in.correctOffset(ret); // chain the call
   }
   
   protected void addOffCorrectMap(int off, int cumulativeDiff) {

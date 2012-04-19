@@ -64,6 +64,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new TokenStream() {
+          // TODO: use CannedTokenStream
           private final String[] TOKENS = {"1", "2", "3", "4", "5"};
           private final int[] INCREMENTS = {0, 2, 1, 0, 1};
           private int i = 0;

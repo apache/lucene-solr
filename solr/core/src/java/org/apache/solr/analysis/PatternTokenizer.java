@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.commons.io.IOUtils;
 
 /**
  * This tokenizer uses regex pattern matching to construct distinct tokens
@@ -51,7 +50,6 @@ import org.apache.commons.io.IOUtils;
  * </p>
  * <p>NOTE: This Tokenizer does not output tokens that are of zero length.</p>
  *
- * @version $Id$
  * @see Pattern
  */
 public final class PatternTokenizer extends Tokenizer {
@@ -59,7 +57,7 @@ public final class PatternTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
-  private String str;
+  private final StringBuilder str = new StringBuilder();
   private int index;
   
   private final Pattern pattern;
@@ -71,8 +69,17 @@ public final class PatternTokenizer extends Tokenizer {
     super(input);
     this.pattern = pattern;
     this.group = group;
-    str = IOUtils.toString(input);
-    matcher = pattern.matcher(str);
+
+    // Use "" instead of str so don't consume chars
+    // (fillBuffer) from the input on throwing IAE below:
+    matcher = pattern.matcher("");
+
+    // confusingly group count depends ENTIRELY on the pattern but is only accessible via matcher
+    if (group >= 0 && group > matcher.groupCount()) {
+      throw new IllegalArgumentException("invalid group specified: pattern only has: " + matcher.groupCount() + " capturing groups");
+    }
+    fillBuffer(str, input);
+    matcher.reset(str);
     index = 0;
   }
 
@@ -84,11 +91,11 @@ public final class PatternTokenizer extends Tokenizer {
     
       // match a specific group
       while (matcher.find()) {
-        final String match = matcher.group(group);
-        if (match.length() == 0) continue;
-        termAtt.setEmpty().append(match);
         index = matcher.start(group);
-        offsetAtt.setOffset(correctOffset(index), correctOffset(matcher.end(group)));
+        final int endIndex = matcher.end(group);
+        if (index == endIndex) continue;       
+        termAtt.setEmpty().append(str, index, endIndex);
+        offsetAtt.setOffset(correctOffset(index), correctOffset(endIndex));
         return true;
       }
       
@@ -131,9 +138,19 @@ public final class PatternTokenizer extends Tokenizer {
   @Override
   public void reset(Reader input) throws IOException {
     super.reset(input);
-    str = IOUtils.toString(input);
+    fillBuffer(str, input);
     matcher.reset(str);
     index = 0;
   }
-
+  
+  // TODO: we should see if we can make this tokenizer work without reading
+  // the entire document into RAM, perhaps with Matcher.hitEnd/requireEnd ?
+  final char[] buffer = new char[8192];
+  private void fillBuffer(StringBuilder sb, Reader input) throws IOException {
+    int len;
+    sb.setLength(0);
+    while ((len = input.read(buffer)) > 0) {
+      sb.append(buffer, 0, len);
+    }
+  }
 }
