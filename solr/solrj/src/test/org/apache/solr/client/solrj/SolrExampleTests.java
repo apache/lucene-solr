@@ -559,8 +559,6 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
   public void testUpdateRequestWithParameters() throws Exception {
     SolrServer server1 = createNewSolrServer();
     
-    System.out.println("server:" + server1.getClass().toString());
-
     server1.deleteByQuery( "*:*" );
     server1.commit();
     
