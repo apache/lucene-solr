@@ -43,7 +43,7 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
     // Caching off by default
     httpCaching = false;
     if (args != null) {
-      Object caching = initArgs.get("httpCaching");
+      Object caching = args.get("httpCaching");
       if(caching!=null) {
         httpCaching = Boolean.parseBoolean(caching.toString());
       }
