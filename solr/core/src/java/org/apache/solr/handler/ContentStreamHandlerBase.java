@@ -20,11 +20,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +34,22 @@ import org.slf4j.LoggerFactory;
  *
  **/
 public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
-  public static Logger log = LoggerFactory.getLogger(XmlUpdateRequestHandler.class);
+  public static Logger log = LoggerFactory.getLogger(ContentStreamHandlerBase.class);
 
+  @Override
+  public void init(NamedList args) {
+    super.init(args);
+
+    // Caching off by default
+    httpCaching = false;
+    if (args != null) {
+      Object caching = initArgs.get("httpCaching");
+      if(caching!=null) {
+        httpCaching = Boolean.parseBoolean(caching.toString());
+      }
+    }
+  }
+  
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();

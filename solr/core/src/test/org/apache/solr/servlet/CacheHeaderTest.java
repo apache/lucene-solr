@@ -27,6 +27,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,7 +48,9 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   @Test
   public void testCacheVetoHandler() throws Exception {
     File f=makeFile(CONTENTS);
-    HttpRequestBase m=getUpdateMethod("GET", "stream.file", f.getCanonicalPath());
+    HttpRequestBase m=getUpdateMethod("GET", 
+        CommonParams.STREAM_FILE, f.getCanonicalPath(),
+        CommonParams.STREAM_CONTENTTYPE, "text/csv" );
     HttpResponse response = getClient().execute(m);
     assertEquals(200, response.getStatusLine().getStatusCode());
     checkVetoHeaders(response, true);
@@ -65,8 +68,8 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   protected void checkVetoHeaders(HttpResponse response, boolean checkExpires) throws Exception {
     Header head = response.getFirstHeader("Cache-Control");
     assertNotNull("We got no Cache-Control header", head);
-    assertTrue("We got no no-cache in the Cache-Control header", head.getValue().contains("no-cache"));
-    assertTrue("We got no no-store in the Cache-Control header", head.getValue().contains("no-store"));
+    assertTrue("We got no no-cache in the Cache-Control header ["+head+"]", head.getValue().contains("no-cache"));
+    assertTrue("We got no no-store in the Cache-Control header ["+head+"]", head.getValue().contains("no-store"));
 
     head = response.getFirstHeader("Pragma");
     assertNotNull("We got no Pragma header", head);

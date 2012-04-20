@@ -500,7 +500,10 @@ Other Changes
   from org.apache.solr.common to org.apache.solr.util (Chris Male)
 
 * SOLR-3357: ResourceLoader.newInstance now accepts a Class representation of the expected
-instance type (Chris Male)
+  instance type (Chris Male)
+
+* SOLR-3388: HTTP caching is now disabled by default for RequestUpdateHandlers. (ryan)
+
 
 Documentation
 ----------------------
