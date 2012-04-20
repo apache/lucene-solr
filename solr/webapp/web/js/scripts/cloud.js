@@ -153,152 +153,300 @@ var init_debug = function( cloud_element )
     );
 };
 
-var generate_graph = function( graph_element, graph_data )
+var helper_path_class = function( p )
 {
-  var w = 900,
-      h = 300;
+  var classes = [ 'link' ];
+  classes.push( 'lvl-' + p.target.depth );
 
-  var tree = d3.layout.tree()
-      .size([h, w - 400]);
+  if( p.target.data.leader )
+  {
+    classes.push( 'leader' );
+  }
 
-  var diagonal = d3.svg.diagonal()
-      .projection(function(d) { return [d.y, d.x]; });
+  if( p.target.data.state )
+  {
+    classes.push( p.target.data.state );
+  }
 
-  var vis = d3.select("#canvas").append("svg")
-      .attr("width", w)
-      .attr("height", h)
-    .append("g")
-      .attr("transform", "translate(100, 0)");
-
-  var nodes = tree.nodes(graph_data);
-
-  var link = vis.selectAll("path.link")
-      .data(tree.links(nodes))
-    .enter().append("path")
-      .attr("class", "link")
-      .attr("d", diagonal);
-
-  var node = vis.selectAll("g.node")
-      .data(nodes)
-    .enter().append("g")
-      .attr("class", "node")
-      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
-
-  node.append("circle")
-      .attr("r", 4.5);
-
-  node.append("text")
-      .attr("dx", function(d) { return d.children ? -8 : 8; })
-      .attr("dy", 3)
-      .attr("text-anchor", function(d) { return d.children ? "end" : "start"; })
-      .text(function(d) { return d.name; });
-
-  /*
-  var r = 860 / 2;
-
-  var tree = d3.layout.tree()
-      .size([360, r - 120])
-      .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
-
-  var diagonal = d3.svg.diagonal.radial()
-      .projection(function(d) { return [d.y, d.x / 180 * Math.PI]; });
-
-  var vis = d3.select("#canvas").append("svg")
-      .attr("width", r * 2)
-      .attr("height", r * 2 - 150)
-    .append("g")
-      .attr("transform", "translate(" + r + "," + r + ")");
-
-  var nodes = tree.nodes(graph_data);
-
-  var link = vis.selectAll("path.link")
-      .data(tree.links(nodes))
-    .enter().append("path")
-      .attr("class", "link")
-      .attr("d", diagonal);
-
-  var node = vis.selectAll("g.node")
-      .data(nodes)
-    .enter().append("g")
-      .attr("class", "node")
-      .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; })
-
-  node.append("circle")
-      .attr("r", 4.5);
-
-  node.append("text")
-      .attr("dx", function(d) { return d.x < 180 ? 8 : -8; })
-      .attr("dy", ".31em")
-      .attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
-      .attr("transform", function(d) { return d.x < 180 ? null : "rotate(180)"; })
-      .text(function(d) { return d.name; });
-  //*/
-
+  return classes.join( ' ' );
 };
 
-var init_graph = function( graph_element )
+var helper_node_class = function( d )
+{
+  var classes = [ 'node' ];
+  classes.push( 'lvl-' + d.depth );
+
+  if( d.data.leader )
+  {
+    classes.push( 'leader' );
+  }
+
+  if( d.data.state )
+  {
+    classes.push( d.data.state );
+  }
+
+  return classes.join( ' ' );
+};
+
+var helper_data = {
+  protocol: [],
+  host: [],
+  hostname: [],
+  port: [],
+  pathname: []
+};
+
+var helper_node_text = function( d )
+{
+  if( !d.data.uri )
+  {
+    return d.name;
+  }
+
+  var name = d.data.uri.hostname;
+
+  if( 1 !== helper_data.protocol.length )
+  {
+    name = d.data.uri.protocol + '//' + name;
+  }
+
+  if( 1 !== helper_data.port.length )
+  {
+    name += ':' + d.data.uri.port;
+  }
+
+  if( 1 !== helper_data.pathname.length )
+  {
+    name += d.data.uri.pathname;
+  }
+
+  return name;
+};
+
+var generate_graph = function( graph_element, graph_data, leaf_count )
+{
+  var w = graph_element.width(),
+      h = leaf_count * 20;
+
+  var tree = d3.layout.tree()
+    .size([h, w - 400]);
+
+  var diagonal = d3.svg.diagonal()
+    .projection(function(d) { return [d.y, d.x]; });
+
+  var vis = d3.select( '#canvas' ).append( 'svg' )
+    .attr( 'width', w )
+    .attr( 'height', h)
+    .append( 'g' )
+      .attr( 'transform', 'translate(100, 0)' );
+
+  var nodes = tree.nodes( graph_data );
+
+  var link = vis.selectAll( 'path.link' )
+    .data( tree.links( nodes ) )
+    .enter().append( 'path' )
+      .attr( 'class', helper_path_class )
+      .attr( 'd', diagonal );
+
+  var node = vis.selectAll( 'g.node' )
+    .data( nodes )
+    .enter().append( 'g' )
+      .attr( 'class', helper_node_class )
+      .attr( 'transform', function(d) { return 'translate(' + d.y + ',' + d.x + ')'; } )
+
+  node.append( 'circle' )
+    .attr( 'r', 4.5 );
+
+  node.append( 'text' )
+    .attr( 'dx', function( d ) { return 0 === d.depth ? -8 : 8; } )
+    .attr( 'dy', function( d ) { return 5; } )
+    .attr( 'text-anchor', function( d ) { return 0 === d.depth ? 'end' : 'start'; } )
+    .attr( 'data-href', function( d ) { return d.name; } )
+    .text( helper_node_text );
+
+  $( 'text[data-href*="//"]', graph_element )
+    .die( 'click' )
+    .live
+    (
+      'click',
+      function()
+      {
+        location.href = $( this ).data( 'href' );
+      }
+    );
+};
+
+var generate_rgraph = function( graph_element, graph_data, leaf_count )
+{
+  var max_val = Math.min( graph_element.width(), $( 'body' ).height() )
+  var r = max_val / 2;
+
+  var cluster = d3.layout.cluster()
+    .size([360, r - 160]);
+
+  var diagonal = d3.svg.diagonal.radial()
+    .projection(function(d) { return [d.y, d.x / 180 * Math.PI]; });
+
+  var vis = d3.select( '#canvas' ).append( 'svg' )
+    .attr( 'width', r * 2 )
+    .attr( 'height', r * 2 )
+    .append( 'g' )
+      .attr( 'transform', 'translate(' + r + ',' + r + ')' );
+
+  var nodes = cluster.nodes( graph_data );
+
+  var link = vis.selectAll( 'path.link' )
+    .data( cluster.links( nodes ) )
+    .enter().append( 'path' )
+      .attr( 'class', helper_path_class )
+      .attr( 'd', diagonal );
+
+  var node = vis.selectAll( 'g.node' )
+    .data( nodes )
+    .enter().append( 'g' )
+      .attr( 'class', helper_node_class )
+      .attr( 'transform', function(d) { return 'rotate(' + (d.x - 90) + ')translate(' + d.y + ')'; } )
+
+  node.append( 'circle' )
+    .attr( 'r', 4.5 );
+
+  node.append( 'text' )
+    .attr( 'dx', function(d) { return d.x < 180 ? 8 : -8; } )
+    .attr( 'dy', '.31em' )
+    .attr( 'text-anchor', function(d) { return d.x < 180 ? 'start' : 'end'; } )
+    .attr( 'transform', function(d) { return d.x < 180 ? null : 'rotate(180)'; } )
+    .attr( 'data-href', function( d ) { return d.name; } )
+    .text( helper_node_text );
+
+  $( 'text[data-href*="//"]', graph_element )
+    .die( 'click' )
+    .live
+    (
+      'click',
+      function()
+      {
+        location.href = $( this ).data( 'href' );
+      }
+    );
+};
+
+var prepare_graph = function( graph_element, callback )
 {
   $.ajax
   (
     {
-      url : app.config.solr_path + '/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json',
+      url : app.config.solr_path + '/zookeeper?wt=json&path=%2Flive_nodes',
       dataType : 'json',
-      context : graph_element,
-      beforeSend : function( xhr, settings )
-      {
-        this
-          .show();
-      },
       success : function( response, text_status, xhr )
       {
-        var state = null;
-        eval( 'state = ' + response.znode.data + ';' );
-        
-        var collections = [];
-        for( var c in state )
+        var live_nodes = {};
+        for( var c in response.tree[0].children )
         {
-          var shards = [];
-          for( var s in state[c] )
-          {
-            var nodes = [];
-            for( var n in state[c][s] )
-            {
-              var node = {
-                id: state[c][s][n].node_name,
-                name: state[c][s][n].base_url,
-                data: {
-                  type : 'node',
-                  state : state[c][s][n].state,
-                  leader : 'true' === state[c][s][n].leader
-                }
-              };
-              nodes.push( node );
-            }
-
-            var shard = {
-              id: s,
-              name: s,
-              data: {
-                type : 'shard',
-              },
-              children: nodes
-            };
-            shards.push( shard );
-          }
-
-          var collection = {
-            id: c,
-            name: c,
-            data: {
-              type : 'collection',
-            },
-            children: shards
-          };
-          collections.push( collection );
+          live_nodes[response.tree[0].children[c].data.title] = true;
         }
 
-        var graph_data = collections.shift();
-        generate_graph( graph_element, graph_data );
+        $.ajax
+        (
+          {
+            url : app.config.solr_path + '/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json',
+            dataType : 'json',
+            context : graph_element,
+            beforeSend : function( xhr, settings )
+            {
+              this
+                .show();
+            },
+            success : function( response, text_status, xhr )
+            {
+              var state = null;
+              eval( 'state = ' + response.znode.data + ';' );
+              
+              var leaf_count = 0;
+              var collections = [];
+              for( var c in state )
+              {
+                var shards = [];
+                for( var s in state[c] )
+                {
+                  var nodes = [];
+                  for( var n in state[c][s] )
+                  {
+                    leaf_count++;
+
+                    var uri = state[c][s][n].base_url;
+                    var parts = uri.match( /^(\w+:)\/\/(([\w\d\.-]+)(:(\d+))?)(.+)$/ );
+                    var uri_parts = {
+                      protocol: parts[1],
+                      host: parts[2],
+                      hostname: parts[3],
+                      port: parseInt( parts[5] || 80, 10 ),
+                      pathname: parts[6]
+                    };
+                    
+                    helper_data.protocol.push( uri_parts.protocol );
+                    helper_data.host.push( uri_parts.host );
+                    helper_data.hostname.push( uri_parts.hostname );
+                    helper_data.port.push( uri_parts.port );
+                    helper_data.pathname.push( uri_parts.pathname );
+
+                    var status = state[c][s][n].state;
+
+                    if( !live_nodes[state[c][s][n].node_name] )
+                    {
+                      status = 'gone';
+                    }
+
+                    var node = {
+                      name: uri,
+                      data: {
+                        type : 'node',
+                        state : status,
+                        leader : 'true' === state[c][s][n].leader,
+                        uri : uri_parts
+                      }
+                    };
+                    nodes.push( node );
+                  }
+
+                  var shard = {
+                    name: s,
+                    data: {
+                      type : 'shard',
+                    },
+                    children: nodes
+                  };
+                  shards.push( shard );
+                }
+
+                var collection = {
+                  name: c,
+                  data: {
+                    type : 'collection',
+                  },
+                  children: shards
+                };
+                collections.push( collection );
+              }
+
+              var graph_data = collections.shift();
+              
+              helper_data.protocol = $.unique( helper_data.protocol );
+              helper_data.host = $.unique( helper_data.host );
+              helper_data.hostname = $.unique( helper_data.hostname );
+              helper_data.port = $.unique( helper_data.port );
+              helper_data.pathname = $.unique( helper_data.pathname );
+
+              callback( graph_element, graph_data, leaf_count );
+            },
+            error : function( xhr, text_status, error_thrown)
+            {
+            },
+            complete : function( xhr, text_status )
+            {
+            }
+          }
+        );
       },
       error : function( xhr, text_status, error_thrown)
       {
@@ -310,6 +458,30 @@ var init_graph = function( graph_element )
   );
 
 };
+
+var init_graph = function( graph_element )
+{
+  prepare_graph
+  (
+    graph_element,
+    function( graph_element, graph_data, leaf_count )
+    {
+      generate_graph( graph_element, graph_data, leaf_count );
+    }
+  );
+}
+
+var init_rgraph = function( graph_element )
+{
+  prepare_graph
+  (
+    graph_element,
+    function( graph_element, graph_data, leaf_count )
+    {
+      generate_rgraph( graph_element, graph_data, leaf_count );
+    }
+  );
+}
 
 var init_tree = function( tree_element )
 {
@@ -528,6 +700,18 @@ sammy.get
             {
               $( this ).addClass( 'current' );
               init_graph( $( '#graph-content', cloud_element ) );
+            }
+          );
+
+        $( '.rgraph', navigation_element )
+          .die( 'activate' )
+          .live
+          (
+            'activate',
+            function( event )
+            {
+              $( this ).addClass( 'current' );
+              init_rgraph( $( '#graph-content', cloud_element ) );
             }
           );
 

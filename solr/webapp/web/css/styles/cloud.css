@@ -5,11 +5,12 @@
 
 #content #cloud #navigation
 {
-  width: 10%;
+  width: 11%;
 }
 
 #content #cloud #navigation .tree a { background-image: url( ../../img/ico/folder-tree.png ); }
 #content #cloud #navigation .graph a { background-image: url( ../../img/ico/molecule.png ); }
+#content #cloud #navigation .rgraph a { background-image: url( ../../img/ico/asterisk.png ); }
 #content #cloud #navigation .dump a { background-image: url( ../../img/ico/download-cloud.png ); }
 
 #content #cloud #navigation .dump
@@ -25,7 +26,7 @@
 #content #cloud #frame
 {
   float: right;
-  width: 89%;
+  width: 88%;
 }
 
 #content #cloud #frame .content
@@ -249,17 +250,98 @@
   color: #00f;
 }
 
+#content #graph-content .node
+{
+  fill: #333;
+}
 
 #content #graph-content .node circle
 {
-  fill: #f0f0f0;
+  fill: #fff;
   stroke: #c0c0c0;
   stroke-width: 1.5px;
+}
+
+#content #graph-content .node.lvl-2 text
+{
+  cursor: pointer;
+}
+
+#content #graph-content .node.lvl-2:hover circle
+{
+  stroke: #000 !important;
+}
+
+#content #graph-content .node.lvl-2:hover text
+{
+  fill: #000 !important;
 }
 
 #content #graph-content .link
 {
   fill: none;
-  stroke: #c0c0c0;
+  stroke: #e0e0e0;
   stroke-width: 1.5px;
+}
+
+#content #graph-content .node.gone circle,
+#content #graph-content .link.gone
+{
+  stroke: #f0f0f0;
+}
+
+#content #graph-content .node.gone text
+{
+  fill: #f0f0f0;
+}
+
+#content #graph-content .node.recovery_failed circle
+{
+  stroke: #C43C35;
+}
+
+#content #graph-content .node.recovery_failed text
+{
+  fill: #C43C35;
+}
+
+#content #graph-content .node.down circle
+{
+  stroke: #c48f00;
+}
+
+#content #graph-content .node.down text
+{
+  fill: #c48f00;
+}
+
+#content #graph-content .node.recovering circle
+{
+  stroke: #d5dd00;
+}
+
+#content #graph-content .node.recovering text
+{
+  fill: #d5dd00;
+}
+
+#content #graph-content .node.active circle
+{
+  stroke: #57A957;
+}
+
+#content #graph-content .node.active text
+{
+  fill: #57A957;
+}
+
+#content #graph-content .node.leader circle
+{
+  fill: #000;
+}
+
+#content #graph-content .link.lvl-1,
+#content #graph-content .link.leader
+{
+  stroke: #c0c0c0;
 }
