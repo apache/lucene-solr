@@ -290,10 +290,14 @@ public class HttpSolrServer extends SolrServer {
 
               if (isMultipart) {
                 for (ContentStream content : streams) {
-                   parts.add(new FormBodyPart(content.getName(), 
+                  String contentType = content.getContentType();
+                  if(contentType==null) {
+                    contentType = "application/octet-stream"; // default
+                  }
+                  parts.add(new FormBodyPart(content.getName(), 
                        new InputStreamBody(
                            content.getStream(), 
-                           content.getContentType(), 
+                           contentType, 
                            content.getName())));
                 }
               }
