@@ -614,7 +614,10 @@
     <isset property="testmethod" />
   </condition>
   <condition property="tests.showSuccess" value="true">
-    <isset property="tests.class" />
+    <or>
+      <isset property="tests.class" />
+      <isset property="tests.method" />
+    </or>
   </condition>
   <!-- default -->
   <property name="tests.showSuccess" value="false"/>
