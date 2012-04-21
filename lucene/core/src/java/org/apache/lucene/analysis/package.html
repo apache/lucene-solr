@@ -149,7 +149,7 @@ and proximity searches (though sentence identification is not provided by Lucene
     {@link org.apache.lucene.document.Field}s.
   </li>
   <li>
-    The modules/analysis library located at the root of the Lucene distribution has a number of different Analyzer implementations to solve a variety
+    The analysis library located at the root of the Lucene distribution has a number of different Analyzer implementations to solve a variety
     of different problems related to searching.  Many of the Analyzers are designed to analyze non-English languages.
   </li>
   <li>
@@ -158,7 +158,7 @@ and proximity searches (though sentence identification is not provided by Lucene
 </ol>
 <p>
   Analysis is one of the main causes of performance degradation during indexing.  Simply put, the more you analyze the slower the indexing (in most cases).
-  Perhaps your application would be just fine using the simple WhitespaceTokenizer combined with a StopFilter. The contrib/benchmark library can be useful 
+  Perhaps your application would be just fine using the simple WhitespaceTokenizer combined with a StopFilter. The benchmark/ library can be useful 
   for testing out the speed of the analysis process.
 </p>
 <h2>Invoking the Analyzer</h2>
