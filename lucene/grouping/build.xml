@@ -20,7 +20,7 @@
 <project name="grouping" default="default">
   
     <description>
-       Grouping module. Collectors for grouping search results
+       Collectors for grouping search results.
     </description>
 
     <import file="../module-build.xml"/>
@@ -35,7 +35,14 @@
       <path refid="base.classpath"/>
     </path>
 
-    <target name="compile" depends="jar-queries,common.compile-core" description="Compiles facet classes" />
+    <target name="compile" depends="jar-queries,common.compile-core" description="Compiles grouping classes" />
     <target name="jar-core" depends="common.jar-core" />
+    <target name="javadocs" depends="javadocs-queries,compile-core">
+      <invoke-module-javadoc>
+        <links>
+          <link href="../queries"/>
+        </links>
+      </invoke-module-javadoc>
+    </target>
 
 </project>

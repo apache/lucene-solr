@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <project name="spatial" default="default">
   <description>
-    Lucene Spatial
+    Geospatial search
   </description>
 
   <import file="../module-build.xml"/>
@@ -23,4 +23,12 @@
   </path>
 
   <target name="compile-core" depends="jar-queries,common.compile-core" />
+
+  <target name="javadocs" depends="javadocs-queries,compile-core">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../queries"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
 </project>

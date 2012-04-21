@@ -45,7 +45,6 @@ See http://forrest.apache.org/docs/linking.html for more info
       <overview label="Overview" href="index.html"/>
       <changes label="Changes" href="ext:changes"/>
       <javadoc label="Javadocs">
-         <javadoc-all label="All" href="ext:javadocs-all"/>
          <javadoc-core label="Core" href="ext:javadocs-core"/>
          <javadoc-analyzers-common label="Analysis: Common" href="ext:javadocs-analyzers-common"/>
          <javadoc-analyzers-kuromoji label="Analysis: Kuromoji (Japanese)" href="ext:javadocs-analyzers-kuromoji"/>
@@ -90,7 +89,6 @@ See http://forrest.apache.org/docs/linking.html for more info
 
   <external-refs>
     <changes href="changes/Changes.html" />
-    <javadocs-all href="api/all/index.html"/>
 	<javadocs-core href="api/core/index.html"/>
 	<javadocs-analyzers-common href="api/analyzers-common/index.html"/>
 	<javadocs-analyzers-icu href="api/analyzers-icu/index.html"/>

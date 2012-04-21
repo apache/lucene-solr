@@ -23,7 +23,7 @@ import org.apache.lucene.search.Query;
 import java.io.IOException;
 
 /**
- * Utility for query time joining using {@link TermsQuery} and {@link TermsCollector}.
+ * Utility for query time joining using TermsQuery and TermsCollector.
  *
  * @lucene.experimental
  */

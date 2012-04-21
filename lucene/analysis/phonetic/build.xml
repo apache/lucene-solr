@@ -20,7 +20,7 @@
 <project name="analyzers-phonetic" default="default">
 
   <description>
-  	Provides phonetic encoding support via Apache Commons Codec.
+    Analyzer for indexing phonetic signatures (for sounds-alike search)
   </description>
 
   <import file="../analysis-module-build.xml"/>

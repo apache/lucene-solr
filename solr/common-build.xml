@@ -196,29 +196,63 @@
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
   </target>
 
-  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url">
+  <property name="lucenedocs" location="${common.dir}/build/docs/api"/>
+
+  <!-- dependency to ensure all lucene javadocs are present -->
+  <target name="lucene-javadocs" depends="javadocs-lucene-core,javadocs-analyzers-common,javadocs-analyzers-icu,javadocs-analyzers-kuromoji,javadocs-analyzers-phonetic,javadocs-analyzers-smartcn,javadocs-analyzers-morfologik,javadocs-analyzers-stempel,javadocs-analyzers-uima,javadocs-suggest,javadocs-grouping,javadocs-queries,javadocs-queryparser,javadocs-highlighter,javadocs-memory,javadocs-misc,javadocs-spatial"/>
+
+  <!-- create javadocs for the current module -->
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs">
    	<sequential>
       <mkdir dir="${javadoc.dir}"/>
-      <mkdir dir="${dest}/META-INF/"/>
-      <invoke-javadoc destdir="${javadoc.dir}"
-                      title="${Name} ${version} ${name} API">
-        <sources>
-          <link offline="true" href="${lucene.javadoc.url}"
-                packagelistloc="${common.dir}/build/docs/api/all/"/>
-          <link href=""/>
+      <solr-invoke-javadoc>
+        <solrsources>
           <packageset dir="${src.dir}"/>
-        </sources>
-      </invoke-javadoc>
+        </solrsources>
+      </solr-invoke-javadoc>
       <solr-jarify basedir="${javadoc.dir}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
      </sequential>
   </target>
+
+  <!-- macro to create solr javadocs with links to lucene. make sure calling task depends on lucene-javadocs -->
+  <macrodef name="solr-invoke-javadoc">
+      <element name="solrsources" optional="yes"/>
+      <attribute name="destdir" default="${javadoc.dir}"/>
+      <attribute name="title" default="${Name} ${version} ${name} API"/>
+      <attribute name="overview" default="${src.dir}/overview.html"/>
+    <sequential>
+      <mkdir dir="@{destdir}"/>
+      <invoke-javadoc destdir="@{destdir}" title="@{title}" overview="@{overview}">
+        <sources>
+          <solrsources/>
+          <link offline="true" href="${lucene.javadoc.url}/core" packagelistloc="${lucenedocs}/core"/>
+          <link offline="true" href="${lucene.javadoc.url}/analyzers-common" packagelistloc="${lucenedocs}/analyzers-common"/>
+          <link offline="true" href="${lucene.javadoc.url}/analyzers-icu" packagelistloc="${lucenedocs}/analyzers-icu"/>
+          <link offline="true" href="${lucene.javadoc.url}/analyzers-kuromoji" packagelistloc="${lucenedocs}/analyzers-kuromoji"/>
+          <link offline="true" href="${lucene.javadoc.url}/analyzers-morfologik" packagelistloc="${lucenedocs}/analyzers-morfologik"/>
+          <link offline="true" href="${lucene.javadoc.url}/analyzers-phonetic" packagelistloc="${lucenedocs}/analyzers-phonetic"/>
+          <link offline="true" href="${lucene.javadoc.url}/analyzers-smartcn" packagelistloc="${lucenedocs}/analyzers-smartcn"/>
+          <link offline="true" href="${lucene.javadoc.url}/analyzers-stempel" packagelistloc="${lucenedocs}/analyzers-stempel"/>
+          <link offline="true" href="${lucene.javadoc.url}/suggest" packagelistloc="${lucenedocs}/suggest"/>
+          <link offline="true" href="${lucene.javadoc.url}/grouping" packagelistloc="${lucenedocs}/grouping"/>
+          <link offline="true" href="${lucene.javadoc.url}/queries" packagelistloc="${lucenedocs}/queries"/>
+          <link offline="true" href="${lucene.javadoc.url}/queryparser" packagelistloc="${lucenedocs}/queryparser"/>
+          <link offline="true" href="${lucene.javadoc.url}/highlighter" packagelistloc="${lucenedocs}/highlighter"/>
+          <link offline="true" href="${lucene.javadoc.url}/memory" packagelistloc="${lucenedocs}/memory"/>
+          <link offline="true" href="${lucene.javadoc.url}/misc" packagelistloc="${lucenedocs}/misc"/>
+          <link offline="true" href="${lucene.javadoc.url}/spatial" packagelistloc="${lucenedocs}/spatial"/>
+          <link href=""/>
+        </sources>
+      </invoke-javadoc>
+    </sequential>
+  </macrodef>
 
   <target name="define-lucene-javadoc-url"
           depends="define-lucene-javadoc-url-SNAPSHOT,define-lucene-javadoc-url-release"/>
 
   <target name="define-lucene-javadoc-url-SNAPSHOT" if="version.contains.SNAPSHOT">
     <property name="lucene.javadoc.url"
-              value="${common.dir}/build/docs/api/all/"/>
+              value="${common.dir}/build/docs/api/"/>
   </target>
 
   <target name="define-lucene-javadoc-url-release" unless="version.contains.SNAPSHOT">
@@ -230,7 +264,7 @@
       </filterchain>
     </loadproperties>
     <property name="lucene.javadoc.url"
-              value="http://lucene.apache.org/java/${underscore.version}/api/all/"/>
+              value="http://lucene.apache.org/java/${underscore.version}/api/"/>
   </target>
 
   <target name="jar-src" depends="init">

@@ -20,7 +20,7 @@
 <project name="analyzers-smartcn" default="default">
 
   <description>
-    Smart Chinese Analyzer
+    Analyzer for indexing Chinese
   </description>
 
   <import file="../analysis-module-build.xml"/>

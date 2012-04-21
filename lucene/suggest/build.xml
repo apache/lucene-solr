@@ -20,7 +20,7 @@
 <project name="suggest" default="default">
 
   <description>
-    Suggest
+    Auto-suggest and Spellchecking support
   </description>
 	
   <!-- just a list of words for testing suggesters -->

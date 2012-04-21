@@ -39,26 +39,19 @@
     </compile>
   </target>
 
-  <!-- Override common-solr.javadocs to include a JUnit javadoc link     -->
+  <!-- Override common-solr.javadocs to include JUnit,test-framework links -->
   <!-- and to copy the built javadocs to ${dest}/docs/api/test-framework -->
   <target name="javadocs"
-          depends="compile-core,define-lucene-javadoc-url">
+          depends="compile-core,lucene-javadocs,javadocs-test-framework,define-lucene-javadoc-url">
     <sequential>
-      <mkdir dir="${javadoc.dir}"/>
-      <mkdir dir="${dest}/META-INF/"/>
-      <invoke-javadoc destdir="${javadoc.dir}"
-                      title="${Name} ${version} ${name} API">
-        <sources>
-          <link offline="true" href="${lucene.javadoc.url}"
-                packagelistloc="${common.dir}/build/docs/api/all/"/>
-          <link offline="true" href="${lucene-javadoc-url}"
-                packagelistloc="${common.dir}/build/docs/api/all/"/>
+      <solr-invoke-javadoc>
+        <solrsources>
           <link offline="true" href="${javadoc.link.junit}"
                 packagelistLoc="${javadoc.packagelist.dir}/junit"/>
-          <link href=""/>
+          <link offline="true" href="${lucene.javadoc.url}/test-framework" packagelistloc="${lucenedocs}/test-framework"/>
           <packageset dir="${src.dir}"/>
-        </sources>
-      </invoke-javadoc>
+        </solrsources>
+      </solr-invoke-javadoc>
       <solr-jarify basedir="${javadoc.dir}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
       <mkdir dir="${dest}/docs/api/test-framework"/>
       <copy todir="${dest}/docs/api/test-framework">

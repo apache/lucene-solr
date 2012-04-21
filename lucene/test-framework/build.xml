@@ -18,7 +18,7 @@
  -->
 
 <project name="test-framework" default="default">
-  <description>Lucene Test Framework</description>
+  <description>Framework for testing Lucene-based applications</description>
 
   <property name="build.dir" location="../build/test-framework"/>
 
@@ -46,7 +46,7 @@
   </target>
 
   <target name="javadocs-core" depends="javadocs"/>
-  <target name="javadocs" depends="init">
+  <target name="javadocs" depends="init,javadocs-lucene-core">
     <sequential>
       <mkdir dir="${javadoc.dir}/test-framework"/>
       <invoke-javadoc overview="${src.dir}/overview.html"
@@ -56,6 +56,7 @@
           <packageset dir="${src.dir}"/>
           <link offline="true" href="${javadoc.link.junit}"
                 packagelistLoc="${javadoc.packagelist.dir}/junit"/>
+          <link href="../core/"/>
           <link href=""/>
         </sources>
       </invoke-javadoc>

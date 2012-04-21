@@ -197,110 +197,23 @@
 
   <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" 
-          depends="javadocs-all, javadocs-core, javadocs-modules, javadocs-test-framework">
+          depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework">
     <echo file="${javadoc.dir}/index.html" append="false">
 <![CDATA[<html><head><title>${Name} ${version} Javadoc Index</title></head>
 <body>
 <h1>${Name} ${version} Javadoc Index</h1>
 <ul>
-  <li><a href="all/index.html">All</a></li>
-  <li><a href="core/index.html">Core</a></li>
-  <li><a href="test-framework/index.html">Test Framework</a></li>
+  <li><a href="core/index.html">core</a>: Lucene core library</li>
+  <li><a href="test-framework/index.html">test-framework</a>: Framework for testing Lucene-based applications</li>
 ]]></echo>
-    <modules-crawl target="javadocs-index.html" failonerror="false"/>
+    <modules-crawl target="javadocs-index.html" failonerror="true"/>
     <echo file="${javadoc.dir}/index.html" append="true"><![CDATA[
 </ul></body>]]></echo>
   </target>
 	
-  <target name="javadocs-core" description="Generate javadoc for core classes">
-    <ant dir="${common.dir}/core" target="javadocs" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
-  <target name="javadocs-test-framework">
-    <ant dir="${common.dir}/test-framework" target="javadocs" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
   <target name="javadocs-modules" description="Generate javadoc for modules classes">
     <modules-crawl target="javadocs"
-                   failonerror="false"/>
-  </target>
-
-  <!-- call resolve to force dependencies to be in lib/ for javadocs -->
-  <target name="javadocs-all" depends="resolve"
-          description="Generate javadoc for all classes">
-  	<sequential>
-      <mkdir dir="${javadoc.dir}/all"/>
-      
-      <path id="javadoc.classpath">
-        <path refid="classpath"/>
-        <pathelement location="${ant.home}/lib/ant.jar"/>
-        <fileset dir="." includes="**/lib/" excludes="**/lib/*.txt"/>
-      </path>
-
-      <invoke-javadoc overview="${common.dir}/core/src/java/overview.html"
-                      destdir="${javadoc.dir}/all">
-        <sources>
-          <!-- TODO: find a dynamic way to do include multiple source roots -->
-          <packageset dir="core/src/java"/>
-          <packageset dir="test-framework/src/java"/>
-
-          <!-- please keep this list up to date, and in alpha order...   -->
-        
-          <!-- ie: `find ./* -path \*src/java | sort` -->
-
-          <!-- if you make changes to the list of package sets, also -->
-          <!-- make sure the group list below is updated.            -->
-          <!-- Also remember to keep site.xml in sync.            -->		  
-          <packageset dir="analysis/common/src/java"/>
-          <packageset dir="analysis/icu/src/java"/>
-          <packageset dir="analysis/kuromoji/src/java"/>
-          <packageset dir="analysis/morfologik/src/java"/>
-          <packageset dir="analysis/phonetic/src/java"/>
-          <packageset dir="analysis/smartcn/src/java"/>
-          <packageset dir="analysis/stempel/src/java"/>
-          <packageset dir="analysis/uima/src/java"/>
-          <packageset dir="benchmark/src/java"/>
-          <packageset dir="demo/src/java"/>
-          <packageset dir="facet/src/java"/>
-          <packageset dir="grouping/src/java"/>
-          <packageset dir="highlighter/src/java"/>
-          <packageset dir="join/src/java"/>
-          <packageset dir="memory/src/java"/>
-          <packageset dir="misc/src/java"/>
-          <packageset dir="queries/src/java"/>
-          <packageset dir="queryparser/src/java"/>
-          <packageset dir="sandbox/src/java"/>
-          <packageset dir="spatial/src/java"/>
-          <packageset dir="suggest/src/java"/>
-          <!-- end alpha sort -->
-
-          <!-- If the main javadoc Group listing includes an "Other   -->
-          <!-- Packages" group after the ones listed here, then those -->
-          <!-- packages are not being matched by any of these rules   -->
-  
-          <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.tokenattributes*"/>
-          <group title="Analysis" packages="org.apache.lucene.analysis.*:org.apache.lucene.collation*:org.tartarus.snowball*:org.egothor.stemmer*"/>
-          <group title="Benchmark" packages="org.apache.lucene.benchmark*"/>
-          <group title="Demo" packages="org.apache.lucene.demo*"/>
-          <group title="Facet" packages="org.apache.lucene.facet*:org.apache.lucene.util.encoding*:org.apache.lucene.util.collections*"/>
-          <group title="Grouping" packages="org.apache.lucene.search.grouping*"/>
-          <group title="Highlighter" packages="org.apache.lucene.search.highlight*:org.apache.lucene.search.vectorhighlight*"/>
-          <group title="Join" packages="org.apache.lucene.search.join*"/>
-          <group title="Memory" packages="org.apache.lucene.index.memory*"/>
-          <group title="Misc" packages="org.apache.lucene.misc*"/>
-          <group title="Queries" packages="org.apache.lucene.queries*"/>
-          <group title="Query Parser" packages="org.apache.lucene.queryparser*"/>
-          <group title="Sandbox" packages="org.apache.lucene.sandbox*"/>
-          <group title="Spatial" packages="org.apache.lucene.spatial*"/>
-          <group title="Suggest" packages="org.apache.lucene.search.spell*:org.apache.lucene.search.suggest*"/>
-
-        </sources>
-      </invoke-javadoc>
-  	</sequential>
+                   failonerror="true"/>
   </target>
 
   <target name="rat-sources">

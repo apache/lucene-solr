@@ -63,25 +63,35 @@
   </target>
   <target name="build-artifacts-and-tests" depends="jar, compile-test" />
 	
-  <target name="javadocs" depends="compile-core">
-   	<sequential>
-       <mkdir dir="${javadoc.dir}/${name}"/>
-       <invoke-javadoc
+  <!-- TODO: why does this previous depend on compile-core? -->
+  <target name="javadocs" depends="compile-core,javadocs-lucene-core">
+    <invoke-module-javadoc/>
+  </target>	
+
+  <macrodef name="invoke-module-javadoc">
+    <!-- additional links for dependencies to other modules -->
+      <element name="links" optional="yes"/>
+    <sequential>
+      <mkdir dir="${javadoc.dir}/${name}"/>
+      <invoke-javadoc
          destdir="${javadoc.dir}/${name}"
-       	title="${Name} ${version} ${name} API">
+       	 title="${Name} ${version} ${name} API">
          <sources>
+           <link href="../core/"/>
+           <links/>
            <link href=""/>
            <packageset dir="${src.dir}"/>
         </sources>
       </invoke-javadoc>
       <jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
     </sequential>
-  </target>	
+  </macrodef>
 
   <target name="javadocs-index.html" description="Generate line for index.html of JavaDocs">
+    <xmlproperty file="${ant.file}" collapseAttributes="true"/>
     <echo file="${javadoc.dir}/index.html" append="true">
 <![CDATA[
-  <li><a href="${name}/index.html">${name}</a></li>
+  <li><a href="${name}/index.html">${name}</a>: ${project.description}</a></li>
 ]]></echo>
   </target>
 
@@ -95,6 +105,17 @@
     </ant>
     <property name="queryparser.uptodate" value="true"/>
   </target>
+
+  <property name="queryparser-javadoc.jar" value="${common.dir}/build/queryparser/lucene-queryparser-${version}-javadoc.jar"/>
+  <target name="check-queryparser-javadocs-uptodate" unless="queryparser-javadocs.uptodate">
+    <module-uptodate name="queryparser" jarfile="${queryparser-javadoc.jar}" property="queryparser-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-queryparser" unless="queryparser-javadocs.uptodate" depends="check-queryparser-javadocs-uptodate">
+    <ant dir="${common.dir}/queryparser" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queryparser-javadocs.uptodate" value="true"/>
+  </target>
   
   <property name="analyzers-common.jar" value="${common.dir}/build/analysis/common/lucene-analyzers-common-${version}.jar"/>
   <target name="check-analyzers-common-uptodate" unless="analyzers-common.uptodate">
@@ -107,6 +128,17 @@
     <property name="analyzers-common.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-common-javadoc.jar" value="${common.dir}/build/analysis/common/lucene-analyzers-common-${version}-javadoc.jar"/>
+  <target name="check-analyzers-common-javadocs-uptodate" unless="analyzers-common-javadocs.uptodate">
+    <module-uptodate name="analysis/common" jarfile="${analyzers-common-javadoc.jar}" property="analyzers-common-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-common" unless="analyzers-common-javadocs.uptodate" depends="check-analyzers-common-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/common" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-common-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="queries.jar" value="${common.dir}/build/queries/lucene-queries-${version}.jar"/>
   <target name="check-queries-uptodate" unless="queries.uptodate">
     <module-uptodate name="queries" jarfile="${queries.jar}" property="queries.uptodate"/>
@@ -116,6 +148,17 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="queries.uptodate" value="true"/>
+  </target>
+
+  <property name="queries-javadoc.jar" value="${common.dir}/build/queries/lucene-queries-${version}-javadoc.jar"/>
+  <target name="check-queries-javadocs-uptodate" unless="queries-javadocs.uptodate">
+    <module-uptodate name="queries" jarfile="${queries-javadoc.jar}" property="queries-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-queries" unless="queries-javadocs.uptodate" depends="check-queries-javadocs-uptodate">
+    <ant dir="${common.dir}/queries" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queries-javadocs.uptodate" value="true"/>
   </target>
   
   <property name="facet.jar" value="${common.dir}/build/facet/lucene-facet-${version}.jar"/>
@@ -129,6 +172,17 @@
     <property name="facet.uptodate" value="true"/>
   </target>
 
+  <property name="facet-javadoc.jar" value="${common.dir}/build/facet/lucene-facet-${version}-javadoc.jar"/>
+  <target name="check-facet-javadocs-uptodate" unless="facet-javadocs.uptodate">
+    <module-uptodate name="facet" jarfile="${facet-javadoc.jar}" property="facet-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-facet" unless="facet-javadocs.uptodate" depends="check-facet-javadocs-uptodate">
+    <ant dir="${common.dir}/facet" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="facet-javadocs.uptodate" value="true"/>
+  </target>
+ 
   <property name="analyzers-icu.jar" value="${common.dir}/build/analysis/icu/lucene-analyzers-icu-${version}.jar"/>
   <target name="check-analyzers-icu-uptodate" unless="analyzers-icu.uptodate">
     <module-uptodate name="analysis/icu" jarfile="${analyzers-icu.jar}" property="analyzers-icu.uptodate"/>
@@ -138,6 +192,17 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-icu.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-icu-javadoc.jar" value="${common.dir}/build/analysis/icu/lucene-analyzers-icu-${version}-javadoc.jar"/>
+  <target name="check-analyzers-icu-javadocs-uptodate" unless="analyzers-icu-javadocs.uptodate">
+    <module-uptodate name="analysis/icu" jarfile="${analyzers-icu-javadoc.jar}" property="analyzers-icu-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-icu" unless="analyzers-icu-javadocs.uptodate" depends="check-analyzers-icu-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/icu" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-icu-javadocs.uptodate" value="true"/>
   </target>
 
   <property name="analyzers-phonetic.jar" value="${common.dir}/build/analysis/phonetic/lucene-analyzers-phonetic-${version}.jar"/>
@@ -150,6 +215,16 @@
     </ant>
   </target>
 
+  <property name="analyzers-phonetic-javadoc.jar" value="${common.dir}/build/analysis/phonetic/lucene-analyzers-phonetic-${version}-javadoc.jar"/>
+  <target name="check-analyzers-phonetic-javadocs-uptodate" unless="analyzers-phonetic-javadocs.uptodate">
+    <module-uptodate name="analysis/phonetic" jarfile="${analyzers-phonetic-javadoc.jar}" property="analyzers-phonetic-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-phonetic" unless="analyzers-phonetic-javadocs.uptodate" depends="check-analyzers-phonetic-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/phonetic" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-phonetic-javadocs.uptodate" value="true"/>
+  </target>
 
   <property name="analyzers-smartcn.jar" value="${common.dir}/build/analysis/smartcn/lucene-analyzers-smartcn-${version}.jar"/>
   <target name="check-analyzers-smartcn-uptodate" unless="analyzers-smartcn.uptodate">
@@ -160,6 +235,17 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-smartcn.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-smartcn-javadoc.jar" value="${common.dir}/build/analysis/smartcn/lucene-analyzers-smartcn-${version}-javadoc.jar"/>
+  <target name="check-analyzers-smartcn-javadocs-uptodate" unless="analyzers-smartcn-javadocs.uptodate">
+    <module-uptodate name="analysis/smartcn" jarfile="${analyzers-smartcn-javadoc.jar}" property="analyzers-smartcn-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-smartcn" unless="analyzers-smartcn-javadocs.uptodate" depends="check-analyzers-smartcn-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/smartcn" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-smartcn-javadocs.uptodate" value="true"/>
   </target>
 
   <property name="analyzers-stempel.jar" value="${common.dir}/build/analysis/stempel/lucene-analyzers-stempel-${version}.jar"/>
@@ -173,6 +259,17 @@
     <property name="analyzers-stempel.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-stempel-javadoc.jar" value="${common.dir}/build/analysis/stempel/lucene-analyzers-stempel-${version}-javadoc.jar"/>
+  <target name="check-analyzers-stempel-javadocs-uptodate" unless="analyzers-stempel-javadocs.uptodate">
+    <module-uptodate name="analysis/stempel" jarfile="${analyzers-stempel-javadoc.jar}" property="analyzers-stempel-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-stempel" unless="analyzers-stempel-javadocs.uptodate" depends="check-analyzers-stempel-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/stempel" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-stempel-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="analyzers-kuromoji.jar" value="${common.dir}/build/analysis/kuromoji/lucene-analyzers-kuromoji-${version}.jar"/>
   <target name="check-analyzers-kuromoji-uptodate" unless="analyzers-kuromoji.uptodate">
     <module-uptodate name="analysis/kuromoji" jarfile="${analyzers-kuromoji.jar}" property="analyzers-kuromoji.uptodate"/>
@@ -184,6 +281,17 @@
     <property name="analyzers-kuromoji.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-kuromoji-javadoc.jar" value="${common.dir}/build/analysis/kuromoji/lucene-analyzers-kuromoji-${version}-javadoc.jar"/>
+  <target name="check-analyzers-kuromoji-javadocs-uptodate" unless="analyzers-kuromoji-javadocs.uptodate">
+    <module-uptodate name="analysis/kuromoji" jarfile="${analyzers-kuromoji-javadoc.jar}" property="analyzers-kuromoji-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-kuromoji" unless="analyzers-kuromoji-javadocs.uptodate" depends="check-analyzers-kuromoji-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/kuromoji" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-kuromoji-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="analyzers-uima.jar" value="${common.dir}/build/analysis/uima/lucene-analyzers-uima-${version}.jar"/>
   <target name="check-analyzers-uima-uptodate" unless="analyzers-uima.uptodate">
     <module-uptodate name="analysis/uima" jarfile="${analyzers-uima.jar}" property="analyzers-uima.uptodate"/>
@@ -193,6 +301,17 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-uima.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-uima-javadoc.jar" value="${common.dir}/build/analysis/uima/lucene-analyzers-uima-${version}-javadoc.jar"/>
+  <target name="check-analyzers-uima-javadocs-uptodate" unless="analyzers-uima-javadocs.uptodate">
+    <module-uptodate name="analysis/uima" jarfile="${analyzers-uima-javadoc.jar}" property="analyzers-uima-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-uima" unless="analyzers-uima-javadocs.uptodate" depends="check-analyzers-uima-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/uima" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-uima-javadocs.uptodate" value="true"/>
   </target>
 
   <property name="analyzers-morfologik.jar" value="${common.dir}/build/analysis/morfologik/lucene-analyzers-morfologik-${version}.jar"/>
@@ -212,6 +331,17 @@
     <property name="analyzers-morfologik.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-morfologik-javadoc.jar" value="${common.dir}/build/analysis/morfologik/lucene-analyzers-morfologik-${version}-javadoc.jar"/>
+  <target name="check-analyzers-morfologik-javadocs-uptodate" unless="analyzers-morfologik-javadocs.uptodate">
+    <module-uptodate name="analysis/morfologik" jarfile="${analyzers-morfologik-javadoc.jar}" property="analyzers-morfologik-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-morfologik" unless="analyzers-morfologik-javadocs.uptodate" depends="check-analyzers-morfologik-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/morfologik" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-morfologik-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="grouping.jar" value="${common.dir}/build/grouping/lucene-grouping-${version}.jar"/>
   <target name="check-grouping-uptodate" unless="grouping.uptodate">
     <module-uptodate name="grouping" jarfile="${grouping.jar}" property="grouping.uptodate"/>
@@ -221,6 +351,17 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="grouping.uptodate" value="true"/>
+  </target>
+
+  <property name="grouping-javadoc.jar" value="${common.dir}/build/grouping/lucene-grouping-${version}-javadoc.jar"/>
+  <target name="check-grouping-javadocs-uptodate" unless="grouping-javadocs.uptodate">
+    <module-uptodate name="grouping" jarfile="${grouping-javadoc.jar}" property="grouping-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-grouping" unless="grouping-javadocs.uptodate" depends="check-grouping-javadocs-uptodate">
+    <ant dir="${common.dir}/grouping" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="grouping-javadocs.uptodate" value="true"/>
   </target>
 
   <property name="highlighter.jar" value="${common.dir}/build/highlighter/lucene-highlighter-${version}.jar"/>
@@ -234,6 +375,17 @@
     <property name="highlighter.uptodate" value="true"/>
   </target>
 
+  <property name="highlighter-javadoc.jar" value="${common.dir}/build/highlighter/lucene-highlighter-${version}-javadoc.jar"/>
+  <target name="check-highlighter-javadocs-uptodate" unless="highlighter-javadocs.uptodate">
+    <module-uptodate name="highlighter" jarfile="${highlighter-javadoc.jar}" property="highlighter-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-highlighter" unless="highlighter-javadocs.uptodate" depends="check-highlighter-javadocs-uptodate">
+    <ant dir="${common.dir}/highlighter" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="highlighter-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="memory.jar" value="${common.dir}/build/memory/lucene-memory-${version}.jar"/>
   <target name="check-memory-uptodate" unless="memory.uptodate">
     <module-uptodate name="memory" jarfile="${memory.jar}" property="memory.uptodate"/>
@@ -243,6 +395,17 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="memory.uptodate" value="true"/>
+  </target>
+
+  <property name="memory-javadoc.jar" value="${common.dir}/build/memory/lucene-memory-${version}-javadoc.jar"/>
+  <target name="check-memory-javadocs-uptodate" unless="memory-javadocs.uptodate">
+    <module-uptodate name="memory" jarfile="${memory-javadoc.jar}" property="memory-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-memory" unless="memory-javadocs.uptodate" depends="check-memory-javadocs-uptodate">
+    <ant dir="${common.dir}/memory" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="memory-javadocs.uptodate" value="true"/>
   </target>
 
   <property name="misc.jar" value="${common.dir}/build/misc/lucene-misc-${version}.jar"/>
@@ -256,6 +419,17 @@
     <property name="misc.uptodate" value="true"/>
   </target>
 
+  <property name="misc-javadoc.jar" value="${common.dir}/build/misc/lucene-misc-${version}-javadoc.jar"/>
+  <target name="check-misc-javadocs-uptodate" unless="misc-javadocs.uptodate">
+    <module-uptodate name="misc" jarfile="${misc-javadoc.jar}" property="misc-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-misc" unless="misc-javadocs.uptodate" depends="check-misc-javadocs-uptodate">
+    <ant dir="${common.dir}/misc" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="misc-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="sandbox.jar" value="${common.dir}/build/sandbox/lucene-sandbox-${version}.jar"/>
   <target name="check-sandbox-uptodate" unless="sandbox.uptodate">
     <module-uptodate name="sandbox" jarfile="${sandbox.jar}" property="sandbox.uptodate"/>
@@ -265,6 +439,17 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="sandbox.uptodate" value="true"/>
+  </target>
+
+  <property name="sandbox-javadoc.jar" value="${common.dir}/build/sandbox/lucene-sandbox-${version}-javadoc.jar"/>
+  <target name="check-sandbox-javadocs-uptodate" unless="sandbox-javadocs.uptodate">
+    <module-uptodate name="sandbox" jarfile="${sandbox-javadoc.jar}" property="sandbox-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-sandbox" unless="sandbox-javadocs.uptodate" depends="check-sandbox-javadocs-uptodate">
+    <ant dir="${common.dir}/sandbox" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="sandbox-javadocs.uptodate" value="true"/>
   </target>
 
   <property name="spatial.jar" value="${common.dir}/build/spatial/lucene-spatial-${version}.jar"/>
@@ -278,6 +463,17 @@
     <property name="spatial.uptodate" value="true"/>
   </target>
 
+  <property name="spatial-javadoc.jar" value="${common.dir}/build/spatial/lucene-spatial-${version}-javadoc.jar"/>
+  <target name="check-spatial-javadocs-uptodate" unless="spatial-javadocs.uptodate">
+    <module-uptodate name="spatial" jarfile="${spatial-javadoc.jar}" property="spatial-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-spatial" unless="spatial-javadocs.uptodate" depends="check-spatial-javadocs-uptodate">
+    <ant dir="${common.dir}/spatial" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="suggest.jar" value="${common.dir}/build/suggest/lucene-suggest-${version}.jar"/>
   <target name="check-suggest-uptodate" unless="suggest.uptodate">
     <module-uptodate name="suggest" jarfile="${suggest.jar}" property="suggest.uptodate"/>
@@ -287,5 +483,16 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="suggest.uptodate" value="true"/>
+  </target>
+
+  <property name="suggest-javadoc.jar" value="${common.dir}/build/suggest/lucene-suggest-${version}-javadoc.jar"/>
+  <target name="check-suggest-javadocs-uptodate" unless="suggest-javadocs.uptodate">
+    <module-uptodate name="suggest" jarfile="${suggest-javadoc.jar}" property="suggest-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-suggest" unless="suggest-javadocs.uptodate" depends="check-suggest-javadocs-uptodate">
+    <ant dir="${common.dir}/suggest" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="suggest-javadocs.uptodate" value="true"/>
   </target>
 </project>

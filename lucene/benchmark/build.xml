@@ -20,7 +20,7 @@
 <project name="benchmark" default="default">
 
     <description>
-        Lucene Benchmarking Contributions
+      System for benchmarking Lucene
     </description>
 
     <import file="../module-build.xml"/>
@@ -162,6 +162,18 @@
         <pathelement location="${build.dir}/classes/java"/>
         <pathelement path="${benchmark.ext.classpath}"/>
     </path>
+
+    <target name="javadocs" depends="javadocs-memory,javadocs-highlighter,javadocs-analyzers-common,javadocs-queryparser,javadocs-facet,compile-core">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../memory"/>
+        <link href="../highlighter"/>
+        <link href="../analyzers-common"/>
+        <link href="../queryparser"/>
+        <link href="../facet"/>
+      </links>
+    </invoke-module-javadoc>
+    </target>
 
     <property name="task.alg" location="conf/micro-standard.alg"/>
     <property name="task.mem" value="140M"/>

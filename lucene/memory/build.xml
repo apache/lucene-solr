@@ -20,7 +20,7 @@
 <project name="memory" default="default">
 
   <description>
-    High-performance single-document index to compare against Query
+    Single-document in-memory index implementation
   </description>
 
   <import file="../module-build.xml"/>

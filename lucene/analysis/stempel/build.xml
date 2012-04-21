@@ -20,7 +20,7 @@
 <project name="analyzers-stempel" default="default">
 
   <description>
-    Stempel Analyzer
+    Analyzer for indexing Polish
   </description>
 	
   <import file="../analysis-module-build.xml"/>

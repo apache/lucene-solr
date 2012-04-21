@@ -20,7 +20,7 @@
 <project name="analyzers-common" default="default">
 
   <description>
-   Analyzers
+   Analyzers for indexing content in different languages and domains.
   </description>
 
   <!-- some files for testing that do not have license headers -->
@@ -138,4 +138,6 @@
       <classpath refid="classpath"/>
     </compile>
   </target>
+
+  <target name="javadocs" depends="module-build.javadocs"/>
 </project>

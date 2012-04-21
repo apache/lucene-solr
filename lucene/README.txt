@@ -22,12 +22,13 @@ core/lucene-core-XX.jar
 Additional modules contain the same structure:
 
 analysis/common/: Analyzers for indexing content in different languages and domains
+analysis/icu/: Analysis integration with ICU (International Components for Unicode)
 analysis/kuromoji/: Analyzer for indexing Japanese
 analysis/morfologik/: Analyzer for indexing Polish
 analysis/phonetic/: Analyzer for indexing phonetic signatures (for sounds-alike search)
 analysis/smartcn/: Analyzer for indexing Chinese
 analysis/stempel/: Analyzer for indexing Polish
-analysis/uima/: Analyzer that integrates with Apache UIMA
+analysis/uima/: Analysis integration with Apache UIMA
 benchmark/: System for benchmarking Lucene
 demo/: Simple example code
 facet/: Faceted indexing and search capabilities

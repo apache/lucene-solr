@@ -20,7 +20,7 @@
 <project name="analyzers-morfologik" default="default">
 
   <description>
-    Morfologik Analyzer
+    Analyzer for indexing Polish
   </description>
 
   <import file="../analysis-module-build.xml"/>

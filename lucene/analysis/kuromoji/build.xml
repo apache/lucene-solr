@@ -20,7 +20,7 @@
 <project name="analyzers-kuromoji" default="default">
 
   <description>
-    Kuromoji Japanese Morphological Analyzer
+    Japanese Morphological Analyzer
   </description>
 
   <!-- default configuration: uses mecab-ipadic -->

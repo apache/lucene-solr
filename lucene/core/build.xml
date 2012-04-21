@@ -18,7 +18,7 @@
  -->
 
 <project name="core" default="default">
-  <description>Lucene Core</description>
+  <description>Lucene core library</description>
 
   <property name="build.dir" location="../build/core"/>
 

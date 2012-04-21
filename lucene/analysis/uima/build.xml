@@ -20,7 +20,7 @@
 <project name="analyzers-uima" default="default">
 
   <description>
-    UIMA Analysis module
+    Analysis integration with Apache UIMA
   </description>
 	
   <property name="tests.userdir" value="src/test-files"/>

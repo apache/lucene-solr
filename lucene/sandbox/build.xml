@@ -18,7 +18,7 @@
 <project name="sandbox" default="default">
 
   <description>
-    Sandbox for odd contrib code
+    Various third party contributions and new ideas
   </description>
 
   <import file="../module-build.xml"/>

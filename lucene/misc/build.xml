@@ -22,7 +22,7 @@
   <!-- TODO: add javacc capability for PrecedenceQueryParser -->
 
   <description>
-    Miscellaneous Lucene extensions
+    Index tools and other miscellaneous code
   </description>
 
   <import file="../module-build.xml"/>

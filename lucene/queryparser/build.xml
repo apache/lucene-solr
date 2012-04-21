@@ -17,7 +17,7 @@
 
 <project name="queryparser" default="default">
   <description>
-    Lucene QueryParsers
+    Query parsers and parsing framework
   </description>
 
   <import file="../module-build.xml"/>
@@ -29,6 +29,15 @@
   </path>
 
   <target name="compile-core" depends="jar-queries,jar-sandbox,common.compile-core"/>
+
+  <target name="javadocs" depends="javadocs-queries,javadocs-sandbox,compile-core">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../queries"/>
+        <link href="../sandbox"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
 
   <target name="javacc" depends="init,javacc-check,javacc-QueryParser,javacc-surround,javacc-flexible"/>
 

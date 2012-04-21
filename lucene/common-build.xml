@@ -553,11 +553,41 @@
     <property name="core.compiled" value="true"/>
   </target>
 
+  <target name="check-lucene-core-javadocs-uptodate" unless="core-javadocs.uptodate">
+    <uptodate property="core-javadocs.uptodate" targetfile="${common.dir}/build/core/lucene-core-${version}-javadoc.jar">
+       <srcfiles dir="${common.dir}/core/src/java" includes="**/*.java"/>
+    </uptodate>
+  </target>
+
+  <target name="javadocs-lucene-core" depends="check-lucene-core-javadocs-uptodate" unless="core-javadocs.uptodate">
+    <ant dir="${common.dir}/core" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="core-javadocs.uptodate" value="true"/>
+  </target>
+
   <target name="compile-test-framework" unless="lucene.test.framework.compiled">
     <ant dir="${common.dir}/test-framework" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="lucene.test.framework.compiled" value="true"/>
+  </target>
+
+  <target name="check-lucene-test-framework-javadocs-uptodate" 
+          unless="lucene.test.framework-javadocs.uptodate">
+    <uptodate property="lucene.test.framework-javadocs.uptodate" 
+         targetfile="${common.dir}/build/test-framework/lucene-test-framework-${version}-javadoc.jar">
+       <srcfiles dir="${common.dir}/test-framework/src/java" includes="**/*.java"/>
+    </uptodate>
+  </target>
+
+  <target name="javadocs-test-framework" 
+          depends="check-lucene-test-framework-javadocs-uptodate"
+          unless="lucene.test.framework-javadocs.uptodate">
+    <ant dir="${common.dir}/test-framework" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="lucene.test.framework-javadocs.uptodate" value="true"/>
   </target>
 
   <target name="compile-tools">

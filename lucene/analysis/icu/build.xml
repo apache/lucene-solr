@@ -20,8 +20,7 @@
 <project name="analyzers-icu" default="default">
 
   <description>
-  	Provides integration with ICU (International Components for Unicode) for
-  	stronger Unicode and internationalization support. 
+   Analysis integration with ICU (International Components for Unicode).
   </description>
 
   <import file="../analysis-module-build.xml"/>
@@ -130,20 +129,5 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
       <classpath refid="classpath"/>
     </compile>
   </target>
-  
-  <target name="javadocs" depends="compile-core">
-   	<sequential>
-       <mkdir dir="${javadoc.dir}/${name}"/>
-       <invoke-javadoc
-         destdir="${javadoc.dir}/${name}"
-       	 title="${Name} ${version} ${name} API">
-         <sources>
-           <link href="../analyzers-common"/>
-           <link href=""/>
-           <packageset dir="${src.dir}"/>
-        </sources>
-      </invoke-javadoc>
-      <jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
-    </sequential>
-  </target>
+
 </project>

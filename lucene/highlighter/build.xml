@@ -20,7 +20,7 @@
 <project name="highlighter" default="default">
 
   <description>
-    Hits highlighter
+    Highlights search keywords in results
   </description>
 
   <import file="../module-build.xml"/>
@@ -31,4 +31,11 @@
   </path>
 
   <target name="compile-core" depends="jar-memory, common.compile-core" />
+  <target name="javadocs" depends="javadocs-memory,compile-core">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../memory"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
 </project>
