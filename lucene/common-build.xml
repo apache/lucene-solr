@@ -1274,6 +1274,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <attribute name="destdir"/>
   	<attribute name="title" default="${Name} ${version} API"/>
     <attribute name="overview" default="${src.dir}/overview.html"/>
+    <attribute name="linksource" default="no"/>
     <sequential>
       <antcall target="download-java6-javadoc-packagelist"/>
       <delete file="@{destdir}/stylesheet.css" failonerror="false"/>
@@ -1291,6 +1292,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           noindex="true"
           author="true"
           version="true"
+          linksource="@{linksource}"
           use="true"
           failonerror="true"
           source="${ant.java.version}"

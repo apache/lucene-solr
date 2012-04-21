@@ -71,11 +71,14 @@
   <macrodef name="invoke-module-javadoc">
     <!-- additional links for dependencies to other modules -->
       <element name="links" optional="yes"/>
+    <!-- link source (don't do this unless its example code) -->
+      <attribute name="linksource" default="no"/>
     <sequential>
       <mkdir dir="${javadoc.dir}/${name}"/>
       <invoke-javadoc
          destdir="${javadoc.dir}/${name}"
-       	 title="${Name} ${version} ${name} API">
+       	 title="${Name} ${version} ${name} API"
+         linksource="@{linksource}">
          <sources>
            <link href="../core/"/>
            <links/>
