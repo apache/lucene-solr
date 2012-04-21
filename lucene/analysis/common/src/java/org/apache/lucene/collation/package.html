@@ -21,12 +21,10 @@
 </head>
 <body>
 <p>
-  <code>CollationKeyFilter</code>
+  Unicode collation support.
+  <code>Collation</code>
   converts each token into its binary <code>CollationKey</code> using the 
-  provided <code>Collator</code>, and then encode the <code>CollationKey</code>
-  as a String using
-  {@link org.apache.lucene.util.IndexableBinaryStringTools}, to allow it to be 
-  stored as an index term.
+  provided <code>Collator</code>, allowing it to be stored as an index term.
 </p>
 
 <h2>Use Cases</h2>
