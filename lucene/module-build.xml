@@ -91,7 +91,7 @@
     <xmlproperty file="${ant.file}" collapseAttributes="true"/>
     <echo file="${javadoc.dir}/index.html" append="true">
 <![CDATA[
-  <li><a href="${name}/index.html">${name}</a>: ${project.description}</a></li>
+  <li><a href="${name}/index.html">${name}</a>: ${project.description}</li>
 ]]></echo>
   </target>
 
