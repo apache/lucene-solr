@@ -126,8 +126,15 @@ sammy.get
                 form_values.push( all_form_values[i] );
               }
 
+              var handler_path = $( '#qt', query_form ).val();
+              if( '/' !== handler_path[0] )
+              {
+                form_values.push( { name : 'qt', value : handler_path.esc() } );
+                handler_path = '/select';
+              }
+
               var query_url = window.location.protocol + '//' + window.location.host
-                            + core_basepath + '/select?' + $.param( form_values );
+                            + core_basepath + handler_path + '?' + $.param( form_values );
                             
               url_element
                 .attr( 'href', query_url )

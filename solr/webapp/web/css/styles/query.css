@@ -52,6 +52,11 @@
   margin-bottom: 5px;
 }
 
+#content #query #form fieldset.common
+{
+  margin-top: 10px;
+}
+
 #content #query #form fieldset legend,
 #content #query #form .optional.expanded legend
 {
