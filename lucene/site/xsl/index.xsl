@@ -42,13 +42,6 @@
           <xsl:value-of select="$version"/></b>. Additional documentation is available in the
           <a href="http://wiki.apache.org/lucene-java">Wiki</a>.
         </p>
-        <h2>Index</h2>
-        <ul>
-          <li><a href="changes/Changes.html">Changes</a></li>
-          <li><a href="fileformats.html">File Formats Documentation</a></li>
-          <li><a href="scoring.html">Scoring in Lucene</a></li>
-          <li><a href="queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">Classic QueryParser Syntax</a></li>
-        </ul>
         <h2>Getting Started</h2>
         <p>The following section is intended as a "getting started" guide. It has three
         audiences: first-time users looking to install Apache Lucene in their
@@ -62,7 +55,14 @@
         <li><a href="core/overview-summary.html#overview_description">Introduction to Lucene's APIs</a>:
         High-level summary of the different Lucene packages. </li>
         </ul>
-        <h2>Javadocs</h2>
+        <h2>Reference Documents</h2>
+          <ul>
+            <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
+            <li><a href="fileformats.html">File Formats</a>: Guide to the index format used by Lucene.</li>
+            <li><a href="scoring.html">Scoring in Lucene</a>: Introduction to how Lucene scores documents.</li>
+            <li><a href="queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">Classic QueryParser Syntax</a>: Overview of the Classic QueryParser's syntax and features.</li>
+          </ul>
+        <h2>API Javadocs</h2>
         <xsl:call-template name="modules"/>
       </body>
     </html>
