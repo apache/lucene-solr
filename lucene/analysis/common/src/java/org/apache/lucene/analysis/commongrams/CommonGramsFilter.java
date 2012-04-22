@@ -44,7 +44,7 @@ import org.apache.lucene.util.Version;
  */
 public final class CommonGramsFilter extends TokenFilter {
 
-  static final String GRAM_TYPE = "gram";
+  public static final String GRAM_TYPE = "gram";
   private static final char SEPARATOR = '_';
 
   private final CharArraySet commonWords;

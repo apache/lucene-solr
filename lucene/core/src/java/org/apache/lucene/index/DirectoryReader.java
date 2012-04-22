@@ -397,7 +397,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    *
    * <p>If instead this reader is a near real-time reader
    * (ie, obtained by a call to {@link
-   * IndexWriter#getReader}, or by calling {@link #openIfChanged}
+   * IndexReader#open(IndexWriter,boolean)}, or by calling {@link #openIfChanged}
    * on a near real-time reader), then this method checks if
    * either a new commmit has occurred, or any new
    * uncommitted changes have taken place via the writer.

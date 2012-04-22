@@ -2517,7 +2517,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   /** Commits all changes to the index, specifying a
    *  commitUserData Map (String -> String).  This just
    *  calls {@link #prepareCommit(Map)} (if you didn't
-   *  already call it) and then {@link #finishCommit}.
+   *  already call it) and then {@link #commit}.
    *
    * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
    * you should immediately close the writer.  See <a
@@ -3719,13 +3719,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     directory.makeLock(IndexWriter.WRITE_LOCK_NAME).release();
   }
 
-  /** If {@link #getReader} has been called (ie, this writer
-   *  is in near real-time mode), then after a merge
-   *  completes, this class can be invoked to warm the
-   *  reader on the newly merged segment, before the merge
-   *  commits.  This is not required for near real-time
-   *  search, but will reduce search latency on opening a
-   *  new near real-time reader after a merge completes.
+  /** If {@link IndexReader#open(IndexWriter,boolean)} has
+   *  been called (ie, this writer is in near real-time
+   *  mode), then after a merge completes, this class can be
+   *  invoked to warm the reader on the newly merged
+   *  segment, before the merge commits.  This is not
+   *  required for near real-time search, but will reduce
+   *  search latency on opening a new near real-time reader
+   *  after a merge completes.
    *
    * @lucene.experimental
    *

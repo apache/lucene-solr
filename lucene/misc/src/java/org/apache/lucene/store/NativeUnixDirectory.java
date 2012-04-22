@@ -43,7 +43,7 @@ import org.apache.lucene.store.IOContext.Context;
  * to the provided Directory instance.
  *
  * <p>See <a
- * href="../../../../../contrib-misc/overview-summary.html#NativeUnixDirectory">Overview</a>
+ * href="{@docRoot}/overview-summary.html#NativeUnixDirectory">Overview</a>
  * for more details.
  *
  * <p>To use this you must compile
