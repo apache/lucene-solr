@@ -124,7 +124,10 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
     }
   }
 
-  static class GroupCount extends AbstractDistinctValuesCollector.GroupCount<BytesRef> {
+  /** Holds distinct values for a single group.
+   *
+   * @lucene.experimental */
+  public static class GroupCount extends AbstractDistinctValuesCollector.GroupCount<BytesRef> {
 
     int[] ords;
 

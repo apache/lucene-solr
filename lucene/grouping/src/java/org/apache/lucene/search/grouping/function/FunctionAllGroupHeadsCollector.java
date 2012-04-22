@@ -116,7 +116,10 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
     }
   }
 
-  class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<MutableValue> {
+  /** Holds current head document for a single group.
+   *
+   * @lucene.experimental */
+  public class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<MutableValue> {
 
     final FieldComparator<?>[] comparators;
 

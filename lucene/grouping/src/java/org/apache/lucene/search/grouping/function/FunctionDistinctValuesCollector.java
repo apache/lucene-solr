@@ -76,7 +76,10 @@ public class FunctionDistinctValuesCollector extends AbstractDistinctValuesColle
     countMval = countFiller.getValue();
   }
 
-  static class GroupCount extends AbstractDistinctValuesCollector.GroupCount<MutableValue> {
+  /** Holds distinct values for a single group.
+   *
+   * @lucene.experimental */
+  public static class GroupCount extends AbstractDistinctValuesCollector.GroupCount<MutableValue> {
 
     GroupCount(MutableValue groupValue) {
       super(groupValue);
