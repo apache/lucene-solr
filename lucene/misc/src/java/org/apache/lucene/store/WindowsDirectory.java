@@ -38,6 +38,7 @@ import org.apache.lucene.store.NativeFSLockFactory; // javadoc
  *       For 64-bit JREs, use mingw64, with the -m64 option. 
  *   <li>Put WindowsDirectory.dll into some directory in your windows PATH
  *   <li>Open indexes with WindowsDirectory and use it.
+ * </ol>
  * </p>
  * @lucene.experimental
  */
