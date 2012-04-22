@@ -93,7 +93,8 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <a target="_blank" href="http://today.java.net/pub/a/today/2003/07/30/LuceneIntro.html">Lucene Analyzer Intro</a>.
  * <p>
  * Arbitrary Lucene queries can be run against this class - see <a target="_blank" 
- * href="../../../../../../../queryparsersyntax.html">Lucene Query Syntax</a>
+ * href="{@docRoot}/../queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">
+ * Lucene Query Syntax</a>
  * as well as <a target="_blank" 
  * href="http://today.java.net/pub/a/today/2003/11/07/QueryParserRules.html">Query Parser Rules</a>.
  * Note that a Lucene query selects on the field names and associated (indexed) 

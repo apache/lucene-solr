@@ -44,8 +44,8 @@ import org.apache.lucene.util.Version;
  *
  * <p>
  * Examples of appropriately formatted queries can be found in the <a
- * href="../../../../../../queryparsersyntax.html">query syntax
- * documentation</a>.
+ * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package_description">
+ * query syntax documentation</a>
  * </p>
  *
  * <p>
