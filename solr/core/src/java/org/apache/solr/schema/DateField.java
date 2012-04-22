@@ -360,7 +360,7 @@ public class DateField extends PrimitiveFieldType {
       /* delegate to SimpleDateFormat for easy stuff */
       Date d = super.parse(i, p);
       int milliIndex = p.getIndex();
-      /* worry aboutthe milliseconds ourselves */
+      /* worry about the milliseconds ourselves */
       if (null != d &&
           -1 == p.getErrorIndex() &&
           milliIndex + 1 < i.length() &&
