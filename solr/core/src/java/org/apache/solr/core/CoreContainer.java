@@ -972,7 +972,7 @@ public class CoreContainer
     }
 
 
-    log.info("swaped: "+n0 + " with " + n1);
+    log.info("swapped: "+n0 + " with " + n1);
   }
   
   /** Removes and returns registered core w/o decrementing it's reference count */
