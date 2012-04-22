@@ -105,16 +105,14 @@ applications.</p>
 <h2 class="boxed">IndexFiles</h2>
 <div class="section">
 <p>As we discussed in the previous walk-through, the <a href=
-"api/demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates
+"src-html/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates
 a Lucene Index. Let's take a look at how it does this.</p>
 <p>The <span class="codefrag">main()</span> method parses the command-line
-parameters, then in preparation for instantiating <a href=
-"api/core/org/apache/lucene/index/IndexWriter.html">IndexWriter</a>, opens a
-<a href="api/core/org/apache/lucene/store/Directory.html">Directory</a> and
-instantiates <a href=
-"api/analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">
-StandardAnalyzer</a> and <a href=
-"api/core/org/apache/lucene/index/IndexWriterConfig.html">IndexWriterConfig</a>.</p>
+parameters, then in preparation for instantiating 
+{@link org.apache.lucene.index.IndexWriter IndexWriter}, opens a
+{@link org.apache.lucene.store.Directory Directory}, and
+instantiates {@link org.apache.lucene.analysis.standard.StandardAnalyzer StandardAnalyzer}
+and {@link org.apache.lucene.index.IndexWriterConfig IndexWriterConfig}.</p>
 <p>The value of the <span class="codefrag">-index</span> command-line parameter
 is the name of the filesystem directory where all index information should be
 stored. If <span class="codefrag">IndexFiles</span> is invoked with a relative
@@ -132,16 +130,13 @@ location of the directory containing files to be indexed.</p>
 exists. When <span class="codefrag">-update</span> is not given, <span class=
 "codefrag">IndexFiles</span> will first wipe the slate clean before indexing
 any documents.</p>
-<p>Lucene <a href=
-"api/core/org/apache/lucene/store/Directory.html">Directory</a>s are used by
+<p>Lucene {@link org.apache.lucene.store.Directory Directory}s are used by
 the <span class="codefrag">IndexWriter</span> to store information in the
-index. In addition to the <a href=
-"api/core/org/apache/lucene/store/FSDirectory.html">FSDirectory</a>
+index. In addition to the {@link org.apache.lucene.store.FSDirectory FSDirectory} 
 implementation we are using, there are several other <span class=
 "codefrag">Directory</span> subclasses that can write to RAM, to databases,
 etc.</p>
-<p>Lucene <a href=
-"api/core/org/apache/lucene/analysis/Analyzer.html">Analyzer</a>s are
+<p>Lucene {@link org.apache.lucene.analysis.Analyzer Analyzer}s are
 processing pipelines that break up text into indexed tokens, a.k.a. terms, and
 optionally perform other operations on these tokens, e.g. downcasing, synonym
 insertion, filtering out unwanted tokens, etc. The <span class=
@@ -155,7 +150,7 @@ have less value for searching. It should be noted that there are different
 rules for every language, and you should use the proper analyzer for each.
 Lucene currently provides Analyzers for a number of different languages (see
 the javadocs under <a href=
-"api/analyzers-common/org/apache/lucene/analysis/">lucene/analysis/common/src/java/org/apache/lucene/analysis</a>).</p>
+"../analyzers-common/overview-summary.html">lucene/analysis/common/src/java/org/apache/lucene/analysis</a>).</p>
 <p>The <span class="codefrag">IndexWriterConfig</span> instance holds all
 configuration for <span class="codefrag">IndexWriter</span>. For example, we
 set the <span class="codefrag">OpenMode</span> to use here based on the value
@@ -163,8 +158,7 @@ of the <span class="codefrag">-update</span> command-line parameter.</p>
 <p>Looking further down in the file, after <span class=
 "codefrag">IndexWriter</span> is instantiated, you should see the <span class=
 "codefrag">indexDocs()</span> code. This recursive function crawls the
-directories and creates <a href=
-"api/core/org/apache/lucene/document/Document.html">Document</a> objects. The
+directories and creates {@link org.apache.lucene.document.Document Document} objects. The
 <span class="codefrag">Document</span> is simply a data object to represent the
 text content from the file as well as its creation time and location. These
 instances are added to the <span class="codefrag">IndexWriter</span>. If the
@@ -182,30 +176,28 @@ adding the new document to the index.</p>
 <h2 class="boxed">Searching Files</h2>
 <div class="section">
 <p>The <a href=
-"api/demo/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
-quite simple. It primarily collaborates with an <a href=
-"api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>,
-<a href=
-"api/analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">
-StandardAnalyzer</a> (which is used in the <a href=
-"api/demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well)
-and a <a href=
-"api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>. The
+"src-html/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
+quite simple. It primarily collaborates with an 
+{@link org.apache.lucene.search.IndexSearcher IndexSearcher},
+{@link org.apache.lucene.analysis.standard.StandardAnalyzer StandardAnalyzer},
+ (which is used in the <a href=
+"src-html/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well)
+and a {@link org.apache.lucene.queryparser.classic.QueryParser QueryParser}. The
 query parser is constructed with an analyzer used to interpret your query text
 in the same way the documents are interpreted: finding word boundaries,
-downcasing, and removing useless words like 'a', 'an' and 'the'. The <a href=
-"api/core/org/apache/lucene/search/Query.html">Query</a> object contains the
-results from the <a href=
-"api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a> which
+downcasing, and removing useless words like 'a', 'an' and 'the'. The 
+{@link org.apache.lucene.search.Query} object contains the
+results from the 
+{@link org.apache.lucene.queryparser.classic.QueryParser QueryParser} which
 is passed to the searcher. Note that it's also possible to programmatically
-construct a rich <a href=
-"api/core/org/apache/lucene/search/Query.html">Query</a> object without using
+construct a rich {@link org.apache.lucene.search.Query}  object without using
 the query parser. The query parser just enables decoding the <a href=
-"queryparsersyntax.html">Lucene query syntax</a> into the corresponding
-<a href="api/core/org/apache/lucene/search/Query.html">Query</a> object.</p>
+"../queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">
+Lucene query syntax</a> into the corresponding
+{@link org.apache.lucene.search.Query Query} object.</p>
 <p><span class="codefrag">SearchFiles</span> uses the <span class=
-"codefrag">IndexSearcher.search(query,n)</span> method that returns <a href=
-"api/core/org/apache/lucene/search/TopDocs.html">TopDocs</a> with max
+"codefrag">IndexSearcher.search(query,n)</span> method that returns 
+{@link org.apache.lucene.search.TopDocs TopDocs} with max
 <span class="codefrag">n</span> hits. The results are printed in pages, sorted
 by score (i.e. relevance).</p>
 </div>
