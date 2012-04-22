@@ -62,7 +62,7 @@ org.apache.lucene.search.IndexSearcher#search(Query,Filter,int)}.
         {@link org.apache.lucene.document.Field Field} with the specified string in it.
     Constructing a {@link org.apache.lucene.search.TermQuery TermQuery}
     is as simple as:
-    <pre>
+    <pre class="prettyprint">
         TermQuery tq = new TermQuery(new Term("fieldName", "term"));
     </pre>In this example, the {@link org.apache.lucene.search.Query Query} identifies all 
         {@link org.apache.lucene.document.Document Document}s that have the 
@@ -210,13 +210,12 @@ org.apache.lucene.search.IndexSearcher#search(Query,Filter,int)}.
     <a href="http://en.wikipedia.org/wiki/Levenshtein">Levenshtein (edit) distance</a>.
     This type of query can be useful when accounting for spelling variations in the collection.
 </p>
-<a name="changingSimilarity"></a>
-<h2>Changing Similarity</h2>
+<a name="scoring"></a>
+<h2>Changing Scoring &mdash; Similarity</h2>
 
 See the {@link org.apache.lucene.search.similarities} package documentation for information
 on the available scoring models and extending or changing Similarity.
 
-<a name="scoring"></a>
 <h2>Changing Scoring &mdash; Expert Level</h2>
 
 <p>Changing scoring is an expert level task, so tread carefully and be prepared to share your code if
@@ -253,7 +252,7 @@ on the available scoring models and extending or changing Similarity.
                 {@link org.apache.lucene.search.Weight Weight} is the internal representation of the
                 Query, so each Query implementation must
                 provide an implementation of Weight. See the subsection on <a
-                    href="#The Weight Interface">The Weight Interface</a> below for details on implementing the Weight
+                    href="#weightClass">The Weight Interface</a> below for details on implementing the Weight
                 interface.</li>
             <li>{@link org.apache.lucene.search.Query#rewrite(IndexReader) rewrite(IndexReader reader} &mdash; Rewrites queries into primitive queries. Primitive queries are:
                 {@link org.apache.lucene.search.TermQuery TermQuery},
@@ -261,6 +260,7 @@ on the available scoring models and extending or changing Similarity.
                     >and other queries that implement {@link org.apache.lucene.search.Query#createWeight(IndexSearcher) createWeight(IndexSearcher searcher)}</span></li>
         </ol>
     </p>
+<a name="weightClass"></a>
 <h4>The Weight Interface</h4>
     <p>The
         {@link org.apache.lucene.search.Weight Weight}
@@ -297,7 +297,7 @@ on the available scoring models and extending or changing Similarity.
             <li>
                 {@link org.apache.lucene.search.Weight#scorer(org.apache.lucene.index.AtomicReaderContext, boolean, boolean, org.apache.lucene.util.Bits)
                   scorer(AtomicReaderContext context, boolean scoresDocsInOrder, boolean topScorer, Bits acceptDocs)} &mdash;
-                Construct a new {@link org.apache.lucene.search.Scorer Scorer} for this Weight. See <a href="#The Scorer Class">The Scorer Class</a>
+                Construct a new {@link org.apache.lucene.search.Scorer Scorer} for this Weight. See <a href="#scorerClass">The Scorer Class</a>
                 below for help defining a Scorer. As the name implies, the Scorer is responsible for doing the actual scoring of documents 
                 given the Query.
             </li>
@@ -313,6 +313,7 @@ on the available scoring models and extending or changing Similarity.
              </li>
         </ol>
     </p>
+<a name="scorerClass"></a>
 <h4>The Scorer Class</h4>
     <p>The
         {@link org.apache.lucene.search.Scorer Scorer}
