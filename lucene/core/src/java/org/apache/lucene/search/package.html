@@ -33,6 +33,8 @@ Code to search indices.
         <li><a href="#algorithm">Appendix: Search Algorithm</a></li>
     </ol>
 </p>
+
+
 <a name="search"></a>
 <h2>Search Basics</h2>
 <p>
@@ -57,6 +59,8 @@ section for more notes on the process.
     <!-- FILL IN MORE HERE -->   
     <!-- TODO: this page over-links the same things too many times -->
 </p>
+
+
 <a name="query"></a>
 <h2>Query Classes</h2>
 <h4>
@@ -135,7 +139,8 @@ section for more notes on the process.
                 &mdash; Matches a sequence of
                 {@link org.apache.lucene.index.Term Term}s.
                 {@link org.apache.lucene.search.PhraseQuery PhraseQuery} uses a slop factor to determine
-                how many positions may occur between any two terms in the phrase and still be considered a match.</p>
+                how many positions may occur between any two terms in the phrase and still be considered a match.
+	        The slop is 0 by default, meaning the phrase must match exactly.</p>
         </li>
         <li>
             <p>{@link org.apache.lucene.search.MultiPhraseQuery MultiPhraseQuery}
@@ -169,13 +174,10 @@ section for more notes on the process.
     and an upper
     {@link org.apache.lucene.index.Term Term}
     according to {@link org.apache.lucene.index.TermsEnum#getComparator TermsEnum.getComparator()}. It is not intended
-    for numerical ranges, use {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery} instead.
+    for numerical ranges; use {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery} instead.
 
     For example, one could find all documents
-    that have terms beginning with the letters <tt>a</tt> through <tt>c</tt>. This type of 
-        {@link org.apache.lucene.search.Query} is frequently used to
-    find
-    documents that occur in a specific date range.
+    that have terms beginning with the letters <tt>a</tt> through <tt>c</tt>.
 </p>
 
 <h4>
@@ -210,7 +212,7 @@ section for more notes on the process.
     {@link org.apache.lucene.search.WildcardQuery WildcardQuery} should
     not start with <tt>*</tt> and <tt>?</tt>, as these are extremely slow. 
     Some QueryParsers may not allow this by default, but provide a <code>setAllowLeadingWildcard</code> method
-    to remove protection.
+    to remove that protection.
     The {@link org.apache.lucene.search.RegexpQuery RegexpQuery} is even more general than WildcardQuery,
     allowing an application to identify all documents with terms that match a regular expression pattern.
 </p>
@@ -225,6 +227,8 @@ section for more notes on the process.
     <a href="http://en.wikipedia.org/wiki/Levenshtein">Levenshtein (edit) distance</a>.
     This type of query can be useful when accounting for spelling variations in the collection.
 </p>
+
+
 <a name="scoring"></a>
 <h2>Scoring &mdash; Introduction</h2>
 <p>Lucene scoring is the heart of why we all love Lucene. It is blazingly fast and it hides 
@@ -248,9 +252,9 @@ section for more notes on the process.
      <li><a href="http://en.wikipedia.org/wiki/Language_model">Language models</a></li>
    </ul>
    These models can be plugged in via the {@link org.apache.lucene.search.similarities Similarity API},
-   and offer extension hooks and parameters for tuning. In general, Lucene first narrows down the documents
+   and offer extension hooks and parameters for tuning. In general, Lucene first finds the documents
    that need to be scored based on boolean logic in the Query specification, and then ranks this subset of
-   documents via the retrieval model. For some valuable references on VSM and IR in general refer to
+   matching documents via the retrieval model. For some valuable references on VSM and IR in general refer to
    <a href="http://wiki.apache.org/lucene-java/InformationRetrieval">Lucene Wiki IR references</a>.
 </p>
 <p>The rest of this document will cover <a href="#scoringBasics">Scoring basics</a> and explain how to 
@@ -260,13 +264,21 @@ section for more notes on the process.
    implementing your own {@link org.apache.lucene.search.Query Query} class and related functionality.
    Finally, we will finish up with some reference material in the <a href="#algorithm">Appendix</a>.
 </p>
+
+
 <a name="scoringBasics"></a>
 <h2>Scoring &mdash; Basics</h2>
 <p>Scoring is very much dependent on the way documents are indexed, so it is important to understand 
    indexing. (see <a href="{@docRoot}/overview-summary.html#overview_description">Lucene overview</a> 
-   before continuing on with this section) It is also assumed that readers know how to use the 
+   before continuing on with this section) Be sure to use the useful
    {@link org.apache.lucene.search.IndexSearcher#explain(org.apache.lucene.search.Query, int) IndexSearcher.explain(Query, doc)}
-   functionality, which can go a long way in informing why a score is returned.
+   to understand how the score for a certain matching document was
+   computed.
+
+<p>Generally, the Query determines which documents match (a binary
+  decision), while the Similarity determines how to assign scores to
+  the matching documents.
+
 </p>
 <h4>Fields and Documents</h4>
 <p>In Lucene, the objects we are scoring are {@link org.apache.lucene.document.Document Document}s.
@@ -280,7 +292,7 @@ section for more notes on the process.
    normalization.
 </p>
 <h4>Score Boosting</h4>
-<p>Lucene allows influencing search results by "boosting" in more than one level:
+<p>Lucene allows influencing search results by "boosting" at different times:
    <ul>                   
       <li><b>Index-time boost</b> by calling
        {@link org.apache.lucene.document.Field#setBoost(float) Field.setBoost()} before a document is 
@@ -303,6 +315,8 @@ section for more notes on the process.
            at search time by the Similarity.</li>
     </ul>
 </p>
+
+
 <a name="changingScoring"></a>
 <h2>Changing Scoring &mdash; Similarity</h2>
 <p>
@@ -311,7 +325,9 @@ influence scoring, this is done at index-time with
 {@link org.apache.lucene.index.IndexWriterConfig#setSimilarity(org.apache.lucene.search.similarities.Similarity)
  IndexWriterConfig.setSimilarity(Similarity)} and at query-time with
 {@link org.apache.lucene.search.IndexSearcher#setSimilarity(org.apache.lucene.search.similarities.Similarity)
- IndexSearcher.setSimilarity(Similarity)}.
+ IndexSearcher.setSimilarity(Similarity)}.  Be sure to use the same
+Similarity at query-time as at index-time (so that norms are
+encoded/decoded correctly); Lucene makes no effort to verify this.
 </p>
 <p>
 You can influence scoring by configuring a different built-in Similarity implementation, or by tweaking its
@@ -328,6 +344,8 @@ a custom Similarity can access per-document values via {@link org.apache.lucene.
 See the {@link org.apache.lucene.search.similarities} package documentation for information
 on the built-in available scoring models and extending or changing Similarity.
 </p>
+
+
 <a name="customQueriesExpert"></a>
 <h2>Custom Queries &mdash; Expert Level</h2>
 
@@ -344,10 +362,14 @@ on the built-in available scoring models and extending or changing Similarity.
             user's information need.</li>
         <li>
             {@link org.apache.lucene.search.Weight Weight} &mdash; The internal interface representation of
-            the user's Query, so that Query objects may be reused.</li>
+            the user's Query, so that Query objects may be reused.
+            This is global (across all segments of the index) and
+            generally will require global statistics (such as docFreq
+            for a given term across all segments).</li>
         <li>
             {@link org.apache.lucene.search.Scorer Scorer} &mdash; An abstract class containing common
-            functionality for scoring. Provides both scoring and explanation capabilities.</li>
+            functionality for scoring. Provides both scoring and
+            explanation capabilities.  This is created per-segment.</li>
     </ol>
     Details on each of these classes, and their children, can be found in the subsections below.
 </p>
@@ -477,6 +499,8 @@ on the built-in available scoring models and extending or changing Similarity.
         out of Lucene (similar to Doug adding SpanQuery functionality).</p>
 
 <!-- TODO: integrate this better, its better served as an intro than an appendix -->
+
+
 <a name="algorithm"></a>
 <h2>Appendix: Search Algorithm</h2>
 <p>This section is mostly notes on stepping through the Scoring process and serves as
