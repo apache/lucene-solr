@@ -1,17 +1,5 @@
 package org.apache.lucene.facet.taxonomy.writercache.cl2o;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Iterator;
-
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,6 +16,20 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Iterator;
+
+import org.apache.lucene.facet.taxonomy.CategoryPath;
+
+// TODO: maybe this could use an FST instead...
 
 /**
  * This is a very efficient LabelToOrdinal implementation that uses a
@@ -47,7 +49,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * 
  * <p>
  * This data structure has a much lower memory footprint (~30%) compared to a
- * Java HashMap<String, Integer>. It also only uses a small fraction of objects
+ * Java HashMap&lt;String, Integer&gt;. It also only uses a small fraction of objects
  * a HashMap would use, thus limiting the GC overhead. Ingestion speed was also
  * ~50% faster compared to a HashMap for 3M unique labels.
  * 

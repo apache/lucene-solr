@@ -54,7 +54,7 @@ import java.util.ArrayList;
  *  merge fewer segments (down to 1 at once, if that one has
  *  deletions) to keep the segment size under budget.
  *      
- *  <p<b>NOTE</b>: this policy freely merges non-adjacent
+ *  <p><b>NOTE</b>: this policy freely merges non-adjacent
  *  segments; if this is a problem, use {@link
  *  LogMergePolicy}.
  *

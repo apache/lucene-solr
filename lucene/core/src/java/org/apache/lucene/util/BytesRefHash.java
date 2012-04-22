@@ -30,7 +30,7 @@ import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
 /**
  * {@link BytesRefHash} is a special purpose hash-map like data-structure
  * optimized for {@link BytesRef} instances. BytesRefHash maintains mappings of
- * byte arrays to ordinal (Map<BytesRef,int>) storing the hashed bytes
+ * byte arrays to ordinal (Map&lt;BytesRef,int&gt;) storing the hashed bytes
  * efficiently in continuous storage. The mapping to the ordinal is
  * encapsulated inside {@link BytesRefHash} and is guaranteed to be increased
  * for each added {@link BytesRef}.

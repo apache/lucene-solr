@@ -158,7 +158,7 @@ public abstract class FacetRequest implements Cloneable {
   }
 
   /**
-   * If getNumLabel()<getNumResults(), only the first getNumLabel() results
+   * If getNumLabel() &lt; getNumResults(), only the first getNumLabel() results
    * will have their category paths calculated, and the rest will only be
    * available as ordinals (category numbers) and will have null paths.
    * <P>

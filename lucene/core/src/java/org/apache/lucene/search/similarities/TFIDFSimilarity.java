@@ -103,7 +103,7 @@ import org.apache.lucene.util.SmallFloat;
  *    </table>
  *    </td></tr>
  *    <tr><td>
- *    <center><font=-1><u>VSM Score</u></font></center>
+ *    <center><font size=-1><u>VSM Score</u></font></center>
  *    </td></tr>
  *  </table>
  *  <br>&nbsp;<br>
@@ -194,7 +194,7 @@ import org.apache.lucene.util.SmallFloat;
  *    </table>
  *    </td></tr>
  *    <tr><td>
- *    <center><font=-1><u>Lucene Conceptual Scoring Formula</u></font></center>
+ *    <center><font size=-1><u>Lucene Conceptual Scoring Formula</u></font></center>
  *    </td></tr>
  *  </table>
  *  <br>&nbsp;<br>
@@ -291,7 +291,7 @@ import org.apache.lucene.util.SmallFloat;
  *  </table>
  * </td></tr>
  * <tr><td>
- *  <center><font=-1><u>Lucene Practical Scoring Function</u></font></center>
+ *  <center><font size=-1><u>Lucene Practical Scoring Function</u></font></center>
  * </td></tr>
  * </table>
  *
@@ -410,7 +410,7 @@ import org.apache.lucene.util.SmallFloat;
  *      computes this value as:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="1" cellspacing="0" border="0"n align="center" style="width:auto">
+ *      <table cellpadding="1" cellspacing="0" border="0" align="center" style="width:auto">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            {@link org.apache.lucene.search.Weight#getValueForNormalization() sumOfSquaredWeights} &nbsp; = &nbsp;
@@ -476,7 +476,7 @@ import org.apache.lucene.util.SmallFloat;
  *      If the document has multiple fields with the same name, all their boosts are multiplied together:
  *
  *      <br>&nbsp;<br>
- *      <table cellpadding="1" cellspacing="0" border="0"n align="center" style="width:auto">
+ *      <table cellpadding="1" cellspacing="0" border="0" align="center" style="width:auto">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            norm(t,d) &nbsp; = &nbsp;

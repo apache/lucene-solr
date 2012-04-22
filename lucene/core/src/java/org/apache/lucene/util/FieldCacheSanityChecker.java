@@ -409,7 +409,7 @@ public final class FieldCacheSanityChecker {
      * it's typically an indication of a possible problem.
      * </p>
      * <p>
-     * <bPNOTE:</b> Only the reader, fieldname, and cached value are actually 
+     * <b>NOTE:</b> Only the reader, fieldname, and cached value are actually 
      * tested -- if two cache entries have different parsers or datatypes but 
      * the cached values are the same Object (== not just equal()) this method 
      * does not consider that a red flag.  This allows for subtle variations 
