@@ -79,6 +79,10 @@ final class CommitTracker implements Runnable {
 
     SolrCore.log.info(name + " AutoCommit: " + this);
   }
+
+  public boolean getOpenSearcher() {
+    return openSearcher;
+  }
   
   public synchronized void close() {
     if (pending != null) {
@@ -91,6 +95,17 @@ final class CommitTracker implements Runnable {
   /** schedule individual commits */
   public void scheduleCommitWithin(long commitMaxTime) {
     _scheduleCommitWithin(commitMaxTime);
+  }
+
+  public void cancelPendingCommit() {
+    synchronized (this) {
+      if (pending != null) {
+        boolean canceled = pending.cancel(false);
+        if (canceled) {
+          pending = null;
+        }
+      }
+    }
   }
   
   private void _scheduleCommitWithinIfNeeded(long commitWithin) {

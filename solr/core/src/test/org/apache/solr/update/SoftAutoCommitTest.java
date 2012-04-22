@@ -188,6 +188,11 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     // add a doc and force a commit
     assertU(adoc("id", "529", "subject", "the doc we care about in this test"));
     assertU(commit());
+
+    Long soft529;
+    Long hard529;
+
+/*** an explicit commit can (and should) clear pending auto-commits
     long postAdd529 = System.currentTimeMillis();
 
     // wait for first hard/soft commit
@@ -204,6 +209,8 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     assertNotNull("hard529 wasn't fast enough", hard529);
 
     monitor.assertSaneOffers();
+ ***/
+
     monitor.clear();
 
     // Delete the document
