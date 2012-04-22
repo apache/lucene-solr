@@ -484,7 +484,7 @@ public abstract class IndexReader implements Closeable {
    * readers, this method returns an {@link AtomicReaderContext}.
    * <p>
    * Note: Any of the sub-{@link CompositeReaderContext} instances reference from this
-   * top-level context holds a <code>null</code> {@link CompositeReaderContext#leaves}
+   * top-level context holds a <code>null</code> {@link CompositeReaderContext#leaves()}
    * reference. Only the top-level context maintains the convenience leaf-view
    * for performance reasons.
    * 
