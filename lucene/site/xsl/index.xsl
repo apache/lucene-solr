@@ -54,13 +54,17 @@
         Tutorial and walk-through of the command-line Lucene demo.</li>
         <li><a href="core/overview-summary.html#overview_description">Introduction to Lucene's APIs</a>:
         High-level summary of the different Lucene packages. </li>
+        <li><a href="core/org/apache/lucene/analysis/package-summary.html#package_description">Analysis overview</a>:
+        Introduction to Lucene's analysis API. </li>
         </ul>
         <h2>Reference Documents</h2>
           <ul>
             <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
             <li><a href="fileformats.html">File Formats</a>: Guide to the index format used by Lucene.</li>
             <li><a href="scoring.html">Scoring in Lucene</a>: Introduction to how Lucene scores documents.</li>
+            <li><a href="core/org/apache/lucene/search/similarities/TFIDFSimilarity.html">Classic Scoring Formula</a>: Formula of Lucene's classic <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space</a> implementation. (look <a href="core/org/apache/lucene/search/similarities/package-summary.html#package_description">here</a> for other models)</li>
             <li><a href="queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">Classic QueryParser Syntax</a>: Overview of the Classic QueryParser's syntax and features.</li>
+            <li><a href="facet/org/apache/lucene/facet/doc-files/userguide.html">Facet User Guide</a>: User's Guide to implementing <a href="http://en.wikipedia.org/wiki/Faceted_search">Faceted search</a>.</li>
           </ul>
         <h2>API Javadocs</h2>
         <xsl:call-template name="modules"/>
