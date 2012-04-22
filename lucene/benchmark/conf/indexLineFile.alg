@@ -24,7 +24,7 @@
 # indexing your documents vs time spent creating the documents.
 #
 # To use this, you must first run the createLineFile.alg, then cd to
-# contrib/benchmark and then run:
+# benchmark and then run:
 #
 #   ant run-task -Dtask.alg=conf/indexLineFile.alg
 #

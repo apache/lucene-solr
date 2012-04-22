@@ -34,7 +34,7 @@ import org.apache.lucene.util.BytesRef;
  * <p/>
  * 
  * This is the same functionality as TermsFilter (from
- * contrib/queries), except this filter requires that the
+ * queries/), except this filter requires that the
  * field contains only a single term for all documents.
  * Because of drastically different implementations, they
  * also have different performance characteristics, as

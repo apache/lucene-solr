@@ -12,8 +12,7 @@ including, but not limited to:
  - Apache Xerces
 
 ICU4J, (under analysis/icu) is licensed under an MIT styles license
-(contrib/icu/lib/ICU-LICENSE.txt) and Copyright (c) 1995-2008 
-International Business Machines Corporation and others
+and Copyright (c) 1995-2008 International Business Machines Corporation and others
 
 Some data files (under analysis/icu/src/data) are derived from Unicode data such
 as the Unicode Character Database. See http://unicode.org/copyright.html for more

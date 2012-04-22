@@ -36,9 +36,9 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues;
 
-/** Minimal port of contrib/benchmark's LneDocSource +
+/** Minimal port of benchmark's LneDocSource +
  * DocMaker, so tests can enum docs from a line file created
- * by contrib/benchmark's WriteLineDoc task */
+ * by benchmark's WriteLineDoc task */
 public class LineFileDocs implements Closeable {
 
   private BufferedReader reader;

@@ -376,7 +376,7 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
     - o.a.l.util.CharacterUtils -> o.a.l.analysis.util.CharacterUtils
 
 * LUCENE-2514: The option to use a Collator's order (instead of binary order) for
-  sorting and range queries has been moved to contrib/queries.
+  sorting and range queries has been moved to lucene/queries.
 
   The Collated TermRangeQuery/Filter has been moved to SlowCollatedTermRangeQuery/Filter, 
   and the collated sorting has been moved to SlowCollatedStringComparator.

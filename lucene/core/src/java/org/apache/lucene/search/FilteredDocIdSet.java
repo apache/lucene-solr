@@ -28,7 +28,7 @@ import org.apache.lucene.util.Bits;
  * <p/>
  *
  * Technically, this same functionality could be achieved
- * with ChainedFilter (under contrib/misc), however the
+ * with ChainedFilter (under queries/), however the
  * benefit of this class is it never materializes the full
  * bitset for the filter.  Instead, the {@link #match}
  * method is invoked on-demand, per docID visited during

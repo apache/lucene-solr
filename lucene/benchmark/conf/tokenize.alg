@@ -20,7 +20,7 @@
 # This alg reads all tokens out of a document but does not index them.
 # This is useful for benchmarking tokenizers.
 #
-# To use this, cd to contrib/benchmark and then run:
+# To use this, cd to benchmark and then run:
 #
 #   ant run-task -Dtask.alg=conf/tokenize.alg
 #

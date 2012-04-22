@@ -20,7 +20,7 @@
 # This alg will process the Wikipedia documents feed to produce a
 # single file that contains all documents, one per line.
 #
-# To use this, first cd to contrib/benchmark and then run:
+# To use this, first cd to benchmark and then run:
 #
 #   ant run-task -Dtask.alg=conf/extractWikipedia.alg
 #

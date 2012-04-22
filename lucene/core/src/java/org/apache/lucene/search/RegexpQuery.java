@@ -38,7 +38,7 @@ import org.apache.lucene.util.automaton.RegExp;
  * <p>
  * The supported syntax is documented in the {@link RegExp} class.
  * Note this might be different than other regular expression implementations.
- * For some alternatives with different syntax, look under contrib/regex
+ * For some alternatives with different syntax, look under the sandbox.
  * </p>
  * <p>
  * Note this query can be slow, as it needs to iterate over many terms. In order
