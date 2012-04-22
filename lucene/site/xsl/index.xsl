@@ -20,11 +20,17 @@
   xmlns:str="http://exslt.org/strings"
   extension-element-prefixes="str"
 >
-	<xsl:param name="buildfiles"/>
-	<xsl:param name="version"/>
+  <xsl:param name="buildfiles"/>
+  <xsl:param name="version"/>
   
-	<xsl:template match="/">
-		<html>
+  <!--
+    NOTE: This template matches the root element of any given input XML document!
+    The XSL input file is ignored completely, but XSL expects one to be given,
+    so build.xml passes itsself here. The list of module build.xmls is given via
+    string parameter, that must be splitted at '|'.
+  --> 
+  <xsl:template match="/">
+    <html>
       <head>
         <title><xsl:text>Apache Lucene </xsl:text><xsl:value-of select="$version"/><xsl:text> Documentation</xsl:text></title>
       </head>
@@ -44,15 +50,13 @@
           <li><a href="queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">Classic QueryParser Syntax</a></li>
         </ul>
         <h2>Getting Started</h2>
-        <p>This document is intended as a "getting started" guide. It has three
+        <p>The following document is intended as a "getting started" guide. It has three
         audiences: first-time users looking to install Apache Lucene in their
         application; developers looking to modify or base the applications they develop
         on Lucene; and developers looking to become involved in and contribute to the
         development of Lucene. This document is written in tutorial and walk-through
         format. The goal is to help you "get started". It does not go into great depth
-        on some of the conceptual or inner details of Lucene.</p>
-        <p>Each section listed below builds on one another. More advanced users may
-        wish to skip sections.</p>
+        on some of the conceptual or inner details of Lucene:</p>
         <ul>
         <li><a href="demo/overview-summary.html#overview_description">About the command-line Lucene demo, its usage, and sources</a>.
         This section is intended for anyone who wants to use the command-line Lucene
