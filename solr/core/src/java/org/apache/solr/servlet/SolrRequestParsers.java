@@ -63,7 +63,7 @@ public class SolrRequestParsers
   
   private HashMap<String, SolrRequestParser> parsers;
   private boolean enableRemoteStreams = false;
-  private boolean handleSelect = false;
+  private boolean handleSelect = true;
   private StandardRequestParser standard;
   
   /**
