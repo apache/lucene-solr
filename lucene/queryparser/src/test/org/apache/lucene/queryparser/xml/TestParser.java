@@ -27,6 +27,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -103,6 +104,17 @@ public class TestParser extends LuceneTestCase {
   public void testBooleanQueryXML() throws ParserException, IOException {
     Query q = parse("BooleanQuery.xml");
     dumpResults("BooleanQuery", q, 5);
+  }
+  
+  public void testDisjunctionMaxQueryXML() throws ParserException, IOException {
+    Query q = parse("DisjunctionMaxQuery.xml");
+    assertTrue(q instanceof DisjunctionMaxQuery);
+    DisjunctionMaxQuery d = (DisjunctionMaxQuery)q;
+    assertEquals(0.0f, d.getTieBreakerMultiplier(), 0.0001f);
+    assertEquals(2, d.getDisjuncts().size());
+    DisjunctionMaxQuery ndq = (DisjunctionMaxQuery) d.getDisjuncts().get(1);
+    assertEquals(1.2f, ndq.getTieBreakerMultiplier(), 0.0001f);
+    assertEquals(1, ndq.getDisjuncts().size());
   }
 
   public void testRangeFilterQueryXML() throws ParserException, IOException {

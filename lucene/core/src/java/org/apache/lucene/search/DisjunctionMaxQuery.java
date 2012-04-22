@@ -78,14 +78,29 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /** Add a collection of disjuncts to this disjunction
    * via Iterable<Query>
+   * @param disjuncts a collection of queries to add as disjuncts.
    */
   public void add(Collection<Query> disjuncts) {
     this.disjuncts.addAll(disjuncts);
   }
 
-  /** An Iterator<Query> over the disjuncts */
+  /** @return An Iterator<Query> over the disjuncts */
   public Iterator<Query> iterator() {
     return disjuncts.iterator();
+  }
+  
+  /**
+   * @return the disjuncts.
+   */
+  public ArrayList<Query> getDisjuncts() {
+    return disjuncts;
+  }
+
+  /**
+   * @return tie breaker value for multiple matches.
+   */
+  public float getTieBreakerMultiplier() {
+    return tieBreakerMultiplier;
   }
 
   /**
@@ -278,5 +293,6 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
             + Float.floatToIntBits(tieBreakerMultiplier)
             + disjuncts.hashCode();
   }
+
 
 }

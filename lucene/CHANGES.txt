@@ -843,6 +843,9 @@ New features
    analysis/ module.  The 'smartcn' and 'stempel' components now depend on 'common'.
    (Chris Male, Robert Muir)
 
+* LUCENE-4004: Add DisjunctionMaxQuery support to the xml query parser.
+  (Benson Margulies via Robert Muir)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
