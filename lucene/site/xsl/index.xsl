@@ -41,6 +41,7 @@
           <li><a href="changes/Changes.html">Changes</a></li>
           <li><a href="fileformats.html">File Formats Documentation</a></li>
           <li><a href="scoring.html">Scoring in Lucene</a></li>
+          <li><a href="queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">Classic QueryParser Syntax</a></li>
         </ul>
         <h2>Getting Started</h2>
         <p>This document is intended as a "getting started" guide. It has three
