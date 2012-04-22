@@ -164,9 +164,9 @@ directories and creates {@link org.apache.lucene.document.Document Document} obj
 text content from the file as well as its creation time and location. These
 instances are added to the <span class="codefrag">IndexWriter</span>. If the
 <span class="codefrag">-update</span> command-line parameter is given, the
-<span class="codefrag">IndexWriter</span> <span class=
-"codefrag">OpenMode</span> will be set to <span class=
-"codefrag">OpenMode.CREATE_OR_APPEND</span>, and rather than adding documents
+<span class="codefrag">IndexWriterConfig</span> <span class=
+"codefrag">OpenMode</span> will be set to {@link org.apache.lucene.index.IndexWriterConfig.OpenMode#CREATE_OR_APPEND
+OpenMode.CREATE_OR_APPEND}, and rather than adding documents
 to the index, the <span class="codefrag">IndexWriter</span> will
 <strong>update</strong> them in the index by attempting to find an
 already-indexed document with the same identifier (in our case, the file path
@@ -196,8 +196,9 @@ the query parser. The query parser just enables decoding the <a href=
 "../queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">
 Lucene query syntax</a> into the corresponding
 {@link org.apache.lucene.search.Query Query} object.</p>
-<p><span class="codefrag">SearchFiles</span> uses the <span class=
-"codefrag">IndexSearcher.search(query,n)</span> method that returns 
+<p><span class="codefrag">SearchFiles</span> uses the 
+{@link org.apache.lucene.search.IndexSearcher#search(org.apache.lucene.search.Query,int)
+IndexSearcher.search(query,n)} method that returns 
 {@link org.apache.lucene.search.TopDocs TopDocs} with max
 <span class="codefrag">n</span> hits. The results are printed in pages, sorted
 by score (i.e. relevance).</p>
