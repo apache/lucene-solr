@@ -129,4 +129,33 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     sr5.close();
     sr6.close();
   }
+
+
+  // make sure we don't leak searchers (SOLR-3391)
+  public void testCloses() {
+    assertU(adoc("id","1"));
+    assertU(commit("openSearcher","false"));  // this was enough to trigger SOLR-3391
+
+    int maxDoc = random().nextInt(20) + 1;
+
+    // test different combinations of commits
+    for (int i=0; i<100; i++) {
+
+      if (random().nextInt(100) < 50) {
+        String id = Integer.toString(random().nextInt(maxDoc));
+        assertU(adoc("id",id));
+      } else {
+        boolean soft = random().nextBoolean();
+        boolean optimize = random().nextBoolean();
+        boolean openSearcher = random().nextBoolean();
+
+        if (optimize) {
+          assertU(optimize("openSearcher",""+openSearcher, "softCommit",""+soft));
+        } else {
+          assertU(commit("openSearcher",""+openSearcher, "softCommit",""+soft));
+        }
+      }
+    }
+
+  }
 }
