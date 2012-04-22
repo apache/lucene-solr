@@ -1290,6 +1290,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           charset="${javadoc.charset}"
           docencoding="${javadoc.charset}"
           noindex="true"
+          includenosourcepackages="true"
           author="true"
           version="true"
           linksource="@{linksource}"
