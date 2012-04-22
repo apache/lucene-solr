@@ -187,19 +187,19 @@ limitations under the License.
 
     </div>
 
-    <button class="refresh-status">Refresh Status</button>
+    <button class="refresh-status"><span>Refresh Status</span></button>
 
     <div class="slaveOnly">        
-      <button class="optional replicate-now" data-command="fetchindex">Replicate now</button>
-      <button class="optional abort-replication" data-command="abortfetch">Abort Replication</button>
+      <button class="optional replicate-now primary" data-command="fetchindex"><span>Replicate now</span></button>
+      <button class="optional abort-replication warn" data-command="abortfetch"><span>Abort Replication</span></button>
 
-      <button class="optional disable-polling" data-command="disablepoll">Disable Polling</button>
-      <button class="optional enable-polling" data-command="enablepoll">Enable Polling</button>
+      <button class="optional disable-polling" data-command="disablepoll"><span>Disable Polling</span></button>
+      <button class="optional enable-polling" data-command="enablepoll"><span>Enable Polling</span></button>
     </div>
 
     <div class="masterOnly">
-      <button class="optional disable-replication" data-command="disablereplication">Disable Replication</button>
-      <button class="optional enable-replication" data-command="enablereplication">Enable Replication</button>
+      <button class="optional disable-replication warn" data-command="disablereplication"><span>Disable Replication<span></button>
+      <button class="optional enable-replication warn" data-command="enablereplication"><span>Enable Replication<span></button>
     </div>
     
   </div>

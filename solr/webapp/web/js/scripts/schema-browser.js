@@ -61,12 +61,12 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
       context : terminfo_element,
       beforeSend : function( xhr, settings )
       {
-        trigger_element
+        $( 'span', trigger_element )
           .addClass( 'loader' );
       },
       success : function( response, text_status, xhr )
       {
-        trigger_element
+        $( 'span', trigger_element )
           .removeClass( 'loader' );
 
         var field_data = response.fields[field];
@@ -104,15 +104,15 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
           {
             if( topterms_frq_last !== topterms[i+1] )
             {
-            if( topterms_frq_last )
-            {
-              topterms_content += '</ul></li>' + "\n";
-            }
+              if( topterms_frq_last )
+              {
+                topterms_content += '</ul></li>' + "\n";
+              }
 
-            topterms_frq_last = topterms[i+1];
-            topterms_content += '<li class="clearfix">'
-                             +  '<p><span>' + topterms_frq_last.esc() + '</span></p>' + "\n"
-                             +  '<ul>' + "\n";
+              topterms_frq_last = topterms[i+1];
+              topterms_content += '<li class="clearfix">'
+                               +  '<p><span>' + topterms_frq_last.esc() + '</span></p>' + "\n"
+                               +  '<ul>' + "\n";
             }
 
             var target = '#/' + current_core + '/query?q=' + field.esc() + ':' + encodeURIComponent( topterms[i] );

@@ -449,9 +449,8 @@
 
 #content #replication #navigation button
 {
-  background-position: 2px 50%;
+  display: block;
   margin-bottom: 10px;
-  padding-left: 21px;
 }
 
 #content #replication #navigation button.optional
@@ -459,40 +458,37 @@
   display: none;
 }
 
-#content #replication #navigation .replicate-now
+#content #replication #navigation .replicate-now span
 {
   background-image: url( ../../img/ico/document-convert.png );
 }
 
-#content #replication #navigation .abort-replication
+#content #replication #navigation .abort-replication span
 {
-  background-color: #800;
   background-image: url( ../../img/ico/hand.png );
-  border-color: #800;
-  color: #fff;
 }
 
-#content #replication #navigation .disable-polling
+#content #replication #navigation .disable-polling span
 {
   background-image: url( ../../img/ico/cross.png );
 }
 
-#content #replication #navigation .enable-polling
+#content #replication #navigation .enable-polling span
 {
   background-image: url( ../../img/ico/tick.png );
 }
 
-#content #replication #navigation .disable-replication
+#content #replication #navigation .disable-replication span
 {
   background-image: url( ../../img/ico/cross.png );
 }
 
-#content #replication #navigation .enable-replication
+#content #replication #navigation .enable-replication span
 {
   background-image: url( ../../img/ico/tick.png );
 }
 
-#content #replication #navigation .refresh-status
+#content #replication #navigation .refresh-status span
 {
   background-image: url( ../../img/ico/arrow-circle.png );
 }

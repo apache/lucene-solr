@@ -110,14 +110,14 @@ var replication_fetch_status = function()
       dataType : 'json',
       beforeSend : function( xhr, settings )
       {
-        $( '.refresh-status', navigation_element )
+        $( '.refresh-status span', navigation_element )
           .addClass( 'loader' );
 
         clear_timer();
       },
       success : function( response, text_status, xhr )
       {
-        $( '.refresh-status', navigation_element )
+        $( '.refresh-status span', navigation_element )
           .removeClass( 'loader' );
                 
         var data = response.details;

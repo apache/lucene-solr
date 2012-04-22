@@ -153,6 +153,7 @@
   margin-right: 5px;
   text-align: right;
   width: 100px;
+  white-space: pre;
 }
 
 #content #schema-browser #data #field .field-options .analyzer a
@@ -246,15 +247,12 @@
 #content #schema-browser #data #field .terminfo-holder .trigger
 {
   float: left;
-  width: 130px;
+  width: 140px;
 }
 
-#content #schema-browser #data #field .terminfo-holder .trigger button
+#content #schema-browser #data #field .terminfo-holder .trigger button span
 {
   background-image: url( ../../img/ico/information.png );
-  background-position: 3px 50%;
-  display: block;
-  padding-left: 23px;
 }
 
 #content #schema-browser #data #field .terminfo-holder .status
@@ -266,13 +264,9 @@
   padding-right: 20px;
 }
 
-#content #schema-browser #data #field .terminfo-holder.disabled .trigger button
+#content #schema-browser #data #field .terminfo-holder.disabled .trigger button span
 {
-  background-color: #f0f0f0;
   background-image: url( ../../img/ico/prohibition.png );
-  border-color: #fff;
-  color: #c0c0c0;
-  cursor: auto;
 }
 
 #content #schema-browser #data #field .terminfo-holder.disabled .status
