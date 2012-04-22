@@ -66,6 +66,7 @@ import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.analysis.hunspell.HunspellDictionaryTest;
+import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
@@ -156,7 +157,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       // TODO: doesn't handle graph inputs
       ThaiWordFilter.class,
       // TODO: doesn't handle graph inputs
-      CJKBigramFilter.class
+      CJKBigramFilter.class,
+      // TODO: doesn't handle graph inputs (or even look at positionIncrement)
+      HyphenatedWordsFilter.class
     );
   }
   
