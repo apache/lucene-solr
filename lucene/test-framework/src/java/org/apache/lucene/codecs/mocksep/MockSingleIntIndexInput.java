@@ -70,7 +70,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     }
   }
   
-  class Index extends IntIndexInput.Index {
+  class MockSingleIntIndexInputIndex extends IntIndexInput.Index {
     private long fp;
 
     @Override
@@ -85,7 +85,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
 
     @Override
     public void set(IntIndexInput.Index other) {
-      fp = ((Index) other).fp;
+      fp = ((MockSingleIntIndexInputIndex) other).fp;
     }
 
     @Override
@@ -100,7 +100,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
 
     @Override
     public Index clone() {
-      Index other = new Index();
+      MockSingleIntIndexInputIndex other = new MockSingleIntIndexInputIndex();
       other.fp = fp;
       return other;
     }
@@ -108,7 +108,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
 
   @Override
   public Index index() {
-    return new Index();
+    return new MockSingleIntIndexInputIndex();
   }
 }
 
