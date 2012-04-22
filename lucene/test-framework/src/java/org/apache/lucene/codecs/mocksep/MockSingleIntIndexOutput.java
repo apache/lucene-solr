@@ -58,7 +58,7 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
 
   @Override
   public Index index() {
-    return new Index();
+    return new MockSingleIntIndexOutputIndex();
   }
 
   @Override
@@ -71,7 +71,7 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
     return "MockSingleIntIndexOutput fp=" + out.getFilePointer();
   }
 
-  private class Index extends IntIndexOutput.Index {
+  private class MockSingleIntIndexOutputIndex extends IntIndexOutput.Index {
     long fp;
     long lastFP;
     @Override
@@ -80,9 +80,9 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
     }
     @Override
     public void copyFrom(IntIndexOutput.Index other, boolean copyLast) {
-      fp = ((Index) other).fp;
+      fp = ((MockSingleIntIndexOutputIndex) other).fp;
       if (copyLast) {
-        lastFP = ((Index) other).fp;
+        lastFP = ((MockSingleIntIndexOutputIndex) other).fp;
       }
     }
     @Override
