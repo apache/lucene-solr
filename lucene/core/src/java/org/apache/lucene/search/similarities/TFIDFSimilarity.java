@@ -442,7 +442,7 @@ import org.apache.lucene.util.SmallFloat;
  *      <b><i>t.getBoost()</i></b>
  *      is a search time boost of term <i>t</i> in the query <i>q</i> as
  *      specified in the query text
- *      (see <A HREF="../../../../../../queryparsersyntax.html#Boosting a Term">query syntax</A>),
+ *      (see <A HREF="{@docRoot}/../queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Boosting_a_Term">query syntax</A>),
  *      or as set by application calls to
  *      {@link org.apache.lucene.search.Query#setBoost(float) setBoost()}.
  *      Notice that there is really no direct API for accessing a boost of one term in a multi term query,
