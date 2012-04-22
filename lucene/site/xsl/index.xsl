@@ -54,13 +54,9 @@
         <p>Each section listed below builds on one another. More advanced users may
         wish to skip sections.</p>
         <ul>
-        <li><a href="demo.html">About the command-line Lucene demo and its usage</a>.
+        <li><a href="demo/overview-summary.html#overview_description">About the command-line Lucene demo, its usage, and sources</a>.
         This section is intended for anyone who wants to use the command-line Lucene
-        demo.</li>
-        <li><a href="demo2.html">About the sources and implementation for the
-        command-line Lucene demo</a>. This section walks through the implementation
-        details (sources) of the command-line Lucene demo. This section is intended for
-        developers.</li>
+        demo, and provides a walk through the source code.</li>
         </ul>
         <h2>Javadocs</h2>
         <xsl:call-template name="modules"/>

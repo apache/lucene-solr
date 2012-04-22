@@ -15,12 +15,204 @@
  limitations under the License.
 -->
 <html>
-  <head>
-    <title>
-      demo
-    </title>
-  </head>
-  <body>
-  demo
-  </body>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Apache Lucene - Building and Installing the Basic Demo</title>
+</head>
+<body>
+<h1>Apache Lucene - Building and Installing the Basic Demo</h1>
+<div id="minitoc-area">
+<ul class="minitoc">
+<li><a href="#About%20this%20Document">About this Document</a></li>
+<li><a href="#About%20the%20Demo">About the Demo</a></li>
+<li><a href="#Setting%20your%20CLASSPATH">Setting your CLASSPATH</a></li>
+<li><a href="#Indexing%20Files">Indexing Files</a></li>
+<li><a href="#About%20the%20code">About the code</a></li>
+<li><a href="#Location%20of%20the%20source">Location of the source</a></li>
+<li><a href="#IndexFiles">IndexFiles</a></li>
+<li><a href="#Searching%20Files">Searching Files</a></li>
+</ul>
+</div>
+<a name="N10013" id="N10013"></a><a name="About this Document"></a>
+<h2 class="boxed">About this Document</h2>
+<div class="section">
+<p>This document is intended as a "getting started" guide to using and running
+the Lucene demos. It walks you through some basic installation and
+configuration.</p>
+</div>
+<a name="N1001C" id="N1001C"></a><a name="About the Demo"></a>
+<h2 class="boxed">About the Demo</h2>
+<div class="section">
+<p>The Lucene command-line demo code consists of an application that
+demonstrates various functionalities of Lucene and how you can add Lucene to
+your applications.</p>
+</div>
+<a name="N10025" id="N10025"></a><a name="Setting your CLASSPATH"></a>
+<h2 class="boxed">Setting your CLASSPATH</h2>
+<div class="section">
+<p>First, you should <a href=
+"http://www.apache.org/dyn/closer.cgi/lucene/java/">download</a> the latest
+Lucene distribution and then extract it to a working directory.</p>
+<p>You need three JARs: the Lucene JAR, the common analysis JAR, and the Lucene
+demo JAR. You should see the Lucene JAR file in the core/ directory you created
+when you extracted the archive -- it should be named something like
+<span class="codefrag">lucene-core-{version}.jar</span>. You should also see
+files called <span class=
+"codefrag">lucene-analyzers-common-{version}.jar</span> and <span class=
+"codefrag">lucene-demo-{version}.jar</span> under analysis/common/ and demo/,
+respectively.</p>
+<p>Put all three of these files in your Java CLASSPATH.</p>
+</div>
+<a name="N10041" id="N10041"></a><a name="Indexing Files"></a>
+<h2 class="boxed">Indexing Files</h2>
+<div class="section">
+<p>Once you've gotten this far you're probably itching to go. Let's <b>build an
+index!</b> Assuming you've set your CLASSPATH correctly, just type:</p>
+<pre>
+    java org.apache.lucene.demo.IndexFiles -docs {path-to-lucene}/src
+</pre>
+This will produce a subdirectory called <span class="codefrag">index</span>
+which will contain an index of all of the Lucene source code.
+<p>To <b>search the index</b> type:</p>
+<pre>
+    java org.apache.lucene.demo.SearchFiles
+</pre>
+You'll be prompted for a query. Type in a swear word and press the enter key.
+You'll see that the Lucene developers are very well mannered and get no
+results. Now try entering the word "string". That should return a whole bunch
+of documents. The results will page at every tenth result and ask you whether
+you want more results.</div>
+<a name="N10013" id="N10013"></a><a name="About the Code"></a>
+<h2 class="boxed">About the Code</h2>
+<div class="section">
+<p>In this section we walk through the sources behind the command-line Lucene
+demo: where to find them, their parts and their function. This section is
+intended for Java developers wishing to understand how to use Lucene in their
+applications.</p>
+</div>
+<a name="N1001C" id="N1001C"></a><a name="Location of the source"></a>
+<h2 class="boxed">Location of the source</h2>
+<div class="section">
+<p>NOTE: to examine the sources, you need to download and extract a source
+checkout of Lucene: (lucene-{version}-src.zip).</p>
+<p>Relative to the directory created when you extracted Lucene, you should see
+a directory called <span class="codefrag">lucene/demo/</span>. This is the root
+for the Lucene demo. Under this directory is <span class=
+"codefrag">src/java/org/apache/lucene/demo/</span>. This is where all the Java
+sources for the demo live.</p>
+<p>Within this directory you should see the <span class=
+"codefrag">IndexFiles.java</span> class we executed earlier. Bring it up in
+<span class="codefrag">vi</span> or your editor of choice and let's take a look
+at it.</p>
+</div>
+<a name="N10037" id="N10037"></a><a name="IndexFiles" id="IndexFiles"></a>
+<h2 class="boxed">IndexFiles</h2>
+<div class="section">
+<p>As we discussed in the previous walk-through, the <a href=
+"api/demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates
+a Lucene Index. Let's take a look at how it does this.</p>
+<p>The <span class="codefrag">main()</span> method parses the command-line
+parameters, then in preparation for instantiating <a href=
+"api/core/org/apache/lucene/index/IndexWriter.html">IndexWriter</a>, opens a
+<a href="api/core/org/apache/lucene/store/Directory.html">Directory</a> and
+instantiates <a href=
+"api/analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">
+StandardAnalyzer</a> and <a href=
+"api/core/org/apache/lucene/index/IndexWriterConfig.html">IndexWriterConfig</a>.</p>
+<p>The value of the <span class="codefrag">-index</span> command-line parameter
+is the name of the filesystem directory where all index information should be
+stored. If <span class="codefrag">IndexFiles</span> is invoked with a relative
+path given in the <span class="codefrag">-index</span> command-line parameter,
+or if the <span class="codefrag">-index</span> command-line parameter is not
+given, causing the default relative index path "<span class=
+"codefrag">index</span>" to be used, the index path will be created as a
+subdirectory of the current working directory (if it does not already exist).
+On some platforms, the index path may be created in a different directory (such
+as the user's home directory).</p>
+<p>The <span class="codefrag">-docs</span> command-line parameter value is the
+location of the directory containing files to be indexed.</p>
+<p>The <span class="codefrag">-update</span> command-line parameter tells
+<span class="codefrag">IndexFiles</span> not to delete the index if it already
+exists. When <span class="codefrag">-update</span> is not given, <span class=
+"codefrag">IndexFiles</span> will first wipe the slate clean before indexing
+any documents.</p>
+<p>Lucene <a href=
+"api/core/org/apache/lucene/store/Directory.html">Directory</a>s are used by
+the <span class="codefrag">IndexWriter</span> to store information in the
+index. In addition to the <a href=
+"api/core/org/apache/lucene/store/FSDirectory.html">FSDirectory</a>
+implementation we are using, there are several other <span class=
+"codefrag">Directory</span> subclasses that can write to RAM, to databases,
+etc.</p>
+<p>Lucene <a href=
+"api/core/org/apache/lucene/analysis/Analyzer.html">Analyzer</a>s are
+processing pipelines that break up text into indexed tokens, a.k.a. terms, and
+optionally perform other operations on these tokens, e.g. downcasing, synonym
+insertion, filtering out unwanted tokens, etc. The <span class=
+"codefrag">Analyzer</span> we are using is <span class=
+"codefrag">StandardAnalyzer</span>, which creates tokens using the Word Break
+rules from the Unicode Text Segmentation algorithm specified in <a href=
+"http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>; converts
+tokens to lowercase; and then filters out stopwords. Stopwords are common
+language words such as articles (a, an, the, etc.) and other tokens that may
+have less value for searching. It should be noted that there are different
+rules for every language, and you should use the proper analyzer for each.
+Lucene currently provides Analyzers for a number of different languages (see
+the javadocs under <a href=
+"api/analyzers-common/org/apache/lucene/analysis/">lucene/analysis/common/src/java/org/apache/lucene/analysis</a>).</p>
+<p>The <span class="codefrag">IndexWriterConfig</span> instance holds all
+configuration for <span class="codefrag">IndexWriter</span>. For example, we
+set the <span class="codefrag">OpenMode</span> to use here based on the value
+of the <span class="codefrag">-update</span> command-line parameter.</p>
+<p>Looking further down in the file, after <span class=
+"codefrag">IndexWriter</span> is instantiated, you should see the <span class=
+"codefrag">indexDocs()</span> code. This recursive function crawls the
+directories and creates <a href=
+"api/core/org/apache/lucene/document/Document.html">Document</a> objects. The
+<span class="codefrag">Document</span> is simply a data object to represent the
+text content from the file as well as its creation time and location. These
+instances are added to the <span class="codefrag">IndexWriter</span>. If the
+<span class="codefrag">-update</span> command-line parameter is given, the
+<span class="codefrag">IndexWriter</span> <span class=
+"codefrag">OpenMode</span> will be set to <span class=
+"codefrag">OpenMode.CREATE_OR_APPEND</span>, and rather than adding documents
+to the index, the <span class="codefrag">IndexWriter</span> will
+<strong>update</strong> them in the index by attempting to find an
+already-indexed document with the same identifier (in our case, the file path
+serves as the identifier); deleting it from the index if it exists; and then
+adding the new document to the index.</p>
+</div>
+<a name="N100DB" id="N100DB"></a><a name="Searching Files"></a>
+<h2 class="boxed">Searching Files</h2>
+<div class="section">
+<p>The <a href=
+"api/demo/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
+quite simple. It primarily collaborates with an <a href=
+"api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>,
+<a href=
+"api/analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">
+StandardAnalyzer</a> (which is used in the <a href=
+"api/demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well)
+and a <a href=
+"api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>. The
+query parser is constructed with an analyzer used to interpret your query text
+in the same way the documents are interpreted: finding word boundaries,
+downcasing, and removing useless words like 'a', 'an' and 'the'. The <a href=
+"api/core/org/apache/lucene/search/Query.html">Query</a> object contains the
+results from the <a href=
+"api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a> which
+is passed to the searcher. Note that it's also possible to programmatically
+construct a rich <a href=
+"api/core/org/apache/lucene/search/Query.html">Query</a> object without using
+the query parser. The query parser just enables decoding the <a href=
+"queryparsersyntax.html">Lucene query syntax</a> into the corresponding
+<a href="api/core/org/apache/lucene/search/Query.html">Query</a> object.</p>
+<p><span class="codefrag">SearchFiles</span> uses the <span class=
+"codefrag">IndexSearcher.search(query,n)</span> method that returns <a href=
+"api/core/org/apache/lucene/search/TopDocs.html">TopDocs</a> with max
+<span class="codefrag">n</span> hits. The results are printed in pages, sorted
+by score (i.e. relevance).</p>
+</div>
+</body>
 </html>
+
