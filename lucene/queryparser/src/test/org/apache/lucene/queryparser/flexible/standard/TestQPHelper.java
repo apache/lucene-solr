@@ -893,7 +893,7 @@ public class TestQPHelper extends LuceneTestCase {
     assertEscapedQueryEquals("&& abc &&", a, "\\&\\& abc \\&\\&");
   }
 
-  @Ignore("contrib queryparser shouldn't escape wildcard terms")
+  @Ignore("flexible queryparser shouldn't escape wildcard terms")
   public void testEscapedWildcard() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));

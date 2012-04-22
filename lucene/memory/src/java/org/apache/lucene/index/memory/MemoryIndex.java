@@ -325,7 +325,7 @@ public class MemoryIndex {
    * Equivalent to adding a tokenized, indexed, termVectorStored, unstored,
    * Lucene {@link org.apache.lucene.document.Field}.
    * Finally closes the token stream. Note that untokenized keywords can be added with this method via 
-   * {@link #keywordTokenStream(Collection)}, the Lucene contrib <code>KeywordTokenizer</code> or similar utilities.
+   * {@link #keywordTokenStream(Collection)}, the Lucene <code>KeywordTokenizer</code> or similar utilities.
    * 
    * @param fieldName
    *            a name to be associated with the text

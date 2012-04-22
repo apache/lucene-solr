@@ -52,7 +52,7 @@ import org.apache.lucene.util.automaton.RegExp;
  * Base Test class for QueryParser subclasses
  */
 // TODO: it would be better to refactor the parts that are specific really
-// to the core QP and subclass/use the parts that are not in the contrib QP
+// to the core QP and subclass/use the parts that are not in the flexible QP
 public abstract class QueryParserTestBase extends LuceneTestCase {
   
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();

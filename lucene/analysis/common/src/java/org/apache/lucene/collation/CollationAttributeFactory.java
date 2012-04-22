@@ -51,8 +51,8 @@ import org.apache.lucene.util.AttributeSource;
  *   </li>
  * </ol> 
  * <p>
- *   The <code>ICUCollationAttributeFactory</code> in the icu package of Lucene's
- *   contrib area uses ICU4J's Collator, which makes its
+ *   The <code>ICUCollationAttributeFactory</code> in the analysis-icu package 
+ *   uses ICU4J's Collator, which makes its
  *   version available, thus allowing collation to be versioned independently
  *   from the JVM.  ICUCollationAttributeFactory is also significantly faster and
  *   generates significantly shorter keys than CollationAttributeFactory.  See

@@ -31,6 +31,6 @@ using this Analyzer you are NOT affected.
 
 * SimpleAnalyzer, StopAnalyzer, LetterTokenizer, LowerCaseFilter, and 
 LowerCaseTokenizer may return different results, along with many other Analyzers
-and TokenStreams in Lucene's contrib area. If you are using one of these 
+and TokenStreams in Lucene's analysis modules. If you are using one of these 
 components, you may be affected.
 

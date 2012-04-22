@@ -55,8 +55,8 @@ import java.text.Collator;
  *   </li>
  * </ol> 
  * <p>
- *   The <code>ICUCollationKeyFilter</code> in the icu package of Lucene's
- *   contrib area uses ICU4J's Collator, which makes its
+ *   The <code>ICUCollationKeyFilter</code> in the analysis-icu package 
+ *   uses ICU4J's Collator, which makes its
  *   version available, thus allowing collation to be versioned independently
  *   from the JVM.  ICUCollationKeyFilter is also significantly faster and
  *   generates significantly shorter keys than CollationKeyFilter.  See
