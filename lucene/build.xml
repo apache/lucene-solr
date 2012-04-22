@@ -174,18 +174,6 @@
     <license-check-macro dir="${basedir}" />
   </target>
 
-  <!-- ================================================================== -->
-  <!-- D O C U M E N T A T I O N                                          -->
-  <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <target name="docs">
-  <!-- copies the docs over to the docs folder -->
-    <copy todir="build/docs">
-      <fileset dir="site/build/site"/> 
-    </copy>
-  </target>
-
   <target name="resolve">
     <sequential>
       <ant dir="test-framework" target="resolve" inheritall="false">
@@ -195,20 +183,26 @@
     </sequential>
   </target>
 
+  <target name="documentation" description="Generate all documentation"
+    depends="javadocs,changes-to-html,doc-index"/>
   <target name="javadoc" depends="javadocs"/>
-  <target name="javadocs" description="Generate javadoc" 
-          depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework">
-    <echo file="${javadoc.dir}/index.html" append="false">
-<![CDATA[<html><head><title>${Name} ${version} Javadoc Index</title></head>
-<body>
-<h1>${Name} ${version} Javadoc Index</h1>
-<ul>
-  <li><a href="core/index.html">core</a>: Lucene core library</li>
-  <li><a href="test-framework/index.html">test-framework</a>: Framework for testing Lucene-based applications</li>
-]]></echo>
-    <modules-crawl target="javadocs-index.html" failonerror="true"/>
-    <echo file="${javadoc.dir}/index.html" append="true"><![CDATA[
-</ul></body>]]></echo>
+  <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
+  
+  <target name="doc-index">
+    <pathconvert pathsep="|" dirsep="/" property="buildfiles">
+      <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
+    </pathconvert>
+    <xslt in="${ant.file}" out="${javadoc.dir}/index.html" style="site/xsl/index.xsl">
+      <outputproperty name="method" value="html"/>
+      <outputproperty name="version" value="4.0"/>
+      <outputproperty name="encoding" value="UTF-8"/>
+      <outputproperty name="indent" value="yes"/>
+      <param name="buildfiles" expression="${buildfiles}"/>
+      <param name="version" expression="${version}"/>
+    </xslt>
+    <copy todir="${javadoc.dir}">
+      <fileset dir="site/html" includes="**/*"/>
+    </copy>
   </target>
 	
   <target name="javadocs-modules" description="Generate javadoc for modules classes">
@@ -230,7 +224,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, jar-test-framework, docs, javadocs, build-modules, init-dist, changes-to-html"/>
+  <target name="package" depends="jar-core, jar-test-framework, build-modules, init-dist, documentation"/>
 
   <target name="nightly" depends="test, package-tgz">
   </target>

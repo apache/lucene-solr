@@ -90,14 +90,6 @@
     </sequential>
   </macrodef>
 
-  <target name="javadocs-index.html" description="Generate line for index.html of JavaDocs">
-    <xmlproperty file="${ant.file}" collapseAttributes="true"/>
-    <echo file="${javadoc.dir}/index.html" append="true">
-<![CDATA[
-  <li><a href="${name}/index.html">${name}</a>: ${project.description}</li>
-]]></echo>
-  </target>
-
   <property name="queryparser.jar" value="${common.dir}/build/queryparser/lucene-queryparser-${version}.jar"/>
   <target name="check-queryparser-uptodate" unless="queryparser.uptodate">
     <module-uptodate name="queryparser" jarfile="${queryparser.jar}" property="queryparser.uptodate"/>

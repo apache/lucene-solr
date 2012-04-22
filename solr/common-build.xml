@@ -196,7 +196,7 @@
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
   </target>
 
-  <property name="lucenedocs" location="${common.dir}/build/docs/api"/>
+  <property name="lucenedocs" location="${common.dir}/build/docs"/>
 
   <!-- dependency to ensure all lucene javadocs are present -->
   <target name="lucene-javadocs" depends="javadocs-lucene-core,javadocs-analyzers-common,javadocs-analyzers-icu,javadocs-analyzers-kuromoji,javadocs-analyzers-phonetic,javadocs-analyzers-smartcn,javadocs-analyzers-morfologik,javadocs-analyzers-stempel,javadocs-analyzers-uima,javadocs-suggest,javadocs-grouping,javadocs-queries,javadocs-queryparser,javadocs-highlighter,javadocs-memory,javadocs-misc,javadocs-spatial"/>
@@ -252,7 +252,7 @@
 
   <target name="define-lucene-javadoc-url-SNAPSHOT" if="version.contains.SNAPSHOT">
     <property name="lucene.javadoc.url"
-              value="${common.dir}/build/docs/api/"/>
+              value="${common.dir}/build/docs/"/>
   </target>
 
   <target name="define-lucene-javadoc-url-release" unless="version.contains.SNAPSHOT">
@@ -264,7 +264,7 @@
       </filterchain>
     </loadproperties>
     <property name="lucene.javadoc.url"
-              value="http://lucene.apache.org/java/${underscore.version}/api/"/>
+              value="http://lucene.apache.org/java/${underscore.version}/"/>
   </target>
 
   <target name="jar-src" depends="init">
