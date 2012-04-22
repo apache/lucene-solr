@@ -197,7 +197,7 @@
       so we pass ourself (${ant.file}) here. The list of module build.xmls is given
       via string parameter, that must be splitted by the XSL at '|'.
     --> 
-    <xslt in="${ant.file}" out="${javadoc.dir}/index.html" style="site/xsl/index.xsl">
+    <xslt in="${ant.file}" out="${javadoc.dir}/index.html" style="site/xsl/index.xsl" force="true">
       <outputproperty name="method" value="html"/>
       <outputproperty name="version" value="4.0"/>
       <outputproperty name="encoding" value="UTF-8"/>
