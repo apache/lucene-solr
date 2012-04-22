@@ -90,7 +90,7 @@ public class DocMaker implements Closeable {
   private Random r;
   private int updateDocIDLimit;
 
-  static class DocState {
+  protected static class DocState {
     
     private final Map<String,Field> fields;
     private final Map<String,Field> numericFields;
