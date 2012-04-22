@@ -37,11 +37,14 @@
       <body>
         <div><img src="lucene_green_300.gif"/></div>
         <h1><xsl:text>Apache Lucene </xsl:text><xsl:value-of select="$version"/><xsl:text> Documentation</xsl:text></h1>
+        <p>Lucene is a Java full-text search engine. Lucene is not a complete application, 
+        but rather a code library and API that can easily be used to add search capabilities
+        to applications.</p>
         <p>
           This is the official documentation for <b><xsl:text>Apache Lucene </xsl:text>
           <xsl:value-of select="$version"/></b>. Additional documentation is available in the
           <a href="http://wiki.apache.org/lucene-java">Wiki</a>.
-        </p>
+        </p>        
         <h2>Getting Started</h2>
         <p>The following section is intended as a "getting started" guide. It has three
         audiences: first-time users looking to install Apache Lucene in their
@@ -60,6 +63,8 @@
         <h2>Reference Documents</h2>
           <ul>
             <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
+            <li><a href="MIGRATE.html">Migration Guide</a>: What changed in Lucene 4; how to migrate code from Lucene 3.x.</li>
+            <li><a href="JRE_VERSION_MIGRATION.html">JRE Version Migration</a>: Information about upgrading between major JRE versions.</li>
             <li><a href="fileformats.html">File Formats</a>: Guide to the index format used by Lucene.</li>
             <li><a href="core/org/apache/lucene/search/package-summary.html#package_description">Search and Scoring in Lucene</a>: Introduction to how Lucene scores documents.</li>
             <li><a href="core/org/apache/lucene/search/similarities/TFIDFSimilarity.html">Classic Scoring Formula</a>: Formula of Lucene's classic <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space</a> implementation. (look <a href="core/org/apache/lucene/search/similarities/package-summary.html#package_description">here</a> for other models)</li>

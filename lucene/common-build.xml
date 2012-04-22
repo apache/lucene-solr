@@ -1506,4 +1506,60 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </scp>
     </sequential>
   </macrodef>
+  
+  <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
+  
+  <target name="resolve-pegdown" unless="pegdown.loaded">
+    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.1.0"
+      inline="true" conf="default" type="jar" transitive="true" pathid="pegdown.classpath"/>
+    <property name="pegdown.loaded" value="true"/>
+  </target>
+  
+  <macrodef name="pegdown">
+    <attribute name="todir"/>
+    <attribute name="flatten" default="false"/>
+    <attribute name="overwrite" default="false"/>
+    <element name="nested" optional="false" implicit="true"/>
+    <sequential>
+      <copy todir="@{todir}" flatten="@{flatten}" overwrite="@{overwrite}" verbose="true"
+        preservelastmodified="false" encoding="UTF-8" outputencoding="UTF-8"
+      >
+        <filterchain>
+          <tokenfilter>
+            <filetokenizer/>
+            <replaceregex pattern="\b(LUCENE|SOLR)\-\d+\b" replace="[\0](https://issues.apache.org/jira/browse/\0)" flags="gs"/>
+            <scriptfilter language="javascript" classpathref="pegdown.classpath"><![CDATA[
+              importClass(java.lang.StringBuilder);
+              importClass(org.pegdown.PegDownProcessor);
+              importClass(org.pegdown.Extensions);
+              importClass(org.pegdown.FastEncoder);
+              var markdownSource = self.getToken();
+              var title = undefined;
+              if (markdownSource.search(/^(#+\s*)?(.+)[\n\r]/) == 0) {
+                title = RegExp.$2;
+                // Convert the first line into a markdown heading, if it is not already:
+                if (RegExp.$1 == '') {
+                  markdownSource = '# ' + markdownSource;
+                }
+              }
+              var processor = new PegDownProcessor(
+                Extensions.ABBREVIATIONS | Extensions.AUTOLINKS |
+                Extensions.FENCED_CODE_BLOCKS | Extensions.SMARTS
+              );
+              var html = new StringBuilder('<html>\n<head>\n');
+              if (title) {
+                html.append('<title>').append(FastEncoder.encode(title)).append('</title>\n');
+              }
+              html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
+                .append('</head>\n<body>\n')
+                .append(processor.markdownToHtml(markdownSource))
+                .append('\n</body>\n</html>\n');
+              self.setToken(html.toString());
+            ]]></scriptfilter>
+          </tokenfilter>
+        </filterchain>
+        <nested/>
+      </copy>
+    </sequential>
+  </macrodef>
 </project>

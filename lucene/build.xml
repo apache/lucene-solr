@@ -184,11 +184,11 @@
   </target>
 
   <target name="documentation" description="Generate all documentation"
-    depends="javadocs,changes-to-html,doc-index"/>
+    depends="javadocs,changes-to-html,process-webpages"/>
   <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
   
-  <target name="doc-index">
+  <target name="process-webpages" depends="resolve-pegdown">
     <pathconvert pathsep="|" dirsep="/" property="buildfiles">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
     </pathconvert>
@@ -205,6 +205,12 @@
       <param name="buildfiles" expression="${buildfiles}"/>
       <param name="version" expression="${version}"/>
     </xslt>
+    
+    <pegdown todir="${javadoc.dir}">
+      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt"/>
+      <globmapper from="*.txt" to="*.html"/>
+    </pegdown>
+
     <copy todir="${javadoc.dir}">
       <fileset dir="site/html" includes="**/*"/>
     </copy>
