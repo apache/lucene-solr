@@ -16,19 +16,19 @@
 <h1>Apache Lucene - Index File Formats</h1>
 <div id="minitoc-area">
 <ul class="minitoc">
-<li><a href="#Index%20File%20Formats">Index File Formats</a></li>
+<li><a href="#Index_File_Formats">Index File Formats</a></li>
 <li><a href="#Definitions">Definitions</a>
 <ul class="minitoc">
-<li><a href="#Inverted%20Indexing">Inverted Indexing</a></li>
-<li><a href="#Types%20of%20Fields">Types of Fields</a></li>
+<li><a href="#Inverted_Indexing">Inverted Indexing</a></li>
+<li><a href="#Types_of_Fields">Types of Fields</a></li>
 <li><a href="#Segments">Segments</a></li>
-<li><a href="#Document%20Numbers">Document Numbers</a></li>
+<li><a href="#Document_Numbers">Document Numbers</a></li>
 </ul>
 </li>
 <li><a href="#Overview">Overview</a></li>
-<li><a href="#File%20Naming">File Naming</a></li>
+<li><a href="#File_Naming">File Naming</a></li>
 <li><a href="#file-names">Summary of File Extensions</a></li>
-<li><a href="#Primitive%20Types">Primitive Types</a>
+<li><a href="#Primitive_Types">Primitive Types</a>
 <ul class="minitoc">
 <li><a href="#Byte">Byte</a></li>
 <li><a href="#UInt32">UInt32</a></li>
@@ -38,34 +38,34 @@
 <li><a href="#String">String</a></li>
 </ul>
 </li>
-<li><a href="#Compound%20Types">Compound Types</a>
+<li><a href="#Compound_Types">Compound Types</a>
 <ul class="minitoc">
 <li><a href="#MapStringString">Map&lt;String,String&gt;</a></li>
 </ul>
 </li>
-<li><a href="#Per-Index%20Files">Per-Index Files</a>
+<li><a href="#Per-Index_Files">Per-Index Files</a>
 <ul class="minitoc">
-<li><a href="#Segments%20File">Segments File</a></li>
-<li><a href="#Lock%20File">Lock File</a></li>
-<li><a href="#Deletable%20File">Deletable File</a></li>
-<li><a href="#Compound%20Files">Compound Files</a></li>
+<li><a href="#Segments_File">Segments File</a></li>
+<li><a href="#Lock_File">Lock File</a></li>
+<li><a href="#Deletable_File">Deletable File</a></li>
+<li><a href="#Compound_Files">Compound Files</a></li>
 </ul>
 </li>
-<li><a href="#Per-Segment%20Files">Per-Segment Files</a>
+<li><a href="#Per-Segment_Files">Per-Segment Files</a>
 <ul class="minitoc">
 <li><a href="#Fields">Fields</a></li>
-<li><a href="#Term%20Dictionary">Term Dictionary</a></li>
+<li><a href="#Term_Dictionary">Term Dictionary</a></li>
 <li><a href="#Frequencies">Frequencies</a></li>
 <li><a href="#Positions">Positions</a></li>
-<li><a href="#Normalization%20Factors">Normalization Factors</a></li>
-<li><a href="#Term%20Vectors">Term Vectors</a></li>
-<li><a href="#Deleted%20Documents">Deleted Documents</a></li>
+<li><a href="#Normalization_Factors">Normalization Factors</a></li>
+<li><a href="#Term_Vectors">Term Vectors</a></li>
+<li><a href="#Deleted_Documents">Deleted Documents</a></li>
 </ul>
 </li>
 <li><a href="#Limitations">Limitations</a></li>
 </ul>
 </div>
-<a name="N1000C" id="N1000C"></a><a name="Index File Formats"></a>
+<a name="N1000C" id="N1000C"></a><a name="Index_File_Formats"></a>
 <h2 class="boxed">Index File Formats</h2>
 <div class="section">
 <p>This document defines the index file formats used in this version of Lucene.
@@ -129,14 +129,14 @@ frequencies.</p>
 <p>The same string in two different fields is considered a different term. Thus
 terms are represented as a pair of strings, the first naming the field, and the
 second naming text within the field.</p>
-<a name="N1005D" id="N1005D"></a><a name="Inverted Indexing"></a>
+<a name="N1005D" id="N1005D"></a><a name="Inverted_Indexing"></a>
 <h3 class="boxed">Inverted Indexing</h3>
 <p>The index stores statistics about terms in order to make term-based search
 more efficient. Lucene's index falls into the family of indexes known as an
 <i>inverted index.</i> This is because it can list, for a term, the documents
 that contain it. This is the inverse of the natural relationship, in which
 documents list terms.</p>
-<a name="N10069" id="N10069"></a><a name="Types of Fields"></a>
+<a name="N10069" id="N10069"></a><a name="Types_of_Fields"></a>
 <h3 class="boxed">Types of Fields</h3>
 <p>In Lucene, fields may be <i>stored</i>, in which case their text is stored
 in the index literally, in a non-inverted manner. Fields that are inverted are
@@ -145,7 +145,7 @@ called <i>indexed</i>. A field may be both stored and indexed.</p>
 text of a field may be used literally as a term to be indexed. Most fields are
 tokenized, but sometimes it is useful for certain identifier fields to be
 indexed literally.</p>
-<p>See the <a href="api/core/org/apache/lucene/document/Field.html">Field</a>
+<p>See the <a href="core/org/apache/lucene/document/Field.html">Field</a>
 java docs for more information on Fields.</p>
 <a name="N10086" id="N10086"></a><a name="Segments" id="Segments"></a>
 <h3 class="boxed">Segments</h3>
@@ -162,7 +162,7 @@ Indexes evolve by:</p>
 </ol>
 <p>Searches may involve multiple segments and/or multiple indexes, each index
 potentially composed of a set of segments.</p>
-<a name="N100A4" id="N100A4"></a><a name="Document Numbers"></a>
+<a name="N100A4" id="N100A4"></a><a name="Document_Numbers"></a>
 <h3 class="boxed">Document Numbers</h3>
 <p>Internally, Lucene refers to documents by an integer <i>document number</i>.
 The first document added to an index is numbered zero, and each subsequent
@@ -231,7 +231,7 @@ that is multiplied into the score for hits on that field.</p>
 <p>Term Vectors. For each field in each document, the term vector (sometimes
 called document vector) may be stored. A term vector consists of term text and
 term frequency. To add Term Vectors to your index see the <a href=
-"api/core/org/apache/lucene/document/Field.html">Field</a> constructors</p>
+"core/org/apache/lucene/document/Field.html">Field</a> constructors</p>
 </li>
 <li>
 <p>Deleted documents. An optional file indicating which documents are
@@ -240,7 +240,7 @@ deleted.</p>
 </ul>
 <p>Details on each of these are provided in subsequent sections.</p>
 </div>
-<a name="N1010E" id="N1010E"></a><a name="File Naming"></a>
+<a name="N1010E" id="N1010E"></a><a name="File_Naming"></a>
 <h2 class="boxed">File Naming</h2>
 <div class="section">
 <p>All files belonging to a segment have the same name with varying extensions.
@@ -268,24 +268,24 @@ Lucene:</p>
 <th>Brief Description</th>
 </tr>
 <tr>
-<td><a href="#Segments%20File">Segments File</a></td>
+<td><a href="#Segments_File">Segments File</a></td>
 <td>segments.gen, segments_N</td>
 <td>Stores information about segments</td>
 </tr>
 <tr>
-<td><a href="#Lock%20File">Lock File</a></td>
+<td><a href="#Lock_File">Lock File</a></td>
 <td>write.lock</td>
 <td>The Write lock prevents multiple IndexWriters from writing to the same
 file.</td>
 </tr>
 <tr>
-<td><a href="#Compound%20Files">Compound File</a></td>
+<td><a href="#Compound_Files">Compound File</a></td>
 <td>.cfs</td>
 <td>An optional "virtual" file consisting of all the other index files for
 systems that frequently run out of file handles.</td>
 </tr>
 <tr>
-<td><a href="#Compound%20File">Compound File Entry table</a></td>
+<td><a href="#Compound_Files">Compound File Entry table</a></td>
 <td>.cfe</td>
 <td>The "virtual" compound file's entry table holding all entries in the
 corresponding .cfs file (Since 3.4)</td>
@@ -326,7 +326,7 @@ corresponding .cfs file (Since 3.4)</td>
 <td>Stores position information about where a term occurs in the index</td>
 </tr>
 <tr>
-<td><a href="#Normalization%20Factors">Norms</a></td>
+<td><a href="#Normalization_Factors">Norms</a></td>
 <td>.nrm</td>
 <td>Encodes length and boost factors for docs and fields</td>
 </tr>
@@ -346,13 +346,13 @@ corresponding .cfs file (Since 3.4)</td>
 <td>The field level info about term vectors</td>
 </tr>
 <tr>
-<td><a href="#Deleted%20Documents">Deleted Documents</a></td>
+<td><a href="#Deleted_Documents">Deleted Documents</a></td>
 <td>.del</td>
 <td>Info about what files are deleted</td>
 </tr>
 </table>
 </div>
-<a name="N10215" id="N10215"></a><a name="Primitive Types"></a>
+<a name="N10215" id="N10215"></a><a name="Primitive_Types"></a>
 <h2 class="boxed">Primitive Types</h2>
 <div class="section"><a name="N1021A" id="N1021A"></a><a name="Byte" id=
 "Byte"></a>
@@ -590,7 +590,7 @@ byte, values from 128 to 16,383 may be stored in two bytes, and so on.</p>
 written as a VInt, followed by the bytes.</p>
 <p>String --&gt; VInt, Chars</p>
 </div>
-<a name="N1053C" id="N1053C"></a><a name="Compound Types"></a>
+<a name="N1053C" id="N1053C"></a><a name="Compound_Types"></a>
 <h2 class="boxed">Compound Types</h2>
 <div class="section"><a name="N10541" id="N10541"></a><a name="MapStringString"
 id="MapStringString"></a>
@@ -599,18 +599,18 @@ id="MapStringString"></a>
 <p>Map&lt;String,String&gt; --&gt;
 Count&lt;String,String&gt;<sup>Count</sup></p>
 </div>
-<a name="N10551" id="N10551"></a><a name="Per-Index Files"></a>
+<a name="N10551" id="N10551"></a><a name="Per-Index_Files"></a>
 <h2 class="boxed">Per-Index Files</h2>
 <div class="section">
 <p>The files in this section exist one-per-index.</p>
-<a name="N10559" id="N10559"></a><a name="Segments File"></a>
+<a name="N10559" id="N10559"></a><a name="Segments_File"></a>
 <h3 class="boxed">Segments File</h3>
 <p>The active segments in the index are stored in the segment info file,
 <tt>segments_N</tt>. There may be one or more <tt>segments_N</tt> files in the
 index; however, the one with the largest generation is the active one (when
 older segments_N files are present it's because they temporarily cannot be
 deleted, or, a writer is in the process of committing, or a custom <a href=
-"api/core/org/apache/lucene/index/IndexDeletionPolicy.html">IndexDeletionPolicy</a>
+"core/org/apache/lucene/index/IndexDeletionPolicy.html">IndexDeletionPolicy</a>
 is in use). This file lists each segment by name, has details about the
 separate norms and deletion files, and also contains the size of each
 segment.</p>
@@ -687,7 +687,7 @@ for each segment it creates. It includes metadata like the current Lucene
 version, OS, Java version, why the segment was created (merge, flush,
 addIndexes), etc.</p>
 <p>HasVectors is 1 if this segment stores term vectors, else it's 0.</p>
-<a name="N105E4" id="N105E4"></a><a name="Lock File"></a>
+<a name="N105E4" id="N105E4"></a><a name="Lock_File"></a>
 <h3 class="boxed">Lock File</h3>
 <p>The write lock, which is stored in the index directory by default, is named
 "write.lock". If the lock directory is different from the index directory then
@@ -695,11 +695,11 @@ the write lock will be named "XXXX-write.lock" where XXXX is a unique prefix
 derived from the full path to the index directory. When this file is present, a
 writer is currently modifying the index (adding or removing documents). This
 lock file ensures that only one writer is modifying the index at a time.</p>
-<a name="N105ED" id="N105ED"></a><a name="Deletable File"></a>
+<a name="N105ED" id="N105ED"></a><a name="Deletable_File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>A writer dynamically computes the files that are deletable, instead, so no
 file is written.</p>
-<a name="N105F6" id="N105F6"></a><a name="Compound Files"></a>
+<a name="N105F6" id="N105F6"></a><a name="Compound_Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This is
 simply a container for all files described in the next section (except for the
@@ -719,7 +719,7 @@ vectors) can be shared in a single set of files for more than one segment. When
 compound file is enabled, these shared files will be added into a single
 compound file (same format as above) but with the extension <tt>.cfx</tt>.</p>
 </div>
-<a name="N10627" id="N10627"></a><a name="Per-Segment Files"></a>
+<a name="N10627" id="N10627"></a><a name="Per-Segment_Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>The remaining files are all per-segment, and are thus defined by suffix.</p>
@@ -797,7 +797,7 @@ Lucene version 2.9.x</li>
 <p>ValueSize --&gt; VInt</p>
 </li>
 </ol>
-<a name="N106EA" id="N106EA"></a><a name="Term Dictionary"></a>
+<a name="N106EA" id="N106EA"></a><a name="Term_Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>The term dictionary is represented as two files:</p>
 <ol>
@@ -971,7 +971,7 @@ be the following sequence of VInts (payloads disabled):</p>
 PayloadLength is stored at the current position, then it indicates the length
 of this Payload. If PayloadLength is not stored, then this Payload has the same
 length as the Payload at the previous position.</p>
-<a name="N10832" id="N10832"></a><a name="Normalization Factors"></a>
+<a name="N10832" id="N10832"></a><a name="Normalization_Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>There's a single .nrm file containing all norms:</p>
 <p>AllNorms (.nrm) --&gt; NormsHeader,&lt;Norms&gt;
@@ -1006,7 +1006,7 @@ are modified. When field <em>N</em> is modified, a separate norm file
 <em>.sN</em> is created, to maintain the norm values for that field.</p>
 <p>Separate norm files are created (when adequate) for both compound and non
 compound segments.</p>
-<a name="N10883" id="N10883"></a><a name="Term Vectors"></a>
+<a name="N10883" id="N10883"></a><a name="Term_Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <p>Term Vector support is an optional on a field by field basis. It consists of
 3 files.</p>
@@ -1071,7 +1071,7 @@ startOffset, the second is the endOffset.</li>
 </ul>
 </li>
 </ol>
-<a name="N1091F" id="N1091F"></a><a name="Deleted Documents"></a>
+<a name="N1091F" id="N1091F"></a><a name="Deleted_Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is optional, and only exists when a segment contains
 deletions.</p>
