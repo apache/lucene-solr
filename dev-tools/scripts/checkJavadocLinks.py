@@ -167,13 +167,16 @@ def checkAll(dirName):
             print
             print fullPath
           print '  BAD EXTERNAL LINK: %s' % link
-      elif link.startswith('mailto://'):
+      elif link.startswith('mailto:'):
         if link.find('@lucene.apache.org') == -1 and link.find('@apache.org') != -1:
           if not printed:
             printed = True
             print
             print fullPath
           print '  BROKEN MAILTO (?): %s' % link
+      elif link.startswith('javascript:'):
+        # ok...?
+        pass
       elif link not in allFiles:
         # We only load HTML... so if the link is another resource (eg
         # SweetSpotSimilarity refs
