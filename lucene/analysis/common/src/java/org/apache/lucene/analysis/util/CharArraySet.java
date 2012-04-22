@@ -33,6 +33,8 @@ import org.apache.lucene.util.Version;
  * etc.  It is designed to be quick to test if a char[]
  * is in the set without the necessity of converting it
  * to a String first.
+ *
+ * <a name="version"></a>
  * <p>You must specify the required {@link Version}
  * compatibility when creating {@link CharArraySet}:
  * <ul>

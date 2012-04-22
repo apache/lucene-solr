@@ -154,7 +154,26 @@ def checkAll(dirName):
       # TODO: normalize path sep for windows...
       if link.startswith('http://') or link.startswith('https://'):
         # don't check external links
-        pass
+
+        if link.find('lucene.apache.org/java/docs/mailinglists.html') != -1:
+          # OK
+          pass
+        elif link.find('lucene.apache.org/java/docs/discussion.html') != -1:
+          # OK
+          pass
+        elif link.find('svn.apache.org') != -1 or link.find('lucene.apache.org') != -1:
+          if not printed:
+            printed = True
+            print
+            print fullPath
+          print '  BAD EXTERNAL LINK: %s' % link
+      elif link.startswith('mailto://'):
+        if link.find('@lucene.apache.org') == -1 and link.find('@apache.org') != -1:
+          if not printed:
+            printed = True
+            print
+            print fullPath
+          print '  BROKEN MAILTO (?): %s' % link
       elif link not in allFiles:
         # We only load HTML... so if the link is another resource (eg
         # SweetSpotSimilarity refs

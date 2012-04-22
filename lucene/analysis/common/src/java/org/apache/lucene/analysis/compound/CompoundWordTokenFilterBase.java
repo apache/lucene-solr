@@ -33,6 +33,8 @@ import org.apache.lucene.util.Version;
 /**
  * Base class for decomposition token filters.
  * <p>
+ *
+ * <a name="version"></a>
  * You must specify the required {@link Version} compatibility when creating
  * CompoundWordTokenFilterBase:
  * <ul>

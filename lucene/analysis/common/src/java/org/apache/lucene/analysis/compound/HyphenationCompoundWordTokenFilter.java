@@ -52,7 +52,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @param matchVersion
    *          Lucene version to enable correct Unicode 4.0 behavior in the
    *          dictionaries if Version > 3.0. See <a
-   *          href="CompoundWordTokenFilterBase#version"
+   *          href="CompoundWordTokenFilterBase.html#version"
    *          >CompoundWordTokenFilterBase</a> for details.
    * @param input
    *          the {@link TokenStream} to process
@@ -73,7 +73,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @param matchVersion
    *          Lucene version to enable correct Unicode 4.0 behavior in the
    *          dictionaries if Version > 3.0. See <a
-   *          href="CompoundWordTokenFilterBase#version"
+   *          href="CompoundWordTokenFilterBase.html#version"
    *          >CompoundWordTokenFilterBase</a> for details.
    * @param input
    *          the {@link TokenStream} to process

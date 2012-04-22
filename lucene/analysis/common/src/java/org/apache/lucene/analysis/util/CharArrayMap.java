@@ -36,6 +36,8 @@ import org.apache.lucene.util.Version;
  * etc.  It is designed to be quick to retrieve items
  * by char[] keys without the necessity of converting
  * to a String first.
+ *
+ * <a name="version"></a>
  * <p>You must specify the required {@link Version}
  * compatibility when creating {@link CharArrayMap}:
  * <ul>
@@ -120,12 +122,12 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
   }
 
   /** true if the <code>len</code> chars of <code>text</code> starting at <code>off</code>
-   * are in the {@link #keySet} */
+   * are in the {@link #keySet()} */
   public boolean containsKey(char[] text, int off, int len) {
     return keys[getSlot(text, off, len)] != null;
   }
 
-  /** true if the <code>CharSequence</code> is in the {@link #keySet} */
+  /** true if the <code>CharSequence</code> is in the {@link #keySet()} */
   public boolean containsKey(CharSequence cs) {
     return keys[getSlot(cs)] != null;
   }

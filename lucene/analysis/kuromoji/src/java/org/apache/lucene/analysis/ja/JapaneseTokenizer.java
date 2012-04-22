@@ -100,7 +100,7 @@ public final class JapaneseTokenizer extends Tokenizer {
    */
   public static final Mode DEFAULT_MODE = Mode.SEARCH;
 
-  enum Type {
+  public enum Type {
     KNOWN,
     UNKNOWN,
     USER
