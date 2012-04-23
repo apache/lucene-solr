@@ -233,6 +233,7 @@
           <link offline="true" href="${lucene.javadoc.url}/analyzers-phonetic" packagelistloc="${lucenedocs}/analyzers-phonetic"/>
           <link offline="true" href="${lucene.javadoc.url}/analyzers-smartcn" packagelistloc="${lucenedocs}/analyzers-smartcn"/>
           <link offline="true" href="${lucene.javadoc.url}/analyzers-stempel" packagelistloc="${lucenedocs}/analyzers-stempel"/>
+          <link offline="true" href="${lucene.javadoc.url}/analyzers-uima" packagelistloc="${lucenedocs}/analyzers-uima"/>
           <link offline="true" href="${lucene.javadoc.url}/suggest" packagelistloc="${lucenedocs}/suggest"/>
           <link offline="true" href="${lucene.javadoc.url}/grouping" packagelistloc="${lucenedocs}/grouping"/>
           <link offline="true" href="${lucene.javadoc.url}/queries" packagelistloc="${lucenedocs}/queries"/>

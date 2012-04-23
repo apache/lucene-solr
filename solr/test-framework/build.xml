@@ -44,14 +44,15 @@
   <target name="javadocs"
           depends="compile-core,lucene-javadocs,javadocs-test-framework,define-lucene-javadoc-url">
     <sequential>
-      <solr-invoke-javadoc>
-        <solrsources>
+      <mkdir dir="${javadoc.dir}"/>
+      <invoke-javadoc destdir="${javadoc.dir}" 
+                      title="${Name}" overview="${src.dir}/overview.html">
+        <sources>
           <link offline="true" href="${javadoc.link.junit}"
                 packagelistLoc="${javadoc.packagelist.dir}/junit"/>
-          <link offline="true" href="${lucene.javadoc.url}/test-framework" packagelistloc="${lucenedocs}/test-framework"/>
           <packageset dir="${src.dir}"/>
-        </solrsources>
-      </solr-invoke-javadoc>
+        </sources>
+      </invoke-javadoc>
       <solr-jarify basedir="${javadoc.dir}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
       <mkdir dir="${dest}/docs/api/test-framework"/>
       <copy todir="${dest}/docs/api/test-framework">

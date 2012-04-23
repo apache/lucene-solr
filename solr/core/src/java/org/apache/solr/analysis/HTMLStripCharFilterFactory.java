@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  *     &lt;charFilter class="solr.HTMLStripCharFilterFactory" escapedTags="a, title" /&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre
+ * &lt;/fieldType&gt;</pre>
  *
  */
  public class HTMLStripCharFilterFactory extends BaseCharFilterFactory {

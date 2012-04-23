@@ -20,7 +20,7 @@ package org.apache.solr.util.plugin;
 import java.util.Map;
 
 /**
- * A plugin that can be initialized with a Map<String,String>
+ * A plugin that can be initialized with a Map&lt;String,String&gt;
  * 
  *
  * @since solr 1.3

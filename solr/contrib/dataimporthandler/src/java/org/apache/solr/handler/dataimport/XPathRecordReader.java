@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * /a//b...
  * /a/b/c
  * </pre>
- * A record is a Map<String,Object> . The key is the provided name
+ * A record is a Map&lt;String,Object&gt; . The key is the provided name
  * and the value is a String or a List<String>
  *
  * This class is thread-safe for parsing xml. But adding fields is not
@@ -98,7 +98,7 @@ public class XPathRecordReader {
   }
 
   /**
-   * A wrapper around {@link #addField0 addField0()} to create a series of  
+   * A wrapper around <code>addField0</code> to create a series of  
    * Nodes based on the supplied Xpath and a given fieldName. The created  
    * nodes are inserted into a Node tree.
    *
@@ -113,7 +113,7 @@ public class XPathRecordReader {
   }
 
   /**
-   * A wrapper around {@link #addField0 addField0()} to create a series of  
+   * A wrapper around <code>addField0</code> to create a series of  
    * Nodes based on the supplied Xpath and a given fieldName. The created  
    * nodes are inserted into a Node tree.
    *

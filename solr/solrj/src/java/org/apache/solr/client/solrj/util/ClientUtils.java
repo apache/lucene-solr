@@ -180,7 +180,8 @@ public class ClientUtils
 
 
   /**
-   * See: <a href="http://lucene.apache.org/java/docs/nightly/queryparsersyntax.html#Escaping%20Special%20Characters">Escaping Special Characters</a>
+   * See: {@link org.apache.lucene.queryparser.classic queryparser syntax} 
+   * for more information on Escaping Special Characters
    */
   public static String escapeQueryChars(String s) {
     StringBuilder sb = new StringBuilder();

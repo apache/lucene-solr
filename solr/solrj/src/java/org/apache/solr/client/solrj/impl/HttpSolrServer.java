@@ -126,17 +126,8 @@ public class HttpSolrServer extends SolrServer {
   
   private final HttpClient httpClient;
   
-  /**
-   * This defaults to false under the assumption that if you are following a
-   * redirect to get to a Solr installation, something is misconfigured
-   * somewhere.
-   */
   private boolean followRedirects = false;
   
-  /**
-   * Maximum number of retries to attempt in the event of transient errors.
-   * Default: 0 (no) retries. No more than 1 recommended.
-   */
   private int maxRetries = 0;
   
   private ThreadSafeClientConnManager ccm;
@@ -517,8 +508,11 @@ public class HttpSolrServer extends SolrServer {
   
   /**
    * HttpClientParams.setRedirecting
-   * 
-   * @see #followRedirects
+   * <p>
+   * This defaults to false under the assumption that if you are following a
+   * redirect to get to a Solr installation, something is misconfigured
+   * somewhere.
+   * </p>
    */
   public void setFollowRedirects(boolean followRedirects) {
     this.followRedirects = followRedirects;
@@ -613,10 +607,12 @@ public class HttpSolrServer extends SolrServer {
   
   /**
    * Set maximum number of retries to attempt in the event of transient errors.
-   * 
+   * <p>
+   * Maximum number of retries to attempt in the event of transient errors.
+   * Default: 0 (no) retries. No more than 1 recommended.
+   * </p>
    * @param maxRetries
    *          No more than 1 recommended
-   * @see #maxRetries
    */
   public void setMaxRetries(int maxRetries) {
     if (maxRetries > 1) {

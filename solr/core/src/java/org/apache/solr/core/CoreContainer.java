@@ -1006,7 +1006,6 @@ public class CoreContainer
   }
   
   /** Gets a core by name and increase its refcount.
-   * @see SolrCore#open() 
    * @see SolrCore#close() 
    * @param name the core name
    * @return the core if found

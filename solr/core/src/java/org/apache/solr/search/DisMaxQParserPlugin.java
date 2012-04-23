@@ -56,7 +56,7 @@ import org.apache.solr.request.SolrQueryRequest;
   * </li>
   * <li> mm - (Minimum Match) this supports a wide variety of
   *           complex expressions.
-  *           read {@link org.apache.solr.util.SolrPluginUtils#setMinShouldMatch SolrPluginUtils.setMinShouldMatch} and <a href="http://lucene.apache.org/solr/api/org/apache/solr/util/doc-files/min-should-match.html">mm expression format</a> for details.
+  *           read {@link org.apache.solr.util.SolrPluginUtils#setMinShouldMatch SolrPluginUtils.setMinShouldMatch} and <a href="{@docRoot}/org/apache/solr/util/doc-files/min-should-match.html">mm expression format</a> for details.
   * </li>
   * <li> pf - (Phrase Fields) fields/boosts to make phrase queries out
   *           of, to boost the users query for exact matches on the specified fields.
