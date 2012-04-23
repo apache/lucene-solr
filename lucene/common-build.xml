@@ -1570,4 +1570,16 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
      </sequential>
   </macrodef>
 
+  <macrodef name="check-missing-javadocs">
+       <attribute name="dir"/>
+       <attribute name="level" default="class"/>
+     <sequential>
+       <exec dir="." executable="${python.exe}" failonerror="true">
+         <arg line="${dev-tools.dir}/scripts/checkJavaDocs.py"/>
+         <arg line="@{dir}"/>
+         <arg line="@{level}"/>
+       </exec>
+     </sequential>
+  </macrodef>
+
 </project>

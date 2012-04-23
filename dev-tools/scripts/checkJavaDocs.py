@@ -70,11 +70,15 @@ def unescapeHTML(s):
   s = s.replace('&amp;', '&')
   return s
 
-def checkPackageSummaries(root):
+def checkPackageSummaries(root, level='class'):
   """
   Just checks for blank summary lines in package-summary.html; returns
   True if there are problems.
   """
+
+  if level != 'class' and level != 'package':
+    print 'unsupported level: %s, must be "class" or "package"' % level
+    sys.exit(1)
   
   #for dirPath, dirNames, fileNames in os.walk('%s/lucene/build/docs/api' % root):
 
@@ -94,7 +98,7 @@ def checkPackageSummaries(root):
       continue
 
     if 'package-summary.html' in fileNames:
-      if checkSummary('%s/package-summary.html' % dirPath):
+      if level != 'package' and checkSummary('%s/package-summary.html' % dirPath):
         anyMissing = True
     if 'overview-summary.html' in fileNames:        
       if checkSummary('%s/overview-summary.html' % dirPath):
@@ -103,4 +107,15 @@ def checkPackageSummaries(root):
   return anyMissing
 
 if __name__ == '__main__':
-  checkPackageSummaries(sys.argv[1])
+  if len(sys.argv) < 2 or len(sys.argv) > 3:
+    print 'usage: %s <dir> [class|package]' % sys.argv[0]
+    sys.exit(1)
+  if len(sys.argv) == 2:
+    level = 'class'
+  else:
+    level = sys.argv[2]
+  if checkPackageSummaries(sys.argv[1], level):
+    print
+    print 'Missing javadocs were found!'
+    sys.exit(1)
+  sys.exit(0)

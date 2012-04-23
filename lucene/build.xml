@@ -189,9 +189,12 @@
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
 
   <!-- we check for broken links across all documentation -->
-  <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
   <target name="javadocs-lint" depends="documentation">
-    <check-broken-links dir="build/docs"/>
+    <sequential>
+      <check-broken-links dir="build/docs"/>
+      <!-- TODO: change this level=class -->
+      <!-- <check-missing-javadocs dir="build/docs" level="package"/> -->
+    </sequential>
   </target>
   
   <target name="process-webpages" depends="resolve-pegdown">
