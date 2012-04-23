@@ -583,7 +583,7 @@ final public class BasicOperations {
    * <p>
    * Worst case complexity: exponential in number of states.
    */
-  static void determinize(Automaton a) {
+  public static void determinize(Automaton a) {
     if (a.deterministic || a.isSingleton()) {
       return;
     }
