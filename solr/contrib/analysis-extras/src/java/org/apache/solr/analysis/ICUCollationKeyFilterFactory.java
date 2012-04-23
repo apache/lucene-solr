@@ -32,7 +32,8 @@ import com.ibm.icu.text.RuleBasedCollator;
 import com.ibm.icu.util.ULocale;
 
 /**
- * Factory for {@link ICUCollationKeyFilter}.
+ * <!-- see LUCENE-4015 for why we cannot link -->
+ * Factory for <code>ICUCollationKeyFilter</code>.
  * <p>
  * This factory can be created in two ways: 
  * <ul>
