@@ -542,6 +542,12 @@
       </solr-invoke-javadoc>
     </sequential>
   </target>
+
+  <!-- TODO: does solr have any other docs we should check? -->
+  <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
+  <target name="javadocs-lint" depends="javadocs">
+    <!-- TODO: enable <check-broken-links dir="build/docs"/> -->
+  </target>
  
   <target name="generate-maven-artifacts" depends="install-maven-tasks">
     <sequential>

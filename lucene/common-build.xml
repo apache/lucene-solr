@@ -1559,4 +1559,15 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </copy>
     </sequential>
   </macrodef>
+
+  <macrodef name="check-broken-links">
+       <attribute name="dir"/>
+     <sequential>
+       <exec dir="." executable="${python.exe}" failonerror="true">
+         <arg line="${dev-tools.dir}/scripts/checkJavadocLinks.py"/>
+         <arg line="@{dir}"/>
+       </exec>
+     </sequential>
+  </macrodef>
+
 </project>

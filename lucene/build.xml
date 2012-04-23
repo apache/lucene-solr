@@ -187,6 +187,12 @@
     depends="javadocs,changes-to-html,process-webpages"/>
   <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
+
+  <!-- we check for broken links across all documentation -->
+  <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
+  <target name="javadocs-lint" depends="documentation">
+    <check-broken-links dir="build/docs"/>
+  </target>
   
   <target name="process-webpages" depends="resolve-pegdown">
     <pathconvert pathsep="|" dirsep="/" property="buildfiles">
