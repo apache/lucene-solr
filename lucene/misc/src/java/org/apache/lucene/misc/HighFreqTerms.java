@@ -123,7 +123,7 @@ public class HighFreqTerms {
       if (terms != null) {
         TermsEnum termsEnum = terms.iterator(null);
         tiq = new TermStatsQueue(numTerms);
-        fillQueue(termsEnum, tiq, field);
+        tiq.fill(field, termsEnum);
       }
     } else {
       Fields fields = MultiFields.getFields(reader);
@@ -137,7 +137,7 @@ public class HighFreqTerms {
         if (field != null) {
           Terms terms = fieldsEnum.terms();
           if (terms != null) {
-            fillQueue(terms.iterator(null), tiq, field);
+            tiq.fill(field, terms.iterator(null));
           }
         } else {
           break;
@@ -211,18 +211,6 @@ public class HighFreqTerms {
     
     return totalTF[0];
   }
-  
-  public static void fillQueue(TermsEnum termsEnum, TermStatsQueue tiq, String field) throws Exception {
-    
-  while (true) {
-      BytesRef term = termsEnum.next();
-      if (term != null) {
-        tiq.insertWithOverflow(new TermStats(field, term, termsEnum.docFreq()));
-      } else {
-        break;
-      }
-    }
-  }
  }
 
 /**
@@ -256,5 +244,16 @@ final class TermStatsQueue extends PriorityQueue<TermStats> {
   @Override
   protected boolean lessThan(TermStats termInfoA, TermStats termInfoB) {
     return termInfoA.docFreq < termInfoB.docFreq;
+  }
+  
+  protected void fill(String field, TermsEnum termsEnum) throws IOException {
+    while (true) {
+      BytesRef term = termsEnum.next();
+      if (term != null) {
+        insertWithOverflow(new TermStats(field, term, termsEnum.docFreq()));
+      } else {
+        break;
+      }
+    }
   }
 }
