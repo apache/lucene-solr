@@ -197,6 +197,8 @@ def checkAll(dirName):
     failures = failures or printed
     
   if failures:
+    print
+    print 'Broken javadocs links were found!'
     sys.exit(1)
   else:
     sys.exit(0)
