@@ -15,6 +15,27 @@
  limitations under the License.
 */
 
+var set_healthcheck_status = function( status )
+{
+  var hc_button = $( '.healthcheck-status' )
+  if ( status == 'enable' )
+  {
+    hc_button.parents( 'dd' )
+      .removeClass( 'ico-0' )
+      .addClass( 'ico-1' );
+    hc_button
+      .addClass( 'enabled' )
+      .html( 'disable ping' );
+  } else {
+    hc_button.parents( 'dd' )
+      .removeClass( 'ico-1')
+      .addClass( 'ico-0' );
+    hc_button
+      .removeClass( 'enabled' )
+      .html( 'enable ping' );
+  }
+};
+
 // #/:core
 sammy.get
 (
@@ -402,6 +423,108 @@ sammy.get
               $( '.message', this )
                 .show()
                 .html( 'We found no "admin-extra.html" file.' );
+            },
+            complete : function( xhr, text_status )
+            {
+              $( 'h2', this )
+                .removeClass( 'loader' );
+            }
+          }
+        );
+
+        $.ajax
+        (
+          {
+            url : core_basepath + '/admin/ping?action=status&wt=json',
+            dataType : 'json',
+            context : $( '#healthcheck', dashboard_element ),
+            beforeSend : function( xhr, settings )
+            {
+              $( 'h2', this )
+                .addClass( 'loader' );
+                            
+              $( '.message', this )
+                .show()
+                .html( 'Loading' );
+
+              $( '.content', this )
+                .hide();
+            },
+            success : function( response, text_status, xhr )
+            {
+              $( '.message', this )
+                .empty()
+                .hide();
+                            
+              $( '.content', this )
+                .show();
+
+              var status_element = $( '.value.status', this );
+              var toggle_button = $( '.healthcheck-status', this );
+              var status = response['status'];
+              $( 'span', status_element ).html( status );
+
+              var action = ( response['status'] == 'enabled' ) ? 'enable' : 'disable';  
+              set_healthcheck_status(action);
+
+              if( response['status'] == 'enabled' )
+              {
+                status_element
+                  .addClass( 'ico-1' );
+                toggle_button
+                  .addClass( 'enabled' );
+              }
+              else
+              {
+                status_element
+                  .addClass( 'ico-0' );
+              }
+              
+              $( '.healthcheck-status', status_element )
+                .die( 'click' )
+                .live
+                (
+                  'click',
+                  function( event )
+                  {                      
+                    var action = $(this).hasClass( 'enabled' ) ? 'disable' : 'enable';  
+                    $.ajax
+                    (
+                      {
+                        url : core_basepath + '/admin/ping?action=' + action + '&wt=json',
+                        dataType : 'json',
+                        context : $( this ),
+                        beforeSend : function( xhr, settings )
+                        {
+                          this
+                            .addClass( 'loader' );
+                        },
+                        success : function( response, text_status, xhr )
+                        {
+                          set_healthcheck_status(action);
+                        },
+                        error : function( xhr, text_status, error_thrown)
+                        {
+                          console.warn( 'd0h, enable broken!' );
+                        },
+                        complete : function( xhr, text_status )
+                        {
+                          this
+                            .removeClass( 'loader' );
+                        }
+                      }
+                    );
+                  }
+                );
+            },
+            error : function( xhr, text_status, error_thrown)
+            {
+              this
+                .addClass( 'disabled' );
+                            
+              $( '.message', this )
+                .show()
+                .html( 'Ping request handler is not configured.' );
             },
             complete : function( xhr, text_status )
             {

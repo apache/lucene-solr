@@ -18,6 +18,9 @@
 package org.apache.solr.handler;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -35,17 +38,70 @@ import org.apache.solr.response.SolrQueryResponse;
  */
 public class PingRequestHandler extends RequestHandlerBase 
 {
+
+  SimpleDateFormat formatRFC3339 = new SimpleDateFormat("yyyy-MM-dd'T'h:m:ss.SZ");
+  protected enum ACTIONS {STATUS, ENABLE, DISABLE, PING};
+  private String healthcheck = null;
+  
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
+    
     SolrParams params = req.getParams();
     SolrCore core = req.getCore();
     
     // Check if the service is available
-    String healthcheck = core.getSolrConfig().get("admin/healthcheck/text()", null );
-    if( healthcheck != null && !new File(healthcheck).exists() ) {
-      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Service disabled");
+    healthcheck = core.getSolrConfig().get("admin/healthcheck/text()", null );
+    
+    String actionParam = params.get("action");
+    ACTIONS action = null;
+    if (actionParam == null){
+      action = ACTIONS.PING;
     }
+    else {
+      try {
+        action = ACTIONS.valueOf(actionParam.toUpperCase());
+      }
+      catch (IllegalArgumentException iae){
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+        "Unknown action: " + actionParam);
+      }
+    }
+    switch(action){
+      case PING:
+        if( healthcheck != null && !new File(healthcheck).exists() ) {
+          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Service disabled");
+        }
+        handlePing(req, rsp);
+        break;
+      case ENABLE:
+        handleEnable(healthcheck,true);
+        break;
+      case DISABLE:
+        handleEnable(healthcheck,false);
+        break;
+      case STATUS:
+        if( healthcheck == null){
+          SolrException e = new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "healthcheck not configured");
+          rsp.setException(e);
+        }
+        else {
+          if ( new File(healthcheck).exists() ){
+            rsp.add( "status",  "enabled");      
+          }
+          else {
+            rsp.add( "status",  "disabled");      
+          }
+        }
+    }
+
+  }
+  
+  protected void handlePing(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
+  {
+    
+    SolrParams params = req.getParams();
+    SolrCore core = req.getCore();
     
     // Get the RequestHandler
     String qt = params.get( CommonParams.QT );//optional; you get the default otherwise
@@ -79,7 +135,27 @@ public class PingRequestHandler extends RequestHandlerBase
     rsp.add( "status", "OK" );
   }
   
-  
+  protected void handleEnable(String healthcheck, boolean enable) throws Exception
+  {
+    if (healthcheck == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, 
+        "No healthcheck file defined.");
+    }
+    File enableFile = new File(healthcheck);
+    if ( enable ) {
+      enableFile.createNewFile();
+      
+      // write out when the file was created
+      FileWriter fw = new FileWriter(enableFile);      
+      fw.write(formatRFC3339.format(new Date()));
+      fw.close(); 
+      
+    } else {
+      if (enableFile.exists() && !enableFile.delete()){
+        throw new SolrException( SolrException.ErrorCode.NOT_FOUND,"Did not successfully delete healthcheck file:'"+healthcheck+"'");
+      }
+    }
+  }
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override

@@ -4,19 +4,19 @@
   width: 49%;
 }
 
-#content #dashboard #statistics
+#content #dashboard .fieldlist
 {
   float: left;
 }
 
-#content #dashboard #statistics dt,
-#content #dashboard #statistics dd
+#content #dashboard .fieldlist dt,
+#content #dashboard .fieldlist dd
 {
   display: block;
   float: left;
 }
 
-#content #dashboard #statistics dt
+#content #dashboard .fieldlist dt
 {
   clear: left;
   margin-right: 2%;
@@ -24,28 +24,28 @@
   width: 23%;
 }
 
-#content #dashboard #statistics dd
+#content #dashboard .fieldlist dd
 {
   width: 74%;
 }
 
-#content #dashboard #statistics .index_optimized
+#content #dashboard .fieldlist .index_optimized
 {
   margin-top: 10px;
 }
 
-#content #dashboard #statistics .ico
+#content #dashboard .fieldlist .ico
 {
   background-image: url( ../../img/ico/slash.png );
   height: 20px;
 }
 
-#content #dashboard #statistics .ico.ico-1
+#content #dashboard .fieldlist .ico.ico-1
 {
   background-image: url( ../../img/ico/tick.png );
 }
 
-#content #dashboard #statistics .ico span
+#content #dashboard .fieldlist .ico span
 {
   display: none;
 }
@@ -112,3 +112,16 @@
 #content #dashboard #replication.is-slave h2 { background-image: url( ../../img/ico/node-slave.png ); }
 #content #dashboard #dataimport h2 { background-image: url( ../../img/ico/document-import.png ); }
 #content #dashboard #admin-extra h2 { background-image: url( ../../img/ico/plus-button.png ); }
+
+#content #dashboard #healthcheck .ico
+{
+  background-image: url( ../../img/ico/slash.png );
+  height: 20px;
+  padding-left: 20px;
+  width: 60%;
+}
+
+#content #dashboard #healthcheck .ico.ico-1
+{
+  background-image: url( ../../img/ico/tick.png );
+}
