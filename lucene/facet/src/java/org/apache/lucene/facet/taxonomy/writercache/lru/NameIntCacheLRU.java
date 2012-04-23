@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter; // javadocs
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -119,7 +120,7 @@ class NameIntCacheLRU {
    * If cache is full remove least recently used entries from cache.
    * Return true if anything was removed, false otherwise.
    * 
-   * See comment in {@link DirectoryTaxonomyWriter#addToCache(String, Integer)}
+   * See comment in {@link DirectoryTaxonomyWriter#addToCache(CategoryPath, int)}
    * for an explanation why we clean 2/3rds of the cache, and not just one
    * entry.
    */ 

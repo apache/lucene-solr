@@ -206,15 +206,13 @@ public class IntHashSet {
 
   /**
    * Adds a pair to the map. Takes the first empty position from the
-   * empty-linked-list's head - {@link firstEmpty}.
+   * empty-linked-list's head - {@link #firstEmpty}.
    * 
    * New pairs are always inserted to baseHash, and are followed by the old
    * colliding pair.
    * 
    * @param key
    *            integer which maps the given value
-   * @param e
-   *            value which is being mapped using the given key
    */
   private void prvt_add(int key) {
     // Hash entry to which the new pair would be inserted
@@ -312,7 +310,7 @@ public class IntHashSet {
 
   /**
    * Find the actual index of a given key with it's baseHashIndex.<br>
-   * Some methods use the baseHashIndex. If those call {@link #find()} there's
+   * Some methods use the baseHashIndex. If those call {@link #find} there's
    * no need to re-calculate that hash.
    * 
    * @param key

@@ -449,7 +449,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
 
   /**
    * Opens the file and reloads the CompactLabelToOrdinal. The file it expects
-   * is generated from the {@link #flush()} command.
+   * is generated from the {@link #flush(File)} command.
    */
   static CompactLabelToOrdinal open(File file, float loadFactor,
                                     int numHashArrays) throws IOException {

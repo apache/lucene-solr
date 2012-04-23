@@ -219,7 +219,7 @@ public class ArrayHashMap<K,V> implements Iterable<V> {
 
   /**
    * Adds a pair to the map. Takes the first empty position from the
-   * empty-linked-list's head - {@link firstEmpty}. New pairs are always
+   * empty-linked-list's head - {@link #firstEmpty}. New pairs are always
    * inserted to baseHash, and are followed by the old colliding pair.
    */
   private void prvt_put(K key, V value) {
@@ -312,7 +312,7 @@ public class ArrayHashMap<K,V> implements Iterable<V> {
 
   /**
    * Finds the actual index of a given key with it's baseHashIndex. Some methods
-   * use the baseHashIndex. If those call {@link #find()} there's no need to
+   * use the baseHashIndex. If those call {@link #find} there's no need to
    * re-calculate that hash.
    * 
    * @return the index of the given key, or 0 if the key wasn't found.

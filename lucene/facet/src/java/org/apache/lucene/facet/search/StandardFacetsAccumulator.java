@@ -230,9 +230,9 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
   /**
    * Iterate over the documents for this partition and fill the facet arrays with the correct
    * count/complement count/value.
-   * @param internalCollector
+   * @param docids
    * @param facetArrays
-   * @param part
+   * @param partition
    * @throws IOException
    */
   private final void fillArraysForPartition(ScoredDocIDs docids,

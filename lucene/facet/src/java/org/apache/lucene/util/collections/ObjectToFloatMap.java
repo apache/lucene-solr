@@ -243,7 +243,7 @@ public class ObjectToFloatMap<K> {
 
   /**
    * Adds a pair to the map. Takes the first empty position from the
-   * empty-linked-list's head - {@link firstEmpty}.
+   * empty-linked-list's head - {@link #firstEmpty}.
    * 
    * New pairs are always inserted to baseHash, and are followed by the old
    * colliding pair.
@@ -369,7 +369,7 @@ public class ObjectToFloatMap<K> {
 
   /**
    * Find the actual index of a given key with it's baseHashIndex.<br>
-   * Some methods use the baseHashIndex. If those call {@link #find()} there's
+   * Some methods use the baseHashIndex. If those call {@link #find} there's
    * no need to re-calculate that hash.
    * 
    * @param key

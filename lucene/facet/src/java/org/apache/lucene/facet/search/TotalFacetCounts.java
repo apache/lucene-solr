@@ -71,7 +71,6 @@ public class TotalFacetCounts {
   
   /** 
    * Construct by key - from index Directory or by recomputing.
-   * @param key the key mapping of this total facet counts (index, taxonomy, category lists...) 
    */
   private TotalFacetCounts (TaxonomyReader taxonomy, FacetIndexingParams facetIndexingParams,
       int[][] counts, CreationType createType4Test) throws IOException, LockObtainFailedException {

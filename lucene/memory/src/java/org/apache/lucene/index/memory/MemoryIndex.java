@@ -194,7 +194,7 @@ public class MemoryIndex {
   /** pos: positions[3*i], startOffset: positions[3*i +1], endOffset: positions[3*i +2] */
   private final int stride;
   
-  /** Could be made configurable; See {@link Document#setBoost(float)} */
+  /** Could be made configurable; */
   private static final float docBoost = 1.0f;
 
   private static final boolean DEBUG = false;
