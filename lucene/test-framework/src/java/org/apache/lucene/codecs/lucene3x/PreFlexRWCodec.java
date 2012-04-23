@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -56,7 +57,7 @@ public class PreFlexRWCodec extends Lucene3xCodec {
   }
 
   @Override
-  public Lucene3xNormsFormat normsFormat() {
+  public NormsFormat normsFormat() {
     if (LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE) {
       return norms;
     } else {

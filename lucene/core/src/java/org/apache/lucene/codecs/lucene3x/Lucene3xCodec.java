@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -119,7 +120,7 @@ public class Lucene3xCodec extends Codec {
   }
 
   @Override
-  public Lucene3xNormsFormat normsFormat() {
+  public NormsFormat normsFormat() {
     return normsFormat;
   }
   
@@ -146,7 +147,7 @@ public class Lucene3xCodec extends Codec {
     }
     // never inside CFS
     liveDocsFormat().files(info, files);
-    normsFormat().separateFiles(info, files);
+    ((Lucene3xNormsFormat)normsFormat()).separateFiles(info, files);
     
     // shared docstores: these guys check the hair
     if (info.getDocStoreOffset() != -1) {

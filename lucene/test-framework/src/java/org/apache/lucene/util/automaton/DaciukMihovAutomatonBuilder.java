@@ -32,7 +32,7 @@ public final class DaciukMihovAutomatonBuilder {
   /**
    * DFSA state with <code>char</code> labels on transitions.
    */
-  final static class State {
+  public final static class State {
     
     /** An empty set of labels. */
     private final static int[] NO_LABELS = new int[0];
