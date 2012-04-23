@@ -1535,12 +1535,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
               importClass(org.pegdown.FastEncoder);
               var markdownSource = self.getToken();
               var title = undefined;
-              if (markdownSource.search(/^(#+\s*)?(.+)[\n\r]/) == 0) {
-                title = RegExp.$2;
-                // Convert the first line into a markdown heading, if it is not already:
-                if (RegExp.$1 == '') {
-                  markdownSource = '# ' + markdownSource;
-                }
+              // match the first heading in markdown and use as title:
+              if (markdownSource.search(/^#+\s*(.+)/m) >= 0) {
+                title = RegExp.$1;
               }
               var processor = new PegDownProcessor(
                 Extensions.ABBREVIATIONS | Extensions.AUTOLINKS |
