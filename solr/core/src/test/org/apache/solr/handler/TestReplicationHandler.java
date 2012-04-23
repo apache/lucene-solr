@@ -720,6 +720,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
           backupThread.start();
         }
+      } else {
+        backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
+        backupThread.start();
       }
       
       
