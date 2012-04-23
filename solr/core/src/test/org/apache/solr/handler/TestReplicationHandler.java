@@ -867,6 +867,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       if(!addNumberToKeepInRequest) {
         if(random().nextBoolean()) {
           masterClient.commit();
+        } else {
+          backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
+          backupThread.start();
         }
       } else {
         backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
