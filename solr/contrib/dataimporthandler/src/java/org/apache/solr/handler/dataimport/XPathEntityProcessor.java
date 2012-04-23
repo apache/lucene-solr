@@ -203,9 +203,11 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     while (true) {
       result = fetchNextRow();
 
-      if (result == null)
+      if (result == null){
+        rowIterator = null;
         return null;
-
+      }
+      
       if (pk == null || result.get(pk) != null)
         return result;
     }

@@ -11,7 +11,9 @@ $Id$
 
 ==================  3.6.1 ==================
 
-(No Changes)
+Bug Fixes
+----------------------
+* SOLR-3360: More bug fixes for the deprecated "threads" parameter.  (Mikhail Khludnev, Claudio R, via James Dyer)
 
 ==================  3.6.0 ==================
 
