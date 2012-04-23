@@ -186,6 +186,10 @@ def checkAll(dirName):
       elif link.startswith('javascript:'):
         # ok...?
         pass
+      elif 'org/apache/solr/client/solrj/beans/Field.html' in link:
+        # see LUCENE-4011: this is a javadocs bug for constants 
+        # on annotations it seems?
+        pass
       elif link not in allFiles:
         # We only load HTML... so if the link is another resource (eg
         # SweetSpotSimilarity refs
