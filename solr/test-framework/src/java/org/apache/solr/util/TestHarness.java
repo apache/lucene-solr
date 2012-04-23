@@ -582,7 +582,7 @@ public class TestHarness {
    * specified set of default options.
    */
   public class LocalRequestFactory {
-    public String qtype = "standard";
+    public String qtype = null;
     public int start = 0;
     public int limit = 1000;
     public Map<String,String> args = new HashMap<String,String>();
