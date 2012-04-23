@@ -993,9 +993,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           ***/
         }
         if (snapshoot) {
-          try {
+          try {            
+            int numberToKeep = numberBackupsToKeep;
+            if (numberToKeep < 1) {
+              numberToKeep = Integer.MAX_VALUE;
+            }            
             SnapShooter snapShooter = new SnapShooter(core, null);
-            snapShooter.createSnapAsync(currentCommitPoint, ReplicationHandler.this);
+            snapShooter.createSnapAsync(currentCommitPoint, numberToKeep, ReplicationHandler.this);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
           }

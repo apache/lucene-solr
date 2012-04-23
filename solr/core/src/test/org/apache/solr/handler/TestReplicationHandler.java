@@ -243,7 +243,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   public void test() throws Exception {
-    doTestReplicateAfterCoreReload();
+   doTestReplicateAfterCoreReload();
     doTestDetails();
     doTestReplicateAfterWrite2Slave();
     doTestIndexAndConfigReplication();
@@ -776,7 +776,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     if(random().nextBoolean()) {
       configFile = "solrconfig-master1-keepOneBackup.xml";
       addNumberToKeepInRequest = false;
-      backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;
     }
     
     masterJetty.stop();
@@ -864,8 +863,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     File[] snapDir = new File[2];
     String firstBackupTimestamp = null;
     for(int i=0 ; i<2 ; i++) {
-      BackupThread backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
-      backupThread.start();
+      BackupThread backupThread = null;
+      if(!addNumberToKeepInRequest) {
+        if(random().nextBoolean()) {
+          masterClient.commit();
+        } else {
+          backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
+          backupThread.start();
+        }
+      }
+      
       
       File dataDir = new File(master.getDataDir());
       
@@ -890,7 +897,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         waitCnt++;
       }
       
-      if(backupThread.fail != null) {
+      if(backupThread!= null && backupThread.fail != null) {
         fail(backupThread.fail);
       }
   

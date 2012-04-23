@@ -379,6 +379,9 @@ Bug Fixes
  
 * SOLR-3352: eDismax: pf2 should kick in for a query with 2 terms (janhoy)
 
+* SOLR-3361: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered on commit
+  (James Dyer, Tomas Fernandez Lobbe)
+
 Other Changes
 ----------------------
 
