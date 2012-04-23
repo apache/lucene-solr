@@ -238,8 +238,8 @@ public class Field implements IndexableField {
   }
   
   /**
-   * Expert: change the value of this field. See <a
-   * href="#setValue(java.lang.String)">setValue(String)</a>.
+   * Expert: change the value of this field. See 
+   * {@link #setStringValue(String)}.
    */
   public void setReaderValue(Reader value) {
     if (!(fieldsData instanceof Reader)) {
@@ -249,16 +249,16 @@ public class Field implements IndexableField {
   }
   
   /**
-   * Expert: change the value of this field. See <a
-   * href="#setValue(java.lang.String)">setValue(String)</a>.
+   * Expert: change the value of this field. See 
+   * {@link #setStringValue(String)}.
    */
   public void setBytesValue(byte[] value) {
     setBytesValue(new BytesRef(value));
   }
 
   /**
-   * Expert: change the value of this field. See <a
-   * href="#setValue(java.lang.String)">setValue(String)</a>.
+   * Expert: change the value of this field. See 
+   * {@link #setStringValue(String)}.
    *
    * <p>NOTE: the provided BytesRef is not copied so be sure
    * not to change it until you're done with this field.
