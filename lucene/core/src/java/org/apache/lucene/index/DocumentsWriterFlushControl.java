@@ -40,7 +40,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * {@link IndexWriterConfig#getRAMPerThreadHardLimitMB()} to prevent address
  * space exhaustion.
  */
-public final class DocumentsWriterFlushControl {
+final class DocumentsWriterFlushControl {
 
   private final long hardMaxBytesPerDWPT;
   private long activeBytes = 0;

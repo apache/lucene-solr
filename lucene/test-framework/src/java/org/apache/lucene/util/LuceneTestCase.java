@@ -26,6 +26,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,8 +36,8 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
@@ -53,11 +54,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldFilterAtomicReader;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
@@ -70,25 +71,24 @@ import org.apache.lucene.index.RandomDocumentsWriterPerThreadPool;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.ThreadAffinityDocumentsWriterThreadPool;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.search.RandomSimilarityProvider;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.After;
@@ -108,7 +108,6 @@ import org.junit.runner.Runner;
 import org.junit.runner.notification.RunListener;
 import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
-
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.MixWithSuiteName;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -1068,12 +1067,37 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       int maxNumThreadStates = rarely(r) ? _TestUtil.nextInt(r, 5, 20) // crazy value
           : _TestUtil.nextInt(r, 1, 4); // reasonable value
-      if (rarely(r)) {
-        // random thread pool
-        c.setIndexerThreadPool(new RandomDocumentsWriterPerThreadPool(maxNumThreadStates, r));
-      } else {
-        // random thread pool
-        c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(maxNumThreadStates));
+
+      Method setIndexerThreadPoolMethod = null;
+      try {
+        // Retrieve the package-private setIndexerThreadPool
+        // method:
+        for(Method m : IndexWriterConfig.class.getDeclaredMethods()) {
+          if (m.getName().equals("setIndexerThreadPool")) {
+            m.setAccessible(true);
+            setIndexerThreadPoolMethod = m;
+            break;
+          }
+        }
+      } catch (Exception e) {
+        // Should not happen?
+        throw new RuntimeException(e);
+      }
+
+      if (setIndexerThreadPoolMethod == null) {
+        throw new RuntimeException("failed to lookup IndexWriterConfig.setIndexerThreadPool method");
+      }
+
+      try {
+        if (rarely(r)) {
+          // random thread pool
+          setIndexerThreadPoolMethod.invoke(c, new RandomDocumentsWriterPerThreadPool(maxNumThreadStates, r));
+        } else {
+          // random thread pool
+          c.setMaxThreadStates(maxNumThreadStates);
+        }
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     }
 

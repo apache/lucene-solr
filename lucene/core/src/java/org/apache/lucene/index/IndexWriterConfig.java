@@ -571,8 +571,8 @@ public final class IndexWriterConfig implements Cloneable {
    * </p>
    * <p>
    * NOTE: This only takes effect when IndexWriter is first created.</p>*/
-  public IndexWriterConfig setIndexerThreadPool(DocumentsWriterPerThreadPool threadPool) {
-    if(threadPool == null) {
+  IndexWriterConfig setIndexerThreadPool(DocumentsWriterPerThreadPool threadPool) {
+    if (threadPool == null) {
       throw new IllegalArgumentException("DocumentsWriterPerThreadPool must not be nul");
     }
     this.indexerThreadPool = threadPool;
@@ -582,8 +582,30 @@ public final class IndexWriterConfig implements Cloneable {
   /** Returns the configured {@link DocumentsWriterPerThreadPool} instance.
    * @see #setIndexerThreadPool(DocumentsWriterPerThreadPool)
    * @return the configured {@link DocumentsWriterPerThreadPool} instance.*/
-  public DocumentsWriterPerThreadPool getIndexerThreadPool() {
+  DocumentsWriterPerThreadPool getIndexerThreadPool() {
     return this.indexerThreadPool;
+  }
+
+  /**
+   * Sets the max number of simultaneous threads that may be indexing documents
+   * at once in IndexWriter. Values &lt; 1 are invalid and if passed
+   * <code>maxThreadStates</code> will be set to
+   * {@link #DEFAULT_MAX_THREAD_STATES}.
+   *
+   * <p>Only takes effect when IndexWriter is first created. */
+  public IndexWriterConfig setMaxThreadStates(int maxThreadStates) {
+    this.indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(maxThreadStates);
+    return this;
+  }
+
+  /** Returns the max number of simultaneous threads that
+   *  may be indexing documents at once in IndexWriter. */
+  public int getMaxThreadStates() {
+    try {
+      return ((ThreadAffinityDocumentsWriterThreadPool) indexerThreadPool).getMaxThreadStates();
+    } catch (ClassCastException cce) {
+      throw new IllegalStateException(cce);
+    }
   }
 
   /** By default, IndexWriter does not pool the

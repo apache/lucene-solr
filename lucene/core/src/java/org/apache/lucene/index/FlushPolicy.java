@@ -50,7 +50,7 @@ import org.apache.lucene.util.SetOnce;
  * @see DocumentsWriterPerThread
  * @see IndexWriterConfig#setFlushPolicy(FlushPolicy)
  */
-public abstract class FlushPolicy {
+abstract class FlushPolicy {
   protected final SetOnce<DocumentsWriter> writer = new SetOnce<DocumentsWriter>();
   protected IndexWriterConfig indexWriterConfig;
 

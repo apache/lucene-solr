@@ -30,7 +30,7 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState; //javad
  * {@link ThreadAffinityDocumentsWriterThreadPool} tries to find the currently
  * minimal contended {@link ThreadState}.
  */
-public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPool {
+class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPool {
   private Map<Thread, ThreadState> threadBindings = new ConcurrentHashMap<Thread, ThreadState>();
   
   /**

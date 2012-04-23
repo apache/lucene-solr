@@ -20,7 +20,7 @@ import java.util.Random;
 
 /**
  * 
- * A {@link DocumentsWriterPerThreadPool} that selects thread states at random.
+ * A <code>DocumentsWriterPerThreadPool<code> that selects thread states at random.
  * 
  * @lucene.internal
  * @lucene.experimental

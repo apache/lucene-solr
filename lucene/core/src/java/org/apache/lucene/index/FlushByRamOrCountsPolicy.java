@@ -47,7 +47,7 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
  * pending iff the global active RAM consumption is >= the configured max RAM
  * buffer.
  */
-public class FlushByRamOrCountsPolicy extends FlushPolicy {
+class FlushByRamOrCountsPolicy extends FlushPolicy {
 
   @Override
   public void onDelete(DocumentsWriterFlushControl control, ThreadState state) {
