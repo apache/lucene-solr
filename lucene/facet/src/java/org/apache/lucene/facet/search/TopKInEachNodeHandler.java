@@ -676,7 +676,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
   }
 
   /**
-   * Maintains an array of {@link AggregatedCategory}. For space consideration, this is implemented as 
+   * Maintains an array of <code>AggregatedCategory</code>. For space consideration, this is implemented as 
    * a pair of arrays, <i>ordinals</i> and <i>values</i>, rather than one array of pairs.
    * Enumerated in <i>ordinals</i> are siblings,  
    * potential nodes of the {@link FacetResult} tree  
@@ -685,8 +685,9 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
    * siblings are enumerated, and  
    * <i>residue</i> holds the sum of values of the siblings rejected from the 
    * enumerated top K.
+   * @lucene.internal
    */
-  private static final class AACO {
+  protected static final class AACO {
     int [] ordinals; // ordinals of the best K children, sorted from best to least
     double [] values; // the respective values for these children
     double residue; // sum of values of all other children, that did not get into top K
