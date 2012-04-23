@@ -267,7 +267,7 @@ public abstract class SolrParams implements Serializable {
     return new AppendedSolrParams(params,defaults);
   }
 
-  /** Create a Map<String,String> from a NamedList given no keys are repeated */
+  /** Create a Map&lt;String,String&gt; from a NamedList given no keys are repeated */
   public static Map<String,String> toMap(NamedList params) {
     HashMap<String,String> map = new HashMap<String,String>();
     for (int i=0; i<params.size(); i++) {
@@ -276,7 +276,7 @@ public abstract class SolrParams implements Serializable {
     return map;
   }
 
-  /** Create a Map<String,String[]> from a NamedList */
+  /** Create a Map&lt;String,String[]&gt; from a NamedList */
   public static Map<String,String[]> toMultiMap(NamedList params) {
     HashMap<String,String[]> map = new HashMap<String,String[]>();
     for (int i=0; i<params.size(); i++) {

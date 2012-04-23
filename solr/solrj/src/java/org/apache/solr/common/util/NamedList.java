@@ -64,7 +64,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    *
    * <p>
    * Modifying the contents of the Entry[] after calling this constructor may change
-   * the NamedList (in future versions of Solr), but this is not garunteed and should
+   * the NamedList (in future versions of Solr), but this is not guaranteed and should
    * not be relied upon.  To modify the NamedList, refer to {@link #add(String, Object)}
    * or {@link #remove(String)}.
    * </p>
@@ -80,7 +80,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * pairwise names/values.
    *
    * <p>
-   * When using this constructor, runtime typesafety is only garunteed if the all
+   * When using this constructor, runtime typesafety is only guaranteed if the all
    * even numbered elements of the input list are of type "T".
    * </p>
    *
@@ -271,9 +271,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
   /**
    *
-   * Helper class implementing Map.Entry<String, T> to store the key-value
+   * Helper class implementing Map.Entry&lt;String, T&gt; to store the key-value
    * relationship in NamedList (the keys of which are String-s) 
-   *
+   * 
    * @param <T>
    */
   public static final class NamedListEntry<T> implements Map.Entry<String, T> {

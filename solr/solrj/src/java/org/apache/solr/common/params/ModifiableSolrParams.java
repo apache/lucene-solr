@@ -42,7 +42,7 @@ public class ModifiableSolrParams extends SolrParams
     vals = new LinkedHashMap<String, String[]>();
   }
 
-  /** Constructs a new ModifiableSolrParams directly using the provided Map<String,String[]> */
+  /** Constructs a new ModifiableSolrParams directly using the provided Map&lt;String,String[]&gt; */
   public ModifiableSolrParams( Map<String,String[]> v )
   {
     vals = v;
