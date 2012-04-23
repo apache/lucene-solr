@@ -243,7 +243,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   public void test() throws Exception {
-   doTestReplicateAfterCoreReload();
+    doTestReplicateAfterCoreReload();
     doTestDetails();
     doTestReplicateAfterWrite2Slave();
     doTestIndexAndConfigReplication();
@@ -867,10 +867,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       if(!addNumberToKeepInRequest) {
         if(random().nextBoolean()) {
           masterClient.commit();
-        } else {
-          backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
-          backupThread.start();
         }
+      } else {
+        backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName);
+        backupThread.start();
       }
       
       
