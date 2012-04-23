@@ -20,7 +20,8 @@ var content_element = null;
 var selected_type = null;
 var context_path = null;
 var active_context = null;
-var changes = { count : {}, list : {} };
+var changes = null;
+var reference_xml = null;
 
 var compute_plugin_data = function( response, changeset )
 {
@@ -30,6 +31,8 @@ var compute_plugin_data = function( response, changeset )
 
   var types_obj = {};
   var plugin_key = null;
+
+  changes = { count : {}, list : {} }
 
   for( var i = 0; i < response['solr-mbeans'].length; i++ )
   {
@@ -52,6 +55,17 @@ var compute_plugin_data = function( response, changeset )
     };
     for( var part_key in plugin_data[key] )
     {
+      if( plugin_data[key][part_key]['_changed_'] )
+      {
+        delete plugin_data[key][part_key]['_changed_'];
+
+        changes.count[key] = changes.count[key] || 0;
+        changes.count[key]++;
+
+        changes.list[key] = changes.list[key] || {};
+        changes.list[key][part_key] = true;
+      }
+
       if( 0 < part_key.indexOf( '.' ) )
       {
         types_obj[key] = true;
@@ -75,25 +89,18 @@ var compute_plugin_data = function( response, changeset )
     types.push( type );
   }
   types.sort();
-            
-  var result = {
-    'plugin_data' : plugin_data
+
+  return {
+    'plugin_data' : plugin_data,
+    'sort_table' : sort_table,
+    'types' : types
   };
-
-  if( !changeset )
-  {
-    result['sort_table'] = sort_table;
-    result['types'] = types;
-  }
-
-  return result;
 };
 
 var render_plugin_data = function( plugin_data, plugin_sort, types )
 {
   var frame_element = $( '#frame', content_element );
   var navigation_element = $( '#navigation ul', content_element );
-  var saved_xml = null;
 
   var navigation_content = [];
   for( var i = 0; i < types.length; i++ )
@@ -120,62 +127,64 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
   navigation_element
     .html( navigation_content.join( "\n" ) );
     
-  $('.PLUGINCHANGES a').die( 'click' ).live( 'click', function(event) { 
-
-    event.preventDefault();
-
-    changes = { count : {}, list : {} }
-    $( 'a > span', navigation_element ).remove();
-    $( '.entry.changed', frame_element ).removeClass( 'changed' );
-
-    $.blockUI({ message: $('#recording'), css: { width: '450px' } }); 
-    
-    $.ajax({
-      type: 'GET',
-      url: core_basepath + '/admin/mbeans?stats=true&wt=xml',
-      dataType : 'text',
-      success: function(data) {
-        saved_xml = data;
-      }
-    }).error(function() {
-      $.unblockUI(); 
-      alert("error getting current status"); 
-    });
-  }); 
-
-  $('#recording button').die( 'click' ).live( 'click', function() { 
-    var data = { 
-      'stats': "true", 
-      'wt':    "json", 
-      'diff':  "true", 
-      'stream.body': saved_xml 
-    };
-    
-    $.ajax({
-      type: 'POST',
-      url: core_basepath + '/admin/mbeans',
-      dataType : 'json',
-      data: data,
-      success : function( response, text_status, xhr )
-      {
-        var beans = response['solr-mbeans'];
-        for( var i = 0; i < beans.length; i += 2 )
-        {
-          var c = 0; var l = {}; 
-          for( var j in beans[i+1] ) { c++; l[j] = true; }
-          changes.count[beans[i]] = c;
-          changes.list[beans[i]] = l;
-        }
-        console.debug( changes );
-
-        var changed_data = compute_plugin_data( response, true );
-        app.plugin_data = $.extend( true, {}, app.plugin_data, changed_data );
+  $( '.PLUGINCHANGES a', navigation_element )
+    .die( 'click' )
+    .live
+    (
+      'click',
+      function( event )
+      { 
+        load_reference_xml();
         
-        render_plugin_data( app.plugin_data.plugin_data, app.plugin_data.sort_table, app.plugin_data.types );
+        changes = { count : {}, list : {} }
+        $( 'a > span', navigation_element ).remove();
+        $( '.entry.changed', frame_element ).removeClass( 'changed' );
+
+        $.blockUI
+        (
+          {
+            message: $('#recording'),
+            css: { width: '450px' }
+          }
+        );
+
+        return false;
       }
-    });
-    $.unblockUI(); 
-  }); 
+    ); 
+
+  $( '#recording button' )
+    .die( 'click' )
+    .live
+    (
+      'click',
+      function( event )
+      { 
+        $.ajax
+        (
+          {
+            type: 'POST',
+            url: core_basepath + '/admin/mbeans',
+            dataType : 'json',
+            data: { 
+              'stats': 'true',
+              'wt': 'json', 
+              'diff': 'true',
+              'all': 'true',
+              'stream.body': reference_xml 
+            },
+            success : function( response, text_status, xhr )
+            {
+              load_reference_xml();
+
+              app.plugin_data = compute_plugin_data( response );
+              render_plugin_data( app.plugin_data.plugin_data, app.plugin_data.sort_table, app.plugin_data.types );
+            }
+          }
+        );
+        $.unblockUI();
+        return false;
+      }
+    ); 
               
   $( 'a[href="' + context_path + '"]', navigation_element )
     .parent().addClass( 'current' );
@@ -303,6 +312,22 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
     );
 };
 
+var load_reference_xml = function()
+{
+  $.ajax
+  (
+    {
+      type: 'GET',
+      url: core_basepath + '/admin/mbeans?stats=true&wt=xml',
+      dataType : 'text',
+      success: function( data )
+      {
+        reference_xml = data;
+      }
+    }
+  );
+}
+
 sammy.bind
 (
   'plugins_load',
@@ -319,7 +344,6 @@ sammy.bind
       return true;
     }
 
-    var core_basepath = params.active_core.attr( 'data-basepath' );
     $.ajax
     (
       {
@@ -384,6 +408,7 @@ sammy.get
   /^#\/([\w\d-]+)\/(plugins)$/,
   function( context )
   {
+    core_basepath = this.active_core.attr( 'data-basepath' );
     delete app.plugin_data;
 
     sammy.trigger
