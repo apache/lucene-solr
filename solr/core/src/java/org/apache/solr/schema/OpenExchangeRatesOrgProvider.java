@@ -61,7 +61,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
    * @param sourceCurrencyCode The source currency being converted from.
    * @param targetCurrencyCode The target currency being converted to.
    * @return The exchange rate.
-   * @throws an exception if the requested currency pair cannot be found 
+   * @throws SolrException if the requested currency pair cannot be found
    */
   public double getExchangeRate(String sourceCurrencyCode, String targetCurrencyCode) {
     if (rates == null) {

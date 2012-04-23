@@ -75,8 +75,7 @@ public  class LeaderElector {
    * If it is, set the leaderId on the leader zk node. If it is not, start
    * watching the candidate that is in line before this one - if it goes down, check
    * if this candidate is the leader again.
-   * @param leaderSeqPath 
-   * 
+   *
    * @param seq
    * @param context 
    * @param replacement has someone else been the leader already?

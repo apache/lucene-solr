@@ -90,8 +90,6 @@ public class DateUtil {
    * @param d The input date to parse
    * @return The parsed {@link java.util.Date}
    * @throws java.text.ParseException If the input can't be parsed
-   * @throws org.apache.commons.httpclient.util.DateParseException
-   *                                  If the input can't be parsed
    */
   public static Date parseDate(String d) throws ParseException {
     return parseDate(d, DEFAULT_DATE_FORMATS);

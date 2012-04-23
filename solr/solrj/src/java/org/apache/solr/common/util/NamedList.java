@@ -101,7 +101,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return Modified List as per the above description
    * @deprecated This a temporary placeholder method until the guts of the class
    * are actually replaced by List&lt;String, ?&gt;.
-   * @see https://issues.apache.org/jira/browse/SOLR-912
+   * @see <a href="https://issues.apache.org/jira/browse/SOLR-912">SOLR-912</a>
    */
   @Deprecated
   private List<Object> nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {

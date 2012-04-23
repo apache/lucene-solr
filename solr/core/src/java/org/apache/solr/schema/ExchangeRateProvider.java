@@ -31,7 +31,7 @@ public interface ExchangeRateProvider {
    * @param sourceCurrencyCode
    * @param targetCurrencyCode
    * @return the exhange rate as a double
-   * @throws exception if the rate is not defined in the provider
+   * @throws SolrException if the rate is not defined in the provider
    */
   public double getExchangeRate(String sourceCurrencyCode, String targetCurrencyCode) throws SolrException;
   

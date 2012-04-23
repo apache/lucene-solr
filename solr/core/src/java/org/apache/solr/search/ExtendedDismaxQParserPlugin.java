@@ -785,7 +785,6 @@ class ExtendedDismaxQParser extends QParser {
   /** 
    * returns a field name or legal field alias from the current 
    * position of the string 
-   * @param solrParams 
    */
   public String getFieldName(String s, int pos, int end) {
     if (pos >= end) return null;
