@@ -88,7 +88,7 @@ public abstract class QueryParserBase {
   }
 
   /** Initializes a query parser.  Called by the QueryParser constructor
-   *  @param matchVersion  Lucene version to match. See <a href="QueryParser#version">here</a>.
+   *  @param matchVersion  Lucene version to match. See <a href="QueryParser.html#version">here</a>.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
    */
