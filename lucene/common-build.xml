@@ -1536,7 +1536,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
               var markdownSource = self.getToken();
               var title = undefined;
               // match the first heading in markdown and use as title:
-              if (markdownSource.search(/^#+\s*(.+)/m) >= 0) {
+              if (markdownSource.search(/^#+\s*(.+)$/m) >= 0) {
                 title = RegExp.$1;
               }
               var processor = new PegDownProcessor(
