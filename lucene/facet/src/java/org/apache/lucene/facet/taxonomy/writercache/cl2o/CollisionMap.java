@@ -54,11 +54,11 @@ public class CollisionMap {
 
   private Entry[] entries;
 
-  public CollisionMap(CharBlockArray labelRepository) {
+  CollisionMap(CharBlockArray labelRepository) {
     this(16 * 1024, 0.75f, labelRepository);
   }
 
-  public CollisionMap(int initialCapacity, CharBlockArray labelRepository) {
+  CollisionMap(int initialCapacity, CharBlockArray labelRepository) {
     this(initialCapacity, 0.75f, labelRepository);
   }
 
