@@ -27,6 +27,9 @@ Bug Fixes:
 * LUCENE-3969: Throw IAE on bad arguments that could cause confusing errors in
   PatternTokenizer. CommonGrams populates PositionLengthAttribute correctly.
   (Uwe Schindler, Mike McCandless, Robert Muir)
+  
+* SOLR-3361: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered on commit
+  (James Dyer, Tomas Fernandez Lobbe)
 
 ==================  3.6.0  ==================
 More information about this release, including any errata related to the 
