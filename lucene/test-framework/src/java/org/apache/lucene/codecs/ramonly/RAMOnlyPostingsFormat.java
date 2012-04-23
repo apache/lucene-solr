@@ -251,7 +251,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
     }
   }
 
-  public static class RAMPostingsWriterImpl extends PostingsConsumer {
+  static class RAMPostingsWriterImpl extends PostingsConsumer {
     private RAMTerm term;
     private RAMDoc current;
     private int posUpto = 0;
