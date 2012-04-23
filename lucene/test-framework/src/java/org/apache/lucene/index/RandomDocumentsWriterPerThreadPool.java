@@ -40,7 +40,7 @@ public class RandomDocumentsWriterPerThreadPool extends
   }
 
   @Override
-  public ThreadState getAndLock(Thread requestingThread,
+  ThreadState getAndLock(Thread requestingThread,
       DocumentsWriter documentsWriter) {
     ThreadState threadState = null;
     if (getActiveThreadState() == 0) {

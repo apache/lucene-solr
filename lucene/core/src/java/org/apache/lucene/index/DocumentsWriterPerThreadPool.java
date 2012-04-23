@@ -242,7 +242,9 @@ public abstract class DocumentsWriterPerThreadPool {
     // don't recycle DWPT by default
   }
   
-  public abstract ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter);
+  // you cannot subclass this without being in o.a.l.index package anyway, so
+  // the class is already pkg-private... fix me: see LUCENE-4013
+  abstract ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter);
 
   
   /**
