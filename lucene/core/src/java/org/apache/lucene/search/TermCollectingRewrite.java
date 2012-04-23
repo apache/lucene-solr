@@ -45,7 +45,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
   protected abstract void addClause(Q topLevel, Term term, int docCount, float boost, TermContext states) throws IOException;
 
   
-  protected final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
+  final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
     IndexReaderContext topReaderContext = reader.getTopReaderContext();
     Comparator<BytesRef> lastTermComp = null;
     final AtomicReaderContext[] leaves = topReaderContext.leaves();
@@ -83,7 +83,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
     }
   }
   
-  protected static abstract class TermCollector {
+  static abstract class TermCollector {
     
     protected AtomicReaderContext readerContext;
     protected IndexReaderContext topReaderContext;
