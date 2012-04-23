@@ -34,6 +34,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.index.Term; // for javadocs
 
 /**
  * <p>A {@link Query} that matches numeric values within a

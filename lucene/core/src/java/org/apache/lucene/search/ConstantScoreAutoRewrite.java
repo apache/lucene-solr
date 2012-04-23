@@ -47,7 +47,7 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
 
   /** If the number of terms in this query is equal to or
    *  larger than this setting then {@link
-   *  #CONSTANT_SCORE_FILTER_REWRITE} is used. */
+   *  MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE} is used. */
   public void setTermCountCutoff(int count) {
     termCountCutoff = count;
   }
@@ -60,7 +60,7 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
   /** If the number of documents to be visited in the
    *  postings exceeds this specified percentage of the
    *  maxDoc() for the index, then {@link
-   *  #CONSTANT_SCORE_FILTER_REWRITE} is used.
+   *  MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE} is used.
    *  @param percent 0.0 to 100.0 */
   public void setDocCountPercent(double percent) {
     docCountPercent = percent;

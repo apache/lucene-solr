@@ -292,7 +292,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * learn, improve and iterate.</p>
    *
    * <p>The resulting reader supports {@link
-   * IndexReader#reopen}, but that call will simply forward
+   * DirectoryReader#openIfChanged}, but that call will simply forward
    * back to this method (though this may change in the
    * future).</p>
    *
@@ -303,7 +303,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * file descriptors, CPU time) will be consumed.</p>
    *
    * <p>For lower latency on reopening a reader, you should
-   * call {@link #setMergedSegmentWarmer} to
+   * call {@link IndexWriterConfig#setMergedSegmentWarmer} to
    * pre-warm a newly merged segment before it's committed
    * to the index.  This is important for minimizing
    * index-to-search delay after a large merge.  </p>
@@ -1948,11 +1948,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   /**
    * Prepares the {@link SegmentInfo} for the new flushed segment and persists
    * the deleted documents {@link MutableBits}. Use
-   * {@link #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes)} to
+   * {@link #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes, FrozenBufferedDeletes)} to
    * publish the returned {@link SegmentInfo} together with its segment private
    * delete packet.
    * 
-   * @see #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes)
+   * @see #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes, FrozenBufferedDeletes)
    */
   SegmentInfo prepareFlushedSegment(FlushedSegment flushedSegment) throws IOException {
     assert flushedSegment != null;

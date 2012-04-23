@@ -268,8 +268,8 @@ public abstract class SimilarityBase extends Similarity {
   
   /** Delegates the {@link #score(int, int)} and
    * {@link #explain(int, Explanation)} methods to
-   * {@link SimilarityBase#score(BasicStats, float, int)} and
-   * {@link SimilarityBase#explain(BasicStats, int, Explanation, int)},
+   * {@link SimilarityBase#score(BasicStats, float, float)} and
+   * {@link SimilarityBase#explain(BasicStats, int, Explanation, float)},
    * respectively.
    */
   private class BasicExactDocScorer extends ExactSimScorer {
@@ -295,10 +295,10 @@ public abstract class SimilarityBase extends Similarity {
     }
   }
   
-  /** Delegates the {@link #score(int, int)} and
+  /** Delegates the {@link #score(int, float)} and
    * {@link #explain(int, Explanation)} methods to
-   * {@link SimilarityBase#score(BasicStats, float, int)} and
-   * {@link SimilarityBase#explain(BasicStats, int, Explanation, int)},
+   * {@link SimilarityBase#score(BasicStats, float, float)} and
+   * {@link SimilarityBase#explain(BasicStats, int, Explanation, float)},
    * respectively.
    */
   private class BasicSloppyDocScorer extends SloppySimScorer {

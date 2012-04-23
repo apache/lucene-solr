@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.FieldInvertState; // javadocs
 
 /**
  * Expert: directly creata a field for a document.  Most

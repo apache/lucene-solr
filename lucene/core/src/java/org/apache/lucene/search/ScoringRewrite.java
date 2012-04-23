@@ -47,7 +47,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
    *  BooleanQuery.TooManyClauses} if the number of terms
    *  exceeds {@link BooleanQuery#getMaxClauseCount}.
    *
-   *  @see #setRewriteMethod */
+   *  @see MultiTermQuery#setRewriteMethod */
   public final static ScoringRewrite<BooleanQuery> SCORING_BOOLEAN_QUERY_REWRITE = new ScoringRewrite<BooleanQuery>() {
     @Override
     protected BooleanQuery getTopLevelQuery() {
@@ -83,7 +83,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
    *  BooleanQuery.TooManyClauses} if the number of terms
    *  exceeds {@link BooleanQuery#getMaxClauseCount}.
    *
-   *  @see #setRewriteMethod */
+   *  @see MultiTermQuery#setRewriteMethod */
   public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {

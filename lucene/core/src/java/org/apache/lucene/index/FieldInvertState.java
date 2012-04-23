@@ -50,8 +50,7 @@ public final class FieldInvertState {
   }
 
   /**
-   * Re-initialize the state, using this boost value.
-   * @param docBoost boost value to use.
+   * Re-initialize the state
    */
   void reset() {
     position = 0;

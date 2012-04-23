@@ -46,6 +46,7 @@ import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.index.IndexWriter; // javadocs
 
 /** Implements search over a single IndexReader.
  *

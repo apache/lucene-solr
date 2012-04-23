@@ -66,10 +66,10 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     }
 
     /**
-     * Returns whether <code>a</code> is less relevant than <code>b</code>.
-     * @param a ScoreDoc
-     * @param b ScoreDoc
-     * @return <code>true</code> if document <code>a</code> should be sorted after document <code>b</code>.
+     * Returns whether <code>hitA</code> is less relevant than <code>hitB</code>.
+     * @param hitA Entry
+     * @param hitB Entry
+     * @return <code>true</code> if document <code>hitA</code> should be sorted after document <code>hitB</code>.
      */
     @Override
     protected boolean lessThan(final Entry hitA, final Entry hitB) {
@@ -201,7 +201,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    * 
    * @param entry The Entry used to create a FieldDoc
    * @return The newly created FieldDoc
-   * @see Searchable#search(Weight,Filter,int,Sort)
+   * @see IndexSearcher#search(Query,Filter,int,Sort)
    */
   FieldDoc fillFields(final Entry entry) {
     final int n = comparators.length;

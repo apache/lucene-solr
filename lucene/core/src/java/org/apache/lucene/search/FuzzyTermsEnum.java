@@ -405,12 +405,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
      * <code>minSimilarity</code>.
      * <p>
      * After calling the constructor the enumeration is already pointing to the first 
-     * valid term if such a term exists. 
-     * 
-     * @param reader Delivers terms.
-     * @param term Pattern term.
-     * @param minSimilarity Minimum required similarity for terms from the reader. Default value is 0.5f.
-     * @param prefixLength Length of required common prefix. Default value is 0.
+     * valid term if such a term exists.
+     *
      * @throws IOException
      */
     public LinearFuzzyTermsEnum() throws IOException {
