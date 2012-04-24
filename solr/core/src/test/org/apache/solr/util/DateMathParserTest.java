@@ -26,6 +26,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.Locale;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -255,7 +258,57 @@ public class DateMathParserTest extends LuceneTestCase {
 
     
   }
-  
+
+  public void testParseMathTz() throws Exception {
+
+    final String PLUS_TZS = "America/Los_Angeles";
+    final String NEG_TZS = "Europe/Paris";
+    
+    assumeTrue("Test requires JVM to know about about TZ: " + PLUS_TZS,
+               TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(PLUS_TZS)); 
+    assumeTrue("Test requires JVM to know about about TZ: " + NEG_TZS,
+               TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(NEG_TZS)); 
+
+    // US, Positive Offset with DST
+
+    TimeZone tz = TimeZone.getTimeZone(PLUS_TZS);
+    DateMathParser p = new DateMathParser(tz, Locale.US);
+
+    p.setNow(parser.parse("2001-07-04T12:08:56.235"));
+
+    // No-Op
+    assertMath("2001-07-04T12:08:56.235", p, "");
+    
+    assertMath("2001-07-04T12:08:56.000", p, "/SECOND");
+    assertMath("2001-07-04T12:08:00.000", p, "/MINUTE");
+    assertMath("2001-07-04T12:00:00.000", p, "/HOUR");
+    assertMath("2001-07-04T07:00:00.000", p, "/DAY");
+    assertMath("2001-07-01T07:00:00.000", p, "/MONTH");
+    // no DST in jan
+    assertMath("2001-01-01T08:00:00.000", p, "/YEAR");
+    // no DST in nov 2001
+    assertMath("2001-11-04T08:00:00.000", p, "+4MONTH/DAY");
+    // yes DST in nov 2010
+    assertMath("2010-11-04T07:00:00.000", p, "+9YEAR+4MONTH/DAY");
+
+    // France, Negative Offset with DST
+
+    tz = TimeZone.getTimeZone(NEG_TZS);
+    p = new DateMathParser(tz, Locale.US);
+    p.setNow(parser.parse("2001-07-04T12:08:56.235"));
+
+    assertMath("2001-07-04T12:08:56.000", p, "/SECOND");
+    assertMath("2001-07-04T12:08:00.000", p, "/MINUTE");
+    assertMath("2001-07-04T12:00:00.000", p, "/HOUR");
+    assertMath("2001-07-03T22:00:00.000", p, "/DAY");
+    assertMath("2001-06-30T22:00:00.000", p, "/MONTH");
+    // no DST in dec
+    assertMath("2000-12-31T23:00:00.000", p, "/YEAR");
+    // no DST in nov
+    assertMath("2001-11-03T23:00:00.000", p, "+4MONTH/DAY");
+
+  } 
+ 
   public void testParseMathExceptions() throws Exception {
     
     DateMathParser p = new DateMathParser(UTC, Locale.US);

@@ -18,12 +18,15 @@
 package org.apache.solr.request;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.TimeZoneUtils;
 
 import java.io.Closeable;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -34,6 +37,7 @@ public class SolrRequestInfo {
   protected SolrQueryRequest req;
   protected SolrQueryResponse rsp;
   protected Date now;
+  protected TimeZone tz;
   protected ResponseBuilder rb;
   protected List<Closeable> closeHooks;
 
@@ -79,7 +83,7 @@ public class SolrRequestInfo {
     if (now != null) return now;
 
     long ms = 0;
-    String nowStr = req.getParams().get("NOW");
+    String nowStr = req.getParams().get(CommonParams.NOW);
 
     if (nowStr != null) {
       ms = Long.parseLong(nowStr);
@@ -89,6 +93,22 @@ public class SolrRequestInfo {
 
     now = new Date(ms);
     return now;
+  }
+
+  /** The TimeZone specified by the request, or null if none was specified */
+  public TimeZone getClientTimeZone() {    
+
+    if (tz == null)  {
+      String tzStr = req.getParams().get(CommonParams.TZ);
+      if (tzStr != null) {
+        tz = TimeZoneUtils.getTimeZone(tzStr);
+        if (null == tz) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                  "Solr JVM does not support TZ: " + tzStr);
+        }
+      } 
+    }
+    return tz;
   }
 
   public SolrQueryRequest getReq() {

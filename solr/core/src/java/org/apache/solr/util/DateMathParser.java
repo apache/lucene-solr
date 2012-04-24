@@ -78,6 +78,13 @@ import java.util.regex.Pattern;
  *
  */
 public class DateMathParser  {
+  
+  public static TimeZone UTC = TimeZone.getTimeZone("UTC");
+
+  /** Default TimeZone for DateMath rounding (UTC) */
+  public static final TimeZone DEFAULT_MATH_TZ = UTC;
+  /** Default Locale for DateMath rounding (Locale.US) */
+  public static final Locale DEFAULT_MATH_LOCALE = Locale.US;
 
   /**
    * A mapping from (uppercased) String labels idenyifying time units,
@@ -101,6 +108,10 @@ public class DateMathParser  {
     // because of complexity in rounding down to the nearest week
     // arround a month/year boundry.
     // (Not to mention: it's not clear what people would *expect*)
+    // 
+    // If we consider adding some time of "week" support, then
+    // we probably need to change "Locale loc" to default to something 
+    // from a param via SolrRequestInfo as well.
     
     Map<String,Integer> units = new HashMap<String,Integer>(13);
     units.put("YEAR",        Calendar.YEAR);
@@ -193,21 +204,53 @@ public class DateMathParser  {
   private Date now;
   
   /**
-   * @param tz The TimeZone used for rounding (to determine when hours/days begin)
-   * @param l The Locale used for rounding (to determine when weeks begin)
-   * @see Calendar#getInstance(TimeZone,Locale)
+   * Default constructor that assumes UTC should be used for rounding unless 
+   * otherwise specified in the SolrRequestInfo
+   * 
+   * @see #DEFAULT_MATH_TZ
+   * @see #DEFAULT_MATH_LOCALE
    */
-  public DateMathParser(TimeZone tz, Locale l) {
-    zone = tz;
-    loc = l;
+  public DateMathParser() {
+    this(null, DEFAULT_MATH_LOCALE);
+    
   }
 
-  /** Redefines this instance's concept of "now" */
+  /**
+   * @param tz The TimeZone used for rounding (to determine when hours/days begin).  If null, then this method defaults to the value dicated by the SolrRequestInfo if it 
+   * exists -- otherwise it uses UTC.
+   * @param l The Locale used for rounding (to determine when weeks begin).  If null, then this method defaults to en_US.
+   * @see #DEFAULT_MATH_TZ
+   * @see #DEFAULT_MATH_LOCALE
+   * @see Calendar#getInstance(TimeZone,Locale)
+   * @see SolrRequestInfo#getClientTimeZone
+   */
+  public DateMathParser(TimeZone tz, Locale l) {
+    loc = (null != l) ? l : DEFAULT_MATH_LOCALE;
+    if (null == tz) {
+      SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
+      tz = (null != reqInfo) ? reqInfo.getClientTimeZone() : DEFAULT_MATH_TZ;
+    }
+    zone = (null != tz) ? tz : DEFAULT_MATH_TZ;
+  }
+
+  /** 
+   * Defines this instance's concept of "now".
+   * @see #getNow
+   */
   public void setNow(Date n) {
     now = n;
   }
   
-  /** Returns a cloned of this instance's concept of "now" */
+  /** 
+   * Returns a cloned of this instance's concept of "now".
+   *
+   * If setNow was never called (or if null was specified) then this method 
+   * first defines 'now' as the value dictated by the SolrRequestInfo if it 
+   * exists -- otherwise it uses a new Date instance at the moment getNow() 
+   * is first called.
+   * @see #setNow
+   * @see SolrRequestInfo#getNow
+   */
   public Date getNow() {
     if (now == null) {
       SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();

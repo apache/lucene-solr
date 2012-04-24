@@ -105,12 +105,18 @@ public class DateField extends PrimitiveFieldType {
 
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
 
-  /* :TODO: let Locale/TimeZone come from init args for rounding only */
-
-  /** TimeZone for DateMath (UTC) */
-  protected static final TimeZone MATH_TZ = UTC;
-  /** Locale for DateMath (Locale.US) */
-  protected static final Locale MATH_LOCALE = Locale.US;
+  /** 
+   * No longer used
+   * @deprecated use DateMathParser.DEFAULT_MATH_TZ
+   * @see DateMathParser#DEFAULT_MATH_TZ
+   */
+  protected static final TimeZone MATH_TZ = DateMathParser.DEFAULT_MATH_TZ;
+  /** 
+   * No longer used
+   * @deprecated use DateMathParser.DEFAULT_MATH_LOCALE
+   * @see DateMathParser#DEFAULT_MATH_LOCALE
+   */
+  protected static final Locale MATH_LOCALE = DateMathParser.DEFAULT_MATH_LOCALE;
 
   /** 
    * Fixed TimeZone (UTC) needed for parsing/formating Dates in the 
@@ -146,7 +152,7 @@ public class DateField extends PrimitiveFieldType {
    */
   public Date parseMath(Date now, String val) {
     String math = null;
-    final DateMathParser p = new DateMathParser(MATH_TZ, MATH_LOCALE);
+    final DateMathParser p = new DateMathParser();
     
     if (null != now) p.setNow(now);
     
@@ -296,7 +302,7 @@ public class DateField extends PrimitiveFieldType {
    */
   public Date parseMathLenient(Date now, String val, SolrQueryRequest req) {
     String math = null;
-    final DateMathParser p = new DateMathParser(MATH_TZ, MATH_LOCALE);
+    final DateMathParser p = new DateMathParser();
 
     if (null != now) p.setNow(now);
 

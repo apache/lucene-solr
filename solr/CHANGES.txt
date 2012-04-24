@@ -274,6 +274,11 @@ New Features
 * SOLR-3363: Consolidated Exceptions in Analysis Factories so they only throw 
   InitalizationExceptions (Chris Male)
 
+* SOLR-2690: New support for a "TZ" request param which overrides the TimeZone 
+  used when rounding Dates in DateMath expressions for the entire request 
+  (all date range queries and date faceting is affected).  The default TZ
+  is still UTC.  (David Schlotfeldt, hossman)
+
 Optimizations
 ----------------------
 

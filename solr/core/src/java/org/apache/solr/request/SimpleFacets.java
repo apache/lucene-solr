@@ -863,7 +863,7 @@ public class SimpleFacets {
     }
 
     final String gap = required.getFieldParam(f,FacetParams.FACET_DATE_GAP);
-    final DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
+    final DateMathParser dmp = new DateMathParser();
 
     final int minCount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
 
@@ -1387,7 +1387,7 @@ public class SimpleFacets {
     }
     @Override
     public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
-      final DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
+      final DateMathParser dmp = new DateMathParser();
       dmp.setNow(value);
       return dmp.parseMath(gap);
     }

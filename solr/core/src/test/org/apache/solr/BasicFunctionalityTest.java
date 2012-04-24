@@ -690,6 +690,19 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ("check count for near stuff",
             req("q", "bday:[NOW-1MONTH TO NOW+2HOURS]"), "*[count(//doc)=4]");
     
+    assertQ("check counts using fixed NOW",
+            req("q", "bday:[NOW/DAY TO NOW/DAY+1DAY]",
+                "NOW", "205369736000" // 1976-07-04T23:08:56.235Z
+                ),
+            "*[count(//doc)=1]");
+                
+    assertQ("check counts using fixed NOW and TZ rounding",
+            req("q", "bday:[NOW/DAY TO NOW/DAY+1DAY]",
+                "TZ", "GMT-23",
+                "NOW", "205369736000" // 1976-07-04T23:08:56.235Z
+                ),
+            "*[count(//doc)=0]");
+
   }
 
   public void testDateRoundtrip() {
