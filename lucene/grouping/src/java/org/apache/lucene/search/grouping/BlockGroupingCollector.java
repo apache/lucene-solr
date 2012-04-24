@@ -26,12 +26,14 @@ import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
 
+// TODO: this sentence is too long for the class summary.
 /** BlockGroupingCollector performs grouping with a
  *  single pass collector, as long as you are grouping by a
  *  doc block field, ie all documents sharing a given group
  *  value were indexed as a doc block using the atomic
- *  {@link IndexWriter#addDocuments} or {@link
- *  IndexWriter#updateDocuments} API.
+ *  {@link IndexWriter#addDocuments IndexWriter.addDocuments()} 
+ *  or {@link IndexWriter#updateDocuments IndexWriter.updateDocuments()} 
+ *  API.
  *
  *  <p>This results in faster performance (~25% faster QPS)
  *  than the two-pass grouping collectors, with the tradeoff

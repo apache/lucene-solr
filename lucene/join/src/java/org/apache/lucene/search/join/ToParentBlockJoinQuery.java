@@ -43,8 +43,8 @@ import org.apache.lucene.util.FixedBitSet;
 /**
  * This query requires that you index
  * children and parent docs as a single block, using the
- * {@link IndexWriter#addDocuments} or {@link
- * IndexWriter#updateDocuments} API.  In each block, the
+ * {@link IndexWriter#addDocuments IndexWriter.addDocuments()} or {@link
+ * IndexWriter#updateDocuments IndexWriter.updateDocuments()} API.  In each block, the
  * child documents must appear first, ending with the parent
  * document.  At search time you provide a Filter
  * identifying the parents, however this Filter must provide
