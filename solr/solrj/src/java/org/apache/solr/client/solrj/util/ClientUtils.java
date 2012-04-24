@@ -23,13 +23,7 @@ import java.io.Writer;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.Map.Entry;
 import java.nio.ByteBuffer;
 
@@ -231,9 +225,13 @@ public class ClientUtils
   }
   
   public static void appendMap(String collection, Map<String,Slice> map1, Map<String,Slice> map2) {
-    Set<Entry<String,Slice>> entrySet = map2.entrySet();
-    for (Entry<String,Slice> entry : entrySet) {
-      map1.put(collection + "_" + entry.getKey(), entry.getValue());
+    if (map1==null)
+      map1 = new HashMap<String,Slice>();
+    if (map2!=null) {
+      Set<Entry<String,Slice>> entrySet = map2.entrySet();
+      for (Entry<String,Slice> entry : entrySet) {
+        map1.put(collection + "_" + entry.getKey(), entry.getValue());
+      }
     }
   }
 }
