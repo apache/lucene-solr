@@ -50,9 +50,12 @@ public class TimeZoneUtilsTest extends LuceneTestCase {
 
   public void testCustom() throws Exception {
 
-    for (String input : new String[] {"GMT+08","GMT+8",
+    for (String input : new String[] {"GMT-00", "GMT+00", "GMT-0", "GMT+0", 
+                                      "GMT+08","GMT+8", "GMT-08","GMT-8",
+                                      "GMT+0800","GMT+08:00",
                                       "GMT-0800","GMT-08:00",
-                                      "GMT+23", "GMT+2300"}) {
+                                      "GMT+23", "GMT+2300",
+                                      "GMT-23", "GMT-2300"}) {
       assertEquals(input, 
                    TimeZone.getTimeZone(input),
                    TimeZoneUtils.getTimeZone(input));
