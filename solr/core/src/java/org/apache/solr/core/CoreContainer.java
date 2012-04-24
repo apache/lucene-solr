@@ -90,7 +90,7 @@ public class CoreContainer
   private static final String DEFAULT_HOST_CONTEXT = "solr";
   private static final String DEFAULT_HOST_PORT = "8983";
   private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 10000;
-  private static final String DEFAULT_DEFAULT_CORE_NAME = "collection1";
+  public static final String DEFAULT_DEFAULT_CORE_NAME = "collection1";
   private static final boolean DEFAULT_SHARE_SCHEMA = false;
   
   protected static Logger log = LoggerFactory.getLogger(CoreContainer.class);
@@ -113,7 +113,7 @@ public class CoreContainer
   protected boolean shareSchema;
   protected Integer zkClientTimeout;
   protected String solrHome;
-  protected String defaultCoreName = "";
+  protected String defaultCoreName = null;
   private SolrXMLSerializer solrXMLSerializer = new SolrXMLSerializer();
   private ZkController zkController;
   private SolrZkServer zkServer;
@@ -437,7 +437,7 @@ public class CoreContainer
     
     
     String dcoreName = cfg.get("solr/cores/@defaultCoreName", null);
-    if(dcoreName != null) {
+    if(dcoreName != null && !dcoreName.isEmpty()) {
       defaultCoreName = dcoreName;
     }
     persistent = cfg.getBool("solr/@persistent", false);
@@ -491,15 +491,7 @@ public class CoreContainer
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                                   "Each core in solr.xml must have a 'name'");
         }
-        String name;
-        if (rawName.equals(defaultCoreName)){
-          // for the default core we use a blank name,
-          // later on attempts to access it by it's full name will 
-          // be mapped to this.
-          name="";
-        } else {
-          name = rawName;
-        }
+        String name = rawName;
         CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
 
         // deal with optional settings
@@ -941,7 +933,7 @@ public class CoreContainer
   }
 
   private String checkDefault(String name) {
-    return name.length() == 0  || defaultCoreName.equals(name) || name.trim().length() == 0 ? "" : name;
+    return (null == name || name.isEmpty()) ? defaultCoreName : name;
   } 
 
   /**
@@ -1035,6 +1027,9 @@ public class CoreContainer
     return coreAdminHandler;
   }
   
+  /**
+   * the default core name, or null if there is no default core name
+   */
   public String getDefaultCoreName() {
     return defaultCoreName;
   }
@@ -1109,8 +1104,9 @@ public class CoreContainer
         Boolean.toString(DEFAULT_SHARE_SCHEMA));
     addCoresAttrib(coresAttribs, "host", this.host, null);
 
-    if (!defaultCoreName.equals("")) coresAttribs.put("defaultCoreName",
-        defaultCoreName);
+    if (! (null == defaultCoreName || defaultCoreName.equals("")) ) {
+      coresAttribs.put("defaultCoreName", defaultCoreName);
+    }
     
     addCoresAttrib(coresAttribs, "hostPort", this.hostPort, DEFAULT_HOST_PORT);
     addCoresAttrib(coresAttribs, "zkClientTimeout",
@@ -1125,9 +1121,7 @@ public class CoreContainer
         Map<String,String> coreAttribs = new HashMap<String,String>();
         CoreDescriptor dcore = solrCore.getCoreDescriptor();
 
-        String coreName = dcore.name.equals("") ? defaultCoreName
-            : dcore.name;
-        
+        String coreName = dcore.name;
         Node coreNode = null;
         
         if (cfg != null) {

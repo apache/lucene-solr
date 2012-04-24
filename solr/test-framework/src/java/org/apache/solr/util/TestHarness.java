@@ -133,14 +133,14 @@ public class TestHarness {
   public TestHarness( String dataDirectory,
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
-      this("", new Initializer("", dataDirectory, solrConfig, indexSchema));
+      this(null, new Initializer(null, dataDirectory, solrConfig, indexSchema));
   }
   
   public TestHarness(String coreName, CoreContainer.Initializer init) {
     try {
       container = init.initialize();
       if (coreName == null)
-        coreName = "";
+        coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
       // get the core & decrease its refcount:
       // the container holds the core for the harness lifetime
       core = container.getCore(coreName);
@@ -191,7 +191,7 @@ public class TestHarness {
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
       if (coreName == null)
-        coreName = "";
+        coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
       this.coreName = coreName;
       this.dataDirectory = dataDirectory;
       this.solrConfig = solrConfig;

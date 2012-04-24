@@ -50,7 +50,7 @@ public class CoreDescriptor {
     if(coreContainer != null && coreContainer.getZkController() != null) {
       this.cloudDesc = new CloudDescriptor();
       // cloud collection defaults to core name
-      cloudDesc.setCollectionName(name.isEmpty() ? coreContainer.getDefaultCoreName() : name);
+      cloudDesc.setCollectionName(name);
     }
 
     if (instanceDir == null) {

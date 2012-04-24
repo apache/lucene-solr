@@ -533,6 +533,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     NamedList<Object> status = new SimpleOrderedMap<Object>();
     try {
       if (cname == null) {
+        rsp.add("defaultCoreName", coreContainer.getDefaultCoreName());
         for (String name : coreContainer.getCoreNames()) {
           status.add(name, getCoreStatus(coreContainer, name));
         }
@@ -807,6 +808,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     if (core != null) {
       try {
         info.add("name", core.getName());
+        info.add("isDefaultCore", core.getName().equals(cores.getDefaultCoreName()));
         info.add("instanceDir", normalizePath(core.getResourceLoader().getInstanceDir()));
         info.add("dataDir", normalizePath(core.getDataDir()));
         info.add("config", core.getConfigResource());

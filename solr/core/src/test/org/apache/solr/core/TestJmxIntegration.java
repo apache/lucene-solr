@@ -115,9 +115,6 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     MBeanServer mbeanServer = servers.get(0);
 
     String coreName = h.getCore().getName();
-    if (coreName.length() == 0) {
-      coreName = h.getCoreContainer().getDefaultCoreName().length() > 0 ? h.getCoreContainer().getDefaultCoreName() : "";
-    }
 
     Set<ObjectInstance> oldBeans = mbeanServer.queryMBeans(null, null);
     int oldNumberOfObjects = 0;

@@ -390,6 +390,10 @@ Bug Fixes
 * SOLR-3361: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered on commit
   (James Dyer, Tomas Fernandez Lobbe)
 
+* SOLR-2605: fixed tracking of the 'defaultCoreName' in CoreContainer so that
+  CoreAdminHandler could return consistent information regardless of wether
+  there is a a default core name or not. (steffkes, hossman)
+
 Other Changes
 ----------------------
 
