@@ -28,7 +28,7 @@ public class TestMappingCharFilterFactory extends LuceneTestCase {
       f.parseString( "\\" );
       fail( "escape character cannot be alone." );
     }
-    catch( RuntimeException expected ){}
+    catch (InitializationException expected) {}
     
     assertEquals( "unexpected escaped characters",
         "\\\"\n\t\r\b\f", f.parseString( "\\\\\\\"\\n\\t\\r\\b\\f" ) );
@@ -41,7 +41,7 @@ public class TestMappingCharFilterFactory extends LuceneTestCase {
       f.parseString( "\\u000" );
       fail( "invalid length check." );
     }
-    catch( RuntimeException expected ){}
+    catch (InitializationException expected) {}
 
     try {
       f.parseString( "\\u123x" );

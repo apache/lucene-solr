@@ -73,7 +73,7 @@ abstract class BaseTokenStreamFactory {
    * to inform user, that for this factory a {@link #luceneMatchVersion} is required */
   protected final void assureMatchVersion() {
     if (luceneMatchVersion == null) {
-      throw new RuntimeException("Configuration Error: Factory '" + this.getClass().getName() +
+      throw new InitializationException("Configuration Error: Factory '" + this.getClass().getName() +
         "' needs a 'luceneMatchVersion' parameter");
     } else if (!luceneMatchVersion.onOrAfter(Version.LUCENE_40)) {
       log.warn(getClass().getSimpleName() + " is using deprecated " + luceneMatchVersion + 
@@ -100,7 +100,7 @@ abstract class BaseTokenStreamFactory {
     String s = args.get(name);
     if (s==null) {
       if (useDefault) return defaultVal;
-      throw new RuntimeException("Configuration Error: missing parameter '" + name + "'");
+      throw new InitializationException("Configuration Error: missing parameter '" + name + "'");
     }
     return Integer.parseInt(s);
   }
@@ -113,7 +113,7 @@ abstract class BaseTokenStreamFactory {
     String s = args.get(name);
     if (s==null) {
       if (useDefault) return defaultVal;
-      throw new RuntimeException("Configuration Error: missing parameter '" + name + "'");
+      throw new InitializationException("Configuration Error: missing parameter '" + name + "'");
     }
     return Boolean.parseBoolean(s);
   }

@@ -20,7 +20,6 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.TypeTokenFilter;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
@@ -58,10 +57,10 @@ public class TypeTokenFilterFactory extends BaseTokenFilterFactory implements Re
           }
         }
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new InitializationException("IOException thrown while loading types", e);
       }
     } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing required parameter: types.");
+      throw new InitializationException("Missing required parameter: types.");
     }
   }
 

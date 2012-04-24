@@ -28,8 +28,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.collation.CollationKeyFilter;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 /**
@@ -84,11 +82,11 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
     String decomposition = args.get("decomposition");
     
     if (custom == null && language == null)
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Either custom or language is required.");
+      throw new InitializationException("Either custom or language is required.");
     
     if (custom != null && 
         (language != null || country != null || variant != null))
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Cannot specify both language and custom. "
+      throw new InitializationException("Cannot specify both language and custom. "
           + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
           + "Then save the entire customized ruleset to a file, and use with the custom parameter");
     
@@ -111,7 +109,7 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
       else if (strength.equalsIgnoreCase("identical"))
         collator.setStrength(Collator.IDENTICAL);
       else
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid strength: " + strength);
+        throw new InitializationException("Invalid strength: " + strength);
     }
     
     // set the decomposition flag, otherwise it will be the default.
@@ -123,7 +121,7 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
       else if (decomposition.equalsIgnoreCase("full"))
         collator.setDecomposition(Collator.FULL_DECOMPOSITION);
       else
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid decomposition: " + decomposition);
+        throw new InitializationException("Invalid decomposition: " + decomposition);
     }
   }
   
@@ -139,8 +137,7 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
     Locale locale;
     
     if (language != null && country == null && variant != null)
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-          "To specify variant, country is required");
+      throw new InitializationException("To specify variant, country is required");
     else if (language != null && country != null && variant != null)
       locale = new Locale(language, country, variant);
     else if (language != null && country != null)
@@ -163,10 +160,10 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
      return new RuleBasedCollator(rules);
     } catch (IOException e) {
       // io error
-      throw new RuntimeException(e);
+      throw new InitializationException("IOException thrown while loading rules", e);
     } catch (ParseException e) {
       // invalid rules
-      throw new RuntimeException(e);
+      throw new InitializationException("ParseException thrown while parsing rules", e);
     } finally {
       IOUtils.closeQuietly(input);
     }

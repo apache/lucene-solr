@@ -50,7 +50,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
       // check if you use the new optional arg "format". this makes no sense for the old one, 
       // as its wired to solr's synonyms format only.
       if (args.containsKey("format") && !args.get("format").equals("solr")) {
-        throw new IllegalArgumentException("You must specify luceneMatchVersion >= 3.4 to use alternate synonyms formats");
+        throw new InitializationException("You must specify luceneMatchVersion >= 3.4 to use alternate synonyms formats");
       }
       delegator = new SlowSynonymFilterFactory();
     }

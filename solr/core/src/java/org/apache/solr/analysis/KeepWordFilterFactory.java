@@ -55,7 +55,7 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory implements Res
       try {
         words = getWordSet(loader, wordFiles, ignoreCase);
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new InitializationException("IOException thrown while loading words", e);
       }
     }
   }

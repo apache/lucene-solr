@@ -51,7 +51,7 @@ public class PatternReplaceCharFilterFactory extends BaseCharFilterFactory {
     try {
       p = Pattern.compile(args.get("pattern"));
     } catch (PatternSyntaxException e) {
-      throw new RuntimeException
+      throw new InitializationException
         ("Configuration Error: 'pattern' can not be parsed in " +
          this.getClass().getName(), e);
     }

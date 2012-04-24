@@ -33,7 +33,6 @@ import org.apache.commons.codec.language.RefinedSoundex;
 import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.PhoneticFilter;
-import org.apache.solr.common.SolrException;
 
 /**
  * Factory for {@link PhoneticFilter}.
@@ -87,8 +86,8 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
     
     String name = args.get( ENCODER );
     if( name == null ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Missing required parameter: "+ENCODER
-          +" ["+registry.keySet()+"]" );
+      throw new InitializationException("Missing required parameter: " + ENCODER
+          + " [" + registry.keySet() + "]");
     }
     Class<? extends Encoder> clazz = registry.get(name.toUpperCase(Locale.ENGLISH));
     if( clazz == null ) {
@@ -111,7 +110,7 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
       }
     } 
     catch (Exception e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error initializing: "+name + "/"+clazz, e);
+      throw new InitializationException("Error initializing: " + name + "/" + clazz, e);
     }
   }
   
@@ -123,11 +122,11 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
       try {
         clazz = lookupEncoder(name);
       } catch (ClassNotFoundException cnfe) {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Unknown encoder: "+name +" ["+registry.keySet()+"]" );
+        throw new InitializationException("Unknown encoder: " + name + " [" + registry.keySet() + "]");
       }
     }
     catch (ClassCastException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Not an encoder: "+name +" ["+registry.keySet()+"]" );
+      throw new InitializationException("Not an encoder: " + name + " [" + registry.keySet() + "]");
     }
     return clazz;
   }

@@ -19,7 +19,6 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
@@ -91,8 +90,8 @@ public class TestTypeTokenFilterFactory extends BaseTokenTestCase {
       args.put("enablePositionIncrements", "false");
       typeTokenFilterFactory.init(args);
       typeTokenFilterFactory.inform(new SolrResourceLoader(null, null));
-      fail("not supplying 'types' parameter should cause a SolrException");
-    } catch (SolrException e) {
+      fail("not supplying 'types' parameter should cause an InitializationException");
+    } catch (InitializationException e) {
       // everything ok
     }
   }

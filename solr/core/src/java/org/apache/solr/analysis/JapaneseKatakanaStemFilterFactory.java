@@ -19,7 +19,6 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapaneseKatakanaStemFilter;
-import org.apache.solr.common.SolrException;
 
 import java.util.Map;
 
@@ -44,8 +43,7 @@ public class JapaneseKatakanaStemFilterFactory extends BaseTokenFilterFactory {
     super.init(args);
     minimumLength = getInt(MINIMUM_LENGTH_PARAM, JapaneseKatakanaStemFilter.DEFAULT_MINIMUM_LENGTH);
     if (minimumLength < 2) {
-      throw new SolrException(SolrException.ErrorCode.UNKNOWN,
-                              "Illegal " + MINIMUM_LENGTH_PARAM + " " + minimumLength + " (must be 2 or greater)");
+      throw new InitializationException("Illegal " + MINIMUM_LENGTH_PARAM + " " + minimumLength + " (must be 2 or greater)");
     }
   }
 

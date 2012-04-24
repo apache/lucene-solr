@@ -61,7 +61,7 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
           stopWords = getWordSet(loader, stopWordFiles, ignoreCase);
         }
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new InitializationException("IOException thrown while loading stopwords", e);
       }
     } else {
       stopWords = new CharArraySet(luceneMatchVersion, StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);

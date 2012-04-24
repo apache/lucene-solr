@@ -20,7 +20,6 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
@@ -50,7 +49,7 @@ final class SlowSynonymFilterFactory extends BaseTokenFilterFactory implements R
   public void inform(ResourceLoader loader) {
     String synonyms = args.get("synonyms");
     if (synonyms == null)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing required argument 'synonyms'.");
+      throw new InitializationException("Missing required argument 'synonyms'.");
     boolean ignoreCase = getBoolean("ignoreCase", false);
     boolean expand = getBoolean("expand", true);
 
@@ -84,7 +83,7 @@ final class SlowSynonymFilterFactory extends BaseTokenFilterFactory implements R
         }
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new InitializationException("IOException thrown while loading synonym rules", e);
     }
     return wlist;
   }
@@ -106,7 +105,7 @@ final class SlowSynonymFilterFactory extends BaseTokenFilterFactory implements R
       List<List<String>> target;
 
       if (mapping.size() > 2) {
-        throw new RuntimeException("Invalid Synonym Rule:" + rule);
+        throw new InitializationException("Invalid Synonym Rule:" + rule);
       } else if (mapping.size()==2) {
         source = getSynList(mapping.get(0), synSep, tokFactory);
         target = getSynList(mapping.get(1), synSep, tokFactory);
@@ -160,7 +159,7 @@ final class SlowSynonymFilterFactory extends BaseTokenFilterFactory implements R
           tokList.add( termAtt.toString() );
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new InitializationException("IOException thrown while tokenizing source", e);
     }
     finally{
       reader.close();

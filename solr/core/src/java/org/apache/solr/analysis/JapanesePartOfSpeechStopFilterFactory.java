@@ -55,7 +55,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends BaseTokenFilterFactor
         stopTags.add(new String(chars));
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new InitializationException("IOException thrown while loading tags", e);
     }
   }
 

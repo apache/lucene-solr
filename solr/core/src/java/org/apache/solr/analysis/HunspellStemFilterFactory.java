@@ -25,8 +25,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 /**
@@ -69,7 +67,7 @@ public class HunspellStemFilterFactory extends BaseTokenFilterFactory implements
     if(pic != null) {
       if(pic.equalsIgnoreCase(TRUE)) ignoreCase = true;
       else if(pic.equalsIgnoreCase(FALSE)) ignoreCase = false;
-      else throw new SolrException(ErrorCode.UNKNOWN, "Unknown value for "+PARAM_IGNORE_CASE+": "+pic+". Must be true or false");
+      else throw new InitializationException("Unknown value for " + PARAM_IGNORE_CASE + ": " + pic + ". Must be true or false");
     }
 
     try {
@@ -79,7 +77,7 @@ public class HunspellStemFilterFactory extends BaseTokenFilterFactory implements
       }
       this.dictionary = new HunspellDictionary(loader.openResource(affixFile), dictionaries, luceneMatchVersion, ignoreCase);
     } catch (Exception e) {
-      throw new RuntimeException("Unable to load hunspell data! [dictionary=" + args.get("dictionary") + ",affix=" + affixFile + "]", e);
+      throw new InitializationException("Unable to load hunspell data! [dictionary=" + args.get("dictionary") + ",affix=" + affixFile + "]", e);
     }
   }
 

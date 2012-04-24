@@ -271,6 +271,9 @@ New Features
   field content that was already processed and split into tokens using some external processing
   chain. Serialization format is pluggable, and defaults to JSON. (ab)
 
+* SOLR-3363: Consolidated Exceptions in Analysis Factories so they only throw 
+  InitalizationExceptions (Chris Male)
+
 Optimizations
 ----------------------
 

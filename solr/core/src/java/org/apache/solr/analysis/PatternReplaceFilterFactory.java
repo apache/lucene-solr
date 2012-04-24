@@ -47,7 +47,7 @@ public class PatternReplaceFilterFactory extends BaseTokenFilterFactory {
     try {
       p = Pattern.compile(args.get("pattern"));
     } catch (PatternSyntaxException e) {
-      throw new RuntimeException
+      throw new InitializationException
         ("Configuration Error: 'pattern' can not be parsed in " +
          this.getClass().getName(), e);
     }
@@ -62,7 +62,7 @@ public class PatternReplaceFilterFactory extends BaseTokenFilterFactory {
         if (r.equals("first")) {
           all = false;
         } else {
-          throw new RuntimeException
+          throw new InitializationException
             ("Configuration Error: 'replace' must be 'first' or 'all' in "
              + this.getClass().getName());
         }

@@ -71,7 +71,7 @@ class SlowSynonymMap {
     }
 
     if (currMap.synonyms != null && !mergeExisting) {
-      throw new RuntimeException("SynonymFilter: there is already a mapping for " + singleMatch);
+      throw new InitializationException("SynonymFilter: there is already a mapping for " + singleMatch);
     }
     List<Token> superset = currMap.synonyms==null ? replacement :
           mergeTokens(Arrays.asList(currMap.synonyms), replacement);

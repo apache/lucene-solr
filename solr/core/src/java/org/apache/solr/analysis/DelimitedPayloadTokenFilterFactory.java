@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.payloads.FloatEncoder;
 import org.apache.lucene.analysis.payloads.IntegerEncoder;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 import java.util.Map;
@@ -75,7 +74,7 @@ public class DelimitedPayloadTokenFilterFactory extends BaseTokenFilterFactory i
       if (delim.length() == 1) {
         delimiter = delim.charAt(0);
       } else{
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Delimiter must be one character only");
+        throw new InitializationException("Delimiter must be one character only");
       }
     }
   }

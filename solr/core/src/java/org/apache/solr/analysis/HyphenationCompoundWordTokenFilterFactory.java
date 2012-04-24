@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.solr.analysis.BaseTokenFilterFactory;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 import java.util.Map;
@@ -79,8 +78,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends BaseTokenFilterFa
       encoding = args.get("encoding");
     hypFile = args.get("hyphenator");
     if (null == hypFile) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Missing required parameter: hyphenator");
+      throw new InitializationException("Missing required parameter: hyphenator");
     }
 
     minWordSize = getInt("minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
@@ -102,7 +100,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends BaseTokenFilterFa
       is.setSystemId(hypFile);
       hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
     } catch (Exception e) { // TODO: getHyphenationTree really shouldn't throw "Exception"
-      throw new RuntimeException(e);
+      throw new InitializationException("Exception thrown while loading dictionary and hyphenation file", e);
     } finally {
       IOUtils.closeQuietly(stream);
     }

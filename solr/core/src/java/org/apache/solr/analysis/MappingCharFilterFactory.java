@@ -71,7 +71,7 @@ public class MappingCharFilterFactory extends BaseCharFilterFactory implements
         }
       }
       catch( IOException e ){
-        throw new RuntimeException( e );
+        throw new InitializationException("IOException thrown while loading mappings", e);
       }
       normMap = new NormalizeCharMap();
       parseRules( wlist, normMap );
@@ -89,7 +89,7 @@ public class MappingCharFilterFactory extends BaseCharFilterFactory implements
     for( String rule : rules ){
       Matcher m = p.matcher( rule );
       if( !m.find() )
-        throw new RuntimeException( "Invalid Mapping Rule : [" + rule + "], file = " + mapping );
+        throw new InitializationException("Invalid Mapping Rule : [" + rule + "], file = " + mapping);
       normMap.add( parseString( m.group( 1 ) ), parseString( m.group( 2 ) ) );
     }
   }
@@ -104,7 +104,7 @@ public class MappingCharFilterFactory extends BaseCharFilterFactory implements
       char c = s.charAt( readPos++ );
       if( c == '\\' ){
         if( readPos >= len )
-          throw new RuntimeException( "Invalid escaped char in [" + s + "]" );
+          throw new InitializationException("Invalid escaped char in [" + s + "]");
         c = s.charAt( readPos++ );
         switch( c ) {
           case '\\' : c = '\\'; break;
@@ -116,7 +116,7 @@ public class MappingCharFilterFactory extends BaseCharFilterFactory implements
           case 'f' : c = '\f'; break;
           case 'u' :
             if( readPos + 3 >= len )
-              throw new RuntimeException( "Invalid escaped char in [" + s + "]" );
+              throw new InitializationException("Invalid escaped char in [" + s + "]");
             c = (char)Integer.parseInt( s.substring( readPos, readPos + 4 ), 16 );
             readPos += 4;
             break;

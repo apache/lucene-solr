@@ -52,7 +52,7 @@ public class ElisionFilterFactory extends BaseTokenFilterFactory implements Reso
       try {
         articles = getWordSet(loader, articlesFile, ignoreCase);
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new InitializationException("IOException thrown while loading articles", e);
       }
     }
   }

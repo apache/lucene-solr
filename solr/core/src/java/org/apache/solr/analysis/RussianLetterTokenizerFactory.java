@@ -21,8 +21,6 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.ru.RussianLetterTokenizer;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 
 /** @deprecated Use {@link StandardTokenizerFactory} instead.
  *  This tokenizer has no Russian-specific functionality.
@@ -34,7 +32,7 @@ public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
   public void init(Map<String, String> args) {
     super.init(args);
     if (args.containsKey("charset"))
-      throw new SolrException(ErrorCode.SERVER_ERROR,
+      throw new InitializationException(
           "The charset parameter is no longer supported.  "
           + "Please process your documents as Unicode instead.");
     assureMatchVersion();

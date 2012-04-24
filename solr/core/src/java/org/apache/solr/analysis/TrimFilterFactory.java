@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
-import org.apache.solr.common.SolrException;
 
 /**
  * Factory for {@link TrimFilter}.
@@ -49,7 +48,7 @@ public class TrimFilterFactory extends BaseTokenFilterFactory {
         updateOffsets = Boolean.valueOf( v );
       }
       catch( Exception ex ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Error reading updateOffsets value.  Must be true or false.", ex );
+        throw new InitializationException("Error reading updateOffsets value.  Must be true or false.", ex);
       }
     }
   }

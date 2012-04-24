@@ -21,8 +21,6 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 
 import java.util.Map;
 
@@ -51,20 +49,17 @@ public class ShingleFilterFactory extends BaseTokenFilterFactory {
     maxShingleSize = getInt("maxShingleSize", 
                             ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
     if (maxShingleSize < 2) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Invalid maxShingleSize (" + maxShingleSize
+      throw new InitializationException("Invalid maxShingleSize (" + maxShingleSize
                               + ") - must be at least 2");
     }
     minShingleSize = getInt("minShingleSize",
                             ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE);
     if (minShingleSize < 2) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Invalid minShingleSize (" + minShingleSize
+      throw new InitializationException("Invalid minShingleSize (" + minShingleSize
                               + ") - must be at least 2");
     }
     if (minShingleSize > maxShingleSize) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Invalid minShingleSize (" + minShingleSize
+      throw new InitializationException("Invalid minShingleSize (" + minShingleSize
                               + ") - must be no greater than maxShingleSize ("
                               + maxShingleSize + ")");
     }

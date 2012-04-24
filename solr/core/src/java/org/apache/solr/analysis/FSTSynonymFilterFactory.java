@@ -39,7 +39,6 @@ import org.apache.lucene.analysis.synonym.SolrSynonymParser;
 import org.apache.lucene.analysis.synonym.WordnetSynonymParser;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
@@ -87,10 +86,10 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
         map = loadWordnetSynonyms(loader, true, analyzer);
       } else {
         // TODO: somehow make this more pluggable
-        throw new RuntimeException("Unrecognized synonyms format: " + format);
+        throw new InitializationException("Unrecognized synonyms format: " + format);
       }
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new InitializationException("Exception thrown while loading synonyms", e);
     }
     
     if (map.fst == null) {
@@ -105,7 +104,7 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
     final boolean expand = getBoolean("expand", true);
     String synonyms = args.get("synonyms");
     if (synonyms == null)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing required argument 'synonyms'.");
+      throw new InitializationException("Missing required argument 'synonyms'.");
     
     CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
       .onMalformedInput(CodingErrorAction.REPORT)
@@ -133,7 +132,7 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
     final boolean expand = getBoolean("expand", true);
     String synonyms = args.get("synonyms");
     if (synonyms == null)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing required argument 'synonyms'.");
+      throw new InitializationException("Missing required argument 'synonyms'.");
     
     CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
       .onMalformedInput(CodingErrorAction.REPORT)

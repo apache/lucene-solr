@@ -48,7 +48,7 @@ public class KeywordMarkerFilterFactory extends BaseTokenFilterFactory implement
       try {
         protectedWords = getWordSet(loader, wordFiles, ignoreCase);
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new InitializationException("IOException thrown while loading protected words", e);
       }
     }
   }

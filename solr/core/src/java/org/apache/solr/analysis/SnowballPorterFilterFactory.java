@@ -56,7 +56,7 @@ public class SnowballPorterFilterFactory extends BaseTokenFilterFactory implemen
       try {
         protectedWords = getWordSet(loader, wordFiles, false);
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new InitializationException("IOException thrown while loading protected words", e);
       }
     }
   }
@@ -72,7 +72,7 @@ public class SnowballPorterFilterFactory extends BaseTokenFilterFactory implemen
     try {
       stemClass = Class.forName("org.tartarus.snowball.ext." + language + "Stemmer");
     } catch (ClassNotFoundException e) {
-      throw new RuntimeException("Can't find class for stemmer language " + language, e);
+      throw new InitializationException("Can't find class for stemmer language " + language, e);
     }
   }
   
@@ -81,7 +81,7 @@ public class SnowballPorterFilterFactory extends BaseTokenFilterFactory implemen
     try {
       program = (SnowballProgram)stemClass.newInstance();
     } catch (Exception e) {
-      throw new RuntimeException("Error instantiating stemmer for language " + language + "from class " +stemClass, e);
+      throw new InitializationException("Error instantiating stemmer for language " + language + "from class " + stemClass, e);
     }
 
     if (protectedWords != null)

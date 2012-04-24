@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.compound.*;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
 import org.apache.lucene.analysis.TokenStream;
 
 import java.util.Map;
@@ -53,8 +52,7 @@ public class DictionaryCompoundWordTokenFilterFactory extends BaseTokenFilterFac
     assureMatchVersion();
     dictFile = args.get("dictionary");
     if (null == dictFile) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-                               "Missing required parameter: dictionary");
+      throw new InitializationException("Missing required parameter: dictionary");
     }
 
     minWordSize= getInt("minWordSize",CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
@@ -66,7 +64,7 @@ public class DictionaryCompoundWordTokenFilterFactory extends BaseTokenFilterFac
     try {
       dictionary = super.getWordSet(loader, dictFile, false);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new InitializationException("IOException thrown while loading dictionary", e);
     }
   }
   public DictionaryCompoundWordTokenFilter create(TokenStream input) {

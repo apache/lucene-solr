@@ -43,7 +43,7 @@ public class TestSynonymMap extends LuceneTestCase {
         SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
         fail( "RuntimeException must be thrown." );
     }
-    catch( RuntimeException expected ){}
+    catch(InitializationException expected) {}
   }
   
   public void testReadMappingRules() throws Exception {

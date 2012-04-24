@@ -32,7 +32,6 @@ import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 /**
@@ -80,7 +79,7 @@ public class JapaneseTokenizerFactory extends BaseTokenizerFactory implements Re
         userDictionary = null;
       }
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      throw new InitializationException("Exception thrown while loading dictionary", e);
     }
   }
   

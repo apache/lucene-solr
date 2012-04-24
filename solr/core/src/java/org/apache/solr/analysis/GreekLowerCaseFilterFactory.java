@@ -22,8 +22,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 
 /** 
  * Factory for {@link GreekLowerCaseFilter}. 
@@ -44,7 +42,7 @@ public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory implemen
     super.init(args);
     assureMatchVersion();
     if (args.containsKey("charset"))
-      throw new SolrException(ErrorCode.SERVER_ERROR,
+      throw new InitializationException(
           "The charset parameter is no longer supported.  "
           + "Please process your documents as Unicode instead.");
   }

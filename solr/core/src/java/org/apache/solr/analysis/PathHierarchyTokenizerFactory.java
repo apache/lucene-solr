@@ -51,7 +51,7 @@ public class PathHierarchyTokenizerFactory extends BaseTokenizerFactory {
     String v = args.get( "delimiter" );
     if( v != null ){
       if( v.length() != 1 ){
-        throw new IllegalArgumentException( "delimiter should be a char. \"" + v + "\" is invalid" );
+        throw new InitializationException("delimiter should be a char. \"" + v + "\" is invalid");
       }
       else{
         delimiter = v.charAt(0);
@@ -64,7 +64,7 @@ public class PathHierarchyTokenizerFactory extends BaseTokenizerFactory {
     v = args.get( "replace" );
     if( v != null ){
       if( v.length() != 1 ){
-        throw new IllegalArgumentException( "replace should be a char. \"" + v + "\" is invalid" );
+        throw new InitializationException("replace should be a char. \"" + v + "\" is invalid");
       }
       else{
         replacement = v.charAt(0);

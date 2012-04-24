@@ -54,7 +54,7 @@ public abstract class BaseCharFilterFactory implements CharFilterFactory {
     String s = args.get(name);
     if (s==null) {
       if (useDefault) return defaultVal;
-      throw new RuntimeException("Configuration Error: missing parameter '" + name + "'");
+      throw new InitializationException("Configuration Error: missing parameter '" + name + "'");
     }
     return Integer.parseInt(s);
   }

@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.pattern.PatternTokenizer;
-import org.apache.solr.common.SolrException;
 
 
 /**
@@ -81,7 +80,7 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
     this.args = args;
     String regex = args.get( PATTERN );
     if( regex == null ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "missing required argument: "+PATTERN );
+      throw new InitializationException("missing required argument: " + PATTERN);
     }
     int flags = 0; // TODO? -- read flags from config CASE_INSENSITIVE, etc
     pattern = Pattern.compile( regex, flags );
@@ -93,7 +92,7 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
         group = Integer.parseInt( g );
       }
       catch( Exception ex ) {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "invalid group argument: "+g );
+        throw new InitializationException("invalid group argument: " + g);
       }
     }
   }
@@ -105,7 +104,7 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
     try {
       return new PatternTokenizer(in, pattern, group);
     } catch( IOException ex ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, ex );
+      throw new InitializationException("IOException thrown creating PatternTokenizer instance", ex);
     }
   }
 }

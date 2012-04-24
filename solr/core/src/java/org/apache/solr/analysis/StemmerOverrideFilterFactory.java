@@ -61,7 +61,7 @@ public class StemmerOverrideFilterFactory extends BaseTokenFilterFactory impleme
           }
         }
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new InitializationException("IOException thrown while loading dictionary", e);
       }
     }
   }
