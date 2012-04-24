@@ -32,7 +32,7 @@
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
     <lst name="master">
-      <str name="backupAfter">commit</str>
+      <str name="replicateAfter">commit</str>
       <str name="confFiles">schema-replication2.xml:schema.xml</str>
     </lst>    
     <str name="maxNumberOfBackups">1</str>
