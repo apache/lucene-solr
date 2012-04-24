@@ -193,7 +193,7 @@
     <sequential>
       <check-broken-links dir="build/docs"/>
       <!-- TODO: change this level=class -->
-      <!-- <check-missing-javadocs dir="build/docs" level="package"/> -->
+      <check-missing-javadocs dir="build/docs" level="package"/>
     </sequential>
   </target>
   
