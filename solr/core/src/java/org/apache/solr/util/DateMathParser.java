@@ -249,7 +249,7 @@ public class DateMathParser  {
    * exists -- otherwise it uses a new Date instance at the moment getNow() 
    * is first called.
    * @see #setNow
-   * @see SolrRequestInfo#getNow
+   * @see SolrRequestInfo#getNOW
    */
   public Date getNow() {
     if (now == null) {
