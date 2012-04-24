@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -60,7 +61,7 @@ public class PingRequestHandler extends RequestHandlerBase
     }
     else {
       try {
-        action = ACTIONS.valueOf(actionParam.toUpperCase());
+        action = ACTIONS.valueOf(actionParam.toUpperCase(Locale.ENGLISH));
       }
       catch (IllegalArgumentException iae){
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
