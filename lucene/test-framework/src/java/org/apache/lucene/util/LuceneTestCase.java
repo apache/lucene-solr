@@ -1318,14 +1318,20 @@ public abstract class LuceneTestCase extends Assert {
     
     return new Field(name, value, newType);
   }
-  
-  /** return a random Locale from the available locales on the system */
+
+  /** 
+   * Return a random Locale from the available locales on the system.
+   * @see "https://issues.apache.org/jira/browse/LUCENE-4020"
+   */
   public static Locale randomLocale(Random random) {
     Locale locales[] = Locale.getAvailableLocales();
     return locales[random.nextInt(locales.length)];
   }
 
-  /** return a random TimeZone from the available timezones on the system */
+  /** 
+   * Return a random TimeZone from the available timezones on the system
+   * @see "https://issues.apache.org/jira/browse/LUCENE-4020" 
+   */
   public static TimeZone randomTimeZone(Random random) {
     String tzIds[] = TimeZone.getAvailableIDs();
     return TimeZone.getTimeZone(tzIds[random.nextInt(tzIds.length)]);
