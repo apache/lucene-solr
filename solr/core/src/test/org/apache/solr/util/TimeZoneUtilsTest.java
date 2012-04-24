@@ -28,6 +28,22 @@ import java.util.Locale;
 
 public class TimeZoneUtilsTest extends LuceneTestCase {
 
+  private static void assertSameRules(final String label,
+                                      final TimeZone expected,
+                                      final TimeZone actual) {
+    
+    if (null == expected && null == actual) return;
+
+    assertNotNull(label + ": expected is null", expected);
+    assertNotNull(label + ": actual is null", actual);
+
+    final boolean same = expected.hasSameRules(actual);
+
+    assertTrue(label + ": " + expected.toString() + " [[NOT SAME RULES]] " + 
+               actual.toString(),
+               same);
+  }
+
   public void testValidIds() throws Exception {
 
     final Set<String> idsTested = new HashSet<String>();
@@ -39,7 +55,7 @@ public class TimeZoneUtilsTest extends LuceneTestCase {
 
       final TimeZone expected = TimeZone.getTimeZone(validId);
       final TimeZone actual = TimeZoneUtils.getTimeZone(validId);
-      assertEquals(validId, expected, actual);
+      assertSameRules(validId, expected, actual);
 
       idsTested.add(validId);
     }
@@ -56,9 +72,9 @@ public class TimeZoneUtilsTest extends LuceneTestCase {
                                       "GMT-0800","GMT-08:00",
                                       "GMT+23", "GMT+2300",
                                       "GMT-23", "GMT-2300"}) {
-      assertEquals(input, 
-                   TimeZone.getTimeZone(input),
-                   TimeZoneUtils.getTimeZone(input));
+      assertSameRules(input, 
+                      TimeZone.getTimeZone(input),
+                      TimeZoneUtils.getTimeZone(input));
     }
   }
 
@@ -70,9 +86,9 @@ public class TimeZoneUtilsTest extends LuceneTestCase {
                                       "GMT-0800","GMT-08:00",
                                       "GMT+23", "GMT+2300",
                                       "GMT-23", "GMT-2300"}) {
-      assertEquals(input, 
-                   TimeZone.getTimeZone(input),
-                   TimeZone.getTimeZone(input));
+      assertSameRules(input, 
+                      TimeZone.getTimeZone(input),
+                      TimeZone.getTimeZone(input));
     }
   }
 
@@ -110,9 +126,9 @@ public class TimeZoneUtilsTest extends LuceneTestCase {
       String mins = String.format(Locale.US, TWO_DIGIT, min);
       String input = "GMT" + (r.nextBoolean()?"+":"-") 
         + hours + (r.nextBoolean() ? "" : ((r.nextBoolean()?":":"") + mins));
-      assertEquals(input,  
-                   TimeZone.getTimeZone(input),
-                   TimeZoneUtils.getTimeZone(input));
+      assertSameRules(input,  
+                      TimeZone.getTimeZone(input),
+                      TimeZoneUtils.getTimeZone(input));
     }
   }
 }
