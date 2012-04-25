@@ -1,17 +1,5 @@
 package org.apache.lucene.codecs.lucene40;
 
-import org.apache.lucene.codecs.Codec; // javadocs
-import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
-import org.apache.lucene.codecs.SegmentInfosFormat;
-import org.apache.lucene.codecs.SegmentInfosReader;
-import org.apache.lucene.codecs.SegmentInfosWriter;
-import org.apache.lucene.codecs.StoredFieldsFormat; // javadocs
-import org.apache.lucene.codecs.TermVectorsFormat; // javadocs
-import org.apache.lucene.index.FieldInfo.IndexOptions; // javadocs
-import org.apache.lucene.index.IndexWriter; // javadocs
-import org.apache.lucene.index.SegmentInfos; // javadocs
-import org.apache.lucene.store.DataOutput; // javadocs
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,6 +16,18 @@ import org.apache.lucene.store.DataOutput; // javadocs
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.codecs.Codec; // javadocs
+import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
+import org.apache.lucene.codecs.SegmentInfosFormat;
+import org.apache.lucene.codecs.SegmentInfosReader;
+import org.apache.lucene.codecs.SegmentInfosWriter;
+import org.apache.lucene.codecs.StoredFieldsFormat; // javadocs
+import org.apache.lucene.codecs.TermVectorsFormat; // javadocs
+import org.apache.lucene.index.FieldInfo.IndexOptions; // javadocs
+import org.apache.lucene.index.IndexWriter; // javadocs
+import org.apache.lucene.index.SegmentInfos; // javadocs
+import org.apache.lucene.store.DataOutput; // javadocs
 
 /**
  * Lucene 4.0 Segments format.
