@@ -79,6 +79,9 @@ public abstract class DataInput implements Cloneable {
   /** Reads an int stored in variable-length format.  Reads between one and
    * five bytes.  Smaller values take fewer bytes.  Negative numbers are not
    * supported.
+   * <p>
+   * The format is described further in {@link DataOutput#writeVInt(int)}.
+   * 
    * @see DataOutput#writeVInt(int)
    */
   public int readVInt() throws IOException {
@@ -121,7 +124,12 @@ public abstract class DataInput implements Cloneable {
 
   /** Reads a long stored in variable-length format.  Reads between one and
    * nine bytes.  Smaller values take fewer bytes.  Negative numbers are not
-   * supported. */
+   * supported.
+   * <p>
+   * The format is described further in {@link DataOutput#writeVInt(int)}.
+   * 
+   * @see DataOutput#writeVLong(long)
+   */
   public long readVLong() throws IOException {
     /* This is the original code of this method,
      * but a Hotspot bug (see LUCENE-2975) corrupts the for-loop if
