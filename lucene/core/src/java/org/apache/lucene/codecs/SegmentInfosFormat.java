@@ -17,11 +17,16 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.SegmentInfos; // javadocs
+
 /**
- * Expert: Controls the format of the segments file.
- * Note, this isn't a per-segment file, if you change the format, other versions
- * of lucene won't be able to read it, yackedy schmackedy
+ * Expert: Controls the format of the 
+ * {@link SegmentInfos} (segments file).
+ * <p>
+ * NOTE: This isn't a per-segment file. If you change the format, other versions
+ * of lucene won't be able to read it.
  * 
+ * @see SegmentInfos
  * @lucene.experimental
  */
 // TODO: would be great to handle this situation better.

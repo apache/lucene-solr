@@ -38,6 +38,7 @@ import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoSuchDirectoryException;
@@ -47,6 +48,25 @@ import org.apache.lucene.util.ThreadInterruptedException;
 /**
  * A collection of segmentInfo objects with methods for operating on
  * those segments in relation to the file system.
+ * <p>
+ * The active segments in the index are stored in the segment info file,
+ * <tt>segments_N</tt>. There may be one or more <tt>segments_N</tt> files in the
+ * index; however, the one with the largest generation is the active one (when
+ * older segments_N files are present it's because they temporarily cannot be
+ * deleted, or, a writer is in the process of committing, or a custom 
+ * {@link org.apache.lucene.index.IndexDeletionPolicy IndexDeletionPolicy}
+ * is in use). This file lists each segment by name, has details about the
+ * separate norms and deletion files, and also contains the size of each
+ * segment.
+ * </p>
+ * <p>There is also a file <tt>segments.gen</tt>. This file contains
+ * the current generation (the <tt>_N</tt> in <tt>segments_N</tt>) of the index.
+ * This is used only as a fallback in case the current generation cannot be
+ * accurately determined by directory listing alone (as is the case for some NFS
+ * clients with time-based directory cache expiration). This file simply contains
+ * an {@link DataOutput#writeInt Int32} version header 
+ * ({@link #FORMAT_SEGMENTS_GEN_CURRENT}), followed by the
+ * generation recorded as {@link DataOutput#writeLong Int64}, written twice.</p>
  * 
  * @lucene.experimental
  */
