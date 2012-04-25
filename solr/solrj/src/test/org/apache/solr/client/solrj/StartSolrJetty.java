@@ -31,9 +31,6 @@ public class StartSolrJetty
   {
     //System.setProperty("solr.solr.home", "../../../example/solr");
 
-    javax.servlet.FilterRegistration xx;
-    
-    
     Server server = new Server();
     SocketConnector connector = new SocketConnector();
     // Set some timeout options to make debugging easier.

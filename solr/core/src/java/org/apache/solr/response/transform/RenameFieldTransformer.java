@@ -26,37 +26,30 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  * @since solr 4.0
  */
-public class RenameFieldsTransformer extends DocTransformer
+public class RenameFieldTransformer extends DocTransformer
 {
-  final NamedList<String> rename;
+  final String from;
+  final String to;
+  final boolean copy;
 
-  public RenameFieldsTransformer( NamedList<String> rename )
+  public RenameFieldTransformer( String from, String to, boolean copy )
   {
-    this.rename = rename;
+    this.from = from;
+    this.to = to;
+    this.copy = copy;
   }
 
   @Override
   public String getName()
   {
-    StringBuilder str = new StringBuilder();
-    str.append( "Rename[" );
-    for( int i=0; i< rename.size(); i++ ) {
-      if( i > 0 ) {
-        str.append( "," );
-      }
-      str.append( rename.getName(i) ).append( ">>" ).append( rename.getVal( i ) );
-    }
-    str.append( "]" );
-    return str.toString();
+    return "Rename["+from+">>"+to+"]";
   }
 
   @Override
   public void transform(SolrDocument doc, int docid) {
-    for( int i=0; i<rename.size(); i++ ) {
-      Object v = doc.remove( rename.getName(i) );
-      if( v != null ) {
-        doc.setField(rename.getVal(i), v);
-      }
+    Object v = (copy)?doc.get(from) : doc.remove( from );
+    if( v != null ) {
+      doc.setField(to, v);
     }
   }
 }

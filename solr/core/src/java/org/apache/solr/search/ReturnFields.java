@@ -32,7 +32,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
-import org.apache.solr.response.transform.RenameFieldsTransformer;
+import org.apache.solr.response.transform.RenameFieldTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.response.transform.ValueSourceAugmenter;
@@ -61,6 +61,9 @@ public class ReturnFields
   // Field names that are OK to include in the response.
   // This will include pseudo fields, lucene fields, and matching globs
   private Set<String> okFieldNames = new HashSet<String>(); 
+
+  // The list of explicitly requested fields
+  private Set<String> reqFieldNames = null;
   
   private DocTransformer transformer;
   private boolean _wantsScore = false;
@@ -111,11 +114,24 @@ public class ReturnFields
     for (String fieldList : fl) {
       add(fieldList,rename,augmenters,req);
     }
-    if( rename.size() > 0 ) {
-      for( int i=0; i<rename.size(); i++ ) {
-        okFieldNames.add( rename.getVal(i) );
+    for( int i=0; i<rename.size(); i++ ) {
+      String from = rename.getName(i);
+      String to = rename.getVal(i);
+      okFieldNames.add( to );
+      boolean copy = (reqFieldNames!=null && reqFieldNames.contains(from));
+      if(!copy) {
+        // Check that subsequent copy/rename requests have the field they need to copy
+        for(int j=i+1; j<rename.size(); j++) {
+          if(from.equals(rename.getName(j))) {
+            rename.setName(j, to); // copy from the current target
+            if(reqFieldNames==null) {
+              reqFieldNames = new HashSet<String>();
+            }
+            reqFieldNames.add(to); // don't rename our current target
+          }
+        }
       }
-      augmenters.addTransformer( new RenameFieldsTransformer( rename ) );
+      augmenters.addTransformer( new RenameFieldTransformer( from, to, copy ) );     
     }
 
     if( !_wantsAllFields ) {
@@ -348,13 +364,21 @@ public class ReturnFields
 
   private void addField( String field, String key, DocTransformers augmenters, SolrQueryRequest req )
   {
-    String disp = (key==null) ? field : key;
+    if(key==null) {
+      if(reqFieldNames==null) {
+        reqFieldNames = new HashSet<String>();
+      }
+      reqFieldNames.add(field);
+    }
+    
     fields.add(field); // need to put in the map to maintain order for things like CSVResponseWriter
     okFieldNames.add( field );
     okFieldNames.add( key );
     // a valid field name
     if(SCORE.equals(field)) {
       _wantsScore = true;
+
+      String disp = (key==null) ? field : key;
       augmenters.addTransformer( new ScoreAugmenter( disp ) );
     }
   }

@@ -18,6 +18,8 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,6 +49,46 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     v = "now cow";
     assertU(adoc("id","2", "text",v,  "text_np",v));
     assertU(commit());
+  }
+
+  @Test
+  public void testCopyRename() throws Exception {
+
+    // original
+    assertQ(req("q","id:1", "fl","id")
+        ,"//*[@numFound='1'] "
+        ,"*[count(//doc/str)=1] "
+        ,"*//doc[1]/str[1][.='1'] "
+        );
+    
+    // rename
+    assertQ(req("q","id:1", "fl","xxx:id")
+        ,"//*[@numFound='1'] "
+        ,"*[count(//doc/str)=1] "
+        ,"*//doc[1]/str[1][.='1'] "
+        );
+
+    // original and copy
+    assertQ(req("q","id:1", "fl","id,xxx:id")
+        ,"//*[@numFound='1'] "
+        ,"*[count(//doc/str)=2] "
+        ,"*//doc[1]/str[1][.='1'] "
+        ,"*//doc[1]/str[2][.='1'] "
+        );
+    assertQ(req("q","id:1", "fl","xxx:id,id")
+        ,"//*[@numFound='1'] "
+        ,"*[count(//doc/str)=2] "
+        ,"*//doc[1]/str[1][.='1'] "
+        ,"*//doc[1]/str[2][.='1'] "
+        );
+
+    // two copies
+    assertQ(req("q","id:1", "fl","xxx:id,yyy:id")
+        ,"//*[@numFound='1'] "
+        ,"*[count(//doc/str)=2] "
+        ,"*//doc[1]/str[1][.='1'] "
+        ,"*//doc[1]/str[2][.='1'] "
+        );
   }
 
   @Test
@@ -202,7 +244,6 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertTrue(rf.wantsField("newSubject"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
-    assertTrue( rf.getTransformer() instanceof RenameFieldsTransformer);
 
     rf = new ReturnFields( req("fl", "newId:id newName:name newTest:test newSubject:subject score") );
     assertTrue(rf.wantsField("id"));
@@ -216,7 +257,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
     assertTrue( rf.getTransformer() instanceof DocTransformers);
-    assertEquals(2, ((DocTransformers)rf.getTransformer()).size());
+    assertEquals(5, ((DocTransformers)rf.getTransformer()).size());  // 4 rename and score
   }
 
   // hyphens in field names are not supported in all contexts, but we wanted
