@@ -68,7 +68,7 @@ class FindHyperlinks(HTMLParser):
           # LUCENE-4010: AttributeSource's javadocs has an unescaped <A> generics!!  Seems to be a javadocs bug... (fixed in Java 7)
           pass
         else:
-          raise RuntimeError('BUG: %s' % attrs)
+          raise RuntimeError('BUG: couldn\'t find an href nor name in link in %s: only got these attrs: %s' % (self.baseURL, attrs))
 
   def printFile(self):
     if not self.printed:
