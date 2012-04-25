@@ -1352,6 +1352,7 @@ public abstract class LuceneTestCase extends Assert {
   public static Locale localeForName(String localeName) {
     String elements[] = localeName.split("\\_");
     switch(elements.length) {
+      case 4: /* fallthrough for special cases */
       case 3: return new Locale(elements[0], elements[1], elements[2]);
       case 2: return new Locale(elements[0], elements[1]);
       case 1: return new Locale(elements[0]);
