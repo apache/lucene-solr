@@ -178,6 +178,9 @@ public abstract class LuceneTestCase extends Assert {
   /** set of directories we created, in afterclass we try to clean these up */
   private static final Map<File, StackTraceElement[]> tempDirs = Collections.synchronizedMap(new HashMap<File, StackTraceElement[]>());
 
+  // TODO: the fact these are static final means they're initialized on class load and they should
+  // be reinitialized on before suite hooks (to allow proper tests).
+
   // by default we randomly pick a different codec for
   // each test case (non-J4 tests) and each test class (J4
   // tests)
@@ -185,10 +188,6 @@ public abstract class LuceneTestCase extends Assert {
   public static final String TEST_CODEC = System.getProperty("tests.codec", "random");
   /** Gets the postingsFormat to run tests with. */
   public static final String TEST_POSTINGSFORMAT = System.getProperty("tests.postingsformat", "random");
-  /** Gets the locale to run tests with */
-  public static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
-  /** Gets the timezone to run tests with */
-  public static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
   /** Gets the directory to run tests with */
   public static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
   /** Get the number of times to run tests */
@@ -203,6 +202,11 @@ public abstract class LuceneTestCase extends Assert {
   public static final String TEST_CLEAN_THREADS = System.getProperty("tests.cleanthreads", "perClass");
   /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
+
+  /** Gets the locale to run tests with */
+  public static String TEST_LOCALE;
+  /** Gets the timezone to run tests with */
+  public static String TEST_TIMEZONE;
 
   /**
    * A random multiplier which you should use when writing random tests:
@@ -453,14 +457,21 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     // END hack
-    
-    locale = TEST_LOCALE.equals("random") ? randomLocale(random()) : localeForName(TEST_LOCALE);
+
+    // Initialize locale/ timezone.
+    TEST_LOCALE = System.getProperty("tests.locale", "random");
+    TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
+
+    // Always pick a random one for consistency (whether TEST_LOCALE was specified or not).
+    Locale randomLocale = randomLocale(random());
+    locale = TEST_LOCALE.equals("random") ? randomLocale : localeForName(TEST_LOCALE);
     Locale.setDefault(locale);
     // TimeZone.getDefault will set user.timezone to the default timezone of the user's locale.
     // So store the original property value and restore it at end.
     restoreProperties.put("user.timezone", System.getProperty("user.timezone"));
     savedTimeZone = TimeZone.getDefault();
-    timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(random()) : TimeZone.getTimeZone(TEST_TIMEZONE);
+    TimeZone randomTimeZone = randomTimeZone(random());
+    timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone : TimeZone.getTimeZone(TEST_TIMEZONE);
     TimeZone.setDefault(timeZone);
     similarity = random().nextBoolean() ? new DefaultSimilarity() : new RandomSimilarityProvider(random());
     testsFailed = false;
@@ -1570,10 +1581,10 @@ public abstract class LuceneTestCase extends Assert {
   // extra params that were overridden needed to reproduce the command
   private static String reproduceWithExtraParams() {
     StringBuilder sb = new StringBuilder();
+    if (locale != null) sb.append(" -Dtests.locale=").append(locale);
+    if (timeZone != null) sb.append(" -Dtests.timezone=").append(timeZone.getID());
     if (!TEST_CODEC.equals("random")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
     if (!TEST_POSTINGSFORMAT.equals("random")) sb.append(" -Dtests.postingsformat=").append(TEST_POSTINGSFORMAT);
-    if (!TEST_LOCALE.equals("random")) sb.append(" -Dtests.locale=").append(TEST_LOCALE);
-    if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
     if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
     if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
