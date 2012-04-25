@@ -125,40 +125,40 @@ public final class BytesRefList {
   }
   
   private int[] sort(final Comparator<BytesRef> comp) {
-    final int[] orderdEntries = new int[size()];
-    for (int i = 0; i < orderdEntries.length; i++) {
-      orderdEntries[i] = i;
+    final int[] orderedEntries = new int[size()];
+    for (int i = 0; i < orderedEntries.length; i++) {
+      orderedEntries[i] = i;
     }
     new SorterTemplate() {
       @Override
       protected void swap(int i, int j) {
-        final int o = orderdEntries[i];
-        orderdEntries[i] = orderdEntries[j];
-        orderdEntries[j] = o;
+        final int o = orderedEntries[i];
+        orderedEntries[i] = orderedEntries[j];
+        orderedEntries[j] = o;
       }
       
       @Override
       protected int compare(int i, int j) {
-        final int ord1 = orderdEntries[i], ord2 = orderdEntries[j];
+        final int ord1 = orderedEntries[i], ord2 = orderedEntries[j];
         return comp.compare(get(scratch1, ord1), get(scratch2, ord2));
       }
       
       @Override
       protected void setPivot(int i) {
-        final int ord = orderdEntries[i];
+        final int ord = orderedEntries[i];
         get(pivot, ord);
       }
       
       @Override
       protected int comparePivot(int j) {
-        final int ord = orderdEntries[j];
+        final int ord = orderedEntries[j];
         return comp.compare(pivot, get(scratch2, ord));
       }
       
       private final BytesRef pivot = new BytesRef(), scratch1 = new BytesRef(),
           scratch2 = new BytesRef();
     }.quickSort(0, size() - 1);
-    return orderdEntries;
+    return orderedEntries;
   }
   
   /**
