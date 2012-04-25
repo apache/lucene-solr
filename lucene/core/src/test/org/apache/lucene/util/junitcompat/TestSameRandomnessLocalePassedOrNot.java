@@ -4,7 +4,6 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.TimeZone;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Assert;
