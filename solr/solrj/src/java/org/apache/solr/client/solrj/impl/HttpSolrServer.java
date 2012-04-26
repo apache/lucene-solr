@@ -294,7 +294,7 @@ public class HttpSolrServer extends SolrServer {
               }
               
               if (parts.size() > 0) {
-                MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
+                MultipartEntity entity = new MultipartEntity(HttpMultipartMode.STRICT);
                 for(FormBodyPart p: parts) {
                   entity.addPart(p);
                 }

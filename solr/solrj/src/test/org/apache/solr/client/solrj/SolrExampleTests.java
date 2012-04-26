@@ -613,6 +613,17 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertNotNull("Couldn't upload xml files", result);
     rsp = server.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 5 , rsp.getResults().getNumFound() );
+    
+    //params encoding, multipart
+    up = new ContentStreamUpdateRequest("/debug/dump");
+    up.addFile(getFile("solrj/docs1.xml")); // 2
+    up.addFile(getFile("solrj/docs2.xml")); // 3
+    up.setParam("a", "\u1234");
+    result = server.request(up);
+    System.out.println(result);
+    Assert.assertEquals("\u1234",
+        ((NamedList)((NamedList) result.get("responseHeader")).get("params")).get("a"));
+
   }
 
 
