@@ -418,8 +418,8 @@ public class CoreContainer
           try {
             logging = loader.newInstance(fname, LogWatcher.class);
           }
-          catch (Exception e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          catch (Throwable e) {
+            log.warn("Unable to load LogWatcher", e);
           }
         }
         
