@@ -33,7 +33,7 @@
   <target name="compile-core"/>
   <target name="compile-test"/>
 
-  <target name="resolve" depends="ivy-availability-check">
+  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
     <sequential>
     <!-- jetty libs in lib/ -->
     <ivy:retrieve conf="default" type="jar" log="download-only"/>
