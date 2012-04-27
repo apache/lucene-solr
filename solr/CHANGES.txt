@@ -524,6 +524,10 @@ Other Changes
 
 * SOLR-3388: HTTP caching is now disabled by default for RequestUpdateHandlers. (ryan)
 
+* SOLR-3309: web.xml now specifies metadata-complete=true (which requires 
+  Servlet 2.5) to prevent servlet containers from scanning class annotations 
+  on startup.  This allows for faster startup times on some servlet containers.
+  (Bill Bell, hossman)
 
 Documentation
 ----------------------
