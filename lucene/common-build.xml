@@ -236,6 +236,13 @@
     <isset property="fetch.sources.javadocs"/>
   </condition>
 
+  <!-- Check for minimum supported ANT version. -->
+  <fail message="Minimum supported ANT version is 1.8.2. Yours: ${ant.version}">
+    <condition>
+      <not><antversion atleast="1.8.2" /></not>
+    </condition>
+  </fail>
+
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />
 

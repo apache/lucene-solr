@@ -944,6 +944,8 @@ Documentation
 
 Build
 
+* LUCENE-4016: Require ANT 1.8.2+ for the build. 
+
 * LUCENE-3808: Refactoring of testing infrastructure to use randomizedtesting
   package: http://labs.carrotsearch.com/randomizedtesting.html (Dawid Weiss)
 
