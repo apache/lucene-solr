@@ -529,6 +529,9 @@ Other Changes
   on startup.  This allows for faster startup times on some servlet containers.
   (Bill Bell, hossman)
 
+* SOLR-1893: Refactored some common code from LRUCache and FastLRUCache into 
+  SolrCacheBase (Tomás Fernández Löbbe via hossman)
+
 Documentation
 ----------------------
 

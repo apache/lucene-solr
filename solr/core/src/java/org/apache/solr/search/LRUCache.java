@@ -17,15 +17,15 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrCore;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.io.IOException;
-import java.net.URL;
 
 
 /**
@@ -55,26 +55,15 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   private long warmupTime = 0;
 
   private Map<K,V> map;
-  private String name;
-  private AutoWarmCountRef autowarm;
-  private State state;
-  private CacheRegenerator regenerator;
   private String description="LRU Cache";
 
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
-    state=State.CREATED;
-    this.regenerator = regenerator;
-    name = (String)args.get("name");
+    super.init(args, regenerator);
     String str = (String)args.get("size");
     final int limit = str==null ? 1024 : Integer.parseInt(str);
     str = (String)args.get("initialSize");
     final int initialSize = Math.min(str==null ? 1024 : Integer.parseInt(str), limit);
-    autowarm = new AutoWarmCountRef((String)args.get("autowarmCount"));
-    description = "LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize;
-    if (autowarm.isAutoWarmingOn()) {
-      description += ", autowarmCount=" + autowarm + ", regenerator=" + regenerator;
-    }
-    description += ')';
+    description = generateDescription(limit, initialSize);
 
     map = new LinkedHashMap<K,V>(initialSize, 0.75f, true) {
         @Override
@@ -101,8 +90,17 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     return persistence;
   }
 
-  public String name() {
-    return name;
+  /**
+   * 
+   * @return Returns the description of this cache. 
+   */
+  private String generateDescription(int limit, int initialSize) {
+    String description = "LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize;
+    if (isAutowarmingOn()) {
+      description += ", " + getAutowarmDescription();
+    }
+    description += ')';
+    return description;
   }
 
   public int size() {
@@ -113,7 +111,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
   public V put(K key, V value) {
     synchronized (map) {
-      if (state == State.LIVE) {
+      if (getState() == State.LIVE) {
         stats.inserts.incrementAndGet();
       }
 
@@ -127,7 +125,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   public V get(K key) {
     synchronized (map) {
       V val = map.get(key);
-      if (state == State.LIVE) {
+      if (getState() == State.LIVE) {
         // only increment lookups and hits if we are live.
         lookups++;
         stats.lookups.incrementAndGet();
@@ -146,21 +144,13 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     }
   }
 
-  public void setState(State state) {
-    this.state = state;
-  }
-
-  public State getState() {
-    return state;
-  }
-
   public void warm(SolrIndexSearcher searcher, SolrCache<K,V> old) throws IOException {
     if (regenerator==null) return;
     long warmingStartTime = System.currentTimeMillis();
     LRUCache<K,V> other = (LRUCache<K,V>)old;
 
     // warm entries
-    if (autowarm.isAutoWarmingOn()) {
+    if (isAutowarmingOn()) {
       Object[] keys,vals = null;
 
       // Don't do the autowarming in the synchronized block, just pull out the keys and values.
@@ -214,42 +204,14 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     return LRUCache.class.getName();
   }
 
-  public String getVersion() {
-    return SolrCore.version;
-  }
-
   public String getDescription() {
-    return description;
-  }
-
-  public Category getCategory() {
-    return Category.CACHE;
+     return description;
   }
 
   public String getSource() {
     return "$URL$";
   }
 
-  public URL[] getDocs() {
-    return null;
-  }
-
-
-  // returns a ratio, not a percent.
-  private static String calcHitRatio(long lookups, long hits) {
-    if (lookups==0) return "0.00";
-    if (lookups==hits) return "1.00";
-    int hundredths = (int)(hits*100/lookups);   // rounded down
-    if (hundredths < 10) return "0.0" + hundredths;
-    return "0." + hundredths;
-
-    /*** code to produce a percent, if we want it...
-    int ones = (int)(hits*100 / lookups);
-    int tenths = (int)(hits*1000 / lookups) - ones*10;
-    return Integer.toString(ones) + '.' + tenths;
-    ***/
-  }
-  
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     synchronized (map) {
@@ -260,9 +222,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
       lst.add("evictions", evictions);
       lst.add("size", map.size());
     }
-
     lst.add("warmupTime", warmupTime);
-
+    
     long clookups = stats.lookups.get();
     long chits = stats.hits.get();
     lst.add("cumulative_lookups", clookups);
@@ -270,12 +231,12 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     lst.add("cumulative_hitratio", calcHitRatio(clookups,chits));
     lst.add("cumulative_inserts", stats.inserts.get());
     lst.add("cumulative_evictions", stats.evictions.get());
-
+    
     return lst;
   }
 
   @Override
   public String toString() {
-    return name + getStatistics().toString();
+    return name() + getStatistics().toString();
   }
 }

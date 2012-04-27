@@ -24,7 +24,6 @@ import org.apache.solr.core.SolrCore;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,18 +49,12 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
   private long warmupTime = 0;
 
-  private String name;
-  private AutoWarmCountRef autowarm;
-  private State state;
-  private CacheRegenerator regenerator;
   private String description = "Concurrent LRU Cache";
   private ConcurrentLRUCache<K,V> cache;
   private int showItems = 0;
 
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
-    state = State.CREATED;
-    this.regenerator = regenerator;
-    name = (String) args.get("name");
+    super.init(args, regenerator);
     String str = (String) args.get("size");
     int limit = str == null ? 1024 : Integer.parseInt(str);
     int minLimit;
@@ -86,21 +79,12 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
     str = (String) args.get("initialSize");
     final int initialSize = str == null ? limit : Integer.parseInt(str);
-    autowarm = new AutoWarmCountRef((String)args.get("autowarmCount"));
     str = (String) args.get("cleanupThread");
     boolean newThread = str == null ? false : Boolean.parseBoolean(str);
 
     str = (String) args.get("showItems");
     showItems = str == null ? 0 : Integer.parseInt(str);
-
-
-    description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
-            ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread="+newThread;
-    if (autowarm.isAutoWarmingOn()) {
-      description += ", autowarmCount=" + autowarm + ", regenerator=" + regenerator;
-    }
-    description += ')';
-
+    description = generateDescription(limit, initialSize, minLimit, acceptableLimit, newThread);
     cache = new ConcurrentLRUCache<K,V>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
     cache.setAlive(false);
 
@@ -117,14 +101,22 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     statsList.add(cache.getStats());
     return statsList;
   }
-
-  public String name() {
-    return name;
+  
+  /**
+   * @return Returns the description of this Cache.
+   */
+  protected String generateDescription(int limit, int initialSize, int minLimit, int acceptableLimit, boolean newThread) {
+    String description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
+        ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread="+newThread;
+    if (isAutowarmingOn()) {
+      description += ", " + getAutowarmDescription();
+    }
+    description += ')';
+    return description;
   }
 
   public int size() {
     return cache.size();
-
   }
 
   public V put(K key, V value) {
@@ -140,12 +132,8 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   }
 
   public void setState(State state) {
-    this.state = state;
+    super.setState(state);
     cache.setAlive(state == State.LIVE);
-  }
-
-  public State getState() {
-    return state;
   }
 
   public void warm(SolrIndexSearcher searcher, SolrCache old) throws IOException {
@@ -153,7 +141,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     long warmingStartTime = System.currentTimeMillis();
     FastLRUCache other = (FastLRUCache) old;
     // warm entries
-    if (autowarm.isAutoWarmingOn()) {
+    if (isAutowarmingOn()) {
       int sz = autowarm.getWarmCount(other.size());
       Map items = other.cache.getLatestAccessedItems(sz);
       Map.Entry[] itemsArr = new Map.Entry[items.size()];
@@ -188,34 +176,14 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     return FastLRUCache.class.getName();
   }
 
-  public String getVersion() {
-    return SolrCore.version;
-  }
-
   public String getDescription() {
     return description;
-  }
-
-  public Category getCategory() {
-    return Category.CACHE;
   }
 
   public String getSource() {
     return "$URL$";
   }
 
-  public URL[] getDocs() {
-    return null;
-  }
-
-  // returns a ratio, not a percent.
-  private static String calcHitRatio(long lookups, long hits) {
-    if (lookups == 0) return "0.00";
-    if (lookups == hits) return "1.00";
-    int hundredths = (int) (hits * 100 / lookups);   // rounded down
-    if (hundredths < 10) return "0.0" + hundredths;
-    return "0." + hundredths;
-  }
 
   public NamedList getStatistics() {
     NamedList<Serializable> lst = new SimpleOrderedMap<Serializable>();
@@ -226,16 +194,6 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     long inserts = stats.getCumulativePuts();
     long evictions = stats.getCumulativeEvictions();
     long size = stats.getCurrentSize();
-
-    lst.add("lookups", lookups);
-    lst.add("hits", hits);
-    lst.add("hitratio", calcHitRatio(lookups, hits));
-    lst.add("inserts", inserts);
-    lst.add("evictions", evictions);
-    lst.add("size", size);
-
-    lst.add("warmupTime", warmupTime);
-
     long clookups = 0;
     long chits = 0;
     long cinserts = 0;
@@ -248,6 +206,15 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
       cinserts += statistiscs.getCumulativePuts();
       cevictions += statistiscs.getCumulativeEvictions();
     }
+
+    lst.add("lookups", lookups);
+    lst.add("hits", hits);
+    lst.add("hitratio", calcHitRatio(lookups, hits));
+    lst.add("inserts", inserts);
+    lst.add("evictions", evictions);
+    lst.add("size", size);
+
+    lst.add("warmupTime", warmupTime);
     lst.add("cumulative_lookups", clookups);
     lst.add("cumulative_hits", chits);
     lst.add("cumulative_hitratio", calcHitRatio(clookups, chits));
@@ -272,7 +239,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
   @Override
   public String toString() {
-    return name + getStatistics().toString();
+    return name() + getStatistics().toString();
   }
 }
 

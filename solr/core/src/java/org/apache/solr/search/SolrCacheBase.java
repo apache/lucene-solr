@@ -17,11 +17,28 @@
 
 package org.apache.solr.search;
 
+import java.io.Serializable;
+import java.net.URL;
+import java.util.Map;
+ 
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoMBean.Category;
+import org.apache.solr.search.SolrCache.State;
+
 /**
  * Common base class of reusable functionality for SolrCaches
  */
 public abstract class SolrCacheBase {
-
+   
+  protected CacheRegenerator regenerator;
+  
+  private State state;
+  
+  private String name;
+  
+  protected AutoWarmCountRef autowarm;
+  
   /**
    * Decides how many things to autowarm based on the size of another cache
    */
@@ -68,5 +85,65 @@ public abstract class SolrCacheBase {
         Math.min(previousCacheSize, autoWarmCount);
     }
   }
+
+  /**
+   * Returns a "Hit Ratio" (ie: max of 1.00, not a percentage) suitable for 
+   * display purposes.
+   */
+  protected static String calcHitRatio(long lookups, long hits) {
+    if (lookups==0) return "0.00";
+    if (lookups==hits) return "1.00";
+    int hundredths = (int)(hits*100/lookups);   // rounded down
+    if (hundredths < 10) return "0.0" + hundredths;
+    return "0." + hundredths;
+
+    /*** code to produce a percent, if we want it...
+    int ones = (int)(hits*100 / lookups);
+    int tenths = (int)(hits*1000 / lookups) - ones*10;
+    return Integer.toString(ones) + '.' + tenths;
+    ***/
+  }
+
+
+  public String getVersion() {
+    return SolrCore.version;
+  }
+
+  public Category getCategory() {
+    return Category.CACHE;
+  }
+
+  public URL[] getDocs() {
+    return null;
+  }
+  
+  public void init(Map<String, String> args, CacheRegenerator regenerator) {
+    this.regenerator = regenerator;
+    state=State.CREATED;
+    name = (String) args.get("name");
+    autowarm = new AutoWarmCountRef((String)args.get("autowarmCount"));
+    
+  }
+  
+  protected String getAutowarmDescription() {
+    return "autowarmCount=" + autowarm + ", regenerator=" + regenerator;
+  }
+  
+  protected boolean isAutowarmingOn() {
+    return autowarm.isAutoWarmingOn();
+  }
+  
+  public void setState(State state) {
+    this.state = state;
+  }
+
+  public State getState() {
+    return state;
+  }
+  
+  public String name() {
+    return this.name;
+  }
+
 }
 
