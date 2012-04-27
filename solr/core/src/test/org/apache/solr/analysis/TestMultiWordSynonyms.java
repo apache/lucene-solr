@@ -53,8 +53,8 @@ public class TestMultiWordSynonyms extends BaseTokenTestCase {
   public void testMultiWordSynonyms() throws IOException {
     SynonymFilterFactory factory = new SynonymFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    args.putAll(DEFAULT_VERSION_PARAM);
     args.put("synonyms", "synonyms.txt");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader("a b c,d"));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("a e"), MockTokenizer.WHITESPACE, false));

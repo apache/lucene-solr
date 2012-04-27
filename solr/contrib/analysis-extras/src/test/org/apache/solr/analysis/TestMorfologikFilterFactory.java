@@ -32,11 +32,10 @@ public class TestMorfologikFilterFactory extends BaseTokenTestCase {
   public void testCreateDictionary() throws Exception {
     StringReader reader = new StringReader("rowery bilety");
     Map<String,String> initParams = new HashMap<String,String>();
-    initParams.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM,
-        DEFAULT_VERSION.toString());
     initParams.put(MorfologikFilterFactory.DICTIONARY_SCHEMA_ATTRIBUTE,
         "morfologik");
     MorfologikFilterFactory factory = new MorfologikFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(initParams);
     TokenStream ts = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION,
         reader));

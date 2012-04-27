@@ -37,7 +37,8 @@ public class TestThaiWordFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ThaiWordFilterFactory factory = new ThaiWordFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] {"การ", "ที่", "ได้",
         "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});

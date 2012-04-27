@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import java.io.*;
 import java.util.Map;
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.util.Version;
 
 
 /**
@@ -53,6 +54,8 @@ public interface TokenizerFactory {
    * schema.xml
    */
   public void init(Map<String,String> args);
+
+  public void setLuceneMatchVersion(Version luceneMatchVersion);
   
   /**
    * Accessor method for reporting the args used to initialize this factory.

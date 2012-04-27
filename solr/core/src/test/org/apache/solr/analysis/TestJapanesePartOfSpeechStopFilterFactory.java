@@ -35,13 +35,14 @@ public class TestJapanesePartOfSpeechStopFilterFactory extends BaseTokenTestCase
         "動詞-自立\n";
     
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    tokenizerFactory.init(DEFAULT_VERSION_PARAM);
+    tokenizerFactory.setLuceneMatchVersion(DEFAULT_VERSION);
+    tokenizerFactory.init(EMPTY_PARAMS);
     tokenizerFactory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = tokenizerFactory.create(new StringReader("私は制限スピードを超える。"));
     JapanesePartOfSpeechStopFilterFactory factory = new JapanesePartOfSpeechStopFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
     args.put("tags", "stoptags.txt");
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader(tags));
     ts = factory.create(ts);

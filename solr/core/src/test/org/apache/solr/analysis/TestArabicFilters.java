@@ -36,7 +36,8 @@ public class TestArabicFilters extends BaseTokenTestCase {
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
     ArabicLetterTokenizerFactory factory = new ArabicLetterTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, new String[] {"الذين", "مَلكت", "أيمانكم"});
   }
@@ -47,9 +48,11 @@ public class TestArabicFilters extends BaseTokenTestCase {
   public void testNormalizer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
     StandardTokenizerFactory factory = new StandardTokenizerFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     ArabicNormalizationFilterFactory filterFactory = new ArabicNormalizationFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
-    filterFactory.init(DEFAULT_VERSION_PARAM);
+    filterFactory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
+    filterFactory.init(EMPTY_PARAMS);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = filterFactory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] {"الذين", "ملكت", "ايمانكم"});
@@ -61,10 +64,12 @@ public class TestArabicFilters extends BaseTokenTestCase {
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
     StandardTokenizerFactory factory = new StandardTokenizerFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     ArabicNormalizationFilterFactory normFactory = new ArabicNormalizationFilterFactory();
+    normFactory.setLuceneMatchVersion(DEFAULT_VERSION);
     ArabicStemFilterFactory stemFactory = new ArabicStemFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
-    normFactory.init(DEFAULT_VERSION_PARAM);
+    factory.init(EMPTY_PARAMS);
+    normFactory.init(EMPTY_PARAMS);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = normFactory.create(tokenizer);
     stream = stemFactory.create(stream);
@@ -78,7 +83,8 @@ public class TestArabicFilters extends BaseTokenTestCase {
     Reader reader = new StringReader("می‌خورد");
     PersianCharFilterFactory charfilterFactory = new PersianCharFilterFactory();
     StandardTokenizerFactory tokenizerFactory = new StandardTokenizerFactory();
-    tokenizerFactory.init(DEFAULT_VERSION_PARAM);
+    tokenizerFactory.setLuceneMatchVersion(DEFAULT_VERSION);
+    tokenizerFactory.init(EMPTY_PARAMS);
     TokenStream stream = tokenizerFactory.create(charfilterFactory.create(CharReader.get(reader)));
     assertTokenStreamContents(stream, new String[] { "می", "خورد" });
   }

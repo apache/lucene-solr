@@ -40,8 +40,9 @@ public class TestDictionaryCompoundWordTokenFilterFactory extends BaseTokenTestC
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     DictionaryCompoundWordTokenFilterFactory factory = new DictionaryCompoundWordTokenFilterFactory();
     ResourceLoader loader = new SolrResourceLoader(null, null);
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     args.put("dictionary", "compoundDictionary.txt");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     TokenStream stream = factory.create(tokenizer);

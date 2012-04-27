@@ -34,9 +34,10 @@ public class TestStopFilterFactory extends BaseTokenTestCase {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     StopFilterFactory factory = new StopFilterFactory();
-    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+    Map<String, String> args = new HashMap<String, String>();
     args.put("words", "stop-1.txt");
     args.put("ignoreCase", "true");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     CharArraySet words = factory.getStopWords();
@@ -46,6 +47,7 @@ public class TestStopFilterFactory extends BaseTokenTestCase {
 
     factory = new StopFilterFactory();
     args.put("words", "stop-1.txt, stop-2.txt");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     words = factory.getStopWords();
@@ -54,6 +56,7 @@ public class TestStopFilterFactory extends BaseTokenTestCase {
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory.isIgnoreCase() == true);
 
     factory = new StopFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     args.put("words", "stop-snowball.txt");
     args.put("format", "snowball");
     factory.init(args);

@@ -28,7 +28,8 @@ import org.apache.lucene.analysis.TokenStream;
 public class TestBeiderMorseFilterFactory extends BaseTokenTestCase {
   public void testBasics() throws Exception {
     BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("Weinberg"), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(ts,
         new String[] { "vDnbirk", "vanbirk", "vinbirk", "wDnbirk", "wanbirk", "winbirk" },

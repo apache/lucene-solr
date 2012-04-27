@@ -47,9 +47,10 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
     }
 
     SnowballPorterFilterFactory factory = new SnowballPorterFilterFactory();
-    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+    Map<String, String> args = new HashMap<String, String>();
     args.put("language", "English");
 
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(new LinesMockSolrResourceLoader(new ArrayList<String>()));
     Tokenizer tokenizer = new MockTokenizer(
@@ -84,9 +85,10 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
   public void testProtected() throws Exception {
     SnowballPorterFilterFactory factory = new SnowballPorterFilterFactory();
     ResourceLoader loader = new SolrResourceLoader(null, null);
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     args.put("protected", "protwords.txt");
     args.put("language", "English");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     Reader reader = new StringReader("ridding of some stemming");

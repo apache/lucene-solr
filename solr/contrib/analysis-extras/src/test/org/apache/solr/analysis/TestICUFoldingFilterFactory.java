@@ -31,7 +31,7 @@ public class TestICUFoldingFilterFactory extends BaseTokenTestCase {
   public void test() throws Exception {
     Reader reader = new StringReader("Résumé");
     ICUFoldingFilterFactory factory = new ICUFoldingFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "resume" });

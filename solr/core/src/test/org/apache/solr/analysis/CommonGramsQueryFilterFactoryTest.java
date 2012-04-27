@@ -38,9 +38,10 @@ public class CommonGramsQueryFilterFactoryTest extends BaseTokenTestCase {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsQueryFilterFactory factory = new CommonGramsQueryFilterFactory();
-    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+    Map<String, String> args = new HashMap<String, String>();
     args.put("words", "stop-1.txt");
     args.put("ignoreCase", "true");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     CharArraySet words = factory.getCommonWords();
@@ -52,6 +53,7 @@ public class CommonGramsQueryFilterFactoryTest extends BaseTokenTestCase {
 
     factory = new CommonGramsQueryFilterFactory();
     args.put("words", "stop-1.txt, stop-2.txt");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     words = factory.getCommonWords();
@@ -62,6 +64,7 @@ public class CommonGramsQueryFilterFactoryTest extends BaseTokenTestCase {
         .isIgnoreCase() == true);
 
     factory = new CommonGramsQueryFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     args.put("words", "stop-snowball.txt");
     args.put("format", "snowball");
     factory.init(args);
@@ -85,8 +88,8 @@ public class CommonGramsQueryFilterFactoryTest extends BaseTokenTestCase {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsQueryFilterFactory factory = new CommonGramsQueryFilterFactory();
-    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
-    factory.init(args);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     factory.inform(loader);
     CharArraySet words = factory.getCommonWords();
     assertTrue("words is null and it shouldn't be", words != null);

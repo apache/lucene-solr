@@ -39,9 +39,10 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("testing dogs");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     StemmerOverrideFilterFactory factory = new StemmerOverrideFilterFactory();
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     ResourceLoader loader = new SolrResourceLoader(null, null);
     args.put("dictionary", "stemdict.txt");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     
@@ -53,10 +54,11 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("testing DoGs");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     StemmerOverrideFilterFactory factory = new StemmerOverrideFilterFactory();
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     ResourceLoader loader = new SolrResourceLoader(null, null);
     args.put("dictionary", "stemdict.txt");
     args.put("ignoreCase", "true");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     

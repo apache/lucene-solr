@@ -47,6 +47,7 @@ public class LowerCaseTokenizerFactory extends BaseTokenizerFactory implements M
   @Override
   public Object getMultiTermComponent() {
     LowerCaseFilterFactory filt = new LowerCaseFilterFactory();
+    filt.setLuceneMatchVersion(luceneMatchVersion);
     filt.init(args);
     return filt;
   }

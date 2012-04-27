@@ -33,11 +33,12 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
   
   public void testCapitalization() throws Exception 
   {
-    Map<String,String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String, String>();
     args.put( CapitalizationFilterFactory.KEEP, "and the it BIG" );
     args.put( CapitalizationFilterFactory.ONLY_FIRST_WORD, "true" );  
     
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init( args );
     assertTokenStreamContents(factory.create(
         new MockTokenizer(new StringReader("kiTTEN"), MockTokenizer.WHITESPACE, false)),
@@ -94,6 +95,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     
     // Now try some prefixes
     factory = new CapitalizationFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     args.put( "okPrefix", "McK" );  // all words
     factory.init( args );
     assertTokenStreamContents(factory.create(
@@ -114,12 +116,13 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
   }
 
   public void testKeepIgnoreCase() throws Exception {
-    Map<String,String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String, String>();
     args.put( CapitalizationFilterFactory.KEEP, "kitten" );
     args.put( CapitalizationFilterFactory.KEEP_IGNORE_CASE, "true" );
     args.put( CapitalizationFilterFactory.ONLY_FIRST_WORD, "true" );
 
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init( args );
     factory.forceFirstLetter = true;
     assertTokenStreamContents(factory.create(
@@ -143,10 +146,11 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
    * This is very weird when combined with ONLY_FIRST_WORD!!!
    */
   public void testMinWordLength() throws Exception {
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     args.put(CapitalizationFilterFactory.ONLY_FIRST_WORD, "true");
     args.put(CapitalizationFilterFactory.MIN_WORD_LENGTH, "5");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader(
         "helo testing"), MockTokenizer.WHITESPACE, false);
@@ -159,9 +163,10 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
    * in each token (it should do nothing)
    */
   public void testMaxWordCount() throws Exception {
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     args.put(CapitalizationFilterFactory.MAX_WORD_COUNT, "2");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader(
         "one two three four"), MockTokenizer.WHITESPACE, false);
@@ -173,9 +178,10 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
    * Test CapitalizationFilterFactory's maxWordCount option when exceeded
    */
   public void testMaxWordCount2() throws Exception {
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     args.put(CapitalizationFilterFactory.MAX_WORD_COUNT, "2");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader(
         "one two three four"), MockTokenizer.KEYWORD, false);
@@ -189,9 +195,10 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
    * This is weird, it is not really a max, but inclusive (look at 'is')
    */
   public void testMaxTokenLength() throws Exception {
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     args.put(CapitalizationFilterFactory.MAX_TOKEN_LENGTH, "2");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader(
         "this is a test"), MockTokenizer.WHITESPACE, false);
@@ -203,10 +210,11 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
    * Test CapitalizationFilterFactory's forceFirstLetter option
    */
   public void testForceFirstLetter() throws Exception {
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     args.put(CapitalizationFilterFactory.KEEP, "kitten");
     args.put(CapitalizationFilterFactory.FORCE_FIRST_LETTER, "true");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader("kitten"), MockTokenizer.WHITESPACE, false);
     TokenStream ts = factory.create(tokenizer);

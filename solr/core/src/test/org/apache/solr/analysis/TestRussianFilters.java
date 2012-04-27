@@ -32,7 +32,8 @@ public class TestRussianFilters extends BaseTokenTestCase {
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("Вместе с тем о силе электромагнитной 100");
     RussianLetterTokenizerFactory factory = new RussianLetterTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, new String[] {"Вместе", "с", "тем", "о",
         "силе", "электромагнитной", "100"});

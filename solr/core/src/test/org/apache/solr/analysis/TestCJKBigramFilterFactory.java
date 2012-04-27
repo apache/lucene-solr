@@ -33,7 +33,8 @@ public class TestCJKBigramFilterFactory extends BaseTokenTestCase {
   public void testDefaults() throws Exception {
     Reader reader = new StringReader("多くの学生が試験に落ちた。");
     CJKBigramFilterFactory factory = new CJKBigramFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     TokenStream stream = factory.create(new StandardTokenizer(TEST_VERSION_CURRENT, reader));
     assertTokenStreamContents(stream,
         new String[] { "多く", "くの", "の学", "学生", "生が", "が試", "試験", "験に", "に落", "落ち", "ちた" });

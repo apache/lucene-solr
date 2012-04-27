@@ -28,4 +28,9 @@ public class TestVersion extends LuceneTestCase {
     assertFalse(Version.LUCENE_30.onOrAfter(Version.LUCENE_31));
   }
 
+  public void testParseLeniently() {
+    assertEquals(Version.LUCENE_40, Version.parseLeniently("4.0"));
+    assertEquals(Version.LUCENE_40, Version.parseLeniently("LUCENE_40"));
+    assertEquals(Version.LUCENE_CURRENT, Version.parseLeniently("LUCENE_CURRENT"));
+  }
 }

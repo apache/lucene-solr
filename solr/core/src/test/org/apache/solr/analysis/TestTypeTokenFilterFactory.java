@@ -35,9 +35,10 @@ public class TestTypeTokenFilterFactory extends BaseTokenTestCase {
   public void testInform() throws Exception {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     TypeTokenFilterFactory factory = new TypeTokenFilterFactory();
-    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+    Map<String, String> args = new HashMap<String, String>();
     args.put("types", "stoptypes-1.txt");
     args.put("enablePositionIncrements", "true");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     Set<String> types = factory.getStopTypes();
@@ -60,9 +61,10 @@ public class TestTypeTokenFilterFactory extends BaseTokenTestCase {
   @Test
   public void testCreationWithBlackList() throws Exception {
     TypeTokenFilterFactory typeTokenFilterFactory = new TypeTokenFilterFactory();
-    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+    Map<String, String> args = new HashMap<String, String>();
     args.put("types", "stoptypes-1.txt, stoptypes-2.txt");
     args.put("enablePositionIncrements", "false");
+    typeTokenFilterFactory.setLuceneMatchVersion(DEFAULT_VERSION);
     typeTokenFilterFactory.init(args);
     NumericTokenStream input = new NumericTokenStream();
     input.setIntValue(123);
@@ -72,10 +74,11 @@ public class TestTypeTokenFilterFactory extends BaseTokenTestCase {
   @Test
     public void testCreationWithWhiteList() throws Exception {
       TypeTokenFilterFactory typeTokenFilterFactory = new TypeTokenFilterFactory();
-      Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+      Map<String, String> args = new HashMap<String, String>();
       args.put("types", "stoptypes-1.txt, stoptypes-2.txt");
       args.put("enablePositionIncrements", "false");
       args.put("useWhitelist","true");
+      typeTokenFilterFactory.setLuceneMatchVersion(DEFAULT_VERSION);
       typeTokenFilterFactory.init(args);
       NumericTokenStream input = new NumericTokenStream();
       input.setIntValue(123);
@@ -86,8 +89,9 @@ public class TestTypeTokenFilterFactory extends BaseTokenTestCase {
   public void testMissingTypesParameter() throws Exception {
     try {
       TypeTokenFilterFactory typeTokenFilterFactory = new TypeTokenFilterFactory();
-      Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+      Map<String, String> args = new HashMap<String, String>();
       args.put("enablePositionIncrements", "false");
+      typeTokenFilterFactory.setLuceneMatchVersion(DEFAULT_VERSION);
       typeTokenFilterFactory.init(args);
       typeTokenFilterFactory.inform(new SolrResourceLoader(null, null));
       fail("not supplying 'types' parameter should cause an InitializationException");

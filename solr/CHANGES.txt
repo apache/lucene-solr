@@ -279,6 +279,11 @@ New Features
   (all date range queries and date faceting is affected).  The default TZ
   is still UTC.  (David Schlotfeldt, hossman)
 
+* SOLR-3402: Analysis Factories are now configured with their Lucene Version
+  throw setLuceneMatchVersion, rather than through the Map passed to init.
+  Parsing and simple error checking for the Version is now done inside
+  the code that creates the Analysis Factories. (Chris Male)
+
 Optimizations
 ----------------------
 

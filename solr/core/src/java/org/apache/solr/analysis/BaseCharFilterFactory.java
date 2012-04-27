@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import java.util.Map;
 
+import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,8 @@ public abstract class BaseCharFilterFactory implements CharFilterFactory {
 
   public static final Logger log = LoggerFactory.getLogger(BaseCharFilterFactory.class);
 
+  protected Version luceneMatchVersion;
+
   /** The init args */
   protected Map<String,String> args;
 
@@ -40,6 +43,10 @@ public abstract class BaseCharFilterFactory implements CharFilterFactory {
 
   public void init(Map<String, String> args) {
     this.args = args;
+  }
+
+  public void setLuceneMatchVersion(Version luceneMatchVersion) {
+    this.luceneMatchVersion = luceneMatchVersion;
   }
 
   protected int getInt(String name) {

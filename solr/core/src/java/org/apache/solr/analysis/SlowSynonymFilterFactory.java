@@ -56,7 +56,7 @@ final class SlowSynonymFilterFactory extends BaseTokenFilterFactory implements R
     String tf = args.get("tokenizerFactory");
     TokenizerFactory tokFactory = null;
     if( tf != null ){
-      tokFactory = loadTokenizerFactory( loader, tf, args );
+      tokFactory = loadTokenizerFactory(loader, tf);
     }
 
     Iterable<String> wlist=loadRules( synonyms, loader );
@@ -167,8 +167,9 @@ final class SlowSynonymFilterFactory extends BaseTokenFilterFactory implements R
     return tokList;
   }
 
-  private static TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname, Map<String,String> args){
+  private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname) {
     TokenizerFactory tokFactory = loader.newInstance(cname, TokenizerFactory.class);
+    tokFactory.setLuceneMatchVersion(luceneMatchVersion);
     tokFactory.init( args );
     if (tokFactory instanceof ResourceLoaderAware) {
       ((ResourceLoaderAware) tokFactory).inform(loader);

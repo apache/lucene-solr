@@ -36,7 +36,7 @@ public class TestHunspellStemFilterFactory extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("dictionary", "hunspell-test.dic");
     args.put("affix", "hunspell-test.aff");
-    args.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, DEFAULT_VERSION.name());
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(new SolrResourceLoader("solr"));
     

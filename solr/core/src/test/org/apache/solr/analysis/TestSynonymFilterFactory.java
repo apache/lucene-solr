@@ -38,8 +38,8 @@ public class TestSynonymFilterFactory extends BaseTokenTestCase {
   public void testSynonyms() throws Exception {
     SynonymFilterFactory factory = new SynonymFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    args.putAll(DEFAULT_VERSION_PARAM);
     args.put("synonyms", "synonyms.txt");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
@@ -55,8 +55,8 @@ public class TestSynonymFilterFactory extends BaseTokenTestCase {
   public void testSynonymsOld() throws Exception {
     SynonymFilterFactory factory = new SynonymFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    args.put("luceneMatchVersion", Version.LUCENE_33.toString());
     args.put("synonyms", "synonyms.txt");
+    factory.setLuceneMatchVersion(Version.LUCENE_33);
     factory.init(args);
     factory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
@@ -72,8 +72,8 @@ public class TestSynonymFilterFactory extends BaseTokenTestCase {
   public void testMultiwordOffsetsOld() throws Exception {
     SynonymFilterFactory factory = new SynonymFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    args.put("luceneMatchVersion", Version.LUCENE_33.toString());
     args.put("synonyms", "synonyms.txt");
+    factory.setLuceneMatchVersion(Version.LUCENE_33);
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader("national hockey league, nhl"));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("national hockey league"), MockTokenizer.WHITESPACE, false));
@@ -89,8 +89,8 @@ public class TestSynonymFilterFactory extends BaseTokenTestCase {
   public void testEmptySynonyms() throws Exception {
     SynonymFilterFactory factory = new SynonymFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
-    args.putAll(DEFAULT_VERSION_PARAM);
     args.put("synonyms", "synonyms.txt");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader("")); // empty file!
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));

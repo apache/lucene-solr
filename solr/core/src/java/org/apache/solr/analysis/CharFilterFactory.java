@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import java.util.Map;
 
 import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.util.Version;
 
 /**
 *
@@ -27,7 +28,12 @@ import org.apache.lucene.analysis.CharStream;
 *
 */
 public interface CharFilterFactory {
+
   public void init(Map<String,String> args);
+
   public Map<String,String> getArgs();
+
+  public void setLuceneMatchVersion(Version luceneMatchVersion);
+
   public CharStream create(CharStream input);
 }

@@ -18,6 +18,8 @@ package org.apache.lucene.util;
  */
 
 
+import java.util.Locale;
+
 /**
  * Use by certain classes to match version compatibility
  * across releases of Lucene.
@@ -110,5 +112,10 @@ public enum Version {
 
   public boolean onOrAfter(Version other) {
     return compareTo(other) >= 0;
+  }
+  
+  public static Version parseLeniently(String version) {
+    String parsedMatchVersion = version.toUpperCase(Locale.ENGLISH);
+    return Version.valueOf(parsedMatchVersion.replaceFirst("^(\\d)\\.(\\d)$", "LUCENE_$1$2"));
   }
 }

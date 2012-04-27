@@ -40,9 +40,10 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenTest
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
     ResourceLoader loader = new SolrResourceLoader(null, null);
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     args.put("hyphenator", "da_UTF8.xml");
     args.put("dictionary", "da_compoundDictionary.txt");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     TokenStream stream = factory.create(tokenizer);
@@ -63,10 +64,11 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenTest
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
     ResourceLoader loader = new SolrResourceLoader(null, null);
-    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    Map<String,String> args = new HashMap<String,String>();
     args.put("hyphenator", "da_UTF8.xml");
     args.put("minSubwordSize", "2");
     args.put("maxSubwordSize", "4");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     TokenStream stream = factory.create(tokenizer);

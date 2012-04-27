@@ -33,9 +33,10 @@ public class TestKeepFilterFactory extends BaseTokenTestCase{
     ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     KeepWordFilterFactory factory = new KeepWordFilterFactory();
-    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
+    Map<String, String> args = new HashMap<String, String>();
     args.put("words", "keep-1.txt");
     args.put("ignoreCase", "true");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     CharArraySet words = factory.getWords();
@@ -45,6 +46,7 @@ public class TestKeepFilterFactory extends BaseTokenTestCase{
 
     factory = new KeepWordFilterFactory();
     args.put("words", "keep-1.txt, keep-2.txt");
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     factory.inform(loader);
     words = factory.getWords();

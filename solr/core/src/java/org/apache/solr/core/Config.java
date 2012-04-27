@@ -314,14 +314,9 @@ public class Config {
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
   
   public static final Version parseLuceneVersionString(final String matchVersion) {
-    String parsedMatchVersion = matchVersion.toUpperCase(Locale.ENGLISH);
-    
-    // be lenient with the supplied version parameter
-    parsedMatchVersion = parsedMatchVersion.replaceFirst("^(\\d)\\.(\\d)$", "LUCENE_$1$2");
-    
     final Version version;
     try {
-      version = Version.valueOf(parsedMatchVersion);
+      version = Version.parseLeniently(matchVersion);
     } catch (IllegalArgumentException iae) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
         "Invalid luceneMatchVersion '" + matchVersion +

@@ -18,6 +18,8 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.Version;
+
 import java.util.Map;
 
 /**
@@ -54,6 +56,8 @@ public interface TokenFilterFactory {
    * schema.xml
    */
   public void init(Map<String,String> args);
+
+  public void setLuceneMatchVersion(Version luceneMatchVersion);
   
   /**
    * Accessor method for reporting the args used to initialize this factory.

@@ -39,7 +39,8 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("l'avion");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ElisionFilterFactory factory = new ElisionFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     ResourceLoader loader = new SolrResourceLoader(null, null);
     Map<String,String> args = new HashMap<String,String>();
     args.put("articles", "frenchArticles.txt");
@@ -56,7 +57,8 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("l'avion");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ElisionFilterFactory factory = new ElisionFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     ResourceLoader loader = new SolrResourceLoader(null, null);
     factory.init(new HashMap<String,String>());
     factory.inform(loader);
@@ -71,7 +73,8 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("L'avion");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ElisionFilterFactory factory = new ElisionFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     ResourceLoader loader = new SolrResourceLoader(null, null);
     Map<String,String> args = new HashMap<String,String>();
     args.put("articles", "frenchArticles.txt");

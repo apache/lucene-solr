@@ -29,7 +29,8 @@ import org.apache.solr.core.SolrResourceLoader;
 public class TestJapaneseBaseFormFilterFactory extends BaseTokenTestCase {
   public void testBasics() throws IOException {
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    tokenizerFactory.init(DEFAULT_VERSION_PARAM);
+    tokenizerFactory.setLuceneMatchVersion(DEFAULT_VERSION);
+    tokenizerFactory.init(EMPTY_PARAMS);
     tokenizerFactory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = tokenizerFactory.create(new StringReader("それはまだ実験段階にあります"));
     JapaneseBaseFormFilterFactory factory = new JapaneseBaseFormFilterFactory();

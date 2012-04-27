@@ -31,7 +31,8 @@ public class TestICUNormalizer2FilterFactory extends BaseTokenTestCase {
   public void testDefaults() throws Exception {
     Reader reader = new StringReader("This is a Ｔｅｓｔ");
     ICUNormalizer2FilterFactory factory = new ICUNormalizer2FilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "this", "is", "a", "test" });

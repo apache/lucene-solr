@@ -35,7 +35,8 @@ public class TestGreekLowerCaseFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("Μάϊος ΜΆΪΟΣ");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     GreekLowerCaseFilterFactory factory = new GreekLowerCaseFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "μαιοσ", "μαιοσ" });
   }

@@ -27,12 +27,19 @@ import org.apache.solr.core.Config;
 /**
  * General token testing helper functions
  */
-public abstract class BaseTokenTestCase extends BaseTokenStreamTestCase
-{
-  /** a map containing the default test version param for easy testing */
-  protected static final Map<String,String> DEFAULT_VERSION_PARAM = 
-    Collections.singletonMap("luceneMatchVersion", System.getProperty("tests.luceneMatchVersion", "LUCENE_CURRENT"));
+public abstract class BaseTokenTestCase extends BaseTokenStreamTestCase{
+  
+  protected static final Map<String, String> EMPTY_PARAMS = Collections.emptyMap();
 
   /** The default test version for easy testing */
-  public static final Version DEFAULT_VERSION = Config.parseLuceneVersionString(DEFAULT_VERSION_PARAM.get("luceneMatchVersion"));
+  public static final Version DEFAULT_VERSION;
+  
+  static {
+    String rawVersion = System.getProperty("tests.luceneMatchVersion", "LUCENE_CURRENT");
+    try {
+      DEFAULT_VERSION = Version.parseLeniently(rawVersion);
+    } catch (IllegalArgumentException iae) {
+      throw new RuntimeException("Test Lucene Match Version [" + rawVersion + "] is invalid", iae);
+    }
+  }
 }

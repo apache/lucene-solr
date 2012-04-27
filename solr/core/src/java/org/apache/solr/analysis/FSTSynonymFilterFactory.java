@@ -66,7 +66,7 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
 
     String tf = args.get("tokenizerFactory");
 
-    final TokenizerFactory factory = tf == null ? null : loadTokenizerFactory(loader, tf, args);
+    final TokenizerFactory factory = tf == null ? null : loadTokenizerFactory(loader, tf);
     
     Analyzer analyzer = new Analyzer() {
       @Override
@@ -153,8 +153,9 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
     return parser.build();
   }
   
-  private static TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname, Map<String,String> args){
+  private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname){
     TokenizerFactory tokFactory = loader.newInstance(cname, TokenizerFactory.class);
+    tokFactory.setLuceneMatchVersion(luceneMatchVersion);
     tokFactory.init(args);
     if (tokFactory instanceof ResourceLoaderAware) {
       ((ResourceLoaderAware) tokFactory).inform(loader);

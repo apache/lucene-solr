@@ -58,10 +58,6 @@ abstract class BaseTokenStreamFactory {
 
   public void init(Map<String,String> args) {
     this.args=args;
-    String matchVersion = args.get(IndexSchema.LUCENE_MATCH_VERSION_PARAM);
-    if (matchVersion != null) {
-      luceneMatchVersion = Config.parseLuceneVersionString(matchVersion);
-    }
   }
 
   public Map<String,String> getArgs() {
@@ -75,15 +71,15 @@ abstract class BaseTokenStreamFactory {
     if (luceneMatchVersion == null) {
       throw new InitializationException("Configuration Error: Factory '" + this.getClass().getName() +
         "' needs a 'luceneMatchVersion' parameter");
-    } else if (!luceneMatchVersion.onOrAfter(Version.LUCENE_40)) {
-      log.warn(getClass().getSimpleName() + " is using deprecated " + luceneMatchVersion + 
-        " emulation. You should at some point declare and reindex to at least 4.0, because " +
-        "3.x emulation is deprecated and will be removed in 5.0");
     }
   }
 
   protected final void warnDeprecated(String message) {
     log.warn(getClass().getSimpleName() + " is deprecated. " + message);
+  }
+
+  public void setLuceneMatchVersion(Version luceneMatchVersion) {
+    this.luceneMatchVersion = luceneMatchVersion;
   }
   
   // TODO: move these somewhere that tokenizers and others

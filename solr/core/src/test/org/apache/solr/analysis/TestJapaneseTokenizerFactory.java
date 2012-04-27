@@ -31,7 +31,8 @@ import org.apache.solr.core.SolrResourceLoader;
 public class TestJapaneseTokenizerFactory extends BaseTokenTestCase {
   public void testSimple() throws IOException {
     JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     factory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = factory.create(new StringReader("これは本ではない"));
     assertTokenStreamContents(ts,
@@ -46,7 +47,8 @@ public class TestJapaneseTokenizerFactory extends BaseTokenTestCase {
    */
   public void testDefaults() throws IOException {
     JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     factory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
     assertTokenStreamContents(ts,

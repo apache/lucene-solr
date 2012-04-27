@@ -33,9 +33,11 @@ public class TestHindiFilters extends BaseTokenTestCase {
   public void testIndicNormalizer() throws Exception {
     Reader reader = new StringReader("ত্‍ अाैर");
     StandardTokenizerFactory factory = new StandardTokenizerFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     IndicNormalizationFilterFactory filterFactory = new IndicNormalizationFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
-    filterFactory.init(DEFAULT_VERSION_PARAM);
+    filterFactory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
+    filterFactory.init(EMPTY_PARAMS);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = filterFactory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "ৎ", "और" });
@@ -47,10 +49,12 @@ public class TestHindiFilters extends BaseTokenTestCase {
   public void testHindiNormalizer() throws Exception {
     Reader reader = new StringReader("क़िताब");
     StandardTokenizerFactory factory = new StandardTokenizerFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     IndicNormalizationFilterFactory indicFilterFactory = new IndicNormalizationFilterFactory();
     HindiNormalizationFilterFactory hindiFilterFactory = new HindiNormalizationFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
-    hindiFilterFactory.init(DEFAULT_VERSION_PARAM);
+    hindiFilterFactory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
+    hindiFilterFactory.init(EMPTY_PARAMS);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = indicFilterFactory.create(tokenizer);
     stream = hindiFilterFactory.create(stream);
@@ -63,11 +67,13 @@ public class TestHindiFilters extends BaseTokenTestCase {
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("किताबें");
     StandardTokenizerFactory factory = new StandardTokenizerFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     IndicNormalizationFilterFactory indicFilterFactory = new IndicNormalizationFilterFactory();
     HindiNormalizationFilterFactory hindiFilterFactory = new HindiNormalizationFilterFactory();
     HindiStemFilterFactory stemFactory = new HindiStemFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
-    stemFactory.init(DEFAULT_VERSION_PARAM);
+    stemFactory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
+    stemFactory.init(EMPTY_PARAMS);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = indicFilterFactory.create(tokenizer);
     stream = hindiFilterFactory.create(stream);

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.Version;
 
 /**
  * A few tests based on org.apache.lucene.analysis.TestUAX29URLEmailTokenizer
@@ -34,7 +35,8 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
   public void testUAX29URLEmailTokenizer() throws Exception {
     Reader reader = new StringReader("Wha\u0301t's this thing do?");
     UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"Wha\u0301t's", "this", "thing", "do" });
@@ -43,7 +45,8 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
   public void testArabic() throws Exception {
     Reader reader = new StringReader("الفيلم الوثائقي الأول عن ويكيبيديا يسمى \"الحقيقة بالأرقام: قصة ويكيبيديا\" (بالإنجليزية: Truth in Numbers: The Wikipedia Story)، سيتم إطلاقه في 2008.");
     UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"الفيلم", "الوثائقي", "الأول", "عن", "ويكيبيديا", "يسمى", "الحقيقة", "بالأرقام", "قصة", "ويكيبيديا",
@@ -53,7 +56,8 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
   public void testChinese() throws Exception {
     Reader reader = new StringReader("我是中国人。 １２３４ Ｔｅｓｔｓ ");
     UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"我", "是", "中", "国", "人", "１２３４", "Ｔｅｓｔｓ"});
@@ -62,7 +66,8 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
   public void testKorean() throws Exception {
     Reader reader = new StringReader("안녕하세요 한글입니다");
     UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"안녕하세요", "한글입니다"});
@@ -71,7 +76,8 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
   public void testHyphen() throws Exception {
     Reader reader = new StringReader("some-dashed-phrase");
     UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"some", "dashed", "phrase"});
@@ -95,7 +101,8 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
         + "http://[a42:a7b6::]/qSmxSUU4z/%52qVl4\n";
     Reader reader = new StringReader(textWithURLs);
     UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] { 
@@ -135,7 +142,8 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
          + "lv'p@tqk.vj5s0tgl.0dlu7su3iyiaz.dqso.494.3hb76.XN--MGBAAM7A8H\n";
     Reader reader = new StringReader(textWithEmails);
     UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] { 
@@ -166,9 +174,9 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
     String content = "one two three " + longWord + " four five six";
     Reader reader = new StringReader(content);
     Map<String,String> args = new HashMap<String,String>();
-    args.put("luceneMatchVersion", DEFAULT_VERSION_PARAM.get("luceneMatchVersion"));
     args.put("maxTokenLength", "1000");
     UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
     factory.init(args);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
@@ -180,14 +188,16 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
   public void testMatchVersion() throws Exception {
     Reader reader = new StringReader("ざ");
     UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
+    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.init(EMPTY_PARAMS);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"ざ"});
     
     reader = new StringReader("ざ");
     factory = new UAX29URLEmailTokenizerFactory();
-    factory.init(Collections.singletonMap("luceneMatchVersion", "3.1"));
+    factory.setLuceneMatchVersion(Version.LUCENE_31);
+    factory.init(EMPTY_PARAMS);
     stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"さ"}); // old broken behavior
