@@ -257,6 +257,12 @@ sammy.get
                   .width( cores_element.width() + 10 )
                   .height( cores_element.height() );
 
+                if( $( '#cloud.global' ).is( ':visible' ) )
+                {
+                  $( '.cloud', div_action )
+                    .show();
+                }
+
                 $( 'button.action', actions_element )
                   .die( 'click' )
                   .live
