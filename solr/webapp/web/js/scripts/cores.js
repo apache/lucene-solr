@@ -157,7 +157,6 @@ sammy.get
               {
                 var cores_element = $( '#cores', content_element );
                 var navigation_element = $( '#navigation', cores_element );
-                var list_element = $( '#list', navigation_element );
                 var data_element = $( '#data', cores_element );
                 var core_data_element = $( '#core-data', data_element );
                 var index_data_element = $( '#index-data', data_element );
@@ -169,7 +168,7 @@ sammy.get
                     cores : cores,
                     basepath : path_parts[1],
                     current_core : current_core,
-                    navigation_element : list_element
+                    navigation_element : navigation_element
                   }
                 );
 
@@ -177,9 +176,6 @@ sammy.get
                 var core_basepath = $( '#' + current_core, app.menu_element ).attr( 'data-basepath' );
 
                 // core-data
-
-                $( 'h2 span', core_data_element )
-                  .html( core_data.name );
 
                 $( '.startTime dd', core_data_element )
                   .html( core_data.startTime );
@@ -207,7 +203,7 @@ sammy.get
                 $( '.optimized dd', index_data_element )
                   .addClass( core_data.index.optimized ? 'ico-1' : 'ico-0' );
 
-                $( '#actions .optimize', cores_element )
+                $( '#actions #optimize', cores_element )
                   .show();
 
                 $( '.optimized dd span', index_data_element )
@@ -243,124 +239,136 @@ sammy.get
 
                 core_selects
                   .html( core_names.join( "\n") );
-                                
-                $( 'option[value="' + current_core + '"]', core_selects.filter( '#swap_core' ) )
-                  .attr( 'selected', 'selected' );
 
                 $( 'option[value="' + current_core + '"]', core_selects.filter( '.other' ) )
-                  .attr( 'disabled', 'disabled' )
-                  .addClass( 'disabled' );
-                                
-                $( 'input[name="core"]', cores_element )
+                  .remove();
+                
+                $( 'input[data-core="current"]', cores_element )
                   .val( current_core );
 
                 // layout
 
+                var ui_block = $( '#ui-block' );
                 var actions_element = $( '.actions', cores_element );
-                var button_holder_element = $( '.button-holder.options', actions_element );
+                var div_action = $( 'div.action', actions_element );
 
-                button_holder_element
-                  .die( 'toggle' )
+                ui_block
+                  .css( 'opacity', 0.7 )
+                  .width( cores_element.width() + 10 )
+                  .height( cores_element.height() );
+
+                $( 'button.action', actions_element )
+                  .die( 'click' )
                   .live
                   (
-                    'toggle',
+                    'click',
                     function( event )
                     {
-                      var element = $( this );
-                                        
-                      element
-                        .toggleClass( 'active' );
-                                            
-                      if( element.hasClass( 'active' ) )
+                      var self = $( this );
+
+                      self
+                        .toggleClass( 'open' );
+
+                      $( '.action.' + self.attr( 'id' ), actions_element )
+                        .trigger( 'open' );
+
+                      return false;
+                    }
+                  );
+
+                div_action
+                  .die( 'close' )
+                  .live
+                  (
+                    'close',
+                    function( event )
+                    {
+                      div_action.hide();
+                      ui_block.hide();
+                    }
+                  )
+                  .die( 'open' )
+                  .live
+                  (
+                    'open',
+                    function( event )
+                    {
+                      var self = $( this );
+                      var rel = $( '#' + self.data( 'rel' ) );
+
+                      self
+                        .trigger( 'close' )
+                        .show()
+                        .css( 'left', rel.position().left );
+                      
+                      ui_block
+                        .show();
+                    }
+                  );
+
+                $( 'form button.reset', actions_element )
+                  .die( 'click' )
+                  .live
+                  (
+                    'click',
+                    function( event )
+                    {
+                      $( this ).closest( 'div.action' )
+                        .trigger( 'close' );
+                    }
+                  );
+
+                var form_callback = {
+
+                  rename : function( form, response )
+                  {
+                    var url = path_parts[1] + $( 'input[name="other"]', form ).val();
+                    context.redirect( url );
+                  }
+
+                };
+
+                $( 'form', div_action )
+                  .ajaxForm
+                  (
+                    {
+                      url : app.config.solr_path + app.config.core_admin_path + '?wt=json',
+                      dataType : 'json',
+                      beforeSubmit : function( array, form, options )
                       {
-                        button_holder_element
-                          .not( element )
-                          .removeClass( 'active' );
+                        $( 'button[type="submit"] span', form )
+                          .addClass( 'loader' );
+                      },
+                      success : function( response, status_text, xhr, form )
+                      {
+                        var action = $( 'input[name="action"]', form ).val().toLowerCase();
+
+                        delete app.cores_data;
+
+                        if( form_callback[action] )
+                        {
+                         form_callback[action]( form, response ); 
+                        }
+                        else
+                        {
+                          sammy.refresh();
+                        }
+
+                        $( 'button.reset', form )
+                          .trigger( 'click' );
+                      },
+                      error : function( xhr, text_status, error_thrown )
+                      {
+                      },
+                      complete : function()
+                      {
+                        $( 'button span.loader', actions_element )
+                          .removeClass( 'loader' );
                       }
                     }
                   );
 
-                $( '.button a', button_holder_element )
-                  .die( 'click' )
-                  .live
-                  (
-                    'click',
-                    function( event )
-                    {
-                      $( this ).parents( '.button-holder' )
-                        .trigger( 'toggle' );
-                    }
-                  );
-
-                $( 'form a.submit', button_holder_element )
-                  .die( 'click' )
-                  .live
-                  (
-                    'click',
-                    function( event )
-                    {
-                      var element = $( this );
-                      var form_element = element.parents( 'form' );
-                      var action = $( 'input[name="action"]', form_element ).val().toLowerCase();
-
-                      form_element
-                        .ajaxSubmit
-                        (
-                          {
-                            url : app.config.solr_path + app.config.core_admin_path + '?wt=json',
-                            dataType : 'json',
-                            beforeSubmit : function( array, form, options )
-                            {
-                              //loader
-                            },
-                            success : function( response, status_text, xhr, form )
-                            {
-                              delete app.cores_data;
-
-                              if( 'rename' === action )
-                              {
-                                context.redirect( path_parts[1] + $( 'input[name="other"]', form_element ).val() );
-                              }
-                              else if( 'swap' === action )
-                              {
-                                window.location.reload();
-                              }
-                                                            
-                              $( 'a.reset', form )
-                                .trigger( 'click' );
-                            },
-                            error : function( xhr, text_status, error_thrown )
-                            {
-                            },
-                            complete : function()
-                            {
-                              //loader
-                            }
-                          }
-                        );
-
-                      return false;
-                    }
-                  );
-
-                $( 'form a.reset', button_holder_element )
-                  .die( 'click' )
-                  .live
-                  (
-                    'click',
-                    function( event )
-                    {
-                      $( this ).parents( 'form' )
-                        .resetForm();
-
-                      $( this ).parents( '.button-holder' )
-                        .trigger( 'toggle' );
-                                            
-                      return false;
-                    }
-                  );
-
-                var reload_button = $( '#actions .reload', cores_element );
+                var reload_button = $( '#actions #reload', cores_element );
                 reload_button
                   .die( 'click' )
                   .live
@@ -376,13 +384,16 @@ sammy.get
                           context : $( this ),
                           beforeSend : function( xhr, settings )
                           {
-                            this
+                            $( 'span', this )
                               .addClass( 'loader' );
                           },
                           success : function( response, text_status, xhr )
                           {
                             this
                               .addClass( 'success' );
+
+                            delete app.cores_data;
+                            sammy.refresh();
 
                             window.setTimeout
                             (
@@ -391,7 +402,7 @@ sammy.get
                                 reload_button
                                   .removeClass( 'success' );
                               },
-                              5000
+                              1000
                             );
                           },
                           error : function( xhr, text_status, error_thrown )
@@ -399,7 +410,7 @@ sammy.get
                           },
                           complete : function( xhr, text_status )
                           {
-                            this
+                            $( 'span', this )
                               .removeClass( 'loader' );
                           }
                         }
@@ -407,13 +418,19 @@ sammy.get
                     }
                   );
                                 
-                $( '#actions .unload', cores_element )
+                $( '#actions #unload', cores_element )
                   .die( 'click' )
                   .live
                   (
                     'click',
                     function( event )
                     {
+                      var ret = confirm( 'Do you really want to unload Core "' + current_core + '"?' );
+                      if( !ret )
+                      {
+                        return false;
+                      }
+
                       $.ajax
                       (
                         {
@@ -422,7 +439,7 @@ sammy.get
                           context : $( this ),
                           beforeSend : function( xhr, settings )
                           {
-                            this
+                            $( 'span', this )
                               .addClass( 'loader' );
                           },
                           success : function( response, text_status, xhr )
@@ -435,7 +452,7 @@ sammy.get
                           },
                           complete : function( xhr, text_status )
                           {
-                            this
+                            $( 'span', this )
                               .removeClass( 'loader' );
                           }
                         }
@@ -443,7 +460,7 @@ sammy.get
                     }
                   );
 
-                var optimize_button = $( '#actions .optimize', cores_element );
+                var optimize_button = $( '#actions #optimize', cores_element );
                 optimize_button
                   .die( 'click' )
                   .live
@@ -459,7 +476,7 @@ sammy.get
                           context : $( this ),
                           beforeSend : function( xhr, settings )
                           {
-                            this
+                            $( 'span', this )
                               .addClass( 'loader' );
                           },
                           success : function( response, text_status, xhr )
@@ -474,7 +491,7 @@ sammy.get
                                 optimize_button
                                   .removeClass( 'success' );
                               },
-                              5000
+                              1000
                             );
                                                         
                             $( '.optimized dd.ico-0', index_data_element )
@@ -487,7 +504,7 @@ sammy.get
                           },
                           complete : function( xhr, text_status )
                           {
-                            this
+                            $( 'span', this )
                               .removeClass( 'loader' );
                           }
                         }

@@ -1,48 +1,34 @@
 #content #cores
 {
+  position: relative;
+}
+
+#content #cores #ui-block
+{
+  background-color: #fff;
+  height: 200px;
+  display: none;
+  position: absolute;
+  left: -5px;
+  top: 35px;
+  width: 500px;
 }
 
 #content #cores #frame
 {
   float: right;
-  width: 78%;
+  width: 86%;
 }
 
 #content #cores #navigation
 {
-  background-image: url( ../../img/div.gif );
-  background-position: 100% 0;
-  background-repeat: repeat-y;
-  width: 20%;
+  padding-top: 50px;
+  width: 12%;
 }
 
-#content #cores #list
+#content #cores #navigation a
 {
-  float: left;
-  padding-top: 15px;
-  width: 100%;
-}
-
-#content #cores #list a
-{
-  border-right: 1px solid #f0f0f0;
-  display: block;
-  margin-left: 1px;
-  padding: 3px 0;
-}
-
-#content #cores #list a:hover
-{
-  background-color: #fafafa;
-}
-
-#content #cores #list .current a
-{
-  background-color: #fff;
-  border-right-color: #fff;
-  border-top: 1px solid #f0f0f0;
-  border-bottom: 1px solid #f0f0f0;
-  font-weight: bold;
+  padding-left: 5px;
 }
 
 #content #cores #frame .actions
@@ -50,181 +36,119 @@
   margin-bottom: 20px;
 }
 
-#content #cores .actions form .buttons
+#content #cores .actions div.action
 {
-  padding-left: 40px;
+  width: 300px;
 }
 
-#content #cores .actions form a
-{
-  display: block;
-  float: left;
-  height: 20px;
-  margin-right: 5px;
-  padding-left: 21px;
-}
-
-#content #cores .actions form a span
+#content #cores .actions div.action .cloud
 {
   display: none;
 }
 
-#content #cores .actions form a.submit
-{
-  background-image: url( ../../img/ico/tick.png );
-  background-position: 50% 50%;
-}
-
-#content #cores .actions form a.submit:hover
-{
-  background-color: #e6f3e6;
-}
-
-#content #cores .actions form a.reset
-{
-  background-image: url( ../../img/ico/cross.png );
-  background-position: 50% 50%;
-}
-
-#content #cores .actions form a.reset:hover
-{
-  background-color: #f3e6e6;
-}
-
 #content #cores .actions form p
 {
-  padding-bottom: 3px;
+  padding-bottom: 8px;
 }
 
 #content #cores .actions form label
 {
   float: left;
-  width: 40px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  text-align: right;
+  width: 25%;
 }
 
 #content #cores .actions form input,
-#content #cores .actions form select
+#content #cores .actions form select,
+#content #cores .actions form .buttons
 {
-  width: 100px;
+  float: right;
+  width: 73%;
 }
 
-#content #cores .actions form select option.disabled
+#content #cores .actions form .buttons
 {
-  color: #c0c0c0;
+  padding-top: 10px;
 }
 
-#content #cores .actions .button-holder
+#content #cores .actions form button.submit
 {
-  float: left;
-  margin-right: 10px;
-  margin-bottom: 5px;
+  margin-right: 20px;
 }
 
-#content #cores .actions .button-holder.active
-{
-  margin-bottom: 0;
-}
-
-#content #cores .actions .button-holder .button
-{
-  background-color: #f5f5f5;
-  border: 1px solid #c0c0c0;
-  position: relative;
-  z-index: 100;
-}
-
-#content #cores .actions .button-holder.active .button
-{
-  background-color: #fff;
-  border-bottom-color: #fff;
-  padding-bottom: 5px;
-}
-
-#content #cores .actions .button-holder .button a
-{
-  background-position: 5px 50%;
-  display: block;
-  padding: 1px 5px;
-  padding-left: 24px;
-}
-
-#content #cores .actions .button-holder .button a.success
+#content #cores .actions form button.submit span
 {
   background-image: url( ../../img/ico/tick.png );
 }
 
-#content #cores .actions .button-holder.active .button a
-{
-  cursor: auto;
-}
-
-#content #cores .actions .button-holder .button-content
-{
-  background-color: #fff;
-  border: 1px solid #c0c0c0;
-  box-shadow: 5px 5px 10px #c0c0c0;
-  -moz-box-shadow: 5px 5px 10px #c0c0c0;
-  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
-  display: none;
-  margin-top: -1px;
-  padding: 5px;
-  padding-top: 15px;
-  position: absolute;
-  z-index: 99;
-}
-
-#content #cores .actions .button-holder.active .button-content
-{
-  display: block;
-}
-
-#content #cores .actions .button .reload
-{
-  background-image: url( ../../img/ico/arrow-circle.png );
-}
-
-#content #cores .actions .button .rename
-{
-  background-image: url( ../../img/ico/ui-text-field-select.png );
-}
-
-#content #cores .actions .button .swap
-{
-  background-image: url( ../../img/ico/arrow-switch.png );
-}
-
-#content #cores .actions .button .unload
+#content #cores .actions form button.reset span
 {
   background-image: url( ../../img/ico/cross.png );
 }
 
-#content #cores .actions .button .optimize
+#content #cores .actions #add
 {
-  background-image: url( ../../img/ico/hammer-screwdriver.png );
-  display: none;
+  left: 0;
+  position: absolute;
 }
 
-#content #cores #navigation .add
+#content #cores .actions #add span
 {
   background-image: url( ../../img/ico/plus-button.png );
 }
 
-#content #cores #navigation .add label
+#content #cores .actions #unload
 {
-  width: 85px;
+  margin-right: 20px;
 }
 
-#content #cores #navigation .add input
+#content #cores .actions #unload span
 {
-  width: 155px;
+  background-image: url( ../../img/ico/cross.png );
 }
 
-#content #cores #navigation .add .buttons
+#content #cores .actions #reload span
 {
-  padding-left: 85px;
+  background-image: url( ../../img/ico/arrow-circle.png );
 }
 
-#content #cores #data #core-data h2 { background-image: url( ../../img/ico/database.png ); }
+#content #cores .actions #rename span
+{
+  background-image: url( ../../img/ico/ui-text-field-select.png );
+}
+
+#content #cores .actions #swap span
+{
+  background-image: url( ../../img/ico/arrow-switch.png );
+}
+
+#content #cores .actions #optimize
+{
+  display: none;
+}
+
+#content #cores .actions #optimize span
+{
+  background-image: url( ../../img/ico/hammer-screwdriver.png );
+}
+
+#content #cores .actions div.action
+{
+  background-color: #fff;
+  border: 1px solid #f0f0f0;
+  box-shadow: 5px 5px 10px #c0c0c0;
+  -moz-box-shadow: 5px 5px 10px #c0c0c0;
+  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+  display: none;
+  position: absolute;
+  left: -50px;
+  top: 40;
+  padding: 10px;
+}
+
+#content #cores #data #core-data h2 { background-image: url( ../../img/ico/box.png ); }
 #content #cores #data #index-data h2 { background-image: url( ../../img/ico/chart.png ); }
 
 #content #cores #data #index-data

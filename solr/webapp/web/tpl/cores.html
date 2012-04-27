@@ -16,81 +16,88 @@ limitations under the License.
 -->
 <div id="cores" class="clearfix">
 
+  <div id="ui-block">&nbsp;</div>
+
   <div id="frame">
 
     <div id="actions" class="actions clearfix">
       
-      <div class="button-holder">
-        <div class="button">
-          <a class="reload">Reload</a>
-        </div>
+      <button id="add" class="action"><span>Add Core</span></button>
+      <button id="unload" class="warn"><span>Unload</span></button>
+      <button id="rename" class="action"><span>Rename</span></button>
+      <button id="swap" class="action"><span>Swap</span></button>
+      <button id="reload"><span>Reload</span></button>
+      <button id="optimize"><span>Optimize</span></button>
+
+      <div class="action add" data-rel="add">
+
+        <form>
+
+          <input type="hidden" name="action" value="CREATE">
+
+          <p class="clearfix"><label for="add_name">name:</label>
+          <input type="text" name="name" id="add_name" placeholder="new_core"></p>
+
+          <p class="clearfix"><label for="add_instanceDir">instanceDir:</label>
+          <input type="text" name="instanceDir" id="add_instanceDir" placeholder="new_core"></p>
+
+          <p class="clearfix"><label for="add_dataDir">dataDir:</label>
+          <input type="text" name="dataDir" id="dataDir" placeholder="data"></p>
+
+          <p class="clearfix"><label for="add_config">config:</label>
+          <input type="text" name="config" id="add_config" placeholder="solrconfig.xml"></p>
+
+          <p class="clearfix"><label for="add_schema">schema:</label>
+          <input type="text" name="schema" id="add_schema" placeholder="schema.xml"></p>
+
+          <p class="clearfix buttons">
+            <button type="submit" class="submit"><span>Add Core</span></button>
+            <button type="reset" class="reset"><span>Cancel</span></button>
+          </p>
+
+        </form>
+
       </div>
-      
-      <div class="button-holder options rename">
-        <div class="button">
-          <a class="rename">Rename</a>
-        </div>
-        <div class="button-content">
 
-          <form>
+      <div class="action rename" data-rel="rename">
 
-            <input type="hidden" name="action" value="RENAME">
+        <form>
 
-            <p class="clearfix"><label for="rename_core">from:</label>
-            <input type="text" name="core" id="rename_core" readonly="readonly"></p>
+          <input type="hidden" name="action" value="RENAME">
+          <input type="hidden" name="core" data-core="current">
 
-            <p class="clearfix"><label for="rename_other">to:</label>
-            <input type="text" name="other" id="rename_other"></p>
+          <p class="clearfix"><label for="rename_other">New Name:</label>
+          <input type="text" name="other" data-core="current" id="rename_other"></p>
 
-            <p class="clearfix buttons">
-              <a class="submit"><span>Rename</span></a>
-              <a class="reset"><span>Cancel</span></a>
-            </p>
+          <p class="clearfix buttons">
+            <button type="submit" class="submit"><span>Rename Core</span></button>
+            <button type="reset" class="reset"><span>Cancel</span></button>
+          </p>
 
-          </form>
+        </form>
 
-        </div>
       </div>
-      
-      <div class="button-holder options swap">
-        <div class="button">
-          <a class="swap">Swap</a>
-        </div>
-        <div class="button-content">
 
-          <form>
+      <div class="action swap" data-rel="swap">
 
-            <input type="hidden" name="action" value="SWAP">
-            <input type="hidden" name="core">
+        <form>
 
-            <p class="clearfix"><label for="swap_core">this:</label>
-            <select id="swap_core" class="core" disabled="disabled">
-            </select></p>
+          <input type="hidden" name="action" value="SWAP">
 
-            <p class="clearfix"><label for="swap_other">and:</label>
-            <select name="other" id="swap_other" class="other">
-            </select></p>
+          <p class="clearfix"><label for="swap_core">this:</label>
+          <input type="text" id="swap_core" name="core" data-core="current" readonly="readonly"></p>
 
-            <p class="clearfix buttons">
-              <a class="submit"><span>Swap</span></a>
-              <a class="reset"><span>Cancel</span></a>
-            </p>
+          <p class="clearfix"><label for="swap_other">and:</label>
+          <select name="other" id="swap_other" name="other" class="other">
+          </select></p>
 
-          </form>
-        
-        </div>
-      </div>
-      
-      <div class="button-holder">
-        <div class="button">
-          <a class="unload">Unload</a>
-        </div>
-      </div>
-      
-      <div class="button-holder">
-        <div class="button">
-          <a class="optimize">Optimize</a>
-        </div>
+          <p class="clearfix buttons">
+            <button type="submit" class="submit"><span>Swap Cores</span></button>
+            <button type="reset" class="reset"><span>Cancel</span></button>
+          </p>
+
+        </form>
+
       </div>
 
     </div>
@@ -99,7 +106,7 @@ limitations under the License.
 
       <div class="block" id="core-data">
 
-          <h2><span></span></h2>
+          <h2><span>Core</span></h2>
           
           <div class="message-container">
               <div class="message"></div>
@@ -191,49 +198,6 @@ limitations under the License.
   </div>
 
   <div id="navigation" class="clearfix">
-
-    <div class="actions">
-      
-      <div class="button-holder options add">
-        <div class="button">
-          <a class="add">Add Core</a>
-        </div>
-        <div class="button-content">
-
-          <form>
-
-            <input type="hidden" name="action" value="CREATE">
-
-            <p class="clearfix"><label for="add_name">name:</label>
-            <input type="text" name="name" id="add_name"></p>
-
-            <p class="clearfix"><label for="add_instanceDir">instanceDir:</label>
-            <input type="text" name="instanceDir" id="add_instanceDir"></p>
-
-            <p class="clearfix"><label for="add_config">config:</label>
-            <input type="text" name="config" id="add_config"></p>
-
-            <p class="clearfix"><label for="add_schema">schema:</label>
-            <input type="text" name="schema" id="add_schema"></p>
-
-            <p class="clearfix"><label for="add_dataDir">dataDir:</label>
-            <input type="text" name="dataDir" id="dataDir"></p>
-
-            <p class="clearfix buttons">
-              <a class="submit"><span>Add Core</span></a>
-              <a class="reset"><span>Cancel</span></a>
-            </p>
-
-          </form>
-
-        </div>
-      </div>
-    
-    </div>
-
-    <div id="list">
-
-    </div>
   
   </div>
 
