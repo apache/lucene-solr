@@ -31,7 +31,6 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.TermsIndexReaderBase;
 import org.apache.lucene.codecs.TermsIndexWriterBase;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.codecs.sep.SepPostingsReader;
 import org.apache.lucene.codecs.sep.SepPostingsWriter;
 import org.apache.lucene.index.SegmentInfo;
@@ -113,7 +112,7 @@ public class MockSepPostingsFormat extends PostingsFormat {
                                                 state.segmentInfo.name,
                                                 postingsReader,
                                                 state.context,
-                                                Lucene40PostingsFormat.TERMS_CACHE_SIZE,
+                                                1024,
                                                 state.segmentSuffix);
       success = true;
       return ret;

@@ -33,7 +33,6 @@ import org.apache.lucene.codecs.TermsIndexReaderBase;
 import org.apache.lucene.codecs.TermsIndexWriterBase;
 import org.apache.lucene.codecs.intblock.VariableIntBlockIndexInput;
 import org.apache.lucene.codecs.intblock.VariableIntBlockIndexOutput;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.codecs.sep.IntIndexInput;
 import org.apache.lucene.codecs.sep.IntIndexOutput;
 import org.apache.lucene.codecs.sep.IntStreamFactory;
@@ -208,7 +207,7 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
                                                 state.segmentInfo.name,
                                                 postingsReader,
                                                 state.context,
-                                                Lucene40PostingsFormat.TERMS_CACHE_SIZE,
+                                                1024,
                                                 state.segmentSuffix);
       success = true;
       return ret;
