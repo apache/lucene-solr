@@ -186,4 +186,13 @@ class DisjunctionMaxScorer extends Scorer {
     }
   }
 
+  @Override
+  public void visitSubScorers(Query parent, BooleanClause.Occur relationship, ScorerVisitor<Query, Query, Scorer> visitor) {
+    super.visitSubScorers(parent, relationship, visitor);
+    final Query q = weight.getQuery();
+    for (int i = 0; i < numScorers; i++) {
+      subScorers[i].visitSubScorers(q, BooleanClause.Occur.SHOULD, visitor);
+    }
+  }
+
 }

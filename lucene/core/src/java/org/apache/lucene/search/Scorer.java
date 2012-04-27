@@ -198,7 +198,7 @@ public abstract class Scorer extends DocIdSetIterator {
    * 
    * @lucene.experimental
    */
-  protected void visitSubScorers(Query parent, Occur relationship,
+  public void visitSubScorers(Query parent, Occur relationship,
       ScorerVisitor<Query, Query, Scorer> visitor) {
     if (weight == null)
       throw new UnsupportedOperationException();

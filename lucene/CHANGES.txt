@@ -14,6 +14,15 @@ Bug Fixes:
 * LUCENE-3971: MappingCharFilter could return invalid final token position.
   (Dawid Weiss, Robert Muir)
 
+* LUCENE-4023: DisjunctionMaxScorer now implements visitSubScorers().
+  (Uwe Schindler)
+
+API Changes
+
+* LUCENE-4023: Changed the visibility of Scorer#visitSubScorers() to
+  public, otherwise it's impossible to implement Scorers outside
+	the Lucene package.  (Uwe Schindler)
+
 Tests:
 
 * LUCENE-3873: add MockGraphTokenFilter, testing analyzers with
@@ -21,6 +30,7 @@ Tests:
 
 * LUCENE-3968: factor out LookaheadTokenFilter from 
   MockGraphTokenFilter (Mike Mccandless)
+
 
 ======================= Lucene 3.6.0 =======================
 More information about this release, including any errata related to the 

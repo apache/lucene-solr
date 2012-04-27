@@ -321,7 +321,7 @@ class BooleanScorer2 extends Scorer {
   }
 
   @Override
-  protected void visitSubScorers(Query parent, Occur relationship, ScorerVisitor<Query, Query, Scorer> visitor) {
+  public void visitSubScorers(Query parent, Occur relationship, ScorerVisitor<Query, Query, Scorer> visitor) {
     super.visitSubScorers(parent, relationship, visitor);
     final Query q = weight.getQuery();
     for (Scorer s : optionalScorers) {
