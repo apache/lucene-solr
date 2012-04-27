@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.junit.Test;
 
@@ -437,8 +438,12 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.addFile(getFile("solrj/docs1.xml")); // 2
     up.addFile(getFile("solrj/docs2.xml")); // 3
+    up.setParam("a", "\u1234");
+    up.setParam(CommonParams.HEADER_ECHO_PARAMS, CommonParams.EchoParamStyle.ALL.toString());
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = server.request(up);
+    Assert.assertEquals("\u1234",
+        ((NamedList)((NamedList) result.get("responseHeader")).get("params")).get("a"));
     assertNotNull("Couldn't upload xml files", result);
     rsp = server.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 5 , rsp.getResults().getNumFound() );

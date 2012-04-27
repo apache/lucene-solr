@@ -31,6 +31,8 @@ Bug Fixes:
 * SOLR-3361: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered on commit
   (James Dyer, Tomas Fernandez Lobbe)
 
+* SOLR-3375: Fix charset problems with HttpSolrServer (Roger Håkansson, yonik, siren)
+
 ==================  3.6.0  ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
