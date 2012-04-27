@@ -402,7 +402,7 @@ public class CoreContainer
           }
         }
       }
-      catch(Exception ex) {
+      catch(Throwable ex) {
         log.warn("Unable to read SLF4J version", ex);
       }
       
