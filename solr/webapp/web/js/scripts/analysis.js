@@ -15,6 +15,8 @@
  limitations under the License.
 */
 
+var cookie_name = 'analysis_verbose';
+
 // #/:core/analysis
 sammy.get
 (
@@ -160,23 +162,6 @@ sammy.get
             }
           );
                         
-        $( '.verbose_output a', analysis_element )
-          .die( 'click' )
-          .live
-          (
-            'click',
-            function( event )
-            {
-              $( this ).parent()
-                .toggleClass( 'active' );
-                            
-              analysis_result
-                .toggleClass( 'verbose_output' );
-                            
-              check_empty_spacer();
-            }
-          );
-                
         var check_empty_spacer = function()
         {
           var spacer_holder = $( 'td.part.data.spacer .holder', analysis_result );
@@ -206,6 +191,43 @@ sammy.get
                 }
               }
             );
+        }
+                        
+        var verbose_link = $( '.verbose_output a', analysis_element );
+
+        verbose_link
+          .die( 'toggle' )
+          .live
+          (
+            'toggle',
+            function( event )
+            {
+              $( this ).parent()
+                .toggleClass( 'active' );
+                            
+              analysis_result
+                .toggleClass( 'verbose_output' );
+                            
+              check_empty_spacer();
+            }
+          )
+          .die( 'click' )
+          .live
+          (
+            'click',
+            function( event )
+            {
+              $.cookie( cookie_name, $.cookie( cookie_name ) ? null : true );
+
+              $( this )
+                .trigger( 'toggle' );
+            }
+          );
+
+        if( $.cookie( cookie_name ) )
+        {
+          verbose_link
+            .trigger( 'toggle' );
         }
 
         var button = $( 'button', analysis_form )
