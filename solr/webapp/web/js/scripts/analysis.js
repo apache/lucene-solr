@@ -21,7 +21,8 @@ sammy.get
   /^#\/([\w\d-]+)\/(analysis)$/,
   function( context )
   {
-    var core_basepath = this.active_core.attr( 'data-basepath' );
+    var active_core = this.active_core;
+    var core_basepath = active_core.attr( 'data-basepath' );
     var content_element = $( '#content' );
         
     $.get
@@ -36,13 +37,32 @@ sammy.get
         var analysis_form = $( 'form', analysis_element );
         var analysis_result = $( '#analysis-result', analysis_element );
         analysis_result.hide();
-                
+
+        var type_or_name = $( '#type_or_name', analysis_form );
+        var schema_browser_element = $( '#tor_schema' );
+        var schema_browser_path = $( 'p > a', active_core ).attr( 'href' ) + '/schema-browser'
+        var schema_browser_map = { 'fieldname' : 'field', 'fieldtype' : 'type' };
+
+        type_or_name
+          .die( 'change' )
+          .live
+          (
+            'change',
+            function( event )
+            {
+              var info = $( this ).val().split( '=' );
+
+              schema_browser_element
+                .attr( 'href', schema_browser_path + '?' + schema_browser_map[info[0]] + '=' + info[1] );
+            }
+          );
+
         $.ajax
         (
           {
             url : core_basepath + '/admin/luke?wt=json&show=schema',
             dataType : 'json',
-            context : $( '#type_or_name', analysis_form ),
+            context : type_or_name,
             beforeSend : function( xhr, settings )
             {
               this

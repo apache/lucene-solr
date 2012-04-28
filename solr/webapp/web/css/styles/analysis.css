@@ -47,6 +47,30 @@
   padding-left: 10px;
 }
 
+#content #analysis .settings #tor_schema
+{
+  background-image: url( ../../img/ico/question-white.png );
+  background-position: 0 50%;
+  color: #c0c0c0;
+  margin-left: 5px;
+  padding-left: 21px;
+}
+
+#content #analysis .settings #tor_schema:hover
+{
+  background-image: url( ../../img/ico/question.png );
+}
+
+#content #analysis .settings #tor_schema span
+{
+  display: none;
+}
+
+#content #analysis .settings #tor_schema:hover span
+{
+  display: inline;
+}
+
 #content #analysis .settings .buttons
 {
   float: right;
