@@ -135,6 +135,9 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
           $( 'p.head .max', topterms_holder_element )
             .html( field_data.distinct );
 
+          $( 'p.head #query_link', topterms_holder_element )
+            .attr( 'href', '#/' + current_core + '/query?q=' + field.esc() + ':[* TO *]' );
+
           $( 'ul li:even', topterms_table_element )
             .addClass( 'odd' );
         }
@@ -884,9 +887,16 @@ sammy.get
         var analyzer_element = $( '.analyzer', data_element );
         var analyzer_data = null;
 
+        var analysis_link = false;
+        var analysis_link_elements = $( 'p a', analyzer_element );
+        var analysis_target = '#/' + current_core + '/analysis?';
+
         if( is_f )
         {
           analyzer_data = schema_browser_data.types[schema_browser_data.relations.f_t[field]];
+
+          analysis_link = true;
+          analysis_target += 'analysis.fieldname=' + field;
         }
         else if( is_df )
         {
@@ -895,7 +905,24 @@ sammy.get
         else if( is_t )
         {
           analyzer_data = schema_browser_data.types[field];
+          
+          analysis_link = true;
+          analysis_target += 'analysis.fieldtype=' + field;
         }
+
+        if( analysis_link )
+        {
+          analysis_link_elements
+            .addClass( 'analysis' )
+            .attr( 'href', analysis_target );
+        }
+        else
+        {
+          analysis_link_elements
+            .removeClass( 'analysis' )
+            .removeAttr( 'href' );
+        }
+
 
         if( analyzer_data )
         {
