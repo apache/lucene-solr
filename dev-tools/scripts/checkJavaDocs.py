@@ -58,6 +58,14 @@ def checkSummary(fullPath):
         printed = True
       print '  missing: %s' % unescapeHTML(m.group(1))
       anyMissing = True
+    elif lineLower.find('licensed to the apache software foundation') != -1 or lineLower.find('copyright 2004 the apache software foundation') != -1:
+      m = reHREF.search(lastLine)
+      if not printed:
+        print
+        print fullPath
+        printed = True
+      print '  license-is-javadoc: %s' % unescapeHTML(m.group(1))
+      anyMissing = True
     lastLine = line
   if desc is not None and fullPath.find('/overview-summary.html') == -1:
     raise RuntimeError('BUG: failed to locate description in %s' % fullPath)
