@@ -411,9 +411,13 @@
     <modules-crawl target="build-artifacts-and-tests"/>
   </target>
 
-  <target name="compile-test" depends="compile-lucene-core,compile-test-framework"
-          description="Builds core, test-framework, and modules tests">
-    <modules-crawl target="compile-test" failonerror="true"/>
+  <target name="compile-test" description="Builds core, test-framework, and modules tests">
+    <sequential>
+      <ant dir="core" target="compile-test" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+      <modules-crawl target="compile-test" failonerror="true"/>
+    </sequential>
   </target>
   
   <target name="test-modules" depends="compile-test">
