@@ -12,6 +12,8 @@ $Id$
 
 Other Changes
 ----------------------
+* SOLR-3262: The "threads" feature is removed (deprecated in Solr 3.6) (James Dyer)
+
 * SOLR-3422: Refactored internal data classes. 
              All entities in data-config.xml must have a name (James Dyer)
 
