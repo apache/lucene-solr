@@ -17,6 +17,9 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
+import org.apache.solr.handler.dataimport.config.DIHConfiguration;
+import org.apache.solr.handler.dataimport.config.Entity;
 
 import org.junit.After;
 import org.junit.Test;
@@ -42,7 +45,8 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   
   @Test
   public void loadClass() throws Exception {
-    Class clz = DocBuilder.loadClass("RegexTransformer", null);
+    @SuppressWarnings("unchecked")
+    Class<Transformer> clz = DocBuilder.loadClass("RegexTransformer", null);
     assertNotNull(clz);
   }
 
@@ -50,13 +54,10 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   public void singleEntityNoRows() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_singleEntity);
-    DataConfig cfg = di.getConfig();
-    DataConfig.Entity ent = cfg.document.entities.get(0);
-    MockDataSource.setIterator("select * from x", new ArrayList().iterator());
-    ent.dataSrc = new MockDataSource();
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams();
-    rp.command = "full-import";
+    DIHConfiguration cfg = di.getConfig();
+    Entity ent = cfg.getEntities().get(0);
+    MockDataSource.setIterator("select * from x", new ArrayList<Map<String, Object>>().iterator());
+    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals(Boolean.TRUE, swi.deleteAllCalled);
@@ -72,13 +73,11 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   public void testDeltaImportNoRows_MustNotCommit() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_deltaConfig);
-    DataConfig cfg = di.getConfig();
-    DataConfig.Entity ent = cfg.document.entities.get(0);
-    MockDataSource.setIterator("select * from x", new ArrayList().iterator());
-    MockDataSource.setIterator("select id from x", new ArrayList().iterator());
-    ent.dataSrc = new MockDataSource();
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams(createMap("command", "delta-import"));
+    DIHConfiguration cfg = di.getConfig();
+    Entity ent = cfg.getEntities().get(0);
+    MockDataSource.setIterator("select * from x", new ArrayList<Map<String, Object>>().iterator());
+    MockDataSource.setIterator("select id from x", new ArrayList<Map<String, Object>>().iterator());
+    RequestInfo rp = new RequestInfo(createMap("command", "delta-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals(Boolean.FALSE, swi.deleteAllCalled);
@@ -94,15 +93,12 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   public void singleEntityOneRow() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_singleEntity);
-    DataConfig cfg = di.getConfig();
-    DataConfig.Entity ent = cfg.document.entities.get(0);
-    List l = new ArrayList();
+    DIHConfiguration cfg = di.getConfig();
+    Entity ent = cfg.getEntities().get(0);
+    List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
     l.add(createMap("id", 1, "desc", "one"));
     MockDataSource.setIterator("select * from x", l.iterator());
-    ent.dataSrc = new MockDataSource();
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams();
-    rp.command = "full-import";
+    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals(Boolean.TRUE, swi.deleteAllCalled);
@@ -114,7 +110,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     assertEquals(1, di.getDocBuilder().importStatistics.rowsCount.get());
 
     for (int i = 0; i < l.size(); i++) {
-      Map<String, Object> map = (Map<String, Object>) l.get(i);
+      Map<String, Object> map = l.get(i);
       SolrInputDocument doc = swi.docs.get(i);
       for (Map.Entry<String, Object> entry : map.entrySet()) {
         assertEquals(entry.getValue(), doc.getFieldValue(entry.getKey()));
@@ -126,14 +122,12 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   public void testImportCommand() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_singleEntity);
-    DataConfig cfg = di.getConfig();
-    DataConfig.Entity ent = cfg.document.entities.get(0);
-    List l = new ArrayList();
+    DIHConfiguration cfg = di.getConfig();
+    Entity ent = cfg.getEntities().get(0);
+    List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
     l.add(createMap("id", 1, "desc", "one"));
     MockDataSource.setIterator("select * from x", l.iterator());
-    ent.dataSrc = new MockDataSource();
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams(createMap("command", "import"));
+    RequestInfo rp = new RequestInfo(createMap("command", "import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals(Boolean.FALSE, swi.deleteAllCalled);
@@ -157,18 +151,15 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   public void singleEntityMultipleRows() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_singleEntity);
-    DataConfig cfg = di.getConfig();
-    DataConfig.Entity ent = cfg.document.entities.get(0);
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams();
-    rp.command = "full-import";
-    List l = new ArrayList();
+    DIHConfiguration cfg = di.getConfig();
+    Entity ent = cfg.getEntities().get(0);
+    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
     l.add(createMap("id", 1, "desc", "one"));
     l.add(createMap("id", 2, "desc", "two"));
     l.add(createMap("id", 3, "desc", "three"));
 
     MockDataSource.setIterator("select * from x", l.iterator());
-    ent.dataSrc = new MockDataSource();
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals(Boolean.TRUE, swi.deleteAllCalled);

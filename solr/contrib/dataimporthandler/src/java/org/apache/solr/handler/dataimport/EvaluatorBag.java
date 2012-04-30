@@ -17,11 +17,12 @@ package org.apache.solr.handler.dataimport;
  */
 
 import org.apache.solr.core.SolrCore;
-import static org.apache.solr.handler.dataimport.DataConfig.CLASS;
-import static org.apache.solr.handler.dataimport.DataConfig.NAME;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DocBuilder.loadClass;
+import static org.apache.solr.handler.dataimport.config.ConfigNameConstants.CLASS;
+import static org.apache.solr.handler.dataimport.config.ConfigNameConstants.NAME;
+
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.slf4j.Logger;

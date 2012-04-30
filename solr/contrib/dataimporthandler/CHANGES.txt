@@ -10,7 +10,10 @@ HTTP data sources quick and easy.
 $Id$
 ==================  4.0.0-dev ==============
 
-(No Changes)
+Other Changes
+----------------------
+* SOLR-3422: Refactored internal data classes. 
+             All entities in data-config.xml must have a name (James Dyer)
 
 ==================  3.6.0 ==================
 

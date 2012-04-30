@@ -49,7 +49,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
     rows.add(createMap("id", 1, "desc", "one"));
     rows.add(createMap("id", 1, "desc", "another one"));
     MockDataSource.setIterator(vr.replaceTokens(q), rows.iterator());
-    EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null);
+    EntityProcessor csep = new EntityProcessorWrapper(new CachedSqlEntityProcessor(), null, null);
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
     while (true) {
@@ -90,7 +90,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
     rows.add(createMap("id", 1, "desc", "one"));
     rows.add(createMap("id", 1, "desc", "another one"));
     MockDataSource.setIterator(vr.replaceTokens(q), rows.iterator());
-    EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null);
+    EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null, null);
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
     while (true) {
@@ -132,7 +132,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
     rows.add(createMap("id", 1, "desc", "one"));
     rows.add(createMap("id", 1, "desc", "another one"));
     MockDataSource.setIterator(vr.replaceTokens(q), rows.iterator());
-    EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null);
+    EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null, null);
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
     while (true) {
@@ -223,7 +223,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
     rows.add(createMap("id", 3, "desc", "another three"));
     rows.add(createMap("id", 3, "desc", "another another three"));
     MockDataSource.setIterator(q, rows.iterator());
-    EntityProcessor csep = new EntityProcessorWrapper(new CachedSqlEntityProcessor(), null);
+    EntityProcessor csep = new EntityProcessorWrapper(new CachedSqlEntityProcessor(), null, null);
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
     while (true) {

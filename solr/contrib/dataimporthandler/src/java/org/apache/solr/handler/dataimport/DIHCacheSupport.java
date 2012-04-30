@@ -21,6 +21,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrap
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -92,6 +93,7 @@ public class DIHCacheSupport {
   }
   
   public void initNewParent(Context context) {
+    dataSourceRowCache = null;
     queryVsCacheIterator = new HashMap<String,Iterator<Map<String,Object>>>();
     for (Map.Entry<String,DIHCache> entry : queryVsCache.entrySet()) {
       queryVsCacheIterator.put(entry.getKey(), entry.getValue().iterator());
@@ -166,18 +168,16 @@ public class DIHCacheSupport {
               + context.getEntityAttribute("name"));
       
     }
-    DIHCache cache = queryVsCache.get(query);
-    if (cache == null) {
-      cache = instantiateCache(context);
-      queryVsCache.put(query, cache);
-      populateCache(query, rowIterator);
-    }
     if (dataSourceRowCache == null) {
+      DIHCache cache = queryVsCache.get(query);
+      
+      if (cache == null) {        
+        cache = instantiateCache(context);        
+        queryVsCache.put(query, cache);        
+        populateCache(query, rowIterator);        
+      }
       dataSourceRowCache = cache.iterator(key);
-    }
-    if (dataSourceRowCache == null) {
-      return null;
-    }
+    }    
     return getFromRowCacheTransformed();
   }
   
@@ -191,25 +191,18 @@ public class DIHCacheSupport {
    */
   protected Map<String,Object> getSimpleCacheData(Context context,
       String query, Iterator<Map<String,Object>> rowIterator) {
-    DIHCache cache = queryVsCache.get(query);
-    if (cache == null) {
-      cache = instantiateCache(context);
-      queryVsCache.put(query, cache);
-      populateCache(query, rowIterator);
-      queryVsCacheIterator.put(query, cache.iterator());
+    if (dataSourceRowCache == null) {      
+      DIHCache cache = queryVsCache.get(query);      
+      if (cache == null) {        
+        cache = instantiateCache(context);        
+        queryVsCache.put(query, cache);        
+        populateCache(query, rowIterator);        
+        queryVsCacheIterator.put(query, cache.iterator());        
+      }      
+      Iterator<Map<String,Object>> cacheIter = queryVsCacheIterator.get(query);      
+      dataSourceRowCache = cacheIter;
     }
-    if (dataSourceRowCache == null || !dataSourceRowCache.hasNext()) {
-      dataSourceRowCache = null;
-      Iterator<Map<String,Object>> cacheIter = queryVsCacheIterator.get(query);
-      if (cacheIter.hasNext()) {
-        List<Map<String,Object>> dsrcl = new ArrayList<Map<String,Object>>(1);
-        dsrcl.add(cacheIter.next());
-        dataSourceRowCache = dsrcl.iterator();
-      }
-    }
-    if (dataSourceRowCache == null) {
-      return null;
-    }
+    
     return getFromRowCacheTransformed();
   }
   

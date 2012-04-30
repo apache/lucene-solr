@@ -18,15 +18,16 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
+import org.apache.solr.handler.dataimport.config.ConfigParseUtil;
+import org.apache.solr.handler.dataimport.config.DIHConfiguration;
+import org.apache.solr.handler.dataimport.config.Entity;
+import org.apache.solr.handler.dataimport.config.Script;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
@@ -63,31 +64,20 @@ public class DataImporter {
   private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(LOG);
 
   private Status status = Status.IDLE;
-
-  private DataConfig config;
-
+  private DIHConfiguration config;
   private Date indexStartTime;
-
   private Properties store = new Properties();
-
   private Map<String, Properties> dataSourceProps = new HashMap<String, Properties>();
-
   private IndexSchema schema;
-
   public DocBuilder docBuilder;
-
   public DocBuilder.Statistics cumulativeStatistics = new DocBuilder.Statistics();
-
-  private SolrCore core;
-  
+  private SolrCore core;  
   private DIHPropertiesWriter propWriter;
-
   private ReentrantLock importLock = new ReentrantLock();
-
   private final Map<String , Object> coreScopeSession;
-
-  private boolean isDeltaImportSupported = false;
-  private final String handlerName;
+  private boolean isDeltaImportSupported = false;  
+  private final String handlerName;  
+  private Map<String, SchemaField> lowerNameVsSchemaField = new HashMap<String, SchemaField>();
 
   /**
    * Only for testing purposes
@@ -106,96 +96,66 @@ public class DataImporter {
     } else {
       propWriter = new ZKPropertiesWriter();
     }
+    propWriter.init(this);
   }
 
   DataImporter(InputSource dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session, String handlerName) {
-      this.handlerName = handlerName;
-    if (dataConfig == null)
-      throw new DataImportHandlerException(SEVERE,
-              "Configuration not found");
+    this.handlerName = handlerName;
+    if (dataConfig == null) {
+      throw new DataImportHandlerException(SEVERE, "Configuration not found");
+    }
     this.core = core;
     this.schema = core.getSchema();
+    loadSchemaFieldMap();
     createPropertyWriter();
-    propWriter.init(this);
+    
     dataSourceProps = ds;
     if (session == null)
       session = new HashMap<String, Object>();
     coreScopeSession = session;
     loadDataConfig(dataConfig);
-
-    for (Map.Entry<String, SchemaField> entry : schema.getFields().entrySet()) {
-      config.lowerNameVsSchemaField.put(entry.getKey().toLowerCase(Locale.ENGLISH), entry.getValue());
-    }
-
-    for (DataConfig.Entity e : config.document.entities) {
-      Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
-      initEntity(e, fields, false);
-      verifyWithSchema(fields);
-      identifyPk(e);
-      if (e.allAttributes.containsKey(SqlEntityProcessor.DELTA_QUERY))
+   
+    for (Entity e : config.getEntities()) {
+      if (e.getAllAttributes().containsKey(SqlEntityProcessor.DELTA_QUERY)) {
         isDeltaImportSupported = true;
+        break;
+      }
     }
+  }
+  
+  
+  
+  private void loadSchemaFieldMap() {
+    Map<String, SchemaField> modLnvsf = new HashMap<String, SchemaField>();
+    for (Map.Entry<String, SchemaField> entry : schema.getFields().entrySet()) {
+      modLnvsf.put(entry.getKey().toLowerCase(Locale.ENGLISH), entry.getValue());
+    }
+    lowerNameVsSchemaField = Collections.unmodifiableMap(modLnvsf);
+  }
+  
+  public SchemaField getSchemaField(String caseInsensitiveName) {
+    SchemaField schemaField = null;
+    if(schema!=null) {
+      schemaField = schema.getFieldOrNull(caseInsensitiveName);
+    }
+    if (schemaField == null) {
+      schemaField = lowerNameVsSchemaField.get(caseInsensitiveName.toLowerCase(Locale.ENGLISH));
+    }
+    return schemaField;
   }
 
    public String getHandlerName() {
         return handlerName;
     }
 
-    private void verifyWithSchema(Map<String, DataConfig.Field> fields) {
-    Map<String, SchemaField> schemaFields = schema.getFields();
-    for (Map.Entry<String, SchemaField> entry : schemaFields.entrySet()) {
-      SchemaField sf = entry.getValue();
-      if (!fields.containsKey(sf.getName())) {
-        if (sf.isRequired()) {
-          LOG
-                  .info(sf.getName()
-                          + " is a required field in SolrSchema . But not found in DataConfig");
-        }
-      }
-    }
-    for (Map.Entry<String, DataConfig.Field> entry : fields.entrySet()) {
-      DataConfig.Field fld = entry.getValue();
-      SchemaField field = schema.getFieldOrNull(fld.getName());
-      if (field == null) {
-        field = config.lowerNameVsSchemaField.get(fld.getName().toLowerCase(Locale.ENGLISH));
-        if (field == null) {
-          LOG.info("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
-        }
-      }
-    }
-
-  }
+    
 
   /**
    * Used by tests
    */
   void loadAndInit(String configStr) {
-    loadDataConfig(new InputSource(new StringReader(configStr)));
-    Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
-    for (DataConfig.Entity entity : config.document.entities) {
-      initEntity(entity, fields, false);
-    }
-  }
-
-  private void identifyPk(DataConfig.Entity entity) {
-    SchemaField uniqueKey = schema.getUniqueKeyField();
-    String schemaPk = "";
-    if (uniqueKey != null)
-      schemaPk = uniqueKey.getName();
-    else return;
-    //if no fields are mentioned . solr uniqueKey is same as dih 'pk'
-    entity.pkMappingFromSchema = schemaPk;
-    for (DataConfig.Field field : entity.fields) {
-      if(field.getName().equals(schemaPk)) {
-        entity.pkMappingFromSchema = field.column;
-        //get the corresponding column mapping for the solr uniqueKey
-        // But if there are multiple columns mapping to the solr uniqueKey, it will fail
-        // so , in one off cases we may need pk
-        break;
-      }
-    } 
-
-  }
+    loadDataConfig(new InputSource(new StringReader(configStr)));       
+  }  
 
   private void loadDataConfig(InputSource configFile) {
 
@@ -224,71 +184,72 @@ public class DataImporter {
         IOUtils.closeQuietly(configFile.getByteStream());
       }
 
-      config = new DataConfig();
-      NodeList elems = document.getElementsByTagName("dataConfig");
-      if(elems == null || elems.getLength() == 0) {
-        throw new DataImportHandlerException(SEVERE, "the root node '<dataConfig>' is missing");
-      }
-      config.readFromXml((Element) elems.item(0));
+      config = readFromXml(document);
       LOG.info("Data Configuration loaded successfully");
     } catch (Exception e) {
       throw new DataImportHandlerException(SEVERE,
               "Exception occurred while initializing context", e);
     }
   }
-
-  private void initEntity(DataConfig.Entity e,
-                          Map<String, DataConfig.Field> fields, boolean docRootFound) {
-    e.allAttributes.put(DATA_SRC, e.dataSource);
-
-    if (!docRootFound && !"false".equals(e.docRoot)) {
-      // if in this chain no document root is found()
-      e.isDocRoot = true;
+  
+  public DIHConfiguration readFromXml(Document xmlDocument) {
+    DIHConfiguration config;
+    List<Map<String, String >> functions = new ArrayList<Map<String ,String>>();
+    Script script = null;
+    Map<String, Properties> dataSources = new HashMap<String, Properties>();
+    
+    NodeList dataConfigTags = xmlDocument.getElementsByTagName("dataConfig");
+    if(dataConfigTags == null || dataConfigTags.getLength() == 0) {
+      throw new DataImportHandlerException(SEVERE, "the root node '<dataConfig>' is missing");
     }
-    if (e.fields != null) {
-      for (DataConfig.Field f : e.fields) {
-        if (schema != null) {
-          if(f.name != null && f.name.contains("${")){
-            f.dynamicName = true;
-            continue;
-          }
-          SchemaField schemaField = schema.getFieldOrNull(f.getName());
-          if (schemaField == null) {
-            schemaField = config.lowerNameVsSchemaField.get(f.getName().toLowerCase(Locale.ENGLISH));
-            if (schemaField != null) f.name = schemaField.getName();
-          }
-          if (schemaField != null) {
-            f.multiValued = schemaField.multiValued();
-            f.allAttributes.put(MULTI_VALUED, Boolean.toString(schemaField
-                    .multiValued()));
-            f.allAttributes.put(TYPE, schemaField.getType().getTypeName());
-            f.allAttributes.put("indexed", Boolean.toString(schemaField.indexed()));
-            f.allAttributes.put("stored", Boolean.toString(schemaField.stored()));
-            f.allAttributes.put("defaultValue", schemaField.getDefaultValue());
-          } else {
-            f.toWrite = false;
-          }
+    Element e = (Element) dataConfigTags.item(0);
+    List<Element> documentTags = ConfigParseUtil.getChildNodes(e, "document");
+    if (documentTags.isEmpty()) {
+      throw new DataImportHandlerException(SEVERE, "DataImportHandler " +
+              "configuration file must have one <document> node.");
+    }
+
+    List<Element> scriptTags = ConfigParseUtil.getChildNodes(e, ConfigNameConstants.SCRIPT);
+    if (!scriptTags.isEmpty()) {
+      script = new Script(scriptTags.get(0));
+    }
+
+    // Add the provided evaluators
+    List<Element> functionTags = ConfigParseUtil.getChildNodes(e, ConfigNameConstants.FUNCTION);
+    if (!functionTags.isEmpty()) {
+      for (Element element : functionTags) {
+        String func = ConfigParseUtil.getStringAttribute(element, NAME, null);
+        String clz = ConfigParseUtil.getStringAttribute(element, ConfigNameConstants.CLASS, null);
+        if (func == null || clz == null){
+          throw new DataImportHandlerException(
+                  SEVERE,
+                  "<function> must have a 'name' and 'class' attributes");
+        } else {
+          functions.add(ConfigParseUtil.getAllAttributes(element));
         }
-        fields.put(f.getName(), f);
-        f.entity = e;
-        f.allAttributes.put("boost", f.boost.toString());
-        f.allAttributes.put("toWrite", Boolean.toString(f.toWrite));
-        e.allFieldsList.add(Collections.unmodifiableMap(f.allAttributes));
       }
     }
-    e.allFieldsList = Collections.unmodifiableList(e.allFieldsList);
-    e.allAttributes = Collections.unmodifiableMap(e.allAttributes);
-
-    if (e.entities == null)
-      return;
-    for (DataConfig.Entity e1 : e.entities) {
-      e1.parentEntity = e;
-      initEntity(e1, fields, e.isDocRoot || docRootFound);
+    List<Element> dataSourceTags = ConfigParseUtil.getChildNodes(e, DATA_SRC);
+    if (!dataSourceTags.isEmpty()) {
+      for (Element element : dataSourceTags) {
+        Properties p = new Properties();
+        HashMap<String, String> attrs = ConfigParseUtil.getAllAttributes(element);
+        for (Map.Entry<String, String> entry : attrs.entrySet()) {
+          p.setProperty(entry.getKey(), entry.getValue());
+        }
+        dataSources.put(p.getProperty("name"), p);
+      }
     }
-
+    if(dataSources.get(null) == null){
+      for (Properties properties : dataSources.values()) {
+        dataSources.put(null,properties);
+        break;        
+      } 
+    }
+    return new DIHConfiguration(documentTags.get(0), this, functions, script, dataSources);
   }
 
-  DataConfig getConfig() {
+  DIHConfiguration getConfig() {
     return config;
   }
 
@@ -308,18 +269,17 @@ public class DataImporter {
     return store.get(key);
   }
 
-  DataSource getDataSourceInstance(DataConfig.Entity key, String name, Context ctx) {
+  DataSource getDataSourceInstance(Entity key, String name, Context ctx) {
     Properties p = dataSourceProps.get(name);
     if (p == null)
-      p = config.dataSources.get(name);
+      p = config.getDataSources().get(name);
     if (p == null)
       p = dataSourceProps.get(null);// for default data source
     if (p == null)
-      p = config.dataSources.get(null);
+      p = config.getDataSources().get(null);
     if (p == null)  
       throw new DataImportHandlerException(SEVERE,
-              "No dataSource :" + name + " available for entity :"
-                      + key.name);
+              "No dataSource :" + name + " available for entity :" + key.getName());
     String type = p.getProperty(TYPE);
     DataSource dataSrc = null;
     if (type == null) {
@@ -344,7 +304,7 @@ public class DataImporter {
       }
       dataSrc.init(ctx, copyProps);
     } catch (Exception e) {
-      wrapAndThrow(SEVERE, e, "Failed to initialize DataSource: " + key.dataSource);
+      wrapAndThrow(SEVERE, e, "Failed to initialize DataSource: " + key.getDataSourceName());
     }
     return dataSrc;
   }
@@ -361,7 +321,7 @@ public class DataImporter {
     return importLock.isLocked();
   }
 
-  public void doFullImport(SolrWriter writer, RequestParams requestParams) {
+  public void doFullImport(SolrWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Full Import");
     setStatus(Status.RUNNING_FULL_DUMP);
 
@@ -371,14 +331,13 @@ public class DataImporter {
       docBuilder = new DocBuilder(this, writer, propWriter, requestParams);
       checkWritablePersistFile(writer);
       docBuilder.execute();
-      if (!requestParams.debug)
+      if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (Throwable t) {
       SolrException.log(LOG, "Full Import failed", t);
       docBuilder.rollback();
     } finally {
       setStatus(Status.IDLE);
-      config.clearCaches();
       DocBuilder.INSTANCE.set(null);
     }
 
@@ -393,7 +352,7 @@ public class DataImporter {
     }
   }
 
-  public void doDeltaImport(SolrWriter writer, RequestParams requestParams) {
+  public void doDeltaImport(SolrWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Delta Import");
     setStatus(Status.RUNNING_DELTA_DUMP);
 
@@ -402,20 +361,19 @@ public class DataImporter {
       docBuilder = new DocBuilder(this, writer, propWriter, requestParams);
       checkWritablePersistFile(writer);
       docBuilder.execute();
-      if (!requestParams.debug)
+      if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (Throwable t) {
       LOG.error("Delta Import Failed", t);
       docBuilder.rollback();
     } finally {
       setStatus(Status.IDLE);
-      config.clearCaches();
       DocBuilder.INSTANCE.set(null);
     }
 
   }
 
-  public void runAsync(final RequestParams reqParams, final SolrWriter sw) {
+  public void runAsync(final RequestInfo reqParams, final SolrWriter sw) {
     new Thread() {
       @Override
       public void run() {
@@ -424,8 +382,8 @@ public class DataImporter {
     }.start();
   }
 
-  void runCmd(RequestParams reqParams, SolrWriter sw) {
-    String command = reqParams.command;
+  void runCmd(RequestInfo reqParams, SolrWriter sw) {
+    String command = reqParams.getCommand();
     if (command.equals(ABORT_CMD)) {
       if (docBuilder != null) {
         docBuilder.abort();
@@ -514,90 +472,7 @@ public class DataImporter {
     public static final String TOTAL_DOCS_SKIPPED = "Total Documents Skipped";
   }
 
-  static final class RequestParams {
-    public String command = null;
-
-    public boolean debug = false;
-    
-    public boolean verbose = false;
-
-    public boolean syncMode = false;
-
-    public boolean commit = true;
-
-    public boolean optimize = false;
-
-    public int start = 0;
-
-    public long rows = Integer.MAX_VALUE;
-
-    public boolean clean = true;
-
-    public List<String> entities;
-
-    public Map<String, Object> requestParams;
-
-    public String dataConfig;
-
-    public ContentStream contentStream;
-    
-    public List<SolrInputDocument> debugDocuments = Collections.synchronizedList(new ArrayList<SolrInputDocument>());
-    
-    public NamedList debugVerboseOutput = null;
-
-    public RequestParams() {
-    }
-
-    public RequestParams(Map<String, Object> requestParams) {
-      if (requestParams.containsKey("command"))
-        command = (String) requestParams.get("command");
-
-      if (StrUtils.parseBool((String)requestParams.get("debug"),false)) {
-        debug = true;
-        rows = 10;
-        // Set default values suitable for debug mode
-        commit = false;
-        clean = false;
-        verbose = StrUtils.parseBool((String)requestParams.get("verbose"),false);
-      }
-      syncMode = StrUtils.parseBool((String)requestParams.get("synchronous"),false);
-      if (DELTA_IMPORT_CMD.equals(command) || IMPORT_CMD.equals(command)) {
-        clean = false;
-      }
-      if (requestParams.containsKey("commit"))
-        commit = StrUtils.parseBool((String) requestParams.get("commit"),true);
-      if (requestParams.containsKey("start"))
-        start = Integer.parseInt((String) requestParams.get("start"));
-      if (requestParams.containsKey("rows"))
-        rows = Integer.parseInt((String) requestParams.get("rows"));
-      if (requestParams.containsKey("clean"))
-        clean = StrUtils.parseBool((String) requestParams.get("clean"),true);
-      if (requestParams.containsKey("optimize")) {
-        optimize = StrUtils.parseBool((String) requestParams.get("optimize"),false);
-        if (optimize)
-          commit = true;
-      }
-
-      Object o = requestParams.get("entity");
-
-      if (o != null && o instanceof String) {
-        entities = new ArrayList<String>();
-        entities.add((String) o);
-      } else if (o != null && o instanceof List) {
-        entities = (List<String>) requestParams.get("entity");
-      }
-
-      dataConfig = (String) requestParams.get("dataConfig");
-      if (dataConfig != null && dataConfig.trim().length() == 0) {
-        // Empty data-config param is not valid, change it to null
-        dataConfig = null;
-      }
-
-      this.requestParams = requestParams;
-    }
-  }
-
-  IndexSchema getSchema() {
+  public IndexSchema getSchema() {
     return schema;
   }
 

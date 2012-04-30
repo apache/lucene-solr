@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
+import org.apache.solr.handler.dataimport.config.DIHConfiguration;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -48,7 +50,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       Context context = getContext("f1", script);
       Map<String, Object> map = new HashMap<String, Object>();
       map.put("name", "Scott");
-      EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
+      EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
       sep.init(context);
       sep.applyTransformer(map);
       assertEquals(map.get("name"), "Hello Scott");
@@ -81,7 +83,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       Context context = getContext("f1", script);
       Map<String, Object> map = new HashMap<String, Object>();
       map.put("name", "Scott");
-      EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
+      EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
       sep.init(context);
       sep.applyTransformer(map);
       assertEquals(map.get("name"), "Hello Scott");
@@ -98,10 +100,9 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       DocumentBuilder builder = DocumentBuilderFactory.newInstance()
               .newDocumentBuilder();
       Document document = builder.parse(new InputSource(new StringReader(xml)));
-      DataConfig config = new DataConfig();
-      config.readFromXml((Element) document.getElementsByTagName("dataConfig")
-              .item(0));
-      assertTrue(config.script.text.indexOf("checkNextToken") > -1);
+      DataImporter di = new DataImporter();
+      DIHConfiguration dc = di.readFromXml(document);
+      assertTrue(dc.getScript().getText().indexOf("checkNextToken") > -1);
     } catch (DataImportHandlerException e) {    
       assumeFalse("This JVM does not have Rhino installed.  Test Skipped.", e
           .getMessage().startsWith("Cannot load Script Engine for language"));
@@ -115,15 +116,13 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       DocumentBuilder builder = DocumentBuilderFactory.newInstance()
               .newDocumentBuilder();
       Document document = builder.parse(new InputSource(new StringReader(xml)));
-      DataConfig config = new DataConfig();
-      config.readFromXml((Element) document.getElementsByTagName("dataConfig")
-              .item(0));
-
-      Context c = getContext("checkNextToken", config.script.text);
+      DataImporter di = new DataImporter();
+      DIHConfiguration dc = di.readFromXml(document);
+      Context c = getContext("checkNextToken", dc.getScript().getText());
 
       Map map = new HashMap();
       map.put("nextToken", "hello");
-      EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
+      EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
       sep.init(c);
       sep.applyTransformer(map);
       assertEquals("true", map.get("$hasMore"));

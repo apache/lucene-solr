@@ -17,6 +17,9 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
+import org.apache.solr.handler.dataimport.config.Entity;
+
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
 import static org.apache.solr.handler.dataimport.EntityProcessorBase.*;
 import static org.apache.solr.handler.dataimport.EntityProcessorBase.SKIP;
@@ -38,19 +41,23 @@ public class EntityProcessorWrapper extends EntityProcessor {
   private static final Logger log = LoggerFactory.getLogger(EntityProcessorWrapper.class);
 
   private EntityProcessor delegate;
+  private Entity entity;
+  private DataSource datasource;
+  private List<EntityProcessorWrapper> children = new ArrayList<EntityProcessorWrapper>();
   private DocBuilder docBuilder;
-
+  private boolean initalized;
   private String onError;
-  private  Context context;
-  private  VariableResolverImpl resolver;
+  private Context context;
+  private VariableResolverImpl resolver;
   private String entityName;
 
   protected List<Transformer> transformers;
 
   protected List<Map<String, Object>> rowcache;
   
-  public EntityProcessorWrapper(EntityProcessor delegate, DocBuilder docBuilder) {
+  public EntityProcessorWrapper(EntityProcessor delegate, Entity entity, DocBuilder docBuilder) {
     this.delegate = delegate;
+    this.entity = entity;
     this.docBuilder = docBuilder;
   }
 
@@ -62,7 +69,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
     if (entityName == null) {
       onError = resolver.replaceTokens(context.getEntityAttribute(ON_ERROR));
       if (onError == null) onError = ABORT;
-      entityName = context.getEntityAttribute(DataConfig.NAME);
+      entityName = context.getEntityAttribute(ConfigNameConstants.NAME);
     }
     delegate.init(context);
 
@@ -292,5 +299,29 @@ public class EntityProcessorWrapper extends EntityProcessor {
   @Override
   public void close() {
     delegate.close();
+  }
+
+  public Entity getEntity() {
+    return entity;
+  }
+
+  public List<EntityProcessorWrapper> getChildren() {
+    return children;
+  }
+
+  public DataSource getDatasource() {
+    return datasource;
+  }
+
+  public void setDatasource(DataSource datasource) {
+    this.datasource = datasource;
+  }
+
+  public boolean isInitalized() {
+    return initalized;
+  }
+
+  public void setInitalized(boolean initalized) {
+    this.initalized = initalized;
   }
 }

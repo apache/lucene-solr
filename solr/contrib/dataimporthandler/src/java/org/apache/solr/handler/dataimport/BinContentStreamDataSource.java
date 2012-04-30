@@ -45,7 +45,7 @@ public class BinContentStreamDataSource extends DataSource<InputStream> {
 
   @Override
   public InputStream getData(String query) {
-     contentStream = context.getDocBuilder().requestParameters.contentStream;
+     contentStream = context.getDocBuilder().getReqParams().getContentStream();
     if (contentStream == null)
       throw new DataImportHandlerException(SEVERE, "No stream available. The request has no body");
     try {

@@ -125,16 +125,21 @@ public class DataImportHandler extends RequestHandlerBase implements
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
           throws Exception {
     rsp.setHttpCaching(false);
-    SolrParams params = req.getParams();
-    DataImporter.RequestParams requestParams = new DataImporter.RequestParams(getParamsMap(params));
-    String command = requestParams.command;
+    
+    //TODO: figure out why just the first one is OK...
+    ContentStream contentStream = null;
     Iterable<ContentStream> streams = req.getContentStreams();
     if(streams != null){
       for (ContentStream stream : streams) {
-          requestParams.contentStream = stream;
+          contentStream = stream;
           break;
       }
     }
+    SolrParams params = req.getParams();
+    RequestInfo requestParams = new RequestInfo(getParamsMap(params), contentStream);
+    String command = requestParams.getCommand();
+   
+    
     if (DataImporter.SHOW_CONF_CMD.equals(command)) {
       // Modify incoming request params to add wt=raw
       ModifiableSolrParams rawParams = new ModifiableSolrParams(req.getParams());
@@ -154,13 +159,13 @@ public class DataImportHandler extends RequestHandlerBase implements
     if (command != null)
       rsp.add("command", command);
 
-    if (requestParams.debug && (importer == null || !importer.isBusy())) {
+    if (requestParams.isDebug() && (importer == null || !importer.isBusy())) {
       // Reload the data-config.xml
       importer = null;
-      if (requestParams.dataConfig != null) {
+      if (requestParams.getDataConfig() != null) {
         try {
           processConfiguration((NamedList) initArgs.get("defaults"));
-          importer = new DataImporter(new InputSource(new StringReader(requestParams.dataConfig)), req.getCore()
+          importer = new DataImporter(new InputSource(new StringReader(requestParams.getDataConfig())), req.getCore()
                   , dataSources, coreScopeSession, myName);
         } catch (RuntimeException e) {
           rsp.add("exception", DebugLogger.getStacktraceString(e));
@@ -194,23 +199,21 @@ public class DataImportHandler extends RequestHandlerBase implements
         SolrResourceLoader loader = req.getCore().getResourceLoader();
         SolrWriter sw = getSolrWriter(processor, loader, requestParams, req);
         
-        if (requestParams.debug) {
+        if (requestParams.isDebug()) {
           if (debugEnabled) {
             // Synchronous request for the debug mode
             importer.runCmd(requestParams, sw);
             rsp.add("mode", "debug");
-            rsp.add("documents", requestParams.debugDocuments);
-            if (requestParams.debugVerboseOutput != null) {
-            	rsp.add("verbose-output", requestParams.debugVerboseOutput);
+            rsp.add("documents", requestParams.getDebugInfo().debugDocuments);
+            if (requestParams.getDebugInfo().debugVerboseOutput != null) {
+            	rsp.add("verbose-output", requestParams.getDebugInfo().debugVerboseOutput);
             }
-            requestParams.debugDocuments = new ArrayList<SolrInputDocument>(0);
-            requestParams.debugVerboseOutput = null;
           } else {
             message = DataImporter.MSG.DEBUG_NOT_ENABLED;
           }
         } else {
           // Asynchronous request for normal mode
-          if(requestParams.contentStream == null && !requestParams.syncMode){
+          if(requestParams.getContentStream() == null && !requestParams.isSyncMode()){
             importer.runAsync(requestParams, sw);
           } else {
             importer.runCmd(requestParams, sw);
@@ -276,7 +279,7 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   private SolrWriter getSolrWriter(final UpdateRequestProcessor processor,
-                                   final SolrResourceLoader loader, final DataImporter.RequestParams requestParams, SolrQueryRequest req) {
+                                   final SolrResourceLoader loader, final RequestInfo requestParams, SolrQueryRequest req) {
 
     return new SolrWriter(processor, req) {
 

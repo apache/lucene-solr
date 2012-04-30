@@ -40,7 +40,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   "<dataConfig>" +
   "  <dataSource type=\"BinFileDataSource\"/>" +
   "  <document>" +
-  "    <entity processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/solr-word.pdf").getAbsolutePath() + "\" >" +
+  "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/solr-word.pdf").getAbsolutePath() + "\" >" +
   "      <field column=\"Author\" meta=\"true\" name=\"author\"/>" +
   "      <field column=\"title\" meta=\"true\" name=\"title\"/>" +
   "      <field column=\"text\"/>" +
@@ -64,19 +64,6 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   @Test
   public void testIndexingWithTikaEntityProcessor() throws Exception {
     runFullImport(conf);
-    assertQ(req("*:*"), tests );
-  }
-
-  @Test
-  public void testIndexingWithTikaEntityProcessorThreaded() throws Exception {
-    DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-    Document doc = builder.parse(new InputSource(new StringReader(conf)));
-    ((Element) doc.getElementsByTagName("entity").item(0)).setAttribute("threads", "1");
-    Transformer trans = TransformerFactory.newInstance().newTransformer();
-    StringWriter writer = new StringWriter();
-    trans.transform(new DOMSource(doc), new StreamResult(writer));
-
-    runFullImport(writer.toString());
     assertQ(req("*:*"), tests );
   }
 

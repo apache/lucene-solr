@@ -53,7 +53,7 @@ public class TestSqlEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testTranformer() {
-    EntityProcessor sep = new EntityProcessorWrapper( new SqlEntityProcessor(), null);
+    EntityProcessor sep = new EntityProcessorWrapper( new SqlEntityProcessor(), null, null);
     List<Map<String, Object>> rows = getRows(2);
     VariableResolverImpl vr = new VariableResolverImpl();
     HashMap<String, String> ea = new HashMap<String, String>();
@@ -76,7 +76,7 @@ public class TestSqlEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testTranformerWithReflection() {
-    EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
+    EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
     List<Map<String, Object>> rows = getRows(2);
     VariableResolverImpl vr = new VariableResolverImpl();
     HashMap<String, String> ea = new HashMap<String, String>();
@@ -99,7 +99,7 @@ public class TestSqlEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testTranformerList() {
-    EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(),null);
+    EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(),null, null);
     List<Map<String, Object>> rows = getRows(2);
     VariableResolverImpl vr = new VariableResolverImpl();
 

@@ -132,15 +132,15 @@ public abstract class AbstractDataImportHandlerTestCase extends
    * Helper for creating a Context instance. Useful for testing Transformers
    */
   @SuppressWarnings("unchecked")
-  public static TestContext getContext(DataConfig.Entity parentEntity,
+  public static TestContext getContext(EntityProcessorWrapper parent,
                                    VariableResolverImpl resolver, DataSource parentDataSource,
                                    String currProcess, final List<Map<String, String>> entityFields,
                                    final Map<String, String> entityAttrs) {
     if (resolver == null) resolver = new VariableResolverImpl();
-    final Context delegate = new ContextImpl(parentEntity, resolver,
+    final Context delegate = new ContextImpl(parent, resolver,
             parentDataSource, currProcess,
             new HashMap<String, Object>(), null, null);
-    return new TestContext(entityAttrs, delegate, entityFields, parentEntity == null);
+    return new TestContext(entityAttrs, delegate, entityFields, parent == null);
   }
 
   /**

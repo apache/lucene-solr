@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.handler.dataimport.config.Entity;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -63,10 +64,8 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("processAttachement", "false");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    DataConfig.Entity ent = di.getConfig().document.entities.get(0);
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams();
-    rp.command = "full-import";
+    Entity ent = di.getConfig().getEntities().get(0);
+    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top1 did not return 2 messages", swi.docs.size(), 2);
@@ -80,10 +79,8 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("processAttachement", "false");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    DataConfig.Entity ent = di.getConfig().document.entities.get(0);
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams();
-    rp.command = "full-import";
+    Entity ent = di.getConfig().getEntities().get(0);
+    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its children did not return 8 messages", swi.docs.size(), 8);
@@ -98,10 +95,8 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("exclude", ".*grandchild.*");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    DataConfig.Entity ent = di.getConfig().document.entities.get(0);
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams();
-    rp.command = "full-import";
+    Entity ent = di.getConfig().getEntities().get(0);
+    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its direct children did not return 5 messages", swi.docs.size(), 5);
@@ -116,10 +111,8 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("include", ".*grandchild.*");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    DataConfig.Entity ent = di.getConfig().document.entities.get(0);
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams();
-    rp.command = "full-import";
+    Entity ent = di.getConfig().getEntities().get(0);
+    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
@@ -135,10 +128,8 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("include", ".*grandchild.*");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    DataConfig.Entity ent = di.getConfig().document.entities.get(0);
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams();
-    rp.command = "full-import";
+    Entity ent = di.getConfig().getEntities().get(0);
+    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
@@ -153,10 +144,8 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     paramMap.put("fetchMailsSince", "2008-12-26 00:00:00");
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
-    DataConfig.Entity ent = di.getConfig().document.entities.get(0);
-    ent.isDocRoot = true;
-    DataImporter.RequestParams rp = new DataImporter.RequestParams();
-    rp.command = "full-import";
+    Entity ent = di.getConfig().getEntities().get(0);
+    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
