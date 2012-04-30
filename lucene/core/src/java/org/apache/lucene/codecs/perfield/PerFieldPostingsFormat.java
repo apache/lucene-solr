@@ -39,6 +39,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -55,6 +56,21 @@ import org.apache.lucene.util.IOUtils;
  * This method uses Java's 
  * {@link ServiceLoader Service Provider Interface} to resolve format names.
  * <p>
+ * PerFieldFile format:
+ * <ul>
+ *   <li>PerFieldFile (.per) --&gt; Header, IdToFormat, FieldToFormat</li>
+ *   <li>Header --&gt; {@link CodecUtil#checkHeader CodecHeader}</li>
+ *   <li>IdToFormat,FieldToFormat --&gt; {@link DataOutput#writeStringStringMap(Map) Map&lt;String,String&gt;}</li> 
+ * </ul>
+ * <p>Notes:</p>
+ * <ul>
+ *   <li>each format is assigned an id, and files written by that posting format
+ *       have an additional suffix containing the id. For example, in a per-field
+ *       configuration instead of <tt>_1.prx</tt> filenames would look like 
+ *       <tt>_1_0.prx</tt>.</li>
+ *   <li>IdToFormat is a mapping between these ids and the available formats.</li>
+ *   <li>FieldToFormat is a mapping between field names and format names.</li>
+ * </ul>
  * @see ServiceLoader
  * @lucene.experimental
  */
