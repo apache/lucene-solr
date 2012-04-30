@@ -141,7 +141,6 @@ public class RequestInfo {
   }
   /**
    * Returns null if we are to run all entities, otherwise just run the entities named in the list.
-   * @return
    */
   public List<String> getEntitiesToRun() {
     return entitiesToRun;
