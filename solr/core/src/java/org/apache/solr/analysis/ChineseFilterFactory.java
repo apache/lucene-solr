@@ -22,6 +22,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.ChineseFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Factory for {@link ChineseFilter}
@@ -29,10 +31,13 @@ import org.apache.lucene.analysis.cn.ChineseFilter;
  */
 @Deprecated
 public class ChineseFilterFactory extends BaseTokenFilterFactory {
+
+  private static final Logger log = LoggerFactory.getLogger(ChineseFilterFactory.class);
+
   @Override
   public void init(Map<String,String> args) {
     super.init(args);
-    warnDeprecated("Use StopFilterFactory instead.");
+    log.warn(getClass().getSimpleName() + " is deprecated. Use StopFilterFactory instead.");
   }
   
   public ChineseFilter create(TokenStream in) {

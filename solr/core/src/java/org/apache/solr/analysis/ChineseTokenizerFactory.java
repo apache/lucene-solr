@@ -23,6 +23,8 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.cn.ChineseTokenizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** 
  * Factory for {@link ChineseTokenizer}
@@ -30,10 +32,13 @@ import org.apache.lucene.analysis.cn.ChineseTokenizer;
  */
 @Deprecated
 public class ChineseTokenizerFactory extends BaseTokenizerFactory {
+
+  private static final Logger log = LoggerFactory.getLogger(ChineseTokenizerFactory.class);
+
   @Override
   public void init(Map<String,String> args) {
     super.init(args);
-    warnDeprecated("Use StandardTokenizerFactory instead.");
+    log.warn(getClass().getSimpleName() + " is deprecated. Use StandardTokenizeFactory instead.");
   }
   
   public ChineseTokenizer create(Reader in) {

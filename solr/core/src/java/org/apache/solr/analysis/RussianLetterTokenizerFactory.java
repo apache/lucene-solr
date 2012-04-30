@@ -21,12 +21,16 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.ru.RussianLetterTokenizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** @deprecated Use {@link StandardTokenizerFactory} instead.
  *  This tokenizer has no Russian-specific functionality.
  */
 @Deprecated
 public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
+
+  private static final Logger log = LoggerFactory.getLogger(RussianLetterTokenizerFactory.class);
 
   @Override
   public void init(Map<String, String> args) {
@@ -36,7 +40,7 @@ public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
           "The charset parameter is no longer supported.  "
           + "Please process your documents as Unicode instead.");
     assureMatchVersion();
-    warnDeprecated("Use StandardTokenizerFactory instead.");
+    log.warn(getClass().getSimpleName() + " is deprecated. Use StandardTokenizerFactory instead.");
   }
 
   public RussianLetterTokenizer create(Reader in) {

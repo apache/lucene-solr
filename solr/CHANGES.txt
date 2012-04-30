@@ -532,6 +532,9 @@ Other Changes
 * SOLR-1893: Refactored some common code from LRUCache and FastLRUCache into 
   SolrCacheBase (Tomás Fernández Löbbe via hossman)
 
+* SOLR-3403: Deprecated Analysis Factories now log their own deprecation messages.
+  No logging support is provided by Factory parent classes. (Chris Male)
+
 Documentation
 ----------------------
 

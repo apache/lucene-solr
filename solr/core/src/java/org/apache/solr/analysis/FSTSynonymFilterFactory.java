@@ -41,6 +41,8 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @deprecated (3.4) use {@link SynonymFilterFactory} instead. this is only a backwards compatibility
@@ -49,6 +51,9 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
 // NOTE: rename this to "SynonymFilterFactory" and nuke that delegator in Lucene 5.0!
 @Deprecated
 final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+
+  public static final Logger log = LoggerFactory.getLogger(FSTSynonymFilterFactory.class);
+
   private SynonymMap map;
   private boolean ignoreCase;
   

@@ -17,10 +17,13 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.Config;
-import org.apache.solr.schema.IndexSchema;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,15 +33,6 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.WordlistLoader;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Simple abstract implementation that handles init arg processing, is not really
@@ -53,8 +47,6 @@ abstract class BaseTokenStreamFactory {
   
   /** the luceneVersion arg */
   protected Version luceneMatchVersion = null;
-
-  public static final Logger log = LoggerFactory.getLogger(BaseTokenStreamFactory.class);
 
   public void init(Map<String,String> args) {
     this.args=args;
@@ -72,10 +64,6 @@ abstract class BaseTokenStreamFactory {
       throw new InitializationException("Configuration Error: Factory '" + this.getClass().getName() +
         "' needs a 'luceneMatchVersion' parameter");
     }
-  }
-
-  protected final void warnDeprecated(String message) {
-    log.warn(getClass().getSimpleName() + " is deprecated. " + message);
   }
 
   public void setLuceneMatchVersion(Version luceneMatchVersion) {
