@@ -23,6 +23,9 @@ import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.util.NumericUtils;
 
+/**
+ * Describes the properties of a field.
+ */
 public class FieldType implements IndexableFieldType {
 
   /** Data type of the numeric value

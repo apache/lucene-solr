@@ -35,14 +35,14 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.FieldInvertState; // javadocs
 
 /**
- * Expert: directly creata a field for a document.  Most
+ * Expert: directly create a field for a document.  Most
  * users should use one of the sugar subclasses: {@link
  * IntField}, {@link LongField}, {@link FloatField}, {@link
  * DoubleField}, {@link DocValuesField}, {@link
  * StringField}, {@link TextField}, {@link StoredField}.
  *
  * <p/> A field is a section of a Document. Each field has three
- * parts: name, type andvalue. Values may be text
+ * parts: name, type and value. Values may be text
  * (String, Reader or pre-analyzed TokenStream), binary
  * (byte[]), or numeric (a Number).  Fields are optionally stored in the
  * index, so that they may be returned with hits on the document.

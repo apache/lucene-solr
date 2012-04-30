@@ -497,7 +497,7 @@ public final class Util {
   }
 
   /** Holds a single input (IntsRef) + output, returned by
-   *  {@link #shortestPaths}. */
+   *  {@link #shortestPaths shortestPaths()}. */
   public final static class MinResult<T> implements Comparable<MinResult<T>> {
     public final IntsRef input;
     public final T output;

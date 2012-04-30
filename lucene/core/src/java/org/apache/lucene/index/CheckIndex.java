@@ -134,8 +134,7 @@ public class CheckIndex {
     /** Holds the status of each segment in the index.
      *  See {@link #segmentInfos}.
      *
-     * <p><b>WARNING</b>: this API is new and experimental and is
-     * subject to suddenly change in the next release.
+     * @lucene.experimental
      */
     public static class SegmentInfoStatus {
       /** Name of the segment. */
@@ -272,6 +271,9 @@ public class CheckIndex {
       public Throwable error = null;
     }
     
+    /**
+     * Status from testing DocValues
+     */
     public static final class DocValuesStatus {
       /** Number of documents tested. */
       public int docCount;

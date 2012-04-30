@@ -60,11 +60,22 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
 	    match.extractTerms(terms);
   }
 
-  /** Return value if the match should be accepted {@code YES}, rejected {@code NO},
-   * or rejected and enumeration should advance to the next document {@code NO_AND_ADVANCE}.
-   * @see #acceptPosition(Spans)
+  /** 
+   * Return value for {@link SpanPositionCheckQuery#acceptPosition(Spans)}.
    */
-  protected static enum AcceptStatus { YES, NO, NO_AND_ADVANCE };
+  protected static enum AcceptStatus {
+    /** Indicates the match should be accepted */
+    YES,
+    
+    /** Indicates the match should be rejected */
+    NO,
+    
+    /** 
+     * Indicates the match should be rejected, and the enumeration should advance
+     * to the next document.
+     */
+    NO_AND_ADVANCE 
+  };
   
   /**
    * Implementing classes are required to return whether the current position is a match for the passed in

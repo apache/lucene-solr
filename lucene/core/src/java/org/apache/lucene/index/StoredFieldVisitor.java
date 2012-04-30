@@ -59,14 +59,24 @@ public abstract class StoredFieldVisitor {
   public void doubleField(FieldInfo fieldInfo, double value) throws IOException {
   }
   
+  /**
+   * Hook before processing a field.
+   * Before a field is processed, this method is invoked so that
+   * subclasses can return a {@link Status} representing whether
+   * they need that particular field or not, or to stop processing
+   * entirely.
+   */
   public abstract Status needsField(FieldInfo fieldInfo) throws IOException;
   
+  /**
+   * Enumeration of possible return values for {@link #needsField}.
+   */
   public static enum Status {
-    /** yes, i want the field */
+    /** YES: the field should be visited. */
     YES,
-    /** no, i do not */
+    /** NO: don't visit this field, but continue processing fields for this document. */
     NO,
-    /** stop loading fields for this document entirely */
+    /** STOP: don't visit this field and stop processing any other fields for this document. */
     STOP
   }
 }

@@ -21,7 +21,7 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.Similarity;
 
-public class NormsConsumerPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsConsumerPerField> {
+final class NormsConsumerPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsConsumerPerField> {
   private final FieldInfo fieldInfo;
   private final DocumentsWriterPerThread.DocState docState;
   private final Similarity similarity;

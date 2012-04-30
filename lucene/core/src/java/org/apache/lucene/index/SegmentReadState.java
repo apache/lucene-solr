@@ -21,6 +21,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
 /**
+ * Holder class for common parameters used during read.
  * @lucene.experimental
  */
 public class SegmentReadState {

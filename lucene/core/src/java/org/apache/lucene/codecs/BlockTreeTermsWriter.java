@@ -69,19 +69,18 @@ import org.apache.lucene.util.fst.Util;
       suffix, and 2) bulk-encode this array using bulk int[]
       codecs; then at search time we can binary search when
       we seek a particular term.
+*/
 
 /**
+ * block-based terms index and dictionary writer.
+ * <p>
  * Writes terms dict and index, block-encoding (column
  * stride) each term's metadata for each set of terms
  * between two index terms.
  *
+ * @see BlockTreeTermsReader
  * @lucene.experimental
  */
-
-/** See {@link BlockTreeTermsReader}.
- *
- * @lucene.experimental
-*/
 
 public class BlockTreeTermsWriter extends FieldsConsumer {
 

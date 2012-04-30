@@ -17,6 +17,9 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
+/**
+ * Automaton representation for matching UTF-8 byte[].
+ */
 public class ByteRunAutomaton extends RunAutomaton {
   
   public ByteRunAutomaton(Automaton a) {

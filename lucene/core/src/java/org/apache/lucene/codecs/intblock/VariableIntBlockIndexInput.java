@@ -73,7 +73,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     public void seek(long pos) throws IOException;
   }
 
-  public static class Reader extends IntIndexInput.Reader {
+  private static class Reader extends IntIndexInput.Reader {
     private final IndexInput in;
 
     public final int[] pending;

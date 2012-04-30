@@ -26,7 +26,10 @@ import java.util.ArrayList;
 // TODO
 //   - do we really need the .bits...?  if not we can make util in UnicodeUtil to convert 1 char into a BytesRef
 
-/** @lucene.internal */
+/** 
+ * Converts UTF-32 automata to the equivalent UTF-8 representation.
+ * @lucene.internal 
+ */
 public final class UTF32ToUTF8 {
 
   // Unicode boundaries for UTF8 bytes 1,2,3,4

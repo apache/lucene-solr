@@ -72,7 +72,7 @@ public class MultiSimilarity extends Similarity {
     return new MultiSloppyDocScorer(subScorers);
   }
   
-  public static class MultiExactDocScorer extends ExactSimScorer {
+  static class MultiExactDocScorer extends ExactSimScorer {
     private final ExactSimScorer subScorers[];
     
     MultiExactDocScorer(ExactSimScorer subScorers[]) {
@@ -98,7 +98,7 @@ public class MultiSimilarity extends Similarity {
     }
   }
   
-  public static class MultiSloppyDocScorer extends SloppySimScorer {
+  static class MultiSloppyDocScorer extends SloppySimScorer {
     private final SloppySimScorer subScorers[];
     
     MultiSloppyDocScorer(SloppySimScorer subScorers[]) {
@@ -134,7 +134,7 @@ public class MultiSimilarity extends Similarity {
     }
   }
 
-  public static class MultiStats extends SimWeight {
+  static class MultiStats extends SimWeight {
     final SimWeight subStats[];
     
     MultiStats(SimWeight subStats[]) {

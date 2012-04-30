@@ -52,7 +52,7 @@ public final class MultiTermsEnum extends TermsEnum {
   private BytesRef current;
   private Comparator<BytesRef> termComp;
 
-  public static class TermsEnumIndex {
+  static class TermsEnumIndex {
     public final static TermsEnumIndex[] EMPTY_ARRAY = new TermsEnumIndex[0];
     final int subIndex;
     final TermsEnum termsEnum;

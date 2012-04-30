@@ -17,6 +17,9 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
+/**
+ * Automaton representation for matching char[].
+ */
 public class CharacterRunAutomaton extends RunAutomaton {
 
   public CharacterRunAutomaton(Automaton a) {

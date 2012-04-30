@@ -51,15 +51,25 @@ import org.apache.lucene.util.Version;
 public final class IndexWriterConfig implements Cloneable {
 
   /**
-   * Specifies the open mode for {@link IndexWriter}:
-   * <ul>
-   * {@link #CREATE} - creates a new index or overwrites an existing one.
-   * {@link #CREATE_OR_APPEND} - creates a new index if one does not exist,
-   * otherwise it opens the index and documents will be appended.
-   * {@link #APPEND} - opens an existing index.
-   * </ul>
+   * Specifies the open mode for {@link IndexWriter}.
    */
-  public static enum OpenMode { CREATE, APPEND, CREATE_OR_APPEND }
+  public static enum OpenMode {
+    /** 
+     * Creates a new index or overwrites an existing one. 
+     */
+    CREATE,
+    
+    /** 
+     * Opens an existing index. 
+     */
+    APPEND,
+    
+    /** 
+     * Creates a new index if one does not exist,
+     * otherwise it opens the index and documents will be appended. 
+     */
+    CREATE_OR_APPEND 
+  }
 
   /** Default value is 32. Change using {@link #setTermIndexInterval(int)}. */
   public static final int DEFAULT_TERM_INDEX_INTERVAL = 32; // TODO: this should be private to the codec, not settable here
