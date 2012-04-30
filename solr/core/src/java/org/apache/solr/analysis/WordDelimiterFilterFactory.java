@@ -22,8 +22,8 @@ import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator;
 import org.apache.lucene.analysis.util.CharArraySet;
 
-import org.apache.solr.util.plugin.ResourceLoaderAware;
-import org.apache.solr.common.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
 
 import java.util.ArrayList;

@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.solr.common.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoader;
 
 class StringMockSolrResourceLoader implements ResourceLoader {
   String text;

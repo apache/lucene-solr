@@ -1,4 +1,4 @@
-package org.apache.solr.common;
+package org.apache.lucene.analysis.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,11 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-/**
- * @since solr 1.3
- */ 
-public interface ResourceLoader
-{
+public interface ResourceLoader {
+
   public InputStream openResource(String resource) throws IOException;
   
   /**

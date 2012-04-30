@@ -18,7 +18,7 @@ package org.apache.solr.analysis;
 
 
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.solr.common.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 

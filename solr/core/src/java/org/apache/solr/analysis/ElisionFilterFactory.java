@@ -19,8 +19,8 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.util.plugin.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.fr.*;
 import org.apache.lucene.analysis.util.CharArraySet;
 

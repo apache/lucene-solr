@@ -15,14 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.plugin;
+package org.apache.lucene.analysis.util;
 
-import org.apache.solr.common.ResourceLoader;
+public interface ResourceLoaderAware {
 
-/**
- * @since solr 1.3
- */
-public interface ResourceLoaderAware 
-{
-  void inform( ResourceLoader loader );
+  void inform(ResourceLoader loader);
 }

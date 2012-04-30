@@ -18,7 +18,7 @@ package org.apache.solr.util;
  */
 
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.common.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 

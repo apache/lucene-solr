@@ -20,7 +20,7 @@ package org.apache.solr.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.solr.common.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoader;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.EntityResolver;

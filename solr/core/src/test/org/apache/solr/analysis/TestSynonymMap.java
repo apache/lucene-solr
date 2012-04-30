@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.common.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoader;
 
 
 /**

@@ -17,7 +17,7 @@ package org.apache.solr.schema;
  */
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Before;
