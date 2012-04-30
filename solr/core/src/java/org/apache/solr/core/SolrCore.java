@@ -1252,7 +1252,7 @@ public final class SolrCore implements SolrInfoMBean {
         // HTTP 503==service unavailable, or 409==Conflict
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,msg);
       } else if (onDeckSearchers > 1) {
-        log.info(logid+"PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
+        log.warn(logid+"PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
       }
     }
 
