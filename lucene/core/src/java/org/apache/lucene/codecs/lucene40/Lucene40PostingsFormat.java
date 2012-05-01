@@ -54,7 +54,7 @@ import org.apache.lucene.util.fst.FST; // javadocs
  *
  * <p>The .tim file contains the list of terms in each
  * field along with per-term statistics (such as docfreq)
- * and pointers to the frequencies, positions, payloads and
+ * and pointers to the frequencies, positions and
  * skip data in the .frq and .prx files.
  * </p>
  *
