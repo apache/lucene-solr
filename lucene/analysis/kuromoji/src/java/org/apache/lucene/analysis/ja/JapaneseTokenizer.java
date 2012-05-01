@@ -100,9 +100,21 @@ public final class JapaneseTokenizer extends Tokenizer {
    */
   public static final Mode DEFAULT_MODE = Mode.SEARCH;
 
+  /**
+   * Token type reflecting the original source of this token
+   */
   public enum Type {
+    /**
+     * Known words from the system dictionary.
+     */
     KNOWN,
+    /**
+     * Unknown words (heuristically segmented).
+     */
     UNKNOWN,
+    /**
+     * Known words from the user dictionary.
+     */
     USER
   }
 

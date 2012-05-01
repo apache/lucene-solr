@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+/**
+ * Abstraction for loading resources (streams, files, and classes).
+ */
 public interface ResourceLoader {
 
   public InputStream openResource(String resource) throws IOException;

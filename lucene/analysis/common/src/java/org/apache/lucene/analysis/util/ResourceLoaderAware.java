@@ -17,6 +17,12 @@
 
 package org.apache.lucene.analysis.util;
 
+/**
+ * Interface for a component that needs to be initialized by
+ * an implementation of {@link ResourceLoader}.
+ * 
+ * @see ResourceLoader
+ */
 public interface ResourceLoaderAware {
 
   void inform(ResourceLoader loader);

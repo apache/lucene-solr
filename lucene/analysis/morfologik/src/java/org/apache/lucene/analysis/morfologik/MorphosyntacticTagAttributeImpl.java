@@ -21,6 +21,7 @@ package org.apache.lucene.analysis.morfologik;
 import org.apache.lucene.util.AttributeImpl;
 
 /**
+ * Morphosyntactic annotations for surface forms.
  * @see MorphosyntacticTagAttribute
  */
 public class MorphosyntacticTagAttributeImpl extends AttributeImpl 
