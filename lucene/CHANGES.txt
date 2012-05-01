@@ -846,6 +846,9 @@ New features
 * LUCENE-4004: Add DisjunctionMaxQuery support to the xml query parser.
   (Benson Margulies via Robert Muir)
 
+* LUCENE-4025: Add maybeRefreshBlocking to ReferenceManager, to let a caller 
+  block until the refresh logic has been executed. (Shai Erera, Mike McCandless)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

@@ -108,7 +108,11 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
             Thread.sleep(_TestUtil.nextInt(random(), 1, 100));
             writer.commit();
             Thread.sleep(_TestUtil.nextInt(random(), 1, 5));
-            if (mgr.maybeRefresh()) {
+            boolean block = random().nextBoolean();
+            if (block) {
+              mgr.maybeRefreshBlocking();
+              lifetimeMGR.prune(pruner);
+            } else if (mgr.maybeRefresh()) {
               lifetimeMGR.prune(pruner);
             }
           }
