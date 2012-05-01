@@ -18,7 +18,7 @@ package org.apache.solr.analysis;
  */
 
 /**
- * Exception representing an error occuring during the initialization of a Factory.
+ * Exception representing an error occurring during the initialization of a Factory.
  */
 public class InitializationException extends RuntimeException {
 
