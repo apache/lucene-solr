@@ -194,7 +194,7 @@ public abstract class ReferenceManager<G> implements Closeable {
     try {
       doMaybeRefresh();
     } finally {
-      refreshLock.lock();
+      refreshLock.unlock();
     }
   }
 

@@ -353,4 +353,35 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     other.close();
     dir.close();
   }
+  
+  public void testMaybeRefreshBlockingLock() throws Exception {
+    // make sure that maybeRefreshBlocking releases the lock, otherwise other
+    // threads cannot obtain it.
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    w.close();
+    
+    final SearcherManager sm = new SearcherManager(dir, null);
+    
+    Thread t = new Thread() {
+      @Override
+      public void run() {
+        try {
+          // this used to not release the lock, preventing other threads from obtaining it.
+          sm.maybeRefreshBlocking();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+    t.start();
+    t.join();
+    
+    // if maybeRefreshBlocking didn't release the lock, this will fail.
+    assertTrue("failde to obtain the refreshLock!", sm.maybeRefresh());
+    
+    sm.close();
+    dir.close();
+  }
+  
 }
