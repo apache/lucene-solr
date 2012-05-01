@@ -22,11 +22,7 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.commons.codec.Encoder;
-import org.apache.commons.codec.language.Caverphone;
-import org.apache.commons.codec.language.DoubleMetaphone;
-import org.apache.commons.codec.language.Metaphone;
-import org.apache.commons.codec.language.RefinedSoundex;
-import org.apache.commons.codec.language.Soundex;
+import org.apache.commons.codec.language.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -60,10 +56,10 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
     assertAlgorithm(new RefinedSoundex(), false, "aaa bbb ccc easgasg",
         new String[] { "A0", "B1", "C3", "E034034" });
     
-    assertAlgorithm(new Caverphone(), true, "Darda Karleen Datha Carlene",
+    assertAlgorithm(new Caverphone2(), true, "Darda Karleen Datha Carlene",
         new String[] { "TTA1111111", "Darda", "KLN1111111", "Karleen", 
           "TTA1111111", "Datha", "KLN1111111", "Carlene" });
-    assertAlgorithm(new Caverphone(), false, "Darda Karleen Datha Carlene",
+    assertAlgorithm(new Caverphone2(), false, "Darda Karleen Datha Carlene",
         new String[] { "TTA1111111", "KLN1111111", "TTA1111111", "KLN1111111" });
   }
 
@@ -79,7 +75,7 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws IOException {
     Encoder encoders[] = new Encoder[] {
-      new Metaphone(), new DoubleMetaphone(), new Soundex(), new RefinedSoundex(), new Caverphone()
+      new Metaphone(), new DoubleMetaphone(), new Soundex(), new RefinedSoundex(), new Caverphone2()
     };
     
     for (final Encoder e : encoders) {
@@ -107,7 +103,7 @@ public class TestPhoneticFilter extends BaseTokenStreamTestCase {
   
   public void testEmptyTerm() throws IOException {
     Encoder encoders[] = new Encoder[] {
-        new Metaphone(), new DoubleMetaphone(), new Soundex(), new RefinedSoundex(), new Caverphone()
+        new Metaphone(), new DoubleMetaphone(), new Soundex(), new RefinedSoundex(), new Caverphone2()
     };
     for (final Encoder e : encoders) {
       Analyzer a = new Analyzer() {
