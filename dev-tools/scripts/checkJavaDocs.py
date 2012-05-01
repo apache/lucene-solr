@@ -24,10 +24,10 @@ reMarkup = re.compile('<.*?>')
 def checkSummary(fullPath):
   printed = False
   f = open(fullPath)
-  lastLine = None
   anyMissing = False
   sawPackage = False
   desc = []
+  lastHREF = None
   for line in f.readlines():
     lineLower = line.strip().lower()
     if desc is not None:
@@ -51,22 +51,22 @@ def checkSummary(fullPath):
           desc.append(lineLower)
       
     if lineLower in ('<td>&nbsp;</td>', '<td></td>', '<td class="collast">&nbsp;</td>'):
-      m = reHREF.search(lastLine)
       if not printed:
         print
         print fullPath
         printed = True
-      print '  missing: %s' % unescapeHTML(m.group(1))
+      print '  missing: %s' % unescapeHTML(lastHREF)
       anyMissing = True
     elif lineLower.find('licensed to the apache software foundation') != -1 or lineLower.find('copyright 2004 the apache software foundation') != -1:
-      m = reHREF.search(lastLine)
       if not printed:
         print
         print fullPath
         printed = True
-      print '  license-is-javadoc: %s' % unescapeHTML(m.group(1))
+      print '  license-is-javadoc: %s' % unescapeHTML(lastHREF)
       anyMissing = True
-    lastLine = line
+    m = reHREF.search(line)
+    if m is not None:
+      lastHREF = m.group(1)
   if desc is not None and fullPath.find('/overview-summary.html') == -1:
     raise RuntimeError('BUG: failed to locate description in %s' % fullPath)
   f.close()
