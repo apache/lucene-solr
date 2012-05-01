@@ -51,15 +51,23 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * <p>
  * <a name="Termdictionary" id="Termdictionary"></a>
  * <h3>Term Dictionary</h3>
- * <p>The .tim file contains the list of terms in each field, in UTF-8 order,
- * along with per-term statistics (such as docfreq) and pointers to the frequencies,
- * positions, and skip data in the .frq and .prx files.
+ *
+ * <p>The .tim file contains the list of terms in each
+ * field along with per-term statistics (such as docfreq)
+ * and pointers to the frequencies, positions, payloads and
+ * skip data in the .frq and .prx files.
  * </p>
- * <p>The .tim is arranged in blocks: with blocks containing either terms or
- * sub-blocks.</p>
+ *
+ * <p>The .tim is arranged in blocks: with blocks containing
+ * a variable number of entries (by default 25-48), where
+ * each entry is either a term or a reference to a
+ * sub-block.  It's written by {@link BlockTreeTermsWriter}
+ * and read by {@link BlockTreeTermsReader}.</p>
+ *
  * <p>NOTE: The term dictionary can plug into different postings implementations:
  * for example the postings writer/reader are actually responsible for encoding 
  * and decoding the MetadataBlock.</p>
+ *
  * <ul>
  * <!-- TODO: expand on this, its not really correct and doesnt explain sub-blocks etc -->
  *    <li>TermsDict (.tim) --&gt; Header, DirOffset, PostingsHeader, SkipInterval,
@@ -122,7 +130,8 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * <a name="Termindex" id="Termindex"></a>
  * <h3>Term Index</h3>
  * <p>The .tip file contains an index into the term dictionary, so that it can be 
- * accessed randomly.</p>
+ * accessed randomly.  The index is also used to determine
+ * when a given term cannot exist on disk (in the .tim file), saving a disk seek.</p>
  * <ul>
  *   <li>TermsIndex (.tip) --&gt; Header, &lt;IndexStartFP&gt;<sup>NumFields</sup>, 
  *                                FSTIndex<sup>NumFields</sup></li>
@@ -133,8 +142,18 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * </ul>
  * <p>Notes:</p>
  * <ul>
- *   <li>The .tip file contains a separate FST for each field. Each field's IndexStartFP points
- *       to its FST.</li>
+ *   <li>The .tip file contains a separate FST for each
+ *       field.  The FST maps a term prefix to the on-disk
+ *       block that holds all terms starting with that
+ *       prefix.  Each field's IndexStartFP points to its
+ *       FST.</li>
+ *   <li>It's possible that an on-disk block would contain
+ *       too many terms (more than the allowed maximum
+ *       (default: 48)).  When this happens, the block is
+ *       sub-divided into new blocks (called "floor
+ *       blocks"), and then the output in the FST for the
+ *       block's prefix encodes the leading byte of each
+ *       sub-block, and its file pointer.
  * </ul>
  * <a name="Frequencies" id="Frequencies"></a>
  * <h3>Frequencies</h3>
