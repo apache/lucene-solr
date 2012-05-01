@@ -271,12 +271,12 @@ systems that frequently run out of file handles.</td>
 </tr>
 <tr>
 <td>Norms</td>
-<td>.nrm.cfs</td>
+<td>.nrm.cfs, .nrm.cfe</td>
 <td>Encodes length and boost factors for docs and fields</td>
 </tr>
 <tr>
 <td>Per-Document Values</td>
-<td>.dv.cfs</td>
+<td>.dv.cfs, .dv.cfe</td>
 <td>Encodes additional scoring factors or other per-document information.</td>
 </tr>
 <tr>
@@ -330,19 +330,24 @@ single set of doc store (vectors &amp; stored fields) files. This allows for
 faster indexing in certain cases. The change is fully backwards compatible (in
 the same way as the lock-less commits change in 2.1).</li>
 <li>In version 2.4, Strings are now written as true UTF-8 byte sequence, not
-Java's modified UTF-8. See issue LUCENE-510 for details.</li>
+Java's modified UTF-8. See <a href="http://issues.apache.org/jira/browse/LUCENE-510">
+LUCENE-510</a> for details.</li>
 <li>In version 2.9, an optional opaque Map&lt;String,String&gt; CommitUserData
 may be passed to IndexWriter's commit methods (and later retrieved), which is
-recorded in the segments_N file. See issue LUCENE-1382 for details. Also,
+recorded in the segments_N file. See <a href="http://issues.apache.org/jira/browse/LUCENE-1382">
+LUCENE-1382</a> for details. Also,
 diagnostics were added to each segment written recording details about why it
 was written (due to flush, merge; which OS/JRE was used; etc.). See issue
-LUCENE-1654 for details.</li>
+<a href="http://issues.apache.org/jira/browse/LUCENE-1654">LUCENE-1654</a> for details.</li>
 <li>In version 3.0, compressed fields are no longer written to the index (they
 can still be read, but on merge the new segment will write them, uncompressed).
-See issue LUCENE-1960 for details.</li>
+See issue <a href="http://issues.apache.org/jira/browse/LUCENE-1960">LUCENE-1960</a> 
+for details.</li>
 <li>In version 3.1, segments records the code version that created them. See
-LUCENE-2720 for details. Additionally segments track explicitly whether or not
-they have term vectors. See LUCENE-2811 for details.</li>
+<a href="http://issues.apache.org/jira/browse/LUCENE-2720">LUCENE-2720</a> for details. 
+Additionally segments track explicitly whether or not they have term vectors. 
+See <a href="http://issues.apache.org/jira/browse/LUCENE-2811">LUCENE-2811</a> 
+for details.</li>
 <li>In version 3.2, numeric fields are written as natively to stored fields
 file, previously they were stored in text format only.</li>
 <li>In version 3.4, fields can omit position data while still indexing term
@@ -369,7 +374,7 @@ document numbers, and the index file format uses an <code>Int32</code>
 on-disk to store document numbers. This is a limitation
 of both the index file format and the current implementation. Eventually these
 should be replaced with either <code>UInt64</code> values, or
-better yet, <code>VInt</code> values which have no limit.</p>
+better yet, {@link org.apache.lucene.store.DataOutput#writeVInt VInt} values which have no limit.</p>
 </div>
 </body>
 </html>
