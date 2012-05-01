@@ -97,7 +97,8 @@ import org.apache.lucene.util.fst.FST; // javadocs
  *    <li>SkipMinimum is the minimum document frequency a term must have in order to write any 
  *        skip data at all.</li>
  *    <li>DocFreq is the count of documents which contain the term.</li>
- *    <li>TotalTermFreq is the total number of occurrences of the term.</li>
+ *    <li>TotalTermFreq is the total number of occurrences of the term. This is encoded
+ *        as the difference between the total number of occurrences and the DocFreq.</li>
  *    <li>FreqDelta determines the position of this term's TermFreqs within the .frq
  *        file. In particular, it is the difference between the position of this term's
  *        data in that file and the position of the previous term's data (or zero, for

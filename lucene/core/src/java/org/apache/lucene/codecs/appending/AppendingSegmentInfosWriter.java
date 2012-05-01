@@ -22,6 +22,13 @@ import java.io.IOException;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosWriter;
 import org.apache.lucene.store.IndexOutput;
 
+/**
+ * Append-only SegmentInfos writer.
+ * <p>
+ * Extends {@link Lucene40SegmentInfosWriter}, writing the same
+ * format, but the first phase of a two-phase commit 
+ * ({@link #prepareCommit(IndexOutput)}) is not implemented.
+ */
 public class AppendingSegmentInfosWriter extends Lucene40SegmentInfosWriter {
 
   @Override

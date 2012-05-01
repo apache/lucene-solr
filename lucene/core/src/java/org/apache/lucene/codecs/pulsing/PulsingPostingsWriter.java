@@ -36,7 +36,15 @@ import org.apache.lucene.util.CodecUtil;
 // payload would not be inlined.  Though this is
 // presumably rare in practice...
 
-/** @lucene.experimental */
+/** 
+ * Writer for the pulsing format. 
+ * <p>
+ * Wraps another postings implementation and decides 
+ * (based on total number of occurrences), whether a terms 
+ * postings should be inlined into the term dictionary,
+ * or passed through to the wrapped writer.
+ *
+ * @lucene.experimental */
 public final class PulsingPostingsWriter extends PostingsWriterBase {
 
   final static String CODEC = "PulsedPostingsWriter";

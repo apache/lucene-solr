@@ -19,8 +19,11 @@ package org.apache.lucene.codecs.pulsing;
 
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsBaseFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat; // javadocs
 
 /**
+ * Concrete pulsing implementation over {@link Lucene40PostingsFormat}.
+ * 
  * @lucene.experimental
  */
 public class Pulsing40PostingsFormat extends PulsingPostingsFormat {

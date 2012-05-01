@@ -23,6 +23,9 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * InfoStream implementation over a {@link PrintStream}
+ * such as <code>System.out</code>.
+ * 
  * @lucene.internal
  */
 public class PrintStreamInfoStream extends InfoStream {

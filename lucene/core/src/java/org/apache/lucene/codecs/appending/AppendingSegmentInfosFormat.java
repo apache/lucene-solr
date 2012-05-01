@@ -20,6 +20,14 @@ package org.apache.lucene.codecs.appending;
 import org.apache.lucene.codecs.SegmentInfosWriter;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfosFormat;
 
+/**
+ * Append-only SegmentInfos format.
+ * <p>
+ * Only a writer is supplied, as the format is written 
+ * the same as {@link Lucene40SegmentInfosFormat}.
+ * 
+ * @see AppendingSegmentInfosWriter
+ */
 public class AppendingSegmentInfosFormat extends Lucene40SegmentInfosFormat {
   private final SegmentInfosWriter writer = new AppendingSegmentInfosWriter();
 

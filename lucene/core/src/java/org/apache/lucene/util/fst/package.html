@@ -21,5 +21,72 @@
 </head>
 <body>
 Finite state transducers
+<p>
+This package implements <a href="http://en.wikipedia.org/wiki/Finite_state_transducer">
+Finite State Transducers</a> with the following characteristics:
+<ul>
+   <li>Fast construction of the minimal FST 
+       (but inputs must be provided in sorted order)</li>
+   <li>Low object overhead and quick deserialization (byte[] representation)</li>
+   <li>Optional compression: {@link org.apache.lucene.util.fst.FST#pack FST.pack()}</li>
+   <li>{@link org.apache.lucene.util.fst.Util#getByOutput Lookup-by-output} when the 
+       outputs are in sorted order (ordinals or file pointers)</li>
+   <li>Pluggable {@link org.apache.lucene.util.fst.Outputs Outputs} representation</li>
+   <li>{@link org.apache.lucene.util.fst.Util#shortestPaths N-shortest-paths} search by
+       weight</li>
+</ul>
+<p>
+FST Construction example:
+<pre class="prettyprint">
+    // input values (keys). These must be provided to Builder in sorted order!
+    String inputValues[] = { "cat", "dog", "dogs" }; 
+    long outputValues[] = { 5, 7, 12 };
+    
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    Builder<Long> builder = new Builder<Long>(INPUT_TYPE.BYTE1, outputs);
+    BytesRef scratchBytes = new BytesRef();
+    IntsRef scratchInts = new IntsRef();
+    for (int i = 0; i < inputValues.length; i++) {
+      scratchBytes.copyChars(inputValues[i]);
+      builder.add(Util.toIntsRef(scratchBytes, scratchInts), outputValues[i]);
+    }
+    FST<Long> fst = builder.finish();
+</pre>
+Retrieval by key:
+<pre class="prettyprint">
+    Long value = Util.get(fst, new BytesRef("dog"));
+    System.out.println(value); // 7
+</pre>
+Retrieval by value:
+<pre class="prettyprint">
+    // Only works because outputs are in sorted order
+    IntsRef key = Util.getByOutput(fst, 12);
+    System.out.println(Util.toBytesRef(key, scratchBytes).utf8ToString()); // dogs
+</pre>
+Iterate over key-value pairs in sorted order:
+<pre class="prettyprint">
+    // Like TermsEnum, this also supports seeking (advance)
+    BytesRefFSTEnum<Long> iterator = new BytesRefFSTEnum<Long>(fst);
+    while (iterator.next() != null) {
+      InputOutput<Long> mapEntry = iterator.current();
+      System.out.println(mapEntry.input.utf8ToString());
+      System.out.println(mapEntry.output);
+    }
+</pre>
+N-shortest paths by weight:
+<pre class="prettyprint">
+    // Only works because we passed 'true' for sharing to getSingleton
+    Comparator<Long> comparator = new Comparator<Long>() {
+      public int compare(Long left, Long right) {
+        return left.compareTo(right);
+      }
+    };
+    Arc<Long> firstArc = fst.getFirstArc(new Arc<Long>());
+    MinResult<Long> paths[] = Util.shortestPaths(fst, firstArc, comparator, 2);
+    System.out.println(Util.toBytesRef(paths[0].input, scratchBytes).utf8ToString()); // cat
+    System.out.println(paths[0].output); // 5
+    System.out.println(Util.toBytesRef(paths[1].input, scratchBytes).utf8ToString()); // dog
+    System.out.println(paths[1].output); // 7
+</pre>
 </body>
 </html>

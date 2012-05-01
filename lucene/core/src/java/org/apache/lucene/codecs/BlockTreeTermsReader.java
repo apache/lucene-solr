@@ -262,6 +262,10 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
   }
 
+  /**
+   * BlockTree statistics for a single field 
+   * returned by {@link FieldReader#computeStats()}.
+   */
   public static class Stats {
     public int indexNodeCount;
     public int indexArcCount;

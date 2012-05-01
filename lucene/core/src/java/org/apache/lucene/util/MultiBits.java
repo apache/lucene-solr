@@ -82,11 +82,23 @@ public final class MultiBits implements Bits {
     return b.toString();
   }
 
+  /**
+   * Represents a sub-Bits from 
+   * {@link MultiBits#getMatchingSub(org.apache.lucene.util.ReaderUtil.Slice) getMatchingSub()}.
+   */
   public final static class SubResult {
     public boolean matches;
     public Bits result;
   }
 
+  /**
+   * Returns a sub-Bits matching the provided <code>slice</code>
+   * <p>
+   * Because <code>null</code> usually has a special meaning for
+   * Bits (e.g. no deleted documents), you must check
+   * {@link SubResult#matches} instead to ensure the sub was 
+   * actually found.
+   */
   public SubResult getMatchingSub(ReaderUtil.Slice slice) {
     int reader = ReaderUtil.subIndex(slice.start, starts);
     assert reader != -1;

@@ -17,6 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+/**
+ * Extension of Bits for live documents.
+ */
 public interface MutableBits extends Bits {
   public void clear(int bit);
 }

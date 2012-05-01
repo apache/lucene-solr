@@ -30,25 +30,60 @@ import org.apache.lucene.util.BytesRef;
 /**
  * Immutable class holding compiled details for a given
  * Automaton.  The Automaton is deterministic, must not have
- * dead states but may not be minimal.
+ * dead states but is not necessarily minimal.
  *
  * @lucene.experimental
  */
 public class CompiledAutomaton {
-  public enum AUTOMATON_TYPE {NONE, ALL, SINGLE, PREFIX, NORMAL};
+  /**
+   * Automata are compiled into different internal forms for the
+   * most efficient execution depending upon the language they accept.
+   */
+  public enum AUTOMATON_TYPE {
+    /** Automaton that accepts no strings. */
+    NONE, 
+    /** Automaton that accepts all possible strings. */
+    ALL, 
+    /** Automaton that accepts only a single fixed string. */
+    SINGLE, 
+    /** Automaton that matches all Strings with a constant prefix. */
+    PREFIX, 
+    /** Catch-all for any other automata. */
+    NORMAL
+  };
   public final AUTOMATON_TYPE type;
 
-  // For PREFIX, this is the prefix term; for SINGLE this is
-  // the singleton term:
+  /** 
+   * For {@link AUTOMATON_TYPE#PREFIX}, this is the prefix term; 
+   * for {@link AUTOMATON_TYPE#SINGLE} this is the singleton term.
+   */
   public final BytesRef term;
 
-  // NOTE: the next 4 members are only non-null if type ==
-  // NORMAL:
+  /** 
+   * Matcher for quickly determining if a byte[] is accepted.
+   * only valid for {@link AUTOMATON_TYPE#NORMAL}.
+   */
   public final ByteRunAutomaton runAutomaton;
   // TODO: would be nice if these sortedTransitions had "int
   // to;" instead of "State to;" somehow:
+  /**
+   * Two dimensional array of transitions, indexed by state
+   * number for traversal. The state numbering is consistent with
+   * {@link #runAutomaton}. 
+   * Only valid for {@link AUTOMATON_TYPE#NORMAL}.
+   */
   public final Transition[][] sortedTransitions;
+  /**
+   * Shared common suffix accepted by the automaton. Only valid
+   * for {@link AUTOMATON_TYPE#NORMAL}, and only when the
+   * automaton accepts an infinite language.
+   */
   public final BytesRef commonSuffixRef;
+  /**
+   * Indicates if the automaton accepts a finite set of strings.
+   * Null if this was not computed.
+   * Only valid for {@link AUTOMATON_TYPE#NORMAL}.
+   */
   public final Boolean finite;
 
   public CompiledAutomaton(Automaton automaton) {

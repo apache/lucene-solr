@@ -19,6 +19,10 @@ package org.apache.lucene.misc;
 
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * Holder for a term along with its statistics
+ * ({@link #docFreq} and {@link #totalTermFreq}).
+ */
 public final class TermStats {
   public BytesRef termtext;
   public String field;

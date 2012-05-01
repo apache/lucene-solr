@@ -1,16 +1,5 @@
 package org.apache.lucene.codecs;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
-
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -28,7 +17,21 @@ import org.apache.lucene.util.RamUsageEstimator;
  * the License.
  */
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
+
 /**
+ * DocValues {@link Source} implementation backed by
+ * simple arrays.
+ * 
  * @lucene.experimental
  * @lucene.internal
  */

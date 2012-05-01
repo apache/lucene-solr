@@ -74,6 +74,9 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
     return services.values().iterator();
   }
   
+  /**
+   * Interface to support {@link NamedSPILoader#lookup(String)} by name.
+   */
   public static interface NamedSPI {
     String getName();
   }

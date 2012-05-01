@@ -35,6 +35,9 @@ public final class ReaderUtil {
 
   private ReaderUtil() {} // no instance
 
+  /**
+   * Subreader slice from a parent composite reader.
+   */
   public static class Slice {
     public static final Slice[] EMPTY_ARRAY = new Slice[0];
     public final int start;

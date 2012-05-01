@@ -36,7 +36,12 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexFileNames;
 
-/** @lucene.experimental */
+/** 
+ * TermsIndexReader for simple every-nth terms indexes.
+ *
+ * @see FixedGapTermsIndexWriter
+ * @lucene.experimental 
+ */
 public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
   // NOTE: long is overkill here, since this number is 128

@@ -34,7 +34,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Appending postings impl
+ * Appending postings impl.
  */
 class AppendingPostingsFormat extends PostingsFormat {
   public static String CODEC_NAME = "Appending";

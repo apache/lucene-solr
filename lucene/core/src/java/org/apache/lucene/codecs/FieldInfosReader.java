@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
 /**
+ * Codec API for reading {@link FieldInfos}.
  * @lucene.experimental
  */
 public abstract class FieldInfosReader {

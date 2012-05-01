@@ -55,6 +55,13 @@ import org.apache.lucene.search.similarities.NormalizationZ;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 
+/**
+ * Similarity implementation that randomizes Similarity implementations
+ * per-field.
+ * <p>
+ * The choices are 'sticky', so the selected algorithm is always used
+ * for the same field.
+ */
 public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
   final DefaultSimilarity defaultSim = new DefaultSimilarity();
   final List<Similarity> knownSims;

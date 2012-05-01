@@ -44,7 +44,6 @@ public class Token {
     this.length = length;
     this.type = type;
     this.position = position;
-    this.positionLength = positionLength;
     this.dictionary = dictionary;
   }
 

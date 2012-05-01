@@ -17,9 +17,19 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexWriter; // javadocs
+import org.apache.lucene.index.SegmentInfos; // javadocs
 import java.io.Closeable;
 
-/** @lucene.internal */
+/** 
+ * Debugging API for Lucene classes such as {@link IndexWriter} 
+ * and {@link SegmentInfos}.
+ * <p>
+ * NOTE: Enabling infostreams may cause performance degradation
+ * in some components.
+ * 
+ * @lucene.internal 
+ */
 public abstract class InfoStream implements Closeable {
 
   /** Instance of InfoStream that does no logging at all. */

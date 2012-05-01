@@ -33,6 +33,18 @@ public interface RegexCapabilities {
    */
   public RegexMatcher compile(String pattern);
 
+  /**
+   * Interface for basic regex matching.
+   * <p>
+   * Implementations return true for {@link #match} if the term 
+   * matches the regex.
+   * <p>
+   * Implementing {@link #prefix()} can restrict the TermsEnum to only
+   * a subset of terms when the regular expression matches a constant
+   * prefix.
+   * <p>
+   * NOTE: implementations cannot seek.
+   */
   public interface RegexMatcher {
     /**
      *

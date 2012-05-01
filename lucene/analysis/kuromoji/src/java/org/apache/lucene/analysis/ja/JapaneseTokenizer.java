@@ -349,8 +349,8 @@ public final class JapaneseTokenizer extends Tokenizer {
     }
 
     public void add(int cost, int lastRightID, int backPos, int backIndex, int backID, Type backType) {
-      // NOTE: this isn't quite a true Viterbit search,
-      // becase we should check if lastRightID is
+      // NOTE: this isn't quite a true Viterbi search,
+      // because we should check if lastRightID is
       // already present here, and only update if the new
       // cost is less than the current cost, instead of
       // simply appending.  However, that will likely hurt
@@ -635,12 +635,12 @@ public final class JapaneseTokenizer extends Tokenizer {
         // path, across all paths, backtrace from it, and
         // then prune all others.  Note that this, in
         // general, can produce the wrong result, if the
-        // total bast path did not in fact back trace
+        // total best path did not in fact back trace
         // through this partial best path.  But it's the
         // best we can do... (short of not having a
         // safety!).
 
-        // First pass: find least cost parital path so far,
+        // First pass: find least cost partial path so far,
         // including ending at future positions:
         int leastIDX = -1;
         int leastCost = Integer.MAX_VALUE;
@@ -985,7 +985,7 @@ public final class JapaneseTokenizer extends Tokenizer {
     // token.  So, we could just directly set the attrs,
     // from the backtrace, in incrementToken w/o ever
     // creating Token; we'd have to defer calling freeBefore
-    // until after the bactrace was fully "consumed" by
+    // until after the backtrace was fully "consumed" by
     // incrementToken.
 
     while (pos > lastBackTracePos) {
