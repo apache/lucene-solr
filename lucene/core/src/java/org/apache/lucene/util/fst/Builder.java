@@ -304,7 +304,12 @@ public class Builder<T> {
 
   /** It's OK to add the same input twice in a row with
    *  different outputs, as long as outputs impls the merge
-   *  method. */
+   *  method. Note that input is fully consumed after this
+   *  method is returned (so caller is free to reuse), but
+   *  output is not.  So if your outputs are changeable (eg
+   *  {@link ByteSequenceOutputs} or {@link
+   *  IntSequenceOutputs}) then you cannot reuse across
+   *  calls. */
   public void add(IntsRef input, T output) throws IOException {
     /*
     if (DEBUG) {
