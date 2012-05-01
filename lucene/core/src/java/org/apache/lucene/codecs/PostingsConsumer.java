@@ -28,19 +28,29 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
+ * Abstract API that consumes postings for an individual term.
+ * <p>
+ * The lifecycle is:
+ * <ol>
+ *    <li>PostingsConsumer is returned for each term by
+ *        {@link TermsConsumer#startTerm(BytesRef)}. 
+ *    <li>{@link #startDoc(int, int)} is called for each
+ *        document where the term occurs, specifying id 
+ *        and term frequency for that document.
+ *    <li>If positions are enabled for the field, then
+ *        {@link #addPosition(int, BytesRef, int, int)}
+ *        will be called for each occurrence in the 
+ *        document.
+ *    <li>{@link #finishDoc()} is called when the producer
+ *        is done adding positions to the document.
+ * </ol>
+ * 
  * @lucene.experimental
  */
-
 public abstract class PostingsConsumer {
 
   /** Adds a new doc in this term. */
-  public abstract void startDoc(int docID, int termDocFreq) throws IOException;
-
-  public static class PostingsMergeState {
-    DocsEnum docsEnum;
-    int[] docMap;
-    int docBase;
-  }
+  public abstract void startDoc(int docID, int freq) throws IOException;
 
   /** Add a new position & payload, and start/end offset.  A
    *  null payload means no payload; a non-null payload with

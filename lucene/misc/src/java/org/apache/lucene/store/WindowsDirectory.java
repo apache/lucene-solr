@@ -75,7 +75,7 @@ public class WindowsDirectory extends FSDirectory {
     return new WindowsIndexInput(new File(getDirectory(), name), Math.max(BufferedIndexInput.bufferSize(context), DEFAULT_BUFFERSIZE));
   }
   
-  protected static class WindowsIndexInput extends BufferedIndexInput {
+  static class WindowsIndexInput extends BufferedIndexInput {
     private final long fd;
     private final long length;
     boolean isClone;

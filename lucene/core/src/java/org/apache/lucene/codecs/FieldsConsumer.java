@@ -24,12 +24,23 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.SegmentWriteState; // javadocs
 import org.apache.lucene.index.Terms;
 
-/** Abstract API that consumes terms, doc, freq, prox, offset and
- *  payloads postings.  Concrete implementations of this
- *  actually do "something" with the postings (write it into
- *  the index in a specific format).
+/** 
+ * Abstract API that consumes terms, doc, freq, prox, offset and
+ * payloads postings.  Concrete implementations of this
+ * actually do "something" with the postings (write it into
+ * the index in a specific format).
+ * <p>
+ * The lifecycle is:
+ * <ol>
+ *   <li>FieldsConsumer is created by 
+ *       {@link PostingsFormat#fieldsConsumer(SegmentWriteState)}.
+ *   <li>For each field, {@link #addField(FieldInfo)} is called,
+ *       returning a {@link TermsConsumer} for the field.
+ *   <li>After all fields are added, the consumer is {@link #close}d.
+ * </ol>
  *
  * @lucene.experimental
  */

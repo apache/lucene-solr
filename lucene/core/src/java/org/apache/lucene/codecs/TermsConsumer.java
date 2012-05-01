@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.FieldInfo; // javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermsEnum;
@@ -30,9 +31,25 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
+ * Abstract API that consumes terms for an individual field.
+ * <p>
+ * The lifecycle is:
+ * <ol>
+ *   <li>TermsConsumer is returned for each field 
+ *       by {@link FieldsConsumer#addField(FieldInfo)}.
+ *   <li>TermsConsumer returns a {@link PostingsConsumer} for
+ *       each term in {@link #startTerm(BytesRef)}.
+ *   <li>When the producer (e.g. IndexWriter)
+ *       is done adding documents for the term, it calls 
+ *       {@link #finishTerm(BytesRef, TermStats)}, passing in
+ *       the accumulated term statistics.
+ *   <li>Producer calls {@link #finish(long, long, int)} with
+ *       the accumulated collection statistics when it is finished
+ *       adding terms to the field.
+ * </ol>
+ * 
  * @lucene.experimental
  */
-
 public abstract class TermsConsumer {
 
   /** Starts a new term in this field; this may be called
@@ -50,11 +67,11 @@ public abstract class TermsConsumer {
    *  before feeding to this API. */
   public abstract Comparator<BytesRef> getComparator() throws IOException;
 
-  /** Default merge impl */
   private MappingMultiDocsEnum docsEnum;
   private MappingMultiDocsEnum docsAndFreqsEnum;
   private MappingMultiDocsAndPositionsEnum postingsEnum;
 
+  /** Default merge impl */
   public void merge(MergeState mergeState, TermsEnum termsEnum) throws IOException {
 
     BytesRef term;

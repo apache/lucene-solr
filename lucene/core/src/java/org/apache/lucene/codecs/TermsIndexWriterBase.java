@@ -23,9 +23,18 @@ import org.apache.lucene.util.BytesRef;
 import java.io.Closeable;
 import java.io.IOException;
 
-/** @lucene.experimental */
+/** 
+ * Base class for terms index implementations to plug
+ * into {@link BlockTermsWriter}.
+ * 
+ * @see TermsIndexReaderBase
+ * @lucene.experimental 
+ */
 public abstract class TermsIndexWriterBase implements Closeable {
 
+  /**
+   * Terms index API for a single field.
+   */
   public abstract class FieldWriter {
     public abstract boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException;
     public abstract void add(BytesRef text, TermStats stats, long termsFilePointer) throws IOException;

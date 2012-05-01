@@ -47,6 +47,10 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
 /**
+ * Reads plain-text DocValues.
+ * <p>
+ * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * 
  * @lucene.experimental
  */
 public class SimpleTextPerDocProducer extends PerDocProducerBase {

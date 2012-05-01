@@ -21,6 +21,10 @@ import java.io.IOException;
 import java.io.FileDescriptor;
 import java.nio.ByteBuffer;
 
+/**
+ * Provides JNI access to native methods such as madvise() for
+ * {@link NativeUnixDirectory}
+ */
 public final class NativePosixUtil {
   public final static int NORMAL = 0;
   public final static int SEQUENTIAL = 1;

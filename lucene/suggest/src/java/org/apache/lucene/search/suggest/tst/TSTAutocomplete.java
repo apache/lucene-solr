@@ -19,6 +19,11 @@ package org.apache.lucene.search.suggest.tst;
 
 import java.util.*;
 
+/**
+ * Ternary Search Trie implementation.
+ * 
+ * @see TernaryTreeNode
+ */
 public class TSTAutocomplete {
 
   /**

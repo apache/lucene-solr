@@ -209,18 +209,18 @@
       <check-missing-javadocs dir="build/docs/analyzers-uima" level="class"/>
       <!-- benchmark: problems -->
       <!-- core: problems -->
-      <!-- demo: problems -->
+      <check-missing-javadocs dir="build/docs/demo" level="class"/>
       <!-- facet: problems -->
       <!-- grouping: problems -->
       <!-- highlighter: problems -->
       <check-missing-javadocs dir="build/docs/join" level="class"/>
       <check-missing-javadocs dir="build/docs/memory" level="class"/>
-      <!-- misc: problems -->
+      <check-missing-javadocs dir="build/docs/misc" level="class"/>
       <!-- queries: problems -->
       <!-- queryparser: problems -->
       <!-- sandbox: problems -->
       <!-- spatial: problems -->
-      <!-- suggest: problems -->
+      <check-missing-javadocs dir="build/docs/suggest" level="class"/>
       <!-- test-framework: problems -->
     </sequential>
   </target>

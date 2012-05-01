@@ -38,7 +38,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * plain-text norms format
+ * plain-text norms format.
  * <p>
  * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
  * 
@@ -63,6 +63,13 @@ public class SimpleTextNormsFormat extends NormsFormat {
     SimpleTextNormsPerDocConsumer.files(info, files);
   }
   
+  /**
+   * Reads plain-text norms.
+   * <p>
+   * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+   * 
+   * @lucene.experimental
+   */
   public static class SimpleTextNormsPerDocProducer extends
       SimpleTextPerDocProducer {
     
@@ -88,6 +95,13 @@ public class SimpleTextNormsFormat extends NormsFormat {
     
   }
   
+  /**
+   * Writes plain-text norms.
+   * <p>
+   * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+   * 
+   * @lucene.experimental
+   */
   public static class SimpleTextNormsPerDocConsumer extends
       SimpleTextPerDocConsumer {
     

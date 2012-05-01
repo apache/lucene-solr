@@ -66,6 +66,11 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
 
   protected abstract BlockReader getBlockReader(IndexInput in, int[] buffer) throws IOException;
 
+  /**
+   * Interface for fixed-size block decoders.
+   * <p>
+   * Implementations should decode into the buffer in {@link #readBlock}.
+   */
   public interface BlockReader {
     public void readBlock() throws IOException;
   }

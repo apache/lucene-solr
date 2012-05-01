@@ -30,9 +30,9 @@ import java.io.Closeable;
 //     frequent indexing
 
 /**
- * TermsDictReader interacts with an instance of this class
+ * {@link BlockTermsReader} interacts with an instance of this class
  * to manage its terms index.  The writer must accept
- * indexed terms (many pairs of CharSequence text + long
+ * indexed terms (many pairs of BytesRef text + long
  * fileOffset), and then this reader must be able to
  * retrieve the nearest index term to a provided term
  * text. 
@@ -48,13 +48,15 @@ public abstract class TermsIndexReaderBase implements Closeable {
 
   public abstract int getDivisor();
 
-  // Similar to TermsEnum, except, the only "metadata" it
-  // reports for a given indexed term is the long fileOffset
-  // into the main terms dict (_X.tis) file:
+  /** 
+   * Similar to TermsEnum, except, the only "metadata" it
+   * reports for a given indexed term is the long fileOffset
+   * into the main terms dictionary file:
+   */
   public static abstract class FieldIndexEnum {
 
     /** Seeks to "largest" indexed term that's <=
-     *  term; retruns file pointer index (into the main
+     *  term; returns file pointer index (into the main
      *  terms index file) for that term */
     public abstract long seek(BytesRef term) throws IOException;
 
@@ -63,8 +65,10 @@ public abstract class TermsIndexReaderBase implements Closeable {
 
     public abstract BytesRef term();
 
-    // Only impl'd if supportsOrd() returns true!
+    /** Only implemented if {@link TermsIndexReaderBase#supportsOrd()} returns true. */
     public abstract long seek(long ord) throws IOException;
+    
+    /** Only implemented if {@link TermsIndexReaderBase#supportsOrd()} returns true. */
     public abstract long ord();
   }
 }

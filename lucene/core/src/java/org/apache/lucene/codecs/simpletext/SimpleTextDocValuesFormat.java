@@ -26,7 +26,12 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.BytesRef;
+
 /**
+ * Plain-text DocValues format.
+ * <p>
+ * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * 
  * @lucene.experimental
  */
 public class SimpleTextDocValuesFormat extends DocValuesFormat {

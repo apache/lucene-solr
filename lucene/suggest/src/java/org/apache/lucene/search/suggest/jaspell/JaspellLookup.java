@@ -34,6 +34,12 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 
+/**
+ * Suggest implementation based on 
+ * <a href="http://jaspell.sourceforge.net/">JaSpell</a>.
+ * 
+ * @see JaspellTernarySearchTrie
+ */
 public class JaspellLookup extends Lookup {
   JaspellTernarySearchTrie trie = new JaspellTernarySearchTrie();
   private boolean usePrefix = true;

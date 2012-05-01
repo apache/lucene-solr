@@ -51,6 +51,12 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 
+/**
+ * Example servlet that uses the XML queryparser.
+ * <p>
+ * NOTE: you must provide CSV data in <code>/WEB-INF/data.tsv</code>
+ * for the demo to work!
+ */
 public class FormBasedXmlQueryDemo extends HttpServlet {
 
   private QueryTemplateManager queryTemplateManager;

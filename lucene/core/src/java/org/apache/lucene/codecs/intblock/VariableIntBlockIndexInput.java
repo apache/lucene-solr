@@ -68,6 +68,11 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
 
   protected abstract BlockReader getBlockReader(IndexInput in, int[] buffer) throws IOException;
 
+  /**
+   * Interface for variable-size block decoders.
+   * <p>
+   * Implementations should decode into the buffer in {@link #readBlock}.
+   */
   public interface BlockReader {
     public int readBlock() throws IOException;
     public void seek(long pos) throws IOException;

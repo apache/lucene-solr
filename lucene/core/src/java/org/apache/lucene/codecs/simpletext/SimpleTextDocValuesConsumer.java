@@ -31,6 +31,10 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.IOUtils;
 
 /**
+ * Writes plain-text DocValues.
+ * <p>
+ * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
+ * 
  * @lucene.experimental
  */
 public class SimpleTextDocValuesConsumer extends DocValuesConsumer {

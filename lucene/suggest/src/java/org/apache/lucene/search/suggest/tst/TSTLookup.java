@@ -33,6 +33,12 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 
+/**
+ * Suggest implementation based on a 
+ * <a href="http://en.wikipedia.org/wiki/Ternary_search_tree">Ternary Search Tree</a>
+ * 
+ * @see TSTAutocomplete
+ */
 public class TSTLookup extends Lookup {
   TernaryTreeNode root = new TernaryTreeNode();
   TSTAutocomplete autocomplete = new TSTAutocomplete();
