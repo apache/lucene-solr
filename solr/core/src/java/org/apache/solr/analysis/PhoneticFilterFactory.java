@@ -25,12 +25,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.codec.Encoder;
-import org.apache.commons.codec.language.Caverphone;
-import org.apache.commons.codec.language.ColognePhonetic;
-import org.apache.commons.codec.language.DoubleMetaphone;
-import org.apache.commons.codec.language.Metaphone;
-import org.apache.commons.codec.language.RefinedSoundex;
-import org.apache.commons.codec.language.Soundex;
+import org.apache.commons.codec.language.*;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.PhoneticFilter;
 
@@ -69,7 +64,7 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
     put( "Metaphone".toUpperCase(Locale.ENGLISH),       Metaphone.class );
     put( "Soundex".toUpperCase(Locale.ENGLISH),         Soundex.class );
     put( "RefinedSoundex".toUpperCase(Locale.ENGLISH),  RefinedSoundex.class );
-    put( "Caverphone".toUpperCase(Locale.ENGLISH),      Caverphone.class );
+    put( "Caverphone".toUpperCase(Locale.ENGLISH),      Caverphone2.class );
     put( "ColognePhonetic".toUpperCase(Locale.ENGLISH), ColognePhonetic.class );
   }};
   private static final Lock lock = new ReentrantLock();
