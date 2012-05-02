@@ -1154,7 +1154,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (random().nextInt(10)==0) {
       assertU(optimize());
     } else {
-      assertU(commit());
+      if (random().nextInt(10) == 0) {
+        assertU(commit());
+      } else {
+        assertU(commit("softCommit","true"));
+      }
     }
 
     // merging segments no longer selects just adjacent segments hence ids (doc.order) can be shuffled.

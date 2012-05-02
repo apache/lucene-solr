@@ -195,9 +195,6 @@ public class DocTermOrds {
    *  <p><b>NOTE</b>: you must pass the same reader that was
    *  used when creating this class */
   public TermsEnum getOrdTermsEnum(AtomicReader reader) throws IOException {
-    if (termInstances == 0) {
-      return null;
-    }
     if (indexedTermsArray == null) {
       //System.out.println("GET normal enum");
       final Fields fields = reader.fields();
@@ -511,9 +508,9 @@ public class DocTermOrds {
           break;
       }
 
-      if (indexedTerms != null) {
-        indexedTermsArray = indexedTerms.toArray(new BytesRef[indexedTerms.size()]);
-      }
+    }
+    if (indexedTerms != null) {
+      indexedTermsArray = indexedTerms.toArray(new BytesRef[indexedTerms.size()]);
     }
 
     long endTime = System.currentTimeMillis();
