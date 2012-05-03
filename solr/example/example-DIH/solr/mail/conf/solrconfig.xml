@@ -674,10 +674,6 @@
   <!-- config for the admin interface -->
   <admin>
     <defaultQuery>solr</defaultQuery>
-
-    <!-- configure a healthcheck file for servers behind a loadbalancer
-    <healthcheck type="file">server-enabled</healthcheck>
-    -->
   </admin>
 
 </config>

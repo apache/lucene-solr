@@ -78,6 +78,12 @@ Upgrading from Solr 3.6-dev
   CommonsHttpSolrServer is now HttpSolrServer, and 
   StreamingUpdateSolrServer is now ConcurrentUpdateSolrServer.
 
+* The PingRequestHandler no longer looks for a <healthcheck/> option in the 
+  (legacy) <admin> section of solrconfig.xml.  Users who wish to take 
+  advantage of this feature should configure a "healthcheckFile" init param 
+  directly on the  PingRequestHandler.  As part of this change, relative file 
+  paths have been fixed to be resolved against the data dir.  See the example 
+  solrconfig.xml and SOLR-1258 for more details.
 
 Detailed Change List
 ----------------------
@@ -534,6 +540,12 @@ Other Changes
 
 * SOLR-3403: Deprecated Analysis Factories now log their own deprecation messages.
   No logging support is provided by Factory parent classes. (Chris Male)
+
+* SOLR-1258: PingRequestHandler is now directly configured with a 
+  "healthcheckFile" instead of looking for the legacy 
+  <admin><healthcheck/></admin> syntax.  Filenames specified as relative 
+  paths have been fixed so that they are resolved against the data dir 
+  instead of the CWD of the java process. (hossman)
 
 Documentation
 ----------------------

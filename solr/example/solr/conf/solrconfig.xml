@@ -1064,6 +1064,12 @@
     <lst name="defaults">
       <str name="echoParams">all</str>
     </lst>
+    <!-- An optional feature of the PingRequestHandler is to configure the 
+         handler with a "healthcheckFile" which can be used to enable/disable 
+         the PingRequestHandler.
+         relative paths are resolved against the data dir 
+      -->
+    <!-- <str name="healthcheckFile">server-enabled.txt</str> -->
   </requestHandler>
 
   <!-- Echo the request contents back to the client -->
@@ -1683,13 +1689,6 @@
   <!-- Legacy config for the admin interface -->
   <admin>
     <defaultQuery>*:*</defaultQuery>
-
-    <!-- configure a healthcheck file for servers behind a
-         loadbalancer 
-      -->
-    <!--
-       <healthcheck type="file">server-enabled</healthcheck>
-      -->
   </admin>
 
 </config>

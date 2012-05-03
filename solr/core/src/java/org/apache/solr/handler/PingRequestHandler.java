@@ -19,40 +19,161 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.text.SimpleDateFormat;
+import java.io.IOException;
 import java.util.Date;
 import java.util.Locale;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.DateField;
 
+import org.apache.commons.io.FileUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Ping solr core
+ * Ping Request Handler for reporting SolrCore health to a Load Balancer.
+ *
+ * <p>
+ * This handler is designed to be used as the endpoint for an HTTP 
+ * Load-Balancer to use when checking the "health" or "up status" of a 
+ * Solr server.
+ * </p>
  * 
+ * <p> 
+ * In it's simplest form, the PingRequestHandler should be
+ * configured with some defaults indicating a request that should be
+ * executed.  If the request succeeds, then the PingRequestHandler
+ * will respond back with a simple "OK" status.  If the request fails,
+ * then the PingRequestHandler will respond back with the
+ * corrisponding HTTP Error code.  Clients (such as load balancers)
+ * can be configured to poll the PingRequestHandler monitoring for
+ * these types of responses (or for a simple connection failure) to
+ * know if there is a problem with the Solr server.
+ * </p>
+ *
+ * <pre class="prettyprint">
+ * &lt;requestHandler name="/admin/ping" class="solr.PingRequestHandler"&gt;
+ *   &lt;lst name="invariants"&gt;
+ *     &lt;str name="qt"&gt;/search&lt;/str&gt;&lt;!-- handler to delegate to --&gt;
+ *     &lt;str name="q"&gt;some test query&lt;/str&gt;
+ *   &lt;/lst&gt;
+ * &lt;/requestHandler&gt;
+ * </pre>
+ *
+ * <p>
+ * A more advanced option available, is to configure the handler with a 
+ * "healthcheckFile" which can be used to enable/disable the PingRequestHandler.
+ * </p>
+ *
+ * <pre class="prettyprint">
+ * &lt;requestHandler name="/admin/ping" class="solr.PingRequestHandler"&gt;
+ *   &lt;!-- relative paths are resolved against the data dir --&gt;
+ *   &lt;str name="healthcheckFile"&gt;server-enabled.txt&lt;/str&gt;
+ *   &lt;lst name="invariants"&gt;
+ *     &lt;str name="qt"&gt;/search&lt;/str&gt;&lt;!-- handler to delegate to --&gt;
+ *     &lt;str name="q"&gt;some test query&lt;/str&gt;
+ *   &lt;/lst&gt;
+ * &lt;/requestHandler&gt;
+ * </pre>
+ *
+ * <ul>
+ *   <li>If the health check file exists, the handler will execute the 
+ *       delegated query and return status as described above.
+ *   </li>
+ *   <li>If the health check file does not exist, the handler will return 
+ *       an HTTP error even if the server is working fine and the delegated 
+ *       query would have succeeded
+ *   </li>
+ * </ul>
+ *
+ * <p> 
+ * This health check file feature can be used as a way to indicate
+ * to some Load Balancers that the server should be "removed from
+ * rotation" for maintenance, or upgrades, or whatever reason you may
+ * wish.  
+ * </p>
+ *
+ * <p> 
+ * The health check file may be created/deleted by any external
+ * system, or the PingRequestHandler itself can be used to
+ * create/delete the file by specifying an "action" param in a
+ * request: 
+ * </p>
+ *
+ * <ul>
+ *   <li><code>http://.../ping?action=enable</code>
+ *       - creates the health check file if it does not already exist
+ *   </li>
+ *   <li><code>http://.../ping?action=disable</code>
+ *       - deletes the health check file if it exists
+ *   </li>
+ *   <li><code>http://.../ping?action=status</code>
+ *       - returns a status code indicating if the healthcheck file exists 
+ *       ("<code>enabled</code>") or not ("<code>disabled<code>")
+ *   </li>
+ * </ul>
+ *
  * @since solr 1.3
  */
-public class PingRequestHandler extends RequestHandlerBase 
+public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAware
 {
+  public static Logger log = LoggerFactory.getLogger(PingRequestHandler.class);
 
-  SimpleDateFormat formatRFC3339 = new SimpleDateFormat("yyyy-MM-dd'T'h:m:ss.SZ");
+  public static final String HEALTHCHECK_FILE_PARAM = "healthcheckFile";
   protected enum ACTIONS {STATUS, ENABLE, DISABLE, PING};
-  private String healthcheck = null;
   
+  private String healthFileName = null;
+  private File healthcheck = null;
+
+  public void init(NamedList args) {
+    super.init(args);
+    Object tmp = args.get(HEALTHCHECK_FILE_PARAM);
+    healthFileName = (null == tmp ? null : tmp.toString());
+  }
+
+  public void inform( SolrCore core ) {
+    if (null != healthFileName) {
+      healthcheck = new File(healthFileName);
+      if ( ! healthcheck.isAbsolute()) {
+        healthcheck = new File(core.getDataDir(), healthFileName);
+        healthcheck = healthcheck.getAbsoluteFile();
+      }
+
+      if ( ! healthcheck.getParentFile().canWrite()) {
+        // this is not fatal, users may not care about enable/disable via 
+        // solr request, file might be touched/deleted by an external system
+        log.warn("Directory for configured healthcheck file is not writable by solr, PingRequestHandler will not be able to control enable/disable: {}",
+                 healthcheck.getParentFile().getAbsolutePath());
+      }
+
+    }
+    
+  }
+  
+  /**
+   * Returns true if the healthcheck flag-file is enabled but does not exist, 
+   * otherwise (no file configured, or file configured and exists) 
+   * returns false. 
+   */
+  public boolean isPingDisabled() {
+    return (null != healthcheck && ! healthcheck.exists() );
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
     
     SolrParams params = req.getParams();
     SolrCore core = req.getCore();
-    
-    // Check if the service is available
-    healthcheck = core.getSolrConfig().get("admin/healthcheck/text()", null );
     
     String actionParam = params.get("action");
     ACTIONS action = null;
@@ -70,32 +191,28 @@ public class PingRequestHandler extends RequestHandlerBase
     }
     switch(action){
       case PING:
-        if( healthcheck != null && !new File(healthcheck).exists() ) {
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Service disabled");
+        if( isPingDisabled() ) {
+          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, 
+                                  "Service disabled");
         }
         handlePing(req, rsp);
         break;
       case ENABLE:
-        handleEnable(healthcheck,true);
+        handleEnable(true);
         break;
       case DISABLE:
-        handleEnable(healthcheck,false);
+        handleEnable(false);
         break;
       case STATUS:
-        if( healthcheck == null){
-          SolrException e = new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "healthcheck not configured");
+        if( healthcheck == null ){
+          SolrException e = new SolrException
+            (SolrException.ErrorCode.SERVICE_UNAVAILABLE, 
+             "healthcheck not configured");
           rsp.setException(e);
-        }
-        else {
-          if ( new File(healthcheck).exists() ){
-            rsp.add( "status",  "enabled");      
-          }
-          else {
-            rsp.add( "status",  "disabled");      
-          }
+        } else {
+          rsp.add( "status", isPingDisabled() ? "disabled" : "enabled" );      
         }
     }
-
   }
   
   protected void handlePing(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
@@ -136,24 +253,25 @@ public class PingRequestHandler extends RequestHandlerBase
     rsp.add( "status", "OK" );
   }
   
-  protected void handleEnable(String healthcheck, boolean enable) throws Exception
-  {
+  protected void handleEnable(boolean enable) throws SolrException {
     if (healthcheck == null) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, 
         "No healthcheck file defined.");
     }
-    File enableFile = new File(healthcheck);
     if ( enable ) {
-      enableFile.createNewFile();
-      
-      // write out when the file was created
-      FileWriter fw = new FileWriter(enableFile);      
-      fw.write(formatRFC3339.format(new Date()));
-      fw.close(); 
-      
+      try {
+        // write out when the file was created
+        FileUtils.write(healthcheck, 
+                        DateField.formatExternal(new Date()), "UTF-8");
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+                                "Unable to write healthcheck flag file", e);
+      }
     } else {
-      if (enableFile.exists() && !enableFile.delete()){
-        throw new SolrException( SolrException.ErrorCode.NOT_FOUND,"Did not successfully delete healthcheck file:'"+healthcheck+"'");
+      if (healthcheck.exists() && !healthcheck.delete()){
+        throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
+                                "Did not successfully delete healthcheck file: "
+                                +healthcheck.getAbsolutePath());
       }
     }
   }

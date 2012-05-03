@@ -20,21 +20,24 @@ package org.apache.solr.handler;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+
+import org.apache.commons.io.FileUtils;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Test;
-
 
 public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
-  private String healthcheck = "server-enabled";
-  private File healthcheckFile = new File(healthcheck);
+  private final String fileName = this.getClass().getName() + ".server-enabled";
+  private File healthcheckFile = null;
   private PingRequestHandler handler = null;
   
   @BeforeClass
@@ -43,116 +46,149 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void before() {
-    healthcheckFile.delete();
-    handler = new PingRequestHandler();
-  }
-  
-  @Test
-  public void testPing() throws Exception {
-     
-    SolrQueryRequest req = req();
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    
-    handler.handleRequestBody(req, rsp);
-    String status = (String) rsp.getValues().get("status");
-    assertEquals("OK", status);
-    req.close();
-    
-    req = req("action","ping");
-    rsp = new SolrQueryResponse();
-    
-    handler.handleRequestBody(req, rsp);
-    status = (String) rsp.getValues().get("status");
-    assertEquals("OK", status);
-    req.close();    
-  }
-  
-  @Test
-  public void testEnablingServer() throws Exception {
-    
-        
-    handler.handleEnable(healthcheck, true);
-    
-    assertTrue(healthcheckFile.exists());
-    
-    SolrQueryRequest req = req();
-    SolrQueryResponse rsp = new SolrQueryResponse();
+  public void before() throws IOException {
 
-    handler.handlePing(req, rsp);
-    String status = (String) rsp.getValues().get("status");
-    assertEquals("OK", status);
-    req.close();
-    
-    FileReader fr = new FileReader(healthcheckFile);
-  
-    BufferedReader br = new BufferedReader(fr); 
-    String s = br.readLine();
-    assertNotNull(s);
-     
+    // by default, use relative file in dataDir
+    healthcheckFile = new File(dataDir, fileName);
+    String fileNameParam = fileName;
+
+    // sometimes randomly use an absolute File path instead 
+    if (random().nextBoolean()) {
+      healthcheckFile = new File(TEMP_DIR, fileName);
+      fileNameParam = healthcheckFile.getAbsolutePath();
+    } 
+      
+    if (healthcheckFile.exists()) FileUtils.forceDelete(healthcheckFile);
+
+    handler = new PingRequestHandler();
+    NamedList initParams = new NamedList();
+    initParams.add(PingRequestHandler.HEALTHCHECK_FILE_PARAM,
+                   fileNameParam);
+    handler.init(initParams);
+    handler.inform(h.getCore());
   }
   
-  @Test
-  public void testDisablingServer() throws Exception {
+  public void testPingWithNoHealthCheck() throws Exception {
     
+    // for this test, we don't want any healthcheck file configured at all
+    handler = new PingRequestHandler();
+    handler.init(new NamedList());
+    handler.inform(h.getCore());
+
+    SolrQueryResponse rsp = null;
+    
+    rsp = makeRequest(handler, req());
+    assertEquals("OK", rsp.getValues().get("status"));
+    
+    rsp = makeRequest(handler, req("action","ping"));
+    assertEquals("OK", rsp.getValues().get("status")); 
+
+  }
+  
+  public void testEnablingServer() throws Exception {
+
+    assertTrue(! healthcheckFile.exists());
+
+    // first make sure that ping responds back that the service is disabled
+
+    try {
+      makeRequest(handler, req());
+      fail("Should have thrown a SolrException because not enabled yet");
+    } catch (SolrException se){
+      assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,se.code());
+    }
+
+    // now enable
+
+    makeRequest(handler, req("action", "enable"));
+
+    assertTrue(healthcheckFile.exists());
+    assertNotNull(FileUtils.readFileToString(healthcheckFile), "UTF-8");
+
+    // now verify that the handler response with success
+
+    SolrQueryResponse rsp = makeRequest(handler, req());
+    assertEquals("OK", rsp.getValues().get("status"));
+
+    // enable when already enabled shouldn't cause any problems
+    makeRequest(handler, req("action", "enable"));
+    assertTrue(healthcheckFile.exists());
+
+  }
+  
+  public void testDisablingServer() throws Exception {
+
+    assertTrue(! healthcheckFile.exists());
         
     healthcheckFile.createNewFile();
+
+    // first make sure that ping responds back that the service is enabled
+
+    SolrQueryResponse rsp = makeRequest(handler, req());
+    assertEquals("OK", rsp.getValues().get("status"));
+
+    // now disable
     
-    handler.handleEnable(healthcheck, false);
+    makeRequest(handler, req("action", "disable"));
     
     assertFalse(healthcheckFile.exists());
 
+    // now make sure that ping responds back that the service is disabled
+
+    try {
+      makeRequest(handler, req());
+      fail("Should have thrown a SolrException because not enabled yet");
+    } catch (SolrException se){
+      assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,se.code());
+    }
+    
+    // disable when already disabled shouldn't cause any problems
+    makeRequest(handler, req("action", "disable"));
+    assertFalse(healthcheckFile.exists());
     
   }
+
   
-  @Test
-  @Ignore // because of how we load the healthcheck file, we have to change it in schema.xml
   public void testGettingStatus() throws Exception {
+    SolrQueryResponse rsp = null;
+
+    handler.handleEnable(true);
     
-        
-    handler.handleEnable(healthcheck, true);
-    
-    
-    SolrQueryRequest req = req("action", "status");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-        
-    handler.handleRequestBody(req, rsp);
-    
-    String status = (String) rsp.getValues().get("status");
-    assertEquals("enabled", status);
-    
-    req.close();    
+    rsp = makeRequest(handler, req("action", "status"));
+    assertEquals("enabled", rsp.getValues().get("status"));
  
-    handler.handleEnable(healthcheck, false);   
+    handler.handleEnable(false);   
     
-    req = req("action", "status");
-    rsp = new SolrQueryResponse();
-    
-    handler.handleRequestBody(req, rsp);
-        
-    status = (String) rsp.getValues().get("status");
-    assertEquals("disabled", status);
-       
-    req.close();    
+    rsp = makeRequest(handler, req("action", "status"));
+    assertEquals("disabled", rsp.getValues().get("status"));
  
   }
   
-  @Test
   public void testBadActionRaisesException() throws Exception {
     
-    SolrQueryRequest req = req("action", "badaction");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    
     try {
-      handler.handleRequestBody(req, rsp);
+      SolrQueryResponse rsp = makeRequest(handler, req("action", "badaction"));
       fail("Should have thrown a SolrException for the bad action");
-    }
-    catch (SolrException se){
+    } catch (SolrException se){
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,se.code());
     }
-
-    req.close();    
-    
   }
-  
+
+  /**
+   * Helper Method: Executes the request against the handler, returns 
+   * the response, and closes the request.
+   */
+  private SolrQueryResponse makeRequest(PingRequestHandler handler,
+                                        SolrQueryRequest req) 
+    throws Exception {
+
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    try {
+      handler.handleRequestBody(req, rsp);
+    } finally {
+      req.close();
+    }
+    return rsp;
+  }
+
 }
