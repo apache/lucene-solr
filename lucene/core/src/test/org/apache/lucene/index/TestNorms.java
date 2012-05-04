@@ -31,12 +31,15 @@ import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Test that norms info is preserved during index life - including
  * separate norms, addDocument, addIndexes, forceMerge.
  */
+@UseNoMemoryExpensiveCodec
 public class TestNorms extends LuceneTestCase {
   final String byteTestField = "normsTestByte";
 
@@ -90,7 +93,7 @@ public class TestNorms extends LuceneTestCase {
   }
   
   public void testMaxByteNorms() throws IOException {
-    Directory dir = newDirectory();
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir, true);
     AtomicReader open = SlowCompositeReaderWrapper.wrap(IndexReader.open(dir));
     DocValues normValues = open.normValues(byteTestField);
@@ -115,11 +118,11 @@ public class TestNorms extends LuceneTestCase {
    * while merging fills in default values based on the Norm {@link Type}
    */
   public void testNormsNotPresent() throws IOException {
-    Directory dir = newDirectory();
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testNormsNotPresent.1"));
     boolean firstWriteNorm = random().nextBoolean();
     buildIndex(dir, firstWriteNorm);
 
-    Directory otherDir = newDirectory();
+    Directory otherDir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testNormsNotPresent.2"));
     boolean secondWriteNorm = random().nextBoolean();
     buildIndex(otherDir, secondWriteNorm);
 
