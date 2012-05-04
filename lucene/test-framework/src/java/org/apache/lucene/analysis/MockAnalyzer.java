@@ -113,6 +113,13 @@ public final class MockAnalyzer extends Analyzer {
                   break;
         }
       }
+      if (LuceneTestCase.VERBOSE) {
+        if (val == Integer.MAX_VALUE) {
+          System.out.println("MockAnalyzer: field=" + fieldName + " gets variable length payloads");
+        } else if (val != -1) {
+          System.out.println("MockAnalyzer: field=" + fieldName + " gets fixed length=" + val + " payloads");
+        }
+      }
       previousMappings.put(fieldName, val); // save it so we are consistent for this field
     }
     
