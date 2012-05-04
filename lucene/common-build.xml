@@ -58,6 +58,7 @@
   <property name="ivy.bootstrap.version" value="2.2.0" />
   <property name="ivy.resource" value="org/apache/ivy/ant/antlib.xml" />
   <available resource="${ivy.resource}" property="ivy.available" />
+  <property name="ivy.default.configuration" value="*"/>
 
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" value="${common.dir}/test-framework/lib/${junit.jar}"/>
@@ -282,7 +283,8 @@
   <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
     <!-- todo, make this a property or something. 
          only special cases need bundles -->
-    <ivy:retrieve type="jar,bundle" log="download-only"/>
+    <ivy:retrieve type="jar,bundle" log="download-only" 
+                  conf="${ivy.default.configuration}"/>
   </target>
 
   <property name="ivy_install_path" location="${user.home}/.ant/lib" />

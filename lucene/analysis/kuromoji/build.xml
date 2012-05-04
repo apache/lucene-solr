@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="analyzers-kuromoji" default="default">
+<project name="analyzers-kuromoji" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
 
   <description>
     Japanese Morphological Analyzer
@@ -26,19 +26,21 @@
   <!-- currently whether rat detects this as binary or not
        is platform dependent?! -->
   <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
+
+  <!-- we don't want to pull in ipadic/naist etc -->
+  <property name="ivy.default.configuration" value="default"/>
   <import file="../analysis-module-build.xml"/> 
 
   <!-- default configuration: uses mecab-ipadic -->
+  <property name="ipadic.type" value="ipadic"/>
   <property name="ipadic.version" value="mecab-ipadic-2.7.0-20070801" />
-  <property name="dict.src.file" value="${ipadic.version}.tar.gz" />
-  <property name="dict.url" value="http://mecab.googlecode.com/files/${dict.src.file}"/>
 
   <!-- alternative configuration: uses mecab-naist-jdic
+  <property name="ipadic.type" value="naist"/>
   <property name="ipadic.version" value="mecab-naist-jdic-0.6.3b-20111013" />
-  <property name="dict.src.file" value="${ipadic.version}.tar.gz" />
-  <property name="dict.url" value="http://sourceforge.jp/frs/redir.php?m=iij&amp;f=/naist-jdic/53500/${dict.src.file}"/>
   -->
   
+  <property name="dict.src.file" value="${ipadic.version}.tar.gz" />
   <property name="dict.src.dir" value="${build.dir}/${ipadic.version}" />
   <property name="dict.encoding" value="euc-jp"/>
   <property name="dict.format" value="ipadic"/>
@@ -54,8 +56,9 @@
   </path>
 
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
-  <target name="download-dict" unless="dict.available">
-     <get src="${dict.url}" dest="${build.dir}/${dict.src.file}"/>
+  <target name="download-dict" depends="ivy-availability-check,ivy-fail,ivy-configure" unless="dict.available">
+     <ivy:retrieve pattern="${build.dir}/${dict.src.file}" conf="${ipadic.type}"/>
+     <!-- TODO: we should checksum too -->
      <gunzip src="${build.dir}/${dict.src.file}"/>
      <untar src="${build.dir}/${ipadic.version}.tar" dest="${build.dir}"/>
   </target>
@@ -86,7 +89,6 @@
       <java fork="true" failonerror="true" maxmemory="1g" classname="org.apache.lucene.analysis.ja.util.DictionaryBuilder">
         <classpath>
           <path refid="tools.classpath"/>
-          <pathelement path="${build.dir}/classes/tools"/>
         </classpath>
         <assertions>
           <enable package="org.apache.lucene"/>
@@ -113,7 +115,6 @@
       destdir="${build.dir}/classes/tools">
       <classpath>
         <path refid="tools.classpath"/>
-        <pathelement path="src/tools/java"/>
       </classpath>
     </compile>
   </target>
