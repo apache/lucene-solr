@@ -23,6 +23,11 @@
     Japanese Morphological Analyzer
   </description>
 
+  <!-- currently whether rat detects this as binary or not
+       is platform dependent?! -->
+  <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
+  <import file="../analysis-module-build.xml"/> 
+
   <!-- default configuration: uses mecab-ipadic -->
   <property name="ipadic.version" value="mecab-ipadic-2.7.0-20070801" />
   <property name="dict.src.file" value="${ipadic.version}.tar.gz" />
@@ -40,10 +45,6 @@
   <property name="dict.normalize" value="false"/>
   <property name="dict.target.dir" location="./src/resources"/>
 
-  <!-- currently whether rat detects this as binary or not
-       is platform dependent?! -->
-  <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
-  <import file="../analysis-module-build.xml"/> 
 
   <available type="dir" file="${build.dir}/${ipadic.version}" property="dict.available"/>
 
