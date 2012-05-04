@@ -1560,7 +1560,7 @@ public abstract class LuceneTestCase extends Assert {
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public static void reportPartialFailureInfo() {
     System.err.println("NOTE: reproduce with (hopefully): ant test " +
-    		"-Dtests.class=*." + getTestClass().getSimpleName() +
+    		"-Dtestcase" + getTestClass().getSimpleName() +
     		" -Dtests.seed=" + RandomizedContext.current().getRunnerSeedAsString() +
     		reproduceWithExtraParams());
   }
@@ -1569,7 +1569,7 @@ public abstract class LuceneTestCase extends Assert {
   public void reportAdditionalFailureInfo() {
     StringBuilder b = new StringBuilder();
     b.append("NOTE: reproduce with: ant test ")
-     .append("-Dtests.class=*.").append(getTestClass().getSimpleName());
+     .append("-Dtestcase").append(getTestClass().getSimpleName());
     if (getName() != null) {
       b.append(" -Dtests.method=").append(getName());
     }
