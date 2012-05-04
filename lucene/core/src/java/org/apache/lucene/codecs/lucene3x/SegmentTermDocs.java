@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene3x;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.lucene40.Lucene40SkipListReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
@@ -43,7 +42,7 @@ class SegmentTermDocs {
 
   private int skipInterval;
   private int maxSkipLevels;
-  private Lucene40SkipListReader skipListReader;
+  private Lucene3xSkipListReader skipListReader;
   
   private long freqBasePointer;
   private long proxBasePointer;
@@ -203,10 +202,10 @@ class SegmentTermDocs {
     // don't skip if the target is close (within skipInterval docs away)
     if ((target - skipInterval) >= doc && df >= skipInterval) {                      // optimized case
       if (skipListReader == null)
-        skipListReader = new Lucene40SkipListReader((IndexInput) freqStream.clone(), maxSkipLevels, skipInterval); // lazily clone
+        skipListReader = new Lucene3xSkipListReader((IndexInput) freqStream.clone(), maxSkipLevels, skipInterval); // lazily clone
 
       if (!haveSkipped) {                          // lazily initialize skip stream
-        skipListReader.init(skipPointer, freqBasePointer, proxBasePointer, df, currentFieldStoresPayloads, false);
+        skipListReader.init(skipPointer, freqBasePointer, proxBasePointer, df, currentFieldStoresPayloads);
         haveSkipped = true;
       }
 

@@ -24,7 +24,6 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.codecs.lucene40.Lucene40SkipListWriter;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -39,7 +38,7 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
   private final TermInfosWriter termsOut;
   private final IndexOutput freqOut;
   private final IndexOutput proxOut;
-  private final Lucene40SkipListWriter skipListWriter;
+  private final PreFlexRWSkipListWriter skipListWriter;
   private final int totalNumDocs;
 
   public PreFlexRWFieldsWriter(SegmentWriteState state) throws IOException {
@@ -75,7 +74,7 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
       }
     }
 
-    skipListWriter = new Lucene40SkipListWriter(termsOut.skipInterval,
+    skipListWriter = new PreFlexRWSkipListWriter(termsOut.skipInterval,
                                                termsOut.maxSkipLevels,
                                                totalNumDocs,
                                                freqOut,
@@ -135,7 +134,7 @@ class PreFlexRWFieldsWriter extends FieldsConsumer {
         }
 
         if ((++df % termsOut.skipInterval) == 0) {
-          skipListWriter.setSkipData(lastDocID, storePayloads, lastPayloadLength, false, 0);
+          skipListWriter.setSkipData(lastDocID, storePayloads, lastPayloadLength);
           skipListWriter.bufferSkip(df);
         }
 
