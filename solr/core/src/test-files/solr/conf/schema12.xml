@@ -530,10 +530,13 @@
    <field name="uniq3" type="string" indexed="true" stored="true"/>
    <field name="nouniq" type="string" indexed="true" stored="true" multiValued="true"/>
 
-   <!-- for versioning -->
-   <field name="_version_" type="long" indexed="true" stored="true"/>
 
-
+   <!--
+      DO NOT INCLUDE _version_ in this schema file
+      We explicitly want tests using this file to *NOT* have this field
+      so we can verify that Solr behaves correctly w/o it in those sitautions
+     -->
+   <!-- <field name="_version_" type="long" indexed="true" stored="true"/> -->
 
    <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false"/>
 

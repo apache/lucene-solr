@@ -55,7 +55,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-tlog.xml","schema12.xml");
+    initCore("solrconfig-tlog.xml","schema15.xml");
   }
 
   @Test
