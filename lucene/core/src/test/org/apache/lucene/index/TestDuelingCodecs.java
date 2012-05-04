@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -209,7 +211,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
     TermsEnum leftTermsEnum = leftTerms.iterator(null);
     TermsEnum rightTermsEnum = rightTerms.iterator(null);
     assertTermsEnum(leftTermsEnum, rightTermsEnum, true);
-    // TODO: test seeking too
+    
+    assertTermsSeeking(leftTerms, rightTerms);
     
     if (deep) {
       int numIntersections = atLeast(3);
@@ -222,6 +225,71 @@ public class TestDuelingCodecs extends LuceneTestCase {
           TermsEnum rightIntersection = rightTerms.intersect(automaton, null);
           assertTermsEnum(leftIntersection, rightIntersection, rarely());
         }
+      }
+    }
+  }
+  
+  private void assertTermsSeeking(Terms leftTerms, Terms rightTerms) throws Exception {
+    TermsEnum leftEnum = null;
+    TermsEnum rightEnum = null;
+    
+    // just an upper bound
+    int numTests = atLeast(20);
+    Random random = random();
+    
+    // collect this number of terms from the left side
+    HashSet<BytesRef> tests = new HashSet<BytesRef>();
+    int numPasses = 0;
+    while (numPasses < 10 && tests.size() < numTests) {
+      leftEnum = leftTerms.iterator(leftEnum);
+      BytesRef term = null;
+      while ((term = leftEnum.next()) != null) {
+        int code = random.nextInt(10);
+        if (code == 0) {
+          // the term
+          tests.add(BytesRef.deepCopyOf(term));
+        } else if (code == 1) {
+          // truncated subsequence of term
+          term = BytesRef.deepCopyOf(term);
+          if (term.length > 0) {
+            // truncate it
+            term.length = random.nextInt(term.length);
+          }
+        } else if (code == 2) {
+          // term, but ensure a non-zero offset
+          byte newbytes[] = new byte[term.length+5];
+          System.arraycopy(term.bytes, term.offset, newbytes, 5, term.length);
+          tests.add(new BytesRef(newbytes, 5, term.length));
+        }
+      }
+      numPasses++;
+    }
+    
+    ArrayList<BytesRef> shuffledTests = new ArrayList<BytesRef>(tests);
+    Collections.shuffle(shuffledTests, random);
+    
+    for (BytesRef b : shuffledTests) {
+      leftEnum = leftTerms.iterator(leftEnum);
+      rightEnum = rightTerms.iterator(rightEnum);
+      
+      assertEquals(info, leftEnum.seekExact(b, false), rightEnum.seekExact(b, false));
+      assertEquals(info, leftEnum.seekExact(b, true), rightEnum.seekExact(b, true));
+      
+      SeekStatus leftStatus;
+      SeekStatus rightStatus;
+      
+      leftStatus = leftEnum.seekCeil(b, false);
+      rightStatus = rightEnum.seekCeil(b, false);
+      assertEquals(info, leftStatus, rightStatus);
+      if (leftStatus != SeekStatus.END) {
+        assertEquals(info, leftEnum.term(), rightEnum.term());
+      }
+      
+      leftStatus = leftEnum.seekCeil(b, true);
+      rightStatus = rightEnum.seekCeil(b, true);
+      assertEquals(info, leftStatus, rightStatus);
+      if (leftStatus != SeekStatus.END) {
+        assertEquals(info, leftEnum.term(), rightEnum.term());
       }
     }
   }
