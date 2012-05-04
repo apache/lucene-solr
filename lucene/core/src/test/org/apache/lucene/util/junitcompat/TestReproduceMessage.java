@@ -195,7 +195,7 @@ public class TestReproduceMessage extends WithNestedTests {
     
     Assert.assertTrue(syserr.contains("NOTE: reproduce with:"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.method=test"));
-    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.class=*." + Nested.class.getSimpleName()));
+    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtestcase=" + Nested.class.getSimpleName()));
   }
 
   @Test
@@ -205,7 +205,7 @@ public class TestReproduceMessage extends WithNestedTests {
     final String syserr = runAndReturnSyserr();
     Assert.assertTrue(syserr.contains("NOTE: reproduce with:"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.method=test"));
-    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.class=*." + Nested.class.getSimpleName()));
+    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtestcase=" + Nested.class.getSimpleName()));
   }
 
   @Test
@@ -215,7 +215,7 @@ public class TestReproduceMessage extends WithNestedTests {
     final String syserr = runAndReturnSyserr();
     Assert.assertTrue(syserr.contains("NOTE: reproduce with:"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.method=test"));
-    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.class=*." + Nested.class.getSimpleName()));
+    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtestcase=" + Nested.class.getSimpleName()));
   }
 
   @Test
@@ -225,7 +225,7 @@ public class TestReproduceMessage extends WithNestedTests {
     final String syserr = runAndReturnSyserr();
     Assert.assertTrue(syserr.contains("NOTE: reproduce with:"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.method=test"));
-    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.class=*." + Nested.class.getSimpleName()));
+    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtestcase=" + Nested.class.getSimpleName()));
   }
 
   @Test @Ignore
@@ -260,7 +260,7 @@ public class TestReproduceMessage extends WithNestedTests {
     final String syserr = runAndReturnSyserr();
     Assert.assertTrue(syserr.contains("NOTE: reproduce with:"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.method=test"));
-    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.class=*." + Nested.class.getSimpleName()));
+    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtestcase=" + Nested.class.getSimpleName()));
   }
 
   @Test
@@ -270,7 +270,7 @@ public class TestReproduceMessage extends WithNestedTests {
     final String syserr = runAndReturnSyserr();
     Assert.assertTrue(syserr.contains("NOTE: reproduce with:"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.method=test"));
-    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.class=*." + Nested.class.getSimpleName()));
+    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtestcase=" + Nested.class.getSimpleName()));
   }
 
   @Test
@@ -280,7 +280,7 @@ public class TestReproduceMessage extends WithNestedTests {
     final String syserr = runAndReturnSyserr();
     Assert.assertTrue(syserr.contains("NOTE: reproduce with:"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.method=test"));
-    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.class=*." + Nested.class.getSimpleName()));
+    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtestcase=" + Nested.class.getSimpleName()));
   }
 
   @Test
@@ -290,7 +290,7 @@ public class TestReproduceMessage extends WithNestedTests {
     final String syserr = runAndReturnSyserr();
     Assert.assertTrue(syserr.contains("NOTE: reproduce with:"));
     Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.method=test"));
-    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtests.class=*." + Nested.class.getSimpleName()));
+    Assert.assertTrue(Arrays.asList(syserr.split("\\s")).contains("-Dtestcase=" + Nested.class.getSimpleName()));
   }
 
   @Test @Ignore
