@@ -18,7 +18,7 @@ package org.apache.solr.common;
  */
 
 /**
- * @deprecated This interface has ben kept for backwards compatibility and will
+ * @deprecated This interface has been kept for backwards compatibility and will
  * be removed in (5.0). Use {@link org.apache.lucene.analysis.util.ResourceLoader}
  */
 @Deprecated
