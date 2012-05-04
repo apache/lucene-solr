@@ -85,17 +85,26 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBasics() throws Exception {
-    assertU(adoc("id","5"));
+    
+    assertNull("This test requires a schema that has no version field, " +
+               "it appears the schema file in use has been edited to violate " +
+               "this requirement",
+               h.getCore().getSchema().getFieldOrNull(VersionInfo.VERSION_FIELD));
 
-    // search - not committed - "5" should not be found.
-    assertQ(req("qt","standard","q","id:5"), "//*[@numFound='0']");
+    assertU(adoc("id","5"));
+    assertU(adoc("id","6"));
+
+    // search - not committed - docs should not be found.
+    assertQ(req("q","id:5"), "//*[@numFound='0']");
+    assertQ(req("q","id:6"), "//*[@numFound='0']");
 
     assertU(commit());
 
-    // now it should be there
+    // now they should be there
     assertQ(req("q","id:5"), "//*[@numFound='1']");
+    assertQ(req("q","id:6"), "//*[@numFound='1']");
 
-    // now delete it
+    // now delete one
     assertU(delI("5"));
 
     // not committed yet
@@ -103,8 +112,20 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
     assertU(commit());
     
-    // should be gone
+    // 5 should be gone
     assertQ(req("q","id:5"), "//*[@numFound='0']");
+    assertQ(req("q","id:6"), "//*[@numFound='1']");
+
+    // now delete all
+    assertU(delQ("*:*"));
+
+    // not committed yet
+    assertQ(req("q","id:6"), "//*[@numFound='1']");
+
+    assertU(commit());
+
+    // 6 should be gone
+    assertQ(req("q","id:6"), "//*[@numFound='0']");
 
   }
 
