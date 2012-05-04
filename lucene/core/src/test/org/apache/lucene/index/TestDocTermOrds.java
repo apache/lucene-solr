@@ -324,7 +324,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     //final TermsEnum te = subR.fields().terms("field").iterator();
     final TermsEnum te = dto.getOrdTermsEnum(r);
-    if (te == null) {
+    if (dto.numTerms() == 0) {
       if (prefixRef == null) {
         assertNull(MultiFields.getTerms(r, "field"));
       } else {
