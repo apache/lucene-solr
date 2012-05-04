@@ -225,8 +225,7 @@
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
-              includes="src/,index.html,*build*.xml,docs/,*.txt,lib/,backwards/"
-              excludes="**/pom.xml,**/*.iml,site/build/"
+              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,lucene/benchmark/work/**,lucene/benchmark/temp/**"
   />
 
   <!-- Default exclude sources and javadoc jars from Ivy fetch to save time and bandwidth -->
