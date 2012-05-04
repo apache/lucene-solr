@@ -405,6 +405,9 @@ Bug Fixes
   CoreAdminHandler could return consistent information regardless of wether
   there is a a default core name or not. (steffkes, hossman)
 
+* SOLR-3370: fixed CSVResponseWriter to respect globs in the 'fl' param
+  (Keith Fligg via hossman)
+
 Other Changes
 ----------------------
 

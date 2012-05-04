@@ -163,6 +163,23 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     w.write(buf, req, rsp);
     String s = buf.toString();
     assertTrue(s.indexOf("score") >=0 && s.indexOf("2.718") > 0 && s.indexOf("89.83") > 0 );
+    
+    // Test field globs
+    rsp.setReturnFields( new ReturnFields("id,foo*", req) );
+    buf = new StringWriter();
+    w.write(buf, req, rsp);
+    assertEquals("id,foo_i,foo_s,foo_l,foo_b,foo_f,foo_d,foo_dt\n" +
+        "1,-1,hi,12345678987654321L,false,1.414,-1.0E300,2000-01-02T03:04:05Z\n" +
+        "2,,,,,,,\n",
+      buf.toString());
+
+    rsp.setReturnFields( new ReturnFields("id,*_d*", req) );
+    buf = new StringWriter();
+    w.write(buf, req, rsp);
+    assertEquals("id,foo_d,foo_dt\n" +
+        "1,-1.0E300,2000-01-02T03:04:05Z\n" +
+        "2,,\n",
+      buf.toString());
 
     req.close();
   }

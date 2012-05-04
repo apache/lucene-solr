@@ -258,6 +258,10 @@ class CSVWriter extends TextResponseWriter {
     CSVSharedBufPrinter csvPrinterMV = new CSVSharedBufPrinter(mvWriter, mvStrategy);
 
     for (String field : fields) {
+       if (!returnFields.wantsField(field)) {
+         continue;
+       }
+
       if (field.equals("score")) {
         CSVField csvField = new CSVField();
         csvField.name = "score";
