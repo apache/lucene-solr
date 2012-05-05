@@ -107,7 +107,9 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     doCheckSorting(docs);
   }
   
-  private void doTestRanges(String startPoint, String endPoint, Query query) throws Exception {
+  private void doTestRanges(String startPoint, String endPoint, Query query) throws Exception { 
+    QueryUtils.check(query);
+    
     // positive test
     TopDocs docs = searcher.search(query, numDocs);
     for (ScoreDoc doc : docs.scoreDocs) {
@@ -145,5 +147,12 @@ public class TestSlowCollationMethods extends LuceneTestCase {
       Query query = new ConstantScoreQuery(new SlowCollatedTermRangeFilter("field", startPoint, endPoint, true, true, collator));
       doTestRanges(startPoint, endPoint, query);
     }
+  }
+  
+  public void testQuery() {
+    String startPoint = _TestUtil.randomUnicodeString(random());
+    String endPoint = _TestUtil.randomUnicodeString(random());
+    Query query = new SlowCollatedTermRangeQuery("field", startPoint, endPoint, true, true, collator);
+    QueryUtils.check(random(), query, searcher);
   }
 }
