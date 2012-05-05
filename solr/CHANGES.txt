@@ -125,8 +125,9 @@ New Features
   (Stefan Matheis, Mark Miller)
   SOLR-3108: Error in SolrCloud's replica lookup code when replica's are hosted in same Solr instance.
   (Bruno Dumon, Sami Siren, Mark Miller)
-  SOLR-3080: Remove shard info from zookeeper when SolrCore is explicitlyunloaded.
+  SOLR-3080: Remove shard info from zookeeper when SolrCore is explicitly unloaded.
   (yonik, Mark Miller, siren)
+  SOLR-3437: Recovery issues a spurious commit to the cluster. (Trym R. Møller via Mark Miller)
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries

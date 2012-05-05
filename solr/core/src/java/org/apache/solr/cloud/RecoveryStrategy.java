@@ -167,7 +167,6 @@ public class RecoveryStrategy extends Thread implements SafeStopThread {
     ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(
         server);
-    server.commit();
     server.shutdown();
   }
 
