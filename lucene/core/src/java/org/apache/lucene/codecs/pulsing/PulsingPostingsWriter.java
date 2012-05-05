@@ -79,6 +79,8 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
     int termFreq;                                 // only incremented on first position for a given doc
     int pos;
     int docID;
+    int startOffset;
+    int endOffset;
   }
 
   // TODO: -- lazy init this?  ie, if every single term
@@ -123,9 +125,6 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
   @Override
   public void setField(FieldInfo fieldInfo) {
     this.indexOptions = fieldInfo.indexOptions;
-    if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-      throw new UnsupportedOperationException("this codec cannot index offsets: " + indexOptions);
-    }
     if (DEBUG) System.out.println("PW field=" + fieldInfo.name + " indexOptions=" + indexOptions);
     storePayloads = fieldInfo.storePayloads;
     wrappedPostingsWriter.setField(fieldInfo);
@@ -186,11 +185,13 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
     if (pendingCount == -1) {
       // We've already seen too many docs for this term --
       // just forward to our fallback writer
-      wrappedPostingsWriter.addPosition(position, payload, -1, -1);
+      wrappedPostingsWriter.addPosition(position, payload, startOffset, endOffset);
     } else {
       // buffer up
       final Position pos = pending[pendingCount++];
       pos.pos = position;
+      pos.startOffset = startOffset;
+      pos.endOffset = endOffset;
       pos.docID = currentDoc.docID;
       if (payload != null && payload.length > 0) {
         if (pos.payload == null) {
@@ -240,10 +241,11 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
       // given codec wants to store other interesting
       // stuff, it could use this pulsing codec to do so
 
-      if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
         int lastDocID = 0;
         int pendingIDX = 0;
         int lastPayloadLength = -1;
+        int lastOffsetLength = -1;
         while(pendingIDX < pendingCount) {
           final Position doc = pending[pendingIDX];
 
@@ -260,14 +262,15 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
           }
 
           int lastPos = 0;
+          int lastOffset = 0;
           for(int posIDX=0;posIDX<doc.termFreq;posIDX++) {
             final Position pos = pending[pendingIDX++];
             assert pos.docID == doc.docID;
             final int posDelta = pos.pos - lastPos;
             lastPos = pos.pos;
             if (DEBUG) System.out.println("    write pos=" + pos.pos);
+            final int payloadLength = pos.payload == null ? 0 : pos.payload.length;
             if (storePayloads) {
-              final int payloadLength = pos.payload == null ? 0 : pos.payload.length;
               if (payloadLength != lastPayloadLength) {
                 buffer.writeVInt((posDelta << 1)|1);
                 buffer.writeVInt(payloadLength);
@@ -275,11 +278,27 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
               } else {
                 buffer.writeVInt(posDelta << 1);
               }
-              if (payloadLength > 0) {
-                buffer.writeBytes(pos.payload.bytes, 0, pos.payload.length);
-              }
             } else {
               buffer.writeVInt(posDelta);
+            }
+            
+            if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+              //System.out.println("write=" + pos.startOffset + "," + pos.endOffset);
+              int offsetDelta = pos.startOffset - lastOffset;
+              int offsetLength = pos.endOffset - pos.startOffset;
+              if (offsetLength != lastOffsetLength) {
+                buffer.writeVInt(offsetDelta << 1 | 1);
+                buffer.writeVInt(offsetLength);
+              } else {
+                buffer.writeVInt(offsetDelta << 1);
+              }
+              lastOffset = pos.startOffset;
+              lastOffsetLength = offsetLength;             
+            }
+            
+            if (payloadLength > 0) {
+              assert storePayloads;
+              buffer.writeBytes(pos.payload.bytes, 0, pos.payload.length);
             }
           }
         }
@@ -387,7 +406,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
           wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
         }
         if (DEBUG) System.out.println("PW:   wrapped.addPos pos=" + pos.pos);
-        wrappedPostingsWriter.addPosition(pos.pos, pos.payload, -1, -1);
+        wrappedPostingsWriter.addPosition(pos.pos, pos.payload, pos.startOffset, pos.endOffset);
       }
       //wrappedPostingsWriter.finishDoc();
     } else {

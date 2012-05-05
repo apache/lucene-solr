@@ -148,7 +148,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     PulsingTermState termState = (PulsingTermState) _termState;
 
     // if we have positions, its total TF, otherwise its computed based on docFreq.
-    long count = fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS ? termState.totalTermFreq : termState.docFreq;
+    long count = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 ? termState.totalTermFreq : termState.docFreq;
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
     if (count <= maxPositions) {
@@ -217,7 +217,11 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse,
                                                boolean needsOffsets) throws IOException {
-    //System.out.println("D&P: field=" + field.name);
+    if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+      return null;
+    } else if (needsOffsets && field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+      return null;
+    }
 
     final PulsingTermState termState = (PulsingTermState) _termState;
 
@@ -258,6 +262,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private final ByteArrayDataInput postings = new ByteArrayDataInput();
     private final IndexOptions indexOptions;
     private final boolean storePayloads;
+    private final boolean storeOffsets;
     private Bits liveDocs;
     private int docID = -1;
     private int accum;
@@ -267,6 +272,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     public PulsingDocsEnum(FieldInfo fieldInfo) {
       indexOptions = fieldInfo.indexOptions;
       storePayloads = fieldInfo.storePayloads;
+      storeOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }
 
     public PulsingDocsEnum reset(Bits liveDocs, PulsingTermState termState) {
@@ -314,13 +320,17 @@ public class PulsingPostingsReader extends PostingsReaderBase {
             freq = postings.readVInt();     // else read freq
           }
 
-          if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+          if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
             // Skip positions
             if (storePayloads) {
               for(int pos=0;pos<freq;pos++) {
                 final int posCode = postings.readVInt();
                 if ((posCode & 1) != 0) {
                   payloadLength = postings.readVInt();
+                }
+                if (storeOffsets && (postings.readVInt() & 1) != 0) {
+                  // new offset length
+                  postings.readVInt();
                 }
                 if (payloadLength != 0) {
                   postings.skipBytes(payloadLength);
@@ -330,6 +340,10 @@ public class PulsingPostingsReader extends PostingsReaderBase {
               for(int pos=0;pos<freq;pos++) {
                 // TODO: skipVInt
                 postings.readVInt();
+                if (storeOffsets && (postings.readVInt() & 1) != 0) {
+                  // new offset length
+                  postings.readVInt();
+                }
               }
             }
           }
@@ -367,6 +381,10 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private byte[] postingsBytes;
     private final ByteArrayDataInput postings = new ByteArrayDataInput();
     private final boolean storePayloads;
+    private final boolean storeOffsets;
+    // note: we could actually reuse across different options, if we passed this to reset()
+    // and re-init'ed storeOffsets accordingly (made it non-final)
+    private final IndexOptions indexOptions;
 
     private Bits liveDocs;
     private int docID = -1;
@@ -376,15 +394,19 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private int position;
     private int payloadLength;
     private BytesRef payload;
+    private int startOffset;
+    private int offsetLength;
 
     private boolean payloadRetrieved;
 
     public PulsingDocsAndPositionsEnum(FieldInfo fieldInfo) {
+      indexOptions = fieldInfo.indexOptions;
       storePayloads = fieldInfo.storePayloads;
+      storeOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }
 
     boolean canReuse(FieldInfo fieldInfo) {
-      return storePayloads == fieldInfo.storePayloads;
+      return indexOptions == fieldInfo.indexOptions && storePayloads == fieldInfo.storePayloads;
     }
 
     public PulsingDocsAndPositionsEnum reset(Bits liveDocs, PulsingTermState termState) {
@@ -401,6 +423,8 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       posPending = 0;
       docID = -1;
       accum = 0;
+      startOffset = storeOffsets ? 0 : -1; // always return -1 if no offsets are stored
+      offsetLength = 0;
       //System.out.println("PR d&p reset storesPayloads=" + storePayloads + " bytes=" + bytes.length + " this=" + this);
       return this;
     }
@@ -427,6 +451,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
           freq = postings.readVInt();     // else read freq
         }
         posPending = freq;
+        startOffset = storeOffsets ? 0 : -1; // always return -1 if no offsets are stored
 
         if (liveDocs == null || liveDocs.get(accum)) {
           //System.out.println("  return docID=" + docID + " freq=" + freq);
@@ -480,6 +505,15 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       } else {
         position += postings.readVInt();
       }
+      
+      if (storeOffsets) {
+        int offsetCode = postings.readVInt();
+        if ((offsetCode & 1) != 0) {
+          // new offset length
+          offsetLength = postings.readVInt();
+        }
+        startOffset += offsetCode >>> 1;
+      }
 
       //System.out.println("PR d&p nextPos return pos=" + position + " this=" + this);
       return position;
@@ -487,12 +521,12 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
     @Override
     public int startOffset() {
-      return -1;
+      return startOffset;
     }
 
     @Override
     public int endOffset() {
-      return -1;
+      return startOffset + offsetLength;
     }
 
     private void skipPositions() throws IOException {

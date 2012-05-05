@@ -30,6 +30,8 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
+import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -56,11 +58,13 @@ public class TestPostingsOffsets extends LuceneTestCase {
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     
     if (Codec.getDefault().getName().equals("Lucene40")) {
-      // pulsing etc are not implemented
-      if (random().nextBoolean()) {
-        iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
-      } else {
-        iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
+      // sep etc are not implemented
+      switch(random().nextInt(4)) {
+        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())); break;
+        case 1: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat())); break;
+        case 2: iwc.setCodec(_TestUtil.alwaysPostingsFormat(
+            new Pulsing40PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
+        case 3: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat())); break;
       }
     }
   }
@@ -73,6 +77,11 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     ft.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    if (random().nextBoolean()) {
+      ft.setStoreTermVectors(true);
+      ft.setStoreTermVectorPositions(random().nextBoolean());
+      ft.setStoreTermVectorOffsets(random().nextBoolean());
+    }
     Token[] tokens = new Token[] {
       makeToken("a", 1, 0, 6),
       makeToken("b", 1, 8, 9),
@@ -132,11 +141,13 @@ public class TestPostingsOffsets extends LuceneTestCase {
     Analyzer analyzer = withPayloads ? new MockPayloadAnalyzer() : new MockAnalyzer(random());
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     if (Codec.getDefault().getName().equals("Lucene40")) {
-      // pulsing etc are not implemented
-      if (random().nextBoolean()) {
-        iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat()));
-      } else {
-        iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
+      // sep etc are not implemented
+      switch(random().nextInt(4)) {
+        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())); break;
+        case 1: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat())); break;
+        case 2: iwc.setCodec(_TestUtil.alwaysPostingsFormat(
+            new Pulsing40PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
+        case 3: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat())); break;
       }
     }
     iwc.setMergePolicy(newLogMergePolicy()); // will rely on docids a bit for skipping

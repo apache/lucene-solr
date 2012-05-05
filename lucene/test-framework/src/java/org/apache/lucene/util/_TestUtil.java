@@ -574,6 +574,12 @@ public class _TestUtil {
    *  default codecs and formats, but always writes in the specified
    *  format. */
   public static Codec alwaysPostingsFormat(final PostingsFormat format) {
+    // TODO: we really need for postings impls etc to announce themselves
+    // (and maybe their params, too) to infostream on flush and merge.
+    // otherwise in a real debugging situation we won't know whats going on!
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("forcing postings format to:" + format);
+    }
     return new Lucene40Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
