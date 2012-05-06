@@ -190,14 +190,15 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * sequence of VInts instead:</p>
  * <p>7,4</p>
  * <p>DocSkip records the document number before every SkipInterval <sup>th</sup>
- * document in TermFreqs. If payloads are disabled for the term's field, then
+ * document in TermFreqs. If payloads and offsets are disabled for the term's field, then
  * DocSkip represents the difference from the previous value in the sequence. If
- * payloads are enabled for the term's field, then DocSkip/2 represents the
- * difference from the previous value in the sequence. If payloads are enabled and
- * DocSkip is odd, then PayloadLength is stored indicating the length of the last
- * payload before the SkipInterval<sup>th</sup> document in TermPositions. If offsets
- * are enabled, then OffsetLength is stored indicating the length of the last offset
- * (endOffset-startOffset).
+ * payloads and/or offsets are enabled for the term's field, then DocSkip/2 represents the
+ * difference from the previous value in the sequence. In this case when
+ * DocSkip is odd, then PayloadLength and/or OffsetLength are stored indicating the length of 
+ * the last payload/offset before the SkipInterval<sup>th</sup> document in TermPositions.</p>
+ * <p>PayloadLength indicates the length of the last payload.</p>
+ * <p>OffsetLength indicates the length of the last offset (endOffset-startOffset).</p>
+ * <p>
  * FreqSkip and ProxSkip record the position of every SkipInterval <sup>th</sup>
  * entry in FreqFile and ProxFile, respectively. File positions are relative to
  * the start of TermFreqs and Positions, to the previous SkipDatum in the

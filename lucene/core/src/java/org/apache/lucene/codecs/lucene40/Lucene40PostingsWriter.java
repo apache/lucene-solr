@@ -138,11 +138,11 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     //if (DEBUG) System.out.println("SPW: startTerm freqOut.fp=" + freqStart);
     if (proxOut != null) {
       proxStart = proxOut.getFilePointer();
-      // force first payload to write its length
-      lastPayloadLength = -1;
-      // force first offset to write its length
-      lastOffsetLength = -1;
     }
+    // force first payload to write its length
+    lastPayloadLength = -1;
+    // force first offset to write its length
+    lastOffsetLength = -1;
     skipListWriter.resetSkip();
   }
 
