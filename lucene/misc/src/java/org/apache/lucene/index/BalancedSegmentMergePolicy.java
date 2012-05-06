@@ -45,11 +45,12 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
 
   public void setMergePolicyParams(MergePolicyParams params) {
     if (params!=null) {
+      // note: this order is important!
+      setMergeFactor(params._mergeFactor);
       setPartialExpunge(params._doPartialExpunge);
       setNumLargeSegments(params._numLargeSegments);
       setMaxSmallSegments(params._maxSmallSegments);
       setPartialExpunge(params._doPartialExpunge);
-      setMergeFactor(params._mergeFactor);
       setUseCompoundFile(params._useCompoundFile);
       setMaxMergeDocs(params._maxMergeDocs);
     }
