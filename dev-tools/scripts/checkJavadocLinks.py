@@ -62,6 +62,7 @@ class FindHyperlinks(HTMLParser):
           self.anchors.add(name)
       elif href is not None:
         assert name is None
+        href = href.strip()
         self.links.append(urlparse.urljoin(self.baseURL, href))
       else:
         if self.baseURL.endswith('/AttributeSource.html'):
