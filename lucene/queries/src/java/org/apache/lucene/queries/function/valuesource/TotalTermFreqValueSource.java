@@ -62,9 +62,15 @@ public class TotalTermFreqValueSource extends ValueSource {
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     long totalTermFreq = 0;
     for (AtomicReaderContext readerContext : searcher.getTopReaderContext().leaves()) {
-      totalTermFreq += readerContext.reader().totalTermFreq(indexedField, indexedBytes);
+      long val = readerContext.reader().totalTermFreq(indexedField, indexedBytes);
+      if (val == -1) {
+        totalTermFreq = -1;
+        break;
+      } else {
+        totalTermFreq += val;
+      }
     }
-    final long ttf = Math.max(-1, totalTermFreq);  // we may have added up -1s if not supported
+    final long ttf = totalTermFreq;
     context.put(this, new LongDocValues(this) {
       @Override
       public long longVal(int doc) {

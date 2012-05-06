@@ -41,9 +41,9 @@ public class TFValueSource extends TermFreqValueSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     Fields fields = readerContext.reader().fields();
-    final Terms terms = fields.terms(field);
+    final Terms terms = fields.terms(indexedField);
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(), field);
+    final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(), indexedField);
     if (similarity == null) {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }
@@ -57,10 +57,16 @@ public class TFValueSource extends TermFreqValueSource {
 
       public void reset() throws IOException {
         // no one should call us for deleted docs?
+        boolean omitTF = false;
+        
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator(null);
           if (termsEnum.seekExact(indexedBytes, false)) {
             docs = termsEnum.docs(null, null, true);
+            if (docs == null) { // omitTF
+              omitTF = true;
+              docs = termsEnum.docs(null, null, false);
+            }
           } else {
             docs = null;
           }
@@ -88,6 +94,30 @@ public class TFValueSource extends TermFreqValueSource {
             @Override
             public int advance(int target) throws IOException {
               return DocIdSetIterator.NO_MORE_DOCS;
+            }
+          };
+        } else if (omitTF) {
+          // the docsenum won't support freq(), so return 1
+          final DocsEnum delegate = docs;
+          docs = new DocsEnum() {
+            @Override
+            public int freq() {
+              return 1;
+            }
+
+            @Override
+            public int docID() {
+              return delegate.docID();
+            }
+
+            @Override
+            public int nextDoc() throws IOException {
+              return delegate.nextDoc();
+            }
+
+            @Override
+            public int advance(int target) throws IOException {
+              return delegate.advance(target);
             }
           };
         }

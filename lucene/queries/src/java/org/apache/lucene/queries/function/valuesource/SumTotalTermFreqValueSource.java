@@ -62,9 +62,15 @@ public class SumTotalTermFreqValueSource extends ValueSource {
       if (fields == null) continue;
       Terms terms = fields.terms(indexedField);
       if (terms == null) continue;
-      sumTotalTermFreq += terms.getSumTotalTermFreq();
+      long v = terms.getSumTotalTermFreq();
+      if (v == -1) {
+        sumTotalTermFreq = -1;
+        break;
+      } else {
+        sumTotalTermFreq += v;
+      }
     }
-    final long ttf = Math.max(-1, sumTotalTermFreq);  // we may have added up -1s if not supported
+    final long ttf = sumTotalTermFreq;
     context.put(this, new LongDocValues(this) {
       @Override
       public long longVal(int doc) {

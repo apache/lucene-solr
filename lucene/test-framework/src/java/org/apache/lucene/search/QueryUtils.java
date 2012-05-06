@@ -323,6 +323,7 @@ public class QueryUtils {
             if (lastReader[0] != null) {
               final AtomicReader previousReader = lastReader[0];
               IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
+              indexSearcher.setSimilarity(s.getSimilarity());
               Weight w = indexSearcher.createNormalizedWeight(q);
               AtomicReaderContext ctx = (AtomicReaderContext)indexSearcher.getTopReaderContext();
               Scorer scorer = w.scorer(ctx, true, false, ctx.reader().getLiveDocs());
@@ -349,6 +350,7 @@ public class QueryUtils {
           // previous reader, hits NO_MORE_DOCS
           final AtomicReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
+          indexSearcher.setSimilarity(s.getSimilarity());
           Weight w = indexSearcher.createNormalizedWeight(q);
           AtomicReaderContext ctx = previousReader.getTopReaderContext();
           Scorer scorer = w.scorer(ctx, true, false, ctx.reader().getLiveDocs());
@@ -408,6 +410,7 @@ public class QueryUtils {
         if (lastReader[0] != null) {
           final AtomicReader previousReader = lastReader[0];
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
+          indexSearcher.setSimilarity(s.getSimilarity());
           Weight w = indexSearcher.createNormalizedWeight(q);
           Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), true, false, previousReader.getLiveDocs());
           if (scorer != null) {
@@ -432,6 +435,7 @@ public class QueryUtils {
       // previous reader, hits NO_MORE_DOCS
       final AtomicReader previousReader = lastReader[0];
       IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
+      indexSearcher.setSimilarity(s.getSimilarity());
       Weight w = indexSearcher.createNormalizedWeight(q);
       Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), true, false, previousReader.getLiveDocs());
       if (scorer != null) {
