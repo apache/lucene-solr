@@ -32,7 +32,7 @@ public final class RollingCharBuffer {
 
   private Reader reader;
 
-  private char[] buffer = new char[32];
+  private char[] buffer = new char[512];
 
   // Next array index to write to in buffer:
   private int nextWrite;
@@ -66,11 +66,6 @@ public final class RollingCharBuffer {
       if (end) {
         return -1;
       }
-      final int ch = reader.read();
-      if (ch == -1) {
-        end = true;
-        return -1;
-      }
       if (count == buffer.length) {
         // Grow
         final char[] newBuffer = new char[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_CHAR)];
@@ -83,9 +78,17 @@ public final class RollingCharBuffer {
       if (nextWrite == buffer.length) {
         nextWrite = 0;
       }
-      buffer[nextWrite++] = (char) ch;
-      count++;
-      nextPos++;
+
+      final int toRead = buffer.length - Math.max(count, nextWrite);
+      final int readCount = reader.read(buffer, nextWrite, toRead);
+      if (readCount == -1) {
+        end = true;
+        return -1;
+      }
+      final int ch = buffer[nextWrite];
+      nextWrite += readCount;
+      count += readCount;
+      nextPos += readCount;
       return ch;
     } else {
       // Cannot read from future (except by 1):
@@ -94,8 +97,7 @@ public final class RollingCharBuffer {
       // Cannot read from already freed past:
       assert nextPos - pos <= count: "nextPos=" + nextPos + " pos=" + pos + " count=" + count;
 
-      final int index = getIndex(pos);
-      return buffer[index];
+      return buffer[getIndex(pos)];
     }
   }
 

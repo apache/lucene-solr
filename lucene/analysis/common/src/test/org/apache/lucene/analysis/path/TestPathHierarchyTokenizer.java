@@ -119,8 +119,9 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
   }
 
   public void testNormalizeWinDelimToLinuxDelim() throws Exception {
-    NormalizeCharMap normMap = new NormalizeCharMap();
-    normMap.add("\\", "/");
+    NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
+    builder.add("\\", "/");
+    NormalizeCharMap normMap = builder.build();
     String path = "c:\\a\\b\\c";
     CharStream cs = new MappingCharFilter(normMap, new StringReader(path));
     PathHierarchyTokenizer t = new PathHierarchyTokenizer( cs );

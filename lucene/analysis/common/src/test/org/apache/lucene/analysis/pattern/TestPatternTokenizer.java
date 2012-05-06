@@ -80,8 +80,9 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     // create MappingCharFilter
     List<String> mappingRules = new ArrayList<String>();
     mappingRules.add( "\"&uuml;\" => \"ü\"" );
-    NormalizeCharMap normMap = new NormalizeCharMap();
-    normMap.add("&uuml;", "ü");
+    NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
+    builder.add("&uuml;", "ü");
+    NormalizeCharMap normMap = builder.build();
     CharStream charStream = new MappingCharFilter( normMap, CharReader.get( new StringReader( INPUT ) ) );
 
     // create PatternTokenizer

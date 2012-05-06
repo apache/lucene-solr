@@ -19,7 +19,11 @@ package org.apache.lucene.analysis.charfilter;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -39,18 +43,20 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    normMap = new NormalizeCharMap();
+    NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
 
-    normMap.add( "aa", "a" );
-    normMap.add( "bbb", "b" );
-    normMap.add( "cccc", "cc" );
+    builder.add( "aa", "a" );
+    builder.add( "bbb", "b" );
+    builder.add( "cccc", "cc" );
 
-    normMap.add( "h", "i" );
-    normMap.add( "j", "jj" );
-    normMap.add( "k", "kkk" );
-    normMap.add( "ll", "llll" );
+    builder.add( "h", "i" );
+    builder.add( "j", "jj" );
+    builder.add( "k", "kkk" );
+    builder.add( "ll", "llll" );
 
-    normMap.add( "empty", "" );
+    builder.add( "empty", "" );
+
+    normMap = builder.build();
   }
 
   public void testReaderReset() throws Exception {
@@ -197,11 +203,13 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
 
   //@Ignore("wrong finalOffset: https://issues.apache.org/jira/browse/LUCENE-3971")
   public void testFinalOffsetSpecialCase() throws Exception {  
-    final NormalizeCharMap map = new NormalizeCharMap();
-    map.add("t", "");
+    final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
+    builder.add("t", "");
     // even though this below rule has no effect, the test passes if you remove it!!
-    map.add("tmakdbl", "c");
+    builder.add("tmakdbl", "c");
     
+    final NormalizeCharMap map = builder.build();
+
     Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
@@ -243,20 +251,194 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
   
   private NormalizeCharMap randomMap() {
     Random random = random();
-    NormalizeCharMap map = new NormalizeCharMap();
+    NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
     // we can't add duplicate keys, or NormalizeCharMap gets angry
     Set<String> keys = new HashSet<String>();
     int num = random.nextInt(5);
     //System.out.println("NormalizeCharMap=");
     for (int i = 0; i < num; i++) {
       String key = _TestUtil.randomSimpleString(random);
-      if (!keys.contains(key)) {
+      if (!keys.contains(key) && key.length() != 0) {
         String value = _TestUtil.randomSimpleString(random);
-        map.add(key, value);
+        builder.add(key, value);
         keys.add(key);
         //System.out.println("mapping: '" + key + "' => '" + value + "'");
       }
     }
-    return map;
+    return builder.build();
+  }
+
+  public void testRandomMaps2() throws Exception {
+    final Random random = random();
+    final int numIterations = atLeast(10);
+    for(int iter=0;iter<numIterations;iter++) {
+
+      if (VERBOSE) {
+        System.out.println("\nTEST iter=" + iter);
+      }
+
+      final char endLetter = (char) _TestUtil.nextInt(random, 'b', 'z');
+
+      final Map<String,String> map = new HashMap<String,String>();
+      final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
+      final int numMappings = atLeast(5);
+      if (VERBOSE) {
+        System.out.println("  mappings:");
+      }
+      while (map.size() < numMappings) {
+        final String key = _TestUtil.randomSimpleStringRange(random, 'a', endLetter, 7);
+        if (key.length() != 0 && !map.containsKey(key)) {
+          final String value = _TestUtil.randomSimpleString(random);
+          map.put(key, value);
+          builder.add(key, value);
+          if (VERBOSE) {
+            System.out.println("    " + key + " -> " + value);
+          }
+        }
+      }
+
+      final NormalizeCharMap charMap = builder.build();
+
+      if (VERBOSE) {
+        System.out.println("  test random documents...");
+      }
+
+      for(int iter2=0;iter2<100;iter2++) {
+        final String content = _TestUtil.randomSimpleStringRange(random, 'a', endLetter, atLeast(1000));
+
+        if (VERBOSE) {
+          System.out.println("  content=" + content);
+        }
+
+        // Do stupid dog-slow mapping:
+
+        // Output string:
+        final StringBuilder output = new StringBuilder();
+
+        // Maps output offset to input offset:
+        final List<Integer> inputOffsets = new ArrayList<Integer>();
+
+        int cumDiff = 0;
+        int charIdx = 0;
+        while(charIdx < content.length()) {
+
+          int matchLen = -1;
+          String matchRepl = null;
+
+          for(Map.Entry<String,String> ent : map.entrySet()) {
+            final String match = ent.getKey();
+            if (charIdx + match.length() <= content.length()) {
+              final int limit = charIdx+match.length();
+              boolean matches = true;
+              for(int charIdx2=charIdx;charIdx2<limit;charIdx2++) {
+                if (match.charAt(charIdx2-charIdx) != content.charAt(charIdx2)) {
+                  matches = false;
+                  break;
+                }
+              }
+
+              if (matches) {
+                final String repl = ent.getValue();
+                if (match.length() > matchLen) {
+                  // Greedy: longer match wins
+                  matchLen = match.length();
+                  matchRepl = repl;
+                }
+              }
+            }
+          }
+
+          if (matchLen != -1) {
+            // We found a match here!
+            if (VERBOSE) {
+              System.out.println("    match=" + content.substring(charIdx, charIdx+matchLen) + " @ off=" + charIdx + " repl=" + matchRepl);
+            }
+            output.append(matchRepl);
+            final int minLen = Math.min(matchLen, matchRepl.length());
+
+            // Common part, directly maps back to input
+            // offset:
+            for(int outIdx=0;outIdx<minLen;outIdx++) {
+              inputOffsets.add(output.length() - matchRepl.length() + outIdx + cumDiff);
+            }
+
+            cumDiff += matchLen - matchRepl.length();
+            charIdx += matchLen;
+
+            if (matchRepl.length() < matchLen) {
+              // Replacement string is shorter than matched
+              // input: nothing to do
+            } else if (matchRepl.length() > matchLen) {
+              // Replacement string is longer than matched
+              // input: for all the "extra" chars we map
+              // back to a single input offset:
+              for(int outIdx=matchLen;outIdx<matchRepl.length();outIdx++) {
+                inputOffsets.add(output.length() + cumDiff - 1);
+              }
+            } else {
+              // Same length: no change to offset
+            }
+
+            assert inputOffsets.size() == output.length(): "inputOffsets.size()=" + inputOffsets.size() + " vs output.length()=" + output.length();
+          } else {
+            inputOffsets.add(output.length() + cumDiff);
+            output.append(content.charAt(charIdx));
+            charIdx++;
+          }
+        }
+
+        final String expected = output.toString();
+        if (VERBOSE) {
+          System.out.print("    expected:");
+          for(int charIdx2=0;charIdx2<expected.length();charIdx2++) {
+            System.out.print(" " + expected.charAt(charIdx2) + "/" + inputOffsets.get(charIdx2));
+          }
+          System.out.println();
+        }
+
+        final MappingCharFilter mapFilter = new MappingCharFilter(charMap, new StringReader(content));
+
+        final StringBuilder actualBuilder = new StringBuilder();
+        final List<Integer> actualInputOffsets = new ArrayList<Integer>();
+
+        // Now consume the actual mapFilter, somewhat randomly:
+        while (true) {
+          if (random.nextBoolean()) {
+            final int ch = mapFilter.read();
+            if (ch == -1) {
+              break;
+            }
+            actualBuilder.append((char) ch);
+          } else {
+            final char[] buffer = new char[_TestUtil.nextInt(random, 1, 100)];
+            final int off = buffer.length == 1 ? 0 : random.nextInt(buffer.length-1);
+            final int count = mapFilter.read(buffer, off, buffer.length-off);
+            if (count == -1) {
+              break;
+            } else {
+              actualBuilder.append(buffer, off, count);
+            }
+          }
+
+          if (random.nextInt(10) == 7) {
+            // Map offsets
+            while(actualInputOffsets.size() < actualBuilder.length()) {
+              actualInputOffsets.add(mapFilter.correctOffset(actualInputOffsets.size()));
+            }
+          }
+        }
+
+        // Finish mappping offsets
+        while(actualInputOffsets.size() < actualBuilder.length()) {
+          actualInputOffsets.add(mapFilter.correctOffset(actualInputOffsets.size()));
+        }
+
+        final String actual = actualBuilder.toString();
+
+        // Verify:
+        assertEquals(expected, actual);
+        assertEquals(inputOffsets, actualInputOffsets);
+      }        
+    }
   }
 }

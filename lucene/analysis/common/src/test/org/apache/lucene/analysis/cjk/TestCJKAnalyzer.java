@@ -203,9 +203,10 @@ public class TestCJKAnalyzer extends BaseTokenStreamTestCase {
   
   /** test that offsets are correct when mappingcharfilter is previously applied */
   public void testChangedOffsets() throws IOException {
-    final NormalizeCharMap norm = new NormalizeCharMap();
-    norm.add("a", "一二");
-    norm.add("b", "二三");
+    final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
+    builder.add("a", "一二");
+    builder.add("b", "二三");
+    final NormalizeCharMap norm = builder.build();
     Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

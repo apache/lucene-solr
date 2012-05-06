@@ -41,11 +41,11 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     cas.add("wlmwoknt");
     cas.add("tcgyreo");
     
-    final NormalizeCharMap map = new NormalizeCharMap();
-    map.add("mtqlpi", "");
-    map.add("mwoknt", "jjp");
-    map.add("tcgyreo", "zpfpajyws");
-    map.add("", "eethksv");
+    final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
+    builder.add("mtqlpi", "");
+    builder.add("mwoknt", "jjp");
+    builder.add("tcgyreo", "zpfpajyws");
+    final NormalizeCharMap map = builder.build();
     
     Analyzer a = new Analyzer() {
       @Override

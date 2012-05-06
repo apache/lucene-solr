@@ -56,7 +56,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
-import org.apache.lucene.analysis.charfilter.CharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
@@ -434,21 +433,21 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     });
     put(NormalizeCharMap.class, new ArgProducer() {
       @Override public Object create(Random random) {
-        NormalizeCharMap map = new NormalizeCharMap();
+        NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
         // we can't add duplicate keys, or NormalizeCharMap gets angry
         Set<String> keys = new HashSet<String>();
         int num = random.nextInt(5);
         //System.out.println("NormalizeCharMap=");
         for (int i = 0; i < num; i++) {
           String key = _TestUtil.randomSimpleString(random);
-          if (!keys.contains(key)) {
+          if (!keys.contains(key) && key.length() > 0) {
             String value = _TestUtil.randomSimpleString(random);
-            map.add(key, value);
+            builder.add(key, value);
             keys.add(key);
             //System.out.println("mapping: '" + key + "' => '" + value + "'");
           }
         }
-        return map;
+        return builder.build();
       }
     });
     put(CharacterRunAutomaton.class, new ArgProducer() {

@@ -19,126 +19,179 @@ package org.apache.lucene.analysis.charfilter;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.LinkedList;
+import java.util.Map;
 
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.RollingCharBuffer;
+import org.apache.lucene.util.fst.CharSequenceOutputs;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Outputs;
 
 /**
  * Simplistic {@link CharFilter} that applies the mappings
  * contained in a {@link NormalizeCharMap} to the character
  * stream, and correcting the resulting changes to the
- * offsets.
+ * offsets.  Matching is greedy (longest pattern matching at
+ * a given point wins).  Replacement is allowed to be the
+ * empty string.
  */
+
 public class MappingCharFilter extends BaseCharFilter {
 
-  private final NormalizeCharMap normMap;
-  private LinkedList<Character> buffer;
-  private String replacement;
-  private int charPointer;
-  private int nextCharCounter;
+  private final Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
+  private final FST<CharsRef> map;
+  private final FST.BytesReader fstReader;
+  private final RollingCharBuffer buffer = new RollingCharBuffer();
+  private final FST.Arc<CharsRef> scratchArc = new FST.Arc<CharsRef>();
+  private final Map<Character,FST.Arc<CharsRef>> cachedRootArcs;
+
+  private CharsRef replacement;
+  private int replacementPointer;
+  private int inputOff;
 
   /** Default constructor that takes a {@link CharStream}. */
   public MappingCharFilter(NormalizeCharMap normMap, CharStream in) {
     super(in);
-    this.normMap = normMap;
+    buffer.reset(in);
+
+    map = normMap.map;
+    cachedRootArcs = normMap.cachedRootArcs;
+
+    if (map != null) {
+      fstReader = map.getBytesReader(0);
+    } else {
+      fstReader = null;
+    }
   }
 
   /** Easy-use constructor that takes a {@link Reader}. */
   public MappingCharFilter(NormalizeCharMap normMap, Reader in) {
-    super(CharReader.get(in));
-    this.normMap = normMap;
+    this(normMap, CharReader.get(in));
+  }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    buffer.reset(input);
+    replacement = null;
+    inputOff = 0;
   }
 
   @Override
   public int read() throws IOException {
+
+    //System.out.println("\nread");
     while(true) {
-      if (replacement != null && charPointer < replacement.length()) {
-        return replacement.charAt(charPointer++);
+
+      if (replacement != null && replacementPointer < replacement.length) {
+        //System.out.println("  return repl[" + replacementPointer + "]=" + replacement.chars[replacement.offset + replacementPointer]);
+        return replacement.chars[replacement.offset + replacementPointer++];
       }
 
-      int firstChar = nextChar();
-      if (firstChar == -1) return -1;
-      NormalizeCharMap nm = normMap.submap != null ?
-        normMap.submap.get(Character.valueOf((char) firstChar)) : null;
-      if (nm == null) return firstChar;
-      NormalizeCharMap result = match(nm);
-      if (result == null) return firstChar;
-      replacement = result.normStr;
-      charPointer = 0;
-      if (result.diff != 0) {
-        int prevCumulativeDiff = getLastCumulativeDiff();
-        if (result.diff < 0) {
-          for(int i = 0; i < -result.diff ; i++)
-            addOffCorrectMap(nextCharCounter + i - prevCumulativeDiff, prevCumulativeDiff - 1 - i);
-        } else {
-          addOffCorrectMap(nextCharCounter - result.diff - prevCumulativeDiff, prevCumulativeDiff + result.diff);
+      // TODO: a more efficient approach would be Aho/Corasick's
+      // algorithm
+      // (http://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_string_matching_algorithm)
+      // or this generalizatio: www.cis.uni-muenchen.de/people/Schulz/Pub/dictle5.ps
+      //
+      // I think this would be (almost?) equivalent to 1) adding
+      // epsilon arcs from all final nodes back to the init
+      // node in the FST, 2) adding a .* (skip any char)
+      // loop on the initial node, and 3) determinizing
+      // that.  Then we would not have to restart matching
+      // at each position.
+
+      int lastMatchLen = -1;
+      CharsRef lastMatch = null;
+
+      final int firstCH = buffer.get(inputOff);
+      if (firstCH != -1) {
+        FST.Arc<CharsRef> arc = cachedRootArcs.get(Character.valueOf((char) firstCH));
+        if (arc != null) {
+          if (!FST.targetHasArcs(arc)) {
+            // Fast pass for single character match:
+            assert arc.isFinal();
+            lastMatchLen = 1;
+            lastMatch = arc.output;
+          } else {
+            int lookahead = 0;
+            CharsRef output = arc.output;
+            while (true) {
+              lookahead++;
+
+              if (arc.isFinal()) {
+                // Match! (to node is final)
+                lastMatchLen = lookahead;
+                lastMatch = outputs.add(output, arc.nextFinalOutput);
+                // Greedy: keep searching to see if there's a
+                // longer match...
+              }
+
+              if (!FST.targetHasArcs(arc)) {
+                break;
+              }
+
+              int ch = buffer.get(inputOff + lookahead);
+              if (ch == -1) {
+                break;
+              }
+              if ((arc = map.findTargetArc(ch, arc, scratchArc, fstReader)) == null) {
+                // Dead end
+                break;
+              }
+              output = outputs.add(output, arc.output);
+            }
+          }
         }
       }
-    }
-  }
 
-  private int nextChar() throws IOException {
-    if (buffer != null && !buffer.isEmpty()) {
-      nextCharCounter++;
-      return buffer.removeFirst().charValue();
-    }
-    int nextChar = input.read();
-    if (nextChar != -1) {
-      nextCharCounter++;
-    }
-    return nextChar;
-  }
+      if (lastMatch != null) {
+        inputOff += lastMatchLen;
+        //System.out.println("  match!  len=" + lastMatchLen + " repl=" + lastMatch);
 
-  private void pushChar(int c) {
-    nextCharCounter--;
-    if(buffer == null)
-      buffer = new LinkedList<Character>();
-    buffer.addFirst(Character.valueOf((char) c));
-  }
+        final int diff = lastMatchLen - lastMatch.length;
 
-  private void pushLastChar(int c) {
-    if (buffer == null) {
-      buffer = new LinkedList<Character>();
-    }
-    buffer.addLast(Character.valueOf((char) c));
-  }
-
-  private NormalizeCharMap match(NormalizeCharMap map) throws IOException {
-    NormalizeCharMap result = null;
-    if (map.submap != null) {
-      int chr = nextChar();
-      if (chr != -1) {
-        NormalizeCharMap subMap = map.submap.get(Character.valueOf((char) chr));
-        if (subMap != null) {
-          result = match(subMap);
+        if (diff != 0) {
+          final int prevCumulativeDiff = getLastCumulativeDiff();
+          if (diff > 0) {
+            // Replacement is shorter than matched input:
+            addOffCorrectMap(inputOff - diff - prevCumulativeDiff, prevCumulativeDiff + diff);
+          } else {
+            // Replacement is longer than matched input: remap
+            // the "extra" chars all back to the same input
+            // offset:
+            final int outputStart = inputOff - prevCumulativeDiff;
+            for(int extraIDX=0;extraIDX<-diff;extraIDX++) {
+              addOffCorrectMap(outputStart + extraIDX, prevCumulativeDiff - extraIDX - 1);
+            }
+          }
         }
-        if (result == null) {
-          pushChar(chr);
+
+        replacement = lastMatch;
+        replacementPointer = 0;
+
+      } else {
+        final int ret = buffer.get(inputOff);
+        if (ret != -1) {
+          inputOff++;
+          buffer.freeBefore(inputOff);
         }
+        return ret;
       }
     }
-    if (result == null && map.normStr != null) {
-      result = map;
-    }
-    return result;
   }
 
   @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
-    char[] tmp = new char[len];
-    int l = input.read(tmp, 0, len);
-    if (l != -1) {
-      for(int i = 0; i < l; i++)
-        pushLastChar(tmp[i]);
-    }
-    l = 0;
+    int numRead = 0;
     for(int i = off; i < off + len; i++) {
       int c = read();
       if (c == -1) break;
       cbuf[i] = (char) c;
-      l++;
+      numRead++;
     }
-    return l == 0 ? -1 : l;
+
+    return numRead == 0 ? -1 : numRead;
   }
 }

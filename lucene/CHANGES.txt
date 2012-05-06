@@ -503,6 +503,10 @@ API Changes
   and sometimes different depending on the type of set, and ultimately a CharArraySet
   or CharArrayMap was always used anyway.  (Robert Muir)
 
+* LUCENE-3830: Switched to NormalizeCharMap.Builder to create
+  immutable instances of NormalizeCharMap. (Dawid Weiss, Mike
+  McCandless)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
@@ -892,6 +896,11 @@ Optimizations
 
 * LUCENE-3468: Replaced last() and remove() with pollLast() in
   FirstPassGroupingCollector (Martijn van Groningen)
+
+* LUCENE-3830: Changed MappingCharFilter/NormalizeCharMap to use an
+  FST under the hood, which requires less RAM.  NormalizeCharMap no
+  longer accepts empty string match (it did previously, but ignored
+  it).  (Dawid Weiss, Mike McCandless)
              
 Bug fixes
 

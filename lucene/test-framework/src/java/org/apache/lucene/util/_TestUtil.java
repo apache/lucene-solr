@@ -206,6 +206,19 @@ public class _TestUtil {
     return new String(buffer, 0, end);
   }
 
+  public static String randomSimpleStringRange(Random r, char minChar, char maxChar, int maxLength) {
+    final int end = nextInt(r, 0, maxLength);
+    if (end == 0) {
+      // allow 0 length
+      return "";
+    }
+    final char[] buffer = new char[end];
+    for (int i = 0; i < end; i++) {
+      buffer[i] = (char) _TestUtil.nextInt(r, minChar, maxChar);
+    }
+    return new String(buffer, 0, end);
+  }
+
   public static String randomSimpleString(Random r) {
     return randomSimpleString(r, 10);
   }

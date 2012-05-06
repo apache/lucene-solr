@@ -312,8 +312,9 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   // so in this case we behave like WDF, and preserve any modified offsets
   public void testInvalidOffsets() throws Exception {
     final CharArraySet dict = makeDictionary("fall");
-    final NormalizeCharMap normMap = new NormalizeCharMap();
-    normMap.add("ü", "ue");
+    final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
+    builder.add("ü", "ue");
+    final NormalizeCharMap normMap = builder.build();
     
     Analyzer analyzer = new Analyzer() {
 
