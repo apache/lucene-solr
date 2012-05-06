@@ -17,19 +17,22 @@ package org.apache.lucene.benchmark.byTask.feeds.demohtml;
  * limitations under the License.
  */
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 
+/**
+ * Utility class storing set of commonly-used html tags.
+ */
 public final class Tags {
 
   /**
    * contains all tags for which whitespaces have to be inserted for proper tokenization
    */
-  public static final Set<String> WS_ELEMS = Collections.synchronizedSet(new HashSet<String>());
+  public static final Set<String> WS_ELEMS;
 
   static{
+    WS_ELEMS = new HashSet<String>();
     WS_ELEMS.add("<hr");
     WS_ELEMS.add("<hr/");  // note that "<hr />" does not need to be listed explicitly
     WS_ELEMS.add("<br");

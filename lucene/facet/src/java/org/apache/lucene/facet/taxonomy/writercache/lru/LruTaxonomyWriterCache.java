@@ -27,6 +27,11 @@ import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
  */
 public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
 
+  /**
+   * Determines cache type.
+   * For guaranteed correctness - not relying on no-collisions in the hash
+   * function, LRU_STRING should be used.
+   */
   public enum LRUType { LRU_HASHED, LRU_STRING }
 
   private NameIntCacheLRU cache;

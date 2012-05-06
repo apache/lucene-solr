@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.PayloadProcessorProvider;
+import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor; // javadocs
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -121,6 +122,10 @@ public class FacetsPayloadProcessorProvider extends PayloadProcessorProvider {
     return null;
   }
   
+  /**
+   * {@link ReaderPayloadProcessor} that processes 
+   * facet ordinals according to the passed in {@link FacetIndexingParams}.
+   */
   public static class FacetsDirPayloadProcessor extends ReaderPayloadProcessor {
     
     private final Map<Term, CategoryListParams> termMap = new HashMap<Term, CategoryListParams>(1);

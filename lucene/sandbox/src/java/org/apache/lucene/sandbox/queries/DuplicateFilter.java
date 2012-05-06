@@ -26,6 +26,15 @@ import org.apache.lucene.util.FixedBitSet;
 
 import java.io.IOException;
 
+/**
+ * Filter to remove duplicate values from search results.
+ * <p>
+ * WARNING: for this to work correctly, you may have to wrap
+ * your reader as it cannot current deduplicate across different
+ * index segments.
+ * 
+ * @see SlowCompositeReaderWrapper
+ */
 public class DuplicateFilter extends Filter {
   // TODO: make duplicate filter aware of ReaderContext such that we can
   // filter duplicates across segments
@@ -45,7 +54,7 @@ public class DuplicateFilter extends Filter {
    * for documents that contain the given field and are identified as none-duplicates.
    * <p/>
    * "Fast" processing sets all bits to true then unsets all duplicate docs found for the
-   * given field. This approach avoids the need to read TermDocs for terms that are seen
+   * given field. This approach avoids the need to read DocsEnum for terms that are seen
    * to have a document frequency of exactly "1" (i.e. no duplicates). While a potentially
    * faster approach , the downside is that bitsets produced will include bits set for
    * documents that do not actually contain the field given.

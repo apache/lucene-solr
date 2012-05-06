@@ -20,6 +20,9 @@ package org.apache.lucene.benchmark.byTask.feeds.demohtml;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Utility class for encoding and decoding HTML entities.
+ */
 public class Entities {
   static final Map<String,String> decoder = new HashMap<String,String>(300);
   static final String[]  encoder = new String[0x100];

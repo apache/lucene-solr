@@ -21,6 +21,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 
+/**
+ * Abstract class for benchmarking highlighting performance
+ */
 public abstract class BenchmarkHighlighter {
   public abstract int doHighlight( IndexReader reader, int doc, String field,
       Document document, Analyzer analyzer, String text ) throws Exception ;

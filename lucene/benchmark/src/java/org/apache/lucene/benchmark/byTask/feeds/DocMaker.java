@@ -90,6 +90,10 @@ public class DocMaker implements Closeable {
   private Random r;
   private int updateDocIDLimit;
 
+  /**
+   * Document state, supports reuse of field instances
+   * across documents (see <code>reuseFields</code> parameter).
+   */
   protected static class DocState {
     
     private final Map<String,Field> fields;

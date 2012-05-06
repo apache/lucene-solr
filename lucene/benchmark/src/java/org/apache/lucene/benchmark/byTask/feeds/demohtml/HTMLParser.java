@@ -5,6 +5,9 @@ import java.io.*;
 import java.util.Locale;
 import java.util.Properties;
 
+/**
+ * Basic html parser (for demo/testing purposes only!)
+ */
 public class HTMLParser implements HTMLParserConstants {
   public static int SUMMARY_LENGTH = 200;
 

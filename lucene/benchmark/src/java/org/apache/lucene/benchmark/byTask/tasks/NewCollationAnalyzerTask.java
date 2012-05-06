@@ -36,6 +36,13 @@ import org.apache.lucene.util.Version;
  * </p>
  */
 public class NewCollationAnalyzerTask extends PerfTask {
+  /**
+   * Different Collation implementations: currently 
+   * limited to what is provided in the JDK and ICU.
+   * 
+   * @see <a href="http://site.icu-project.org/charts/collation-icu4j-sun">
+   *      Comparison of implementations</a>
+   */
   public enum Implementation { 
     JDK("org.apache.lucene.collation.CollationKeyAnalyzer", 
         "java.text.Collator"),

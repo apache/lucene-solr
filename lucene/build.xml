@@ -201,16 +201,15 @@
       <check-missing-javadocs dir="build/docs/analyzers-common" level="class"/>
       <check-missing-javadocs dir="build/docs/analyzers-icu" level="class"/>
       <check-missing-javadocs dir="build/docs/analyzers-kuromoji" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-kuromoji" level="class"/>
       <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="class"/>
       <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="class"/>
       <check-missing-javadocs dir="build/docs/analyzers-smartcn" level="class"/>
       <check-missing-javadocs dir="build/docs/analyzers-stempel" level="class"/>
       <check-missing-javadocs dir="build/docs/analyzers-uima" level="class"/>
-      <!-- benchmark: problems -->
+      <check-missing-javadocs dir="build/docs/benchmark" level="class"/>
       <!-- core: problems -->
       <check-missing-javadocs dir="build/docs/demo" level="class"/>
-      <!-- facet: problems -->
+      <check-missing-javadocs dir="build/docs/facet" level="class"/>
       <!-- grouping: problems -->
       <!-- highlighter: problems -->
       <check-missing-javadocs dir="build/docs/join" level="class"/>
@@ -218,7 +217,7 @@
       <check-missing-javadocs dir="build/docs/misc" level="class"/>
       <!-- queries: problems -->
       <!-- queryparser: problems -->
-      <!-- sandbox: problems -->
+      <check-missing-javadocs dir="build/docs/sandbox" level="class"/>
       <!-- spatial: problems -->
       <check-missing-javadocs dir="build/docs/suggest" level="class"/>
       <!-- test-framework: problems -->
