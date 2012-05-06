@@ -94,6 +94,8 @@ public class MockDirectoryWrapper extends Directory {
   // is made to delete an open file, we enroll it here.
   private Set<String> openFilesDeleted;
 
+  final RateLimiter rateLimiter;
+
   private synchronized void init() {
     if (openFiles == null) {
       openFiles = new HashMap<String,Integer>();
@@ -120,6 +122,19 @@ public class MockDirectoryWrapper extends Directory {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+
+    // 2% of the time use rate limiter
+    if (randomState.nextInt(50) == 17) {
+      // Use RateLimiter
+      double maxMBPerSec = 10 + 5*(randomState.nextDouble()-0.5);
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockDirectoryWrapper: will rate limit output IO to " + maxMBPerSec + " MB/sec");
+      }
+      rateLimiter = new RateLimiter(maxMBPerSec);
+    } else {
+      rateLimiter = null;
+    }
+
     init();
   }
 

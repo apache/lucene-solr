@@ -78,6 +78,10 @@ public class MockIndexOutputWrapper extends IndexOutput {
     long freeSpace = dir.maxSize == 0 ? 0 : dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
 
+    if (dir.rateLimiter != null) {
+      dir.rateLimiter.pause(len);
+    }
+
     // If MockRAMDir crashed since we were opened, then
     // don't write anything:
     if (dir.crashed)
