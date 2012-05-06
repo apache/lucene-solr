@@ -191,12 +191,13 @@ enabling substantial customization to how a query is created.
 <p>Note: You cannot use a * or ? symbol as the first character of a search.</p>
 <a name="N1009B"></a><a name="Fuzzy_Searches"></a>
 <h3 class="boxed">Fuzzy Searches</h3>
-<p>Lucene supports fuzzy searches based on the Levenshtein Distance, or Edit Distance algorithm. To do a fuzzy search use the tilde, "~", symbol at the end of a Single word Term. For example to search for a term similar in spelling to "roam" use the fuzzy search: </p>
+<p>Lucene supports fuzzy searches based on Damerau-Levenshtein Distance. To do a fuzzy search use the tilde, "~", symbol at the end of a Single word Term. For example to search for a term similar in spelling to "roam" use the fuzzy search: </p>
 <pre class="code">roam~</pre>
 <p>This search will find terms like foam and roams.</p>
-<p>Starting with Lucene 1.9 an additional (optional) parameter can specify the required similarity. The value is between 0 and 1, with a value closer to 1 only terms with a higher similarity will be matched. For example:</p>
-<pre class="code">roam~0.8</pre>
-<p>The default that is used if the parameter is not given is 0.5.</p>
+<p>An additional (optional) parameter can specify the maximum number of edits allowed. The value is between 0 and 2, For example:</p>
+<pre class="code">roam~1</pre>
+<p>The default that is used if the parameter is not given is 2 edit distances.</p>
+<p>Previously, a floating point value was allowed here. This syntax is considered deprecated and will be removed in Lucene 5.0</p>
 <a name="N100B4"></a><a name="Proximity_Searches"></a>
 <h3 class="boxed">Proximity Searches</h3>
 <p>Lucene supports finding words are a within a specific distance away. To do a proximity search use the tilde, "~", symbol at the end of a Phrase. For example to search for a "apache" and "jakarta" within 10 words of each other in a document use the search: </p>

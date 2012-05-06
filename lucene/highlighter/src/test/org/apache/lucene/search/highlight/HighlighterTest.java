@@ -669,12 +669,12 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         numHighlights = 0;
-        FuzzyQuery fuzzyQuery = new FuzzyQuery(new Term(FIELD_NAME, "kinnedy"), 0.5f);
+        FuzzyQuery fuzzyQuery = new FuzzyQuery(new Term(FIELD_NAME, "kinnedy"), 2);
         fuzzyQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         doSearching(fuzzyQuery);
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this, true);
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
-            numHighlights == 5);
+            numHighlights == 4);
       }
     };
 

@@ -59,8 +59,8 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     fuzzyInput = new String[] { "Übersetzung Übersetzung~0.9",
         "Mötley Crüe Mötley~0.75 Crüe~0.5",
         "Renée Zellweger Renée~0.9 Zellweger~" };
-    fuzzyExpected = new String[] { "ubersetzung ubersetzung~0.9",
-        "motley crue motley~0.75 crue~0.5", "renee zellweger renee~0.9 zellweger~2.0" };
+    fuzzyExpected = new String[] { "ubersetzung ubersetzung~1",
+        "motley crue motley~1 crue~2", "renee zellweger renee~0 zellweger~2" };
 
     a = new ASCIIAnalyzer();
   }

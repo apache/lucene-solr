@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -29,6 +29,9 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -55,7 +58,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * 
  * results line: comma-separated docID, score pair
  **/
-public class TestFuzzyQuery2 extends LuceneTestCase {
+public class TestSlowFuzzyQuery2 extends LuceneTestCase {
   /** epsilon for score comparisons */
   static final float epsilon = 0.00001f;
 
@@ -115,7 +118,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
       int prefix = Integer.parseInt(params[1]);
       int pqSize = Integer.parseInt(params[2]);
       float minScore = Float.parseFloat(params[3]);
-      FuzzyQuery q = new FuzzyQuery(new Term("field", query), minScore, prefix);
+      SlowFuzzyQuery q = new SlowFuzzyQuery(new Term("field", query), minScore, prefix);
       q.setRewriteMethod(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite(pqSize));
       int expectedResults = Integer.parseInt(reader.readLine());
       TopDocs docs = searcher.search(q, expectedResults);

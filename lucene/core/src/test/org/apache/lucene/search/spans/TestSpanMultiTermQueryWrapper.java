@@ -90,7 +90,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   
   public void testFuzzy2() throws Exception {
     // maximum of 1 term expansion
-    FuzzyQuery fq = new FuzzyQuery(new Term("field", "broan"), 1f, 0, 1);
+    FuzzyQuery fq = new FuzzyQuery(new Term("field", "broan"), 1, 0, 1, false);
     SpanQuery sfq = new SpanMultiTermQueryWrapper<FuzzyQuery>(fq);
     // will only match jumps over lazy broun dog
     SpanPositionRangeQuery sprq = new SpanPositionRangeQuery(sfq, 0, 100);

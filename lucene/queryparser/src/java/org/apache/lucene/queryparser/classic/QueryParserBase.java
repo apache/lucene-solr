@@ -774,7 +774,10 @@ public abstract class QueryParserBase {
    */
   protected Query newFuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
     // FuzzyQuery doesn't yet allow constant score rewrite
-    return new FuzzyQuery(term,minimumSimilarity,prefixLength);
+    String text = term.text();
+    int numEdits = FuzzyQuery.floatToEdits(minimumSimilarity, 
+        text.codePointCount(0, text.length()));
+    return new FuzzyQuery(term,numEdits,prefixLength);
   }
 
   // TODO: Should this be protected instead?

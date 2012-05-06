@@ -28,7 +28,7 @@ import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /** Implements the fuzzy search query. The similarity measurement
- * is based on the Levenshtein (edit distance) algorithm.
+ * is based on the Damerau-Levenshtein (optimal string alignment) algorithm.
  * 
  * <p>This query uses {@link MultiTermQuery.TopTermsScoringBooleanQueryRewrite}
  * as default. So terms will be collected and scored according to their
@@ -37,94 +37,81 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
  */
 public class FuzzyQuery extends MultiTermQuery {
   
-  public final static float defaultMinSimilarity = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
+  public final static int defaultMaxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
   public final static int defaultPrefixLength = 0;
   public final static int defaultMaxExpansions = 50;
+  public final static boolean defaultTranspositions = true;
   
-  private float minimumSimilarity;
-  private int prefixLength;
-  private boolean termLongEnough = false;
-  
-  protected Term term;
+  private final int maxEdits;
+  private final int maxExpansions;
+  private final boolean transpositions;
+  private final int prefixLength;
+  private final Term term;
   
   /**
-   * Create a new FuzzyQuery that will match terms with a similarity 
-   * of at least <code>minimumSimilarity</code> to <code>term</code>.
+   * Create a new FuzzyQuery that will match terms with an edit distance 
+   * of at most <code>maxEdits</code> to <code>term</code>.
    * If a <code>prefixLength</code> &gt; 0 is specified, a common prefix
    * of that length is also required.
    * 
    * @param term the term to search for
-   * @param minimumSimilarity a value between 0 and 1 to set the required similarity
-   *  between the query term and the matching terms. For example, for a
-   *  <code>minimumSimilarity</code> of <code>0.5</code> a term of the same length
-   *  as the query term is considered similar to the query term if the edit distance
-   *  between both terms is less than <code>length(term)*0.5</code>
-   *  <p>
-   *  Alternatively, if <code>minimumSimilarity</code> is >= 1f, it is interpreted 
-   *  as a pure Levenshtein edit distance. For example, a value of <code>2f</code>
-   *  will match all terms within an edit distance of <code>2</code> from the 
-   *  query term. Edit distances specified in this way may not be fractional.
-   *  
+   * @param maxEdits must be >= 0 and <= {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE}.
    * @param prefixLength length of common (non-fuzzy) prefix
    * @param maxExpansions the maximum number of terms to match. If this number is
    *  greater than {@link BooleanQuery#getMaxClauseCount} when the query is rewritten, 
    *  then the maxClauseCount will be used instead.
-   * @throws IllegalArgumentException if minimumSimilarity is &gt;= 1 or &lt; 0
-   * or if prefixLength &lt; 0
+   * @param transpositions true if transpositions should be treated as a primitive
+   *        edit operation. If this is false, comparisons will implement the classic
+   *        Levenshtein algorithm.
    */
-  public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength,
-      int maxExpansions) {
+  public FuzzyQuery(Term term, int maxEdits, int prefixLength, int maxExpansions, boolean transpositions) {
     super(term.field());
-    this.term = term;
     
-    if (minimumSimilarity >= 1.0f && minimumSimilarity != (int)minimumSimilarity)
-      throw new IllegalArgumentException("fractional edit distances are not allowed");
-    if (minimumSimilarity < 0.0f)
-      throw new IllegalArgumentException("minimumSimilarity < 0");
-    if (prefixLength < 0)
-      throw new IllegalArgumentException("prefixLength < 0");
-    if (maxExpansions < 0)
-      throw new IllegalArgumentException("maxExpansions < 0");
-    
-    setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(maxExpansions));
-    
-    String text = term.text();
-    int len = text.codePointCount(0, text.length());
-    if (len > 0 && (minimumSimilarity >= 1f || len > 1.0f / (1.0f - minimumSimilarity))) {
-      this.termLongEnough = true;
+    if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
+      throw new IllegalArgumentException("maxEdits must be between 0 and " + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
+    }
+    if (prefixLength < 0) {
+      throw new IllegalArgumentException("prefixLength cannot be negative.");
+    }
+    if (maxExpansions < 0) {
+      throw new IllegalArgumentException("maxExpansions cannot be negative.");
     }
     
-    this.minimumSimilarity = minimumSimilarity;
+    this.term = term;
+    this.maxEdits = maxEdits;
     this.prefixLength = prefixLength;
+    this.transpositions = transpositions;
+    this.maxExpansions = maxExpansions;
+    setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(maxExpansions));
   }
   
   /**
-   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, prefixLength, defaultMaxExpansions)}.
+   * Calls {@link #FuzzyQuery(Term, int, int, int, boolean) 
+   * FuzzyQuery(term, minimumSimilarity, prefixLength, defaultMaxExpansions, defaultTranspositions)}.
    */
-  public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
-    this(term, minimumSimilarity, prefixLength, defaultMaxExpansions);
+  public FuzzyQuery(Term term, int maxEdits, int prefixLength) {
+    this(term, maxEdits, prefixLength, defaultMaxExpansions, defaultTranspositions);
   }
   
   /**
-   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, 0, defaultMaxExpansions)}.
+   * Calls {@link #FuzzyQuery(Term, int, int) FuzzyQuery(term, maxEdits, defaultPrefixLength)}.
    */
-  public FuzzyQuery(Term term, float minimumSimilarity) {
-    this(term, minimumSimilarity, defaultPrefixLength, defaultMaxExpansions);
+  public FuzzyQuery(Term term, int maxEdits) {
+    this(term, maxEdits, defaultPrefixLength);
   }
 
   /**
-   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, defaultMinSimilarity, 0, defaultMaxExpansions)}.
+   * Calls {@link #FuzzyQuery(Term, int) FuzzyQuery(term, defaultMaxEdits)}.
    */
   public FuzzyQuery(Term term) {
-    this(term, defaultMinSimilarity, defaultPrefixLength, defaultMaxExpansions);
+    this(term, defaultMaxEdits);
   }
   
   /**
-   * Returns the minimum similarity that is required for this query to match.
-   * @return float value between 0.0 and 1.0
+   * @return the maximum number of edit distances allowed for this query to match.
    */
-  public float getMinSimilarity() {
-    return minimumSimilarity;
+  public int getMaxEdits() {
+    return maxEdits;
   }
     
   /**
@@ -138,13 +125,10 @@ public class FuzzyQuery extends MultiTermQuery {
 
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    if (!termLongEnough) {  // can only match if it's exact
+    if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(null), term.bytes());
     }
-    // TODO: should we expose the transpositions option to this query?
-    // maybe move the old/slowish stuff (lev without transpositions, n > 2, etc) all to contrib,
-    // deprecate it, and just have a faster/simpler/better one in core?
-    return new FuzzyTermsEnum(terms, atts, getTerm(), minimumSimilarity, prefixLength, false);
+    return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, prefixLength, transpositions);
   }
   
   /**
@@ -163,7 +147,7 @@ public class FuzzyQuery extends MultiTermQuery {
     }
     buffer.append(term.text());
     buffer.append('~');
-    buffer.append(Float.toString(minimumSimilarity));
+    buffer.append(Integer.toString(maxEdits));
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
@@ -172,8 +156,10 @@ public class FuzzyQuery extends MultiTermQuery {
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + Float.floatToIntBits(minimumSimilarity);
+    result = prime * result + maxEdits;
     result = prime * result + prefixLength;
+    result = prime * result + maxExpansions;
+    result = prime * result + (transpositions ? 0 : 1);
     result = prime * result + ((term == null) ? 0 : term.hashCode());
     return result;
   }
@@ -187,10 +173,13 @@ public class FuzzyQuery extends MultiTermQuery {
     if (getClass() != obj.getClass())
       return false;
     FuzzyQuery other = (FuzzyQuery) obj;
-    if (Float.floatToIntBits(minimumSimilarity) != Float
-        .floatToIntBits(other.minimumSimilarity))
+    if (maxEdits != other.maxEdits)
       return false;
     if (prefixLength != other.prefixLength)
+      return false;
+    if (maxExpansions != other.maxExpansions)
+      return false;
+    if (transpositions != other.transpositions)
       return false;
     if (term == null) {
       if (other.term != null)
@@ -199,6 +188,31 @@ public class FuzzyQuery extends MultiTermQuery {
       return false;
     return true;
   }
+  
+  /**
+   * @deprecated pass integer edit distances instead.
+   */
+  @Deprecated
+  public final static float defaultMinSimilarity = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
 
-
+  /**
+   * Helper function to convert from deprecated "minimumSimilarity" fractions
+   * to raw edit distances.
+   * 
+   * @param minimumSimilarity scaled similarity
+   * @param termLen length (in unicode codepoints) of the term.
+   * @return equivalent number of maxEdits
+   * @deprecated pass integer edit distances instead.
+   */
+  @Deprecated
+  public static int floatToEdits(float minimumSimilarity, int termLen) {
+    if (minimumSimilarity > 1f) {
+      return (int) Math.min(minimumSimilarity, LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
+    } else if (minimumSimilarity == 0.0f) {
+      return 0; // 0 means exact, not infinite # of edits!
+    } else {
+      return Math.min((int) ((1D-minimumSimilarity) * termLen), 
+        LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
+    }
+  }
 }

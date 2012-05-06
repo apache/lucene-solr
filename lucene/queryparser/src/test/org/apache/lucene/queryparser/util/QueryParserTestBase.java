@@ -420,10 +420,10 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   public void testWildcard() throws Exception {
     assertQueryEquals("term*", null, "term*");
     assertQueryEquals("term*^2", null, "term*^2.0");
-    assertQueryEquals("term~", null, "term~2.0");
-    assertQueryEquals("term~0.7", null, "term~0.7");
-    assertQueryEquals("term~^3", null, "term~2.0^3.0");
-    assertQueryEquals("term^3~", null, "term~2.0^3.0");
+    assertQueryEquals("term~", null, "term~2");
+    assertQueryEquals("term~0.7", null, "term~1");
+    assertQueryEquals("term~^3", null, "term~2^3.0");
+    assertQueryEquals("term^3~", null, "term~2^3.0");
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "term*germ^3.0");
 
@@ -432,10 +432,10 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertTrue(getQuery("term~", null) instanceof FuzzyQuery);
     assertTrue(getQuery("term~0.7", null) instanceof FuzzyQuery);
     FuzzyQuery fq = (FuzzyQuery)getQuery("term~0.7", null);
-    assertEquals(0.7f, fq.getMinSimilarity(), 0.1f);
+    assertEquals(1, fq.getMaxEdits());
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
     fq = (FuzzyQuery)getQuery("term~", null);
-    assertEquals(2.0f, fq.getMinSimilarity(), 0.1f);
+    assertEquals(2, fq.getMaxEdits());
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
     
     assertParseException("term~1.1"); // value > 1, throws exception
@@ -470,9 +470,9 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertWildcardQueryEquals("TE?M", false, "TE?M");
     assertWildcardQueryEquals("Te?m*gerM", false, "Te?m*gerM");
 //  Fuzzy queries:
-    assertWildcardQueryEquals("Term~", "term~2.0");
-    assertWildcardQueryEquals("Term~", true, "term~2.0");
-    assertWildcardQueryEquals("Term~", false, "Term~2.0");
+    assertWildcardQueryEquals("Term~", "term~2");
+    assertWildcardQueryEquals("Term~", true, "term~2");
+    assertWildcardQueryEquals("Term~", false, "Term~2");
 //  Range queries:
     assertWildcardQueryEquals("[A TO C]", "[a TO c]");
     assertWildcardQueryEquals("[A TO C]", true, "[a TO c]");
@@ -693,10 +693,10 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
     assertQueryEquals("a:b\\\\?c", a, "a:b\\\\?c");
 
-    assertQueryEquals("a:b\\-c~", a, "a:b-c~2.0");
-    assertQueryEquals("a:b\\+c~", a, "a:b+c~2.0");
-    assertQueryEquals("a:b\\:c~", a, "a:b:c~2.0");
-    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~2.0");
+    assertQueryEquals("a:b\\-c~", a, "a:b-c~2");
+    assertQueryEquals("a:b\\+c~", a, "a:b+c~2");
+    assertQueryEquals("a:b\\:c~", a, "a:b:c~2");
+    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~2");
 
     assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
     assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");
@@ -1271,7 +1271,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   public void testDistanceAsEditsParsing() throws Exception {
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random()));
     FuzzyQuery q = (FuzzyQuery) qp.parse("foobar~2");
-    assertEquals(2f, q.getMinSimilarity(), 0.0001f);
+    assertEquals(2, q.getMaxEdits());
   }
 
   public void testPhraseQueryToString() throws ParseException {
