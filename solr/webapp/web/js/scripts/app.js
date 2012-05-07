@@ -82,6 +82,12 @@ var sammy = $.sammy
       {},
       function( context )
       {
+        if( app.timeout )
+        {
+          console.debug( 'Clearing Timeout #' + app.timeout );
+          clearTimeout( app.timeout );
+        }
+
         var menu_wrapper = $( '#menu-wrapper' );
 
         $( 'li[id].active', menu_wrapper )
@@ -139,6 +145,8 @@ var solr_admin = function( app_config )
     
   this.menu_element = $( '#menu-selector' );
   this.config = config;
+
+  this.timeout = null;
 
   this.run = function()
   {
