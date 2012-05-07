@@ -924,15 +924,17 @@ public final class ZkController {
       InterruptedException {
     // check for configName
     log.info("Looking for collection configName");
+    List<String> configNames = null;
     int retry = 1;
-    for (; retry < 6; retry++) {
+    int retryLimt = 6;
+    for (; retry < retryLimt; retry++) {
       if (zkClient.exists(collectionPath, true)) {
         ZkNodeProps cProps = ZkNodeProps.load(zkClient.getData(collectionPath, null, null, true));
         if (cProps.containsKey(CONFIGNAME_PROP)) {
           break;
         }
       }
-      List<String> configNames = null;
+     
       // if there is only one conf, use that
       try {
         configNames = zkClient.getChildren(CONFIGS_ZKNODE, null,
@@ -949,11 +951,11 @@ public final class ZkController {
       log.info("Could not find collection configName - pausing for 3 seconds and trying again - try: " + retry);
       Thread.sleep(3000);
     }
-    if (retry == 10) {
+    if (retry == retryLimt) {
       log.error("Could not find configName for collection " + collection);
       throw new ZooKeeperException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Could not find configName for collection " + collection);
+          "Could not find configName for collection " + collection + " found:" + configNames);
     }
   }
   
