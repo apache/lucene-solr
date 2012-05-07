@@ -40,6 +40,7 @@ import java.util.Set;
  * <p/>
  * It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
  * 
+ * @see Lucene40StoredFieldsFormat
  * @lucene.internal
  */
 public final class Lucene40StoredFieldsReader extends StoredFieldsReader implements Cloneable, Closeable {

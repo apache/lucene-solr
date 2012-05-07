@@ -36,7 +36,14 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-/** @lucene.experimental */
+/** 
+ * Class responsible for writing stored document fields.
+ * <p/>
+ * It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
+ * 
+ * @see Lucene40StoredFieldsFormat
+ * @lucene.experimental 
+ */
 public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   // NOTE: bit 0 is free here!  You can steal it!
   static final int FIELD_IS_BINARY = 1 << 1;

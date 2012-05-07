@@ -38,7 +38,9 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Default PerDocProducer implementation that uses compound file.
+ * Lucene 4.0 PerDocProducer implementation that uses compound file.
+ * 
+ * @see Lucene40DocValuesFormat
  * @lucene.experimental
  */
 public class Lucene40DocValuesProducer extends PerDocProducerBase {

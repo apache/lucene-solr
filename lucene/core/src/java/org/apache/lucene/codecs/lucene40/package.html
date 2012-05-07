@@ -167,7 +167,8 @@ term occurs in each document. Note that this will not exist if all fields in
 all documents omit position data.
 </li>
 <li>
-Normalization factors. For each field in each document, a value is stored
+{@link org.apache.lucene.codecs.lucene40.Lucene40NormsFormat Normalization factors}. 
+For each field in each document, a value is stored
 that is multiplied into the score for hits on that field.
 </li>
 <li>
@@ -178,7 +179,8 @@ term frequency. To add Term Vectors to your index see the
 {@link org.apache.lucene.document.Field Field} constructors
 </li>
 <li>
-Per-document values. Like stored values, these are also keyed by document
+{@link org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat Per-document values}. 
+Like stored values, these are also keyed by document
 number, but are generally intended to be loaded into main memory for fast
 access. Whereas stored values are generally intended for summary results from
 searches, per-document values are useful for things like scoring factors.
@@ -270,12 +272,12 @@ systems that frequently run out of file handles.</td>
 <td>Stores position information about where a term occurs in the index</td>
 </tr>
 <tr>
-<td>Norms</td>
+<td>{@link org.apache.lucene.codecs.lucene40.Lucene40NormsFormat Norms}</td>
 <td>.nrm.cfs, .nrm.cfe</td>
 <td>Encodes length and boost factors for docs and fields</td>
 </tr>
 <tr>
-<td>Per-Document Values</td>
+<td>{@link org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat Per-Document Values}</td>
 <td>.dv.cfs, .dv.cfe</td>
 <td>Encodes additional scoring factors or other per-document information.</td>
 </tr>

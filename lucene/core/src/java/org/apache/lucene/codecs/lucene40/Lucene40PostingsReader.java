@@ -38,8 +38,11 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
-/** Concrete class that reads the current doc/freq/skip
- *  postings format. 
+/** 
+ * Concrete class that reads the 4.0 frq/prox
+ * postings format. 
+ *  
+ *  @see Lucene40PostingsFormat
  *  @lucene.experimental */
 
 public class Lucene40PostingsReader extends PostingsReaderBase {

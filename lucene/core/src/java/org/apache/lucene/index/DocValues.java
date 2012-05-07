@@ -548,7 +548,7 @@ public abstract class DocValues implements Closeable {
      * pointer per document to dereference the shared byte[].
      * Use this type if your documents may share the same byte[].
      * <p>
-     * NOTE: Fields of this type will not store values for documents without and
+     * NOTE: Fields of this type will not store values for documents without an
      * explicitly provided value. If a documents value is accessed while no
      * explicit value is stored the returned {@link BytesRef} will be a 0-length
      * reference. Custom default values must be assigned explicitly.
@@ -575,7 +575,7 @@ public abstract class DocValues implements Closeable {
      * {@link #BYTES_FIXED_DEREF}, but allowing each
      * document's value to be a different length.
      * <p>
-     * NOTE: Fields of this type will not store values for documents without and
+     * NOTE: Fields of this type will not store values for documents without an
      * explicitly provided value. If a documents value is accessed while no
      * explicit value is stored the returned {@link BytesRef} will be a 0-length
      * reference. Custom default values must be assigned explicitly.
@@ -589,7 +589,7 @@ public abstract class DocValues implements Closeable {
      * {@link #BYTES_FIXED_SORTED}, but allowing each
      * document's value to be a different length.
      * <p>
-     * NOTE: Fields of this type will not store values for documents without and
+     * NOTE: Fields of this type will not store values for documents without an
      * explicitly provided value. If a documents value is accessed while no
      * explicit value is stored the returned {@link BytesRef} will be a 0-length
      * reference.Custom default values must be assigned explicitly.
@@ -607,7 +607,7 @@ public abstract class DocValues implements Closeable {
      * and allows access via document id, ordinal and by-value.
      * Use this type if your documents may share the same byte[].
      * <p>
-     * NOTE: Fields of this type will not store values for documents without and
+     * NOTE: Fields of this type will not store values for documents without an
      * explicitly provided value. If a documents value is accessed while no
      * explicit value is stored the returned {@link BytesRef} will be a 0-length
      * reference. Custom default values must be assigned

@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.util.mutable;
 
+/**
+ * {@link MutableValue} implementation of type 
+ * <code>float</code>.
+ */
 public class MutableValueFloat extends MutableValue {
   public float value;
 

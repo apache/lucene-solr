@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.util.mutable;
 
+/**
+ * {@link MutableValue} implementation of type 
+ * <code>long</code>.
+ */
 public class MutableValueLong extends MutableValue {
   public long value;
 

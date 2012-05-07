@@ -16,7 +16,11 @@
  */
 package org.apache.lucene.util.mutable;
 
-/** @lucene.internal */
+/**
+ * Base class for all mutable values.
+ *  
+ * @lucene.internal 
+ */
 public abstract class MutableValue implements Comparable<MutableValue> {
   public boolean exists = true;
 

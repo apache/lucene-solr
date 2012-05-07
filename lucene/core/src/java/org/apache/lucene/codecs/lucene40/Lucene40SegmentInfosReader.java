@@ -30,7 +30,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
 /**
- * Default implementation of {@link SegmentInfosReader}.
+ * Lucene 4.0 implementation of {@link SegmentInfosReader}.
+ * 
+ * @see Lucene40SegmentInfosFormat
  * @lucene.experimental
  */
 public class Lucene40SegmentInfosReader extends SegmentInfosReader {

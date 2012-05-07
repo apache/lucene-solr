@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.util.mutable;
 
+/**
+ * {@link MutableValue} implementation of type 
+ * <code>double</code>.
+ */
 public class MutableValueDouble extends MutableValue {
   public double value;
 

@@ -608,7 +608,11 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     public Map<PulsingPostingsReader,DocsEnum> enums();
   }
     
-  /** @lucene.internal */
+  /** 
+   * Implementation of {@link PulsingEnumAttribute} for reuse of
+   * wrapped postings readers underneath pulsing.
+   * 
+   * @lucene.internal */
   public static final class PulsingEnumAttributeImpl extends AttributeImpl implements PulsingEnumAttribute {
     // we could store 'other', but what if someone 'chained' multiple postings readers,
     // this could cause problems?

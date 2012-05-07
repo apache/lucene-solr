@@ -18,6 +18,10 @@ package org.apache.lucene.util.mutable;
 
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * {@link MutableValue} implementation of type 
+ * {@link String}.
+ */
 public class MutableValueStr extends MutableValue {
   public BytesRef value = new BytesRef();
 

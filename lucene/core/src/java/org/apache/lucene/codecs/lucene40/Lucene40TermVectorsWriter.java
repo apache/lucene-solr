@@ -47,6 +47,13 @@ import org.apache.lucene.util.StringHelper;
 //     file; saves a seek to tvd only to read a 0 vint (and
 //     saves a byte in tvd)
 
+/**
+ * Lucene 4.0 Term Vectors writer.
+ * <p>
+ * It writes .tvd, .tvf, and .tvx files.
+ * 
+ * @see Lucene40TermVectorsFormat
+ */
 public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   private final Directory directory;
   private final String segment;

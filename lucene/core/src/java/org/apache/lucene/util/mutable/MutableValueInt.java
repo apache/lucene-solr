@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.util.mutable;
 
+/**
+ * {@link MutableValue} implementation of type 
+ * <code>int</code>.
+ */
 public class MutableValueInt extends MutableValue {
   public int value;
   

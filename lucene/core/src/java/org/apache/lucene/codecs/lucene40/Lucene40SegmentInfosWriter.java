@@ -32,7 +32,9 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Default implementation of {@link SegmentInfosWriter}.
+ * Lucene 4.0 implementation of {@link SegmentInfosWriter}.
+ * 
+ * @see Lucene40SegmentInfosFormat
  * @lucene.experimental
  */
 public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {

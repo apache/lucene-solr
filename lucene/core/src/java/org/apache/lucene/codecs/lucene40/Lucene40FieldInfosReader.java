@@ -35,7 +35,10 @@ import org.apache.lucene.store.IndexInput;
  */
 
 /**
+ * Lucene 4.0 FieldInfos reader.
+ * 
  * @lucene.experimental
+ * @see Lucene40FieldInfosFormat
  */
 public class Lucene40FieldInfosReader extends FieldInfosReader {
 

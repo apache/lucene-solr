@@ -31,7 +31,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Default PerDocConsumer implementation that uses compound file.
+ * Lucene 4.0 PerDocConsumer implementation that uses compound file.
+ * 
+ * @see Lucene40DocValuesFormat
  * @lucene.experimental
  */
 public class Lucene40DocValuesConsumer extends DocValuesWriterBase {

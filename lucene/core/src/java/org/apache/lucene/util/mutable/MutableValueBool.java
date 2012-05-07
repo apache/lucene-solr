@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.util.mutable;
 
+/**
+ * {@link MutableValue} implementation of type 
+ * <code>boolean</code>.
+ */
 public class MutableValueBool extends MutableValue {
   public boolean value;
 

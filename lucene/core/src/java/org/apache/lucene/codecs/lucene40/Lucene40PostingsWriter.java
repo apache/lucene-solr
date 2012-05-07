@@ -38,7 +38,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 
-/** @lucene.experimental */
+/**
+ * Concrete class that writes the 4.0 frq/prx postings format.
+ * 
+ * @see Lucene40PostingsFormat
+ * @lucene.experimental 
+ */
 public final class Lucene40PostingsWriter extends PostingsWriterBase {
   final static String CODEC = "Lucene40PostingsWriter";
 

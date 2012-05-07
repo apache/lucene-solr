@@ -29,6 +29,9 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
 /**
+ * Lucene 4.0 FieldInfos writer.
+ * 
+ * @see Lucene40FieldInfosFormat
  * @lucene.experimental
  */
 public class Lucene40FieldInfosWriter extends FieldInfosWriter {

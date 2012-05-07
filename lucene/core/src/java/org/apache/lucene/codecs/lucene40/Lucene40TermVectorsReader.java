@@ -45,6 +45,13 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
+/**
+ * Lucene 4.0 Term Vectors reader.
+ * <p>
+ * It reads .tvd, .tvf, and .tvx files.
+ * 
+ * @see Lucene40TermVectorsFormat
+ */
 public class Lucene40TermVectorsReader extends TermVectorsReader {
 
   // NOTE: if you make a new format, it must be larger than
