@@ -98,7 +98,11 @@ var sammy = $.sammy
 
         if( this.params.splat )
         {
-          var active_element = $( '#' + this.params.splat[0], menu_wrapper );
+          var selector = '~' === this.params.splat[0][0]
+                       ? '#' + this.params.splat[0].replace( /^~/, '' ) + '.global'
+                       : '#menu-selector #' + this.params.splat[0];
+
+          var active_element = $( selector, menu_wrapper );
                     
           if( 0 === active_element.size() )
           {

@@ -383,7 +383,7 @@ var load_logging_viewer = function()
 // #/~logging
 sammy.get
 (
-  /^#\/~(logging)$/,
+  /^#\/(~logging)$/,
   function( context )
   {
     var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );

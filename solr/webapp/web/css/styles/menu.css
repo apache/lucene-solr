@@ -177,12 +177,12 @@
   color: #333;
 }
 
-#menu #index p a { background-image: url( ../../img/ico/dashboard.png ); }
-#menu #logging p a { background-image: url( ../../img/ico/inbox-document-text.png ); }
-#menu #java-properties p a { background-image: url( ../../img/ico/jar.png ); }
-#menu #threads p a { background-image: url( ../../img/ico/ui-accordion.png ); }
-#menu #cores p a { background-image: url( ../../img/ico/databases.png ); }
-#menu #cloud p a { background-image: url( ../../img/ico/network-cloud.png ); }
+#menu #index.global p a { background-image: url( ../../img/ico/dashboard.png ); }
+#menu #logging.global p a { background-image: url( ../../img/ico/inbox-document-text.png ); }
+#menu #java-properties.global p a { background-image: url( ../../img/ico/jar.png ); }
+#menu #threads.global p a { background-image: url( ../../img/ico/ui-accordion.png ); }
+#menu #cores.global p a { background-image: url( ../../img/ico/databases.png ); }
+#menu #cloud.global p a { background-image: url( ../../img/ico/network-cloud.png ); }
 
 #menu-selector .ping.error a
 {
@@ -228,6 +228,9 @@
   padding-left: 26px;
   padding-top: 5px;
   padding-bottom: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #content #navigation a:hover

@@ -18,7 +18,7 @@
 // #/~java-properties
 sammy.get
 (
-  /^#\/~(java-properties)$/,
+  /^#\/(~java-properties)$/,
   function( context )
   {
     var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );

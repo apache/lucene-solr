@@ -104,7 +104,7 @@ sammy.bind
 // #/~cores
 sammy.get
 (
-  /^#\/~(cores)$/,
+  /^#\/(~cores)$/,
   function( context )
   {
     delete app.cores_template;
@@ -134,7 +134,7 @@ sammy.get
 // #/~cores
 sammy.get
 (
-  /^#\/~(cores)\//,
+  /^#\/(~cores)\//,
   function( context )
   {
     var content_element = $( '#content' );

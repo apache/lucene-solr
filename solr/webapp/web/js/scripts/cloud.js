@@ -661,7 +661,7 @@ var init_tree = function( tree_element )
 // #/~cloud
 sammy.get
 (
-  /^#\/~(cloud)$/,
+  /^#\/(~cloud)$/,
   function( context )
   {
     var content_element = $( '#content' );
