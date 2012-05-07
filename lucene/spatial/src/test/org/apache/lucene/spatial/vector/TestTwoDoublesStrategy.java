@@ -15,19 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix;
+package org.apache.lucene.spatial.vector;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.simple.SimpleSpatialContext;
-import org.junit.Before;
 
-
-public class RecursivePrefixTreeStrategyTestCase extends BaseRecursivePrefixTreeStrategyTestCase {
-
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-  }
+public class TestTwoDoublesStrategy extends BaseTwoDoublesStrategyTestCase {
 
   @Override
   protected SpatialContext getSpatialContext() {
