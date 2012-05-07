@@ -101,10 +101,10 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
 
     assertFalse("No mbean found for SolrIndexSearcher", mbeanServer.queryMBeans(searcher, null).isEmpty());
 
-    int oldNumDocs = Integer.valueOf((String) mbeanServer.getAttribute(searcher, "numDocs"));
+    int oldNumDocs =  (Integer)mbeanServer.getAttribute(searcher, "numDocs");
     assertU(adoc("id", "1"));
     assertU("commit", commit());
-    int numDocs = Integer.valueOf((String) mbeanServer.getAttribute(searcher, "numDocs"));
+    int numDocs = (Integer)mbeanServer.getAttribute(searcher, "numDocs");
     assertTrue("New numDocs is same as old numDocs as reported by JMX",
             numDocs > oldNumDocs);
   }

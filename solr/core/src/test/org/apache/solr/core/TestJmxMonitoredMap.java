@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectInstance;
+import javax.management.ObjectName;
 import javax.management.Query;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
@@ -34,6 +35,10 @@ import java.net.URL;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Set;
+
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 
 /**
  * Test for JmxMonitoredMap
@@ -54,7 +59,9 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
   @Override
   @Before
   public void setUp() throws Exception {
+
     super.setUp();
+
     int retries = 5;
     for (int i = 0; i < retries; i++) {
       try {
@@ -96,34 +103,72 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
   }
 
   @Test
+  public void testTypeName() throws Exception{
+    MockInfoMBean mock = new MockInfoMBean();
+    monitoredMap.put("mock", mock);
+
+    NamedList dynamicStats = mock.getStatistics();
+    assertTrue(dynamicStats.size() != 0);
+    assertTrue(dynamicStats.get("Integer") instanceof Integer);
+    assertTrue(dynamicStats.get("Double") instanceof Double);
+    assertTrue(dynamicStats.get("Long") instanceof Long);
+    assertTrue(dynamicStats.get("Short") instanceof Short);
+    assertTrue(dynamicStats.get("Byte") instanceof Byte);
+    assertTrue(dynamicStats.get("Float") instanceof Float);
+    assertTrue(dynamicStats.get("String") instanceof String);
+
+    Set<ObjectInstance> objects = mbeanServer.queryMBeans(null, Query.match(
+        Query.attr("name"), Query.value("mock")));
+
+    ObjectName name = objects.iterator().next().getObjectName();
+    assertMBeanTypeAndValue(name, "Integer", Integer.class, 123);
+    assertMBeanTypeAndValue(name, "Double", Double.class, 567.534);
+    assertMBeanTypeAndValue(name, "Long", Long.class, 32352463l);
+    assertMBeanTypeAndValue(name, "Short", Short.class, (short) 32768);
+    assertMBeanTypeAndValue(name, "Byte", Byte.class, (byte) 254);
+    assertMBeanTypeAndValue(name, "Float", Float.class, 3.456f);
+    assertMBeanTypeAndValue(name, "String",String.class, "testing");
+
+  }
+
+  @SuppressWarnings("unchecked")
+  public void assertMBeanTypeAndValue(ObjectName name, String attr, Class type, Object value) throws Exception {
+    assertThat(mbeanServer.getAttribute(name, attr), 
+        allOf(instanceOf(type), equalTo(value))
+    );
+  }
+
+  @Test
   public void testPutRemoveClear() throws Exception {
     MockInfoMBean mock = new MockInfoMBean();
     monitoredMap.put("mock", mock);
 
+
     Set<ObjectInstance> objects = mbeanServer.queryMBeans(null, Query.match(
-            Query.attr("name"), Query.value("mock")));
+        Query.attr("name"), Query.value("mock")));
     assertFalse("No MBean for mock object found in MBeanServer", objects
-            .isEmpty());
+        .isEmpty());
 
     monitoredMap.remove("mock");
     objects = mbeanServer.queryMBeans(null, Query.match(Query.attr("name"),
-            Query.value("mock")));
+        Query.value("mock")));
     assertTrue("MBean for mock object found in MBeanServer even after removal",
-            objects.isEmpty());
+        objects.isEmpty());
 
     monitoredMap.put("mock", mock);
     monitoredMap.put("mock2", mock);
     objects = mbeanServer.queryMBeans(null, Query.match(Query.attr("name"),
-            Query.value("mock")));
+        Query.value("mock")));
     assertFalse("No MBean for mock object found in MBeanServer", objects
-            .isEmpty());
+        .isEmpty());
 
     monitoredMap.clear();
     objects = mbeanServer.queryMBeans(null, Query.match(Query.attr("name"),
-            Query.value("mock")));
+        Query.value("mock")));
     assertTrue(
-            "MBean for mock object found in MBeanServer even after clear has been called",
-            objects.isEmpty());
+        "MBean for mock object found in MBeanServer even after clear has been called",
+        objects.isEmpty());
+
   }
 
   private class MockInfoMBean implements SolrInfoMBean {
@@ -154,7 +199,15 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
 
     @SuppressWarnings("unchecked")
     public NamedList getStatistics() {
-      return null;
+      NamedList myList = new NamedList<Integer>();
+      myList.add("Integer", 123);
+      myList.add("Double",567.534);
+      myList.add("Long", 32352463l);
+      myList.add("Short", (short) 32768);
+      myList.add("Byte", (byte) 254);
+      myList.add("Float", 3.456f);
+      myList.add("String","testing");
+      return myList;
     }
   }
 

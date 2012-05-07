@@ -551,6 +551,10 @@ Other Changes
   paths have been fixed so that they are resolved against the data dir 
   instead of the CWD of the java process. (hossman)
 
+* SOLR-3083: JMX beans now report Numbers as numeric values rather then String
+  (Tagged Siteops, Greg Bowyer via ryan)
+
+
 Documentation
 ----------------------
 

@@ -19,16 +19,20 @@ package org.apache.solr.core;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.JmxConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.management.*;
+import javax.management.openmbean.OpenMBeanAttributeInfoSupport;
+import javax.management.openmbean.OpenType;
+import javax.management.openmbean.SimpleType;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -228,20 +232,45 @@ public class JmxMonitoredMap<K, V> extends
         if (dynamicStats != null) {
           for (int i = 0; i < dynamicStats.size(); i++) {
             String name = dynamicStats.getName(i);
-            if (!staticStats.contains(name))
+            if (staticStats.contains(name)) {
+              continue;
+            }
+            Class type = dynamicStats.get(name).getClass();
+            OpenType typeBox = determineType(type);
+            if (type.equals(String.class) || typeBox == null) {
               attrInfoList.add(new MBeanAttributeInfo(dynamicStats.getName(i),
-                      String.class.getName(), null, true, false, false));
+                  String.class.getName(), null, true, false, false));
+            } else {
+              attrInfoList.add(new OpenMBeanAttributeInfoSupport(
+                  dynamicStats.getName(i), dynamicStats.getName(i), typeBox,
+                  true, false, false));
+            }
           }
         }
       } catch (Exception e) {
-        LOG.warn( "Could not getStatistics on info bean "
-                + infoBean.getName(), e);
+        LOG.warn("Could not getStatistics on info bean {}", infoBean.getName(), e);
       }
 
       MBeanAttributeInfo[] attrInfoArr = attrInfoList
               .toArray(new MBeanAttributeInfo[attrInfoList.size()]);
       return new MBeanInfo(getClass().getName(), infoBean
               .getDescription(), attrInfoArr, null, null, null);
+    }
+
+    private OpenType determineType(Class type) {
+      try {
+        for (Field field : SimpleType.class.getFields()) {
+          if (field.getType().equals(SimpleType.class)) {
+            SimpleType candidate = (SimpleType) field.get(SimpleType.class);
+            if (candidate.getTypeName().equals(type.getName())) {
+              return candidate;
+            }
+          }
+        }
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      return null;
     }
 
     public Object getAttribute(String attribute)
@@ -264,11 +293,18 @@ public class JmxMonitoredMap<K, V> extends
         val = list.get(attribute);
       }
 
-      if (val != null)
+      if (val != null) {
+        // Its String or one of the simple types, just return it as JMX suggests direct support for such types
+        for (String simpleTypeName : SimpleType.ALLOWED_CLASSNAMES_LIST) {
+          if (val.getClass().getName().equals(simpleTypeName)) {
+            return val;
+          }
+        }
+        // Its an arbitrary object which could be something complex and odd, return its toString, assuming that is
+        // a workable representation of the object
         return val.toString();
-      else
-        return val;
-
+      }
+      return null;
     }
 
     public AttributeList getAttributes(String[] attributes) {
