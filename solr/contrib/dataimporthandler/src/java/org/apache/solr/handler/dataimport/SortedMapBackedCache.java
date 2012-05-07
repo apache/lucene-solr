@@ -120,6 +120,20 @@ public class SortedMapBackedCache implements DIHCache {
   @Override
   public Iterator<Map<String,Object>> iterator(Object key) {
     checkOpen(true);
+    if(key instanceof Iterable<?>) {
+      List<Map<String,Object>> vals = new ArrayList<Map<String,Object>>();
+      Iterator<?> iter = ((Iterable<?>) key).iterator();
+      while(iter.hasNext()) {
+        List<Map<String,Object>> val = theMap.get(iter.next());
+        if(val!=null) {
+          vals.addAll(val);
+        }
+      } 
+      if(vals.size()==0) {
+        return null;
+      }
+      return vals.iterator();
+    }    
     List<Map<String,Object>> val = theMap.get(key);
     if (val == null) {
       return null;

@@ -43,11 +43,11 @@ import org.junit.Test;
  * @since solr 1.3
  */
 public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
-  Driver driver;
-  DataSource dataSource;
-  Connection connection;
-  IMocksControl mockControl;
-  JdbcDataSource jdbcDataSource = new JdbcDataSource();
+  private Driver driver;
+  private DataSource dataSource;
+  private Connection connection;
+  private IMocksControl mockControl;
+  private JdbcDataSource jdbcDataSource = new JdbcDataSource();
   List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
 
   Context context = AbstractDataImportHandlerTestCase.getContext(null, null,
@@ -129,7 +129,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   @Test
   public void testRetrieveFromDriverManager() throws Exception {
     DriverManager.registerDriver(driver);
-
+    try {
     EasyMock.expect(
             driver.connect((String) EasyMock.notNull(), (Properties) EasyMock
                     .notNull())).andReturn(connection);
@@ -147,6 +147,11 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     mockControl.verify();
 
     assertSame("connection", conn, connection);
+    } catch(Exception e) {
+      throw e;
+    } finally {
+      DriverManager.deregisterDriver(driver);
+    }
   }
 
   @Test

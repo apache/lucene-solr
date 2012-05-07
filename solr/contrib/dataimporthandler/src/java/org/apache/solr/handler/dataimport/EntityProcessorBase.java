@@ -57,8 +57,6 @@ public class EntityProcessorBase extends EntityProcessor {
       firstInit(context);
     }
     if(cacheSupport!=null) {
-      rowIterator = null;
-      query = null;
       cacheSupport.initNewParent(context);
     }   
     
