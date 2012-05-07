@@ -40,7 +40,7 @@
   <!-- ========================================================================= -->
  
   <target name="example" description="Creates a runnable example configuration."
-          depends="resolve-example,dist-contrib,dist-war">
+          depends="dist-contrib,dist-war">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
@@ -56,14 +56,6 @@
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
 
-  <!-- example-DIH needs hsqldb. don't put anything here needed by *tests* -->
-  <target name="resolve-example" unless="example.libs.uptodate">
-    <ant dir="${common-solr.dir}/example/example-DIH" target="resolve" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="example.libs.uptodate" value="true"/>
-  </target>
- 
   <target name="run-example" depends="example"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.solr.home" location="example/solr"/>
@@ -474,7 +466,7 @@
     <!-- NOOP -->
   </target>
 
-  <target name="resolve" depends="resolve-example,resolve-jetty">
+  <target name="resolve" depends="resolve-example">
      <sequential>
      <ant dir="core" target="resolve" inheritall="false">
          <propertyset refid="uptodate.and.compiled.properties"/>

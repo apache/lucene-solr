@@ -190,7 +190,7 @@
     <solr-jarify/>
   </target>
 
-  <target name="compile-core" depends="prep-lucene-jars,resolve-jetty,common.compile-core"/>
+  <target name="compile-core" depends="prep-lucene-jars,resolve-example,common.compile-core"/>
   <target name="compile-test" depends="sync-resources,compile-solr-test-framework,common.compile-test"/>
 
   <target name="dist" depends="jar-core">
@@ -340,12 +340,15 @@
     <property name="solr.test.framework.compiled" value="true"/>
   </target>
 
-  <!-- resolve jetty dependencies in the example (relied upon by compile!) -->
-  <target name="resolve-jetty" unless="jetty.libs.uptodate">
+  <!-- resolve dependencies in the example (relied upon by compile/tests) -->
+  <target name="resolve-example" unless="example.libs.uptodate">
     <ant dir="${common-solr.dir}/example" target="resolve" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-    <property name="jetty.libs.uptodate" value="true"/>
+    <ant dir="${common-solr.dir}/example/example-DIH" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="example.libs.uptodate" value="true"/>
   </target>
 
   <macrodef name="contrib-crawl">
