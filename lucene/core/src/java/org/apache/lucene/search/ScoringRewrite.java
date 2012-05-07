@@ -67,11 +67,6 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       if (count > BooleanQuery.getMaxClauseCount())
         throw new BooleanQuery.TooManyClauses();
     }
-    
-    // Make sure we are still a singleton even after deserializing
-    protected Object readResolve() {
-      return SCORING_BOOLEAN_QUERY_REWRITE;
-    }    
   };
   
   /** Like {@link #SCORING_BOOLEAN_QUERY_REWRITE} except
@@ -95,11 +90,6 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       final Query result = new ConstantScoreQuery(bq);
       result.setBoost(query.getBoost());
       return result;
-    }
-
-    // Make sure we are still a singleton even after deserializing
-    protected Object readResolve() {
-      return CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE;
     }
   };
 

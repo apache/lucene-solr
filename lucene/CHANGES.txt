@@ -141,9 +141,10 @@ Changes in backwards compatibility policy
   ParallelMultiSearcher into IndexSearcher as an optional
   ExecutorServiced passed to its ctor.  (Mike McCandless)
 
-* LUCENE-2908: Removed serialization code from lucene classes. It is recommended
-  that you serialize user search needs at a higher level in your application.
-  (Robert Muir)
+* LUCENE-2908, LUCENE-4037: Removed serialization code from lucene classes. 
+  It is recommended that you serialize user search needs at a higher level 
+  in your application.
+  (Robert Muir, Benson Margulies)
 
 * LUCENE-2831: Changed Weight#scorer, Weight#explain & Filter#getDocIdSet to
   operate on a AtomicReaderContext instead of directly on IndexReader to enable

@@ -173,11 +173,6 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     public SpanQuery rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
       return delegate.rewrite(reader, query);
     }
-
-    // Make sure we are still a singleton even after deserializing
-    protected Object readResolve() {
-      return SCORING_SPAN_QUERY_REWRITE;
-    }
   };
   
   /**

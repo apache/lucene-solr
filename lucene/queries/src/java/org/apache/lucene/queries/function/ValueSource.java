@@ -18,16 +18,12 @@ package org.apache.lucene.queries.function;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -38,7 +34,7 @@ import java.util.Map;
  *
  *
  */
-public abstract class ValueSource implements Serializable {
+public abstract class ValueSource {
 
   /**
    * Gets the values for this reader and the context that was previously

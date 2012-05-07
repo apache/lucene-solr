@@ -146,11 +146,6 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
    * actual machine crash.
    */
   private static class CrashingException extends RuntimeException {
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
-
     public CrashingException(String msg) {
       super(msg);
     }

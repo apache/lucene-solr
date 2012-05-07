@@ -125,9 +125,6 @@ public interface FieldCache {
       // directly from byte[]
       return Byte.parseByte(term.utf8ToString());
     }
-    protected Object readResolve() {
-      return DEFAULT_BYTE_PARSER;
-    }
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".DEFAULT_BYTE_PARSER"; 
@@ -142,9 +139,6 @@ public interface FieldCache {
       // IntField, instead, which already decodes
       // directly from byte[]
       return Short.parseShort(term.utf8ToString());
-    }
-    protected Object readResolve() {
-      return DEFAULT_SHORT_PARSER;
     }
     @Override
     public String toString() { 
@@ -161,9 +155,6 @@ public interface FieldCache {
       // directly from byte[]
       return Integer.parseInt(term.utf8ToString());
     }
-    protected Object readResolve() {
-      return DEFAULT_INT_PARSER;
-    }
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".DEFAULT_INT_PARSER"; 
@@ -178,9 +169,6 @@ public interface FieldCache {
       // FloatField, instead, which already decodes
       // directly from byte[]
       return Float.parseFloat(term.utf8ToString());
-    }
-    protected Object readResolve() {
-      return DEFAULT_FLOAT_PARSER;
     }
     @Override
     public String toString() { 
@@ -197,9 +185,6 @@ public interface FieldCache {
       // directly from byte[]
       return Long.parseLong(term.utf8ToString());
     }
-    protected Object readResolve() {
-      return DEFAULT_LONG_PARSER;
-    }
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".DEFAULT_LONG_PARSER"; 
@@ -214,9 +199,6 @@ public interface FieldCache {
       // DoubleField, instead, which already decodes
       // directly from byte[]
       return Double.parseDouble(term.utf8ToString());
-    }
-    protected Object readResolve() {
-      return DEFAULT_DOUBLE_PARSER;
     }
     @Override
     public String toString() { 
@@ -234,9 +216,6 @@ public interface FieldCache {
         throw new FieldCacheImpl.StopFillCacheException();
       return NumericUtils.prefixCodedToInt(term);
     }
-    protected Object readResolve() {
-      return NUMERIC_UTILS_INT_PARSER;
-    }
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".NUMERIC_UTILS_INT_PARSER"; 
@@ -252,9 +231,6 @@ public interface FieldCache {
       if (NumericUtils.getPrefixCodedIntShift(term) > 0)
         throw new FieldCacheImpl.StopFillCacheException();
       return NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(term));
-    }
-    protected Object readResolve() {
-      return NUMERIC_UTILS_FLOAT_PARSER;
     }
     @Override
     public String toString() { 
@@ -272,9 +248,6 @@ public interface FieldCache {
         throw new FieldCacheImpl.StopFillCacheException();
       return NumericUtils.prefixCodedToLong(term);
     }
-    protected Object readResolve() {
-      return NUMERIC_UTILS_LONG_PARSER;
-    }
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".NUMERIC_UTILS_LONG_PARSER"; 
@@ -290,9 +263,6 @@ public interface FieldCache {
       if (NumericUtils.getPrefixCodedLongShift(term) > 0)
         throw new FieldCacheImpl.StopFillCacheException();
       return NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term));
-    }
-    protected Object readResolve() {
-      return NUMERIC_UTILS_DOUBLE_PARSER;
     }
     @Override
     public String toString() { 
