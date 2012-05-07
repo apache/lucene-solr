@@ -89,7 +89,7 @@ import org.apache.lucene.util.packed.PackedInts; // javadocs
  *        ({@link DataOutput#writeByte Byte} * ValueSize)<sup>NumValues</sup></li>
  *    <li>{@link Type#BYTES_VAR_SORTED BYTES_VAR_SORTED} .idx --&gt; Header, TotalVarBytes,
  *        Addresses, Ordinals</li>
- *    <li>{@link Type#BYTES_VAR_SORTED BYTES_VAR_SORTED} .dat --&gt; Header, ValueSize,
+ *    <li>{@link Type#BYTES_VAR_SORTED BYTES_VAR_SORTED} .dat --&gt; Header,
  *        ({@link DataOutput#writeByte Byte} * <i>variable ValueSize</i>)<sup>NumValues</sup></li>
  * </ul>
  * Data Types:
