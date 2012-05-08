@@ -387,6 +387,7 @@ public class HttpSolrServer extends SolrServer {
       switch (httpStatus) {
         case HttpStatus.SC_OK:
         case HttpStatus.SC_BAD_REQUEST:
+        case HttpStatus.SC_CONFLICT:  // 409
           break;
         case HttpStatus.SC_MOVED_PERMANENTLY:
         case HttpStatus.SC_MOVED_TEMPORARILY:

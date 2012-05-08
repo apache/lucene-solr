@@ -138,10 +138,21 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         }
       }
     } catch (Exception e) {
-      SolrException.log(SolrCore.log,e);
-      if (e instanceof ParseException) {
-        e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      if (e instanceof SolrException) {
+        SolrException se = (SolrException)e;
+        if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
+          // TODO: should we allow this to be counted as an error (numErrors++)?
+
+        } else {
+          SolrException.log(SolrCore.log,e);
+        }
+      } else {
+        SolrException.log(SolrCore.log,e);
+        if (e instanceof ParseException) {
+          e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+        }
       }
+
       rsp.setException(e);
       numErrors++;
     }

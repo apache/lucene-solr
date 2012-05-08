@@ -35,7 +35,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.noggit.JSONUtil;
+import org.apache.noggit.ObjectBuilder;
+import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -45,6 +49,7 @@ import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -57,7 +62,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 /**
  *
  */
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-2161")
+// @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-2161")
 public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
@@ -274,7 +279,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
-    
+
+
+    doOptimisticLockingAndUpdating();
     testMultipleCollections();
     testANewCollectionInOneInstance();
     testSearchByCollectionName();
@@ -286,6 +293,45 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       super.printLayout();
     }
   }
+
+  // cloud level test mainly needed just to make sure that versions and errors are propagated correctly
+  private void doOptimisticLockingAndUpdating() throws Exception {
+    SolrInputDocument sd =  sdoc("id", 1000, "_version_", -1);
+    indexDoc(sd);
+
+    ignoreException("version conflict");
+    for (SolrServer client : clients) {
+      try {
+        client.add(sd);
+        fail();
+      } catch (SolrException e) {
+        assertEquals(409, e.code());
+      }
+    }
+    unIgnoreException("version conflict");
+
+    // TODO: test deletes.  SolrJ needs a good way to pass version for delete...
+
+    sd =  sdoc("id", 1000, "foo_i",5);
+    clients.get(0).add(sd);
+
+    List<Integer> expected = new ArrayList<Integer>();
+    int val = 0;
+    for (SolrServer client : clients) {
+      val += 10;
+      client.add(sdoc("id", 1000, "val_i", map("add",val), "foo_i",val));
+      expected.add(val);
+    }
+
+    QueryRequest qr = new QueryRequest(params("qt", "/get", "id","1000"));
+    for (SolrServer client : clients) {
+      val += 10;
+      NamedList rsp = client.request(qr);
+      String match = JSONTestUtil.matchObj("/val_i", rsp.get("doc"), expected);
+      if (match != null) throw new RuntimeException(match);
+    }
+  }
+
 
   private void testNumberOfCommitsWithCommitAfterAdd()
       throws MalformedURLException, SolrServerException, IOException {

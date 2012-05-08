@@ -197,6 +197,79 @@ public class RealTimeGetComponent extends SearchComponent
 
   }
 
+  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes) throws IOException {
+    SolrInputDocument sid = null;
+    RefCounted<SolrIndexSearcher> searcherHolder = null;
+    try {
+      SolrIndexSearcher searcher = null;
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+
+
+      if (ulog != null) {
+        Object o = ulog.lookup(idBytes);
+        if (o != null) {
+          // should currently be a List<Oper,Ver,Doc/Id>
+          List entry = (List)o;
+          assert entry.size() >= 3;
+          int oper = (Integer)entry.get(0);
+          switch (oper) {
+            case UpdateLog.ADD:
+              sid = (SolrInputDocument)entry.get(entry.size()-1);
+              break;
+            case UpdateLog.DELETE:
+              return null;
+            default:
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
+          }
+        }
+      }
+
+      if (sid == null) {
+        // didn't find it in the update log, so it should be in the newest searcher opened
+        if (searcher == null) {
+          searcherHolder = core.getRealtimeSearcher();
+          searcher = searcherHolder.get();
+        }
+
+        // SolrCore.verbose("RealTimeGet using searcher ", searcher);
+        SchemaField idField = core.getSchema().getUniqueKeyField();
+
+        int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
+        if (docid < 0) return null;
+        Document luceneDocument = searcher.doc(docid);
+        sid = toSolrInputDocument(luceneDocument, core.getSchema());
+      }
+    } finally {
+      if (searcherHolder != null) {
+        searcherHolder.decref();
+      }
+    }
+
+    return sid;
+  }
+
+  private static SolrInputDocument toSolrInputDocument(Document doc, IndexSchema schema) {
+    SolrInputDocument out = new SolrInputDocument();
+    for( IndexableField f : doc.getFields() ) {
+      String fname = f.name();
+      SchemaField sf = schema.getFieldOrNull(f.name());
+      Object val = null;
+      if (sf != null) {
+        val = sf.getType().toObject(f);   // object or external string?
+      } else {
+        val = f.stringValue();
+        if (val == null) val = f.numericValue();
+        if (val == null) val = f.binaryValue();
+        if (val == null) val = f;
+      }
+
+      // todo: how to handle targets of copy fields (including polyfield sub-fields)?
+      out.addField(fname, val);
+    }
+    return out;
+  }
+
+
   private static SolrDocument toSolrDoc(Document doc, IndexSchema schema) {
     SolrDocument out = new SolrDocument();
     for( IndexableField f : doc.getFields() ) {
@@ -307,7 +380,7 @@ public class RealTimeGetComponent extends SearchComponent
         sreq.shards = sliceToShards(rb, collection, shard);
         sreq.actualShards = sreq.shards;
         sreq.params = new ModifiableSolrParams();
-        sreq.params.set("shards.qt","/get");      // TODO: how to avoid hardcoding this and hit the same handler?
+        sreq.params.set(ShardParams.SHARDS_QT,"/get");      // TODO: how to avoid hardcoding this and hit the same handler?
         sreq.params.set("distrib",false);
         sreq.params.set("ids", shardIdList);
 
@@ -321,7 +394,7 @@ public class RealTimeGetComponent extends SearchComponent
       sreq.shards = null;  // ALL
       sreq.actualShards = sreq.shards;
       sreq.params = new ModifiableSolrParams();
-      sreq.params.set("shards.qt","/get");      // TODO: how to avoid hardcoding this and hit the same handler?
+      sreq.params.set(ShardParams.SHARDS_QT,"/get");      // TODO: how to avoid hardcoding this and hit the same handler?
       sreq.params.set("distrib",false);
       sreq.params.set("ids", shardIdList);
 

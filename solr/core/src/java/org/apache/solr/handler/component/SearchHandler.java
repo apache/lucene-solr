@@ -266,7 +266,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));
               }
-              String shardQt = req.getParams().get(ShardParams.SHARDS_QT);
+              String shardQt = params.get(ShardParams.SHARDS_QT);
               if (shardQt == null) {
                 params.remove(CommonParams.QT);
               } else {

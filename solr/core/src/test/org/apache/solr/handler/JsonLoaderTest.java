@@ -30,6 +30,8 @@ import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Map;
+
 public class JsonLoaderTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -197,6 +199,31 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals("2", f.getValue());
     assertEquals(add.commitWithin, -1);
     assertEquals(add.overwrite, true);
+
+    req.close();
+  }
+
+  public void testExtendedFieldValues() throws Exception {
+    String str = "[{'id':'1', 'val_s':{'add':'foo'}}]".replace('\'', '"');
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader( req, p );
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str));
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    assertEquals(add.commitWithin, -1);
+    assertEquals(add.overwrite, true);
+    SolrInputDocument d = add.solrDoc;
+
+    SolrInputField f = d.getField( "id" );
+    assertEquals("1", f.getValue());
+
+    f = d.getField( "val_s" );
+    Map<String,Object> map = (Map<String,Object>)f.getValue();
+    assertEquals("foo",map.get("add"));
 
     req.close();
   }

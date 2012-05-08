@@ -96,10 +96,22 @@ public class ClientUtils
     for( SolrInputField field : doc ) {
       float boost = field.getBoost();
       String name = field.getName();
+
       for( Object v : field ) {
+        String update = null;
+
+        if (v instanceof Map) {
+          // currently only supports a single value
+          for (Entry<Object,Object> entry : ((Map<Object,Object>)v).entrySet()) {
+            update = entry.getKey().toString();
+            Object fieldVal = entry.getValue();
+            v = fieldVal;
+          }
+        }
+
         if (v instanceof Date) {
           v = DateUtil.getThreadLocalDateFormat().format( (Date)v );
-        }else if (v instanceof byte[]) {
+        } else if (v instanceof byte[]) {
           byte[] bytes = (byte[]) v;
           v = Base64.byteArrayToBase64(bytes, 0,bytes.length);
         } else if (v instanceof ByteBuffer) {
@@ -107,10 +119,18 @@ public class ClientUtils
           v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
         }
 
-        if( boost != 1.0f ) {
-          XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost );
-        } else if (v != null) {
-          XML.writeXML(writer, "field", v.toString(), "name", name );
+        if (update == null) {
+          if( boost != 1.0f ) {
+            XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost );
+          } else if (v != null) {
+            XML.writeXML(writer, "field", v.toString(), "name", name );
+          }
+        } else {
+          if( boost != 1.0f ) {
+            XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost, "update", update);
+          } else if (v != null) {
+            XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
+          }
         }
 
         // only write the boost for the first multi-valued field

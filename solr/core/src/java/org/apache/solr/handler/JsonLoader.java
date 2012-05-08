@@ -19,9 +19,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.noggit.JSONParser;
@@ -320,153 +318,142 @@ class JsonLoader extends ContentStreamLoader {
           +" at ["+parser.getPosition()+"]" );
     }
   }
-  
-  SolrInputDocument parseDoc(int ev) throws IOException
-  {
-    Stack<Object> stack = new Stack<Object>();
-    Object obj = null;
-    boolean inArray = false;
 
-    if( ev != JSONParser.OBJECT_START ) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "object should already be started" );
-    }
-    
-    while( true ) {
-      //System.out.println( ev + "["+JSONParser.getEventString(ev)+"] "+parser.wasKey() ); //+ parser.getString() );
 
-      switch (ev) {
-        case JSONParser.STRING:
-          if( parser.wasKey() ) {
-            obj = stack.peek();
-            String v = parser.getString();
-            if( obj instanceof SolrInputField ) {
-              SolrInputField field = (SolrInputField)obj;
-              if( "boost".equals( v ) ) {
-                ev = parser.nextEvent();
-                if( ev != JSONParser.NUMBER &&
-                    ev != JSONParser.LONG &&  
-                    ev != JSONParser.BIGNUMBER ) {
-                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "boost should have number! "+JSONParser.getEventString(ev) );
-                }
-                field.setBoost((float)parser.getDouble());
-              }
-              else if( "value".equals( v  ) ) {
-                // nothing special...
-                stack.push( field ); // so it can be popped
-              }
-              else {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid key: "+v + " ["+ parser.getPosition()+"]" );
-              }
-            }
-            else if( obj instanceof SolrInputDocument ) {
-              SolrInputDocument doc = (SolrInputDocument)obj;
-              SolrInputField f = doc.get( v );
-              if( f == null ) {
-                f = new SolrInputField( v );
-                doc.put( f.getName(), f );
-              }
-              stack.push( f );
-            }
-            else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "hymmm ["+ parser.getPosition()+"]" );
-            }
-          }
-          else {
-            addValToField(stack, parser.getString(), inArray, parser);
-          }
-          break;
+  private SolrInputDocument parseDoc(int ev) throws IOException {
+    assert ev == JSONParser.OBJECT_START;
 
-        case JSONParser.LONG:
-        case JSONParser.NUMBER:
-        case JSONParser.BIGNUMBER:
-          addValToField(stack, parser.getNumberChars().toString(), inArray, parser);
-          break;
-          
-        case JSONParser.BOOLEAN:
-          addValToField(stack, parser.getBoolean(),inArray, parser);
-          break;
-
-        case JSONParser.NULL:
-          parser.getNull();
-          /*** if we wanted to remove the field from the document now...
-          if (!inArray) {
-            Object o = stack.peek();
-            // if null was only value in the field, then remove the field
-            if (o instanceof SolrInputField) {
-              SolrInputField sif = (SolrInputField)o;
-              if (sif.getValueCount() == 0) {
-                sdoc.remove(sif.getName());
-              }
-            }
-          }
-          ***/
-
-          addValToField(stack, null, inArray, parser);
-          break;
-
-        case JSONParser.OBJECT_START:
-          if( stack.isEmpty() ) {
-            stack.push( new SolrInputDocument() );
-          }
-          else {
-            obj = stack.peek();
-            if( obj instanceof SolrInputField ) {
-              // should alreay be pushed...
-            }
-            else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "should not start new object with: "+obj + " ["+ parser.getPosition()+"]" );
-            }
-          }
-          break;
-        case JSONParser.OBJECT_END:
-          obj = stack.pop();
-          if( obj instanceof SolrInputDocument ) {
-            return (SolrInputDocument)obj;
-          }
-          else if( obj instanceof SolrInputField ) {
-            // should already be pushed...
-          }
-          else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "should not start new object with: "+obj + " ["+ parser.getPosition()+"]" );
-          }
-          break;
-
-        case JSONParser.ARRAY_START:
-          inArray = true;
-          break;
-          
-        case JSONParser.ARRAY_END:
-          inArray = false;
-          stack.pop(); // the val should have done it...
-          break;
-          
-        default:
-          System.out.println("UNKNOWN_EVENT_ID:"+ev);
-          break;
-      }
-
-      ev = parser.nextEvent();
-      if( ev == JSONParser.EOF ) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "should finish doc first!" );
+    SolrInputDocument sdoc = new SolrInputDocument();
+    for (;;) {
+      SolrInputField sif = parseField();
+      if (sif == null) return sdoc;
+      SolrInputField prev = sdoc.put(sif.getName(), sif);
+      if (prev != null) {
+        // blech - repeated keys
+        sif.addValue(prev.getValue(), prev.getBoost());
       }
     }
   }
-  
-  static void addValToField( Stack stack, Object val, boolean inArray, JSONParser parser ) throws IOException
-  {
-    Object obj = stack.peek();
-    if( !(obj instanceof SolrInputField) ) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "hymmm ["+parser.getPosition()+"]" );
+
+  private SolrInputField parseField()  throws IOException {
+    int ev = parser.nextEvent();
+    if (ev == JSONParser.OBJECT_END) {
+      return null;
     }
 
-    SolrInputField f = inArray
-      ? (SolrInputField)obj
-      : (SolrInputField)stack.pop();
+    String fieldName = parser.getString();
+    SolrInputField sif = new SolrInputField(fieldName);
+    parseFieldValue(sif);
+    return sif;
+  }
 
-    if (val == null) return;
+  private void parseFieldValue(SolrInputField sif) throws IOException {
+    int ev = parser.nextEvent();
+    if (ev == JSONParser.OBJECT_START) {
+      parseExtendedFieldValue(sif, ev);
+    } else {
+      Object val = parseNormalFieldValue(ev);
+      sif.setValue(val, 1.0f);
+    }
+  }
 
-    float boost = (f.getValue()==null)?f.getBoost():1.0f;
-    f.addValue( val,boost );
+  private void parseExtendedFieldValue(SolrInputField sif, int ev)  throws IOException {
+    assert ev == JSONParser.OBJECT_START;
+
+    float boost = 1.0f;
+    Object normalFieldValue = null;
+    Map<String, Object> extendedInfo = null;
+
+    for (;;) {
+      ev = parser.nextEvent();
+      switch (ev) {
+        case JSONParser.STRING:
+          String label = parser.getString();
+          if ("boost".equals(label)) {
+            ev = parser.nextEvent();
+            if( ev != JSONParser.NUMBER &&
+                ev != JSONParser.LONG &&
+                ev != JSONParser.BIGNUMBER ) {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "boost should have number! "+JSONParser.getEventString(ev) );
+            }
+
+            boost = (float)parser.getDouble();
+          } else if ("value".equals(label)) {
+            normalFieldValue = parseNormalFieldValue(parser.nextEvent());
+          } else {
+            // If we encounter other unknown map keys, then use a map
+            if (extendedInfo == null) {
+              extendedInfo = new HashMap<String, Object>(2);
+            }
+            // for now, the only extended info will be field values
+            // we could either store this as an Object or a SolrInputField
+            Object val = parseNormalFieldValue(parser.nextEvent());
+            extendedInfo.put(label, val);
+          }
+          break;
+
+        case JSONParser.OBJECT_END:
+          if (extendedInfo != null) {
+            if (normalFieldValue != null) {
+              extendedInfo.put("value",normalFieldValue);
+            }
+            sif.setValue(extendedInfo, boost);
+          } else {
+            sif.setValue(normalFieldValue, boost);
+          }
+          return;
+
+        default:
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON extended field value. Unexpected "+JSONParser.getEventString(ev) );
+      }
+    }
+  }
+
+
+  private Object parseNormalFieldValue(int ev) throws IOException {
+    if (ev == JSONParser.ARRAY_START) {
+      List<Object> val = parseArrayFieldValue(ev);
+      return val;
+    } else {
+      Object val = parseSingleFieldValue(ev);
+      return val;
+    }
+  }
+
+
+  private Object parseSingleFieldValue(int ev) throws IOException {
+    switch (ev) {
+      case JSONParser.STRING:
+        return parser.getString();
+      case JSONParser.LONG:
+      case JSONParser.NUMBER:
+      case JSONParser.BIGNUMBER:
+        return parser.getNumberChars().toString();
+      case JSONParser.BOOLEAN:
+        return Boolean.toString(parser.getBoolean()); // for legacy reasons, single values s are expected to be strings
+      case JSONParser.NULL:
+        parser.getNull();
+        return null;
+      case JSONParser.ARRAY_START:
+        return parseArrayFieldValue(ev);
+      default:
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON field value. Unexpected "+JSONParser.getEventString(ev) );
+    }
+  }
+
+
+  private List<Object> parseArrayFieldValue(int ev) throws IOException {
+    assert ev == JSONParser.ARRAY_START;
+
+    ArrayList lst = new ArrayList(2);
+    for (;;) {
+      ev = parser.nextEvent();
+      if (ev == JSONParser.ARRAY_END) {
+        return lst;
+      }
+      Object val = parseSingleFieldValue(ev);
+      lst.add(val);
+    }
   }
 
 

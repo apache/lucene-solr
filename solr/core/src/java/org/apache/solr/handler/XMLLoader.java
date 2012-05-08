@@ -42,6 +42,8 @@ import javax.xml.transform.TransformerConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -269,6 +271,8 @@ class XMLLoader extends ContentStreamLoader {
     String name = null;
     float boost = 1.0f;
     boolean isNull = false;
+    String update = null;
+
     while (true) {
       int event = parser.next();
       switch (event) {
@@ -283,10 +287,14 @@ class XMLLoader extends ContentStreamLoader {
           if ("doc".equals(parser.getLocalName())) {
             return doc;
           } else if ("field".equals(parser.getLocalName())) {
-            if (!isNull) {
-              doc.addField(name, text.toString(), boost);
-              boost = 1.0f;
+            Object v = isNull ? null : text.toString();
+            if (update != null) {
+              Map<String,Object> extendedValue = new HashMap<String,Object>(1);
+              extendedValue.put(update, v);
+              v = extendedValue;
             }
+            doc.addField(name, v, boost);
+            boost = 1.0f;
           }
           break;
 
@@ -299,6 +307,7 @@ class XMLLoader extends ContentStreamLoader {
                     "unexpected XML tag doc/" + localName);
           }
           boost = 1.0f;
+          update = null;
           String attrVal = "";
           for (int i = 0; i < parser.getAttributeCount(); i++) {
             attrName = parser.getAttributeLocalName(i);
@@ -309,6 +318,8 @@ class XMLLoader extends ContentStreamLoader {
               boost = Float.parseFloat(attrVal);
             } else if ("null".equals(attrName)) {
               isNull = StrUtils.parseBoolean(attrVal);
+            } else if ("update".equals(attrName)) {
+              update = attrVal;
             } else {
               XmlUpdateRequestHandler.log.warn("Unknown attribute doc/field/@" + attrName);
             }

@@ -291,6 +291,17 @@ New Features
   Parsing and simple error checking for the Version is now done inside
   the code that creates the Analysis Factories. (Chris Male)
 
+* SOLR-3178: Optimistic locking.  If a _version_ is provided with an update
+  that does not match the version in the index, an HTTP 409 error (Conflict)
+  will result.  (Per Steffensen, yonik)
+
+* SOLR-139: Updateable documents.  JSON Example:
+  {"id":"mydoc", "f1":{"set":10}, "f2":{"add":20}}  will result in field "f1"
+  being set to 10, "f2" having an additional value of 20 added, and all
+  other existing fields unchanged.  All source fields must be stored for
+  this feature to work correctly.  (Ryan McKinley, Erik Hatcher, yonik)
+
+
 Optimizations
 ----------------------
 
