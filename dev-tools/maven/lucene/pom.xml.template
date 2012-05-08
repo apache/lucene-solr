@@ -63,7 +63,4 @@
     <module>spatial</module>
     <module>suggest</module>
   </modules>
-  <build>
-    <directory>build/lucene-parent</directory>
-  </build>
 </project>

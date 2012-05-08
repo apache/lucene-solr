@@ -33,7 +33,8 @@
   <description>Apache Solr Search Server</description>
   <properties>
     <module-directory>solr/webapp</module-directory>
-    <build-directory>../build</build-directory>
+    <top-level>../../..</top-level>
+    <module-path>${top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>
@@ -101,8 +102,8 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
-          <warSourceDirectory>web</warSourceDirectory>
-          <webXml>web/WEB-INF/web.xml</webXml>
+          <warSourceDirectory>${module-path}/web</warSourceDirectory>
+          <webXml>${module-path}/web/WEB-INF/web.xml</webXml>
         </configuration>
       </plugin>
       <plugin>
@@ -114,11 +115,11 @@
           <webAppConfig>
             <contextPath>/solr</contextPath>
           </webAppConfig>
-          <webAppSourceDirectory>web</webAppSourceDirectory>
+          <webAppSourceDirectory>${module-path}/web</webAppSourceDirectory>
           <systemProperties>
             <systemProperty>
               <name>solr.solr.home</name>
-              <value>../example/solr</value>
+              <value>${top-level}/solr/example/solr</value>
             </systemProperty>
           </systemProperties>
         </configuration>

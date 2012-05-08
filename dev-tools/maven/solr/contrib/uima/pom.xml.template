@@ -33,7 +33,9 @@
   <description>Apache Solr - UIMA integration</description>
   <properties>
     <module-directory>solr/contrib/uima</module-directory>
-    <build-directory>../../build/contrib/solr-uima</build-directory>
+    <top-level>../../../..</top-level>
+    <module-path>${top-level}/${module-directory}</module-path>
+    <surefire-top-level>${top-level}/../..</surefire-top-level>
   </properties>
   <scm>
     <connection>
@@ -108,19 +110,16 @@
     </dependency>
   </dependencies>
   <build>
-    <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/classes/java</outputDirectory>
-    <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
-    <sourceDirectory>src/java</sourceDirectory>
-    <testSourceDirectory>src/test</testSourceDirectory>
+    <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
     <resources>
       <resource>
-        <directory>src/resources</directory>
+        <directory>${module-path}/src/resources</directory>
       </resource>
     </resources>
     <testResources>
       <testResource>
-        <directory>src/test-files</directory>
+        <directory>${module-path}/src/test-files</directory>
       </testResource>
     </testResources>
     <plugins>
@@ -129,7 +128,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables>
-            <java.util.logging.config.file>../../../../testlogging.properties</java.util.logging.config.file>
+            <java.util.logging.config.file>${surefire-top-level}/solr/testlogging.properties</java.util.logging.config.file>
           </systemPropertyVariables>
         </configuration>
       </plugin>

@@ -35,7 +35,8 @@
   </description>
   <properties>
     <module-directory>lucene/spatial</module-directory>
-    <build-directory>../build/spatial</build-directory>
+    <top-level>../../..</top-level>
+    <module-path>${top-level}/${module-directory}</module-path>
   </properties>
   <dependencies>
     <dependency> 
@@ -61,14 +62,11 @@
     </dependency>
   </dependencies>
   <build>
-    <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/classes/java</outputDirectory>
-    <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
-    <sourceDirectory>src/java</sourceDirectory>
-    <testSourceDirectory>src/test</testSourceDirectory>
+    <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
     <testResources>
       <testResource>
-        <directory>src/test-files</directory>
+        <directory>${module-path}/src/test-files</directory>
       </testResource>
     </testResources>
   </build>

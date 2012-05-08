@@ -41,7 +41,6 @@
     <module>velocity</module>
   </modules>
   <build>
-    <directory>../build/solr-contrib-aggregator</directory>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

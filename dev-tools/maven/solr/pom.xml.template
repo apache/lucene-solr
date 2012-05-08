@@ -100,7 +100,6 @@
     </dependency>
   </dependencies>
   <build>
-    <directory>build/solr-parent</directory>
     <pluginManagement>
       <plugins>
         <plugin>

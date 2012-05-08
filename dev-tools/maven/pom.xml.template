@@ -30,14 +30,15 @@
   <artifactId>lucene-solr-grandparent</artifactId>
   <version>@version@</version>
   <packaging>pom</packaging>
-  <name>Grandparent POM for Apache Lucene Java and Apache Solr</name>
-  <description>Parent POM for Apache Lucene Java and Apache Solr</description>
+  <name>Grandparent POM for Apache Lucene Core and Apache Solr</name>
+  <description>Parent POM for Apache Lucene Core and Apache Solr</description>
   <url>http://lucene.apache.org/java</url>
   <modules>
     <module>lucene</module>
     <module>solr</module>
   </modules>
   <properties>
+    <top-level>..</top-level>
     <base.specification.version>4.0.0</base.specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.6</java.compat.version>
@@ -60,6 +61,7 @@
     <tests.locale>random</tests.locale>
     <tests.luceneMatchVersion>4.0</tests.luceneMatchVersion>
     <tests.multiplier>1</tests.multiplier>
+    <tests.nightly>false</tests.nightly>
     <tests.postingsformat>random</tests.postingsformat>
     <tests.timezone>random</tests.timezone>
     <tests.verbose>false</tests.verbose>
@@ -397,7 +399,6 @@
     </dependency>
   </dependencies>
   <build>
-    <directory>lucene/build/lucene-parent</directory>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -480,6 +481,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.12</version>
           <configuration>
+            <runOrder>random</runOrder>
             <reportFormat>plain</reportFormat>
             <workingDirectory>${project.build.directory}/test</workingDirectory>
             <argLine>-Xmx512M</argLine>
@@ -602,6 +604,7 @@
           <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
           <revisionOnScmFailure>NO-REVISION-AVAILABLE</revisionOnScmFailure>
           <buildNumberPropertyName>svn.revision</buildNumberPropertyName>
+          <scmDirectory>${top-level}</scmDirectory>
         </configuration>
       </plugin>
       <plugin>

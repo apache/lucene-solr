@@ -75,6 +75,7 @@ D. How to use Maven to build Lucene/Solr
 
          svn update
          ant get-maven-poms
+         cd maven-build
 
    The details, followed by some example Maven commands:
 
@@ -84,9 +85,9 @@ D. How to use Maven to build Lucene/Solr
       from the Apache Subversion repository, run "svn update" from the top
       level.
 
-   3. Copy the Maven POM templates from under dev-tools/maven/ to where they
-      they need to go in order to drive the Maven build, using the following
-      command from the top-level directory:
+   3. Copy the Maven POM templates from under dev-tools/maven/ to the
+      maven-build/ directory using the following command from the top-level
+      directory:
 
          ant get-maven-poms
 
@@ -101,6 +102,11 @@ D. How to use Maven to build Lucene/Solr
       with the above command, e.g.:
 
          ant -Dversion=4.0-my-special-version get-maven-poms
+
+   4. To remove the maven-build/ directory and its contents, use the following
+      command from the top-level directory:
+
+         and clean-maven-build
 
 
    Some example Maven commands you can use after you perform the above

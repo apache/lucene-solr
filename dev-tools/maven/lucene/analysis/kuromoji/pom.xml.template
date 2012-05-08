@@ -35,7 +35,8 @@
   </description>
   <properties>
     <module-directory>lucene/analysis/kuromoji</module-directory>
-    <build-directory>../../build/analysis/kuromoji</build-directory>
+    <top-level>../../../..</top-level>
+    <module-path>${top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>
@@ -68,14 +69,11 @@
     </dependency>
   </dependencies>
   <build>
-    <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/classes/java</outputDirectory>
-    <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
-    <sourceDirectory>src/java</sourceDirectory>
-    <testSourceDirectory>src/test</testSourceDirectory>
+    <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
     <resources>
       <resource>
-        <directory>src/resources</directory>
+        <directory>${module-path}/src/resources</directory>
       </resource>
     </resources>
     <testResources>
