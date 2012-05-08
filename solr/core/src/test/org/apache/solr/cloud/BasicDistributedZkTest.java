@@ -337,8 +337,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       throws MalformedURLException, SolrServerException, IOException {
     long startCommits = getNumCommits((HttpSolrServer) clients.get(0));
     
-    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update/csv");
-    up.addFile(getFile("books_numeric_ids.csv"));
+    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
+    up.addFile(getFile("books_numeric_ids.csv"), "application/csv");
     up.setCommitWithin(900000);
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = clients.get(0).request(up);

@@ -104,6 +104,22 @@ public abstract class ContentStreamBase implements ContentStream
       sourceInfo = file.toURI().toString();
     }
 
+    public String getContentType() {
+      if(contentType==null) {
+        try {
+          char first = (char)new FileInputStream( file ).read();
+          if(first == '<') {
+            return "application/xml";
+          }
+          if(first == '{') {
+            return "application/json";
+          }
+        }
+        catch(Exception ex) {}
+      }
+      return contentType;
+    }
+
     public InputStream getStream() throws IOException {
       return new FileInputStream( file );
     }
@@ -123,7 +139,7 @@ public abstract class ContentStreamBase implements ContentStream
   
 
   /**
-   * Construct a <code>ContentStream</code> from a <code>File</code>
+   * Construct a <code>ContentStream</code> from a <code>String</code>
    */
   public static class StringStream extends ContentStreamBase
   {
@@ -136,6 +152,20 @@ public abstract class ContentStreamBase implements ContentStream
       name = null;
       size = new Long( str.length() );
       sourceInfo = "string";
+    }
+
+    public String getContentType() {
+      if(contentType==null && str.length() > 0) {
+        char first = str.charAt(0);
+        if(first == '<') {
+          return "application/xml";
+        }
+        if(first == '{') {
+          return "application/json";
+        }
+        // find a comma? for CSV?
+      }
+      return contentType;
     }
 
     public InputStream getStream() throws IOException {

@@ -17,67 +17,21 @@
 
 package org.apache.solr.handler;
 
-import javax.xml.stream.XMLInputFactory;
-
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Add documents to solr using the STAX XML parser.
+ * 
+ * use {@link UpdateRequestHandler}
  */
-public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
-  public static Logger log = LoggerFactory.getLogger(XmlUpdateRequestHandler.class);
-  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
-
-  // XML Constants
-  public static final String ADD = "add";
-  public static final String DELETE = "delete";
-  public static final String OPTIMIZE = "optimize";
-  public static final String COMMIT = "commit";
-  public static final String ROLLBACK = "rollback";
-  public static final String WAIT_SEARCHER = "waitSearcher";
-  public static final String SOFT_COMMIT = "softCommit";
-
-  public static final String OVERWRITE = "overwrite";
-  
-  public static final String VERSION = "version";
-  
-  // NOTE: This constant is for use with the <add> XML tag, not the HTTP param with same name
-  public static final String COMMIT_WITHIN = "commitWithin";
-
-
-  XMLInputFactory inputFactory;
-
+@Deprecated
+public class XmlUpdateRequestHandler extends UpdateRequestHandler {
 
   @Override
   public void init(NamedList args) {
     super.init(args);
-
-    inputFactory = XMLInputFactory.newInstance();
-    try {
-      // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
-      // XMLInputFactory, as that implementation tries to cache and reuse the
-      // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
-      // prevents this.
-      // All other known open-source stax parsers (and the bea ref impl)
-      // have thread-safe factories.
-      inputFactory.setProperty("reuse-instance", Boolean.FALSE);
-    }
-    catch (IllegalArgumentException ex) {
-      // Other implementations will likely throw this exception since "reuse-instance"
-      // isimplementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input chain: " + inputFactory);
-    }
-    inputFactory.setXMLReporter(xmllog);
-  }
-
-  @Override
-  protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
-    return new XMLLoader(processor, inputFactory);
+    setAssumeContentType("application/xml");
+    log.warn("Using deprecated class: "+this.getClass().getSimpleName()+" -- replace with UpdateRequestHandler");
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

@@ -332,7 +332,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
     assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(server.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-    assertEquals("application/octet-stream", DebugServlet.headers.get("Content-Type"));
+    assertEquals("application/javabin", DebugServlet.headers.get("Content-Type"));
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
   }

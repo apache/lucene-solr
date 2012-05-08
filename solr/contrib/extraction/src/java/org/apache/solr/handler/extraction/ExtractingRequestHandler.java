@@ -26,7 +26,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.handler.ContentStreamLoader;
+import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.mime.MimeTypeException;
 import org.slf4j.Logger;

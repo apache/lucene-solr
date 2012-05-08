@@ -22,7 +22,7 @@ import java.util.HashMap;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.*;
-import org.apache.solr.handler.XmlUpdateRequestHandler;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -42,7 +42,7 @@ public class UpdateParamsTest extends AbstractSolrTestCase {
   public void testUpdateProcessorParamDeprecationRemoved() throws Exception {
     SolrCore core = h.getCore();
     
-    XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
+    UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init( null );
     
     MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );

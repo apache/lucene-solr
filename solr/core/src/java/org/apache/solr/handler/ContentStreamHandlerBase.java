@@ -21,6 +21,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -30,9 +31,9 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Shares common code between various handlers that manipulate {@link org.apache.solr.common.util.ContentStream} objects.
- *
- **/
+ * Shares common code between various handlers that manipulate 
+ * {@link org.apache.solr.common.util.ContentStream} objects.
+ */
 public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
   public static Logger log = LoggerFactory.getLogger(ContentStreamHandlerBase.class);
 
@@ -70,7 +71,7 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
       } else {
 
         for (ContentStream stream : streams) {
-          documentLoader.load(req, rsp, stream);
+          documentLoader.load(req, rsp, stream, processor);
         }
 
         // Perhaps commit from the parameters

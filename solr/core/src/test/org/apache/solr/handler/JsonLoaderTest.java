@@ -21,6 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -84,8 +85,8 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req();
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
-    JsonLoader loader = new JsonLoader( req, p );
-    loader.load(req, rsp, new ContentStreamBase.StringStream(input));
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(input), p);
 
     assertEquals( 2, p.addCommands.size() );
     
@@ -153,8 +154,8 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("commitWithin","100", "overwrite","false");
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
-    JsonLoader loader = new JsonLoader( req, p );
-    loader.load(req, rsp, new ContentStreamBase.StringStream(str));
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
 
     assertEquals( 2, p.addCommands.size() );
 
@@ -181,8 +182,8 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req();
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
-    JsonLoader loader = new JsonLoader( req, p );
-    loader.load(req, rsp, new ContentStreamBase.StringStream(str));
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
 
     assertEquals( 2, p.addCommands.size() );
 
@@ -208,8 +209,8 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req();
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
-    JsonLoader loader = new JsonLoader( req, p );
-    loader.load(req, rsp, new ContentStreamBase.StringStream(str));
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
 
     assertEquals( 1, p.addCommands.size() );
 

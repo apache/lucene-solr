@@ -79,6 +79,9 @@ public interface CommonParams {
   
   /** default query field */
   public static final String DF = "df";
+
+  /** Transformer param -- used with XSLT */
+  public static final String TR = "tr";
   
   /** whether to include debug data for all components pieces, including doing explains*/
   public static final String DEBUG_QUERY = "debugQuery";

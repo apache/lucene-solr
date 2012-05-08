@@ -129,8 +129,8 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
             if (updateRequest == null)
               break;
 
-            final boolean isXml = ClientUtils.TEXT_XML.equals(server.requestWriter
-                .getUpdateContentType());
+            String contentType = server.requestWriter.getUpdateContentType();
+            final boolean isXml = ClientUtils.TEXT_XML.equals(contentType);
 
             final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
 
@@ -188,12 +188,13 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
             requestParams.set(CommonParams.WT, server.parser.getWriterType());
             requestParams.set(CommonParams.VERSION, server.parser.getVersion());
 
-            final String path = isXml ? "/update" : "/update/javabin";
-
-            method = new HttpPost(server.getBaseURL() + path
+            method = new HttpPost(server.getBaseURL() + "/update"
                 + ClientUtils.toQueryString(requestParams, false));
             method.setEntity(template);
             method.addHeader("User-Agent", HttpSolrServer.AGENT);
+            method.addHeader("Content-Type", contentType);
+            
+            
             response = server.getHttpClient().execute(method);
             int statusCode = response.getStatusLine().getStatusCode();
             log.info("Status for: "

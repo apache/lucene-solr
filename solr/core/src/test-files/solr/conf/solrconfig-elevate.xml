@@ -123,7 +123,7 @@
 
   </query>
 
-  <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler" />
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
 
   <!-- test elevation -->

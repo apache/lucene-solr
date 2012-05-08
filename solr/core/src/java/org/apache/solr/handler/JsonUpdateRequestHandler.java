@@ -18,26 +18,18 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Add documents to solr using the noggit JSON parser.
+ * use {@link UpdateRequestHandler}
  */
-public class JsonUpdateRequestHandler extends ContentStreamHandlerBase {
-  public static Logger log = LoggerFactory.getLogger(JsonUpdateRequestHandler.class);
-
+@Deprecated
+public class JsonUpdateRequestHandler extends UpdateRequestHandler {
 
   @Override
   public void init(NamedList args) {
     super.init(args);
-  }
-
-  @Override
-  protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
-    return new JsonLoader(req, processor);
+    setAssumeContentType("application/json");
+    log.warn("Using deprecated class: "+this.getClass().getSimpleName()+" -- replace with UpdateRequestHandler");
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

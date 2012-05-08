@@ -260,11 +260,7 @@
     </lst>
   </requestHandler>
 
-  <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler"          />
-  <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy">
-  	<bool name="httpCaching">false</bool>
-  </requestHandler>
-  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler" />
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">

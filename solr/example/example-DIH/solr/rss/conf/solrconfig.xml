@@ -389,14 +389,7 @@
        "update.processor.class" is the class name for the UpdateRequestProcessor.  It is initalized
        only once.  This can not be changed for each request.
     -->
-  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" >
-    <!--
-    <str name="update.processor.class">org.apache.solr.handler.UpdateRequestProcessor</str>
-    -->
-  </requestHandler>
-
-  <!-- CSV update handler, loaded on demand -->
-  <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
 
   <!-- 

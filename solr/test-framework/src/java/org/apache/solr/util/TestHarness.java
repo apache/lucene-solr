@@ -26,7 +26,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.handler.XmlUpdateRequestHandler;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.logging.ListenerConfig;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.jul.JulWatcher;
@@ -74,7 +74,7 @@ public class TestHarness {
   private SolrCore core;
   private final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
   private final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
-  public XmlUpdateRequestHandler updater;
+  public UpdateRequestHandler updater;
         
   public static SolrConfig createConfig(String confFile) {
       // set some system properties for use by tests
@@ -147,7 +147,7 @@ public class TestHarness {
       if (core != null)
         core.close();
 
-      updater = new XmlUpdateRequestHandler();
+      updater = new UpdateRequestHandler();
       updater.init( null );
     } catch (Exception e) {
       throw new RuntimeException(e);

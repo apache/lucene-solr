@@ -21,6 +21,8 @@ import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -47,11 +49,12 @@ public class BinaryUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     BinaryRequestWriter brw = new BinaryRequestWriter();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     SolrQueryResponse rsp = new SolrQueryResponse();
-    BinaryUpdateRequestHandler handler = new BinaryUpdateRequestHandler();
+    UpdateRequestHandler handler = new UpdateRequestHandler();
+    handler.init(new NamedList());
     SolrQueryRequest req = req();
     ContentStreamLoader csl = handler.newLoader(req, p);
 
-    csl.load(req, rsp, brw.getContentStream(ureq));
+    csl.load(req, rsp, brw.getContentStream(ureq), p);
 
     AddUpdateCommand add = p.addCommands.get(0);
     System.out.println(add.solrDoc);

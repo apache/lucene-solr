@@ -33,7 +33,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.BinaryUpdateRequestHandler;
-import org.apache.solr.handler.XmlUpdateRequestHandler;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -328,7 +328,8 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams);
     try {
       req.setContentStreams(streams);
-      BinaryUpdateRequestHandler h = new BinaryUpdateRequestHandler();
+      UpdateRequestHandler h = new UpdateRequestHandler();
+      h.init(new NamedList());
       h.handleRequestBody(req, new SolrQueryResponse());
     } finally {
       req.close();
@@ -359,7 +360,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
         (SolrParams) mmparams) {
     };
 
-    XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
+    UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
     ArrayList<ContentStream> streams = new ArrayList<ContentStream>(2);
     streams.add(new ContentStreamBase.StringStream(doc));

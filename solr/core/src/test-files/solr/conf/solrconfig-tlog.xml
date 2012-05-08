@@ -31,11 +31,7 @@
     </lst>
   </requestHandler>
 
-  <requestHandler name="/update"    class="solr.XmlUpdateRequestHandler">
-  </requestHandler>
-
-  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
-  </requestHandler>
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>

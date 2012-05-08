@@ -27,7 +27,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
-import org.apache.solr.handler.XmlUpdateRequestHandler;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -150,7 +150,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     core.registerNewSearcherListener(trigger);
   
     
-    XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
+    UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init( null );
     
     MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
@@ -198,7 +198,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     tracker.setDocsUpperBound(-1);
     // updater.commitCallbacks.add(trigger);
     
-    XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
+    UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init( null );
     
     MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
@@ -268,7 +268,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     tracker.setTimeUpperBound(0);
     tracker.setDocsUpperBound(-1);
     
-    XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
+    UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init( null );
     
     MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );

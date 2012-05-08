@@ -49,7 +49,7 @@
       <str name="fl">implicit</str>
     </lst>
   </requestHandler>
-  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
   
   
   <queryResponseWriter name="standard" class="solr.XMLResponseWriter"/>

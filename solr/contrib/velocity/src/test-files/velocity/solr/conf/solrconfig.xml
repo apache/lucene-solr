@@ -83,18 +83,8 @@
      </lst>
     </requestHandler>
 
-
-  <requestHandler name="/update"
-                  class="solr.XmlUpdateRequestHandler">
-    </requestHandler>
-  <!-- Binary Update Request Handler
-       http://wiki.apache.org/solr/javabin
-    -->
-  <requestHandler name="/update/javabin" 
-                  class="solr.BinaryUpdateRequestHandler" />
-  <requestHandler name="/update/json"
-                  class="solr.JsonUpdateRequestHandler" 
-                  startup="lazy" />
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
+  
   <!--
      <queryResponseWriter name="xml" 
                           default="true"

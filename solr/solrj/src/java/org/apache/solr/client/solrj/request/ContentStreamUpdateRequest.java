@@ -61,8 +61,10 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
    * @see #getContentStreams()
    * @see org.apache.solr.common.util.ContentStreamBase.FileStream
    */
-  public void addFile(File file) throws IOException {
-    addContentStream(new ContentStreamBase.FileStream(file));
+  public void addFile(File file, String contentType) throws IOException {
+    ContentStreamBase cs = new ContentStreamBase.FileStream(file);
+    cs.setContentType(contentType);
+    addContentStream(cs);
   }
 
   /**

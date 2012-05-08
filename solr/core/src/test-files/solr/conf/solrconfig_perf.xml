@@ -70,10 +70,6 @@
   <requestHandler name="standard" class="solr.SearchHandler" default="true">
   </requestHandler>
 
-  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
-  <requestHandler name="/update/javabin" class="solr.BinaryUpdateRequestHandler" />
-  
-  <!-- CSV update handler, loaded on demand -->
-  <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
 </config>

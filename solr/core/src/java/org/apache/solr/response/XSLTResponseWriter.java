@@ -33,6 +33,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -46,7 +47,6 @@ import org.apache.solr.util.xslt.TransformerProvider;
 public class XSLTResponseWriter implements QueryResponseWriter {
 
   public static final String DEFAULT_CONTENT_TYPE = "application/xml";
-  public static final String TRANSFORM_PARAM = "tr";
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltwriter.transformer";
   
   private Integer xsltCacheLifetimeSeconds = null; 
@@ -116,9 +116,9 @@ public class XSLTResponseWriter implements QueryResponseWriter {
    *  depending on which one is called first, then the other one reuses the same Transformer
    */
   protected Transformer getTransformer(SolrQueryRequest request) throws IOException {
-    final String xslt = request.getParams().get(TRANSFORM_PARAM,null);
+    final String xslt = request.getParams().get(CommonParams.TR,null);
     if(xslt==null) {
-      throw new IOException("'" + TRANSFORM_PARAM + "' request parameter is required to use the XSLTResponseWriter");
+      throw new IOException("'" + CommonParams.TR + "' request parameter is required to use the XSLTResponseWriter");
     }
     // not the cleanest way to achieve this
     SolrConfig solrConfig = request.getCore().getSolrConfig();

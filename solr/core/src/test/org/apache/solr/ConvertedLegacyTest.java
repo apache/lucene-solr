@@ -1236,9 +1236,9 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
 
     // can mess up parsing (and it has in the past)
 
-    assertU("  <delete>  <id>44</id>  </delete>");
-    assertU("  <add>  <doc>  <field name=\"id\">44</field>  <field name=\"shouldbestored\">hi</field>  </doc>  </add>");
-    assertU("  <commit />");
+    assertU("<delete>  <id>44</id>  </delete>");
+    assertU("<add>  <doc>  <field name=\"id\">44</field>  <field name=\"shouldbestored\">hi</field>  </doc>  </add>");
+    assertU("<commit />");
 
     // test adding multiple docs per add command
 

@@ -20,6 +20,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -40,12 +41,12 @@ import javax.xml.stream.XMLStreamReader;
 
 public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   private static XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-  protected static XmlUpdateRequestHandler handler;
+  protected static UpdateRequestHandler handler;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml","schema.xml");
-    handler = new XmlUpdateRequestHandler();
+    handler = new UpdateRequestHandler();
   }
 
   @Test
@@ -65,7 +66,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       inputFactory.createXMLStreamReader( new StringReader( xml ) );
     parser.next(); // read the START document...
     //null for the processor is all right here
-    XMLLoader loader = new XMLLoader(null, inputFactory);
+    XMLLoader loader = new XMLLoader();
     SolrInputDocument doc = loader.readDoc( parser );
     
     // Read boosts
@@ -100,8 +101,8 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
 
-    XMLLoader loader = new XMLLoader(p, inputFactory);
-    loader.load(req, rsp, new ContentStreamBase.StringStream(xml));
+    XMLLoader loader = new XMLLoader().init(null);
+    loader.load(req, rsp, new ContentStreamBase.StringStream(xml), p);
 
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(100, add.commitWithin);
@@ -135,8 +136,8 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 	    p.expectDelete(null, "id:150", 500);
 	    p.expectDelete("150", null, -1);
 
-	    XMLLoader loader = new XMLLoader(p, inputFactory);
-	    loader.load(req(), new SolrQueryResponse(), new ContentStreamBase.StringStream(xml));
+	    XMLLoader loader = new XMLLoader().init(null);
+	    loader.load(req(), new SolrQueryResponse(), new ContentStreamBase.StringStream(xml), p);
 	    
 	    p.assertNoCommandsPending();
 	  }

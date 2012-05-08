@@ -705,9 +705,7 @@
     code. To enable solr1.1 behavior, remove the /update handler or
     change its path
   -->
-  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler"/>
-
-  <requestHandler name="/update/javabin" class="solr.BinaryUpdateRequestHandler" />
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
   <!--
     Analysis request handler. Since Solr 1.3. Use to return how a
@@ -798,7 +796,7 @@
     signatureField and Solr will maintain uniqueness based on that
     anyway. You have to link the chain to an update handler above to use
     it ie: <requestHandler name="/update
-    "class="solr.XmlUpdateRequestHandler"> <lst name="defaults"> <str
+    "class="solr.UpdateRequestHandler"> <lst name="defaults"> <str
     name="update.chain">dedupe</str> </lst> </requestHandler>
   -->
 

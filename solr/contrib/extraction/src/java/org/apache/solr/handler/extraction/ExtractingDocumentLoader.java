@@ -28,7 +28,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.ContentStreamLoader;
+import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -134,8 +134,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
    * @throws java.io.IOException
    */
   @Override
-  public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws IOException {
-    errHeader = "ExtractingDocumentLoader: " + stream.getSourceInfo();
+  public void load(SolrQueryRequest req, SolrQueryResponse rsp,
+      ContentStream stream, UpdateRequestProcessor processor) throws Exception {
     Parser parser = null;
     String streamType = req.getParams().get(ExtractingParams.STREAM_TYPE, null);
     if (streamType != null) {
@@ -240,6 +240,4 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Stream type of " + streamType + " didn't match any known parsers.  Please supply the " + ExtractingParams.STREAM_TYPE + " parameter.");
     }
   }
-
-
 }

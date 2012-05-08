@@ -1,4 +1,4 @@
-package org.apache.solr.handler;
+package org.apache.solr.handler.loader;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,23 +22,38 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.util.xslt.TransformerProvider;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.sax.SAXSource;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
@@ -46,48 +61,129 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-/**
- *
- *
- **/
-class XMLLoader extends ContentStreamLoader {
-  protected UpdateRequestProcessor processor;
-  protected XMLInputFactory inputFactory;
+public class XMLLoader extends ContentStreamLoader {
+  public static Logger log = LoggerFactory.getLogger(XMLLoader.class);
+  static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
+  
+  public static final String CONTEXT_TRANSFORMER_KEY = "xsltupdater.transformer";
 
-  public XMLLoader(UpdateRequestProcessor processor, XMLInputFactory inputFactory) {
-    this.processor = processor;
-    this.inputFactory = inputFactory;
+  private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
+
+  public static final int XSLT_CACHE_DEFAULT = 60;
+  
+  int xsltCacheLifetimeSeconds;
+  XMLInputFactory inputFactory;
+
+  @Override
+  public XMLLoader init(SolrParams args) {
+    inputFactory = XMLInputFactory.newInstance();
+    try {
+      // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
+      // XMLInputFactory, as that implementation tries to cache and reuse the
+      // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
+      // prevents this.
+      // All other known open-source stax parsers (and the bea ref impl)
+      // have thread-safe factories.
+      inputFactory.setProperty("reuse-instance", Boolean.FALSE);
+    }
+    catch (IllegalArgumentException ex) {
+      // Other implementations will likely throw this exception since "reuse-instance"
+      // isimplementation specific.
+      log.debug("Unable to set the 'reuse-instance' property for the input chain: " + inputFactory);
+    }
+    inputFactory.setXMLReporter(xmllog);
+    
+    xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
+    if(args != null) {
+      xsltCacheLifetimeSeconds = args.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
+      log.info("xsltCacheLifetimeSeconds=" + xsltCacheLifetimeSeconds);
+    }
+    return this;
+  }
+
+  public String getDefaultWT() {
+    return "xml";
   }
 
   @Override
-  public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws Exception {
-    errHeader = "XMLLoader: " + stream.getSourceInfo();
+  public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream, UpdateRequestProcessor processor) throws Exception {
+    final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+    
     InputStream is = null;
     XMLStreamReader parser = null;
-    try {
-      is = stream.getStream();
-      final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
-      if (XmlUpdateRequestHandler.log.isTraceEnabled()) {
-        final byte[] body = IOUtils.toByteArray(is);
-        // TODO: The charset may be wrong, as the real charset is later
-        // determined by the XML parser, the content-type is only used as a hint!
-        XmlUpdateRequestHandler.log.trace("body", new String(body, (charset == null) ?
-          ContentStreamBase.DEFAULT_CHARSET : charset));
+
+    String tr = req.getParams().get(CommonParams.TR,null);
+    if(tr!=null) {
+      Transformer t = getTransformer(tr,req);
+      final DOMResult result = new DOMResult();
+      
+      // first step: read XML and build DOM using Transformer (this is no overhead, as XSL always produces
+      // an internal result DOM tree, we just access it directly as input for StAX):
+      try {
+        is = stream.getStream();
+        final InputSource isrc = new InputSource(is);
+        isrc.setEncoding(charset);
+        final SAXSource source = new SAXSource(isrc);
+        t.transform(source, result);
+      } catch(TransformerException te) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, te.getMessage(), te);
+      } finally {
         IOUtils.closeQuietly(is);
-        is = new ByteArrayInputStream(body);
       }
-      parser = (charset == null) ?
-        inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
-      this.processUpdate(req, processor, parser);
-    } catch (XMLStreamException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
-    } finally {
-      if (parser != null) parser.close();
-      IOUtils.closeQuietly(is);
+      // second step feed the intermediate DOM tree into StAX parser:
+      try {
+        parser = inputFactory.createXMLStreamReader(new DOMSource(result.getNode()));
+        this.processUpdate(req, processor, parser);
+      } catch (XMLStreamException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
+      } finally {
+        if (parser != null) parser.close();
+      }
+    }
+    // Normal XML Loader
+    else {
+      try {
+        is = stream.getStream();
+        if (UpdateRequestHandler.log.isTraceEnabled()) {
+          final byte[] body = IOUtils.toByteArray(is);
+          // TODO: The charset may be wrong, as the real charset is later
+          // determined by the XML parser, the content-type is only used as a hint!
+          UpdateRequestHandler.log.trace("body", new String(body, (charset == null) ?
+            ContentStreamBase.DEFAULT_CHARSET : charset));
+          IOUtils.closeQuietly(is);
+          is = new ByteArrayInputStream(body);
+        }
+        parser = (charset == null) ?
+          inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
+        this.processUpdate(req, processor, parser);
+      } catch (XMLStreamException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
+      } finally {
+        if (parser != null) parser.close();
+        IOUtils.closeQuietly(is);
+      }
     }
   }
+  
 
-
+  /** Get Transformer from request context, or from TransformerProvider.
+   *  This allows either getContentType(...) or write(...) to instantiate the Transformer,
+   *  depending on which one is called first, then the other one reuses the same Transformer
+   */
+  Transformer getTransformer(String xslt, SolrQueryRequest request) throws IOException {
+    // not the cleanest way to achieve this
+    // no need to synchronize access to context, right? 
+    // Nothing else happens with it at the same time
+    final Map<Object,Object> ctx = request.getContext();
+    Transformer result = (Transformer)ctx.get(CONTEXT_TRANSFORMER_KEY);
+    if(result==null) {
+      SolrConfig solrConfig = request.getCore().getSolrConfig();
+      result = TransformerProvider.instance.getTransformer(solrConfig, xslt, xsltCacheLifetimeSeconds);
+      result.setErrorListener(xmllog);
+      ctx.put(CONTEXT_TRANSFORMER_KEY,result);
+    }
+    return result;
+  }
 
 
   /**
@@ -108,8 +204,8 @@ class XMLLoader extends ContentStreamLoader {
 
         case XMLStreamConstants.START_ELEMENT:
           String currTag = parser.getLocalName();
-          if (currTag.equals(XmlUpdateRequestHandler.ADD)) {
-            XmlUpdateRequestHandler.log.trace("SolrCore.update(add)");
+          if (currTag.equals(UpdateRequestHandler.ADD)) {
+            log.trace("SolrCore.update(add)");
 
             addCmd = new AddUpdateCommand(req);
 
@@ -120,28 +216,28 @@ class XMLLoader extends ContentStreamLoader {
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
               String attrVal = parser.getAttributeValue(i);
-              if (XmlUpdateRequestHandler.OVERWRITE.equals(attrName)) {
+              if (UpdateRequestHandler.OVERWRITE.equals(attrName)) {
                 addCmd.overwrite = StrUtils.parseBoolean(attrVal);
-              } else if (XmlUpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
+              } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
                 addCmd.commitWithin = Integer.parseInt(attrVal);
               } else {
-                XmlUpdateRequestHandler.log.warn("Unknown attribute id in add:" + attrName);
+                log.warn("Unknown attribute id in add:" + attrName);
               }
             }
 
           } else if ("doc".equals(currTag)) {
             if(addCmd != null) {
-              XmlUpdateRequestHandler.log.trace("adding doc...");
+              log.trace("adding doc...");
               addCmd.clear();
               addCmd.solrDoc = readDoc(parser);
               processor.processAdd(addCmd);
             } else {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected <doc> tag without an <add> tag surrounding it.");
             }
-          } else if (XmlUpdateRequestHandler.COMMIT.equals(currTag) || XmlUpdateRequestHandler.OPTIMIZE.equals(currTag)) {
-            XmlUpdateRequestHandler.log.trace("parsing " + currTag);
+          } else if (UpdateRequestHandler.COMMIT.equals(currTag) || UpdateRequestHandler.OPTIMIZE.equals(currTag)) {
+            log.trace("parsing " + currTag);
 
-            CommitUpdateCommand cmd = new CommitUpdateCommand(req, XmlUpdateRequestHandler.OPTIMIZE.equals(currTag));
+            CommitUpdateCommand cmd = new CommitUpdateCommand(req, UpdateRequestHandler.OPTIMIZE.equals(currTag));
             ModifiableSolrParams mp = new ModifiableSolrParams();
             
             for (int i = 0; i < parser.getAttributeCount(); i++) {
@@ -156,15 +252,15 @@ class XMLLoader extends ContentStreamLoader {
 
             processor.processCommit(cmd);
           } // end commit
-          else if (XmlUpdateRequestHandler.ROLLBACK.equals(currTag)) {
-            XmlUpdateRequestHandler.log.trace("parsing " + currTag);
+          else if (UpdateRequestHandler.ROLLBACK.equals(currTag)) {
+            log.trace("parsing " + currTag);
 
             RollbackUpdateCommand cmd = new RollbackUpdateCommand(req);
 
             processor.processRollback(cmd);
           } // end rollback
-          else if (XmlUpdateRequestHandler.DELETE.equals(currTag)) {
-            XmlUpdateRequestHandler.log.trace("parsing delete");
+          else if (UpdateRequestHandler.DELETE.equals(currTag)) {
+            log.trace("parsing delete");
             processDelete(req, processor, parser);
           } // end delete
           break;
@@ -190,10 +286,10 @@ class XMLLoader extends ContentStreamLoader {
         // deprecated
       } else if ("fromCommitted".equals(attrName)) {
         // deprecated
-      } else if (XmlUpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
+      } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
         deleteCmd.commitWithin = Integer.parseInt(attrVal);
       } else {
-        XmlUpdateRequestHandler.log.warn("unexpected attribute delete/@" + attrName);
+        log.warn("unexpected attribute delete/@" + attrName);
       }
     }
 
@@ -204,7 +300,7 @@ class XMLLoader extends ContentStreamLoader {
         case XMLStreamConstants.START_ELEMENT:
           String mode = parser.getLocalName();
           if (!("id".equals(mode) || "query".equals(mode))) {
-            XmlUpdateRequestHandler.log.warn("unexpected XML tag /delete/" + mode);
+            log.warn("unexpected XML tag /delete/" + mode);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                     "unexpected XML tag /delete/" + mode);
           }
@@ -214,7 +310,7 @@ class XMLLoader extends ContentStreamLoader {
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
               String attrVal = parser.getAttributeValue(i);
-              if (XmlUpdateRequestHandler.VERSION.equals(attrName)) {
+              if (UpdateRequestHandler.VERSION.equals(attrName)) {
                 deleteCmd.setVersion(Long.parseLong(attrVal));
               }
             }
@@ -230,7 +326,7 @@ class XMLLoader extends ContentStreamLoader {
           } else if ("delete".equals(currTag)) {
             return;
           } else {
-            XmlUpdateRequestHandler.log.warn("unexpected XML tag /delete/" + currTag);
+            log.warn("unexpected XML tag /delete/" + currTag);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                     "unexpected XML tag /delete/" + currTag);
           }
@@ -254,7 +350,7 @@ class XMLLoader extends ContentStreamLoader {
    *
    * @since solr 1.3
    */
-  SolrInputDocument readDoc(XMLStreamReader parser) throws XMLStreamException {
+  public SolrInputDocument readDoc(XMLStreamReader parser) throws XMLStreamException {
     SolrInputDocument doc = new SolrInputDocument();
 
     String attrName = "";
@@ -263,7 +359,7 @@ class XMLLoader extends ContentStreamLoader {
       if ("boost".equals(attrName)) {
         doc.setDocumentBoost(Float.parseFloat(parser.getAttributeValue(i)));
       } else {
-        XmlUpdateRequestHandler.log.warn("Unknown attribute doc/@" + attrName);
+        log.warn("Unknown attribute doc/@" + attrName);
       }
     }
 
@@ -302,7 +398,7 @@ class XMLLoader extends ContentStreamLoader {
           text.setLength(0);
           String localName = parser.getLocalName();
           if (!"field".equals(localName)) {
-            XmlUpdateRequestHandler.log.warn("unexpected XML tag doc/" + localName);
+            log.warn("unexpected XML tag doc/" + localName);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                     "unexpected XML tag doc/" + localName);
           }
@@ -321,12 +417,11 @@ class XMLLoader extends ContentStreamLoader {
             } else if ("update".equals(attrName)) {
               update = attrVal;
             } else {
-              XmlUpdateRequestHandler.log.warn("Unknown attribute doc/field/@" + attrName);
+              log.warn("Unknown attribute doc/field/@" + attrName);
             }
           }
           break;
       }
     }
   }
-
 }

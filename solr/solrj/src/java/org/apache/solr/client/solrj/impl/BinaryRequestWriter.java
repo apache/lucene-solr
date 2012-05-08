@@ -58,13 +58,14 @@ public class BinaryRequestWriter extends RequestWriter {
 
   @Override
   public String getUpdateContentType() {
-    return "application/octet-stream";
+    return "application/javabin";
   }
 
   @Override
   public ContentStream getContentStream(final UpdateRequest request) throws IOException {
     final BAOS baos = new BAOS();
-      new JavaBinUpdateRequestCodec().marshal(request, baos);
+    new JavaBinUpdateRequestCodec().marshal(request, baos);
+    
     return new ContentStream() {
       public String getName() {
         return null;
@@ -75,7 +76,7 @@ public class BinaryRequestWriter extends RequestWriter {
       }
 
       public String getContentType() {
-        return "application/octet-stream";
+        return "application/javabin";
       }
 
       public Long getSize() // size if we know it, otherwise null
@@ -99,23 +100,15 @@ public class BinaryRequestWriter extends RequestWriter {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
       new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
-    } 
-
-  }/*
+    }
+  }
+  
+  /*
    * A hack to get access to the protected internal buffer and avoid an additional copy 
    */
   class BAOS extends ByteArrayOutputStream {
     byte[] getbuf() {
       return super.buf;
-    }
-  }
-
-  @Override
-  public String getPath(SolrRequest req) {
-    if (req instanceof UpdateRequest) {
-      return "/update/javabin";
-    } else {
-      return req.getPath();
     }
   }
 }

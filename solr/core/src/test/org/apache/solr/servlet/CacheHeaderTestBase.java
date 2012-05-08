@@ -75,7 +75,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     }
     java.net.URI uri = URIUtils.createURI("http",
         new URI(httpserver.getBaseURL()).getHost(),
-        new URI(httpserver.getBaseURL()).getPort(), "/solr/update/csv",
+        new URI(httpserver.getBaseURL()).getPort(), "/solr/update",
         URLEncodedUtils.format(qparams, "UTF-8"), null);
     
     if ("GET".equals(method)) {

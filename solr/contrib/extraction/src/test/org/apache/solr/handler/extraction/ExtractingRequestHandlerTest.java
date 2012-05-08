@@ -301,7 +301,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
 
     ExtractingDocumentLoader loader = (ExtractingDocumentLoader) handler.newLoader(req, p);
-    loader.load(req, rsp, new ContentStreamBase.FileStream(getFile("extraction/version_control.txt")));
+    loader.load(req, rsp, new ContentStreamBase.FileStream(getFile("extraction/version_control.txt")),p);
 
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(200, add.commitWithin);
