@@ -853,6 +853,9 @@ New features
 
 * LUCENE-4025: Add maybeRefreshBlocking to ReferenceManager, to let a caller 
   block until the refresh logic has been executed. (Shai Erera, Mike McCandless)
+  
+* LUCENE-4039: Add AddIndexesTask to benchmark, which uses IW.addIndexes. 
+  (Shai Erera)
 
 Optimizations
 
