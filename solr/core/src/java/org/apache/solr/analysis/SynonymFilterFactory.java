@@ -21,9 +21,11 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link SynonymFilter}.
@@ -37,8 +39,8 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
-public class SynonymFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
-  private BaseTokenFilterFactory delegator;
+public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+  private TokenFilterFactory delegator;
 
   @Override
   public void init(Map<String,String> args) {

@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import com.ibm.icu.text.FilteredNormalizer2;
 import com.ibm.icu.text.Normalizer2;
@@ -44,7 +45,7 @@ import com.ibm.icu.text.UnicodeSet;
  * @see Normalizer2
  * @see FilteredNormalizer2
  */
-public class ICUNormalizer2FilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
+public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   private Normalizer2 normalizer;
 
   // TODO: support custom normalization

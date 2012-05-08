@@ -2,6 +2,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUFoldingFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,7 +22,7 @@ import org.apache.lucene.analysis.icu.ICUFoldingFilter;
  */
 
 /** Factory for {@link ICUFoldingFilter} */
-public class ICUFoldingFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
+public class ICUFoldingFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 
   @Override
   public TokenStream create(TokenStream input) {

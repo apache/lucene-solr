@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.hi.HindiStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link HindiStemFilter}. 
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.hi.HindiStemFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class HindiStemFilterFactory extends BaseTokenFilterFactory {
+public class HindiStemFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new HindiStemFilter(input);
   }

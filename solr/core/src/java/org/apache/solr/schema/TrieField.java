@@ -21,6 +21,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldType.NumericType;
@@ -39,7 +41,8 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.lucene.util.mutable.MutableValueLong;
-import org.apache.solr.analysis.*;
+import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.analysis.TrieTokenizerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;

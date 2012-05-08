@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pt.PortugueseStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link PortugueseStemFilter}. 
@@ -32,7 +33,7 @@ import org.apache.lucene.analysis.pt.PortugueseStemFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class PortugueseStemFilterFactory extends BaseTokenFilterFactory {
+public class PortugueseStemFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new PortugueseStemFilter(input);
   }

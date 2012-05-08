@@ -26,12 +26,13 @@ import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.egothor.stemmer.Trie;
 
 /**
  * Factory for {@link StempelFilter} using a Polish stemming table.
  */
-public class StempelPolishStemFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class StempelPolishStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private Trie stemmer = null;
   private static final String STEMTABLE = "org/apache/lucene/analysis/pl/stemmer_20000.tbl";
   

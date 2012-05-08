@@ -26,7 +26,6 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.text.ParseException;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -37,10 +36,9 @@ import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.synonym.SolrSynonymParser;
 import org.apache.lucene.analysis.synonym.WordnetSynonymParser;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 // NOTE: rename this to "SynonymFilterFactory" and nuke that delegator in Lucene 5.0!
 @Deprecated
-final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+final class FSTSynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
   public static final Logger log = LoggerFactory.getLogger(FSTSynonymFilterFactory.class);
 

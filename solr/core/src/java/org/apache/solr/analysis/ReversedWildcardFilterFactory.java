@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link ReversedWildcardFilter}-s. When this factory is
@@ -61,7 +62,7 @@ import org.apache.lucene.analysis.reverse.ReverseStringFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class ReversedWildcardFilterFactory extends BaseTokenFilterFactory {
+public class ReversedWildcardFilterFactory extends TokenFilterFactory {
   
   private char markerChar = ReverseStringFilter.START_OF_HEADING_MARKER;
   private boolean withOriginal;

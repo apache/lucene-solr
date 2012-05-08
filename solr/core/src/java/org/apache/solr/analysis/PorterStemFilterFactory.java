@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.en.PorterStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link PorterStemFilter}.
@@ -32,7 +33,7 @@ import org.apache.lucene.analysis.en.PorterStemFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class PorterStemFilterFactory extends BaseTokenFilterFactory {
+public class PorterStemFilterFactory extends TokenFilterFactory {
   public PorterStemFilter create(TokenStream input) {
     return new PorterStemFilter(input);
   }

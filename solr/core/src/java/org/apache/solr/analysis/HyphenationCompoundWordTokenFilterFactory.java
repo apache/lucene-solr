@@ -22,10 +22,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.CompoundWordTokenFilterBase;
 import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.solr.analysis.BaseTokenFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.*;
 
 import java.util.Map;
 import java.io.InputStream;
@@ -58,7 +55,7 @@ import org.xml.sax.InputSource;
  *
  * @see HyphenationCompoundWordTokenFilter
  */
-public class HyphenationCompoundWordTokenFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private CharArraySet dictionary;
   private HyphenationTree hyphenator;
   private String dictFile;

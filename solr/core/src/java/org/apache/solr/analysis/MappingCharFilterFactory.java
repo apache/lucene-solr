@@ -27,6 +27,8 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -45,7 +47,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * @since Solr 1.4
  *
  */
-public class MappingCharFilterFactory extends BaseCharFilterFactory implements
+public class MappingCharFilterFactory extends CharFilterFactory implements
     ResourceLoaderAware, MultiTermAwareComponent {
 
   protected NormalizeCharMap normMap;

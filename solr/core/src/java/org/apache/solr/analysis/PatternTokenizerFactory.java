@@ -24,6 +24,8 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.pattern.PatternTokenizer;
+import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 
 
 /**
@@ -63,7 +65,7 @@ import org.apache.lucene.analysis.pattern.PatternTokenizer;
  * @since solr1.2
  *
  */
-public class PatternTokenizerFactory extends BaseTokenizerFactory 
+public class PatternTokenizerFactory extends TokenizerFactory
 {
   public static final String PATTERN = "pattern";
   public static final String GROUP = "group";

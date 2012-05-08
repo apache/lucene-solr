@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ngram.NGramTokenFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link NGramTokenFilter}.
@@ -32,7 +33,7 @@ import org.apache.lucene.analysis.ngram.NGramTokenFilter;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class NGramFilterFactory extends BaseTokenFilterFactory {
+public class NGramFilterFactory extends TokenFilterFactory {
   private int maxGramSize = 0;
 
   private int minGramSize = 0;

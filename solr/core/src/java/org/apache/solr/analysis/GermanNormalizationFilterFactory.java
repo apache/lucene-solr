@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.de.GermanNormalizationFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link GermanNormalizationFilter}.
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.de.GermanNormalizationFilter;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
  */
-public class GermanNormalizationFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
+public class GermanNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 
   public TokenStream create(TokenStream input) {
     return new GermanNormalizationFilter(input);

@@ -18,6 +18,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 
 import java.io.Reader;
 
@@ -31,7 +32,7 @@ import java.io.Reader;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class KeywordTokenizerFactory extends BaseTokenizerFactory {
+public class KeywordTokenizerFactory extends TokenizerFactory {
   public KeywordTokenizer create(Reader input) {
     return new KeywordTokenizer(input);
   }

@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.util.ResourceLoader;
 
@@ -41,7 +43,7 @@ public class TestSynonymMap extends LuceneTestCase {
     rules.add( "a=>b=>c" );
     try{
         SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
-        fail( "RuntimeException must be thrown." );
+        fail( "InitializationException must be thrown." );
     }
     catch(InitializationException expected) {}
   }
@@ -245,7 +247,7 @@ public class TestSynonymMap extends LuceneTestCase {
 	SlowSynonymMap synMap;
 	
 	// prepare bi-gram tokenizer factory
-	BaseTokenizerFactory tf = new NGramTokenizerFactory();
+	TokenizerFactory tf = new NGramTokenizerFactory();
 	Map<String, String> args = new HashMap<String, String>();
 	args.put("minGramSize","2");
 	args.put("maxGramSize","2");

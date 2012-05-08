@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link DoubleMetaphoneFilter}.
@@ -32,7 +33,7 @@ import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class DoubleMetaphoneFilterFactory extends BaseTokenFilterFactory 
+public class DoubleMetaphoneFilterFactory extends TokenFilterFactory
 {
   public static final String INJECT = "inject"; 
   public static final String MAX_CODE_LENGTH = "maxCodeLength"; 

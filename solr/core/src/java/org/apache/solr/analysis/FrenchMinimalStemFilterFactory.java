@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.fr.FrenchMinimalStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link FrenchMinimalStemFilter}.
@@ -33,7 +34,7 @@ import org.apache.lucene.analysis.fr.FrenchMinimalStemFilter;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class FrenchMinimalStemFilterFactory extends BaseTokenFilterFactory {
+public class FrenchMinimalStemFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new FrenchMinimalStemFilter(input);
   }

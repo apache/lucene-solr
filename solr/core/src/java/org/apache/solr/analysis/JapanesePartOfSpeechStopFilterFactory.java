@@ -23,9 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.*;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter}.
@@ -40,7 +38,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * &lt;/fieldType&gt;
  * </pre>
  */
-public class JapanesePartOfSpeechStopFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware  {
+public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware  {
   private boolean enablePositionIncrements;
   private Set<String> stopTags;
 

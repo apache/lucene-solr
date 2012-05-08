@@ -21,6 +21,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.payloads.TypeAsPayloadTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link TypeAsPayloadTokenFilter}.
@@ -33,7 +34,7 @@ import org.apache.lucene.analysis.TokenStream;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class TypeAsPayloadTokenFilterFactory extends BaseTokenFilterFactory {
+public class TypeAsPayloadTokenFilterFactory extends TokenFilterFactory {
   public TypeAsPayloadTokenFilter create(TokenStream input) {
     return new TypeAsPayloadTokenFilter(input);
   }

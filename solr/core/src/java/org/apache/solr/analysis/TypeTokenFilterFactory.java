@@ -19,9 +19,11 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.TypeTokenFilter;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -39,7 +41,7 @@ import java.util.Set;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
-public class TypeTokenFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class TypeTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
   @Override
   public void inform(ResourceLoader loader) {

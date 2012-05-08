@@ -17,12 +17,10 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.util.CharArraySet;
 
 import java.util.Map;
 import java.io.IOException;
@@ -39,7 +37,7 @@ import java.io.IOException;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class StopFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class StopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
   @Override
   public void init(Map<String,String> args) {

@@ -23,9 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.*;
 
 /**
  * Construct {@link CommonGramsQueryFilter}.
@@ -41,7 +39,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
+public class CommonGramsQueryFilterFactory extends TokenFilterFactory
     implements ResourceLoaderAware {
 
   @Override

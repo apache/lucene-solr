@@ -18,6 +18,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 
 import java.io.Reader;
 import java.util.Map;
@@ -32,7 +33,7 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class WhitespaceTokenizerFactory extends BaseTokenizerFactory {
+public class WhitespaceTokenizerFactory extends TokenizerFactory {
   @Override
   public void init(Map<String,String> args) {
     super.init(args);

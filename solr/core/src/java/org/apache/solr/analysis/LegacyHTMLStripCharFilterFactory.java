@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
  */
 
 import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
  * Factory for {@link LegacyHTMLStripCharFilter}.
@@ -49,7 +50,7 @@ import org.apache.lucene.analysis.CharStream;
  * @deprecated use {@link HTMLStripCharFilterFactory}
  */
 @Deprecated
-public class LegacyHTMLStripCharFilterFactory extends BaseCharFilterFactory {
+public class LegacyHTMLStripCharFilterFactory extends CharFilterFactory {
 
   public LegacyHTMLStripCharFilter create(CharStream input) {
     return new LegacyHTMLStripCharFilter(input);

@@ -17,6 +17,7 @@ package org.apache.solr.analysis;
  */
 
 import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ import java.util.Map;
  * @deprecated (3.1) Use StandardTokenizerFactory instead.
  **/
 @Deprecated
-public class ArabicLetterTokenizerFactory extends BaseTokenizerFactory{
+public class ArabicLetterTokenizerFactory extends TokenizerFactory {
 
   private static final Logger log = LoggerFactory.getLogger(ArabicLetterTokenizerFactory.class);
 

@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link CJKBigramFilter}.
@@ -36,7 +37,7 @@ import org.apache.lucene.analysis.cjk.CJKBigramFilter;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
-public class CJKBigramFilterFactory extends BaseTokenFilterFactory {
+public class CJKBigramFilterFactory extends TokenFilterFactory {
   int flags;
 
   @Override

@@ -1,4 +1,6 @@
-/**
+package org.apache.lucene.analysis.util;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,25 +17,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+import org.apache.lucene.analysis.Tokenizer;
 
-import java.util.Map;
+import java.io.Reader;
 
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.util.Version;
+public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 
-/**
-*
-* @since Solr 1.4
-*
-*/
-public interface CharFilterFactory {
-
-  public void init(Map<String,String> args);
-
-  public Map<String,String> getArgs();
-
-  public void setLuceneMatchVersion(Version luceneMatchVersion);
-
-  public CharStream create(CharStream input);
+  /** Creates a TokenStream of the specified input */
+  public abstract Tokenizer create(Reader input);
 }

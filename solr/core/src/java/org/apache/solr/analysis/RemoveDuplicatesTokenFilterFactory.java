@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link RemoveDuplicatesTokenFilter}.
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class RemoveDuplicatesTokenFilterFactory extends BaseTokenFilterFactory {
+public class RemoveDuplicatesTokenFilterFactory extends TokenFilterFactory {
   public RemoveDuplicatesTokenFilter create(TokenStream input) {
     return new RemoveDuplicatesTokenFilter(input);
   }

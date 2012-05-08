@@ -24,8 +24,10 @@ import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * TokenFilterFactory that creates instances of {@link org.apache.lucene.analysis.hunspell.HunspellStemFilter}.
@@ -43,7 +45,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * 
  * See <a href="http://wiki.apache.org/solr/Hunspell">http://wiki.apache.org/solr/Hunspell</a>
  */
-public class HunspellStemFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class HunspellStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   
   private static final String PARAM_DICTIONARY = "dictionary";
   private static final String PARAM_AFFIX = "affix";

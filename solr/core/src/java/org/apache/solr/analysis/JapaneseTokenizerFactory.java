@@ -30,6 +30,8 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
+import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -49,7 +51,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * &lt;/fieldType&gt;
  * </pre>
  */
-public class JapaneseTokenizerFactory extends BaseTokenizerFactory implements ResourceLoaderAware {
+public class JapaneseTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
   private static final String MODE = "mode";
   
   private static final String USER_DICT_PATH = "userDictionary";

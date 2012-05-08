@@ -22,6 +22,8 @@ import java.util.Map;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
+import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 
 
 /**
@@ -34,7 +36,7 @@ import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class PathHierarchyTokenizerFactory extends BaseTokenizerFactory {
+public class PathHierarchyTokenizerFactory extends TokenizerFactory {
   
   private char delimiter;
   private char replacement;

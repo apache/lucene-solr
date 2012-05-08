@@ -18,6 +18,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 
 /**
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class ArabicNormalizationFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
+public class ArabicNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 
   public ArabicNormalizationFilter create(TokenStream input) {
     return new ArabicNormalizationFilter(input);

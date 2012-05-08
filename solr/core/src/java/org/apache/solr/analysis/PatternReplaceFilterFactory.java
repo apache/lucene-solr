@@ -18,6 +18,8 @@
 package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pattern.PatternReplaceFilter;
+import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -36,7 +38,7 @@ import java.util.regex.PatternSyntaxException;
  *
  * @see PatternReplaceFilter
  */
-public class PatternReplaceFilterFactory extends BaseTokenFilterFactory {
+public class PatternReplaceFilterFactory extends TokenFilterFactory {
   Pattern p;
   String replacement;
   boolean all = true;

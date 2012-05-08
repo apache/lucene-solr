@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.ChineseFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * @deprecated Use {@link StopFilterFactory} instead.
  */
 @Deprecated
-public class ChineseFilterFactory extends BaseTokenFilterFactory {
+public class ChineseFilterFactory extends TokenFilterFactory {
 
   private static final Logger log = LoggerFactory.getLogger(ChineseFilterFactory.class);
 

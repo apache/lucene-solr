@@ -21,6 +21,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
+import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link TrimFilter}.
@@ -34,7 +36,7 @@ import org.apache.lucene.analysis.miscellaneous.TrimFilter;
  *
  * @see TrimFilter
  */
-public class TrimFilterFactory extends BaseTokenFilterFactory {
+public class TrimFilterFactory extends TokenFilterFactory {
   
   protected boolean updateOffsets = false;
   

@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,16 +17,10 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-/**
- * Exception representing an error occurring during the initialization of a Factory.
- */
-public class InitializationException extends RuntimeException {
+import org.apache.lucene.analysis.TokenStream;
 
-  public InitializationException(String message) {
-    super(message);
-  }
+public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
-  public InitializationException(String message, Throwable cause) {
-    super(message, cause);
-  }
+  /** Transform the specified input TokenStream */
+  public abstract TokenStream create(TokenStream input);
 }

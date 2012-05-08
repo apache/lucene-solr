@@ -18,6 +18,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ar.ArabicStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 
 /**
@@ -32,7 +33,7 @@ import org.apache.lucene.analysis.ar.ArabicStemFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class ArabicStemFilterFactory extends BaseTokenFilterFactory{
+public class ArabicStemFilterFactory extends TokenFilterFactory {
 
 
   public ArabicStemFilter create(TokenStream input) {

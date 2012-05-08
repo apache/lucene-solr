@@ -18,6 +18,9 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 
 import java.io.IOException;
 import java.io.Reader;

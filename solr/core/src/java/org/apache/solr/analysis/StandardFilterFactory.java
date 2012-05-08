@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link StandardFilter}.
@@ -33,7 +34,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class StandardFilterFactory extends BaseTokenFilterFactory {
+public class StandardFilterFactory extends TokenFilterFactory {
   @Override
   public void init(Map<String,String> args) {
     super.init(args);

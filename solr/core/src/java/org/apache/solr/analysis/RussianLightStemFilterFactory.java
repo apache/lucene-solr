@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ru.RussianLightStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link RussianLightStemFilter}.
@@ -32,7 +33,7 @@ import org.apache.lucene.analysis.ru.RussianLightStemFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class RussianLightStemFilterFactory extends BaseTokenFilterFactory {
+public class RussianLightStemFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new RussianLightStemFilter(input);
   }

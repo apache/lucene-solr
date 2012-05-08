@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.no.NorwegianLightStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link NorwegianLightStemFilter}.
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.no.NorwegianLightStemFilter;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
-public class NorwegianLightStemFilterFactory extends BaseTokenFilterFactory {
+public class NorwegianLightStemFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new NorwegianLightStemFilter(input);
   }

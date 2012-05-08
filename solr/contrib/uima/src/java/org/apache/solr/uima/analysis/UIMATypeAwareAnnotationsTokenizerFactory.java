@@ -19,15 +19,15 @@ package org.apache.solr.uima.analysis;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.uima.UIMATypeAwareAnnotationsTokenizer;
-import org.apache.solr.analysis.BaseTokenizerFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 
 import java.io.Reader;
 import java.util.Map;
 
 /**
- * Solr {@link org.apache.solr.analysis.TokenizerFactory} for {@link UIMATypeAwareAnnotationsTokenizer}
+ * {@link org.apache.lucene.analysis.util.TokenizerFactory} for {@link UIMATypeAwareAnnotationsTokenizer}
  */
-public class UIMATypeAwareAnnotationsTokenizerFactory extends BaseTokenizerFactory {
+public class UIMATypeAwareAnnotationsTokenizerFactory extends TokenizerFactory {
 
   private String descriptorPath;
   private String tokenType;

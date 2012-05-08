@@ -21,6 +21,7 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.th.ThaiWordFilter;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link ThaiWordFilter}.
@@ -33,7 +34,7 @@ import org.apache.lucene.analysis.TokenStream;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class ThaiWordFilterFactory extends BaseTokenFilterFactory {
+public class ThaiWordFilterFactory extends TokenFilterFactory {
   public ThaiWordFilter create(TokenStream input) {
     assureMatchVersion();
     return new ThaiWordFilter(luceneMatchVersion, input);

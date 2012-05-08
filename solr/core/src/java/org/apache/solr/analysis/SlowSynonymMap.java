@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.util.CharArrayMap;
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.util.Version;
 
 import java.util.*;

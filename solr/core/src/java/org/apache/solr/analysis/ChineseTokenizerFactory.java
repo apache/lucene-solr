@@ -23,6 +23,7 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.cn.ChineseTokenizer;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * @deprecated Use {@link StandardTokenizerFactory} instead.
  */
 @Deprecated
-public class ChineseTokenizerFactory extends BaseTokenizerFactory {
+public class ChineseTokenizerFactory extends TokenizerFactory {
 
   private static final Logger log = LoggerFactory.getLogger(ChineseTokenizerFactory.class);
 

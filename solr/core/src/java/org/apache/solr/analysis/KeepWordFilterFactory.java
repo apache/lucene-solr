@@ -17,11 +17,9 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.KeepWordFilter;
-import org.apache.lucene.analysis.util.CharArraySet;
 
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +36,7 @@ import java.io.IOException;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class KeepWordFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class KeepWordFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
   @Override
   public void init(Map<String,String> args) {

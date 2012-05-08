@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link LimitTokenCountFilter}. 
@@ -33,7 +34,7 @@ import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class LimitTokenCountFilterFactory extends BaseTokenFilterFactory {
+public class LimitTokenCountFilterFactory extends TokenFilterFactory {
 
   int maxTokenCount;
 

@@ -17,6 +17,7 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.util.InitializationException;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMappingCharFilterFactory extends LuceneTestCase {

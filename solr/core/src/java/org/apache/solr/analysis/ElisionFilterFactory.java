@@ -19,10 +19,8 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.analysis.fr.*;
-import org.apache.lucene.analysis.util.CharArraySet;
 
 import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;
@@ -40,7 +38,7 @@ import org.apache.lucene.analysis.TokenStream;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class ElisionFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class ElisionFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
   private CharArraySet articles;
 

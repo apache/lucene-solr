@@ -22,6 +22,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 
 import java.io.Reader;
 import java.util.Map;
@@ -38,7 +39,7 @@ import java.util.Map;
  * 
  */
 
-public class UAX29URLEmailTokenizerFactory extends BaseTokenizerFactory {
+public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
 
   private int maxTokenLength;
 

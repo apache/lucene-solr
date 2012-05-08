@@ -23,6 +23,8 @@ import java.util.regex.PatternSyntaxException;
 
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilter;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.InitializationException;
 
 /**
  * Factory for {@link PatternReplaceCharFilter}. 
@@ -38,7 +40,7 @@ import org.apache.lucene.analysis.pattern.PatternReplaceCharFilter;
  *
  * @since Solr 3.1
  */
-public class PatternReplaceCharFilterFactory extends BaseCharFilterFactory {
+public class PatternReplaceCharFilterFactory extends CharFilterFactory {
   
   private Pattern p;
   private String replacement;

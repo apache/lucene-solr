@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.LengthFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
 
@@ -33,7 +34,7 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class LengthFilterFactory extends BaseTokenFilterFactory {
+public class LengthFilterFactory extends TokenFilterFactory {
   int min,max;
   boolean enablePositionIncrements;
   public static final String MIN_KEY = "min";

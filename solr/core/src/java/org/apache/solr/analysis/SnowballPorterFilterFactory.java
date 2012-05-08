@@ -23,9 +23,7 @@ import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.*;
 import org.tartarus.snowball.SnowballProgram;
 
 /**
@@ -43,7 +41,7 @@ import org.tartarus.snowball.SnowballProgram;
  * 
  *
  */
-public class SnowballPorterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class SnowballPorterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
 
   private String language = "English";

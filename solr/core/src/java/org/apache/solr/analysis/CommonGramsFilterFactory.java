@@ -21,9 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.*;
 
 /**
  * Constructs a {@link CommonGramsFilter}.
@@ -40,7 +38,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 /*
  * This is pretty close to a straight copy from StopFilterFactory
  */
-public class CommonGramsFilterFactory extends BaseTokenFilterFactory implements
+public class CommonGramsFilterFactory extends TokenFilterFactory implements
     ResourceLoaderAware {
 
   public void inform(ResourceLoader loader) {

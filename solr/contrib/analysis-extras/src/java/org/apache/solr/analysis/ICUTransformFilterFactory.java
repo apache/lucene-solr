@@ -21,9 +21,9 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUTransformFilter;
-import org.apache.solr.analysis.BaseTokenFilterFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import com.ibm.icu.text.Transliterator;
 
@@ -37,7 +37,7 @@ import com.ibm.icu.text.Transliterator;
  * </ul>
  * @see Transliterator
  */
-public class ICUTransformFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
+public class ICUTransformFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   private Transliterator transliterator;
   
   // TODO: add support for custom rules

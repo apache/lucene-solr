@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapaneseBaseFormFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapaneseBaseFormFilter}.
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.ja.JapaneseBaseFormFilter;
  * &lt;/fieldType&gt;
  * </pre>
  */
-public class JapaneseBaseFormFilterFactory extends BaseTokenFilterFactory {
+public class JapaneseBaseFormFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenStream create(TokenStream input) {

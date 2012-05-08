@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link EnglishPossessiveFilter}. 
@@ -34,7 +35,7 @@ import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class EnglishPossessiveFilterFactory extends BaseTokenFilterFactory {
+public class EnglishPossessiveFilterFactory extends TokenFilterFactory {
   
   @Override
   public void init(Map<String,String> args) {

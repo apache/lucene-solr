@@ -20,6 +20,8 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.cjk.CJKTokenizer;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+
 import java.io.Reader;
 
 /** 
@@ -33,7 +35,7 @@ import java.io.Reader;
  * @deprecated
  */
 @Deprecated
-public class CJKTokenizerFactory extends BaseTokenizerFactory {
+public class CJKTokenizerFactory extends TokenizerFactory {
   public CJKTokenizer create(Reader in) {
     return new CJKTokenizer(in);
   }

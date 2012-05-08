@@ -1,4 +1,6 @@
-/**
+package org.apache.lucene.analysis.util;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,13 +17,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+import org.apache.lucene.analysis.CharStream;
 
-/**
- * Simple abstract implementation that handles init arg processing.
- * 
- *
- */
-public abstract class BaseTokenFilterFactory extends BaseTokenStreamFactory implements TokenFilterFactory {
+public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
+  public abstract CharStream create(CharStream input);
 }

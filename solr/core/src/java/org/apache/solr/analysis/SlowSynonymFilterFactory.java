@@ -19,9 +19,8 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.*;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +28,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Factory for {@link SlowSynonymFilter} (only used with luceneMatchVersion < 3.4)
@@ -44,7 +42,7 @@ import java.util.Map;
  * @deprecated (3.4) use {@link SynonymFilterFactory} instead. only for precise index backwards compatibility. this factory will be removed in Lucene 5.0
  */
 @Deprecated
-final class SlowSynonymFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+final class SlowSynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
   public void inform(ResourceLoader loader) {
     String synonyms = args.get("synonyms");

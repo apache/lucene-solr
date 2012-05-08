@@ -21,6 +21,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.payloads.NumericPayloadTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import java.util.Map;
 
 /** 
@@ -34,7 +35,7 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class NumericPayloadTokenFilterFactory extends BaseTokenFilterFactory {
+public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
   private float payload;
   private String typeMatch;
   @Override

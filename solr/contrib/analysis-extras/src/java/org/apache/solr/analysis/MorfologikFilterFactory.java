@@ -26,6 +26,7 @@ import morfologik.stemming.PolishStemmer.DICTIONARY;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.morfologik.MorfologikFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Filter factory for {@link MorfologikFilter}.
@@ -44,7 +45,7 @@ import org.apache.lucene.analysis.morfologik.MorfologikFilter;
  * 
  * @see <a href="http://morfologik.blogspot.com/">Morfologik web site</a>
  */
-public class MorfologikFilterFactory extends BaseTokenFilterFactory {
+public class MorfologikFilterFactory extends TokenFilterFactory {
   /** Dictionary. */
   private DICTIONARY dictionary = DICTIONARY.MORFOLOGIK;
   

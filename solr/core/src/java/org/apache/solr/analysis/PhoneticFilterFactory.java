@@ -27,6 +27,8 @@ import org.apache.commons.codec.Encoder;
 import org.apache.commons.codec.language.*;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.PhoneticFilter;
+import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link PhoneticFilter}.
@@ -55,7 +57,7 @@ import org.apache.lucene.analysis.phonetic.PhoneticFilter;
  * 
  * @see PhoneticFilter
  */
-public class PhoneticFilterFactory extends BaseTokenFilterFactory 
+public class PhoneticFilterFactory extends TokenFilterFactory
 {
   public static final String ENCODER = "encoder";
   public static final String INJECT = "inject"; // boolean

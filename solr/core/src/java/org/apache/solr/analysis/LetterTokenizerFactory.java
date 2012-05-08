@@ -18,6 +18,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.core.LetterTokenizer;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 
 import java.io.Reader;
 import java.util.Map;
@@ -32,7 +33,7 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class LetterTokenizerFactory extends BaseTokenizerFactory {
+public class LetterTokenizerFactory extends TokenizerFactory {
 
   @Override
   public void init(Map<String,String> args) {

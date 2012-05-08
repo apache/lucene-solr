@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.id.IndonesianStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link IndonesianStemFilter}. 
@@ -34,7 +35,7 @@ import org.apache.lucene.analysis.id.IndonesianStemFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class IndonesianStemFilterFactory extends BaseTokenFilterFactory {
+public class IndonesianStemFilterFactory extends TokenFilterFactory {
   private boolean stemDerivational = true;
 
   @Override

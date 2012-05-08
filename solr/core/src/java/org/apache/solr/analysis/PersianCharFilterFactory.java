@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.fa.PersianCharFilter;
+import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
  * Factory for {@link PersianCharFilter}.
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.fa.PersianCharFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class PersianCharFilterFactory extends BaseCharFilterFactory implements MultiTermAwareComponent {
+public class PersianCharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
 
   @Override
   public CharStream create(CharStream input) {

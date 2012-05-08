@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.hu.HungarianLightStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link HungarianLightStemFilter}. 
@@ -32,7 +33,7 @@ import org.apache.lucene.analysis.hu.HungarianLightStemFilter;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class HungarianLightStemFilterFactory extends BaseTokenFilterFactory {
+public class HungarianLightStemFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new HungarianLightStemFilter(input);
   }

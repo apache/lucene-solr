@@ -21,6 +21,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.de.GermanStemFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link GermanStemFilter}. 
@@ -34,7 +35,7 @@ import org.apache.lucene.analysis.TokenStream;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class GermanStemFilterFactory extends BaseTokenFilterFactory {
+public class GermanStemFilterFactory extends TokenFilterFactory {
   public GermanStemFilter create(TokenStream in) {
     return new GermanStemFilter(in);
   }

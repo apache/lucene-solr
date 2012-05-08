@@ -22,6 +22,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
+import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link GreekLowerCaseFilter}. 
@@ -34,8 +36,7 @@ import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent
-{
+public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
  
   @Override
   public void init(Map<String, String> args) {

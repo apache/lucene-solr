@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.standard.ClassicFilter;
 
 /**
@@ -33,7 +34,7 @@ import org.apache.lucene.analysis.standard.ClassicFilter;
  *
  *
  */
-public class ClassicFilterFactory extends BaseTokenFilterFactory {
+public class ClassicFilterFactory extends TokenFilterFactory {
   public TokenFilter create(TokenStream input) {
     return new ClassicFilter(input);
   }

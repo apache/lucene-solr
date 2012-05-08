@@ -19,7 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
-import org.apache.solr.analysis.BaseTokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link HyphenatedWordsFilter}.
@@ -32,7 +32,7 @@ import org.apache.solr.analysis.BaseTokenFilterFactory;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class HyphenatedWordsFilterFactory extends BaseTokenFilterFactory {
+public class HyphenatedWordsFilterFactory extends TokenFilterFactory {
 	public HyphenatedWordsFilter create(TokenStream input) {
 		return new HyphenatedWordsFilter(input);
 	}

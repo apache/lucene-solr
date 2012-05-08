@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for the SmartChineseAnalyzer {@link WordTokenFilter}
@@ -30,7 +31,7 @@ import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
  * <code>words="org/apache/lucene/analysis/cn/smart/stopwords.txt"</code>
  * @lucene.experimental
  */
-public class SmartChineseWordTokenFilterFactory extends BaseTokenFilterFactory {
+public class SmartChineseWordTokenFilterFactory extends TokenFilterFactory {
   public TokenFilter create(TokenStream input) {
       return new WordTokenFilter(input);
   }

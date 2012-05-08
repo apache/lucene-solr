@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.bg.BulgarianStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link BulgarianStemFilter}.
@@ -32,7 +33,7 @@ import org.apache.lucene.analysis.bg.BulgarianStemFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class BulgarianStemFilterFactory extends BaseTokenFilterFactory {
+public class BulgarianStemFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new BulgarianStemFilter(input);
   }

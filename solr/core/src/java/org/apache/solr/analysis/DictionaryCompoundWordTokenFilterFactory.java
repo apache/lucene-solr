@@ -19,9 +19,7 @@
 
 package org.apache.solr.analysis;
 import org.apache.lucene.analysis.compound.*;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.analysis.TokenStream;
 
 import java.util.Map;
@@ -39,7 +37,7 @@ import java.io.IOException;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class DictionaryCompoundWordTokenFilterFactory extends BaseTokenFilterFactory  implements ResourceLoaderAware {
+public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory  implements ResourceLoaderAware {
   private CharArraySet dictionary;
   private String dictFile;
   private int minWordSize;

@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cjk.CJKWidthFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link CJKWidthFilter}.
@@ -33,7 +34,7 @@ import org.apache.lucene.analysis.cjk.CJKWidthFilter;
  * &lt;/fieldType&gt;</pre>
  */
 
-public class CJKWidthFilterFactory extends BaseTokenFilterFactory implements MultiTermAwareComponent {
+public class CJKWidthFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   
   @Override
   public TokenStream create(TokenStream input) {

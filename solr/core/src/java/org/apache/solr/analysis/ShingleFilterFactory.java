@@ -21,6 +21,8 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
 
@@ -36,7 +38,7 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class ShingleFilterFactory extends BaseTokenFilterFactory {
+public class ShingleFilterFactory extends TokenFilterFactory {
   private int minShingleSize;
   private int maxShingleSize;
   private boolean outputUnigrams;

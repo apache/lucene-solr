@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.el.GreekStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link GreekStemFilter}. 
@@ -32,7 +33,7 @@ import org.apache.lucene.analysis.el.GreekStemFilter;
  * &lt;/fieldType&gt;</pre>
  *
  */
-public class GreekStemFilterFactory extends BaseTokenFilterFactory {
+public class GreekStemFilterFactory extends TokenFilterFactory {
 
   public TokenStream create(TokenStream input) {
     return new GreekStemFilter(input);

@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cz.CzechStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  *  Factory for {@link CzechStemFilter}.
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.cz.CzechStemFilter;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
-public class CzechStemFilterFactory extends BaseTokenFilterFactory {
+public class CzechStemFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new CzechStemFilter(input);
   }

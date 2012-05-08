@@ -1,4 +1,6 @@
-/**
+package org.apache.lucene.analysis.util;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,13 +17,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
-
 /**
- * Simple abstract implementation that handles init arg processing.
- * 
- *
+ * Exception representing an error occurring during the initialization of a Factory.
  */
-public abstract class BaseTokenizerFactory extends BaseTokenStreamFactory implements TokenizerFactory {
+public class InitializationException extends RuntimeException {
 
+  public InitializationException(String message) {
+    super(message);
+  }
+
+  public InitializationException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

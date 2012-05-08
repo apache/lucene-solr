@@ -20,10 +20,8 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator;
-import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.*;
 
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
 
 import java.util.ArrayList;
@@ -53,7 +51,7 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
  * &lt;/fieldType&gt;</pre> 
  *
  */
-public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class WordDelimiterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
   public static final String TYPES = "types";
   

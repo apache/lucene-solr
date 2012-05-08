@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.lv.LatvianStemFilter;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link LatvianStemFilter}. 
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.lv.LatvianStemFilter;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
-public class LatvianStemFilterFactory extends BaseTokenFilterFactory {
+public class LatvianStemFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new LatvianStemFilter(input);
   }

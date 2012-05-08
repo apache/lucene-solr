@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
+import org.apache.lucene.analysis.util.CharFilterFactory;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -38,7 +39,7 @@ import java.util.regex.Pattern;
  * &lt;/fieldType&gt;</pre>
  *
  */
- public class HTMLStripCharFilterFactory extends BaseCharFilterFactory {
+ public class HTMLStripCharFilterFactory extends CharFilterFactory {
   
   Set<String> escapedTags = null;
   Pattern TAG_NAME_PATTERN = Pattern.compile("[^\\s,]+");
