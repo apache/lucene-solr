@@ -301,6 +301,11 @@ New Features
   other existing fields unchanged.  All source fields must be stored for
   this feature to work correctly.  (Ryan McKinley, Erik Hatcher, yonik)
 
+* SOLR-2857: Support XML,CSV,JSON, and javabin in a single RequestHandler and 
+  choose the correct ContentStreamLoader based on Content-Type header.  This
+  also deprecates the existing [Xml,JSON,CSV,Binary,Xslt]UpdateRequestHandler.
+  (ryan)
+
 
 Optimizations
 ----------------------
