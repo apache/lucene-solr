@@ -19,6 +19,10 @@ package org.apache.lucene.analysis.util;
 
 import org.apache.lucene.analysis.CharStream;
 
+/**
+ * Abstract parent class for analysis factories that create {@link CharStream}
+ * instances.
+ */
 public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
   public abstract CharStream create(CharStream input);

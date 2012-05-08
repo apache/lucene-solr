@@ -19,6 +19,10 @@ package org.apache.lucene.analysis.util;
 
 import org.apache.lucene.analysis.TokenStream;
 
+/**
+ * Abstract parent class for analysis factories that create {@link org.apache.lucene.analysis.TokenFilter}
+ * instances.
+ */
 public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
   /** Transform the specified input TokenStream */

@@ -32,6 +32,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Abstract parent class for analysis factories {@link TokenizerFactory},
+ * {@link TokenFilterFactory} and {@link CharFilterFactory}.
+ */
 abstract class AbstractAnalysisFactory {
 
   /** The init args */

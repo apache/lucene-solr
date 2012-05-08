@@ -21,6 +21,10 @@ import org.apache.lucene.analysis.Tokenizer;
 
 import java.io.Reader;
 
+/**
+ * Abstract parent class for analysis factories that create {@link Tokenizer}
+ * instances.
+ */
 public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 
   /** Creates a TokenStream of the specified input */
