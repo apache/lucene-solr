@@ -36,7 +36,7 @@ import java.util.Map;
  * Abstract parent class for analysis factories {@link TokenizerFactory},
  * {@link TokenFilterFactory} and {@link CharFilterFactory}.
  */
-abstract class AbstractAnalysisFactory {
+public abstract class AbstractAnalysisFactory {
 
   /** The init args */
   protected Map<String,String> args;

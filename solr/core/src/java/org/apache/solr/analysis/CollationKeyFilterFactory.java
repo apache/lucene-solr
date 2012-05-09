@@ -26,11 +26,8 @@ import java.util.Locale;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.InitializationException;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.collation.CollationKeyFilter;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 /**
  * Factory for {@link CollationKeyFilter}.
@@ -172,7 +169,7 @@ public class CollationKeyFilterFactory extends TokenFilterFactory implements Mul
   }
   
   @Override
-  public Object getMultiTermComponent() {
+  public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }
 }

@@ -22,7 +22,9 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.InitializationException;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
@@ -52,7 +54,7 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements M
     return new GreekLowerCaseFilter(luceneMatchVersion, in);
   }
 
-  public Object getMultiTermComponent() {
+  public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }
 }

@@ -21,12 +21,10 @@ import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.collation.ICUCollationKeyFilter;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RuleBasedCollator;
@@ -190,7 +188,7 @@ public class ICUCollationKeyFilterFactory extends TokenFilterFactory implements 
   }
   
   @Override
-  public Object getMultiTermComponent() {
+  public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }
 }

@@ -19,6 +19,8 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ga.IrishLowerCaseFilter;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
@@ -41,7 +43,7 @@ public class IrishLowerCaseFilterFactory extends TokenFilterFactory implements M
 
   // this will 'mostly work', except for special cases, just like most other filters
   @Override
-  public Object getMultiTermComponent() {
+  public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }
 }

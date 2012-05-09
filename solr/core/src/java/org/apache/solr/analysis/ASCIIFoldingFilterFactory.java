@@ -19,6 +19,8 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -40,7 +42,7 @@ public class ASCIIFoldingFilterFactory extends TokenFilterFactory implements Mul
   }
 
   @Override
-  public Object getMultiTermComponent() {
+  public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }
 }

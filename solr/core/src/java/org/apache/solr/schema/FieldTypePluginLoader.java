@@ -19,13 +19,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.analysis.KeywordTokenizerFactory;
-import org.apache.solr.analysis.MultiTermAwareComponent;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
@@ -185,7 +181,7 @@ public final class FieldTypePluginLoader
 
     public void add(Object current) {
       if (!(current instanceof MultiTermAwareComponent)) return;
-      Object newComponent = ((MultiTermAwareComponent)current).getMultiTermComponent();
+      AbstractAnalysisFactory newComponent = ((MultiTermAwareComponent)current).getMultiTermComponent();
       if (newComponent instanceof TokenFilterFactory) {
         if (filters == null) {
           filters = new ArrayList<TokenFilterFactory>(2);

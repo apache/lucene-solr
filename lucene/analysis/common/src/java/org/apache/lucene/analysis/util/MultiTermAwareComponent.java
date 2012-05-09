@@ -1,6 +1,6 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.util;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,5 +27,5 @@ public interface MultiTermAwareComponent {
   /** Returns an analysis component to handle analysis if multi-term queries.
    * The returned component must be a TokenizerFactory, TokenFilterFactory or CharFilterFactory.
    */
-  public Object getMultiTermComponent();
+  public AbstractAnalysisFactory getMultiTermComponent();
 }

@@ -19,7 +19,9 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.fa.PersianCharFilter;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 
 /**
  * Factory for {@link PersianCharFilter}.
@@ -40,7 +42,7 @@ public class PersianCharFilterFactory extends CharFilterFactory implements Multi
   }
 
   @Override
-  public Object getMultiTermComponent() {
+  public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }
 }

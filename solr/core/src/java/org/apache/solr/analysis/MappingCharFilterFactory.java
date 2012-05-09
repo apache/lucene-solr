@@ -27,11 +27,8 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.InitializationException;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.*;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 /**
  * Factory for {@link MappingCharFilter}. 
@@ -131,7 +128,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
   }
 
   @Override
-  public Object getMultiTermComponent() {
+  public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }
 }
