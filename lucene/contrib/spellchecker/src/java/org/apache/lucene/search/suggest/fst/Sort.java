@@ -80,29 +80,35 @@ public final class Sort {
   
     /** 
      * Approximately half of the currently available free heap, but no less
-     * than {@link #MIN_BUFFER_SIZE_MB}. However if current heap allocation 
-     * is insufficient for sorting consult with max allowed heap size. 
+     * than {@link #ABSOLUTE_MIN_SORT_BUFFER_SIZE}. However if current heap allocation 
+     * is insufficient or if there is a large portion of unallocated heap-space available 
+     * for sorting consult with max allowed heap size. 
      */
     public static BufferSize automatic() {
       Runtime rt = Runtime.getRuntime();
       
       // take sizes in "conservative" order
-      long max = rt.maxMemory();
-      long total = rt.totalMemory();
-      long free = rt.freeMemory();
-
-      // by free mem (attempting to not grow the heap for this)
-      long half = free/2;
-      if (half >= ABSOLUTE_MIN_SORT_BUFFER_SIZE) { 
-        return new BufferSize(Math.min(MIN_BUFFER_SIZE_MB * MB, half));
-      }
+      final long max = rt.maxMemory(); // max allocated
+      final long total = rt.totalMemory(); // currently allocated
+      final long free = rt.freeMemory(); // unused portion of currently allocated
+      final long totalAvailableBytes = max - total + free;
       
-      // by max mem (heap will grow)
-      half = (max - total) / 2;
-      return new BufferSize(Math.min(MIN_BUFFER_SIZE_MB * MB, half));
+      // by free mem (attempting to not grow the heap for this)
+      long sortBufferByteSize = free/2;
+      final long minBufferSizeBytes = MIN_BUFFER_SIZE_MB*MB;
+      if (sortBufferByteSize <  minBufferSizeBytes
+          || totalAvailableBytes > 10 * minBufferSizeBytes) { // lets see if we need/should to grow the heap 
+        if (totalAvailableBytes/2 > minBufferSizeBytes){ // there is enough mem for a reasonable buffer
+          sortBufferByteSize = totalAvailableBytes/2; // grow the heap
+        } else {
+          //heap seems smallish lets be conservative fall back to the free/2 
+          sortBufferByteSize = Math.max(ABSOLUTE_MIN_SORT_BUFFER_SIZE, sortBufferByteSize);
+        }
+      }
+      return new BufferSize(Math.min(Integer.MAX_VALUE, sortBufferByteSize));
     }
   }
-
+  
   /**
    * Sort info (debugging mostly).
    */
