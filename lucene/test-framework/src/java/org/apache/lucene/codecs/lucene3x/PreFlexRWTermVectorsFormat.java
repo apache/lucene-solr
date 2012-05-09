@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
@@ -35,8 +36,8 @@ class PreFlexRWTermVectorsFormat extends Lucene3xTermVectorsFormat {
   }
 
   @Override
-  public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
-    return new Lucene3xTermVectorsReader(directory, segmentInfo, fieldInfos, context) {
+  public TermVectorsReader vectorsReader(SegmentReadState state) throws IOException {
+    return new Lucene3xTermVectorsReader(state.dir, state.segmentInfo, state.fieldInfos, state.context) {
       @Override
       protected boolean sortTermsByUnicode() {
         // We carefully peek into stack track above us: if

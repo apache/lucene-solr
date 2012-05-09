@@ -23,8 +23,8 @@ import java.util.Set;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -38,8 +38,8 @@ import org.apache.lucene.store.IOContext;
 class Lucene3xTermVectorsFormat extends TermVectorsFormat {
 
   @Override
-  public TermVectorsReader vectorsReader(Directory directory,SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
-    return new Lucene3xTermVectorsReader(directory, segmentInfo, fieldInfos, context);
+  public TermVectorsReader vectorsReader(SegmentReadState state) throws IOException {
+    return new Lucene3xTermVectorsReader(state.dir, state.segmentInfo, state.fieldInfos, state.context);
   }
 
   @Override

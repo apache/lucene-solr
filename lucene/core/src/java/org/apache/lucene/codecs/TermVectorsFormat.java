@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -29,7 +30,7 @@ import org.apache.lucene.store.IOContext;
  * Controls the format of term vectors
  */
 public abstract class TermVectorsFormat {
-  public abstract TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException;
+  public abstract TermVectorsReader vectorsReader(SegmentReadState state) throws IOException;
   public abstract TermVectorsWriter vectorsWriter(Directory directory, String segment, IOContext context) throws IOException;
   public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

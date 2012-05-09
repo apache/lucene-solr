@@ -165,6 +165,6 @@ class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     
     return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
       docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-      delCount, hasProx, codec, diagnostics, hasVectors);
+      delCount, hasProx, codec, diagnostics, hasVectors, null);
   }
 }

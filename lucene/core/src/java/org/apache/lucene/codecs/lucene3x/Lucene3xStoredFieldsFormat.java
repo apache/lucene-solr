@@ -23,8 +23,8 @@ import java.util.Set;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -33,9 +33,8 @@ import org.apache.lucene.store.IOContext;
 class Lucene3xStoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
-  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si,
-      FieldInfos fn, IOContext context) throws IOException {
-    return new Lucene3xStoredFieldsReader(directory, si, fn, context);
+  public StoredFieldsReader fieldsReader(SegmentReadState state) throws IOException {
+    return new Lucene3xStoredFieldsReader(state.dir, state.segmentInfo, state.fieldInfos, state.context);
   }
 
   @Override

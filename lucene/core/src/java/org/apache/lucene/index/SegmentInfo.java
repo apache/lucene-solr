@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosReader;
+import org.apache.lucene.codecs.stacked.StackedMap;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -91,6 +92,8 @@ public final class SegmentInfo implements Cloneable {
   //TODO: remove when we don't have to support old indexes anymore that had this field
   private int hasProx = CHECK_FIELDINFO;     // True if this segment has any fields with positional information
 
+  private String stackedName;                         // name of the stacked segment with updates for this segment
+  private StackedMap stackedMap;            // map of our id-s to the stacked id-s
   
   private FieldInfos fieldInfos;
 
@@ -154,6 +157,7 @@ public final class SegmentInfo implements Cloneable {
     isCompoundFile = src.isCompoundFile;
     delCount = src.delCount;
     codec = src.codec;
+    stackedName = src.stackedName;
   }
 
   void setDiagnostics(Map<String, String> diagnostics) {
@@ -163,6 +167,10 @@ public final class SegmentInfo implements Cloneable {
   public Map<String, String> getDiagnostics() {
     return diagnostics;
   }
+  
+  public StackedMap getStackedMap() {
+    return stackedMap;
+  }
 
   /**
    * Construct a new complete SegmentInfo instance from input.
@@ -171,7 +179,7 @@ public final class SegmentInfo implements Cloneable {
    */
   public SegmentInfo(Directory dir, String version, String name, int docCount, long delGen, int docStoreOffset,
       String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
-      int delCount, int hasProx, Codec codec, Map<String,String> diagnostics, int hasVectors) {
+      int delCount, int hasProx, Codec codec, Map<String,String> diagnostics, int hasVectors, String ovlName) {
     this.dir = dir;
     this.version = version;
     this.name = name;
@@ -187,6 +195,7 @@ public final class SegmentInfo implements Cloneable {
     this.codec = codec;
     this.diagnostics = diagnostics;
     this.hasVectors = hasVectors;
+    this.stackedName = ovlName;
   }
 
   synchronized void loadFieldInfos(Directory dir, boolean checkCompoundFile) throws IOException {
@@ -205,6 +214,10 @@ public final class SegmentInfo implements Cloneable {
         }
       }
     }
+  }
+  
+  synchronized void loadStackedMap(Directory dir) throws IOException {
+    
   }
 
   /**
@@ -228,6 +241,10 @@ public final class SegmentInfo implements Cloneable {
     return fieldInfos;
   }
 
+  public String getOverlayName() {
+    return stackedName;
+  }
+  
   public boolean hasDeletions() {
     // Cases:
     //
@@ -270,6 +287,8 @@ public final class SegmentInfo implements Cloneable {
     si.version = version;
     si.hasProx = hasProx;
     si.hasVectors = hasVectors;
+    si.stackedName = stackedName;
+    si.stackedMap = stackedMap;
     return si;
   }
 
@@ -389,6 +408,10 @@ public final class SegmentInfo implements Cloneable {
 
   public boolean getHasProx() throws IOException {
     return hasProx == CHECK_FIELDINFO ? getFieldInfos().hasProx() : hasProx == YES;
+  }
+  
+  public boolean getHasStacked() {
+    return stackedName != null;
   }
 
   /** Can only be called once. */

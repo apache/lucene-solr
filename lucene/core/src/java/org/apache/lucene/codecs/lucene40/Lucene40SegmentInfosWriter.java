@@ -99,6 +99,10 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
     output.writeString(si.getCodec().getName());
     output.writeStringStringMap(si.getDiagnostics());
     output.writeByte((byte) (si.getHasVectorsInternal()));
+    output.writeByte((byte) (si.getOverlayName() != null ? SegmentInfo.YES : SegmentInfo.NO));
+    if (si.getOverlayName() != null) {
+      output.writeString(si.getOverlayName());
+    }
   }
   
   protected IndexOutput createOutput(Directory dir, String segmentFileName, IOContext context)

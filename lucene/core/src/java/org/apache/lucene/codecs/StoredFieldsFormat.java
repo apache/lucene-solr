@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -29,7 +30,7 @@ import org.apache.lucene.store.IOContext;
  * Controls the format of stored fields
  */
 public abstract class StoredFieldsFormat {
-  public abstract StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException;
+  public abstract StoredFieldsReader fieldsReader(SegmentReadState state) throws IOException;
   public abstract StoredFieldsWriter fieldsWriter(Directory directory, String segment, IOContext context) throws IOException;
   public abstract void files(SegmentInfo info, Set<String> files) throws IOException;
 }

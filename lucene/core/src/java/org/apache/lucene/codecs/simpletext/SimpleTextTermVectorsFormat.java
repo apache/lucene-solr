@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -37,8 +38,8 @@ import org.apache.lucene.store.IOContext;
 public class SimpleTextTermVectorsFormat extends TermVectorsFormat {
 
   @Override
-  public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
-    return new SimpleTextTermVectorsReader(directory, segmentInfo, context);
+  public TermVectorsReader vectorsReader(SegmentReadState state) throws IOException {
+    return new SimpleTextTermVectorsReader(state.dir, state.segmentInfo, state.context);
   }
 
   @Override

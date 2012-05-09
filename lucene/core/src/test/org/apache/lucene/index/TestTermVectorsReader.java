@@ -35,6 +35,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -47,6 +48,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private String[] testTerms = {"this", "is", "a", "test"};
   private int[][] positions = new int[testTerms.length][];
   private Directory dir;
+  private SegmentReadState state;
   private SegmentInfo seg;
   private FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
   private static int TERM_FREQ = 3;
@@ -129,6 +131,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     writer.close();
 
     fieldInfos = seg.getFieldInfos(); //new FieldInfos(dir, IndexFileNames.segmentFileName(seg.name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+    state = new SegmentReadState(dir, seg, fieldInfos, newIOContext(random()), 1);
   }
   
   @Override
@@ -200,7 +203,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(state);
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
@@ -219,7 +222,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
   
   public void testDocsEnum() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(state);
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
@@ -246,7 +249,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testPositionReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(state);
     BytesRef[] terms;
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
@@ -301,7 +304,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testOffsetReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(state);
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
     TermsEnum termsEnum = vector.iterator(null);
@@ -343,7 +346,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   public void testBadParams() throws IOException {
     TermVectorsReader reader = null;
     try {
-      reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+      reader = Codec.getDefault().termVectorsFormat().vectorsReader(state);
       //Bad document number, good field number
       reader.get(50);
       fail();
@@ -352,7 +355,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     } finally {
       reader.close();
     }
-    reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg, fieldInfos, newIOContext(random()));
+    reader = Codec.getDefault().termVectorsFormat().vectorsReader(state);
     //good document number, bad field
     Terms vector = reader.get(0).terms("f50");
     assertNull(vector);

@@ -105,20 +105,39 @@ final class SegmentCoreReaders {
       final PostingsFormat format = codec.postingsFormat();
       final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si, fieldInfos, context, termsIndexDivisor);
       // Ask codec for its Fields
-      fields = format.fieldsProducer(segmentReadState);
-      assert fields != null;
+      FieldsProducer mainFields = format.fieldsProducer(segmentReadState);
+      assert mainFields != null;
       // ask codec for its Norms: 
       // TODO: since we don't write any norms file if there are no norms,
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
-      norms = codec.normsFormat().docsProducer(segmentReadState);
-      perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
+      PerDocProducer mainNorms = codec.normsFormat().docsProducer(segmentReadState);
+      PerDocProducer mainPerDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
   
-      fieldsReaderOrig = si.getCodec().storedFieldsFormat().fieldsReader(cfsDir, si, fieldInfos, context);
+      StoredFieldsReader mainFieldsReaderOrig = si.getCodec().storedFieldsFormat().fieldsReader(segmentReadState);
  
+      TermVectorsReader mainTermVectorsReaderOrig = null;
       if (si.getHasVectors()) { // open term vector files only as needed
-        termVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(cfsDir, si, fieldInfos, context);
+        mainTermVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(segmentReadState);
       } else {
-        termVectorsReaderOrig = null;
+        mainTermVectorsReaderOrig = null;
+      }
+      
+      if (si.getHasStacked()) {
+        si.loadStackedMap(cfsDir);
+      }
+      if (si.getStackedMap() != null) { // open stacked reader and wrap format readers
+        SegmentReadState stacked = new SegmentReadState(cfsDir, stackedSi, stackedFieldInfos, context, termsIndexDivisor);
+        fields = mainFields;
+        norms = mainNorms;
+        perDocProducer = mainPerDocProducer;
+        fieldsReaderOrig = mainFieldsReaderOrig;
+        termVectorsReaderOrig = mainTermVectorsReaderOrig;          
+      } else {
+        fields = mainFields;
+        norms = mainNorms;
+        perDocProducer = mainPerDocProducer;
+        fieldsReaderOrig = mainFieldsReaderOrig;
+        termVectorsReaderOrig = mainTermVectorsReaderOrig;
       }
 
       success = true;

@@ -168,7 +168,7 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
     
     return new SegmentInfo(directory, version, name, docCount, delGen, dsOffset,
         dsSegment, dsCompoundFile, normGen, isCompoundFile,
-        delCount, hasProx, codec, diagnostics, hasVectors);
+        delCount, hasProx, codec, diagnostics, hasVectors, null);
   }
   
   private String readString(int offset, BytesRef scratch) {
