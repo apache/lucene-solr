@@ -53,7 +53,6 @@ import org.apache.lucene.util.packed.PackedInts; // javadocs
  * actually contains only the unique values, and an additional <tt>.idx</tt> file contains
  * pointers to these unique values.
  * </p>
- * <!-- TODO: review these and make sure everything is actually accurate -->
  * Formats:
  * <ul>
  *    <li>{@link Type#VAR_INTS VAR_INTS} .dat --&gt; Header, PackedType, MinValue, 
@@ -72,6 +71,8 @@ import org.apache.lucene.util.packed.PackedInts; // javadocs
  *        Float64<sup>maxdoc</sup></li>
  *    <li>{@link Type#BYTES_FIXED_STRAIGHT BYTES_FIXED_STRAIGHT} .dat --&gt; Header, ValueSize,
  *        ({@link DataOutput#writeByte Byte} * ValueSize)<sup>maxdoc</sup></li>
+ *    <li>{@link Type#BYTES_VAR_STRAIGHT BYTES_VAR_STRAIGHT} .idx --&gt; Header, MaxAddress,
+ *        Addresses</li>
  *    <li>{@link Type#BYTES_VAR_STRAIGHT BYTES_VAR_STRAIGHT} .dat --&gt; Header, TotalBytes,
  *        Addresses, ({@link DataOutput#writeByte Byte} *
  *        <i>variable ValueSize</i>)<sup>maxdoc</sup></li>
@@ -96,7 +97,7 @@ import org.apache.lucene.util.packed.PackedInts; // javadocs
  * <ul>
  *    <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *    <li>PackedType --&gt; {@link DataOutput#writeByte Byte}</li>
- *    <li>MinValue, DefaultValue --&gt; {@link DataOutput#writeLong Int64}</li>
+ *    <li>MaxAddress, MinValue, DefaultValue --&gt; {@link DataOutput#writeLong Int64}</li>
  *    <li>PackedStream, Addresses, Ordinals --&gt; {@link PackedInts}</li>
  *    <li>ValueSize, NumValues --&gt; {@link DataOutput#writeInt Int32}</li>
  *    <li>Float32 --&gt; 32-bit float encoded with {@link Float#floatToRawIntBits(float)}
@@ -123,6 +124,10 @@ import org.apache.lucene.util.packed.PackedInts; // javadocs
  *        In the VAR_SORTED case, there is double indirection (docid -> ordinal -> address), but
  *        an additional sentinel ordinal+address is always written (so there are NumValues+1 ordinals). To
  *        determine the length, ord+1's address is looked up as well.</li>
+ *    <li>{@link Type#BYTES_VAR_STRAIGHT BYTES_VAR_STRAIGHT} in contrast to other straight 
+ *        variants uses a <tt>.idx</tt> file to improve lookup perfromance. In contrast to 
+ *        {@link Type#BYTES_VAR_DEREF BYTES_VAR_DEREF} it doesn't apply deduplication of the document values.
+ *    </li>
  * </ul>
  */
 public class Lucene40DocValuesFormat extends DocValuesFormat {
