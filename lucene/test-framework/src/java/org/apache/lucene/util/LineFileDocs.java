@@ -24,6 +24,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
@@ -88,8 +91,6 @@ public class LineFileDocs implements Closeable {
       size *= 2.8;
     }
 
-    reader = new BufferedReader(new InputStreamReader(is, "UTF-8"), BUFFER_SIZE);
-
     // Override sizes for currently "known" line files:
     if (path.equals("europarl.lines.txt.gz")) {
       size = 15129506L;
@@ -103,7 +104,11 @@ public class LineFileDocs implements Closeable {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("TEST: LineFileDocs: seek to fp=" + seekTo + " on open");
       }
-      reader.skip(seekTo);
+      is.skip(seekTo);
+      CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
+          .onMalformedInput(CodingErrorAction.IGNORE)
+          .onUnmappableCharacter(CodingErrorAction.IGNORE);
+      reader = new BufferedReader(new InputStreamReader(is, decoder), BUFFER_SIZE);
       reader.readLine();
     }
   }
