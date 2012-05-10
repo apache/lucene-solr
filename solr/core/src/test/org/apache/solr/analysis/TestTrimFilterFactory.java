@@ -21,13 +21,14 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Simple tests to ensure this factory is working
  */
-public class TestTrimFilterFactory extends BaseTokenTestCase {
+public class TestTrimFilterFactory extends BaseTokenStreamTestCase {
   public void testTrimming() throws Exception {
     TrimFilterFactory factory = new TrimFilterFactory();
     Map<String,String> args = new HashMap<String,String>();

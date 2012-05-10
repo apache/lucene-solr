@@ -20,12 +20,13 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Simple tests to ensure the Chinese tokenizer factory is working.
  */
-public class TestChineseTokenizerFactory extends BaseTokenTestCase {
+public class TestChineseTokenizerFactory extends BaseTokenStreamTestCase {
   /**
    * Ensure the tokenizer actually tokenizes chinese text correctly
    */

@@ -17,6 +17,7 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
@@ -27,7 +28,7 @@ import java.util.Map;
 /**
  * Simple tests to ensure this factory is working
  */
-public class TestPatternReplaceFilterFactory extends BaseTokenTestCase {
+public class TestPatternReplaceFilterFactory extends BaseTokenStreamTestCase {
 
   public void testReplaceAll() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";

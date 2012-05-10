@@ -19,9 +19,11 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
@@ -29,12 +31,13 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * Simple tests to ensure the CJK bigram factory is working.
  * @deprecated
  */
-public class TestCJKBigramFilterFactory extends BaseTokenTestCase {
+public class TestCJKBigramFilterFactory extends BaseTokenStreamTestCase {
   public void testDefaults() throws Exception {
     Reader reader = new StringReader("多くの学生が試験に落ちた。");
     CJKBigramFilterFactory factory = new CJKBigramFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
     TokenStream stream = factory.create(new StandardTokenizer(TEST_VERSION_CURRENT, reader));
     assertTokenStreamContents(stream,
         new String[] { "多く", "くの", "の学", "学生", "生が", "が試", "試験", "験に", "に落", "落ち", "ちた" });

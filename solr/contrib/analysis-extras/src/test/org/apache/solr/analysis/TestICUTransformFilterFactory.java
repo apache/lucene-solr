@@ -22,12 +22,13 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /** basic tests for {@link ICUTransformFilterFactory} */
-public class TestICUTransformFilterFactory extends BaseTokenTestCase {
+public class TestICUTransformFilterFactory extends BaseTokenStreamTestCase {
   
   /** ensure the transform is working */
   public void test() throws Exception {
@@ -36,7 +37,7 @@ public class TestICUTransformFilterFactory extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("id", "Traditional-Simplified");
     factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "简化字" });
   }
@@ -49,7 +50,7 @@ public class TestICUTransformFilterFactory extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("id", "Cyrillic-Latin");
     factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "Rossijskaâ",  "Federaciâ" });
     
@@ -57,7 +58,7 @@ public class TestICUTransformFilterFactory extends BaseTokenTestCase {
     reader = new StringReader("Rossijskaâ Federaciâ");
     args.put("direction", "reverse");
     factory.init(args);
-    tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
     stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "Российская", "Федерация" });
   }

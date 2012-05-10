@@ -19,7 +19,10 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
+import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -28,7 +31,7 @@ import org.apache.lucene.analysis.th.ThaiWordFilter;
 /**
  * Simple tests to ensure the Thai word filter factory is working.
  */
-public class TestThaiWordFilterFactory extends BaseTokenTestCase {
+public class TestThaiWordFilterFactory extends BaseTokenStreamTestCase {
   /**
    * Ensure the filter actually decomposes text.
    */
@@ -37,8 +40,9 @@ public class TestThaiWordFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ThaiWordFilterFactory factory = new ThaiWordFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] {"การ", "ที่", "ได้",
         "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});

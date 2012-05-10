@@ -20,19 +20,20 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /** basic tests for {@link ICUFoldingFilterFactory} */
-public class TestICUFoldingFilterFactory extends BaseTokenTestCase {
+public class TestICUFoldingFilterFactory extends BaseTokenStreamTestCase {
   
   /** basic tests to ensure the folding is working */
   public void test() throws Exception {
     Reader reader = new StringReader("Résumé");
     ICUFoldingFilterFactory factory = new ICUFoldingFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "resume" });
   }

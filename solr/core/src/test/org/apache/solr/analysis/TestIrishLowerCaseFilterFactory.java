@@ -20,13 +20,14 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Simple tests to ensure the Irish lowercase filter factory is working.
  */
-public class TestIrishLowerCaseFilterFactory extends BaseTokenTestCase {
+public class TestIrishLowerCaseFilterFactory extends BaseTokenStreamTestCase {
   public void testCasing() throws Exception {
     Reader reader = new StringReader("nAthair tUISCE hARD");
     IrishLowerCaseFilterFactory factory = new IrishLowerCaseFilterFactory();

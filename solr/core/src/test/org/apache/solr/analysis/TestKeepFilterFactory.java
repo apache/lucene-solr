@@ -16,6 +16,7 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
@@ -27,7 +28,7 @@ import java.util.HashMap;
  *
  *
  **/
-public class TestKeepFilterFactory extends BaseTokenTestCase{
+public class TestKeepFilterFactory extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
     ResourceLoader loader = new SolrResourceLoader(null, null);
@@ -36,7 +37,7 @@ public class TestKeepFilterFactory extends BaseTokenTestCase{
     Map<String, String> args = new HashMap<String, String>();
     args.put("words", "keep-1.txt");
     args.put("ignoreCase", "true");
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(loader);
     CharArraySet words = factory.getWords();
@@ -46,7 +47,7 @@ public class TestKeepFilterFactory extends BaseTokenTestCase{
 
     factory = new KeepWordFilterFactory();
     args.put("words", "keep-1.txt, keep-2.txt");
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(loader);
     words = factory.getWords();

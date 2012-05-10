@@ -22,6 +22,7 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -31,7 +32,7 @@ import com.ibm.icu.text.RuleBasedCollator;
 import com.ibm.icu.util.ULocale;
 
 @Deprecated
-public class TestICUCollationKeyFilterFactory extends BaseTokenTestCase {
+public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
 
   /*
    * Turkish has some funny casing.

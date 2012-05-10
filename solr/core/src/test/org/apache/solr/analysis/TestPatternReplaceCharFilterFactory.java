@@ -22,15 +22,12 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 
 /**
  * Simple tests to ensure this factory is working
  */
-public class TestPatternReplaceCharFilterFactory extends BaseTokenTestCase {
+public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamTestCase {
   
   //           1111
   // 01234567890123

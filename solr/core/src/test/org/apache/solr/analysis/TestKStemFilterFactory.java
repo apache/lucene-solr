@@ -3,6 +3,7 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
@@ -26,7 +27,7 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Simple tests to ensure the kstem filter factory is working.
  */
-public class TestKStemFilterFactory extends BaseTokenTestCase {
+public class TestKStemFilterFactory extends BaseTokenStreamTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("bricks");
     KStemFilterFactory factory = new KStemFilterFactory();

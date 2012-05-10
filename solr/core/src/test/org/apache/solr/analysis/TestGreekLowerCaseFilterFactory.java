@@ -19,7 +19,10 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
+import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -27,7 +30,7 @@ import org.apache.lucene.analysis.Tokenizer;
 /**
  * Simple tests to ensure the Greek lowercase filter factory is working.
  */
-public class TestGreekLowerCaseFilterFactory extends BaseTokenTestCase {
+public class TestGreekLowerCaseFilterFactory extends BaseTokenStreamTestCase {
   /**
    * Ensure the filter actually lowercases (and a bit more) greek text.
    */
@@ -35,8 +38,9 @@ public class TestGreekLowerCaseFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("Μάϊος ΜΆΪΟΣ");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     GreekLowerCaseFilterFactory factory = new GreekLowerCaseFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "μαιοσ", "μαιοσ" });
   }

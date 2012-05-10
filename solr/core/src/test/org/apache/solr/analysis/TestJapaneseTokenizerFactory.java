@@ -19,20 +19,23 @@ package org.apache.solr.analysis;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Simple tests for {@link JapaneseTokenizerFactory}
  */
-public class TestJapaneseTokenizerFactory extends BaseTokenTestCase {
+public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
   public void testSimple() throws IOException {
     JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
     factory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = factory.create(new StringReader("これは本ではない"));
     assertTokenStreamContents(ts,
@@ -47,8 +50,9 @@ public class TestJapaneseTokenizerFactory extends BaseTokenTestCase {
    */
   public void testDefaults() throws IOException {
     JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
     factory.inform(new SolrResourceLoader(null, null));
     TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
     assertTokenStreamContents(ts,

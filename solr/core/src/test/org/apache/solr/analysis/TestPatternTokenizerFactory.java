@@ -21,11 +21,11 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 
 /** Simple Tests to ensure this factory is working */
-public class TestPatternTokenizerFactory extends BaseTokenTestCase 
-{
+public class TestPatternTokenizerFactory extends BaseTokenStreamTestCase {
   public void testFactory() throws Exception {
     final String INPUT = "Günther Günther is here";
 

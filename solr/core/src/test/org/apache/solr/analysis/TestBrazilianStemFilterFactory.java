@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -27,7 +28,7 @@ import org.apache.lucene.analysis.Tokenizer;
 /**
  * Simple tests to ensure the Brazilian stem filter factory is working.
  */
-public class TestBrazilianStemFilterFactory extends BaseTokenTestCase {
+public class TestBrazilianStemFilterFactory extends BaseTokenStreamTestCase {
   /**
    * Ensure the filter actually stems and normalizes text.
    */

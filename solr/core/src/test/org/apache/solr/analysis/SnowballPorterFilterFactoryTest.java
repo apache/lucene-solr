@@ -16,6 +16,7 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -34,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 
-public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
+public class SnowballPorterFilterFactoryTest extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
     EnglishStemmer stemmer = new EnglishStemmer();
@@ -50,7 +51,7 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
     Map<String, String> args = new HashMap<String, String>();
     args.put("language", "English");
 
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(new LinesMockSolrResourceLoader(new ArrayList<String>()));
     Tokenizer tokenizer = new MockTokenizer(
@@ -88,7 +89,7 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put("protected", "protwords.txt");
     args.put("language", "English");
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(loader);
     Reader reader = new StringReader("ridding of some stemming");

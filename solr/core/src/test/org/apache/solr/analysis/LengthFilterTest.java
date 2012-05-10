@@ -21,10 +21,11 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
-public class LengthFilterTest extends BaseTokenTestCase {
+public class LengthFilterTest extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
     LengthFilterFactory factory = new LengthFilterFactory();

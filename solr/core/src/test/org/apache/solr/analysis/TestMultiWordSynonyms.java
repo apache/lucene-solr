@@ -17,6 +17,7 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -33,7 +34,7 @@ import java.util.Map;
 /**
  * @since solr 1.4
  */
-public class TestMultiWordSynonyms extends BaseTokenTestCase {
+public class TestMultiWordSynonyms extends BaseTokenStreamTestCase {
 
   /**
    * @deprecated Remove this test in 5.0
@@ -54,7 +55,7 @@ public class TestMultiWordSynonyms extends BaseTokenTestCase {
     SynonymFilterFactory factory = new SynonymFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("synonyms", "synonyms.txt");
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader("a b c,d"));
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("a e"), MockTokenizer.WHITESPACE, false));

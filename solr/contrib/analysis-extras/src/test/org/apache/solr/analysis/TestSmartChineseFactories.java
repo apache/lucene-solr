@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
@@ -27,11 +28,11 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
  * Tests for {@link SmartChineseSentenceTokenizerFactory} and 
  * {@link SmartChineseWordTokenFilterFactory}
  */
-public class TestSmartChineseFactories extends BaseTokenTestCase {
+public class TestSmartChineseFactories extends BaseTokenStreamTestCase {
   /** Test showing the behavior with whitespace */
   public void testSimple() throws Exception {
     String sentence = "我购买了道具和服装。";
-    WhitespaceTokenizer ws = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(sentence));
+    WhitespaceTokenizer ws = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(sentence));
     SmartChineseWordTokenFilterFactory factory = new SmartChineseWordTokenFilterFactory();
     TokenStream ts = factory.create(ws);
     // TODO: fix smart chinese to not emit punctuation tokens

@@ -20,13 +20,14 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Simple tests to ensure the Norwegian Light stem factory is working.
  */
-public class TestNorwegianLightStemFilterFactory extends BaseTokenTestCase {
+public class TestNorwegianLightStemFilterFactory extends BaseTokenStreamTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("epler eple");
     NorwegianLightStemFilterFactory factory = new NorwegianLightStemFilterFactory();

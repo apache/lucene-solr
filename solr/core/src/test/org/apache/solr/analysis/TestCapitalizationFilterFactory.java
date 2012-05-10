@@ -21,6 +21,7 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -29,7 +30,7 @@ import org.apache.lucene.analysis.Tokenizer;
 /**
  * 
  */
-public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
+public class TestCapitalizationFilterFactory extends BaseTokenStreamTestCase {
   
   public void testCapitalization() throws Exception 
   {
@@ -38,7 +39,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put( CapitalizationFilterFactory.ONLY_FIRST_WORD, "true" );  
     
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init( args );
     assertTokenStreamContents(factory.create(
         new MockTokenizer(new StringReader("kiTTEN"), MockTokenizer.WHITESPACE, false)),
@@ -95,7 +96,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     
     // Now try some prefixes
     factory = new CapitalizationFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     args.put( "okPrefix", "McK" );  // all words
     factory.init( args );
     assertTokenStreamContents(factory.create(
@@ -122,7 +123,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put( CapitalizationFilterFactory.ONLY_FIRST_WORD, "true" );
 
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init( args );
     factory.forceFirstLetter = true;
     assertTokenStreamContents(factory.create(
@@ -150,7 +151,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put(CapitalizationFilterFactory.ONLY_FIRST_WORD, "true");
     args.put(CapitalizationFilterFactory.MIN_WORD_LENGTH, "5");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader(
         "helo testing"), MockTokenizer.WHITESPACE, false);
@@ -166,7 +167,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put(CapitalizationFilterFactory.MAX_WORD_COUNT, "2");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader(
         "one two three four"), MockTokenizer.WHITESPACE, false);
@@ -181,7 +182,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put(CapitalizationFilterFactory.MAX_WORD_COUNT, "2");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader(
         "one two three four"), MockTokenizer.KEYWORD, false);
@@ -198,7 +199,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     args.put(CapitalizationFilterFactory.MAX_TOKEN_LENGTH, "2");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader(
         "this is a test"), MockTokenizer.WHITESPACE, false);
@@ -214,7 +215,7 @@ public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
     args.put(CapitalizationFilterFactory.KEEP, "kitten");
     args.put(CapitalizationFilterFactory.FORCE_FIRST_LETTER, "true");
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     Tokenizer tokenizer = new MockTokenizer(new StringReader("kitten"), MockTokenizer.WHITESPACE, false);
     TokenStream ts = factory.create(tokenizer);

@@ -18,18 +18,21 @@ package org.apache.solr.analysis;
  */
 
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
 /** Simple tests for {@link BeiderMorseFilterFactory} */
-public class TestBeiderMorseFilterFactory extends BaseTokenTestCase {
+public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws Exception {
     BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("Weinberg"), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(ts,
         new String[] { "vDnbirk", "vanbirk", "vinbirk", "wDnbirk", "wanbirk", "winbirk" },

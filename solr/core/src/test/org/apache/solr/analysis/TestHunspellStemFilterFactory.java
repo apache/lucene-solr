@@ -22,6 +22,7 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.core.SolrResourceLoader;
@@ -30,13 +31,13 @@ import org.apache.solr.schema.IndexSchema;
 /**
  * Simple tests to ensure the Hunspell stemmer loads from factory
  */
-public class TestHunspellStemFilterFactory extends BaseTokenTestCase {
+public class TestHunspellStemFilterFactory extends BaseTokenStreamTestCase {
   public void testStemming() throws Exception {
     HunspellStemFilterFactory factory = new HunspellStemFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("dictionary", "hunspell-test.dic");
     args.put("affix", "hunspell-test.aff");
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(new SolrResourceLoader("solr"));
     

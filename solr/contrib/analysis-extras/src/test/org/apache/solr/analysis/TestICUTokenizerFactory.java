@@ -20,10 +20,11 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 
 /** basic tests for {@link ICUTokenizerFactory} **/
-public class TestICUTokenizerFactory extends BaseTokenTestCase {
+public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
   public void testMixedText() throws Exception {
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี  This is a test ກວ່າດອກ");
     ICUTokenizerFactory factory = new ICUTokenizerFactory();

@@ -20,13 +20,14 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Simple tests to ensure the Spanish Light stem factory is working.
  */
-public class TestSpanishLightStemFilterFactory extends BaseTokenTestCase {
+public class TestSpanishLightStemFilterFactory extends BaseTokenStreamTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("sociedades");
     SpanishLightStemFilterFactory factory = new SpanishLightStemFilterFactory();

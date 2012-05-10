@@ -19,25 +19,29 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
+import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * Simple tests to ensure the Hindi filter Factories are working.
  */
-public class TestHindiFilters extends BaseTokenTestCase {
+public class TestHindiFilters extends BaseTokenStreamTestCase {
   /**
    * Test IndicNormalizationFilterFactory
    */
   public void testIndicNormalizer() throws Exception {
     Reader reader = new StringReader("ত্‍ अाैर");
     StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     IndicNormalizationFilterFactory filterFactory = new IndicNormalizationFilterFactory();
-    filterFactory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
-    filterFactory.init(EMPTY_PARAMS);
+    filterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
+    filterFactory.init(args);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = filterFactory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "ৎ", "और" });
@@ -49,12 +53,13 @@ public class TestHindiFilters extends BaseTokenTestCase {
   public void testHindiNormalizer() throws Exception {
     Reader reader = new StringReader("क़िताब");
     StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     IndicNormalizationFilterFactory indicFilterFactory = new IndicNormalizationFilterFactory();
     HindiNormalizationFilterFactory hindiFilterFactory = new HindiNormalizationFilterFactory();
-    hindiFilterFactory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
-    hindiFilterFactory.init(EMPTY_PARAMS);
+    hindiFilterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
+    hindiFilterFactory.init(args);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = indicFilterFactory.create(tokenizer);
     stream = hindiFilterFactory.create(stream);
@@ -67,13 +72,14 @@ public class TestHindiFilters extends BaseTokenTestCase {
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("किताबें");
     StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     IndicNormalizationFilterFactory indicFilterFactory = new IndicNormalizationFilterFactory();
     HindiNormalizationFilterFactory hindiFilterFactory = new HindiNormalizationFilterFactory();
     HindiStemFilterFactory stemFactory = new HindiStemFilterFactory();
-    stemFactory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
-    stemFactory.init(EMPTY_PARAMS);
+    stemFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
+    stemFactory.init(args);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = indicFilterFactory.create(tokenizer);
     stream = hindiFilterFactory.create(stream);

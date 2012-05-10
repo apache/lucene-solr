@@ -19,21 +19,25 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
+import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * Simple tests to ensure the Russian filter factories are working.
  */
-public class TestRussianFilters extends BaseTokenTestCase {
+public class TestRussianFilters extends BaseTokenStreamTestCase {
   /**
    * Test RussianLetterTokenizerFactory
    */
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("Вместе с тем о силе электромагнитной 100");
     RussianLetterTokenizerFactory factory = new RussianLetterTokenizerFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, new String[] {"Вместе", "с", "тем", "о",
         "силе", "электромагнитной", "100"});

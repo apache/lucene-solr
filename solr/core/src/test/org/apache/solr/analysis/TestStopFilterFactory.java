@@ -17,6 +17,7 @@ package org.apache.solr.analysis;
  */
 
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
@@ -28,7 +29,7 @@ import java.util.HashMap;
  *
  *
  **/
-public class TestStopFilterFactory extends BaseTokenTestCase {
+public class TestStopFilterFactory extends BaseTokenStreamTestCase {
 
   public void testInform() throws Exception {
     ResourceLoader loader = new SolrResourceLoader(null, null);
@@ -37,7 +38,7 @@ public class TestStopFilterFactory extends BaseTokenTestCase {
     Map<String, String> args = new HashMap<String, String>();
     args.put("words", "stop-1.txt");
     args.put("ignoreCase", "true");
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(loader);
     CharArraySet words = factory.getStopWords();
@@ -47,7 +48,7 @@ public class TestStopFilterFactory extends BaseTokenTestCase {
 
     factory = new StopFilterFactory();
     args.put("words", "stop-1.txt, stop-2.txt");
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(loader);
     words = factory.getStopWords();
@@ -56,7 +57,7 @@ public class TestStopFilterFactory extends BaseTokenTestCase {
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory.isIgnoreCase() == true);
 
     factory = new StopFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     args.put("words", "stop-snowball.txt");
     args.put("format", "snowball");
     factory.init(args);

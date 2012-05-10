@@ -20,12 +20,13 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
+public class DoubleMetaphoneFilterFactoryTest extends BaseTokenStreamTestCase {
 
   public void testDefaults() throws Exception {
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();

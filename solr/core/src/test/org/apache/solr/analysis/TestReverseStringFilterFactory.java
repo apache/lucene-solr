@@ -19,7 +19,10 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
+import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -27,7 +30,7 @@ import org.apache.lucene.analysis.Tokenizer;
 /**
  * Simple tests to ensure the Reverse string filter factory is working.
  */
-public class TestReverseStringFilterFactory extends BaseTokenTestCase {
+public class TestReverseStringFilterFactory extends BaseTokenStreamTestCase {
   /**
    * Ensure the filter actually reverses text.
    */
@@ -35,8 +38,9 @@ public class TestReverseStringFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("simple test");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     ReverseStringFilterFactory factory = new ReverseStringFilterFactory();
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
-    factory.init(EMPTY_PARAMS);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    Map<String, String> args = Collections.emptyMap();
+    factory.init(args);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "elpmis", "tset" });
   }

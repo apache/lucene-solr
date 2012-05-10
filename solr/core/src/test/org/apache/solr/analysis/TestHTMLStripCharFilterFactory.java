@@ -22,15 +22,12 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.CharReader;
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 
 /**
  * Simple tests to ensure this factory is working
  */
-public class TestHTMLStripCharFilterFactory extends BaseTokenTestCase {
+public class TestHTMLStripCharFilterFactory extends BaseTokenStreamTestCase {
 
 
   public void testNothingChanged() throws IOException {

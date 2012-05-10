@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.commons.codec.language.Metaphone;
 import org.apache.commons.codec.language.Caverphone2;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -31,7 +32,7 @@ import org.apache.lucene.analysis.Tokenizer;
 /**
  *
  */
-public class TestPhoneticFilterFactory extends BaseTokenTestCase {
+public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   
   private static final int REPEATS = 100000;
 

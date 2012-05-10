@@ -21,6 +21,7 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilter;
@@ -30,7 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
-public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenTestCase {
+public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestCase {
 
   public void testEncoder() throws Exception {
     Map<String,String> args = new HashMap<String, String>();

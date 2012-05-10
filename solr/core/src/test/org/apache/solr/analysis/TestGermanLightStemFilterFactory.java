@@ -20,13 +20,14 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Simple tests to ensure the German light stem factory is working.
  */
-public class TestGermanLightStemFilterFactory extends BaseTokenTestCase {
+public class TestGermanLightStemFilterFactory extends BaseTokenStreamTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("häuser");
     GermanLightStemFilterFactory factory = new GermanLightStemFilterFactory();

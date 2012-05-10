@@ -20,13 +20,14 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Simple tests to ensure the CJKWidthFilterFactory is working
  */
-public class TestCJKWidthFilterFactory extends BaseTokenTestCase {
+public class TestCJKWidthFilterFactory extends BaseTokenStreamTestCase {
   public void test() throws Exception {
     Reader reader = new StringReader("Ｔｅｓｔ １２３４");
     CJKWidthFilterFactory factory = new CJKWidthFilterFactory();

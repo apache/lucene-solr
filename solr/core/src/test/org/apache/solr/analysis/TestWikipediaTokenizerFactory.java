@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 
@@ -27,7 +28,7 @@ import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 /**
  * Simple tests to ensure the wikipedia tokenizer is working.
  */
-public class TestWikipediaTokenizerFactory extends BaseTokenTestCase {
+public class TestWikipediaTokenizerFactory extends BaseTokenStreamTestCase {
   public void testTokenizer() throws IOException {
     Reader reader = new StringReader("This is a [[Category:foo]]");
     WikipediaTokenizerFactory factory = new WikipediaTokenizerFactory();

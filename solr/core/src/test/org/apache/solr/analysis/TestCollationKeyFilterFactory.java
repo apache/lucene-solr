@@ -28,12 +28,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.ResourceLoader;
 
-public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
+public class TestCollationKeyFilterFactory extends BaseTokenStreamTestCase {
 
   /*
    * Turkish has some funny casing.

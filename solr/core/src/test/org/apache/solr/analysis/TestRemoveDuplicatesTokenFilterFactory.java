@@ -17,6 +17,7 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -27,7 +28,7 @@ import java.util.Iterator;
 import java.util.Arrays;
 
 /** Simple tests to ensure this factory is working */
-public class TestRemoveDuplicatesTokenFilterFactory extends BaseTokenTestCase {
+public class TestRemoveDuplicatesTokenFilterFactory extends BaseTokenStreamTestCase {
 
   public static Token tok(int pos, String t, int start, int end) {
     Token tok = new Token(t,start,end);

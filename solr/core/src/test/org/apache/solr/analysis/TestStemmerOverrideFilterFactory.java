@@ -23,6 +23,7 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
@@ -33,7 +34,7 @@ import org.apache.solr.core.SolrResourceLoader;
 /**
  * Simple tests to ensure the stemmer override filter factory is working.
  */
-public class TestStemmerOverrideFilterFactory extends BaseTokenTestCase {
+public class TestStemmerOverrideFilterFactory extends BaseTokenStreamTestCase {
   public void testKeywords() throws IOException {
     // our stemdict stems dogs to 'cat'
     Reader reader = new StringReader("testing dogs");
@@ -42,7 +43,7 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     ResourceLoader loader = new SolrResourceLoader(null, null);
     args.put("dictionary", "stemdict.txt");
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(loader);
     
@@ -58,7 +59,7 @@ public class TestStemmerOverrideFilterFactory extends BaseTokenTestCase {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     args.put("dictionary", "stemdict.txt");
     args.put("ignoreCase", "true");
-    factory.setLuceneMatchVersion(DEFAULT_VERSION);
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
     factory.init(args);
     factory.inform(loader);
     

@@ -2,6 +2,7 @@ package org.apache.solr.analysis;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.core.SolrResourceLoader;
@@ -26,12 +27,12 @@ import org.apache.solr.core.SolrResourceLoader;
 /**
  * Tests for {@link StempelPolishStemFilterFactory}
  */
-public class TestStempelPolishStemFilterFactory extends BaseTokenTestCase {
+public class TestStempelPolishStemFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws Exception {
     StringReader document = new StringReader("studenta studenci");
     StempelPolishStemFilterFactory factory = new StempelPolishStemFilterFactory();
     factory.inform(new SolrResourceLoader(null, null));
-    TokenStream ts = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, document));
+    TokenStream ts = factory.create(new WhitespaceTokenizer(TEST_VERSION_CURRENT, document));
     assertTokenStreamContents(ts,
         new String[] { "student", "student" });
   }

@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
@@ -27,7 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
  * @deprecated
  */
 @Deprecated
-public class TestCJKTokenizerFactory extends BaseTokenTestCase {
+public class TestCJKTokenizerFactory extends BaseTokenStreamTestCase {
   /**
    * Ensure the tokenizer actually tokenizes CJK text correctly
    */
