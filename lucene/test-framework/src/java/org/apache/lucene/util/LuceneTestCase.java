@@ -178,6 +178,9 @@ public abstract class LuceneTestCase extends Assert {
   /** set of directories we created, in afterclass we try to clean these up */
   private static final Map<File, StackTraceElement[]> tempDirs = Collections.synchronizedMap(new HashMap<File, StackTraceElement[]>());
 
+  private static String DEFAULT_LINE_DOCS_FILE = "europarl.lines.txt.gz";
+  private static String JENKINS_LARGE_LINE_DOCS_FILE = "enwiki.random.lines.txt";
+
   // TODO: the fact these are static final means they're initialized on class load and they should
   // be reinitialized on before suite hooks (to allow proper tests).
 
@@ -197,7 +200,7 @@ public abstract class LuceneTestCase extends Assert {
   /** whether or not @nightly tests should run */
   public static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
   /** the line file used by LineFileDocs */
-  public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", "europarl.lines.txt.gz");
+  public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", DEFAULT_LINE_DOCS_FILE);
   /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
   public static final String TEST_CLEAN_THREADS = System.getProperty("tests.cleanthreads", "perClass");
   /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
@@ -1577,6 +1580,9 @@ public abstract class LuceneTestCase extends Assert {
      .append(RandomizedContext.current().getRunnerSeedAsString())
      .append(reproduceWithExtraParams());
     System.err.println(b.toString());
+    if (TEST_LINE_DOCS_FILE.endsWith(JENKINS_LARGE_LINE_DOCS_FILE)) {
+      System.err.println("NOTE: download the large Jenkins line-docs file by running 'ant get-jenkins-line-docs' in the lucene directory");
+    }
   }
 
   // extra params that were overridden needed to reproduce the command
@@ -1589,6 +1595,7 @@ public abstract class LuceneTestCase extends Assert {
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
     if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
     if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
+    if (!TEST_LINE_DOCS_FILE.equals(DEFAULT_LINE_DOCS_FILE)) sb.append(" -Dtests.linedocsfile=" + TEST_LINE_DOCS_FILE);
     // TODO we can't randomize this yet (it drives ant crazy) but this makes tests reproduceable
     // in case machines have different default charsets...
     sb.append(" -Dargs=\"-Dfile.encoding=" + System.getProperty("file.encoding") + "\"");
