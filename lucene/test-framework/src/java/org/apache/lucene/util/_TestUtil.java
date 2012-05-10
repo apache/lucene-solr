@@ -35,9 +35,18 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.ByteDocValuesField;
+import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatDocValuesField;
+import org.apache.lucene.document.IntDocValuesField;
+import org.apache.lucene.document.LongDocValuesField;
+import org.apache.lucene.document.PackedLongDocValuesField;
+import org.apache.lucene.document.ShortDocValuesField;
+import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocValues;
@@ -750,30 +759,50 @@ public class _TestUtil {
     for(IndexableField f : doc1) {
       final Field field1 = (Field) f;
       final Field field2;
-      if (field1 instanceof DocValuesField) {
-        final DocValues.Type dvType = field1.fieldType().docValueType();
-        switch (dvType) {
+      final DocValues.Type dvType = field1.fieldType().docValueType();
+      if (dvType != null) {
+        switch(dvType) {
         case VAR_INTS:
-        case FIXED_INTS_8:
-        case FIXED_INTS_16:
-        case FIXED_INTS_32:
-        case FIXED_INTS_64:
-          field2 = new DocValuesField(field1.name(), field1.numericValue().intValue(), dvType);
+          field2 = new PackedLongDocValuesField(field1.name(), field1.numericValue().longValue());
           break;
-        case BYTES_FIXED_DEREF:
-        case BYTES_FIXED_STRAIGHT:
-        case BYTES_VAR_DEREF:
-        case BYTES_VAR_STRAIGHT: 
-        case BYTES_FIXED_SORTED:
-        case BYTES_VAR_SORTED:
-          field2 = new DocValuesField(field1.name(), BytesRef.deepCopyOf(field1.binaryValue()), dvType);
+        case FIXED_INTS_8:
+          field2 = new ByteDocValuesField(field1.name(), field1.numericValue().byteValue());
+          break;
+        case FIXED_INTS_16:
+          field2 = new ShortDocValuesField(field1.name(), field1.numericValue().shortValue());
+          break;
+        case FIXED_INTS_32:
+          field2 = new IntDocValuesField(field1.name(), field1.numericValue().intValue());
+          break;
+        case FIXED_INTS_64:
+          field2 = new LongDocValuesField(field1.name(), field1.numericValue().longValue());
           break;
         case FLOAT_32:
+          field2 = new FloatDocValuesField(field1.name(), field1.numericValue().floatValue());
+          break;
         case FLOAT_64:
-          field2 = new DocValuesField(field1.name(), field1.numericValue().doubleValue(), dvType);
+          field2 = new DoubleDocValuesField(field1.name(), field1.numericValue().doubleValue());
+          break;
+        case BYTES_FIXED_STRAIGHT:
+          field2 = new StraightBytesDocValuesField(field1.name(), field1.binaryValue(), true);
+          break;
+        case BYTES_VAR_STRAIGHT:
+          field2 = new StraightBytesDocValuesField(field1.name(), field1.binaryValue(), false);
+          break;
+        case BYTES_FIXED_DEREF:
+          field2 = new DerefBytesDocValuesField(field1.name(), field1.binaryValue(), true);
+          break;
+        case BYTES_VAR_DEREF:
+          field2 = new DerefBytesDocValuesField(field1.name(), field1.binaryValue(), false);
+          break;
+        case BYTES_FIXED_SORTED:
+          field2 = new SortedBytesDocValuesField(field1.name(), field1.binaryValue(), true);
+          break;
+        case BYTES_VAR_SORTED:
+          field2 = new SortedBytesDocValuesField(field1.name(), field1.binaryValue(), false);
           break;
         default:
-          throw new IllegalArgumentException("don't know how to clone DV field=" + field1);
+          throw new IllegalStateException("unknown Type: " + dvType);
         }
       } else {
         field2 = new Field(field1.name(), field1.stringValue(), field1.fieldType());

@@ -17,7 +17,10 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.DocValuesField;
+import java.io.IOException;
+import java.util.*;
+
+import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.*;
@@ -36,9 +39,6 @@ import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Convenience class to perform grouping in a non distributed environment.
@@ -85,7 +85,8 @@ public class GroupingSearch {
 
   /**
    * Constructs a <code>GroupingSearch</code> instance that groups documents by doc values.
-   * This constructor can only be used when the groupField is a {@link DocValuesField}.
+   * This constructor can only be used when the groupField
+   * is a <code>*DocValuesField</code> (eg, {@link DerefBytesDocValuesField}.
    *
    * @param groupField            The name of the field to group by that contains doc values
    * @param docValuesType         The doc values type of the specified groupField

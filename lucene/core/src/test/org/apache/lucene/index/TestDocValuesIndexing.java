@@ -20,13 +20,21 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.ByteDocValuesField;
+import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatDocValuesField;
+import org.apache.lucene.document.IntDocValuesField;
+import org.apache.lucene.document.LongDocValuesField;
+import org.apache.lucene.document.PackedLongDocValuesField;
+import org.apache.lucene.document.ShortDocValuesField;
+import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.SortedSource;
@@ -67,7 +75,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
-      doc.add(new DocValuesField("docId", i, DocValues.Type.VAR_INTS));
+      doc.add(new PackedLongDocValuesField("docId", i));
       doc.add(new TextField("docId", "" + i));
       writer.addDocument(doc);
     }
@@ -416,14 +424,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       indexValues(w, numValues, val, numVariantList,
           false, 7);
       DirectoryReader r = DirectoryReader.open(w, true);
-      if (val == Type.VAR_INTS) {
-        DocValues docValues = getDocValues(r, val.name());
-      }
       DocValues docValues = getDocValues(r, val.name());
       assertNotNull(docValues);
       // make sure we don't get a direct source since they don't support getArray()
-      if (val == Type.VAR_INTS) {
-      }
       Source source = docValues.getSource();
       switch (source.getType()) {
       case FIXED_INTS_8:
@@ -567,36 +570,58 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     final boolean isNumeric = NUMERICS.contains(valueType);
     FixedBitSet deleted = new FixedBitSet(numValues);
     Document doc = new Document();
-    final DocValuesField valField;
+    final Field valField;
     if (isNumeric) {
       switch (valueType) {
       case VAR_INTS:
-        valField = new DocValuesField(valueType.name(), (long) 0, valueType);
+        valField = new PackedLongDocValuesField(valueType.name(), (long) 0);
         break;
       case FIXED_INTS_16:
-        valField = new DocValuesField(valueType.name(), (short) 0, valueType);
+        valField = new ShortDocValuesField(valueType.name(), (short) 0);
         break;
       case FIXED_INTS_32:
-        valField = new DocValuesField(valueType.name(), 0, valueType);
+        valField = new IntDocValuesField(valueType.name(), 0);
         break;
       case FIXED_INTS_64:
-        valField = new DocValuesField(valueType.name(), (long) 0, valueType);
+        valField = new LongDocValuesField(valueType.name(), (long) 0);
         break;
       case FIXED_INTS_8:
-        valField = new DocValuesField(valueType.name(), (byte) 0, valueType);
+        valField = new ByteDocValuesField(valueType.name(), (byte) 0);
         break;
       case FLOAT_32:
-        valField = new DocValuesField(valueType.name(), (float) 0, valueType);
+        valField = new FloatDocValuesField(valueType.name(), (float) 0);
         break;
       case FLOAT_64:
-        valField = new DocValuesField(valueType.name(), (double) 0, valueType);
+        valField = new DoubleDocValuesField(valueType.name(), (double) 0);
         break;
       default:
         valField = null;
         fail("unhandled case");
       }
     } else {
-      valField = new DocValuesField(valueType.name(), new BytesRef(), valueType);
+      switch (valueType) {
+      case BYTES_FIXED_STRAIGHT:
+        valField = new StraightBytesDocValuesField(valueType.name(), new BytesRef(), true);
+        break;
+      case BYTES_VAR_STRAIGHT:
+        valField = new StraightBytesDocValuesField(valueType.name(), new BytesRef(), false);
+        break;
+      case BYTES_FIXED_DEREF:
+        valField = new DerefBytesDocValuesField(valueType.name(), new BytesRef(), true);
+        break;
+      case BYTES_VAR_DEREF:
+        valField = new DerefBytesDocValuesField(valueType.name(), new BytesRef(), false);
+        break;
+      case BYTES_FIXED_SORTED:
+        valField = new SortedBytesDocValuesField(valueType.name(), new BytesRef(), true);
+        break;
+      case BYTES_VAR_SORTED:
+        valField = new SortedBytesDocValuesField(valueType.name(), new BytesRef(), false);
+        break;
+      default:
+        valField = null;
+        fail("unhandled case");
+      }
     }
     doc.add(valField);
     final BytesRef bytesRef = new BytesRef();
@@ -616,7 +641,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           valField.setLongValue((long)i);
           break;
         case FIXED_INTS_16:
-          valField.setIntValue((short)i);
+          valField.setShortValue((short)i);
           break;
         case FIXED_INTS_32:
           valField.setIntValue(i);
@@ -625,7 +650,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           valField.setLongValue((long)i);
           break;
         case FIXED_INTS_8:
-          valField.setIntValue((byte)(0xFF & (i % 128)));
+          valField.setByteValue((byte)(0xFF & (i % 128)));
           break;
         case FLOAT_32:
           valField.setFloatValue(2.0f * i);
@@ -677,7 +702,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
-    DocValuesField f = new DocValuesField("field", 17, Type.VAR_INTS);
+    Field f = new PackedLongDocValuesField("field", 17);
     // Index doc values are single-valued so we should not
     // be able to add same field more than once:
     doc.add(f);
@@ -707,8 +732,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     // Index doc values are single-valued so we should not
     // be able to add same field more than once:
     Field f;
-    doc.add(f = new DocValuesField("field", 17, Type.VAR_INTS));
-    doc.add(new DocValuesField("field", 22.0, Type.FLOAT_32));
+    doc.add(f = new PackedLongDocValuesField("field", 17));
+    doc.add(new FloatDocValuesField("field", 22.0f));
     try {
       w.addDocument(doc);
       fail("didn't hit expected exception");
@@ -742,10 +767,10 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       for (int i = 0; i < numDocs; i++) {
         Document doc = new Document();
         doc.add(newField("id", "" + i, TextField.TYPE_STORED));
-        String string =fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random(),
+        String string = fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random(),
             len) : _TestUtil.randomRealisticUnicodeString(random(), 1, len);
         BytesRef br = new BytesRef(string);
-        doc.add(new DocValuesField("field", br, type));
+        doc.add(new SortedBytesDocValuesField("field", br, type == Type.BYTES_FIXED_SORTED));
         hash.add(br);
         docToString.put("" + i, string);
         w.addDocument(doc);
@@ -775,7 +800,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         BytesRef br = new BytesRef(string);
         hash.add(br);
         docToString.put(id, string);
-        doc.add( new DocValuesField("field", br, type));
+        doc.add(new SortedBytesDocValuesField("field", br, type == Type.BYTES_FIXED_SORTED));
         w.addDocument(doc);
       }
       w.commit();
@@ -853,8 +878,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       }
       
       final Document doc = new Document();
-      doc.add(new DocValuesField("stringdv", br, DocValues.Type.BYTES_VAR_SORTED));
-      doc.add(new DocValuesField("id", numDocs, DocValues.Type.VAR_INTS));
+      doc.add(new SortedBytesDocValuesField("stringdv", br));
+      doc.add(new PackedLongDocValuesField("id", numDocs));
       docValues.add(br);
       writer.addDocument(doc);
       numDocs++;
@@ -935,7 +960,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     BytesRef b = new BytesRef();
     b.bytes = bytes;
     b.length = bytes.length;
-    doc.add(new DocValuesField("field", b, DocValues.Type.BYTES_VAR_DEREF));
+    doc.add(new DerefBytesDocValuesField("field", b));
     w.addDocument(doc);
     bytes[0] = 1;
     w.addDocument(doc);

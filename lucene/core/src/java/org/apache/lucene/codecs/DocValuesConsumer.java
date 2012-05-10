@@ -18,11 +18,20 @@ package org.apache.lucene.codecs;
  */
 import java.io.IOException;
 
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.ByteDocValuesField;
+import org.apache.lucene.document.DerefBytesDocValuesField;
+import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatDocValuesField;
+import org.apache.lucene.document.IntDocValuesField;
+import org.apache.lucene.document.LongDocValuesField;
+import org.apache.lucene.document.PackedLongDocValuesField;
+import org.apache.lucene.document.ShortDocValuesField;
+import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.util.Bits;
@@ -116,27 +125,46 @@ public abstract class DocValuesConsumer {
     final Field scratchField;
     switch(type) {
     case VAR_INTS:
-    case FIXED_INTS_16:
-    case FIXED_INTS_32:
-    case FIXED_INTS_64:
+      scratchField = new PackedLongDocValuesField("", (long) 0);
+      break;
     case FIXED_INTS_8:
-      scratchField = new DocValuesField("", (long) 0, type);
+      scratchField = new ByteDocValuesField("", (byte) 0);
+      break;
+    case FIXED_INTS_16:
+      scratchField = new ShortDocValuesField("", (short) 0);
+      break;
+    case FIXED_INTS_32:
+      scratchField = new IntDocValuesField("", 0);
+      break;
+    case FIXED_INTS_64:
+      scratchField = new LongDocValuesField("", (long) 0);
       break;
     case FLOAT_32:
+      scratchField = new FloatDocValuesField("", 0f);
+      break;
     case FLOAT_64:
-      scratchField = new DocValuesField("", (double) 0, type);
+      scratchField = new DoubleDocValuesField("", 0d);
       break;
     case BYTES_FIXED_STRAIGHT:
-    case BYTES_FIXED_DEREF:
-    case BYTES_FIXED_SORTED:
+      scratchField = new StraightBytesDocValuesField("", new BytesRef(), true);
+      break;
     case BYTES_VAR_STRAIGHT:
+      scratchField = new StraightBytesDocValuesField("", new BytesRef(), false);
+      break;
+    case BYTES_FIXED_DEREF:
+      scratchField = new DerefBytesDocValuesField("", new BytesRef(), true);
+      break;
     case BYTES_VAR_DEREF:
+      scratchField = new DerefBytesDocValuesField("", new BytesRef(), false);
+      break;
+    case BYTES_FIXED_SORTED:
+      scratchField = new SortedBytesDocValuesField("", new BytesRef(), true);
+      break;
     case BYTES_VAR_SORTED:
-      scratchField = new DocValuesField("", new BytesRef(), type);
+      scratchField = new SortedBytesDocValuesField("", new BytesRef(), false);
       break;
     default:
-      assert false;
-      scratchField = null;
+      throw new IllegalStateException("unknown Type: " + type);
     }
     for (int i = 0; i < docCount; i++) {
       if (liveDocs == null || liveDocs.get(i)) {
@@ -171,14 +199,24 @@ public abstract class DocValuesConsumer {
     case BYTES_VAR_STRAIGHT:
       scratchField.setBytesValue(source.getBytes(sourceDoc, spare));
       break;
-    case FIXED_INTS_16:
-    case FIXED_INTS_32:
-    case FIXED_INTS_64:
     case FIXED_INTS_8:
+      scratchField.setByteValue((byte) source.getInt(sourceDoc));
+      break;
+    case FIXED_INTS_16:
+      scratchField.setShortValue((short) source.getInt(sourceDoc));
+      break;
+    case FIXED_INTS_32:
+      scratchField.setIntValue((int) source.getInt(sourceDoc));
+      break;
+    case FIXED_INTS_64:
+      scratchField.setLongValue(source.getInt(sourceDoc));
+      break;
     case VAR_INTS:
       scratchField.setLongValue(source.getInt(sourceDoc));
       break;
     case FLOAT_32:
+      scratchField.setFloatValue((float) source.getFloat(sourceDoc));
+      break;
     case FLOAT_64:
       scratchField.setDoubleValue(source.getFloat(sourceDoc));
       break;

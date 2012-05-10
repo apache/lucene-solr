@@ -17,6 +17,9 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.*;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -36,9 +39,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
-
-import java.io.IOException;
-import java.util.*;
 
 public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
@@ -321,17 +321,19 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       return;
     }
 
-    DocValuesField valuesField = null;
+    Field valuesField = null;
     switch (type) {
       case VAR_INTS:
-        valuesField = new DocValuesField(field, Integer.parseInt(value), type);
+        valuesField = new PackedLongDocValuesField(field, Integer.parseInt(value));
         break;
       case FLOAT_64:
-        valuesField = new DocValuesField(field, Double.parseDouble(value), type);
+        valuesField = new DoubleDocValuesField(field, Double.parseDouble(value));
         break;
       case BYTES_VAR_STRAIGHT:
+        valuesField = new StraightBytesDocValuesField(field, new BytesRef(value));
+        break;
       case BYTES_VAR_SORTED:
-        valuesField = new DocValuesField(field, new BytesRef(value), type);
+        valuesField = new SortedBytesDocValuesField(field, new BytesRef(value));
         break;
     }
     doc.add(valuesField);

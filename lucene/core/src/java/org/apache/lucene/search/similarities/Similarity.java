@@ -19,7 +19,8 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.DocValuesField; // javadoc
+import org.apache.lucene.document.ByteDocValuesField; // javadoc
+import org.apache.lucene.document.FloatDocValuesField; // javadoc
 import org.apache.lucene.index.AtomicReader; // javadoc
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
@@ -29,7 +30,6 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.spans.SpanQuery; // javadoc
@@ -68,7 +68,9 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * {@link CollectionStatistics#maxDoc()} or {@link CollectionStatistics#docCount()}, 
  * depending upon whether the average should reflect field sparsity.
  * <p>
- * Additional scoring factors can be stored in named {@link DocValuesField}s, and accessed
+ * Additional scoring factors can be stored in named
+ * <code>*DocValuesField</code>s (such as {@link
+ * ByteDocValuesField} or {@link FloatDocValuesField}), and accessed
  * at query-time with {@link AtomicReader#docValues(String)}.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or

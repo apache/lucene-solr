@@ -28,13 +28,12 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocValues;
 
 /** Minimal port of benchmark's LneDocSource +
  * DocMaker, so tests can enum docs from a line file created
@@ -150,7 +149,7 @@ public class LineFileDocs implements Closeable {
       doc.add(date);
 
       if (useDocValues) {
-        titleDV = new DocValuesField("titleDV", new BytesRef(), DocValues.Type.BYTES_VAR_SORTED);
+        titleDV = new SortedBytesDocValuesField("titleDV", new BytesRef());
         doc.add(titleDV);
       } else {
         titleDV = null;

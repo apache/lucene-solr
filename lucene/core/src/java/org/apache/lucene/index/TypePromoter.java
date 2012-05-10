@@ -114,8 +114,8 @@ class TypePromoter {
       return create(FLAGS_MAP.get(promoted.flags & PROMOTE_TO_VAR_SIZE_MASK),
           VAR_TYPE_VALUE_SIZE);
     }
-    return promoted;
 
+    return promoted;
   }
 
   /**

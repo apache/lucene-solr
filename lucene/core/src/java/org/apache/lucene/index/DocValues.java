@@ -21,7 +21,16 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.ByteDocValuesField; // javadocs
+import org.apache.lucene.document.DerefBytesDocValuesField; // javadocs
+import org.apache.lucene.document.DoubleDocValuesField; // javadocs
+import org.apache.lucene.document.FloatDocValuesField; // javadocs
+import org.apache.lucene.document.IntDocValuesField; // javadocs
+import org.apache.lucene.document.LongDocValuesField; // javadocs
+import org.apache.lucene.document.PackedLongDocValuesField; // javadocs
+import org.apache.lucene.document.ShortDocValuesField; // javadocs
+import org.apache.lucene.document.SortedBytesDocValuesField; // javadocs
+import org.apache.lucene.document.StraightBytesDocValuesField; // javadocs
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -40,7 +49,16 @@ import org.apache.lucene.util.packed.PackedInts;
  * {@link DocValues} are fully integrated into the {@link DocValuesFormat} API.
  * 
  * @see Type for limitations and default implementation documentation
- * @see DocValuesField for adding values to the index
+ * @see ByteDocValuesField for adding byte values to the index
+ * @see ShortDocValuesField for adding short values to the index
+ * @see IntDocValuesField for adding int values to the index
+ * @see LongDocValuesField for adding long values to the index
+ * @see FloatDocValuesField for adding float values to the index
+ * @see DoubleDocValuesField for adding double values to the index
+ * @see PackedLongDocValuesField for adding packed long values to the index
+ * @see SortedBytesDocValuesField for adding sorted {@link BytesRef} values to the index
+ * @see StraightBytesDocValuesField for adding straight {@link BytesRef} values to the index
+ * @see DerefBytesDocValuesField for adding deref {@link BytesRef} values to the index
  * @see DocValuesFormat#docsConsumer(org.apache.lucene.index.PerDocWriteState) for
  *      customization
  * @lucene.experimental

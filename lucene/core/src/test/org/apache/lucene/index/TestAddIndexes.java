@@ -45,7 +45,7 @@ import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -1263,7 +1263,7 @@ public class TestAddIndexes extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), d1);
     Document doc = new Document();
     doc.add(newField("id", "1", StringField.TYPE_STORED));
-    doc.add(new DocValuesField("dv", 1, DocValues.Type.VAR_INTS));
+    doc.add(new PackedLongDocValuesField("dv", 1));
     w.addDocument(doc);
     IndexReader r1 = w.getReader();
     w.close();
@@ -1272,7 +1272,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w = new RandomIndexWriter(random(), d2);
     doc = new Document();
     doc.add(newField("id", "2", StringField.TYPE_STORED));
-    doc.add(new DocValuesField("dv", 2, DocValues.Type.VAR_INTS));
+    doc.add(new PackedLongDocValuesField("dv", 2));
     w.addDocument(doc);
     IndexReader r2 = w.getReader();
     w.close();

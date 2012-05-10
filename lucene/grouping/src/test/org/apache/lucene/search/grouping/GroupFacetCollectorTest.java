@@ -220,7 +220,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
   private void addField(Document doc, String field, String value, boolean canUseIDV) {
     doc.add(new Field(field, value, StringField.TYPE_UNSTORED));
     if (canUseIDV) {
-      doc.add(new DocValuesField(field, new BytesRef(value), DocValues.Type.BYTES_VAR_SORTED));
+      doc.add(new SortedBytesDocValuesField(field, new BytesRef(value)));
     }
   }
 
@@ -368,7 +368,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     Document docNoFacet = new Document();
     Document docNoGroupNoFacet = new Document();
     Field group = newField("group", "", StringField.TYPE_UNSTORED);
-    DocValuesField groupDc = new DocValuesField("group", new BytesRef(), DocValues.Type.BYTES_VAR_SORTED);
+    Field groupDc = new SortedBytesDocValuesField("group", new BytesRef());
     if (useDv) {
       doc.add(groupDc);
       docNoFacet.add(groupDc);
@@ -381,7 +381,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       facetFields[0] = newField("facet", "", StringField.TYPE_UNSTORED);
       doc.add(facetFields[0]);
       docNoGroup.add(facetFields[0]);
-      facetFields[1] = new DocValuesField("facet", new BytesRef(), DocValues.Type.BYTES_VAR_SORTED);
+      facetFields[1] = new SortedBytesDocValuesField("facet", new BytesRef());
       doc.add(facetFields[1]);
       docNoGroup.add(facetFields[1]);
     } else {

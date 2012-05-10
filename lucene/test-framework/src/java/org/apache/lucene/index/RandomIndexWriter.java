@@ -25,9 +25,18 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.ByteDocValuesField; 
+import org.apache.lucene.document.DerefBytesDocValuesField; 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleDocValuesField; 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatDocValuesField; 
+import org.apache.lucene.document.IntDocValuesField; 
+import org.apache.lucene.document.LongDocValuesField; 
+import org.apache.lucene.document.PackedLongDocValuesField; 
+import org.apache.lucene.document.ShortDocValuesField; 
+import org.apache.lucene.document.SortedBytesDocValuesField; 
+import org.apache.lucene.document.StraightBytesDocValuesField; 
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -138,7 +147,7 @@ public class RandomIndexWriter implements Closeable {
 
   public <T extends IndexableField> void addDocument(final Iterable<T> doc, Analyzer a) throws IOException {
     if (doDocValues && doc instanceof Document) {
-      randomPerDocFieldValues(r, (Document) doc);
+      randomPerDocFieldValues((Document) doc);
     }
     if (r.nextInt(5) == 3) {
       // TODO: maybe, we should simply buffer up added docs
@@ -179,11 +188,23 @@ public class RandomIndexWriter implements Closeable {
     
     maybeCommit();
   }
+
+  private BytesRef getFixedRandomBytes() {
+    final String randomUnicodeString = _TestUtil.randomFixedByteLengthUnicodeString(r, fixedBytesLength);
+    BytesRef fixedRef = new BytesRef(randomUnicodeString);
+    if (fixedRef.length > fixedBytesLength) {
+      fixedRef = new BytesRef(fixedRef.bytes, 0, fixedBytesLength);
+    } else {
+      fixedRef.grow(fixedBytesLength);
+      fixedRef.length = fixedBytesLength;
+    }
+    return fixedRef;
+  }
   
-  private void randomPerDocFieldValues(Random random, Document doc) {
+  private void randomPerDocFieldValues(Document doc) {
     
     DocValues.Type[] values = DocValues.Type.values();
-    DocValues.Type type = values[random.nextInt(values.length)];
+    DocValues.Type type = values[r.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
     if ("Lucene3x".equals(codec.getName()) || doc.getField(name) != null) {
       return;
@@ -191,44 +212,45 @@ public class RandomIndexWriter implements Closeable {
     final Field f;
     switch (type) {
     case BYTES_FIXED_DEREF:
-    case BYTES_FIXED_STRAIGHT:
-    case BYTES_FIXED_SORTED:
-      //make sure we use a valid unicode string with a fixed size byte length
-      final String randomUnicodeString = _TestUtil.randomFixedByteLengthUnicodeString(random, fixedBytesLength);
-      BytesRef fixedRef = new BytesRef(randomUnicodeString);
-      if (fixedRef.length > fixedBytesLength) {
-        fixedRef = new BytesRef(fixedRef.bytes, 0, fixedBytesLength);
-      } else {
-        fixedRef.grow(fixedBytesLength);
-        fixedRef.length = fixedBytesLength;
-      }
-      f = new DocValuesField(name, fixedRef, type);
+      f = new DerefBytesDocValuesField(name, getFixedRandomBytes(), true);
       break;
     case BYTES_VAR_DEREF:
+      f = new DerefBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)), false);
+      break;
+    case BYTES_FIXED_STRAIGHT:
+      f = new StraightBytesDocValuesField(name, getFixedRandomBytes(), true);
+      break;
     case BYTES_VAR_STRAIGHT:
+      f = new StraightBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)), false);
+      break;
+    case BYTES_FIXED_SORTED:
+      f = new SortedBytesDocValuesField(name, getFixedRandomBytes(), true);
+      break;
     case BYTES_VAR_SORTED:
-      f = new DocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(random, 20)), type);
+      f = new SortedBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)), false);
       break;
     case FLOAT_32:
-      f = new DocValuesField(name, random.nextFloat(), type);
+      f = new FloatDocValuesField(name, r.nextFloat());
       break;
     case FLOAT_64:
-      f = new DocValuesField(name, random.nextDouble(), type);
+      f = new DoubleDocValuesField(name, r.nextDouble());
       break;
     case VAR_INTS:
-      f = new DocValuesField(name, random.nextLong(), type);
+      f = new PackedLongDocValuesField(name, r.nextLong());
       break;
     case FIXED_INTS_16:
-      f = new DocValuesField(name, random.nextInt(Short.MAX_VALUE), type);
+      // TODO: we should test negatives too?
+      f = new ShortDocValuesField(name, (short) r.nextInt(Short.MAX_VALUE));
       break;
     case FIXED_INTS_32:
-      f = new DocValuesField(name, random.nextInt(), type);
+      f = new IntDocValuesField(name, r.nextInt());
       break;
     case FIXED_INTS_64:
-      f = new DocValuesField(name, random.nextLong(), type);
+      f = new LongDocValuesField(name, r.nextLong());
       break;
-    case FIXED_INTS_8:
-      f = new DocValuesField(name, random.nextInt(128), type);
+    case FIXED_INTS_8:  
+      // TODO: we should test negatives too?
+      f = new ByteDocValuesField(name, (byte) r.nextInt(128));
       break;
     default:
       throw new IllegalArgumentException("no such type: " + type);
@@ -267,7 +289,7 @@ public class RandomIndexWriter implements Closeable {
    */
   public <T extends IndexableField> void updateDocument(Term t, final Iterable<T> doc) throws IOException {
     if (doDocValues) {
-      randomPerDocFieldValues(r, (Document) doc);
+      randomPerDocFieldValues((Document) doc);
     }
     if (r.nextInt(5) == 3) {
       w.updateDocuments(t, new Iterable<Iterable<T>>() {

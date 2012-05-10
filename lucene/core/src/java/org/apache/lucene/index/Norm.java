@@ -16,7 +16,17 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.ByteDocValuesField;
+import org.apache.lucene.document.DerefBytesDocValuesField;
+import org.apache.lucene.document.DoubleDocValuesField;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatDocValuesField;
+import org.apache.lucene.document.IntDocValuesField;
+import org.apache.lucene.document.LongDocValuesField;
+import org.apache.lucene.document.PackedLongDocValuesField;
+import org.apache.lucene.document.ShortDocValuesField;
+import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
@@ -33,7 +43,7 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.internal
  */
 public final class Norm  {
-  private DocValuesField field;
+  private Field field;
   private BytesRef spare;
   
   /**
@@ -81,7 +91,7 @@ public final class Norm  {
    */
   public void setShort(short norm) {
     setType(Type.FIXED_INTS_16);
-    this.field.setIntValue(norm);
+    this.field.setShortValue(norm);
     
   }
 
@@ -106,7 +116,7 @@ public final class Norm  {
    */
   public void setByte(byte norm) {
     setType(Type.FIXED_INTS_8);
-    this.field.setIntValue(norm);
+    this.field.setByteValue(norm);
   }
 
   /**
@@ -124,26 +134,46 @@ public final class Norm  {
         throw new IllegalArgumentException("FieldType missmatch - expected "+type+" but was " + field.fieldType().docValueType());
       }
     } else {
-      switch (type) {
-      case BYTES_FIXED_DEREF:
-      case BYTES_FIXED_SORTED:
-      case BYTES_FIXED_STRAIGHT:
-      case BYTES_VAR_DEREF:
-      case BYTES_VAR_SORTED:
-      case BYTES_VAR_STRAIGHT:
-        this.field = new DocValuesField("", new BytesRef(), type);
-        break;
 
-      case FIXED_INTS_16:
-      case FIXED_INTS_32:
-      case FIXED_INTS_64:
-      case FIXED_INTS_8:
+      switch(type) {
       case VAR_INTS:
-        this.field = new DocValuesField("", 0, type);
+        field = new PackedLongDocValuesField("", (long) 0);
+        break;
+      case FIXED_INTS_8:
+        field = new ByteDocValuesField("", (byte) 0);
+        break;
+      case FIXED_INTS_16:
+        field = new ShortDocValuesField("", (short) 0);
+        break;
+      case FIXED_INTS_32:
+        field = new IntDocValuesField("", 0);
+        break;
+      case FIXED_INTS_64:
+        field = new LongDocValuesField("", (byte) 0);
         break;
       case FLOAT_32:
+        field = new FloatDocValuesField("", 0f);
+        break;
       case FLOAT_64:
-        this.field = new DocValuesField("", 0f, type);
+        field = new DoubleDocValuesField("", 0d);
+        break;
+      case BYTES_FIXED_STRAIGHT:
+        field = new StraightBytesDocValuesField("", new BytesRef(), true);
+        break;
+      case BYTES_VAR_STRAIGHT:
+        field = new StraightBytesDocValuesField("", new BytesRef(), false);
+        break;
+      case BYTES_FIXED_DEREF:
+        field = new DerefBytesDocValuesField("", new BytesRef(), true);
+        break;
+      case BYTES_VAR_DEREF:
+        field = new DerefBytesDocValuesField("", new BytesRef(), false);
+        break;
+      case BYTES_FIXED_SORTED:
+        field = new SortedBytesDocValuesField("", new BytesRef(), true);
+        break;
+      case BYTES_VAR_SORTED:
+        field = new SortedBytesDocValuesField("", new BytesRef(), false);
         break;
       default:
         throw new IllegalArgumentException("unknown Type: " + type);

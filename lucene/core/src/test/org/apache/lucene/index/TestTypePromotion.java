@@ -23,9 +23,18 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.ByteDocValuesField;
+import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.FloatDocValuesField;
+import org.apache.lucene.document.IntDocValuesField;
+import org.apache.lucene.document.LongDocValuesField;
+import org.apache.lucene.document.PackedLongDocValuesField;
+import org.apache.lucene.document.ShortDocValuesField;
+import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -155,7 +164,7 @@ public class TestTypePromotion extends LuceneTestCase {
         assertEquals(msg  + " byteSize: " + bytes.length, values[id], value);
         break;
       case Float:
-          assertEquals(msg, values[id], Double.doubleToRawLongBits(directSource.getFloat(i)));
+        assertEquals(msg, values[id], Double.doubleToRawLongBits(directSource.getFloat(i)));
         break;
       case Int:
         assertEquals(msg, values[id], directSource.getInt(i));
@@ -172,54 +181,69 @@ public class TestTypePromotion extends LuceneTestCase {
   public void index(IndexWriter writer,
       Type valueType, long[] values, int offset, int num)
       throws CorruptIndexException, IOException {
-    final DocValuesField valField;
-    switch (valueType) {
-    case FIXED_INTS_8:
-      valField = new DocValuesField("promote", (byte) 0, valueType);
-      break;
-    case FIXED_INTS_16:
-      valField = new DocValuesField("promote", (short) 0, valueType);
-      break;
-    case FIXED_INTS_32:
-      valField = new DocValuesField("promote", 0, valueType);
-      break;
-    case VAR_INTS:
-      valField = new DocValuesField("promote", 0L, valueType);
-      break;
-    case FIXED_INTS_64:
-      valField = new DocValuesField("promote", (long) 0, valueType);
-      break;
-    case FLOAT_64:
-      valField = new DocValuesField("promote", (double) 0, valueType);
-      break;
-    case FLOAT_32:
-      valField = new DocValuesField("promote", (float) 0, valueType);
-      break;
-    case BYTES_FIXED_DEREF:
-    case BYTES_FIXED_SORTED:
-    case BYTES_FIXED_STRAIGHT:
-    case BYTES_VAR_DEREF:
-    case BYTES_VAR_SORTED:
-    case BYTES_VAR_STRAIGHT:
-      valField = new DocValuesField("promote", new BytesRef(), valueType);
-      break;
-    default:
-      fail("unexpected value " + valueType);
-      valField = null;
+    final Field valField;
+
+    if (VERBOSE) {
+      System.out.println("TEST: add docs " + offset + "-" + (offset+num) + " valType=" + valueType);
     }
 
-    BytesRef ref = new BytesRef(new byte[] { 1, 2, 3, 4 });
+    switch(valueType) {
+    case VAR_INTS:
+      valField = new PackedLongDocValuesField("promote", (long) 0);
+      break;
+    case FIXED_INTS_8:
+      valField = new ByteDocValuesField("promote", (byte) 0);
+      break;
+    case FIXED_INTS_16:
+      valField = new ShortDocValuesField("promote", (short) 0);
+      break;
+    case FIXED_INTS_32:
+      valField = new IntDocValuesField("promote", 0);
+      break;
+    case FIXED_INTS_64:
+      valField = new LongDocValuesField("promote", (byte) 0);
+      break;
+    case FLOAT_32:
+      valField = new FloatDocValuesField("promote", 0f);
+      break;
+    case FLOAT_64:
+      valField = new DoubleDocValuesField("promote", 0d);
+      break;
+    case BYTES_FIXED_STRAIGHT:
+      valField = new StraightBytesDocValuesField("promote", new BytesRef(), true);
+      break;
+    case BYTES_VAR_STRAIGHT:
+      valField = new StraightBytesDocValuesField("promote", new BytesRef(), false);
+      break;
+    case BYTES_FIXED_DEREF:
+      valField = new DerefBytesDocValuesField("promote", new BytesRef(), true);
+      break;
+    case BYTES_VAR_DEREF:
+      valField = new DerefBytesDocValuesField("promote", new BytesRef(), false);
+      break;
+    case BYTES_FIXED_SORTED:
+      valField = new SortedBytesDocValuesField("promote", new BytesRef(), true);
+      break;
+    case BYTES_VAR_SORTED:
+      valField = new SortedBytesDocValuesField("promote", new BytesRef(), false);
+      break;
+    default:
+      throw new IllegalStateException("unknown Type: " + valueType);
+    }
+
     for (int i = offset; i < offset + num; i++) {
       Document doc = new Document();
       doc.add(new Field("id", i + "", TextField.TYPE_STORED));
       switch (valueType) {
       case VAR_INTS:
+        // TODO: can we do nextLong()?
         values[i] = random().nextInt();
         valField.setLongValue(values[i]);
         break;
       case FIXED_INTS_16:
+        // TODO: negatives too?
         values[i] = random().nextInt(Short.MAX_VALUE);
-        valField.setIntValue((short) values[i]);
+        valField.setShortValue((short) values[i]);
         break;
       case FIXED_INTS_32:
         values[i] = random().nextInt();
@@ -230,7 +254,7 @@ public class TestTypePromotion extends LuceneTestCase {
         valField.setLongValue(values[i]);
         break;
       case FLOAT_64:
-        double nextDouble = random().nextDouble();
+        final double nextDouble = random().nextDouble();
         values[i] = Double.doubleToRawLongBits(nextDouble);
         valField.setDoubleValue(nextDouble);
         break;
@@ -241,7 +265,7 @@ public class TestTypePromotion extends LuceneTestCase {
         break;
       case FIXED_INTS_8:
         values[i] = (byte) i;
-        valField.setIntValue((byte)values[i]);
+        valField.setByteValue((byte)values[i]);
         break;
       case BYTES_FIXED_DEREF:
       case BYTES_FIXED_SORTED:
@@ -273,6 +297,9 @@ public class TestTypePromotion extends LuceneTestCase {
       default:
         fail("unexpected value " + valueType);
       }
+      if (VERBOSE) {
+        System.out.println("  doc " + i + " has val=" + valField);
+      }
       doc.add(valField);
       writer.addDocument(doc);
       if (random().nextInt(10) == 0) {
@@ -289,7 +316,7 @@ public class TestTypePromotion extends LuceneTestCase {
     runTest(SORTED_BYTES, TestType.Byte);
   }
 
-  public void testPromotInteger() throws IOException {
+  public void testPromoteInteger() throws IOException {
     runTest(INTEGERS, TestType.Int);
   }
 

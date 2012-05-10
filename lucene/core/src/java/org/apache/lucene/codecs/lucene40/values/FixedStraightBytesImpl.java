@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesWriterBase;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -54,7 +54,7 @@ class FixedStraightBytesImpl {
   static final int VERSION_CURRENT = VERSION_START;
   
   static abstract class FixedBytesWriterBase extends BytesWriterBase {
-    protected final DocValuesField bytesSpareField = new DocValuesField("", new BytesRef(), Type.BYTES_FIXED_STRAIGHT);
+    protected final StraightBytesDocValuesField bytesSpareField = new StraightBytesDocValuesField("", new BytesRef(), true);
     protected int lastDocID = -1;
     // start at -1 if the first added value is > 0
     protected int size = -1;

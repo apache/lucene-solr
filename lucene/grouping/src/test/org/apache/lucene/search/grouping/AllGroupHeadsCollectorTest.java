@@ -17,14 +17,17 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.*;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.*;
@@ -36,9 +39,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-
-import java.io.IOException;
-import java.util.*;
 
 public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
@@ -210,9 +210,21 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       Document docNoGroup = new Document();
       Field group = newField("group", "", StringField.TYPE_UNSTORED);
       doc.add(group);
-      DocValuesField valuesField = null;
+      Field valuesField = null;
       if (canUseIDV) {
-        valuesField = new DocValuesField("group", new BytesRef(), valueType);
+        switch(valueType) {
+        case BYTES_VAR_DEREF:
+          valuesField = new DerefBytesDocValuesField("group", new BytesRef());
+          break;
+        case BYTES_VAR_STRAIGHT:
+          valuesField = new StraightBytesDocValuesField("group", new BytesRef());
+          break;
+        case BYTES_VAR_SORTED:
+          valuesField = new SortedBytesDocValuesField("group", new BytesRef());
+          break;
+        default:
+          fail("unhandled type");
+        }
         doc.add(valuesField);
       }
       Field sort1 = newField("sort1", "", StringField.TYPE_UNSTORED);
@@ -529,7 +541,21 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, Type valueType) {
     doc.add(new Field(groupField, value, TextField.TYPE_STORED));
     if (canUseIDV) {
-      doc.add(new DocValuesField(groupField, new BytesRef(value), valueType));
+      Field valuesField = null;
+      switch(valueType) {
+      case BYTES_VAR_DEREF:
+        valuesField = new DerefBytesDocValuesField(groupField, new BytesRef(value));
+        break;
+      case BYTES_VAR_STRAIGHT:
+        valuesField = new StraightBytesDocValuesField(groupField, new BytesRef(value));
+        break;
+      case BYTES_VAR_SORTED:
+        valuesField = new SortedBytesDocValuesField(groupField, new BytesRef(value));
+        break;
+      default:
+        fail("unhandled type");
+      }
+      doc.add(valuesField);
     }
   }
 
