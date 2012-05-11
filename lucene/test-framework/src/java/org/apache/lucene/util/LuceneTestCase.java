@@ -420,7 +420,7 @@ public abstract class LuceneTestCase extends Assert {
       codec = Codec.forName("Lucene3x");
       assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
-    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9)) {
+    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !useNoMemoryExpensiveCodec)) {
       codec = new SimpleTextCodec();
     } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8)) {
       codec = new AppendingCodec();
