@@ -58,6 +58,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldFilterAtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
+import org.apache.lucene.index.AlcoholicMergePolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
@@ -1119,6 +1120,8 @@ public abstract class LuceneTestCase extends Assert {
       c.setMergePolicy(new MockRandomMergePolicy(r));
     } else if (r.nextBoolean()) {
       c.setMergePolicy(newTieredMergePolicy());
+    } else if (r.nextInt(5) == 0) { 
+      c.setMergePolicy(newAlcoholicMergePolicy());
     } else {
       c.setMergePolicy(newLogMergePolicy());
     }
@@ -1135,6 +1138,15 @@ public abstract class LuceneTestCase extends Assert {
   public static TieredMergePolicy newTieredMergePolicy() {
     return newTieredMergePolicy(random());
   }
+  
+  public static AlcoholicMergePolicy newAlcoholicMergePolicy() {
+    return newAlcoholicMergePolicy(random(), timeZone);
+  }
+  
+  public static AlcoholicMergePolicy newAlcoholicMergePolicy(Random r, TimeZone tz) {
+    return new AlcoholicMergePolicy(tz, new Random(r.nextLong()));
+  }
+
 
   public static LogMergePolicy newLogMergePolicy(Random r) {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
