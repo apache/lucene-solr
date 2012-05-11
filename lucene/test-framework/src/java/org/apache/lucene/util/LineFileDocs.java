@@ -84,17 +84,17 @@ public class LineFileDocs implements Closeable {
   private synchronized void open(Random random) throws IOException {
     InputStream is = getClass().getResourceAsStream(path);
     boolean needSkip = true;
-    long size = 0L;
+    long size = 0L, seekTo = 0L;
     if (is == null) {
       // if its not in classpath, we load it as absolute filesystem path (e.g. Hudson's home dir)
       File file = new File(path);
+      size = file.length();
       if (path.endsWith(".gz")) {
         // if it is a gzip file, we need to use InputStream and slowly skipTo:
         is = new FileInputStream(file);
       } else {
         // optimized seek using RandomAccessFile:
-        size = file.length();
-        final long seekTo = randomSeekPos(random, size);
+        seekTo = randomSeekPos(random, size);
         final FileChannel channel = new RandomAccessFile(path, "r").getChannel();
         if (LuceneTestCase.VERBOSE) {
           System.out.println("TEST: LineFileDocs: file seek to fp=" + seekTo + " on open");
@@ -117,23 +117,30 @@ public class LineFileDocs implements Closeable {
     // If we only have an InputStream, we need to seek now,
     // but this seek is a scan, so very inefficient!!!
     if (needSkip) {
-      final long skipTo = randomSeekPos(random, size);
+      seekTo = randomSeekPos(random, size);
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("TEST: LineFileDocs: stream skip to fp=" + skipTo + " on open");
+        System.out.println("TEST: LineFileDocs: stream skip to fp=" + seekTo + " on open");
       }
-      is.skip(skipTo);
+      is.skip(seekTo);
     }
     
-    int b;
-    do {
-      b = is.read();
-    } while (b >= 0 && b != 13 && b != 10);
-    CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
+    // if we seeked somewhere, read until newline char
+    if (seekTo > 0L) {
+      int b;
+      do {
+        b = is.read();
+      } while (b >= 0 && b != 13 && b != 10);
+    }
+    
+    CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
         .onMalformedInput(CodingErrorAction.REPORT)
         .onUnmappableCharacter(CodingErrorAction.REPORT);
     reader = new BufferedReader(new InputStreamReader(is, decoder), BUFFER_SIZE);
-    // read one more line, to make sure we are not inside a Windows linebreak (\r\n):
-    reader.readLine();
+    
+    if (seekTo > 0L) {
+      // read one more line, to make sure we are not inside a Windows linebreak (\r\n):
+      reader.readLine();
+    }
   }
 
   public synchronized void reset(Random random) throws IOException {
