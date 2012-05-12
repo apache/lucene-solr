@@ -1611,8 +1611,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        <attribute name="dir"/>
      <sequential>
        <exec dir="." executable="${python.exe}" failonerror="true">
-         <arg line="${dev-tools.dir}/scripts/checkJavadocLinks.py"/>
-         <arg line="@{dir}"/>
+         <arg value="${dev-tools.dir}/scripts/checkJavadocLinks.py"/>
+         <arg value="@{dir}"/>
        </exec>
      </sequential>
   </macrodef>
@@ -1622,9 +1622,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        <attribute name="level" default="class"/>
      <sequential>
        <exec dir="." executable="${python.exe}" failonerror="true">
-         <arg line="${dev-tools.dir}/scripts/checkJavaDocs.py"/>
-         <arg line="@{dir}"/>
-         <arg line="@{level}"/>
+         <arg value="${dev-tools.dir}/scripts/checkJavaDocs.py"/>
+         <arg value="@{dir}"/>
+         <arg value="@{level}"/>
        </exec>
      </sequential>
   </macrodef>
