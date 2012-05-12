@@ -65,7 +65,7 @@ class FindHyperlinks(HTMLParser):
         href = href.strip()
         self.links.append(urlparse.urljoin(self.baseURL, href))
       else:
-        if self.baseURL.endswith('/AttributeSource.html'):
+        if self.baseURL.endswith(os.path.sep + 'AttributeSource.html'):
           # LUCENE-4010: AttributeSource's javadocs has an unescaped <A> generics!!  Seems to be a javadocs bug... (fixed in Java 7)
           pass
         else:
