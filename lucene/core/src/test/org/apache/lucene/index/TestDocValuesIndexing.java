@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.ByteDocValuesField;
 import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
@@ -48,6 +47,7 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Before;
 
 /**
@@ -55,17 +55,12 @@ import org.junit.Before;
  * Tests DocValues integration into IndexWriter & Codecs
  * 
  */
+@SuppressCodecs("Lucene3x")
 public class TestDocValuesIndexing extends LuceneTestCase {
   /*
    * - add test for multi segment case with deletes
    * - add multithreaded tests / integrate into stress indexing?
    */
-
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    assumeFalse("cannot work with preflex codec", Codec.getDefault().getName().equals("Lucene3x"));
-  }
   
   /*
    * Simple test case to show how to use the API

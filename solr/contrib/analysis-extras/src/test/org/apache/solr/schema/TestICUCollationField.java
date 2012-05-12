@@ -22,7 +22,7 @@ import java.io.FileOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -33,11 +33,11 @@ import com.ibm.icu.util.ULocale;
 /**
  * Tests {@link ICUCollationField} with TermQueries, RangeQueries, and sort order.
  */
+@SuppressCodecs("Lucene3x")
 public class TestICUCollationField extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assumeFalse("preflex format only supports UTF-8 encoded bytes", "Lucene3x".equals(Codec.getDefault().getName()));
     String home = setupSolrHome();
     initCore("solrconfig.xml","schema.xml", home);
     // add some docs

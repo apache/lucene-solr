@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -30,15 +29,14 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Test indexing and searching some byte[] terms
  */
+@SuppressCodecs("Lucene3x")
 public class TestBinaryTerms extends LuceneTestCase {
-  public void testBinary() throws IOException {
-    assumeFalse("PreFlex codec cannot work with binary terms!", 
-        Codec.getDefault().getName().equals("Lucene3x"));
-    
+  public void testBinary() throws IOException {    
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     BytesRef bytes = new BytesRef(2);

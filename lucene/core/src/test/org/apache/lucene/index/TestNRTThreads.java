@@ -22,13 +22,13 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 // TODO
 //   - mix in forceMerge, addIndexes
 //   - randomoly mix in non-congruent docs
 
-@UseNoMemoryExpensiveCodec
+@SuppressCodecs({ "SimpleText", "Memory" })
 public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
   
   @Override

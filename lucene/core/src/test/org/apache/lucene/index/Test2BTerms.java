@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.*;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.store.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
@@ -45,7 +46,7 @@ import org.junit.Ignore;
 //
 //   java -server -Xmx8g -d64 -cp .:lib/junit-4.10.jar:./build/classes/test:./build/classes/test-framework:./build/classes/java -Dlucene.version=4.0-dev -Dtests.directory=MMapDirectory -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
 //
-@LuceneTestCase.UseNoMemoryExpensiveCodec
+@SuppressCodecs({ "SimpleText", "Memory" })
 public class Test2BTerms extends LuceneTestCase {
 
   private final static int TOKEN_LEN = 10;

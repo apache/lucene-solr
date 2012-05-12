@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -33,28 +32,21 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Before;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * 
  */
+// TODO: what is the problem with SimpleText
+@SuppressCodecs({ "SimpleText", "Lucene3x" })
 public class TestCustomNorms extends LuceneTestCase {
   final String floatTestField = "normsTestFloat";
   final String exceptionTestField = "normsTestExcp";
 
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    assumeFalse("cannot work with preflex codec", Codec.getDefault().getName()
-        .equals("Lucene3x"));
-    assumeFalse("cannot work with simple text codec", Codec.getDefault()
-        .getName().equals("SimpleText"));
-
-  }
-
   public void testFloatNorms() throws IOException {
 
     MockDirectoryWrapper dir = newDirectory();
+    // TODO: what is the checkindex problem?
     dir.setCheckIndexOnClose(false); // can't set sim to checkindex yet
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));

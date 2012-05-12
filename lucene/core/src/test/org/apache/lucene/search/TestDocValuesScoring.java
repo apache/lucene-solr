@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
@@ -36,6 +35,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Tests the use of indexdocvalues in scoring.
@@ -43,13 +43,11 @@ import org.apache.lucene.util.LuceneTestCase;
  * In the example, a docvalues field is used as a per-document boost (separate from the norm)
  * @lucene.experimental
  */
+@SuppressCodecs("Lucene3x")
 public class TestDocValuesScoring extends LuceneTestCase {
   private static final float SCORE_EPSILON = 0.001f; /* for comparing floats */
 
-  public void testSimple() throws Exception {
-    assumeFalse("PreFlex codec cannot work with DocValues!", 
-        "Lucene3x".equals(Codec.getDefault().getName()));
-    
+  public void testSimple() throws Exception {    
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();

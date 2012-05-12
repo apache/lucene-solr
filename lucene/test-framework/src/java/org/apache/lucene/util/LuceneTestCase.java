@@ -404,30 +404,33 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     Class<?> targetClass = RandomizedContext.current().getTargetClass();
-    LuceneTestCase.useNoMemoryExpensiveCodec =
-        targetClass.isAnnotationPresent(UseNoMemoryExpensiveCodec.class);
-    if (useNoMemoryExpensiveCodec) {
-        System.err.println("NOTE: Using no memory expensive codecs (Memory, SimpleText) for " +
-            targetClass.getSimpleName() + ".");
+    if (targetClass.isAnnotationPresent(SuppressCodecs.class)) {
+      SuppressCodecs a = targetClass.getAnnotation(SuppressCodecs.class);
+      avoidCodecs = new HashSet<String>(Arrays.asList(a.value()));
+      System.err.println("NOTE: Suppressing codecs " + Arrays.toString(a.value()) 
+          + " for " + targetClass.getSimpleName() + ".");
+    } else {
+      avoidCodecs = null;
     }
+    
 
     PREFLEX_IMPERSONATION_IS_ACTIVE = false;
     savedCodec = Codec.getDefault();
     final Codec codec;
     int randomVal = random().nextInt(10);
     
-    if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2)) { // preflex-only setup
+    if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal < 2 && !shouldAvoidCodec("Lucene3x"))) { // preflex-only setup
       codec = Codec.forName("Lucene3x");
       assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
       PREFLEX_IMPERSONATION_IS_ACTIVE = true;
-    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !useNoMemoryExpensiveCodec)) {
+    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
       codec = new SimpleTextCodec();
-    } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8)) {
+    } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
       codec = new AppendingCodec();
     } else if (!"random".equals(TEST_CODEC)) {
       codec = Codec.forName(TEST_CODEC);
     } else if ("random".equals(TEST_POSTINGSFORMAT)) {
-      codec = new RandomCodec(random(), useNoMemoryExpensiveCodec);
+      codec = new RandomCodec(random(), avoidCodecs);
     } else {
       codec = new Lucene40Codec() {
         private final PostingsFormat format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
@@ -719,11 +722,11 @@ public abstract class LuceneTestCase extends Assert {
 
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
 
-    if (useNoMemoryExpensiveCodec) {
+    if (avoidCodecs != null) {
       String defFormat = _TestUtil.getPostingsFormat("thisCodeMakesAbsolutelyNoSenseCanWeDeleteIt");
-      if ("SimpleText".equals(defFormat) || "Memory".equals(defFormat)) {
+      if (avoidCodecs.contains(defFormat)) {
         assumeTrue("NOTE: A test method in " + getClass().getSimpleName() 
-            + " was ignored, as it uses too much memory with " + defFormat + ".", false);
+            + " was ignored, as it is not allowed to use " + defFormat + ".", false);
       }
     }
   }
@@ -1648,7 +1651,11 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   // initialized by the TestRunner
-  static boolean useNoMemoryExpensiveCodec;
+  static HashSet<String> avoidCodecs;
+  
+  static boolean shouldAvoidCodec(String codec) {
+    return avoidCodecs != null && avoidCodecs.contains(codec);
+  }
 
   private String name = "<unknown>";
 
@@ -1698,7 +1705,9 @@ public abstract class LuceneTestCase extends Assert {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.TYPE)
-  public @interface UseNoMemoryExpensiveCodec {}
+  public @interface SuppressCodecs {
+    String[] value();
+  }
 
   protected static boolean defaultCodecSupportsDocValues() {
     return !Codec.getDefault().getName().equals("Lucene3x");

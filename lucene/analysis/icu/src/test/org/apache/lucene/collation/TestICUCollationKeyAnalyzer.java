@@ -24,10 +24,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CollationTestBase;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import java.util.Locale;
 
-
+@SuppressCodecs("Lucene3x")
 public class TestICUCollationKeyAnalyzer extends CollationTestBase {
 
   private Collator collator = Collator.getInstance(new Locale("fa"));
@@ -41,12 +42,6 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
     (collator.getCollationKey(secondRangeBeginningOriginal).toByteArray());
   private BytesRef secondRangeEnd = new BytesRef
     (collator.getCollationKey(secondRangeEndOriginal).toByteArray());
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    assumeFalse("preflex format only supports UTF-8 encoded bytes", "Lucene3x".equals(Codec.getDefault().getName()));
-  }
 
   public void testFarsiRangeFilterCollating() throws Exception {
     testFarsiRangeFilterCollating(analyzer, firstRangeBeginning, firstRangeEnd, 

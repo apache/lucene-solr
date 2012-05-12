@@ -20,13 +20,13 @@ package org.apache.lucene.collation;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CollationTestBase;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import java.text.Collator;
 import java.util.Locale;
 
-
+@SuppressCodecs("Lucene3x")
 public class TestCollationKeyAnalyzer extends CollationTestBase {
   // the sort order of Ø versus U depends on the version of the rules being used
   // for the inherited root locale: Ø's order isnt specified in Locale.US since 
@@ -43,12 +43,6 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
   private BytesRef firstRangeEnd = new BytesRef(collator.getCollationKey(firstRangeEndOriginal).toByteArray());
   private BytesRef secondRangeBeginning = new BytesRef(collator.getCollationKey(secondRangeBeginningOriginal).toByteArray());
   private BytesRef secondRangeEnd = new BytesRef(collator.getCollationKey(secondRangeEndOriginal).toByteArray());
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    assumeFalse("preflex format only supports UTF-8 encoded bytes", "Lucene3x".equals(Codec.getDefault().getName()));
-  }
 
   public void testFarsiRangeFilterCollating() throws Exception {
     testFarsiRangeFilterCollating

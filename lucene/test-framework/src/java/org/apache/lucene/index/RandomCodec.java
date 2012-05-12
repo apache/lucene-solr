@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
@@ -56,6 +57,8 @@ public class RandomCodec extends Lucene40Codec {
   // otherwise DWPT's .toString() calls that iterate over the map can 
   // cause concurrentmodificationexception if indexwriter's infostream is on
   private Map<String,PostingsFormat> previousMappings = Collections.synchronizedMap(new HashMap<String,PostingsFormat>());
+  /** set of codec names to avoid */
+  private final Set<String> avoidCodecs;
   private final int perFieldSeed;
 
   @Override
@@ -74,29 +77,34 @@ public class RandomCodec extends Lucene40Codec {
     return codec;
   }
 
-  public RandomCodec(Random random, boolean useNoMemoryExpensiveCodec) {
+  public RandomCodec(Random random, Set<String> avoidCodecs) {
+    this.avoidCodecs = avoidCodecs;
     this.perFieldSeed = random.nextInt();
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
-    formats.add(new Lucene40PostingsFormat(minItemsPerBlock, maxItemsPerBlock));
+    add(new Lucene40PostingsFormat(minItemsPerBlock, maxItemsPerBlock));
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
-    formats.add(new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
-    formats.add(new MockSepPostingsFormat());
-    formats.add(new MockFixedIntBlockPostingsFormat(_TestUtil.nextInt(random, 1, 2000)));
-    formats.add(new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)));
-    formats.add(new MockRandomPostingsFormat(random));
-    formats.add(new NestedPulsingPostingsFormat());
-    formats.add(new Lucene40WithOrds());
-    if (!useNoMemoryExpensiveCodec) {
-      formats.add(new SimpleTextPostingsFormat());
-      formats.add(new MemoryPostingsFormat(random.nextBoolean()));
-    }
+    add(new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
+    add(new MockSepPostingsFormat());
+    add(new MockFixedIntBlockPostingsFormat(_TestUtil.nextInt(random, 1, 2000)));
+    add(new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)));
+    add(new MockRandomPostingsFormat(random));
+    add(new NestedPulsingPostingsFormat());
+    add(new Lucene40WithOrds());
+    add(new SimpleTextPostingsFormat());
+    add(new MemoryPostingsFormat(random.nextBoolean()));
     Collections.shuffle(formats, random);
+  }
+  
+  private final void add(PostingsFormat p) {
+    if (avoidCodecs == null || !avoidCodecs.contains(p.getName())) {
+      formats.add(p);
+    }
   }
   
   @Override

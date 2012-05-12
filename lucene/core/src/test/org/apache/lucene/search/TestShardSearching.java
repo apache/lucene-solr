@@ -29,7 +29,7 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase.UseNoMemoryExpensiveCodec;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 
 // TODO
@@ -41,7 +41,7 @@ import org.apache.lucene.util._TestUtil;
 //   - test pulling docs in 2nd round trip...
 //   - filter too
 
-@UseNoMemoryExpensiveCodec
+@SuppressCodecs({ "SimpleText", "Memory" })
 public class TestShardSearching extends ShardSearchingTestBase {
 
   private static class PreviousSearchState {

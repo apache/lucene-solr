@@ -22,19 +22,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene3x.PreFlexRWCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Assume;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
+@SuppressCodecs("Lucene3x")
 public class TestMixedCodecs extends LuceneTestCase {
 
   public void test() throws Exception {
-
-    Assume.assumeTrue(!(Codec.getDefault() instanceof PreFlexRWCodec));
 
     final int NUM_DOCS = atLeast(1000);
 

@@ -22,7 +22,6 @@ import java.util.EnumSet;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.ByteDocValuesField;
 import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
@@ -42,14 +41,10 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Before;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
+@SuppressCodecs("Lucene3x")
 public class TestTypePromotion extends LuceneTestCase {
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    assumeFalse("cannot work with preflex codec", Codec.getDefault().getName().equals("Lucene3x"));
-  }
 
   private static EnumSet<Type> INTEGERS = EnumSet.of(Type.VAR_INTS,
       Type.FIXED_INTS_16, Type.FIXED_INTS_32,

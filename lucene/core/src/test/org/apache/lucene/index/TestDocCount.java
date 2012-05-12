@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -25,14 +24,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Tests the Terms.docCount statistic
  */
+@SuppressCodecs("Lucene3x")
 public class TestDocCount extends LuceneTestCase {
   public void testSimple() throws Exception {
-    assumeFalse("PreFlex codec does not support docCount statistic!", 
-        "Lucene3x".equals(Codec.getDefault().getName()));
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(100);
