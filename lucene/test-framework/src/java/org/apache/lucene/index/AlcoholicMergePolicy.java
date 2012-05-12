@@ -23,6 +23,8 @@ import java.util.GregorianCalendar;
 import java.util.Random;
 import java.util.TimeZone;
 
+import org.apache.lucene.util._TestUtil;
+
 /** 
  * <p>
  * Merge policy for testing, it is like an alcoholic.
@@ -45,6 +47,7 @@ public class AlcoholicMergePolicy extends LogMergePolicy {
   public AlcoholicMergePolicy(TimeZone tz, Random random) {
     this.calendar = new GregorianCalendar(tz);
     this.random = random;
+    maxMergeSize = _TestUtil.nextInt(random, 1024*1024, Integer.MAX_VALUE);
   }
   
   @Override
@@ -58,11 +61,10 @@ public class AlcoholicMergePolicy extends LogMergePolicy {
       
       Drink[] values = Drink.values();
       // pick a random drink during the day
-      return values[random.nextInt(values.length)].drunkFactor * (1 + random.nextInt(Integer.MAX_VALUE / 2));
-     
+      return values[random.nextInt(values.length)].drunkFactor * info.sizeInBytes();
     }
-    return  maxMergeSize == Long.MAX_VALUE ? maxMergeSize : maxMergeSize+1;
-    
+
+    return info.sizeInBytes();
   }
   
   public static enum Drink {

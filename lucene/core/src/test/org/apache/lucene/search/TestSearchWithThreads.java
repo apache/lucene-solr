@@ -29,6 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 @SuppressCodecs({ "SimpleText", "Memory" })
 public class TestSearchWithThreads extends LuceneTestCase {
