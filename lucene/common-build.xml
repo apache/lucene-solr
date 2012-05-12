@@ -550,7 +550,7 @@
       <!-- If possible, include the svnversion -->
       <exec dir="." executable="${svnversion.exe}"
             outputproperty="svnversion" failifexecutionfails="false">
-        <arg line="."/>
+        <arg value="."/>
       </exec>
       
       <build-manifest title="@{title}"
