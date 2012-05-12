@@ -51,6 +51,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -59,7 +60,9 @@ import org.junit.BeforeClass;
   Verify we can read the pre-4.0 file format, do searches
   against it, and add documents to it.
 */
-
+// don't use 3.x codec, its unrealistic since it means
+// we won't even be running the actual code, only the impostor
+@SuppressCodecs("Lucene3x")
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // Uncomment these cases & run them on an older Lucene
