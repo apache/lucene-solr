@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.ByteDocValuesField;
 import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
@@ -121,6 +122,44 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testAddIndexes() throws IOException {
+    Directory d1 = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d1);
+    Document doc = new Document();
+    doc.add(newField("id", "1", StringField.TYPE_STORED));
+    doc.add(new PackedLongDocValuesField("dv", 1));
+    w.addDocument(doc);
+    IndexReader r1 = w.getReader();
+    w.close();
+
+    Directory d2 = newDirectory();
+    w = new RandomIndexWriter(random(), d2);
+    doc = new Document();
+    doc.add(newField("id", "2", StringField.TYPE_STORED));
+    doc.add(new PackedLongDocValuesField("dv", 2));
+    w.addDocument(doc);
+    IndexReader r2 = w.getReader();
+    w.close();
+
+    Directory d3 = newDirectory();
+    w = new RandomIndexWriter(random(), d3);
+    w.addIndexes(SlowCompositeReaderWrapper.wrap(r1), SlowCompositeReaderWrapper.wrap(r2));
+    r1.close();
+    d1.close();
+    r2.close();
+    d2.close();
+
+    w.forceMerge(1);
+    DirectoryReader r3 = w.getReader();
+    w.close();
+    AtomicReader sr = getOnlySegmentReader(r3);
+    assertEquals(2, sr.numDocs());
+    DocValues docValues = sr.docValues("dv");
+    assertNotNull(docValues);
+    r3.close();
+    d3.close();
+  }
+
+  public void testAddIndexesRandom() throws IOException {
     int valuesPerIndex = 10;
     List<Type> values = Arrays.asList(Type.values());
     Collections.shuffle(values, random());

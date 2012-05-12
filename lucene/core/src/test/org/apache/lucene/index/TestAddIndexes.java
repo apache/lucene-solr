@@ -1256,43 +1256,4 @@ public class TestAddIndexes extends LuceneTestCase {
     r3.close();
     d3.close();
   }
-  
-  public void testDocValues() throws IOException {
-    assumeFalse("preflex does not support docvalues", Codec.getDefault().getName().equals("Lucene3x"));
-    Directory d1 = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), d1);
-    Document doc = new Document();
-    doc.add(newField("id", "1", StringField.TYPE_STORED));
-    doc.add(new PackedLongDocValuesField("dv", 1));
-    w.addDocument(doc);
-    IndexReader r1 = w.getReader();
-    w.close();
-
-    Directory d2 = newDirectory();
-    w = new RandomIndexWriter(random(), d2);
-    doc = new Document();
-    doc.add(newField("id", "2", StringField.TYPE_STORED));
-    doc.add(new PackedLongDocValuesField("dv", 2));
-    w.addDocument(doc);
-    IndexReader r2 = w.getReader();
-    w.close();
-
-    Directory d3 = newDirectory();
-    w = new RandomIndexWriter(random(), d3);
-    w.addIndexes(SlowCompositeReaderWrapper.wrap(r1), SlowCompositeReaderWrapper.wrap(r2));
-    r1.close();
-    d1.close();
-    r2.close();
-    d2.close();
-
-    w.forceMerge(1);
-    DirectoryReader r3 = w.getReader();
-    w.close();
-    AtomicReader sr = getOnlySegmentReader(r3);
-    assertEquals(2, sr.numDocs());
-    DocValues docValues = sr.docValues("dv");
-    assertNotNull(docValues);
-    r3.close();
-    d3.close();
-  }
 }
