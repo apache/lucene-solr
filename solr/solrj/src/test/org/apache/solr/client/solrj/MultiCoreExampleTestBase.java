@@ -138,7 +138,18 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     }
     catch( Exception ex ) {}
     resetExceptionIgnores();
-    
+
+    // in core0
+    doc = new SolrInputDocument();
+    doc.setField( "id", "BBB1" );
+    doc.setField( "name", "AAA1" );
+    doc.setField( "type", "BBB" );
+    doc.setField( "core0", "AAA1" );
+
+    up.clear();
+    up.add( doc );
+    up.process( getSolrCore0() );
+
     // now Make sure AAA is in 0 and BBB in 1
     SolrQuery q = new SolrQuery();
     QueryRequest r = new QueryRequest( q );
@@ -155,8 +166,14 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 
     // cross-core join
     assertEquals( 0, getSolrCore0().query( new SolrQuery( "{!join from=type to=name}*:*" ) ).getResults().size() );  // normal join
-    assertEquals( 1, getSolrCore0().query( new SolrQuery( "{!join from=type to=name fromIndex=core1}id:BBB" ) ).getResults().size() );
+    assertEquals( 2, getSolrCore0().query( new SolrQuery( "{!join from=type to=name fromIndex=core1}id:BBB" ) ).getResults().size() );
     assertEquals( 1, getSolrCore1().query( new SolrQuery( "{!join from=type to=name fromIndex=core0}id:AAA" ) ).getResults().size() );
+
+    // test that no rewrite happens in core0 (if it does, it will rewrite to BBB1 and nothing will be found in core1)
+    assertEquals( 2, getSolrCore0().query( new SolrQuery( "{!join from=type to=name fromIndex=core1}id:BB~" ) ).getResults().size() );
+
+    // test that query is parsed in the fromCore  - TODO
+    // assertEquals( 2, getSolrCore0().query( new SolrQuery( "{!join from=type to=name fromIndex=core1}core1:yup" ) ).getResults().size() );
 
 
     // Now test reloading it should have a newer open time

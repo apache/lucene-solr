@@ -84,11 +84,8 @@ class JoinQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    Query newQ = q.rewrite(reader);
-    if (newQ == q) return this;
-    JoinQuery nq = (JoinQuery)this.clone();
-    nq.q = newQ;
-    return nq;
+    // don't rewrite the subQuery
+    return this;
   }
 
   @Override
