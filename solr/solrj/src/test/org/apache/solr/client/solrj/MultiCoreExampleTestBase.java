@@ -172,9 +172,8 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     // test that no rewrite happens in core0 (if it does, it will rewrite to BBB1 and nothing will be found in core1)
     assertEquals( 2, getSolrCore0().query( new SolrQuery( "{!join from=type to=name fromIndex=core1}id:BB~" ) ).getResults().size() );
 
-    // test that query is parsed in the fromCore  - TODO
-    // assertEquals( 2, getSolrCore0().query( new SolrQuery( "{!join from=type to=name fromIndex=core1}core1:yup" ) ).getResults().size() );
-
+    // test that query is parsed in the fromCore
+    assertEquals( 2, getSolrCore0().query( new SolrQuery( "{!join from=type to=name fromIndex=core1}core1:yup" ) ).getResults().size() );
 
     // Now test reloading it should have a newer open time
     String name = "core0";

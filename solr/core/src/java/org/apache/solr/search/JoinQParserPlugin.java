@@ -31,6 +31,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.TrieField;
@@ -57,8 +58,30 @@ public class JoinQParserPlugin extends QParserPlugin {
         String fromIndex = getParam("fromIndex");
         String toField = getParam("to");
         String v = localParams.get("v");
-        QParser fromQueryParser = subQuery(v, null);
-        Query fromQuery = fromQueryParser.getQuery();
+        Query fromQuery;
+
+        if (fromIndex != null) {
+          CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
+
+          final SolrCore fromCore = container.getCore(fromIndex);
+
+          if (fromCore == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + fromIndex);
+          }
+
+          LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
+          try {
+            QParser parser = QParser.getParser(v, "lucene", otherReq);
+            fromQuery = parser.getQuery();
+          } finally {
+            otherReq.close();
+            fromCore.close();
+          }
+        } else {
+          QParser fromQueryParser = subQuery(v, null);
+          fromQuery = fromQueryParser.getQuery();
+        }
+
         JoinQuery jq = new JoinQuery(fromField, toField, fromIndex, fromQuery);
         return jq;
       }
@@ -90,7 +113,6 @@ class JoinQuery extends Query {
 
   @Override
   public void extractTerms(Set terms) {
-    q.extractTerms(terms);
   }
 
   public Weight createWeight(IndexSearcher searcher) throws IOException {
@@ -124,7 +146,7 @@ class JoinQuery extends Query {
         final SolrCore fromCore = container.getCore(fromIndex);
 
         if (fromCore == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core ");
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + fromIndex);
         }
 
         if (info.getReq().getCore() == fromCore) {
