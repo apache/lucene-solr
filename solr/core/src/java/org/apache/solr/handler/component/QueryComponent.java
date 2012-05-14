@@ -32,22 +32,13 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.CloudState;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
@@ -56,8 +47,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
-import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
-import org.apache.solr.search.grouping.endresulttransformer.EndResultTransformer;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.QueryCommand;
@@ -70,6 +59,8 @@ import org.apache.solr.search.grouping.distributed.responseprocessor.SearchGroup
 import org.apache.solr.search.grouping.distributed.responseprocessor.StoredFieldsShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.responseprocessor.TopGroupsShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchGroupsResultTransformer;
+import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
+import org.apache.solr.search.grouping.endresulttransformer.EndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
@@ -288,6 +279,7 @@ public class QueryComponent extends SearchComponent
                 .setField(searcher.getSchema().getField(field))
                 .setGroupSort(groupingSpec.getGroupSort())
                 .setTopNGroups(cmd.getOffset() + cmd.getLen())
+                .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
                 .build()
             );
           }
@@ -329,7 +321,6 @@ public class QueryComponent extends SearchComponent
                     .setMaxDocPerGroup(groupingSpec.getGroupOffset() + groupingSpec.getGroupLimit())
                     .setNeedScores(needScores)
                     .setNeedMaxScore(needScores)
-                    .setNeedGroupCount(groupingSpec.isIncludeGroupCount())
                     .build()
             );
           }

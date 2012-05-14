@@ -20,27 +20,26 @@ package org.apache.solr.search.grouping.distributed.command;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.SearchGroup;
+import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
- *
+ * Creates all the collectors needed for the first phase and how to handle the results.
  */
-public class SearchGroupsFieldCommand implements Command<Collection<SearchGroup<BytesRef>>> {
+public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collection<SearchGroup<BytesRef>>>> {
 
   public static class Builder {
 
     private SchemaField field;
     private Sort groupSort;
     private Integer topNGroups;
+    private boolean includeGroupCount = false;
 
     public Builder setField(SchemaField field) {
       this.field = field;
@@ -57,12 +56,17 @@ public class SearchGroupsFieldCommand implements Command<Collection<SearchGroup<
       return this;
     }
 
+    public Builder setIncludeGroupCount(boolean includeGroupCount) {
+      this.includeGroupCount = includeGroupCount;
+      return this;
+    }
+
     public SearchGroupsFieldCommand build() {
       if (field == null || groupSort == null || topNGroups == null) {
         throw new IllegalStateException("All fields must be set");
       }
 
-      return new SearchGroupsFieldCommand(field, groupSort, topNGroups);
+      return new SearchGroupsFieldCommand(field, groupSort, topNGroups, includeGroupCount);
     }
 
   }
@@ -70,30 +74,45 @@ public class SearchGroupsFieldCommand implements Command<Collection<SearchGroup<
   private final SchemaField field;
   private final Sort groupSort;
   private final int topNGroups;
+  private final boolean includeGroupCount;
 
   private TermFirstPassGroupingCollector firstPassGroupingCollector;
+  private TermAllGroupsCollector allGroupsCollector;
 
-  private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups) {
+  private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
     this.field = field;
     this.groupSort = groupSort;
     this.topNGroups = topNGroups;
+    this.includeGroupCount = includeGroupCount;
   }
 
   public List<Collector> create() throws IOException {
+    List<Collector> collectors = new ArrayList<Collector>();
     if (topNGroups > 0) {
       firstPassGroupingCollector = new TermFirstPassGroupingCollector(field.getName(), groupSort, topNGroups);
-      return Arrays.asList((Collector) firstPassGroupingCollector);
-    } else {
-      return Collections.emptyList();
+      collectors.add(firstPassGroupingCollector);
     }
+    if (includeGroupCount) {
+      allGroupsCollector = new TermAllGroupsCollector(field.getName());
+      collectors.add(allGroupsCollector);
+    }
+    return collectors;
   }
 
-  public Collection<SearchGroup<BytesRef>> result() {
+  public Pair<Integer, Collection<SearchGroup<BytesRef>>> result() {
+    final Collection<SearchGroup<BytesRef>> topGroups;
     if (topNGroups > 0) {
-      return firstPassGroupingCollector.getTopGroups(0, true);
+      topGroups = firstPassGroupingCollector.getTopGroups(0, true);
     } else {
-      return Collections.emptyList();
+      topGroups = Collections.emptyList();
     }
+    final Integer groupCount;
+    if (includeGroupCount) {
+      groupCount = allGroupsCollector.getGroupCount();
+    } else {
+      groupCount = null;
+    }
+    return new Pair<Integer, Collection<SearchGroup<BytesRef>>>(groupCount, topGroups);
   }
 
   public Sort getSortWithinGroup() {

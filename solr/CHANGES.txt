@@ -425,6 +425,9 @@ Bug Fixes
 * SOLR-3370: fixed CSVResponseWriter to respect globs in the 'fl' param
   (Keith Fligg via hossman)
 
+* SOLR-3436: Group count incorrect when not all shards are queried in the second
+  pass. (Francois Perron, Martijn van Groningen)
+
 Other Changes
 ----------------------
 
