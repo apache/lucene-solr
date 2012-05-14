@@ -159,6 +159,50 @@ public class TestUpdate extends SolrTestCaseJ4 {
       assertEquals(409, se.code());
     }
 
+    version = addAndGetVersion(sdoc("id","1", "val_i",5), null);
+    afterUpdate.call();
+
+    version = addAndGetVersion(sdoc("id","1",
+        "val_is",map("inc",1),
+        "val2_i",map("inc","1"),
+        "val2_f",map("inc",1),
+        "val2_d",map("inc","1.0"),
+        "val2_l",map("inc",1)
+        ),
+        null);
+    afterUpdate.call();
+
+    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
+        ,"=={'doc':{'id':'1', 'val_i':5, 'val_is':[1], 'val2_i':1, 'val2_f':1.0, 'val2_d':1.0, 'val2_l':1}}"
+    );
+
+    version = addAndGetVersion(sdoc("id","1",
+        "val_is",map("inc","-5"),
+        "val2_i",map("inc",-5),
+        "val2_f",map("inc","-5.0"),
+        "val2_d",map("inc",-5),
+        "val2_l",map("inc","-5")
+    ),
+        null);
+    afterUpdate.call();
+
+    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
+        ,"=={'doc':{'id':'1', 'val_i':5, 'val_is':[-4], 'val2_i':-4, 'val2_f':-4.0, 'val2_d':-4.0, 'val2_l':-4}}"
+    );
+
+    version = addAndGetVersion(sdoc("id","1",
+        "val_is",map("inc","2000000000"),
+        "val2_i",map("inc",-2000000000),
+        "val2_f",map("inc","1e+20"),
+        "val2_d",map("inc",-1.2345678901e+100),
+        "val2_l",map("inc","5000000000")
+    ),
+        null);
+    afterUpdate.call();
+
+    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
+        ,"=={'doc':{'id':'1', 'val_i':5, 'val_is':[1999999996], 'val2_i':-2000000004, 'val2_f':1.0E20, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}"
+    );
 
   }
 

@@ -516,12 +516,41 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             oldDoc.addField( sif.getName(), fieldVal, sif.getBoost());
           } else if ("set".equals(key)) {
             oldDoc.setField(sif.getName(),  fieldVal, sif.getBoost());
+          } else if ("inc".equals(key)) {
+            SolrInputField numericField = oldDoc.get(sif.getName());
+            if (numericField == null) {
+              oldDoc.setField(sif.getName(),  fieldVal, sif.getBoost());
+            } else {
+              // TODO: fieldtype needs externalToObject?
+              String oldValS = numericField.getFirstValue().toString();
+              SchemaField sf = cmd.getReq().getSchema().getField(sif.getName());
+              BytesRef term = new BytesRef();
+              sf.getType().readableToIndexed(oldValS, term);
+              Object oldVal = sf.getType().toObject(sf, term);
+
+              String fieldValS = fieldVal.toString();
+              Number result;
+              if (oldVal instanceof Long) {
+                result = ((Long) oldVal).longValue() + Long.parseLong(fieldValS);
+              } else if (oldVal instanceof Float) {
+                result = ((Float) oldVal).floatValue() + Float.parseFloat(fieldValS);
+              } else if (oldVal instanceof Double) {
+                result = ((Double) oldVal).doubleValue() + Double.parseDouble(fieldValS);
+              } else {
+                // int, short, byte
+                result = ((Integer) oldVal).intValue() + Integer.parseInt(fieldValS);
+              }
+
+              oldDoc.setField(sif.getName(),  result, sif.getBoost());
+            }
+
           }
         }
       } else {
         // normal fields are treated as a "set"
         oldDoc.put(sif.getName(), sif);
       }
+
     }
 
     cmd.solrDoc = oldDoc;
