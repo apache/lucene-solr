@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- *
+ * Defines all collectors for retrieving the second phase and how to handle the collector result.
  */
 public class TopGroupsFieldCommand implements Command<TopGroups<String>> {
 
@@ -43,7 +43,6 @@ public class TopGroupsFieldCommand implements Command<TopGroups<String>> {
     private Integer maxDocPerGroup;
     private boolean needScores = false;
     private boolean needMaxScore = false;
-    private boolean needGroupCount = false;
 
     public Builder setField(SchemaField field) {
       this.field = field;
@@ -80,18 +79,13 @@ public class TopGroupsFieldCommand implements Command<TopGroups<String>> {
       return this;
     }
 
-    public Builder setNeedGroupCount(Boolean needGroupCount) {
-      this.needGroupCount = needGroupCount;
-      return this;
-    }
-
     public TopGroupsFieldCommand build() {
       if (field == null || groupSort == null ||  sortWithinGroup == null || firstPhaseGroups == null ||
           maxDocPerGroup == null) {
         throw new IllegalStateException("All required fields must be set");
       }
 
-      return new TopGroupsFieldCommand(field, groupSort, sortWithinGroup, firstPhaseGroups, maxDocPerGroup, needScores, needMaxScore, needGroupCount);
+      return new TopGroupsFieldCommand(field, groupSort, sortWithinGroup, firstPhaseGroups, maxDocPerGroup, needScores, needMaxScore);
     }
 
   }
@@ -103,10 +97,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<String>> {
   private final int maxDocPerGroup;
   private final boolean needScores;
   private final boolean needMaxScore;
-  private final boolean needGroupCount;
-
   private TermSecondPassGroupingCollector secondPassCollector;
-  private TermAllGroupsCollector allGroupsCollector;
 
   private TopGroupsFieldCommand(SchemaField field,
                                 Sort groupSort,
@@ -114,8 +105,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<String>> {
                                 Collection<SearchGroup<String>> firstPhaseGroups,
                                 int maxDocPerGroup,
                                 boolean needScores,
-                                boolean needMaxScore,
-                                boolean needGroupCount) {
+                                boolean needMaxScore) {
     this.field = field;
     this.groupSort = groupSort;
     this.sortWithinGroup = sortWithinGroup;
@@ -123,7 +113,6 @@ public class TopGroupsFieldCommand implements Command<TopGroups<String>> {
     this.maxDocPerGroup = maxDocPerGroup;
     this.needScores = needScores;
     this.needMaxScore = needMaxScore;
-    this.needGroupCount = needGroupCount;
   }
 
   public List<Collector> create() throws IOException {
@@ -136,11 +125,6 @@ public class TopGroupsFieldCommand implements Command<TopGroups<String>> {
           field.getName(), firstPhaseGroups, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true
     );
     collectors.add(secondPassCollector);
-    if (!needGroupCount) {
-      return collectors;
-    }
-    allGroupsCollector = new TermAllGroupsCollector(field.getName());
-    collectors.add(allGroupsCollector);
     return collectors;
   }
 
@@ -150,11 +134,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<String>> {
       return new TopGroups<String>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0]);
     }
 
-    TopGroups<String> result = secondPassCollector.getTopGroups(0);
-    if (allGroupsCollector != null) {
-      result = new TopGroups<String>(result, allGroupsCollector.getGroupCount());
-    }
-    return result;
+    return secondPassCollector.getTopGroups(0);
   }
 
   public String getKey() {

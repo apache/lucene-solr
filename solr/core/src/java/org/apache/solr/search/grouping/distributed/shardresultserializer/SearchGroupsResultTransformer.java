@@ -25,6 +25,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.Command;
+import org.apache.solr.search.grouping.distributed.command.Pair;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommand;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ import java.util.*;
 /**
  * Implementation for transforming {@link SearchGroup} into a {@link NamedList} structure and visa versa.
  */
-public class SearchGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, Collection<SearchGroup<String>>>> {
+public class SearchGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, Pair<Integer, Collection<SearchGroup<String>>>>> {
 
   private final SolrIndexSearcher searcher;
 
@@ -47,17 +48,20 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   public NamedList transform(List<Command> data) throws IOException {
     NamedList<NamedList> result = new NamedList<NamedList>();
     for (Command command : data) {
-      NamedList commandResult;
+      final NamedList<Object> commandResult = new NamedList<Object>();
       if (SearchGroupsFieldCommand.class.isInstance(command)) {
         SearchGroupsFieldCommand fieldCommand = (SearchGroupsFieldCommand) command;
-        Collection<SearchGroup<String>> searchGroups = fieldCommand.result();
-        if (searchGroups == null) {
-          continue;
+        Pair<Integer, Collection<SearchGroup<String>>> pair = fieldCommand.result();
+        Integer groupedCount = pair.getA();
+        Collection<SearchGroup<String>> searchGroups = pair.getB();
+        if (searchGroups != null) {
+          commandResult.add("topGroups", serializeSearchGroup(searchGroups, fieldCommand.getGroupSort()));
         }
-
-        commandResult = serializeSearchGroup(searchGroups, fieldCommand.getGroupSort());
+        if (groupedCount != null) {
+          commandResult.add("groupCount", groupedCount);
+        }
       } else {
-        commandResult = null;
+        continue;
       }
 
       result.add(command.getKey(), commandResult);
@@ -68,20 +72,24 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   /**
    * {@inheritDoc}
    */
-  public Map<String, Collection<SearchGroup<String>>> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) throws IOException {
-    Map<String, Collection<SearchGroup<String>>> result = new HashMap<String, Collection<SearchGroup<String>>>();
+  public Map<String, Pair<Integer, Collection<SearchGroup<String>>>> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) throws IOException {
+    Map<String, Pair<Integer, Collection<SearchGroup<String>>>> result = new HashMap<String, Pair<Integer, Collection<SearchGroup<String>>>>();
     for (Map.Entry<String, NamedList> command : shardResponse) {
       List<SearchGroup<String>> searchGroups = new ArrayList<SearchGroup<String>>();
+      NamedList topGroupsAndGroupCount = command.getValue();
       @SuppressWarnings("unchecked")
-      NamedList<List<Comparable>> rawSearchGroups = command.getValue();
-      for (Map.Entry<String, List<Comparable>> rawSearchGroup : rawSearchGroups){
-        SearchGroup<String> searchGroup = new SearchGroup<String>();
-        searchGroup.groupValue = rawSearchGroup.getKey() != null ? rawSearchGroup.getKey() : null;
-        searchGroup.sortValues = rawSearchGroup.getValue().toArray(new Comparable[rawSearchGroup.getValue().size()]);
-        searchGroups.add(searchGroup);
+      NamedList<List<Comparable>> rawSearchGroups = (NamedList<List<Comparable>>) topGroupsAndGroupCount.get("topGroups");
+      if (rawSearchGroups != null) {
+        for (Map.Entry<String, List<Comparable>> rawSearchGroup : rawSearchGroups){
+          SearchGroup<String> searchGroup = new SearchGroup<String>();
+          searchGroup.groupValue = rawSearchGroup.getKey() != null ? rawSearchGroup.getKey() : null;
+          searchGroup.sortValues = rawSearchGroup.getValue().toArray(new Comparable[rawSearchGroup.getValue().size()]);
+          searchGroups.add(searchGroup);
+        }
       }
 
-      result.put(command.getKey(), searchGroups);
+      Integer groupCount = (Integer) topGroupsAndGroupCount.get("groupCount");
+      result.put(command.getKey(), new Pair<Integer, Collection<SearchGroup<String>>>(groupCount, searchGroups));
     }
     return result;
   }

@@ -172,11 +172,16 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "fq", s2 + ":a", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "group.truncate", "true");
     query("q", "*:*", "fq", s2 + ":a", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
 
+    // SOLR-3316
     query("q", "*:*", "fq", s2 + ":a", "rows", 0, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "facet", "true", "facet.field", t1);
     query("q", "*:*", "fq", s2 + ":a", "rows", 0, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
 
+    // SOLR-3436
+    query("q", "*:*", "fq", s1 + ":a", "fl", "id," + s1, "group", "true", "group.field", s1, "sort", s1 + " asc, id asc", "group.ngroups", "true");
+    query("q", "*:*", "fq", s1 + ":a", "rows", 0, "fl", "id," + s1, "group", "true", "group.field", s1, "sort", s1 + " asc, id asc", "group.ngroups", "true");
+
     ModifiableSolrParams params = new ModifiableSolrParams();
-    Object[] q =  {"q", "*:*", "fq", s2 + ":a", "rows", 1, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10};
+    Object[] q =  {"q", "*:*", "fq", s2 + ":a", "rows", 1, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "group.ngroups", "true"};
 
     for (int i = 0; i < q.length; i += 2) {
       params.add(q[i].toString(), q[i + 1].toString());
@@ -190,7 +195,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     NamedList nl = (NamedList<?>) rsp.getResponse().get("grouped");
     nl = (NamedList<?>) nl.getVal(0);
     int matches = (Integer) nl.getVal(0);
+    int groupCount = (Integer) nl.get("ngroups");
     assertEquals(100 * clients.size(), matches);
+    assertEquals(clients.size(), groupCount);
 
     // We cannot validate distributed grouping with scoring as first sort. since there is no global idf. We can check if no errors occur
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + s1, "group", "true", "group.field", s1, "group.limit", 10, "sort", s1 + " desc", "group.sort", "score desc"); // SOLR-2955

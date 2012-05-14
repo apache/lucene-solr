@@ -113,10 +113,9 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       }
 
       Integer totalHitCount = (Integer) commandResult.get("totalHitCount");
-      Integer totalGroupCount = (Integer) commandResult.get("totalGroupCount");
 
       List<GroupDocs<String>> groupDocs = new ArrayList<GroupDocs<String>>();
-      for (int i = totalGroupCount == null ? 2 : 3; i < commandResult.size(); i++) {
+      for (int i = 2; i < commandResult.size(); i++) {
         String groupValue = commandResult.getName(i);
         @SuppressWarnings("unchecked")
         NamedList<Object> groupResult = (NamedList<Object>) commandResult.getVal(i);
@@ -149,9 +148,6 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       TopGroups<String> topGroups = new TopGroups<String>(
         groupSort.getSort(), sortWithinGroup.getSort(), totalHitCount, totalGroupedHitCount, groupDocsArr
       );
-      if (totalGroupCount != null) {
-        topGroups = new TopGroups<String>(topGroups, totalGroupCount);
-      }
 
       result.put(key, topGroups);
     }

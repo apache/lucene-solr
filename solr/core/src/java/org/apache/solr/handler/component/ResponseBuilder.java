@@ -154,6 +154,7 @@ public class ResponseBuilder
 
   // Context fields for grouping
   public final Map<String, Collection<SearchGroup<String>>> mergedSearchGroups = new HashMap<String, Collection<SearchGroup<String>>>();
+  public final Map<String, Integer> mergedGroupCounts = new HashMap<String, Integer>();
   public final Map<String, Map<SearchGroup<String>, Set<String>>> searchGroupToShards = new HashMap<String, Map<SearchGroup<String>, Set<String>>>();
   public final Map<String, TopGroups<String>> mergedTopGroups = new HashMap<String, TopGroups<String>>();
   public final Map<String, QueryCommandResult> mergedQueryCommandResults = new HashMap<String, QueryCommandResult>();

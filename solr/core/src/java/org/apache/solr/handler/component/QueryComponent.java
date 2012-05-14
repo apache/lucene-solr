@@ -272,6 +272,7 @@ public class QueryComponent extends SearchComponent
                 .setField(searcher.getSchema().getField(field))
                 .setGroupSort(groupingSpec.getGroupSort())
                 .setTopNGroups(cmd.getOffset() + cmd.getLen())
+                .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
                 .build()
             );
           }
@@ -313,7 +314,6 @@ public class QueryComponent extends SearchComponent
                     .setMaxDocPerGroup(groupingSpec.getGroupOffset() + groupingSpec.getGroupLimit())
                     .setNeedScores(needScores)
                     .setNeedMaxScore(needScores)
-                    .setNeedGroupCount(groupingSpec.isIncludeGroupCount())
                     .build()
             );
           }
