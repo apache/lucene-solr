@@ -21,6 +21,13 @@ Other Changes
 * SOLR-3422: Refactored internal data classes. 
              All entities in data-config.xml must have a name (James Dyer)
 
+==================  3.6.1 ==================
+
+Bug Fixes
+----------------------
+* SOLR-3336: SolrEntityProcessor substitutes most variables at query time
+             (Michael Kroh, Lance Norskog, via Martijn van Groningen)
+
 ==================  3.6.0 ==================
 
 New Features

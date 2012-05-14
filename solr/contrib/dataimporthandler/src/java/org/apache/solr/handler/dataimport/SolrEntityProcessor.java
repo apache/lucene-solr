@@ -110,34 +110,6 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     } catch (MalformedURLException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE, e);
     }
-
-    this.queryString = context.getResolvedEntityAttribute(QUERY);
-    if (this.queryString == null) {
-      throw new DataImportHandlerException(
-          DataImportHandlerException.SEVERE,
-          "SolrEntityProcessor: parameter 'query' is required"
-      );
-    }
-    
-    String rowsP = context.getResolvedEntityAttribute(CommonParams.ROWS);
-    if (rowsP != null) {
-      rows = Integer.parseInt(rowsP);
-    }
-    
-    String fqAsString = context.getResolvedEntityAttribute(CommonParams.FQ);
-    if (fqAsString != null) {
-      this.filterQueries = fqAsString.split(",");
-    }
-    
-    String fieldsAsString = context.getResolvedEntityAttribute(CommonParams.FL);
-    if (fieldsAsString != null) {
-      this.fields = fieldsAsString.split(",");
-    }
-    this.queryType = context.getResolvedEntityAttribute(CommonParams.QT);
-    String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
-    if (timeoutAsString != null) {
-      this.timeout = Integer.parseInt(timeoutAsString);
-    }
   }
   
   @Override
@@ -176,6 +148,34 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   }
   
   protected SolrDocumentList doQuery(int start) {
+    this.queryString = context.getResolvedEntityAttribute(QUERY);
+    if (this.queryString == null) {
+      throw new DataImportHandlerException(
+          DataImportHandlerException.SEVERE,
+          "SolrEntityProcessor: parameter 'query' is required"
+      );
+    }
+
+    String rowsP = context.getResolvedEntityAttribute(CommonParams.ROWS);
+    if (rowsP != null) {
+      rows = Integer.parseInt(rowsP);
+    }
+
+    String fqAsString = context.getResolvedEntityAttribute(CommonParams.FQ);
+    if (fqAsString != null) {
+      this.filterQueries = fqAsString.split(",");
+    }
+
+    String fieldsAsString = context.getResolvedEntityAttribute(CommonParams.FL);
+    if (fieldsAsString != null) {
+      this.fields = fieldsAsString.split(",");
+    }
+    this.queryType = context.getResolvedEntityAttribute(CommonParams.QT);
+    String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
+    if (timeoutAsString != null) {
+      this.timeout = Integer.parseInt(timeoutAsString);
+    }
+
     SolrQuery solrQuery = new SolrQuery(queryString);
     solrQuery.setRows(rows);
     solrQuery.setStart(start);
