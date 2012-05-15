@@ -31,6 +31,9 @@ import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import com.carrotsearch.randomizedtesting.ClassValidator;
 
@@ -38,7 +41,19 @@ import com.carrotsearch.randomizedtesting.ClassValidator;
  * Don't allow shadowing of {@link BeforeClass} or {@link AfterClass} hooks
  * as it is very likely a user error and will prevent execution of shadowed hooks.
  */
-public class ValidateNoStaticHooksShadowing implements ClassValidator {
+public class TestRuleNoStaticHooksShadowing implements TestRule, ClassValidator {
+  
+  @Override
+  public Statement apply(final Statement base, final Description description) {
+    return new Statement() {
+      @Override
+      public void evaluate() throws Throwable {
+        validate(description.getTestClass());
+        base.evaluate();
+      }
+    };
+  }
+
   @Override
   public void validate(Class<?> clazz) throws Throwable {
     List<List<Method>> all = allDeclaredMethods(clazz);

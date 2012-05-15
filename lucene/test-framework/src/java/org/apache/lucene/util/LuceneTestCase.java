@@ -106,11 +106,6 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
   LuceneJUnit3MethodProvider.class,
   JUnit4MethodProvider.class
 })
-@Validators({
-  ValidateAssertionsRequired.class,
-  ValidateNoStaticHooksShadowing.class,
-  ValidateNoInstanceHooksOverrides.class
-})
 @Listeners({
   RunListenerPrintReproduceInfo.class
 })
@@ -297,6 +292,9 @@ public abstract class LuceneTestCase extends Assert {
   @ClassRule
   public static TestRule classRules = RuleChain
     .outerRule(suiteFailureMarker = new TestRuleMarkFailure())
+    .around(new TestRuleAssertionsRequired())
+    .around(new TestRuleNoStaticHooksShadowing())
+    .around(new TestRuleNoInstanceHooksOverrides())
     .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(new TestRuleIcuHack())
     .around(classNameRule = new TestRuleStoreClassName())

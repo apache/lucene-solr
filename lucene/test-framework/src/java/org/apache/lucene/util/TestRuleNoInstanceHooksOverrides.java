@@ -17,7 +17,10 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import static com.carrotsearch.randomizedtesting.MethodCollector.*;
+import static com.carrotsearch.randomizedtesting.MethodCollector.allDeclaredMethods;
+import static com.carrotsearch.randomizedtesting.MethodCollector.annotatedWith;
+import static com.carrotsearch.randomizedtesting.MethodCollector.flatten;
+import static com.carrotsearch.randomizedtesting.MethodCollector.removeOverrides;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -29,6 +32,9 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import com.carrotsearch.randomizedtesting.ClassValidator;
 
@@ -37,7 +43,18 @@ import com.carrotsearch.randomizedtesting.ClassValidator;
  * likely a user error and will result in superclass methods not being called
  * (requires manual chaining). 
  */
-public class ValidateNoInstanceHooksOverrides implements ClassValidator {
+public class TestRuleNoInstanceHooksOverrides implements TestRule, ClassValidator {
+  @Override
+  public Statement apply(final Statement base, final Description description) {
+    return new Statement() {
+      @Override
+      public void evaluate() throws Throwable {
+        validate(description.getTestClass());
+        base.evaluate();
+      }
+    };
+  }
+
   @Override
   public void validate(Class<?> clazz) throws Throwable {
     List<List<Method>> all = allDeclaredMethods(clazz);
