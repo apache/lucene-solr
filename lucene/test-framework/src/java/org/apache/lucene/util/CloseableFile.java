@@ -1,5 +1,7 @@
 package org.apache.lucene.util;
 
+import java.io.*;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -7,9 +9,9 @@ package org.apache.lucene.util;
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,28 +20,29 @@ package org.apache.lucene.util;
  */
 
 /**
- * Sneaky: rethrowing checked exceptions as unchecked
- * ones. Eh, it is sometimes useful...
- *
- * <p>Pulled from <a href="http://www.javapuzzlers.com">Java Puzzlers</a>.</p>
- * @see "http://www.amazon.com/Java-Puzzlers-Traps-Pitfalls-Corner/dp/032133678X"
+ * A {@link Closeable} that attempts to remove a given file/folder.
  */
-@SuppressWarnings({"unchecked","rawtypes"})
-public final class Rethrow {
-  /**
-   * Classy puzzler to rethrow any checked exception as an unchecked one.
-   */
-  private static class Rethrower<T extends Throwable> {
-    private void rethrow(Throwable t) throws T {
-      throw (T) t;
+final class CloseableFile implements Closeable {
+  private final File file;
+
+  public CloseableFile(File file) {
+    this.file = file;
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (file.exists()) {
+      try {
+        _TestUtil.rmDir(file);
+      } catch (IOException e) {
+        // Ignore the exception from rmDir.
+      }
+
+      // Re-check.
+      if (file.exists()) {
+        throw new IOException(
+            "Could not remove: " + file.getAbsolutePath());
+      }
     }
   }
-  
-  /**
-   * Rethrows <code>t</code> (identical object).
-   */
-  public static void rethrow(Throwable t) {
-    new Rethrower<Error>().rethrow(t);
-  }
 }
-

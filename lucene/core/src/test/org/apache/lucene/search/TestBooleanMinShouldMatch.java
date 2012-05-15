@@ -84,7 +84,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     public void verifyNrHits(Query q, int expected) throws Exception {
         ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
         if (expected != h.length) {
-            printHits(getName(), h, s);
+            printHits(getTestName(), h, s);
         }
         assertEquals("result count", expected, h.length);
         //System.out.println("TEST: now check");

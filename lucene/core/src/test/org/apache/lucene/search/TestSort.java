@@ -603,7 +603,7 @@ public class TestSort extends LuceneTestCase {
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getName() + " IntParser");
+    assertSaneFieldCaches(getTestName() + " IntParser");
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.FloatParser(){
@@ -612,7 +612,7 @@ public class TestSort extends LuceneTestCase {
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getName() + " FloatParser");
+    assertSaneFieldCaches(getTestName() + " FloatParser");
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.LongParser(){
@@ -621,7 +621,7 @@ public class TestSort extends LuceneTestCase {
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getName() + " LongParser");
+    assertSaneFieldCaches(getTestName() + " LongParser");
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.DoubleParser(){
@@ -630,7 +630,7 @@ public class TestSort extends LuceneTestCase {
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getName() + " DoubleParser");
+    assertSaneFieldCaches(getTestName() + " DoubleParser");
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.ByteParser(){
@@ -639,7 +639,7 @@ public class TestSort extends LuceneTestCase {
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getName() + " ByteParser");
+    assertSaneFieldCaches(getTestName() + " ByteParser");
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.ShortParser(){
@@ -648,7 +648,7 @@ public class TestSort extends LuceneTestCase {
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
-    assertSaneFieldCaches(getName() + " ShortParser");
+    assertSaneFieldCaches(getTestName() + " ShortParser");
     fc.purgeAllCaches();
   }
 
@@ -1229,7 +1229,7 @@ public class TestSort extends LuceneTestCase {
     
     // up to this point, all of the searches should have "sane" 
     // FieldCache behavior, and should have reused hte cache in several cases
-    assertSaneFieldCaches(getName() + " various");
+    assertSaneFieldCaches(getTestName() + " various");
     // next we'll check Locale based (String[]) for 'string', so purge first
     FieldCache.DEFAULT.purgeAllCaches();
   }

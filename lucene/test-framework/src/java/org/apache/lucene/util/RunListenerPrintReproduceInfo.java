@@ -1,0 +1,174 @@
+package org.apache.lucene.util;
+
+import static org.apache.lucene.util.LuceneTestCase.DEFAULT_LINE_DOCS_FILE;
+import static org.apache.lucene.util.LuceneTestCase.JENKINS_LARGE_LINE_DOCS_FILE;
+import static org.apache.lucene.util.LuceneTestCase.RANDOM_MULTIPLIER;
+import static org.apache.lucene.util.LuceneTestCase.TEST_CODEC;
+import static org.apache.lucene.util.LuceneTestCase.TEST_DIRECTORY;
+import static org.apache.lucene.util.LuceneTestCase.TEST_LINE_DOCS_FILE;
+import static org.apache.lucene.util.LuceneTestCase.TEST_NIGHTLY;
+import static org.apache.lucene.util.LuceneTestCase.TEST_POSTINGSFORMAT;
+import static org.apache.lucene.util.LuceneTestCase.classEnvRule;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.lucene.codecs.Codec;
+import org.junit.runner.Description;
+import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.RunListener;
+
+import com.carrotsearch.randomizedtesting.LifecycleScope;
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * A suite listener printing a "reproduce string". This ensures test result
+ * events are always captured properly even if exceptions happen at
+ * initialization or suite/ hooks level.
+ */
+public final class RunListenerPrintReproduceInfo extends RunListener {
+  /**
+   * A list of all test suite classes executed so far in this JVM (ehm, 
+   * under this class's classloader).
+   */
+  private static List<String> testClassesRun = new ArrayList<String>();
+
+  /**
+   * The currently executing scope.
+   */
+  private LifecycleScope scope;
+
+  /** Current test failed. */
+  private boolean testFailed;
+
+  /** Suite-level code (initialization, rule, hook) failed. */
+  private boolean suiteFailed;
+
+  /** A marker to print full env. diagnostics after the suite. */
+  private boolean printDiagnosticsAfterClass;
+
+
+  @Override
+  public void testRunStarted(Description description) throws Exception {
+    suiteFailed = false;
+    testFailed = false;
+    scope = LifecycleScope.SUITE;
+
+    Class<?> targetClass = RandomizedContext.current().getTargetClass();
+    testClassesRun.add(targetClass.getSimpleName());
+  }
+
+  @Override
+  public void testStarted(Description description) throws Exception {
+    this.testFailed = false;
+    this.scope = LifecycleScope.TEST;
+  }
+
+  @Override
+  public void testFailure(Failure failure) throws Exception {
+    if (scope == LifecycleScope.TEST) {
+      testFailed = true;
+    } else {
+      suiteFailed = true;
+    }
+    printDiagnosticsAfterClass = true;
+  }
+
+  @Override
+  public void testFinished(Description description) throws Exception {
+    if (testFailed) {
+      reportAdditionalFailureInfo(description.getMethodName());
+    }
+    scope = LifecycleScope.SUITE;
+    testFailed = false;
+  }
+
+  @Override
+  public void testRunFinished(Result result) throws Exception {
+    if (printDiagnosticsAfterClass || LuceneTestCase.VERBOSE) {
+      RunListenerPrintReproduceInfo.printDebuggingInformation();
+    }
+
+    if (suiteFailed) {
+      reportAdditionalFailureInfo(null);
+    }
+  }
+  
+  /** print some useful debugging information about the environment */
+  static void printDebuggingInformation() {
+    if (classEnvRule != null) {
+      System.err.println("NOTE: test params are: codec=" + Codec.getDefault() +
+          ", sim=" + classEnvRule.similarity +
+          ", locale=" + classEnvRule.locale +
+          ", timezone=" + (classEnvRule.timeZone == null ? "(null)" : classEnvRule.timeZone.getID()));
+    }
+    System.err.println("NOTE: " + System.getProperty("os.name") + " "
+        + System.getProperty("os.version") + " "
+        + System.getProperty("os.arch") + "/"
+        + System.getProperty("java.vendor") + " "
+        + System.getProperty("java.version") + " "
+        + (Constants.JRE_IS_64BIT ? "(64-bit)" : "(32-bit)") + "/"
+        + "cpus=" + Runtime.getRuntime().availableProcessors() + ","
+        + "threads=" + Thread.activeCount() + ","
+        + "free=" + Runtime.getRuntime().freeMemory() + ","
+        + "total=" + Runtime.getRuntime().totalMemory());
+    System.err.println("NOTE: All tests run in this JVM: " + Arrays.toString(testClassesRun.toArray()));
+  }
+
+  // We get here from InterceptTestCaseEvents on the 'failed' event....
+  public void reportAdditionalFailureInfo(final String testName) {
+    if (TEST_LINE_DOCS_FILE.endsWith(JENKINS_LARGE_LINE_DOCS_FILE)) {
+      System.err.println("NOTE: download the large Jenkins line-docs file by running 'ant get-jenkins-line-docs' in the lucene directory.");
+    }
+
+    StringBuilder b = new StringBuilder();
+    b.append("NOTE: reproduce with: ant test ")
+     .append("-Dtestcase=").append(RandomizedContext.current().getTargetClass().getSimpleName());
+    if (testName != null) {
+      b.append(" -Dtests.method=").append(testName);
+    }
+    b.append(" -Dtests.seed=")
+     .append(RandomizedContext.current().getRunnerSeedAsString())
+     .append(reproduceWithExtraParams());
+    System.err.println(b.toString());
+  }
+
+  // extra params that were overridden needed to reproduce the command
+  private static String reproduceWithExtraParams() {
+    StringBuilder sb = new StringBuilder();
+    if (classEnvRule != null) {
+      if (classEnvRule.locale != null) sb.append(" -Dtests.locale=").append(classEnvRule.locale);
+      if (classEnvRule.timeZone != null) sb.append(" -Dtests.timezone=").append(classEnvRule.timeZone.getID());
+    }
+    if (!TEST_CODEC.equals("random")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
+    if (!TEST_POSTINGSFORMAT.equals("random")) sb.append(" -Dtests.postingsformat=").append(TEST_POSTINGSFORMAT);
+    if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
+    if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
+    if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
+    if (!TEST_LINE_DOCS_FILE.equals(DEFAULT_LINE_DOCS_FILE)) sb.append(" -Dtests.linedocsfile=" + TEST_LINE_DOCS_FILE);
+
+    // TODO we can't randomize this yet (it drives ant crazy) but this makes tests reproduce
+    // in case machines have different default charsets...
+    sb.append(" -Dargs=\"-Dfile.encoding=" + System.getProperty("file.encoding") + "\"");
+    return sb.toString();
+  }  
+}

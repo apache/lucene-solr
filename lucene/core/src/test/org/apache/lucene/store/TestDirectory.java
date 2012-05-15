@@ -17,17 +17,21 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class TestDirectory extends LuceneTestCase {
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
+public class TestDirectory extends LuceneTestCase {
   public void testDetectClose() throws Throwable {
-    Directory[] dirs = new Directory[] { new RAMDirectory(), new SimpleFSDirectory(TEMP_DIR), new NIOFSDirectory(TEMP_DIR) };
+    Directory[] dirs = new Directory[] { 
+        new RAMDirectory(), 
+        new SimpleFSDirectory(TEMP_DIR), 
+        new NIOFSDirectory(TEMP_DIR)
+    };
+
     for (Directory dir : dirs) {
       dir.close();
       try {

@@ -36,7 +36,6 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
   
   @Test
   public void testRangeFilterId() throws IOException {
-    
     IndexReader reader = signedIndexReader;
     IndexSearcher search = newSearcher(reader);
     

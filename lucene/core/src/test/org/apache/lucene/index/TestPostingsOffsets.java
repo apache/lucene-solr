@@ -53,12 +53,17 @@ public class TestPostingsOffsets extends LuceneTestCase {
   
   public void setUp() throws Exception {
     super.setUp();
+
     // Currently only SimpleText and Lucene40 can index offsets into postings:
-    assumeTrue("codec does not support offsets", Codec.getDefault().getName().equals("SimpleText") || Codec.getDefault().getName().equals("Lucene40"));
+    String codecName = Codec.getDefault().getName();
+    assumeTrue("Codec does not support offsets: " + codecName, 
+        codecName.equals("SimpleText") || 
+        codecName.equals("Lucene40"));
+
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     
-    if (Codec.getDefault().getName().equals("Lucene40")) {
-      // sep etc are not implemented
+    if (codecName.equals("Lucene40")) {
+      // Sep etc are not implemented
       switch(random().nextInt(4)) {
         case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())); break;
         case 1: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat())); break;

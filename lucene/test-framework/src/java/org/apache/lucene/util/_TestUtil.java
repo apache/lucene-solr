@@ -28,6 +28,8 @@ import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.nio.CharBuffer;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -80,7 +82,7 @@ public class _TestUtil {
     try {
       File f = createTempFile(desc, "tmp", LuceneTestCase.TEMP_DIR);
       f.delete();
-      LuceneTestCase.registerTempDir(f);
+      LuceneTestCase.closeAfterSuite(new CloseableFile(f));
       return f;
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -120,10 +122,10 @@ public class _TestUtil {
     Enumeration<? extends ZipEntry> entries = zipFile.entries();
     
     rmDir(destDir);
-    
+
     destDir.mkdir();
-    LuceneTestCase.registerTempDir(destDir);
-    
+    LuceneTestCase.closeAfterSuite(new CloseableFile(destDir));
+
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();
       
@@ -881,7 +883,21 @@ public class _TestUtil {
     default:
       return ref.utf8ToString();
     }
-    
   }
- 
+
+  /**
+   * Shutdown {@link ExecutorService} and wait for its.
+   */
+  public static void shutdownExecutorService(ExecutorService ex) {
+    if (ex != null) {
+      try {
+        ex.shutdown();
+        ex.awaitTermination(1, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        // Just report it on the syserr.
+        System.err.println("Could not properly shutdown executor service.");
+        e.printStackTrace(System.err);
+      }
+    }
+  }
 }

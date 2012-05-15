@@ -34,7 +34,11 @@ import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.ClassValidator;
 
-public class NoStaticHooksShadowing implements ClassValidator {
+/**
+ * Don't allow shadowing of {@link BeforeClass} or {@link AfterClass} hooks
+ * as it is very likely a user error and will prevent execution of shadowed hooks.
+ */
+public class ValidateNoStaticHooksShadowing implements ClassValidator {
   @Override
   public void validate(Class<?> clazz) throws Throwable {
     List<List<Method>> all = allDeclaredMethods(clazz);

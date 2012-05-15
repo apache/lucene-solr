@@ -88,7 +88,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(),
         zkServer.getZkAddress(), "solrconfig.xml", "schema.xml");
     
-    log.info("####SETUP_START " + getName());
+    log.info("####SETUP_START " + getTestName());
     
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -129,7 +129,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     if (!initSuccessful) {
       fail("Init was not successful!");
     }
-    log.info("####SETUP_END " + getName());
+    log.info("####SETUP_END " + getTestName());
   }
      
   private void setupContainer(int port, String shard) throws IOException,

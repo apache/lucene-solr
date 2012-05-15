@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -25,8 +24,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeaks;
 
 /**
  * https://issues.apache.org/jira/browse/LUCENE-1974
@@ -36,7 +38,6 @@ import org.junit.BeforeClass;
  *    BooleanScorer.score(Collector collector, int max, int firstDocID)
  * 
  * Line 273, end=8192, subScorerDocID=11378, then more got false?
- * 
  */
 public class TestPrefixInBooleanQuery extends LuceneTestCase {
 

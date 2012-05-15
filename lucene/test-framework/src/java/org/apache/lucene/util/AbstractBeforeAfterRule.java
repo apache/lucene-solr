@@ -1,5 +1,15 @@
 package org.apache.lucene.util;
 
+import java.util.ArrayList;
+
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.MultipleFailureException;
+import org.junit.runners.model.Statement;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,40 +27,37 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
-public class StoreClassNameRule implements TestRule {
-  private volatile Description description;
-
+/**
+ * A {@link TestRule} that guarantees the execution of {@link #after} even
+ * if an exception has been thrown from delegate {@link Statement}. This is much
+ * like {@link AfterClass} or {@link After} annotations but can be used with
+ * {@link RuleChain} to guarantee the order of execution.
+ */
+abstract class AbstractBeforeAfterRule implements TestRule {
   @Override
   public Statement apply(final Statement s, final Description d) {
-    if (!d.isSuite()) {
-      throw new IllegalArgumentException("This is a @ClassRule (applies to suites only).");
-    }
-
     return new Statement() {
-      @Override
       public void evaluate() throws Throwable {
+        before();
+        
+        final ArrayList<Throwable> errors = new ArrayList<Throwable>();
         try {
-          description = d; 
           s.evaluate();
-        } finally {
-          description = null;
+        } catch (Throwable t) {
+          errors.add(t);
         }
+        
+        try {
+          after();
+        } catch (Throwable t) {
+          errors.add(t);
+        }
+
+        MultipleFailureException.assertEmpty(errors);
       }
     };
   }
-  
-  /**
-   * Returns the test class currently executing in this rule.
-   */
-  public Class<?> getTestClass() {
-    Description localDescription = description;
-    if (localDescription == null) {
-      throw new RuntimeException("The rule is not currently executing.");
-    }
-    return localDescription.getTestClass();
-  }
+
+  protected void before() throws Exception {}
+  protected void after() throws Exception {}
 }

@@ -364,7 +364,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     
     // Thread.sleep(10000000000L);
 
-    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
+    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
   }
   
   protected void queryPartialResults(final List<String> upShards, 

@@ -17,29 +17,19 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import com.carrotsearch.randomizedtesting.ClassValidator;
+
 /**
- * Sneaky: rethrowing checked exceptions as unchecked
- * ones. Eh, it is sometimes useful...
- *
- * <p>Pulled from <a href="http://www.javapuzzlers.com">Java Puzzlers</a>.</p>
- * @see "http://www.amazon.com/Java-Puzzlers-Traps-Pitfalls-Corner/dp/032133678X"
+ * Require assertions for Lucene/Solr packages.
  */
-@SuppressWarnings({"unchecked","rawtypes"})
-public final class Rethrow {
-  /**
-   * Classy puzzler to rethrow any checked exception as an unchecked one.
-   */
-  private static class Rethrower<T extends Throwable> {
-    private void rethrow(Throwable t) throws T {
-      throw (T) t;
-    }
-  }
-  
-  /**
-   * Rethrows <code>t</code> (identical object).
-   */
-  public static void rethrow(Throwable t) {
-    new Rethrower<Error>().rethrow(t);
+public class ValidateAssertionsRequired implements ClassValidator {
+  @Override
+  public void validate(Class<?> clazz) throws Throwable {
+    try {
+      assert false;
+      throw new RuntimeException("Enable assertions globally (-ea) or for Solr/Lucene subpackages only.");
+    } catch (AssertionError e) {
+      // Ok, enabled.
+    }    
   }
 }
-

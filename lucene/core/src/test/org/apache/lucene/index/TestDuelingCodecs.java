@@ -70,7 +70,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     // so this would make assertEquals complicated.
 
     leftCodec = Codec.forName("SimpleText");
-    rightCodec = new RandomCodec(random(), null);
+    rightCodec = new RandomCodec(random());
     leftDir = newDirectory();
     rightDir = newDirectory();
 

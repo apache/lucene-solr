@@ -91,7 +91,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer
         .getZkAddress(), "solrconfig.xml", "schema.xml");
     
-    log.info("####SETUP_START " + getName());
+    log.info("####SETUP_START " + getTestName());
     dataDir1 = new File(dataDir + File.separator + "data1");
     dataDir1.mkdirs();
     
@@ -129,7 +129,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
     System.clearProperty("hostPort");
     System.clearProperty("solr.solr.home");
     
-    log.info("####SETUP_END " + getName());
+    log.info("####SETUP_END " + getTestName());
     
   }
 

@@ -43,7 +43,6 @@ import java.util.Set;
 /**
  * Test for LBHttpSolrServer
  *
- *
  * @since solr 1.4
  */
 public class TestLBHttpSolrServer extends LuceneTestCase {
@@ -52,11 +51,13 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
 
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
   }
+
   @AfterClass
   public static void afterClass() throws Exception {
     if (savedFactory == null) {
@@ -100,6 +101,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     for (SolrInstance aSolr : solr) {
       aSolr.tearDown();
     }
+    httpClient.getConnectionManager().shutdown();
     super.tearDown();
   }
 

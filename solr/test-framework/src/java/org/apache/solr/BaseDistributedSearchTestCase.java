@@ -184,7 +184,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (!AbstractSolrTestCase.recurseDelete(testDir)) {
       System.err.println("!!!! WARNING: best effort to remove " + testDir.getAbsolutePath() + " FAILED !!!!!");
     }
-    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
+    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
     super.tearDown();
   }
 

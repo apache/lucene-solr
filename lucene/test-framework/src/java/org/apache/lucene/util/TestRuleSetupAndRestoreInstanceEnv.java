@@ -1,5 +1,8 @@
 package org.apache.lucene.util;
 
+import org.apache.lucene.search.BooleanQuery;
+import org.junit.internal.AssumptionViolatedException;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,19 +20,24 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.ClassValidator;
-
 /**
- * Require assertions for Lucene/Solr packages.
+ * Prepares and restores {@link LuceneTestCase} at instance level 
+ * (fine grained junk that doesn't fit anywhere else).
  */
-public class RequireAssertions implements ClassValidator {
-  @Override
-  public void validate(Class<?> clazz) throws Throwable {
-    try {
-      assert false;
-      throw new RuntimeException("Enable assertions globally (-ea) or for Solr/Lucene subpackages only.");
-    } catch (AssertionError e) {
-      // Ok, enabled.
-    }    
+final class TestRuleSetupAndRestoreInstanceEnv extends AbstractBeforeAfterRule {
+  private int savedBoolMaxClauseCount;
+
+  protected void before() {
+    savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
+
+    final String defFormat = _TestUtil.getPostingsFormat("thisCodeMakesAbsolutelyNoSenseCanWeDeleteIt");
+    if (LuceneTestCase.shouldAvoidCodec(defFormat)) {
+      throw new AssumptionViolatedException(
+          "Method not allowed to use codec: " + defFormat + ".");
+    }
+  }
+
+  protected void after() {
+    BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
   }
 }

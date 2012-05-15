@@ -108,7 +108,8 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
       FieldCacheSanityChecker.checkSanity(cache.getCacheEntries());
     
     if (0 < insanity.length)
-      dumpArray(getTestLabel() + " INSANITY", insanity, System.err);
+      dumpArray(getTestClass().getName() + "#" + getTestName() 
+          + " INSANITY", insanity, System.err);
 
     assertEquals("shouldn't be any cache insanity", 0, insanity.length);
     cache.purgeAllCaches();

@@ -130,7 +130,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         }
       }
     } finally {
-      purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
+      FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
     }
   }
 

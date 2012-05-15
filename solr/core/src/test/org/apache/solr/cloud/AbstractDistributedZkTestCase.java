@@ -42,7 +42,6 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    log.info("####SETUP_START " + getName());
     createTempDir();
     
     String zkDir = testDir.getAbsolutePath() + File.separator

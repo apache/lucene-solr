@@ -23,7 +23,6 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.MultipleFailureException;
@@ -34,17 +33,11 @@ import org.junit.runners.model.Statement;
  * {@link Thread#setDefaultUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)}
  * and causes test/ suite failures if uncaught exceptions are detected.
  */
-public class UncaughtExceptionsRule implements TestRule {
+public class TestRuleReportUncaughtExceptions implements TestRule {
   // This was originally volatile, but I don't think it needs to be. It's the same
   // thread accessing it, always.
   private UncaughtExceptionHandler savedUncaughtExceptionHandler;
   
-  private final LuceneTestCase ltc;
-  
-  public UncaughtExceptionsRule(LuceneTestCase ltc) {
-    this.ltc = ltc;
-  }
-
   public static class UncaughtExceptionEntry {
     public final Thread thread;
     public final Throwable exception;
@@ -86,27 +79,9 @@ public class UncaughtExceptionsRule implements TestRule {
           uncaughtExceptions.clear();
         }
 
-        if (hasNonAssumptionErrors(errors)) {
-          if (ltc == null) {
-            // class level failure (e.g. afterclass)
-            LuceneTestCase.reportPartialFailureInfo();
-          } else {
-            // failure in a method
-            ltc.reportAdditionalFailureInfo();
-          }
-        }
         MultipleFailureException.assertEmpty(errors);
       }
     };
-  }
-
-  private boolean hasNonAssumptionErrors(ArrayList<Throwable> errors) {
-    for (Throwable t : errors) {
-      if (!(t instanceof AssumptionViolatedException)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /**

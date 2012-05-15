@@ -23,20 +23,18 @@ import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.*;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class TestBinaryField extends LuceneTestCase {
   HttpSolrServer server;

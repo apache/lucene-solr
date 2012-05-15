@@ -60,14 +60,11 @@ public class TestWindowsMMap extends LuceneTestCase {
     return fb.toString();
   }
   
-  private final static String storePathname = 
-   _TestUtil.getTempDir("testLuceneMmap").getAbsolutePath();
-
   public void testMmapIndex() throws Exception {
     // sometimes the directory is not cleaned by rmDir, because on Windows it
     // may take some time until the files are finally dereferenced. So clean the
     // directory up front, or otherwise new IndexWriter will fail.
-    File dirPath = new File(storePathname);
+    File dirPath = _TestUtil.getTempDir("testLuceneMmap");
     rmDir(dirPath);
     MMapDirectory dir = new MMapDirectory(dirPath, null);
     

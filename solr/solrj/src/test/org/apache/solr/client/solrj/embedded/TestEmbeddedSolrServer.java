@@ -17,8 +17,12 @@ package org.apache.solr.client.solrj.embedded;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import junit.framework.Assert;
-import org.apache.lucene.util.SystemPropertiesRestoreRule;
+
 import org.apache.solr.core.SolrCore;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -26,9 +30,7 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
 

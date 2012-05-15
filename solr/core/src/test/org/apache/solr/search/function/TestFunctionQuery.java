@@ -198,7 +198,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
             Arrays.asList("v1","\0:[* TO *]"),  88,12
             );
 
-    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
+    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
   }
 
   @Test
@@ -281,7 +281,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       // System.out.println("Done test "+i);
     }
 
-    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity    
+    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
   }
 
   @Test
@@ -421,7 +421,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     );
 
 
-    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
+    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
   }
 
   /**
@@ -642,7 +642,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(fieldAsFunc, "sqrt(\0)");
     assertTrue(orig != FileFloatSource.onlyForTesting);
 
-    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity    
+    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
   }
 
   /**
@@ -669,7 +669,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
                100,10,  25,5,  0,0,   1,1);
     singleTest(fieldAsFunc, "log(\0)",  1,0);
 
-    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity    
+    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
   }
 
     @Test

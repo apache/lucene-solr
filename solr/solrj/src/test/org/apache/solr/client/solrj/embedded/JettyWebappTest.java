@@ -23,7 +23,6 @@ import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.SystemPropertiesRestoreRule;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -33,6 +32,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  *

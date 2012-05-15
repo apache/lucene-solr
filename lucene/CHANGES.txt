@@ -960,6 +960,9 @@ Documentation
 
 Build
 
+* LUCENE-4047: Cleanup of LuceneTestCase: moved blocks of initialization/ cleanup
+  code into JUnit instance and class rules. (Dawid Weiss)
+
 * LUCENE-4016: Require ANT 1.8.2+ for the build. 
 
 * LUCENE-3808: Refactoring of testing infrastructure to use randomizedtesting

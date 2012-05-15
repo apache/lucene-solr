@@ -86,7 +86,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     Config config = new Config(props);
     PerfRunData runData = new PerfRunData(config);
 
-    TaskSequence tasks = new TaskSequence(runData, getName(), null, false);
+    TaskSequence tasks = new TaskSequence(runData, getTestName(), null, false);
     tasks.addTask(new CreateIndexTask(runData));
     tasks.addTask(new AddDocTask(runData));
     tasks.addTask(new CloseIndexTask(runData));
