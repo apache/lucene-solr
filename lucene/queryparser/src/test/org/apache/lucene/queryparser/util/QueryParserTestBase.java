@@ -421,6 +421,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertQueryEquals("term*", null, "term*");
     assertQueryEquals("term*^2", null, "term*^2.0");
     assertQueryEquals("term~", null, "term~2");
+    assertQueryEquals("term~1", null, "term~1");
     assertQueryEquals("term~0.7", null, "term~1");
     assertQueryEquals("term~^3", null, "term~2^3.0");
     assertQueryEquals("term^3~", null, "term~2^3.0");

@@ -206,7 +206,7 @@ public class FuzzyQuery extends MultiTermQuery {
    */
   @Deprecated
   public static int floatToEdits(float minimumSimilarity, int termLen) {
-    if (minimumSimilarity > 1f) {
+    if (minimumSimilarity >= 1f) {
       return (int) Math.min(minimumSimilarity, LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     } else if (minimumSimilarity == 0.0f) {
       return 0; // 0 means exact, not infinite # of edits!
