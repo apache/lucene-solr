@@ -282,7 +282,7 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * Class environment setup rule.
    */
-  public static final TestRuleSetupAndRestoreClassEnv classEnvRule;
+  static final TestRuleSetupAndRestoreClassEnv classEnvRule;
 
   /**
    * Suite failure marker (any error in the test or suite scope).
