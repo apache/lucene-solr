@@ -56,11 +56,11 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
  * <p>
  * The preferred way to specify class (suite-level) setup/cleanup is to use
  * static methods annotated with {@link BeforeClass} and {@link AfterClass}. Any
- * code in these methods us executed withing the test framework's control and
+ * code in these methods is executed within the test framework's control and
  * ensure proper setup has been made. <b>Try not to use static initializers
  * (including complex final field initializers).</b> Static initializers are
- * executed before any setup rules can be executed and may cause you (or
- * somebody else) headaches.
+ * executed before any setup rules are fired and may cause you (or somebody 
+ * else) headaches.
  * 
  * <p>
  * For instance-level setup, use {@link Before} and {@link After} annotated
@@ -91,14 +91,14 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
  *   just dump the stack trace of all threads and you'll see the seed),</li>
  *   <li>the master seed can also be accessed manually by getting the current
  *   context ({@link RandomizedContext#current()}) and then calling
- *   {@link RandomizedContext#getRunnerSeedAsString()}.
+ *   {@link RandomizedContext#getRunnerSeedAsString()}.</li>
  * </ul>
  * 
  * <p>There is a number of other facilities tests can use, like:
  * <ul>
  *   <li>{@link #closeAfterTest(Closeable)} and {@link #closeAfterSuite(Closeable)} to
- * register resources to be closed after each scope (if close fails, the scope
- * will fail too).
+ *   register resources to be closed after each scope (if close fails, the scope
+ *   will fail too).</li>
  * </ul> 
  */
 @RunWith(RandomizedRunner.class)
