@@ -513,6 +513,9 @@ API Changes
   immutable instances of NormalizeCharMap. (Dawid Weiss, Mike
   McCandless)
 
+* LUCENE-4063: FrenchLightStemmer no longer deletes repeated digits.
+  (Tanguy Moal via Steve Rowe)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions

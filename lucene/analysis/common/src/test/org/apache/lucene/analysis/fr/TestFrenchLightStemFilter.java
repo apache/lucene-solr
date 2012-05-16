@@ -153,6 +153,22 @@ public class TestFrenchLightStemFilter extends BaseTokenStreamTestCase {
     
     checkOneTerm(analyzer, "disposition", "dispos");
     checkOneTerm(analyzer, "dispose", "dispos");
+
+    // SOLR-3463 : abusive compression of repeated characters in numbers
+    // Trailing repeated char elision :
+    checkOneTerm(analyzer, "1234555", "1234555");
+    // Repeated char within numbers with more than 4 characters :
+    checkOneTerm(analyzer, "12333345", "12333345");
+    // Short numbers weren't affected already:
+    checkOneTerm(analyzer, "1234", "1234");
+    // Ensure behaviour is preserved for words!
+    // Trailing repeated char elision :
+    checkOneTerm(analyzer, "abcdeff", "abcdef");
+    // Repeated char within words with more than 4 characters :
+    checkOneTerm(analyzer, "abcccddeef", "abcdef");
+    checkOneTerm(analyzer, "créées", "cre");
+    // Combined letter and digit repetition
+    checkOneTerm(analyzer, "22hh00", "22h00"); // 10:00pm
   }
   
   /** Test against a vocabulary from the reference impl */
