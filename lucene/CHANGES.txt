@@ -995,6 +995,10 @@ Build
 * LUCENE-3286: Moved remainder of contrib/xml-query-parser to lucene/queryparser.
   Classes now found at org.apache.lucene.queryparser.xml.*
 
+* LUCENE-4059: Improve ANT task prepare-webpages (used by documentation
+  tasks) to correctly encode build file names as URIs for later processing by
+  XSL.  (Greg Bowyer, Uwe Schindler)
+
 ======================= Lucene 3.6.0 =======================
 
 Changes in backwards compatibility policy
