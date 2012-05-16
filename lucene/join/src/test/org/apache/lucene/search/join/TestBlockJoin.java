@@ -444,7 +444,6 @@ public class TestBlockJoin extends LuceneTestCase {
     }
 
     final IndexSearcher s = newSearcher(r);
-    s.setDefaultFieldSortScoring(true, true);
 
     final IndexSearcher joinS = newSearcher(joinR);
 

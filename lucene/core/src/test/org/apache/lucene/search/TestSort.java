@@ -44,9 +44,11 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -218,7 +220,6 @@ public class TestSort extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close ();
     IndexSearcher s = newSearcher(reader);
-    s.setDefaultFieldSortScoring(true, true);
     return s;
   }
 
@@ -734,6 +735,15 @@ public class TestSort extends LuceneTestCase {
     public Integer value(int slot) {
       return Integer.valueOf(slotValues[slot]);
     }
+
+    @Override
+    public int compareDocToValue(int doc, Integer valueObj) {
+      final int value = valueObj.intValue();
+      final int docValue = docValues[doc];
+
+      // values are small enough that overflow won't happen
+      return docValue - value;
+    }
   }
 
   static class MyFieldComparatorSource extends FieldComparatorSource {
@@ -889,7 +899,7 @@ public class TestSort extends LuceneTestCase {
 
     // try to pick a query that will result in an unnormalized
     // score greater than 1 to test for correct normalization
-    final TopDocs docs1 = full.search(queryE,null,nDocs,sort);
+    final TopDocs docs1 = full.search(queryE,null,nDocs,sort,true,true);
 
     // a filter that only allows through the first hit
     Filter filt = new Filter() {
@@ -903,7 +913,7 @@ public class TestSort extends LuceneTestCase {
       }
     };
 
-    TopDocs docs2 = full.search(queryE, filt, nDocs, sort);
+    TopDocs docs2 = full.search(queryE, filt, nDocs, sort,true,true);
     
     assertEquals(docs1.scoreDocs[0].score, docs2.scoreDocs[0].score, 1e-6);
   }
@@ -1244,7 +1254,7 @@ public class TestSort extends LuceneTestCase {
       String expectedResult) throws IOException {
 
     //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
-    TopDocs hits = searcher.search(query, null, Math.max(1, expectedResult.length()), sort);
+    TopDocs hits = searcher.search(query, null, Math.max(1, expectedResult.length()), sort, true, true);
     ScoreDoc[] result = hits.scoreDocs;
     assertEquals(expectedResult.length(),hits.totalHits);
     StringBuilder buff = new StringBuilder(10);
@@ -1477,5 +1487,39 @@ public class TestSort extends LuceneTestCase {
 
     r.close();
     dir.close();
+  }
+
+  public void testMaxScore() throws Exception {
+    Directory d = newDirectory();
+    // Not RIW because we need exactly 2 segs:
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    int id = 0;
+    for(int seg=0;seg<2;seg++) {
+      for(int docIDX=0;docIDX<10;docIDX++) {
+        Document doc = new Document();
+        doc.add(newField("id", ""+docIDX, StringField.TYPE_STORED));
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<id;i++) {
+          sb.append(' ');
+          sb.append("text");
+        }
+        doc.add(newField("body", sb.toString(), TextField.TYPE_UNSTORED));
+        w.addDocument(doc);
+        id++;
+      }
+      w.commit();
+    }
+
+    IndexReader r = DirectoryReader.open(w, true);
+    w.close();
+    Query q = new TermQuery(new Term("body", "text"));
+    IndexSearcher s = newSearcher(r);
+    float maxScore = s.search(q , 10).getMaxScore();
+    assertEquals(maxScore, s.search(q, null, 3, Sort.INDEXORDER, random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, null, 3, Sort.RELEVANCE, random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, false)}), random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, true)}), random().nextBoolean(), true).getMaxScore(), 0.0);
+    r.close();
+    d.close();
   }
 }

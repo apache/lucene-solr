@@ -266,6 +266,11 @@ Changes in backwards compatibility policy
 * LUCENE-3970: Rename Fields.getUniqueFieldCount -> .size() and
   Terms.getUniqueTermCount -> .size().  (Iulius Curt via Mike McCandless)
 
+* LUCENE-3514: IndexSearcher.setDefaultFieldSortScoring was removed
+  and replaced with per-search control via new expert search methods
+  that take two booleans indicating whether hit scores and max
+  score should be computed.  (Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -856,6 +861,10 @@ New features
   
 * LUCENE-4039: Add AddIndexesTask to benchmark, which uses IW.addIndexes. 
   (Shai Erera)
+
+* LUCENE-3514: Added IndexSearcher.searchAfter when Sort is used,
+  returning results after a specified FieldDoc for deep
+  paging.  (Mike McCandless)
 
 Optimizations
 

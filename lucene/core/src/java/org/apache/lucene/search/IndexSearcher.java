@@ -304,14 +304,51 @@ public class IndexSearcher {
    * <code>sort</code>.
    * 
    * <p>NOTE: this does not compute scores by default; use
-   * {@link IndexSearcher#setDefaultFieldSortScoring} to
-   * enable scoring.
+   * {@link IndexSearcher#search(Query,Filter,int,Sort,boolean,boolean)} to
+   * control scoring.
    *
    * @throws BooleanQuery.TooManyClauses
    */
   public TopFieldDocs search(Query query, Filter filter, int n,
                              Sort sort) throws IOException {
-    return search(createNormalizedWeight(wrapFilter(query, filter)), n, sort);
+    return search(createNormalizedWeight(wrapFilter(query, filter)), n, sort, false, false);
+  }
+
+  /** Search implementation with arbitrary sorting, plus
+   * control over whether hit scores and max score
+   * should be computed.  Finds
+   * the top <code>n</code> hits for <code>query</code>, applying
+   * <code>filter</code> if non-null, and sorting the hits by the criteria in
+   * <code>sort</code>.  If <code>doDocScores</code> is <code>true</code>
+   * then the score of each hit will be computed and
+   * returned.  If <code>doMaxScore</code> is
+   * <code>true</code> then the maximum score over all
+   * collected hits will be computed.
+   * 
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopFieldDocs search(Query query, Filter filter, int n,
+                             Sort sort, boolean doDocScores, boolean doMaxScore) throws IOException {
+    return search(createNormalizedWeight(wrapFilter(query, filter)), n, sort, doDocScores, doMaxScore);
+  }
+
+  /** Finds the top <code>n</code>
+   * hits for <code>query</code>, applying <code>filter</code> if non-null,
+   * where all results are after a previous result (<code>after</code>).
+   * <p>
+   * By passing the bottom result from a previous page as <code>after</code>,
+   * this method can be used for efficient 'deep-paging' across potentially
+   * large result sets.
+   *
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopDocs searchAfter(ScoreDoc after, Query query, Filter filter, int n, Sort sort) throws IOException {
+    if (after != null && !(after instanceof FieldDoc)) {
+      // TODO: if we fix type safety of TopFieldDocs we can
+      // remove this
+      throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
+    }
+    return search(createNormalizedWeight(wrapFilter(query, filter)), (FieldDoc) after, n, sort, true, false, false);
   }
 
   /**
@@ -324,7 +361,52 @@ public class IndexSearcher {
    */
   public TopFieldDocs search(Query query, int n,
                              Sort sort) throws IOException {
-    return search(createNormalizedWeight(query), n, sort);
+    return search(createNormalizedWeight(query), n, sort, false, false);
+  }
+
+  /** Finds the top <code>n</code>
+   * hits for <code>query</code> where all results are after a previous 
+   * result (<code>after</code>).
+   * <p>
+   * By passing the bottom result from a previous page as <code>after</code>,
+   * this method can be used for efficient 'deep-paging' across potentially
+   * large result sets.
+   *
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopDocs searchAfter(ScoreDoc after, Query query, int n, Sort sort) throws IOException {
+    if (after != null && !(after instanceof FieldDoc)) {
+      // TODO: if we fix type safety of TopFieldDocs we can
+      // remove this
+      throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
+    }
+    return search(createNormalizedWeight(query), (FieldDoc) after, n, sort, true, false, false);
+  }
+
+  /** Finds the top <code>n</code>
+   * hits for <code>query</code> where all results are after a previous 
+   * result (<code>after</code>), allowing control over
+   * whether hit scores and max score should be computed.
+   * <p>
+   * By passing the bottom result from a previous page as <code>after</code>,
+   * this method can be used for efficient 'deep-paging' across potentially
+   * large result sets.  If <code>doDocScores</code> is <code>true</code>
+   * then the score of each hit will be computed and
+   * returned.  If <code>doMaxScore</code> is
+   * <code>true</code> then the maximum score over all
+   * collected hits will be computed.
+   *
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopDocs searchAfter(ScoreDoc after, Query query, Filter filter, int n, Sort sort,
+                             boolean doDocScores, boolean doMaxScore) throws IOException {
+    if (after != null && !(after instanceof FieldDoc)) {
+      // TODO: if we fix type safety of TopFieldDocs we can
+      // remove this
+      throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
+    }
+    return search(createNormalizedWeight(wrapFilter(query, filter)), (FieldDoc) after, n, sort, true,
+                  doDocScores, doMaxScore);
   }
 
   /** Expert: Low-level search implementation.  Finds the top <code>n</code>
@@ -383,7 +465,9 @@ public class IndexSearcher {
     return collector.topDocs();
   }
 
-  /** Expert: Low-level search implementation with arbitrary sorting.  Finds
+  /** Expert: Low-level search implementation with arbitrary
+   * sorting and control over whether hit scores and max
+   * score should be computed.  Finds
    * the top <code>n</code> hits for <code>query</code> and sorting the hits
    * by the criteria in <code>sort</code>.
    *
@@ -393,12 +477,13 @@ public class IndexSearcher {
    * @throws BooleanQuery.TooManyClauses
    */
   protected TopFieldDocs search(Weight weight,
-      final int nDocs, Sort sort) throws IOException {
-    return search(weight, nDocs, sort, true);
+                                final int nDocs, Sort sort,
+                                boolean doDocScores, boolean doMaxScore) throws IOException {
+    return search(weight, null, nDocs, sort, true, doDocScores, doMaxScore);
   }
 
   /**
-   * Just like {@link #search(Weight, int, Sort)}, but you choose
+   * Just like {@link #search(Weight, int, Sort, boolean, boolean)}, but you choose
    * whether or not the fields in the returned {@link FieldDoc} instances should
    * be set by specifying fillFields.
    *
@@ -408,27 +493,29 @@ public class IndexSearcher {
    * then pass that to {@link #search(AtomicReaderContext[], Weight,
    * Collector)}.</p>
    */
-  protected TopFieldDocs search(Weight weight, int nDocs,
-                                Sort sort, boolean fillFields)
+  protected TopFieldDocs search(Weight weight, FieldDoc after, int nDocs,
+                                Sort sort, boolean fillFields,
+                                boolean doDocScores, boolean doMaxScore)
       throws IOException {
 
     if (sort == null) throw new NullPointerException();
     
     if (executor == null) {
       // use all leaves here!
-      return search (leafContexts, weight, nDocs, sort, fillFields);
+      return search(leafContexts, weight, after, nDocs, sort, fillFields, doDocScores, doMaxScore);
     } else {
       final TopFieldCollector topCollector = TopFieldCollector.create(sort, nDocs,
+                                                                      after,
                                                                       fillFields,
-                                                                      fieldSortDoTrackScores,
-                                                                      fieldSortDoMaxScore,
+                                                                      doDocScores,
+                                                                      doMaxScore,
                                                                       false);
 
       final Lock lock = new ReentrantLock();
       final ExecutionHelper<TopFieldDocs> runner = new ExecutionHelper<TopFieldDocs>(executor);
       for (int i = 0; i < leafSlices.length; i++) { // search each leaf slice
         runner.submit(
-                      new SearcherCallableWithSort(lock, this, leafSlices[i], weight, nDocs, topCollector, sort));
+                      new SearcherCallableWithSort(lock, this, leafSlices[i], weight, after, nDocs, topCollector, sort, doDocScores, doMaxScore));
       }
       int totalHits = 0;
       float maxScore = Float.NEGATIVE_INFINITY;
@@ -447,18 +534,12 @@ public class IndexSearcher {
   
   
   /**
-   * Just like {@link #search(Weight, int, Sort)}, but you choose
+   * Just like {@link #search(Weight, int, Sort, boolean, boolean)}, but you choose
    * whether or not the fields in the returned {@link FieldDoc} instances should
    * be set by specifying fillFields.
-   *
-   * <p>NOTE: this does not compute scores by default.  If you
-   * need scores, create a {@link TopFieldCollector}
-   * instance by calling {@link TopFieldCollector#create} and
-   * then pass that to {@link #search(AtomicReaderContext[], Weight, 
-   * Collector)}.</p>
    */
-  protected TopFieldDocs search(AtomicReaderContext[] leaves, Weight weight, int nDocs,
-      Sort sort, boolean fillFields) throws IOException {
+  protected TopFieldDocs search(AtomicReaderContext[] leaves, Weight weight, FieldDoc after, int nDocs,
+                                Sort sort, boolean fillFields, boolean doDocScores, boolean doMaxScore) throws IOException {
     // single thread
     int limit = reader.maxDoc();
     if (limit == 0) {
@@ -466,8 +547,9 @@ public class IndexSearcher {
     }
     nDocs = Math.min(nDocs, limit);
 
-    TopFieldCollector collector = TopFieldCollector.create(sort, nDocs,
-                                                           fillFields, fieldSortDoTrackScores, fieldSortDoMaxScore, !weight.scoresDocsOutOfOrder());
+    TopFieldCollector collector = TopFieldCollector.create(sort, nDocs, after,
+                                                           fillFields, doDocScores,
+                                                           doMaxScore, !weight.scoresDocsOutOfOrder());
     search(leaves, weight, collector);
     return (TopFieldDocs) collector.topDocs();
   }
@@ -553,26 +635,6 @@ public class IndexSearcher {
     return weight.explain(leafContexts[n], deBasedDoc);
   }
 
-  private boolean fieldSortDoTrackScores;
-  private boolean fieldSortDoMaxScore;
-
-  /** By default, no scores are computed when sorting by
-   *  field (using {@link #search(Query,Filter,int,Sort)}).
-   *  You can change that, per IndexSearcher instance, by
-   *  calling this method.  Note that this will incur a CPU
-   *  cost.
-   * 
-   *  @param doTrackScores If true, then scores are
-   *  returned for every matching document in {@link
-   *  TopFieldDocs}.
-   *
-   *  @param doMaxScore If true, then the max score for all
-   *  matching docs is computed. */
-  public void setDefaultFieldSortScoring(boolean doTrackScores, boolean doMaxScore) {
-    fieldSortDoTrackScores = doTrackScores;
-    fieldSortDoMaxScore = doMaxScore;
-  }
-
   /**
    * Creates a normalized weight for a top-level {@link Query}.
    * The query is rewritten by this method and {@link Query#createWeight} called,
@@ -626,7 +688,7 @@ public class IndexSearcher {
     }
 
     public TopDocs call() throws IOException {
-      final TopDocs docs = searcher.search (slice.leaves, weight, after, nDocs);
+      final TopDocs docs = searcher.search(slice.leaves, weight, after, nDocs);
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
       //it would be so nice if we had a thread-safe insert 
       lock.lock();
@@ -657,9 +719,13 @@ public class IndexSearcher {
     private final TopFieldCollector hq;
     private final Sort sort;
     private final LeafSlice slice;
+    private final FieldDoc after;
+    private final boolean doDocScores;
+    private final boolean doMaxScore;
 
     public SearcherCallableWithSort(Lock lock, IndexSearcher searcher, LeafSlice slice, Weight weight,
-        int nDocs, TopFieldCollector hq, Sort sort) {
+                                    FieldDoc after, int nDocs, TopFieldCollector hq, Sort sort,
+                                    boolean doDocScores, boolean doMaxScore) {
       this.lock = lock;
       this.searcher = searcher;
       this.weight = weight;
@@ -667,6 +733,9 @@ public class IndexSearcher {
       this.hq = hq;
       this.sort = sort;
       this.slice = slice;
+      this.after = after;
+      this.doDocScores = doDocScores;
+      this.doMaxScore = doMaxScore;
     }
 
     private final class FakeScorer extends Scorer {
@@ -707,7 +776,7 @@ public class IndexSearcher {
 
     public TopFieldDocs call() throws IOException {
       assert slice.leaves.length == 1;
-      final TopFieldDocs docs = searcher.search (slice.leaves, weight, nDocs, sort, true);
+      final TopFieldDocs docs = searcher.search(slice.leaves, weight, after, nDocs, sort, true, doDocScores, doMaxScore);
       lock.lock();
       try {
         final int base = slice.leaves[0].docBase;
@@ -717,6 +786,11 @@ public class IndexSearcher {
           fakeScorer.doc = scoreDoc.doc - base;
           fakeScorer.score = scoreDoc.score;
           hq.collect(scoreDoc.doc-base);
+        }
+
+        // Carry over maxScore from sub:
+        if (doMaxScore && docs.getMaxScore() > hq.maxScore) {
+          hq.maxScore = docs.getMaxScore();
         }
       } finally {
         lock.unlock();

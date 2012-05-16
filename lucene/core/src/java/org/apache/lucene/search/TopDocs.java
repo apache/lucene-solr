@@ -45,7 +45,7 @@ public class TopDocs {
   
   /** Sets the maximum score value encountered. */
   public void setMaxScore(float maxScore) {
-    this.maxScore=maxScore;
+    this.maxScore = maxScore;
   }
 
   /** Constructs a TopDocs with a default maxScore=Float.NaN. */

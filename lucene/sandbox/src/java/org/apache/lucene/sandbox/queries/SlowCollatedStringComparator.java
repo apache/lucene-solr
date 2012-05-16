@@ -118,4 +118,16 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
       return collator.compare(first, second);
     }
   }
+
+  @Override
+  public int compareDocToValue(int doc, String value) {
+    final BytesRef br = currentDocTerms.getTerm(doc, tempBR);
+    final String docValue;
+    if (br == null) {
+      docValue = null;
+    } else {
+      docValue = br.utf8ToString();
+    }
+    return compareValues(docValue, value);
+  }
 }

@@ -843,6 +843,166 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   }
 
+  /*
+   * Implements a TopFieldCollector when after != null.
+   */
+  private final static class PagingFieldCollector extends TopFieldCollector {
+
+    Scorer scorer;
+    int collectedHits;
+    final FieldComparator<?>[] comparators;
+    final int[] reverseMul;
+    final FieldValueHitQueue<Entry> queue;
+    final boolean trackDocScores;
+    final boolean trackMaxScore;
+    final FieldDoc after;
+    int afterDoc;
+    
+    public PagingFieldCollector(
+                                FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits, boolean fillFields,
+                                boolean trackDocScores, boolean trackMaxScore)
+        throws IOException {
+      super(queue, numHits, fillFields);
+      this.queue = queue;
+      this.trackDocScores = trackDocScores;
+      this.trackMaxScore = trackMaxScore;
+      this.after = after;
+      comparators = queue.getComparators();
+      reverseMul = queue.getReverseMul();
+
+      // Must set maxScore to NEG_INF, or otherwise Math.max always returns NaN.
+      maxScore = Float.NEGATIVE_INFINITY;
+    }
+    
+    void updateBottom(int doc, float score) {
+      bottom.doc = docBase + doc;
+      bottom.score = score;
+      bottom = pq.updateTop();
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override
+    public void collect(int doc) throws IOException {
+      totalHits++;
+
+      //System.out.println("  collect doc=" + doc);
+
+      // Check if this hit was already collected on a
+      // previous page:
+      boolean sameValues = true;
+      for(int compIDX=0;compIDX<comparators.length;compIDX++) {
+        final FieldComparator comp = comparators[compIDX];
+
+        final int cmp = reverseMul[compIDX] * comp.compareDocToValue(doc, after.fields[compIDX]);
+        if (cmp < 0) {
+          // Already collected on a previous page
+          //System.out.println("    skip: before");
+          return;
+        } else if (cmp > 0) {
+          // Not yet collected
+          sameValues = false;
+          //System.out.println("    keep: after");
+          break;
+        }
+      }
+
+      // Tie-break by docID:
+      if (sameValues && doc <= afterDoc) {
+        // Already collected on a previous page
+        //System.out.println("    skip: tie-break");
+        return;
+      }
+
+      collectedHits++;
+
+      float score = Float.NaN;
+      if (trackMaxScore) {
+        score = scorer.score();
+        if (score > maxScore) {
+          maxScore = score;
+        }
+      }
+
+      if (queueFull) {
+        // Fastmatch: return if this hit is not competitive
+        for (int i = 0;; i++) {
+          final int c = reverseMul[i] * comparators[i].compareBottom(doc);
+          if (c < 0) {
+            // Definitely not competitive.
+            return;
+          } else if (c > 0) {
+            // Definitely competitive.
+            break;
+          } else if (i == comparators.length - 1) {
+            // This is the equals case.
+            if (doc + docBase > bottom.doc) {
+              // Definitely not competitive
+              return;
+            }
+            break;
+          }
+        }
+
+        // This hit is competitive - replace bottom element in queue & adjustTop
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].copy(bottom.slot, doc);
+        }
+
+        // Compute score only if it is competitive.
+        if (trackDocScores && !trackMaxScore) {
+          score = scorer.score();
+        }
+        updateBottom(doc, score);
+
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].setBottom(bottom.slot);
+        }
+      } else {
+        // Startup transient: queue hasn't gathered numHits yet
+        final int slot = collectedHits - 1;
+        //System.out.println("    slot=" + slot);
+        // Copy hit into queue
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].copy(slot, doc);
+        }
+
+        // Compute score only if it is competitive.
+        if (trackDocScores && !trackMaxScore) {
+          score = scorer.score();
+        }
+        bottom = pq.add(new Entry(slot, docBase + doc, score));
+        queueFull = collectedHits == numHits;
+        if (queueFull) {
+          for (int i = 0; i < comparators.length; i++) {
+            comparators[i].setBottom(bottom.slot);
+          }
+        }
+      }
+    }
+
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+      for (int i = 0; i < comparators.length; i++) {
+        comparators[i].setScorer(scorer);
+      }
+    }
+    
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+      docBase = context.docBase;
+      afterDoc = after.doc - docBase;
+      for (int i = 0; i < comparators.length; i++) {
+        queue.setComparator(i, comparators[i].setNextReader(context));
+      }
+    }
+  }
+
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
   
   private final boolean fillFields;
@@ -909,6 +1069,52 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       boolean fillFields, boolean trackDocScores, boolean trackMaxScore,
       boolean docsScoredInOrder)
       throws IOException {
+    return create(sort, numHits, null, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder);
+  }
+
+  /**
+   * Creates a new {@link TopFieldCollector} from the given
+   * arguments.
+   *
+   * <p><b>NOTE</b>: The instances returned by this method
+   * pre-allocate a full array of length
+   * <code>numHits</code>.
+   * 
+   * @param sort
+   *          the sort criteria (SortFields).
+   * @param numHits
+   *          the number of results to collect.
+   * @param after
+   *          only hits after this FieldDoc will be collected
+   * @param fillFields
+   *          specifies whether the actual field values should be returned on
+   *          the results (FieldDoc).
+   * @param trackDocScores
+   *          specifies whether document scores should be tracked and set on the
+   *          results. Note that if set to false, then the results' scores will
+   *          be set to Float.NaN. Setting this to true affects performance, as
+   *          it incurs the score computation on each competitive result.
+   *          Therefore if document scores are not required by the application,
+   *          it is recommended to set it to false.
+   * @param trackMaxScore
+   *          specifies whether the query's maxScore should be tracked and set
+   *          on the resulting {@link TopDocs}. Note that if set to false,
+   *          {@link TopDocs#getMaxScore()} returns Float.NaN. Setting this to
+   *          true affects performance as it incurs the score computation on
+   *          each result. Also, setting this true automatically sets
+   *          <code>trackDocScores</code> to true as well.
+   * @param docsScoredInOrder
+   *          specifies whether documents are scored in doc Id order or not by
+   *          the given {@link Scorer} in {@link #setScorer(Scorer)}.
+   * @return a {@link TopFieldCollector} instance which will sort the results by
+   *         the sort criteria.
+   * @throws IOException
+   */
+  public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
+      boolean fillFields, boolean trackDocScores, boolean trackMaxScore,
+      boolean docsScoredInOrder)
+      throws IOException {
+
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
     }
@@ -918,43 +1124,56 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
-    if (queue.getComparators().length == 1) {
+
+    if (after == null) {
+      if (queue.getComparators().length == 1) {
+        if (docsScoredInOrder) {
+          if (trackMaxScore) {
+            return new OneComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
+          } else if (trackDocScores) {
+            return new OneComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+          } else {
+            return new OneComparatorNonScoringCollector(queue, numHits, fillFields);
+          }
+        } else {
+          if (trackMaxScore) {
+            return new OutOfOrderOneComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
+          } else if (trackDocScores) {
+            return new OutOfOrderOneComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+          } else {
+            return new OutOfOrderOneComparatorNonScoringCollector(queue, numHits, fillFields);
+          }
+        }
+      }
+
+      // multiple comparators.
       if (docsScoredInOrder) {
         if (trackMaxScore) {
-          return new OneComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
+          return new MultiComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
         } else if (trackDocScores) {
-          return new OneComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+          return new MultiComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
         } else {
-          return new OneComparatorNonScoringCollector(queue, numHits, fillFields);
+          return new MultiComparatorNonScoringCollector(queue, numHits, fillFields);
         }
       } else {
         if (trackMaxScore) {
-          return new OutOfOrderOneComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
+          return new OutOfOrderMultiComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
         } else if (trackDocScores) {
-          return new OutOfOrderOneComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+          return new OutOfOrderMultiComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
         } else {
-          return new OutOfOrderOneComparatorNonScoringCollector(queue, numHits, fillFields);
+          return new OutOfOrderMultiComparatorNonScoringCollector(queue, numHits, fillFields);
         }
       }
-    }
-
-    // multiple comparators.
-    if (docsScoredInOrder) {
-      if (trackMaxScore) {
-        return new MultiComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
-      } else if (trackDocScores) {
-        return new MultiComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
-      } else {
-        return new MultiComparatorNonScoringCollector(queue, numHits, fillFields);
-      }
     } else {
-      if (trackMaxScore) {
-        return new OutOfOrderMultiComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
-      } else if (trackDocScores) {
-        return new OutOfOrderMultiComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
-      } else {
-        return new OutOfOrderMultiComparatorNonScoringCollector(queue, numHits, fillFields);
+      if (after.fields == null) {
+        throw new IllegalArgumentException("after.fields wasn't set; you must pass fillFields=true for the previous search");
       }
+
+      if (after.fields.length != sort.getSort().length) {
+        throw new IllegalArgumentException("after.fields has " + after.fields.length + " values but sort has " + sort.getSort().length);
+      }
+
+      return new PagingFieldCollector(queue, after, numHits, fillFields, trackDocScores, trackMaxScore);
     }
   }
   

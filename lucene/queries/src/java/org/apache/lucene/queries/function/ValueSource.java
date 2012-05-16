@@ -184,5 +184,18 @@ public abstract class ValueSource {
     public Double value(int slot) {
       return values[slot];
     }
+
+    @Override
+    public int compareDocToValue(int doc, Double valueObj) {
+      final double value = valueObj.doubleValue();
+      final double docValue = docVals.doubleVal(doc);
+      if (docValue < value) {
+        return -1;
+      } else if (docValue > value) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
   }
 }

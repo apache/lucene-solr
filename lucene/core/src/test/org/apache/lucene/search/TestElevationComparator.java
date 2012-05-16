@@ -188,6 +188,14 @@ class ElevationComparatorSource extends FieldComparatorSource {
      public Integer value(int slot) {
        return Integer.valueOf(values[slot]);
      }
+
+     @Override
+     public int compareDocToValue(int doc, Integer valueObj) throws IOException {
+       final int value = valueObj.intValue();
+       final int docValue = docVal(doc);
+       // values will be small enough that there is no overflow concern
+       return value - docValue;
+     }
    };
  }
 }

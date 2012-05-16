@@ -139,6 +139,10 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
+    public int compareDocToValue(int doc, Object value) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
 
   static final class JustCompileFieldComparatorSource extends FieldComparatorSource {
