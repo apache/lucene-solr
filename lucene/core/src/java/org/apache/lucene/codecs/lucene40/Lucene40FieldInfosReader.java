@@ -49,10 +49,6 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
   public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosWriter.FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
-
-    boolean hasVectors = false;
-    boolean hasFreq = false;
-    boolean hasProx = false;
     
     try {
       final int format = input.readVInt();
@@ -92,9 +88,6 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           storePayloads = false;
         }
-        hasVectors |= storeTermVector;
-        hasProx |= isIndexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-        hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
         // DV Types are packed in one byte
         byte val = input.readByte();
         final DocValues.Type docValuesType = getDocValuesType((byte) (val & 0x0F));
@@ -107,7 +100,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
       
-      return new ReadOnlyFieldInfos(infos, hasFreq, hasProx, hasVectors);
+      return new ReadOnlyFieldInfos(infos);
     } finally {
       input.close();
     }

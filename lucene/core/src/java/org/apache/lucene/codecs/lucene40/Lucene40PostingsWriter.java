@@ -164,10 +164,10 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     }
     */
     this.fieldInfo = fieldInfo;
-    indexOptions = fieldInfo.indexOptions;
+    indexOptions = fieldInfo.getIndexOptions();
     
     storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;        
-    storePayloads = fieldInfo.storePayloads;
+    storePayloads = fieldInfo.hasPayloads();
     //System.out.println("  set init blockFreqStart=" + freqStart);
     //System.out.println("  set init blockProxStart=" + proxStart);
   }

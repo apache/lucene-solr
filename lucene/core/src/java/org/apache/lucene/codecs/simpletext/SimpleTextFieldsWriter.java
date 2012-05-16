@@ -107,7 +107,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
     private int lastEndOffset = -1;
 
     public SimpleTextPostingsWriter(FieldInfo field) {
-      this.indexOptions = field.indexOptions;
+      this.indexOptions = field.getIndexOptions();
       writePositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       writeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       //System.out.println("writeOffsets=" + writeOffsets);

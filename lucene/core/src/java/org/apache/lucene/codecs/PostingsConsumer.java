@@ -70,7 +70,8 @@ public abstract class PostingsConsumer {
     int df = 0;
     long totTF = 0;
 
-    if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_ONLY) {
+    IndexOptions indexOptions = mergeState.fieldInfo.getIndexOptions();
+    if (indexOptions == IndexOptions.DOCS_ONLY) {
       while(true) {
         final int doc = postings.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) {
@@ -82,7 +83,7 @@ public abstract class PostingsConsumer {
         df++;
       }
       totTF = -1;
-    } else if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS) {
+    } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
       while(true) {
         final int doc = postings.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) {
@@ -95,7 +96,7 @@ public abstract class PostingsConsumer {
         df++;
         totTF += freq;
       }
-    } else if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+    } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
       while(true) {
         final int doc = postingsEnum.nextDoc();
@@ -120,7 +121,7 @@ public abstract class PostingsConsumer {
         df++;
       }
     } else {
-      assert mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+      assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
       final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
       while(true) {
         final int doc = postingsEnum.nextDoc();

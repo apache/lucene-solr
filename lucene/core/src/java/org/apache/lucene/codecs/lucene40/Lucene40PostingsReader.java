@@ -200,7 +200,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       // undefined
     }
 
-    if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
+    if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
       if (isFirstTerm) {
         termState.proxOffset = termState.bytesReader.readVLong();
       } else {
@@ -212,7 +212,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-    if (needsFreqs && fieldInfo.indexOptions == IndexOptions.DOCS_ONLY) {
+    if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
       return null;
     } else if (canReuse(reuse, liveDocs)) {
       // if (DEBUG) System.out.println("SPR.docs ts=" + termState);
@@ -248,13 +248,13 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
                                                DocsAndPositionsEnum reuse, boolean needsOffsets)
     throws IOException {
 
-    boolean hasOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    boolean hasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     if (needsOffsets && !hasOffsets) {
       return null; // not available
     }
 
     // TODO: refactor
-    if (fieldInfo.storePayloads || hasOffsets) {
+    if (fieldInfo.hasPayloads() || hasOffsets) {
       SegmentFullPositionsEnum docsEnum;
       if (reuse == null || !(reuse instanceof SegmentFullPositionsEnum)) {
         docsEnum = new SegmentFullPositionsEnum(freqIn, proxIn);
@@ -326,9 +326,9 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     
     
     DocsEnum reset(FieldInfo fieldInfo, StandardTermState termState) throws IOException {
-      indexOmitsTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
-      storePayloads = fieldInfo.storePayloads;
-      storeOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      indexOmitsTF = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY;
+      storePayloads = fieldInfo.hasPayloads();
+      storeOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       freqOffset = termState.freqOffset;
       skipOffset = termState.skipOffset;
 
@@ -701,8 +701,8 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
-      assert fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-      assert !fieldInfo.storePayloads;
+      assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      assert !fieldInfo.hasPayloads();
 
       this.liveDocs = liveDocs;
 
@@ -914,9 +914,9 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     }
 
     public SegmentFullPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
-      storeOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-      storePayloads = fieldInfo.storePayloads;
-      assert fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      storeOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      storePayloads = fieldInfo.hasPayloads();
+      assert fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       assert storePayloads || storeOffsets;
       if (payload == null) {
         payload = new BytesRef();

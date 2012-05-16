@@ -205,7 +205,8 @@ final class SegmentMerger {
       final AtomicReader reader = readerAndLiveDocs.reader;
       FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fi : readerFieldInfos) {
-        FieldInfo merged = mergeState.fieldInfos.add(fi);
+        // nocommit: ugly
+        FieldInfo merged = ((MutableFieldInfos)mergeState.fieldInfos).add(fi);
         // update the type promotion mapping for this reader
         if (fi.hasDocValues()) {
           TypePromoter previous = docValuesTypes.get(merged);

@@ -148,7 +148,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     PulsingTermState termState = (PulsingTermState) _termState;
 
     // if we have positions, its total TF, otherwise its computed based on docFreq.
-    long count = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 ? termState.totalTermFreq : termState.docFreq;
+    long count = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 ? termState.totalTermFreq : termState.docFreq;
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
     if (count <= maxPositions) {
@@ -179,7 +179,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsEnum docs(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-    if (needsFreqs && field.indexOptions == IndexOptions.DOCS_ONLY) {
+    if (needsFreqs && field.getIndexOptions() == IndexOptions.DOCS_ONLY) {
       return null;
     }
     PulsingTermState termState = (PulsingTermState) _termState;
@@ -217,9 +217,9 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse,
                                                boolean needsOffsets) throws IOException {
-    if (field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+    if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
       return null;
-    } else if (needsOffsets && field.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+    } else if (needsOffsets && field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
       return null;
     }
 
@@ -270,9 +270,9 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private int payloadLength;
 
     public PulsingDocsEnum(FieldInfo fieldInfo) {
-      indexOptions = fieldInfo.indexOptions;
-      storePayloads = fieldInfo.storePayloads;
-      storeOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      indexOptions = fieldInfo.getIndexOptions();
+      storePayloads = fieldInfo.hasPayloads();
+      storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }
 
     public PulsingDocsEnum reset(Bits liveDocs, PulsingTermState termState) {
@@ -296,7 +296,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     }
 
     boolean canReuse(FieldInfo fieldInfo) {
-      return indexOptions == fieldInfo.indexOptions && storePayloads == fieldInfo.storePayloads;
+      return indexOptions == fieldInfo.getIndexOptions() && storePayloads == fieldInfo.hasPayloads();
     }
 
     @Override
@@ -400,13 +400,13 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private boolean payloadRetrieved;
 
     public PulsingDocsAndPositionsEnum(FieldInfo fieldInfo) {
-      indexOptions = fieldInfo.indexOptions;
-      storePayloads = fieldInfo.storePayloads;
-      storeOffsets = fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      indexOptions = fieldInfo.getIndexOptions();
+      storePayloads = fieldInfo.hasPayloads();
+      storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }
 
     boolean canReuse(FieldInfo fieldInfo) {
-      return indexOptions == fieldInfo.indexOptions && storePayloads == fieldInfo.storePayloads;
+      return indexOptions == fieldInfo.getIndexOptions() && storePayloads == fieldInfo.hasPayloads();
     }
 
     public PulsingDocsAndPositionsEnum reset(Bits liveDocs, PulsingTermState termState) {

@@ -64,7 +64,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
       SimpleTextUtil.writeNewline(out);
       
       for (FieldInfo fi : infos) {
-        assert fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.storePayloads;
+        assert fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
 
         SimpleTextUtil.write(out, NAME);
         SimpleTextUtil.write(out, fi.name, scratch);
@@ -75,19 +75,19 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, ISINDEXED);
-        SimpleTextUtil.write(out, Boolean.toString(fi.isIndexed), scratch);
+        SimpleTextUtil.write(out, Boolean.toString(fi.isIndexed()), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, STORETV);
-        SimpleTextUtil.write(out, Boolean.toString(fi.storeTermVector), scratch);
+        SimpleTextUtil.write(out, Boolean.toString(fi.hasVectors()), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, PAYLOADS);
-        SimpleTextUtil.write(out, Boolean.toString(fi.storePayloads), scratch);
+        SimpleTextUtil.write(out, Boolean.toString(fi.hasPayloads()), scratch);
         SimpleTextUtil.writeNewline(out);
                
         SimpleTextUtil.write(out, NORMS);
-        SimpleTextUtil.write(out, Boolean.toString(!fi.omitNorms), scratch);
+        SimpleTextUtil.write(out, Boolean.toString(!fi.omitsNorms()), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, NORMS_TYPE);
@@ -99,7 +99,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, INDEXOPTIONS);
-        SimpleTextUtil.write(out, fi.indexOptions.toString(), scratch);
+        SimpleTextUtil.write(out, fi.getIndexOptions().toString(), scratch);
         SimpleTextUtil.writeNewline(out);
       }
     } finally {

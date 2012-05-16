@@ -241,13 +241,13 @@ public class SepPostingsReader extends PostingsReaderBase {
     //System.out.println("  docFreq=" + termState.docFreq);
     termState.docIndex.read(termState.bytesReader, isFirstTerm);
     //System.out.println("  docIndex=" + termState.docIndex);
-    if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
+    if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
       termState.freqIndex.read(termState.bytesReader, isFirstTerm);
-      if (fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      if (fieldInfo.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         //System.out.println("  freqIndex=" + termState.freqIndex);
         termState.posIndex.read(termState.bytesReader, isFirstTerm);
         //System.out.println("  posIndex=" + termState.posIndex);
-        if (fieldInfo.storePayloads) {
+        if (fieldInfo.hasPayloads()) {
           if (isFirstTerm) {
             termState.payloadFP = termState.bytesReader.readVLong();
           } else {
@@ -273,7 +273,7 @@ public class SepPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsEnum reuse, boolean needsFreqs) throws IOException {
-    if (needsFreqs && fieldInfo.indexOptions == IndexOptions.DOCS_ONLY) {
+    if (needsFreqs && fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY) {
       return null;
     }
     final SepTermState termState = (SepTermState) _termState;
@@ -298,7 +298,7 @@ public class SepPostingsReader extends PostingsReaderBase {
                                                DocsAndPositionsEnum reuse, boolean needsOffsets)
     throws IOException {
 
-    if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+    if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
       return null;
     }
 
@@ -306,7 +306,7 @@ public class SepPostingsReader extends PostingsReaderBase {
       return null;
     }
 
-    assert fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     final SepTermState termState = (SepTermState) _termState;
     SepDocsAndPositionsEnum postingsEnum;
     if (reuse == null || !(reuse instanceof SepDocsAndPositionsEnum)) {
@@ -371,9 +371,9 @@ public class SepPostingsReader extends PostingsReaderBase {
 
     SepDocsEnum init(FieldInfo fieldInfo, SepTermState termState, Bits liveDocs) throws IOException {
       this.liveDocs = liveDocs;
-      this.indexOptions = fieldInfo.indexOptions;
+      this.indexOptions = fieldInfo.getIndexOptions();
       omitTF = indexOptions == IndexOptions.DOCS_ONLY;
-      storePayloads = fieldInfo.storePayloads;
+      storePayloads = fieldInfo.hasPayloads();
 
       // TODO: can't we only do this if consumer
       // skipped consuming the previous docs?
@@ -536,7 +536,7 @@ public class SepPostingsReader extends PostingsReaderBase {
 
     SepDocsAndPositionsEnum init(FieldInfo fieldInfo, SepTermState termState, Bits liveDocs) throws IOException {
       this.liveDocs = liveDocs;
-      storePayloads = fieldInfo.storePayloads;
+      storePayloads = fieldInfo.hasPayloads();
       //System.out.println("Sep D&P init");
 
       // TODO: can't we only do this if consumer

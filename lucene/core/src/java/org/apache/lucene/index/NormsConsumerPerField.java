@@ -47,7 +47,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
 
   @Override
   void finish() throws IOException {
-    if (fieldInfo.isIndexed && !fieldInfo.omitNorms) {
+    if (fieldInfo.isIndexed() && !fieldInfo.omitsNorms()) {
       similarity.computeNorm(fieldState, norm);
       
       if (norm.type() != null) {

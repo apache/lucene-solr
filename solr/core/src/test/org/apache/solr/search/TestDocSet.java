@@ -367,8 +367,7 @@ public class TestDocSet extends LuceneTestCase {
 
       @Override
       public FieldInfos getFieldInfos() {
-        // nocommit
-        return new ReadOnlyFieldInfos(new FieldInfo[0], false, false, false);
+        return new ReadOnlyFieldInfos(new FieldInfo[0]);
       }
 
       @Override

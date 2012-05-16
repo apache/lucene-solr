@@ -31,16 +31,16 @@ public final class FieldInfo {
   public final String name;
   public final int number;
 
-  public boolean isIndexed;
+  private boolean indexed;
   private DocValues.Type docValueType;
 
   // True if any document indexed term vectors
-  public boolean storeTermVector;
+  private boolean storeTermVector;
 
   private DocValues.Type normType;
-  public boolean omitNorms; // omit norms associated with indexed fields  
-  public IndexOptions indexOptions;
-  public boolean storePayloads; // whether this field stores payloads together with term positions
+  private boolean omitNorms; // omit norms associated with indexed fields  
+  private IndexOptions indexOptions;
+  private boolean storePayloads; // whether this field stores payloads together with term positions
 
   /**
    * Controls how much information is stored in the postings lists.
@@ -64,13 +64,13 @@ public final class FieldInfo {
   /**
    * @lucene.experimental
    */
-  public FieldInfo(String name, boolean isIndexed, int number, boolean storeTermVector, 
+  public FieldInfo(String name, boolean indexed, int number, boolean storeTermVector, 
             boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normsType) {
     this.name = name;
-    this.isIndexed = isIndexed;
+    this.indexed = indexed;
     this.number = number;
     this.docValueType = docValues;
-    if (isIndexed) {
+    if (indexed) {
       this.storeTermVector = storeTermVector;
       this.storePayloads = storePayloads;
       this.omitNorms = omitNorms;
@@ -88,17 +88,17 @@ public final class FieldInfo {
   
   @Override
   public FieldInfo clone() {
-    return new FieldInfo(name, isIndexed, number, storeTermVector,
+    return new FieldInfo(name, indexed, number, storeTermVector,
                          omitNorms, storePayloads, indexOptions, docValueType, normType);
   }
 
   // should only be called by FieldInfos#addOrUpdate
-  void update(boolean isIndexed, boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
+  void update(boolean indexed, boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
 
-    if (this.isIndexed != isIndexed) {
-      this.isIndexed = true;                      // once indexed, always index
+    if (this.indexed != indexed) {
+      this.indexed = true;                      // once indexed, always index
     }
-    if (isIndexed) { // if updated field data is not for indexing, leave the updates out
+    if (indexed) { // if updated field data is not for indexing, leave the updates out
       if (this.storeTermVector != storeTermVector) {
         this.storeTermVector = true;                // once vector, always vector
       }
@@ -128,6 +128,11 @@ public final class FieldInfo {
     }
   }
   
+  /** @return IndexOptions for the field */
+  public IndexOptions getIndexOptions() {
+    return indexOptions;
+  }
+  
   /**
    * @return true if this field has any docValues.
    */
@@ -149,11 +154,15 @@ public final class FieldInfo {
     return normType;
   }
 
-  public void setStoreTermVectors() {
+  void setStoreTermVectors() {
     storeTermVector = true;
   }
+  
+  void setStorePayloads() {
+    storePayloads = true;
+  }
 
-  public void setNormValueType(Type type, boolean force) {
+  void setNormValueType(Type type, boolean force) {
     if (normType == null || force) {
       normType = type;
     } else if (type != normType) {
@@ -164,7 +173,7 @@ public final class FieldInfo {
   /**
    * @return true if norms are explicitly omitted for this field
    */
-  public boolean omitNorms() {
+  public boolean omitsNorms() {
     return omitNorms;
   }
   
@@ -172,7 +181,28 @@ public final class FieldInfo {
    * @return true if this field actually has any norms.
    */
   public boolean hasNorms() {
-    return isIndexed && !omitNorms && normType != null;
+    return indexed && !omitNorms && normType != null;
+  }
+  
+  /**
+   * @return true if this field is indexed.
+   */
+  public boolean isIndexed() {
+    return indexed;
+  }
+  
+  /**
+   * @return true if any payloads exist for this field.
+   */
+  public boolean hasPayloads() {
+    return storePayloads;
+  }
+  
+  /**
+   * @return true if any term vectors exist for this field.
+   */
+  public boolean hasVectors() {
+    return storeTermVector;
   }
   
 }

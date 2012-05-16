@@ -40,8 +40,7 @@ public class MergeState {
     }
   }
 
-  // nocommit...
-  public MutableFieldInfos fieldInfos;
+  public FieldInfos fieldInfos;
   public List<IndexReaderAndLiveDocs> readers;        // Readers & liveDocs being merged
   public int[][] docMaps;                             // Maps docIDs around deletions
   public int[] docBase;                               // New docID base per reader

@@ -156,23 +156,23 @@ public class TestOmitPositions extends LuceneTestCase {
     SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
     // docs + docs = docs
-    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").indexOptions);
+    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").getIndexOptions());
     // docs + docs/freqs = docs
-    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
+    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").getIndexOptions());
     // docs + docs/freqs/pos = docs
-    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f3").indexOptions);
+    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f3").getIndexOptions());
     // docs/freqs + docs = docs
-    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f4").indexOptions);
+    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f4").getIndexOptions());
     // docs/freqs + docs/freqs = docs/freqs
-    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f5").indexOptions);
+    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f5").getIndexOptions());
     // docs/freqs + docs/freqs/pos = docs/freqs
-    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f6").indexOptions);
+    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f6").getIndexOptions());
     // docs/freqs/pos + docs = docs
-    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f7").indexOptions);
+    assertEquals(IndexOptions.DOCS_ONLY, fi.fieldInfo("f7").getIndexOptions());
     // docs/freqs/pos + docs/freqs = docs/freqs
-    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f8").indexOptions);
+    assertEquals(IndexOptions.DOCS_AND_FREQS, fi.fieldInfo("f8").getIndexOptions());
     // docs/freqs/pos + docs/freqs/pos = docs/freqs/pos
-    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f9").indexOptions);
+    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f9").getIndexOptions());
     
     reader.close();
     ram.close();

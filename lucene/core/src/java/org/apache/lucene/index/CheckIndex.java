@@ -741,7 +741,7 @@ public class CheckIndex {
       if (fi == null) {
         throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, no fieldInfos for: " + field);
       }
-      if (!fi.isIndexed) {
+      if (!fi.isIndexed()) {
         throw new RuntimeException("fieldsEnum inconsistent with fieldInfos, isIndexed == false for: " + field);
       }
       
@@ -1406,7 +1406,7 @@ public class CheckIndex {
 
             // Make sure FieldInfo thinks this field is vector'd:
             final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-            if (!fieldInfo.storeTermVector) {
+            if (!fieldInfo.hasVectors()) {
               throw new RuntimeException("docID=" + j + " has term vectors for field=" + field + " but FieldInfo has storeTermVector=false");
             }
 

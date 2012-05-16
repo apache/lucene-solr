@@ -55,7 +55,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     this.fieldInfo = fieldInfo;
     docState = termsHashPerField.docState;
     fieldState = termsHashPerField.fieldState;
-    setIndexOptions(fieldInfo.indexOptions);
+    setIndexOptions(fieldInfo.getIndexOptions());
   }
 
   @Override
@@ -83,7 +83,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   void reset() {
     // Record, up front, whether our in-RAM format will be
     // with or without term freqs:
-    setIndexOptions(fieldInfo.indexOptions);
+    setIndexOptions(fieldInfo.getIndexOptions());
     payloadAttribute = null;
   }
 
@@ -330,7 +330,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     // according to this.indexOptions, but then write the
     // new segment to the directory according to
     // currentFieldIndexOptions:
-    final IndexOptions currentFieldIndexOptions = fieldInfo.indexOptions;
+    final IndexOptions currentFieldIndexOptions = fieldInfo.getIndexOptions();
 
     final boolean writeTermFreq = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     final boolean writePositions = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;

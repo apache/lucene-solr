@@ -724,7 +724,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
           // Write term stats, to separate byte[] blob:
           bytesWriter2.writeVInt(term.stats.docFreq);
-          if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
+          if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
             assert term.stats.totalTermFreq >= term.stats.docFreq;
             bytesWriter2.writeVLong(term.stats.totalTermFreq - term.stats.docFreq);
           }
@@ -750,7 +750,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
             // Write term stats, to separate byte[] blob:
             bytesWriter2.writeVInt(term.stats.docFreq);
-            if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
+            if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
               assert term.stats.totalTermFreq >= term.stats.docFreq;
               bytesWriter2.writeVLong(term.stats.totalTermFreq - term.stats.docFreq);
             }
@@ -930,7 +930,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           assert rootCode != null: "field=" + field.fieldInfo.name + " numTerms=" + field.numTerms;
           out.writeVInt(rootCode.length);
           out.writeBytes(rootCode.bytes, rootCode.offset, rootCode.length);
-          if (field.fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
+          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
             out.writeVLong(field.sumTotalTermFreq);
           }
           out.writeVLong(field.sumDocFreq);

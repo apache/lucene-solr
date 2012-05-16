@@ -83,8 +83,10 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         
         // Aggregate the storePayload as seen by the same
         // field across multiple threads
-        if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-          fieldInfo.storePayloads |= fieldWriter.hasPayloads;
+        if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
+          if (fieldWriter.hasPayloads) {
+            fieldInfo.setStorePayloads();
+          }
         }
         
         // If this field has postings then add them to the

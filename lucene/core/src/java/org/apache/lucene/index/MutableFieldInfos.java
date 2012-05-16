@@ -26,8 +26,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 
-// nocommit: only public temporarily for FieldsConsumer (until we fix SegmentMerger)
-public final class MutableFieldInfos extends FieldInfos {
+final class MutableFieldInfos extends FieldInfos {
   static final class FieldNumberBiMap {
     
     private final Map<Integer,String> numberToName;
@@ -148,26 +147,6 @@ public final class MutableFieldInfos extends FieldInfos {
     }
     return fis;
   }
-
-  /** Returns true if any fields have positions */
-  public boolean hasProx() {
-    for (FieldInfo fi : this) {
-      if (fi.isIndexed && fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  /** Returns true if any fields have freqs */
-  public boolean hasFreq() {
-    for (FieldInfo fi : this) {
-      if (fi.isIndexed && fi.indexOptions != IndexOptions.DOCS_ONLY) {
-        return true;
-      }
-    }
-    return false;
-  }
   
   /**
    * Assumes the fields are not storing term vectors.
@@ -280,9 +259,9 @@ public final class MutableFieldInfos extends FieldInfos {
   
   synchronized public FieldInfo add(FieldInfo fi) {
     // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
-    return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed, fi.storeTermVector,
-               fi.omitNorms, fi.storePayloads,
-               fi.indexOptions, fi.getDocValuesType(), fi.getNormType());
+    return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed(), fi.hasVectors(),
+               fi.omitsNorms(), fi.hasPayloads(),
+               fi.getIndexOptions(), fi.getDocValuesType(), fi.getNormType());
   }
   
   /*
@@ -300,6 +279,7 @@ public final class MutableFieldInfos extends FieldInfos {
     return fi;
   }
 
+  @Override
   public FieldInfo fieldInfo(String fieldName) {
     return byName.get(fieldName);
   }
@@ -309,11 +289,13 @@ public final class MutableFieldInfos extends FieldInfos {
    * @param fieldNumber
    * @return the FieldInfo object or null when the given fieldNumber
    * doesn't exist.
-   */  
+   */
+  @Override
   public FieldInfo fieldInfo(int fieldNumber) {
     return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
 
+  @Override
   public Iterator<FieldInfo> iterator() {
     return byNumber.values().iterator();
   }
@@ -321,33 +303,10 @@ public final class MutableFieldInfos extends FieldInfos {
   /**
    * @return number of fields
    */
+  @Override
   public int size() {
     assert byNumber.size() == byName.size();
     return byNumber.size();
-  }
-
-  /**
-   * @return true if at least one field has any vectors
-   */
-  public boolean hasVectors() {
-    for (FieldInfo fi : this) {
-      if (fi.storeTermVector) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * @return true if at least one field has any norms
-   */
-  public boolean hasNorms() {
-    for (FieldInfo fi : this) {
-      if (fi.hasNorms()) {
-        return true;
-      }
-    }
-    return false;
   }
 
   synchronized final long getVersion() {
@@ -358,29 +317,10 @@ public final class MutableFieldInfos extends FieldInfos {
   final ReadOnlyFieldInfos asReadOnly() {
     FieldInfo infos[] = new FieldInfo[size()];
     int upto = 0;
-    boolean hasVectors = false;
-    boolean hasProx = false;
-    boolean hasFreq = false;
     for (FieldInfo info : this) {
       infos[upto++] = info.clone();
-      hasVectors |= info.storeTermVector;
-      hasProx |= info.isIndexed && info.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-      hasFreq |= info.isIndexed && info.indexOptions != IndexOptions.DOCS_ONLY;
     }
-    return new ReadOnlyFieldInfos(infos, hasFreq, hasProx, hasVectors);
-  }
-
-  /**
-   * @return true if at least one field has docValues
-   */
-  public boolean hasDocValues() {
-    for (FieldInfo fi : this) {
-      if (fi.hasDocValues()) { 
-        return true;
-      }
-    }
-
-    return false;
+    return new ReadOnlyFieldInfos(infos);
   }
   
   /**

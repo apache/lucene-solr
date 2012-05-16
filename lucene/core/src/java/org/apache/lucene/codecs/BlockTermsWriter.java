@@ -130,7 +130,7 @@ public class BlockTermsWriter extends FieldsConsumer {
           out.writeVInt(field.fieldInfo.number);
           out.writeVLong(field.numTerms);
           out.writeVLong(field.termsStartPointer);
-          if (field.fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
+          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
             out.writeVLong(field.sumTotalTermFreq);
           }
           out.writeVLong(field.sumDocFreq);
@@ -302,7 +302,7 @@ public class BlockTermsWriter extends FieldsConsumer {
         final TermStats stats = pendingTerms[termCount].stats;
         assert stats != null;
         bytesWriter.writeVInt(stats.docFreq);
-        if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
+        if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
           bytesWriter.writeVLong(stats.totalTermFreq-stats.docFreq);
         }
       }

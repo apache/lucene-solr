@@ -187,12 +187,12 @@ public final class SepPostingsWriter extends PostingsWriterBase {
   @Override
   public void setField(FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
-    this.indexOptions = fieldInfo.indexOptions;
+    this.indexOptions = fieldInfo.getIndexOptions();
     if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
       throw new UnsupportedOperationException("this codec cannot index offsets");
     }
     skipListWriter.setIndexOptions(indexOptions);
-    storePayloads = indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS && fieldInfo.storePayloads;
+    storePayloads = indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS && fieldInfo.hasPayloads();
   }
 
   /** Adds a new doc in this term.  If this returns null

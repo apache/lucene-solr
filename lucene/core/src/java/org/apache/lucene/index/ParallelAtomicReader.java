@@ -48,8 +48,7 @@ import org.apache.lucene.util.Bits;
  * undefined behavior</em>.
  */
 public final class ParallelAtomicReader extends AtomicReader {
-  // nocommit: make this read-only.
-  private final MutableFieldInfos fieldInfos = new MutableFieldInfos();
+  private final FieldInfos fieldInfos;
   private final ParallelFields fields = new ParallelFields();
   private final AtomicReader[] parallelReaders, storedFieldsReaders;
   private final Set<AtomicReader> completeReaderSet =
@@ -100,20 +99,23 @@ public final class ParallelAtomicReader extends AtomicReader {
       }
     }
     
+    // TODO: make this read-only in a cleaner way?
+    MutableFieldInfos builder = new MutableFieldInfos();
     // build FieldInfos and fieldToReader map:
     for (final AtomicReader reader : this.parallelReaders) {
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fieldInfo : readerFieldInfos) {
         // NOTE: first reader having a given field "wins":
         if (!fieldToReader.containsKey(fieldInfo.name)) {
-          fieldInfos.add(fieldInfo);
+          builder.add(fieldInfo);
           fieldToReader.put(fieldInfo.name, reader);
-          if (fieldInfo.storeTermVector) {
+          if (fieldInfo.hasVectors()) {
             tvFieldToReader.put(fieldInfo.name, reader);
           }
         }
       }
     }
+    fieldInfos = builder.asReadOnly();
     
     // build Fields instance
     for (final AtomicReader reader : this.parallelReaders) {

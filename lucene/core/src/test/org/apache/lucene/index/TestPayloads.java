@@ -113,9 +113,9 @@ public class TestPayloads extends LuceneTestCase {
 
       SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram));
         FieldInfos fi = reader.getFieldInfos();
-        assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").storePayloads);
-        assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
-        assertFalse("Payload field bit should not be set.", fi.fieldInfo("f3").storePayloads);
+        assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").hasPayloads());
+        assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").hasPayloads());
+        assertFalse("Payload field bit should not be set.", fi.fieldInfo("f3").hasPayloads());
         reader.close();
         
         // now we add another document which has payloads for field f3 and verify if the SegmentMerger
@@ -140,9 +140,9 @@ public class TestPayloads extends LuceneTestCase {
 
       reader = getOnlySegmentReader(IndexReader.open(ram));
         fi = reader.getFieldInfos();
-        assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").storePayloads);
-        assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
-        assertTrue("Payload field bit should be set.", fi.fieldInfo("f3").storePayloads);
+        assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").hasPayloads());
+        assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").hasPayloads());
+        assertTrue("Payload field bit should be set.", fi.fieldInfo("f3").hasPayloads());
         reader.close();
         ram.close();
     }

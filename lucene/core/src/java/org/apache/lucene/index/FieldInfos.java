@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.util.Iterator;
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+
 /** 
  * Collection of {@link FieldInfo}s (accessible by number or by name).
  *  @lucene.experimental
@@ -49,28 +51,58 @@ public abstract class FieldInfos implements Cloneable,Iterable<FieldInfo> {
   public abstract int size();
 
   /** Returns true if any fields have positions */
-  // nocommit
-  public abstract boolean hasProx();
+  public boolean hasProx() {
+    for (FieldInfo fi : this) {
+      if (fi.isIndexed() && fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
+        return true;
+      }
+    }
+    return false;
+  }
   
   /** Returns true if any fields have freqs */
-  // nocommit
-  public abstract boolean hasFreq();
+  public boolean hasFreq() {
+    for (FieldInfo fi : this) {
+      if (fi.isIndexed() && fi.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+        return true;
+      }
+    }
+    return false;
+  }
   
   /**
    * @return true if at least one field has any vectors
    */
-  // nocommit
-  public abstract boolean hasVectors();
+  public boolean hasVectors() {
+    for (FieldInfo fi : this) {
+      if (fi.hasVectors()) {
+        return true;
+      }
+    }
+    return false;
+  }
   
   /**
    * @return true if at least one field has any norms
    */
-  // nocommit
-  public abstract boolean hasNorms();
+  public boolean hasNorms() {
+    for (FieldInfo fi : this) {
+      if (fi.hasNorms()) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   /**
    * @return true if at least one field has docValues
    */
-  // nocommit
-  public abstract boolean hasDocValues();
+  public boolean hasDocValues() {
+    for (FieldInfo fi : this) {
+      if (fi.hasDocValues()) { 
+        return true;
+      }
+    }
+    return false;
+  }
 }

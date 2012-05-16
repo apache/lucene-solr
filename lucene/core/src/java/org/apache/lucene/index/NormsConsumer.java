@@ -64,12 +64,12 @@ final class NormsConsumer extends InvertedDocEndConsumer {
           final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi);
           // we must check the final value of omitNorms for the fieldinfo, it could have 
           // changed for this field since the first time we added it.
-          if (!fi.omitNorms) {
+          if (!fi.omitsNorms()) {
             if (toWrite != null && toWrite.initialized()) {
               anythingFlushed = true;
               final Type type = toWrite.flush(state.numDocs);
               assert fi.getNormType() == type;
-            } else if (fi.isIndexed) {
+            } else if (fi.isIndexed()) {
               anythingFlushed = true;
               assert fi.getNormType() == null;
               fi.setNormValueType(null, false);

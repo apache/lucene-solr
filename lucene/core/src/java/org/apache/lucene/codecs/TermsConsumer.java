@@ -81,7 +81,8 @@ public abstract class TermsConsumer {
     long sumDFsinceLastAbortCheck = 0;
     FixedBitSet visitedDocs = new FixedBitSet(mergeState.mergedDocCount);
 
-    if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_ONLY) {
+    IndexOptions indexOptions = mergeState.fieldInfo.getIndexOptions();
+    if (indexOptions == IndexOptions.DOCS_ONLY) {
       if (docsEnum == null) {
         docsEnum = new MappingMultiDocsEnum();
       }
@@ -109,7 +110,7 @@ public abstract class TermsConsumer {
           }
         }
       }
-    } else if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS) {
+    } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
       if (docsAndFreqsEnum == null) {
         docsAndFreqsEnum = new MappingMultiDocsEnum();
       }
@@ -136,7 +137,7 @@ public abstract class TermsConsumer {
           }
         }
       }
-    } else if (mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+    } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       if (postingsEnum == null) {
         postingsEnum = new MappingMultiDocsAndPositionsEnum();
       }
@@ -170,7 +171,7 @@ public abstract class TermsConsumer {
         }
       }
     } else {
-      assert mergeState.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+      assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
       if (postingsEnum == null) {
         postingsEnum = new MappingMultiDocsAndPositionsEnum();
       }

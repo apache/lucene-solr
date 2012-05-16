@@ -55,7 +55,9 @@ public class TestFieldsReader extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     fieldInfos = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
     DocHelper.setupDoc(testDoc);
-    _TestUtil.add(testDoc, fieldInfos);
+    for (IndexableField field : testDoc) {
+      fieldInfos.addOrUpdate(field.name(), field.fieldType());
+    }
     dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);

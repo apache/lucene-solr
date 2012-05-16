@@ -61,17 +61,18 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
       output.writeVInt(FORMAT_CURRENT);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
-        assert fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.storePayloads;
+        IndexOptions indexOptions = fi.getIndexOptions();
+        assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
         byte bits = 0x0;
-        if (fi.isIndexed) bits |= IS_INDEXED;
-        if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
-        if (fi.omitNorms) bits |= OMIT_NORMS;
-        if (fi.storePayloads) bits |= STORE_PAYLOADS;
-        if (fi.indexOptions == IndexOptions.DOCS_ONLY) {
+        if (fi.isIndexed()) bits |= IS_INDEXED;
+        if (fi.hasVectors()) bits |= STORE_TERMVECTOR;
+        if (fi.omitsNorms()) bits |= OMIT_NORMS;
+        if (fi.hasPayloads()) bits |= STORE_PAYLOADS;
+        if (indexOptions == IndexOptions.DOCS_ONLY) {
           bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-        } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
+        } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
           bits |= STORE_OFFSETS_IN_POSTINGS;
-        } else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS) {
+        } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
           bits |= OMIT_POSITIONS;
         }
         output.writeString(fi.name);

@@ -59,10 +59,6 @@ class Lucene3xFieldInfosReader extends FieldInfosReader {
   public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
-
-    boolean hasVectors = false;
-    boolean hasFreq = false;
-    boolean hasProx = false;
     
     try {
       final int format = input.readVInt();
@@ -104,9 +100,6 @@ class Lucene3xFieldInfosReader extends FieldInfosReader {
         if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
           storePayloads = false;
         }
-        hasVectors |= storeTermVector;
-        hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-        hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, null, isIndexed && !omitNorms? Type.FIXED_INTS_8 : null);
       }
@@ -114,7 +107,7 @@ class Lucene3xFieldInfosReader extends FieldInfosReader {
       if (input.getFilePointer() != input.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
-      return new ReadOnlyFieldInfos(infos, hasFreq, hasProx, hasVectors);
+      return new ReadOnlyFieldInfos(infos);
     } finally {
       input.close();
     }

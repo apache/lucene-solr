@@ -1,9 +1,13 @@
 package org.apache.lucene.index;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,12 +37,12 @@ public final class ReadOnlyFieldInfos extends FieldInfos {
   
   private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+  private final Collection<FieldInfo> values; // for an unmodifiable iterator
   
-  public ReadOnlyFieldInfos(FieldInfo[] infos, boolean hasFreq, boolean hasProx, boolean hasVectors) {
-    this.hasFreq = hasFreq;
-    this.hasProx = hasProx;
-    this.hasVectors = hasVectors;
-    
+  public ReadOnlyFieldInfos(FieldInfo[] infos) {
+    boolean hasVectors = false;
+    boolean hasProx = false;
+    boolean hasFreq = false;
     boolean hasNorms = false;
     boolean hasDocValues = false;
     
@@ -48,41 +52,55 @@ public final class ReadOnlyFieldInfos extends FieldInfos {
       assert !byName.containsKey(info.name);
       byName.put(info.name, info);
       
+      hasVectors |= info.hasVectors();
+      hasProx |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      hasFreq |= info.isIndexed() && info.getIndexOptions() != IndexOptions.DOCS_ONLY;
       hasNorms |= info.hasNorms();
       hasDocValues |= info.hasDocValues();
     }
     
+    this.hasVectors = hasVectors;
+    this.hasProx = hasProx;
+    this.hasFreq = hasFreq;
     this.hasNorms = hasNorms;
     this.hasDocValues = hasDocValues;
+    this.values = Collections.unmodifiableCollection(byNumber.values());
   }
   
+  @Override
   public boolean hasFreq() {
     return hasFreq;
   }
   
+  @Override
   public boolean hasProx() {
     return hasProx;
   }
   
+  @Override
   public boolean hasVectors() {
     return hasVectors;
   }
   
+  @Override
   public boolean hasNorms() {
     return hasNorms;
   }
   
+  @Override
   public boolean hasDocValues() {
     return hasDocValues;
   }
   
+  @Override
   public int size() {
     assert byNumber.size() == byName.size();
     return byNumber.size();
   }
   
+  @Override
   public Iterator<FieldInfo> iterator() {
-    return byNumber.values().iterator();
+    return values.iterator();
   }
 
   @Override
@@ -103,7 +121,7 @@ public final class ReadOnlyFieldInfos extends FieldInfos {
     for (FieldInfo info : this) {
       infos[upto++] = info.clone();
     }
-    return new ReadOnlyFieldInfos(infos, hasFreq, hasProx, hasVectors);
+    return new ReadOnlyFieldInfos(infos);
   }
 
 }

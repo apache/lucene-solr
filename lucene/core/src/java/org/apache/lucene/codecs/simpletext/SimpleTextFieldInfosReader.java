@@ -52,10 +52,6 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
     IndexInput input = directory.openInput(fileName, iocontext);
     BytesRef scratch = new BytesRef();
     
-    boolean hasVectors = false;
-    boolean hasFreq = false;
-    boolean hasProx = false;
-    
     try {
       
       SimpleTextUtil.readLine(input, scratch);
@@ -103,11 +99,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, INDEXOPTIONS);
         IndexOptions indexOptions = IndexOptions.valueOf(readString(INDEXOPTIONS.length, scratch));
-
-        hasVectors |= storeTermVector;
-        hasProx |= isIndexed && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-        hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
-        
+      
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType, normsType);
       }
@@ -116,7 +108,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
       
-      return new ReadOnlyFieldInfos(infos, hasFreq, hasProx, hasVectors);
+      return new ReadOnlyFieldInfos(infos);
     } finally {
       input.close();
     }

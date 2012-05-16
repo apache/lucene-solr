@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Set;
 
 import org.apache.lucene.index.FilterAtomicReader;
@@ -26,19 +27,19 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   
   private final Set<String> fields;
   private final boolean negate;
-  // nocommit: make read only
-  private final MutableFieldInfos fieldInfos;
+  private final FieldInfos fieldInfos;
 
   public FieldFilterAtomicReader(AtomicReader in, Set<String> fields, boolean negate) {
     super(in);
     this.fields = fields;
     this.negate = negate;
-    this.fieldInfos = new MutableFieldInfos();
+    ArrayList<FieldInfo> filteredInfos = new ArrayList<FieldInfo>();
     for (FieldInfo fi : in.getFieldInfos()) {
       if (hasField(fi.name)) {
-        fieldInfos.add(fi);
+        filteredInfos.add(fi);
       }
     }
+    fieldInfos = new ReadOnlyFieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
   }
   
   boolean hasField(String field) {

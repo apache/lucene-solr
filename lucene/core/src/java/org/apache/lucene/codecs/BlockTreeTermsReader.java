@@ -147,7 +147,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         rootCode.length = numBytes;
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         assert fieldInfo != null: "field=" + field;
-        final long sumTotalTermFreq = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
+        final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
         final long indexStartFP = indexDivisor != -1 ? indexIn.readVLong() : 0;
@@ -732,7 +732,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
             // just skipN here:
             termState.docFreq = statsReader.readVInt();
             //if (DEBUG) System.out.println("    dF=" + state.docFreq);
-            if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
+            if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
               termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
               //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
             }
@@ -897,13 +897,13 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       @Override
       public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
-        if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+        if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           // Positions were not indexed:
           return null;
         }
 
         if (needsOffsets &&
-            fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+            fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
           // Offsets were not indexed:
           return null;
         }
@@ -2129,13 +2129,13 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       @Override
       public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse, boolean needsOffsets) throws IOException {
-        if (fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+        if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           // Positions were not indexed:
           return null;
         }
 
         if (needsOffsets &&
-            fieldInfo.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+            fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
           // Offsets were not indexed:
           return null;
         }
@@ -2546,7 +2546,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
             // just skipN here:
             state.docFreq = statsReader.readVInt();
             //if (DEBUG) System.out.println("    dF=" + state.docFreq);
-            if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
+            if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
               state.totalTermFreq = state.docFreq + statsReader.readVLong();
               //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
             }

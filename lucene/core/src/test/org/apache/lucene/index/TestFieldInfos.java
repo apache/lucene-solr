@@ -47,7 +47,9 @@ public class TestFieldInfos extends LuceneTestCase {
   //Positive test of FieldInfos
     assertTrue(testDoc != null);
     MutableFieldInfos fieldInfos = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
-    _TestUtil.add(testDoc, fieldInfos);
+    for (IndexableField field : testDoc) {
+      fieldInfos.addOrUpdate(field.name(), field.fieldType());
+    }
     //Since the complement is stored as well in the fields map
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
     
@@ -76,22 +78,22 @@ public class TestFieldInfos extends LuceneTestCase {
     assertTrue(fieldInfos.size() == readIn.size());
     FieldInfo info = readIn.fieldInfo("textField1");
     assertTrue(info != null);
-    assertTrue(info.storeTermVector == false);
-    assertTrue(info.omitNorms == false);
+    assertTrue(info.hasVectors() == false);
+    assertTrue(info.omitsNorms() == false);
 
     info = readIn.fieldInfo("textField2");
     assertTrue(info != null);
-    assertTrue(info.omitNorms == false);
+    assertTrue(info.omitsNorms() == false);
 
     info = readIn.fieldInfo("textField3");
     assertTrue(info != null);
-    assertTrue(info.storeTermVector == false);
-    assertTrue(info.omitNorms == true);
+    assertTrue(info.hasVectors() == false);
+    assertTrue(info.omitsNorms() == true);
 
     info = readIn.fieldInfo("omitNorms");
     assertTrue(info != null);
-    assertTrue(info.storeTermVector == false);
-    assertTrue(info.omitNorms == true);
+    assertTrue(info.hasVectors() == false);
+    assertTrue(info.omitsNorms() == true);
 
     dir.close();
   }

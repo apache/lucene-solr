@@ -62,7 +62,6 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.MutableFieldInfos;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -676,14 +675,6 @@ public class _TestUtil {
     } catch (Exception e) {
       // Should not happen?
       throw new RuntimeException(e);
-    }
-  }
-  
-  /** Adds field info for a Document. */
-  // nocommit: what uses this?
-  public static void add(Document doc, MutableFieldInfos fieldInfos) {
-    for (IndexableField field : doc) {
-      fieldInfos.addOrUpdate(field.name(), field.fieldType());
     }
   }
   

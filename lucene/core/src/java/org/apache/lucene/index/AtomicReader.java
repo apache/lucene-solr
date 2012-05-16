@@ -194,9 +194,7 @@ public abstract class AtomicReader extends IndexReader {
 
   /**
    * Get the {@link FieldInfos} describing all fields in
-   * this reader.  NOTE: do not make any changes to the
-   * returned FieldInfos!
-   *
+   * this reader.
    * @lucene.experimental
    */
   public abstract FieldInfos getFieldInfos();
