@@ -229,21 +229,21 @@ final class SegmentMerger {
       TypePromoter promoter = e.getValue();
       if (promoter == null) {
         if (norms) {
-          fi.setNormValueType(null, true);
+          fi.setNormValueType(null);
         } else {
-          fi.setDocValuesType(null, true);
+          fi.setDocValuesType(null);
         }
       } else {
         assert promoter != TypePromoter.getIdentityPromoter();
         if (norms) {
           if (fi.getNormType() != promoter.type()) {
             // reset the type if we got promoted
-            fi.setNormValueType(promoter.type(), true);
+            fi.setNormValueType(promoter.type());
           }  
         } else {
           if (fi.getDocValuesType() != promoter.type()) {
             // reset the type if we got promoted
-            fi.setDocValuesType(promoter.type(), true);
+            fi.setDocValuesType(promoter.type());
           }
         }
       }

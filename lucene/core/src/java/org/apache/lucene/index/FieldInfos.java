@@ -33,6 +33,11 @@ public abstract class FieldInfos implements Cloneable,Iterable<FieldInfo> {
   @Override
   public abstract FieldInfos clone();
 
+  /**
+   * Return the fieldinfo object referenced by the field name
+   * @return the FieldInfo object or null when the given fieldName
+   * doesn't exist.
+   */  
   public abstract FieldInfo fieldInfo(String fieldName);
 
   /**
@@ -43,6 +48,11 @@ public abstract class FieldInfos implements Cloneable,Iterable<FieldInfo> {
    */  
   public abstract FieldInfo fieldInfo(int fieldNumber);
 
+  /**
+   * Returns an iterator over all the fieldinfo objects present,
+   * ordered by ascending field number
+   */
+  // TODO: what happens if in fact a different order is used?
   public abstract Iterator<FieldInfo> iterator();
 
   /**

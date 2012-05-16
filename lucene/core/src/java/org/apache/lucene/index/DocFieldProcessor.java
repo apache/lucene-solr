@@ -342,7 +342,8 @@ final class DocFieldProcessor extends DocConsumer {
       }
     }
     DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
-    fieldInfo.setDocValuesType(valueType, false);
+    assert fieldInfo.getDocValuesType() == null || fieldInfo.getDocValuesType() == valueType;
+    fieldInfo.setDocValuesType(valueType);
 
     docValuesConsumerAndDocID = new DocValuesConsumerAndDocID(docValuesConsumer);
     docValuesConsumerAndDocID.docID = docState.docID;

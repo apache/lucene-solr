@@ -120,12 +120,8 @@ public final class FieldInfo {
     assert this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !this.storePayloads;
   }
 
-  void setDocValuesType(DocValues.Type type, boolean force) {
-    if (docValueType == null || force) {
-      docValueType = type;
-    } else if (type != docValueType) {
-      throw new IllegalArgumentException("DocValues type already set to " + docValueType + " but was: " + type);
-    }
+  void setDocValuesType(DocValues.Type type) {
+    docValueType = type;
   }
   
   /** @return IndexOptions for the field */
@@ -162,12 +158,8 @@ public final class FieldInfo {
     storePayloads = true;
   }
 
-  void setNormValueType(Type type, boolean force) {
-    if (normType == null || force) {
-      normType = type;
-    } else if (type != normType) {
-      throw new IllegalArgumentException("Norm type already set to " + normType);
-    }
+  void setNormValueType(Type type) {
+    normType = type;
   }
   
   /**

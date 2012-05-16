@@ -72,7 +72,6 @@ final class NormsConsumer extends InvertedDocEndConsumer {
             } else if (fi.isIndexed()) {
               anythingFlushed = true;
               assert fi.getNormType() == null;
-              fi.setNormValueType(null, false);
             }
           }
         }

@@ -247,10 +247,10 @@ final class MutableFieldInfos extends FieldInfos {
     } else {
       fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
       if (docValues != null) {
-        fi.setDocValuesType(docValues, true);
+        fi.setDocValuesType(docValues);
       }
       if (normType != null) {
-        fi.setNormValueType(normType, true);
+        fi.setNormValueType(normType);
       }
     }
     version++;
