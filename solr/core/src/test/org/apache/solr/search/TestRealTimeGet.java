@@ -25,6 +25,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -1213,6 +1214,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   // and tests the ability to buffer updates and apply them later
   @Test
   public void testStressRecovery() throws Exception {
+    assumeFalse("FIXME: This test is horribly slow sometimes on Windows!", Constants.WINDOWS);
     clearIndex();
     assertU(commit());
 
