@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.MutableFieldInfos;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -199,7 +200,7 @@ public class MemoryIndex {
 
   private static final boolean DEBUG = false;
 
-  private final FieldInfos fieldInfos;
+  private final MutableFieldInfos fieldInfos;
   
   /**
    * Sorts term entries into ascending order; also works for
@@ -235,7 +236,8 @@ public class MemoryIndex {
    */
   protected MemoryIndex(boolean storeOffsets) {
     this.stride = storeOffsets ? 3 : 1;
-    fieldInfos = new FieldInfos();
+    // nocommit: this can probably have a much simpler implementation
+    fieldInfos = new MutableFieldInfos();
   }
   
   /**

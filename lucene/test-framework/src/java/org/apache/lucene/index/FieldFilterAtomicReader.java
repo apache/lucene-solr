@@ -26,13 +26,14 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   
   private final Set<String> fields;
   private final boolean negate;
-  private final FieldInfos fieldInfos;
+  // nocommit: make read only
+  private final MutableFieldInfos fieldInfos;
 
   public FieldFilterAtomicReader(AtomicReader in, Set<String> fields, boolean negate) {
     super(in);
     this.fields = fields;
     this.negate = negate;
-    this.fieldInfos = new FieldInfos();
+    this.fieldInfos = new MutableFieldInfos();
     for (FieldInfo fi : in.getFieldInfos()) {
       if (hasField(fi.name)) {
         fieldInfos.add(fi);

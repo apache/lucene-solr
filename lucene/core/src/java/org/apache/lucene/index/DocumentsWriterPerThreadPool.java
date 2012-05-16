@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
+import org.apache.lucene.index.MutableFieldInfos.FieldNumberBiMap;
 import org.apache.lucene.util.SetOnce;
 
 /**
@@ -139,7 +139,7 @@ abstract class DocumentsWriterPerThreadPool {
     this.documentsWriter.set(documentsWriter); // thread pool is bound to DW
     this.globalFieldMap.set(globalFieldMap);
     for (int i = 0; i < threadStates.length; i++) {
-      final FieldInfos infos = new FieldInfos(globalFieldMap);
+      final MutableFieldInfos infos = new MutableFieldInfos(globalFieldMap);
       threadStates[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, infos, documentsWriter.chain));
     }
   }
@@ -228,7 +228,7 @@ abstract class DocumentsWriterPerThreadPool {
     assert globalFieldMap.get() != null;
     final DocumentsWriterPerThread dwpt = threadState.dwpt;
     if (!closed) {
-      final FieldInfos infos = new FieldInfos(globalFieldMap.get());
+      final MutableFieldInfos infos = new MutableFieldInfos(globalFieldMap.get());
       final DocumentsWriterPerThread newDwpt = new DocumentsWriterPerThread(dwpt, infos);
       newDwpt.initialize();
       threadState.resetWriter(newDwpt);

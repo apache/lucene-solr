@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
-import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
+import org.apache.lucene.index.MutableFieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.search.Query;
@@ -2231,7 +2231,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(),
                                                mergedName, MergeState.CheckAbort.NONE, payloadProcessorProvider,
-                                               new FieldInfos(globalFieldNumberMap), codec, context);
+                                               new MutableFieldInfos(globalFieldNumberMap), codec, context);
 
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
@@ -3157,7 +3157,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, new FieldInfos(globalFieldNumberMap));
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, new MutableFieldInfos(globalFieldNumberMap));
 
     // TODO: in the non-pool'd case this is somewhat
     // wasteful, because we open these readers, close them,
@@ -3320,7 +3320,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final MergeState.CheckAbort checkAbort = new MergeState.CheckAbort(merge, directory);
     SegmentMerger merger = new SegmentMerger(infoStream, directory, config.getTermIndexInterval(), mergedName, checkAbort,
-                                             payloadProcessorProvider, merge.info.getFieldInfos(), codec, context);
+        // nocommit
+                                             payloadProcessorProvider, (MutableFieldInfos)merge.info.getFieldInfos(), codec, context);
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merging " + segString(merge.segments) + " mergeVectors=" + merge.info.getFieldInfos().hasVectors());

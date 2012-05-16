@@ -203,7 +203,7 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   @Override
-  public void processDocument(FieldInfos fieldInfos) throws IOException {
+  public void processDocument(MutableFieldInfos fieldInfos) throws IOException {
 
     consumer.startDocument();
     fieldsWriter.startDocument();

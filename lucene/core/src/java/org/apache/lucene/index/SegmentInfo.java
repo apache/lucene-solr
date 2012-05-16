@@ -383,7 +383,8 @@ public final class SegmentInfo implements Cloneable {
 
   public List<String> files() throws IOException {
     final long fisVersion = fieldInfosVersion;
-    if (fisVersion != (fieldInfosVersion = getFieldInfos().getVersion())) {
+    // nocommit: fix this once we detangle
+    if (true /* fisVersion != (fieldInfosVersion = getFieldInfos().getVersion()) */) {
       clearFilesCache(); // FIS has modifications - need to recompute
     } else if (files != null) {
       // Already cached:

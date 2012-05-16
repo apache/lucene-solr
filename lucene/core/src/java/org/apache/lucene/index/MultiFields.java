@@ -248,7 +248,8 @@ public final class MultiFields extends Fields {
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
     final List<AtomicReader> subReaders = new ArrayList<AtomicReader>();
     ReaderUtil.gatherSubReaders(subReaders, reader);
-    final FieldInfos fieldInfos = new FieldInfos();
+    // nocommit: this should be read-only
+    final MutableFieldInfos fieldInfos = new MutableFieldInfos();
     for(AtomicReader subReader : subReaders) {
       fieldInfos.add(subReader.getFieldInfos());
     }

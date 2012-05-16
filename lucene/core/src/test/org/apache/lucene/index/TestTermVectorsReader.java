@@ -48,7 +48,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private int[][] positions = new int[testTerms.length][];
   private Directory dir;
   private SegmentInfo seg;
-  private FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
+  // nocommit: make a fieldInfos.empty for stuff like this?
+  private FieldInfos fieldInfos = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
   private static int TERM_FREQ = 3;
 
   private class TestToken implements Comparable<TestToken> {

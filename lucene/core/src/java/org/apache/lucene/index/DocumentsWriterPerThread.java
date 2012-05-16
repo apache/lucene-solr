@@ -169,7 +169,7 @@ class DocumentsWriterPerThread {
   boolean aborting = false;   // True if an abort is pending
   boolean hasAborted = false; // True if the last exception throws by #updateDocument was aborting
 
-  private FieldInfos fieldInfos;
+  private MutableFieldInfos fieldInfos;
   private final InfoStream infoStream;
   private int numDocsInRAM;
   private int flushedDocCount;
@@ -180,7 +180,7 @@ class DocumentsWriterPerThread {
 
   
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent,
-      FieldInfos fieldInfos, IndexingChain indexingChain) {
+      MutableFieldInfos fieldInfos, IndexingChain indexingChain) {
     this.directory = directory;
     this.parent = parent;
     this.fieldInfos = fieldInfos;
@@ -196,7 +196,7 @@ class DocumentsWriterPerThread {
     initialize();
   }
   
-  public DocumentsWriterPerThread(DocumentsWriterPerThread other, FieldInfos fieldInfos) {
+  public DocumentsWriterPerThread(DocumentsWriterPerThread other, MutableFieldInfos fieldInfos) {
     this(other.directory, other.parent, fieldInfos, other.parent.chain);
   }
   
@@ -413,7 +413,7 @@ class DocumentsWriterPerThread {
   private void doAfterFlush() throws IOException {
     segment = null;
     consumer.doAfterFlush();
-    fieldInfos = FieldInfos.from(fieldInfos);
+    fieldInfos = MutableFieldInfos.from(fieldInfos);
     parent.subtractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
   }

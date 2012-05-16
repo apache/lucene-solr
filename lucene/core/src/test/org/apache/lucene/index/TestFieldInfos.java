@@ -46,7 +46,7 @@ public class TestFieldInfos extends LuceneTestCase {
   public FieldInfos createAndWriteFieldInfos(Directory dir, String filename) throws IOException{
   //Positive test of FieldInfos
     assertTrue(testDoc != null);
-    FieldInfos fieldInfos = new FieldInfos(new FieldInfos.FieldNumberBiMap());
+    MutableFieldInfos fieldInfos = new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap());
     _TestUtil.add(testDoc, fieldInfos);
     //Since the complement is stored as well in the fields map
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
@@ -109,57 +109,11 @@ public class TestFieldInfos extends LuceneTestCase {
     dir.close();
   }
   
-  private void assertReadOnly(FieldInfos readOnly, FieldInfos modifiable) {
-    assertTrue(readOnly.isReadOnly());
-    assertFalse(modifiable.isReadOnly());
-    try {
-      readOnly.add(modifiable.fieldInfo(0));
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    
-    try {
-      readOnly.addOrUpdate("bogus", random().nextBoolean());
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    try {
-      readOnly.addOrUpdate("bogus", random().nextBoolean(), random().nextBoolean());
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    try {
-      readOnly.addOrUpdate("bogus", random().nextBoolean(), random().nextBoolean(),
-          random().nextBoolean());
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    try {
-      readOnly.addOrUpdate("bogus", random().nextBoolean(), random().nextBoolean(),
-          random().nextBoolean(),
-          random().nextBoolean(), random().nextBoolean() ? IndexOptions.DOCS_ONLY : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null, null);
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    try {
-      readOnly.addOrUpdate(Arrays.asList("a", "b", "c"), random().nextBoolean());
-      fail("instance should be read only");
-    } catch (IllegalStateException e) {
-      // expected
-    }
-    
+  private void assertReadOnly(FieldInfos readOnly, FieldInfos modifiable) {    
     assertEquals(modifiable.size(), readOnly.size());
     // assert we can iterate
     for (FieldInfo fi : readOnly) {
       assertEquals(fi.name, modifiable.fieldInfo(fi.number).name);
     }
-    
   }
-  
-  
 }

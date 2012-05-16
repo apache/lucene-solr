@@ -48,7 +48,8 @@ import org.apache.lucene.util.Bits;
  * undefined behavior</em>.
  */
 public final class ParallelAtomicReader extends AtomicReader {
-  private final FieldInfos fieldInfos = new FieldInfos();
+  // nocommit: make this read-only.
+  private final MutableFieldInfos fieldInfos = new MutableFieldInfos();
   private final ParallelFields fields = new ParallelFields();
   private final AtomicReader[] parallelReaders, storedFieldsReaders;
   private final Set<AtomicReader> completeReaderSet =

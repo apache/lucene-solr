@@ -55,7 +55,7 @@ final class SegmentMerger {
   
   private final MergeState mergeState = new MergeState();
 
-  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, Codec codec, IOContext context) {
+  SegmentMerger(InfoStream infoStream, Directory dir, int termIndexInterval, String name, MergeState.CheckAbort checkAbort, PayloadProcessorProvider payloadProcessorProvider, MutableFieldInfos fieldInfos, Codec codec, IOContext context) {
     mergeState.infoStream = infoStream;
     mergeState.readers = new ArrayList<MergeState.IndexReaderAndLiveDocs>();
     mergeState.fieldInfos = fieldInfos;

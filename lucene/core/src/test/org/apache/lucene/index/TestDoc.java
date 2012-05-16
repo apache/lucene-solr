@@ -194,7 +194,7 @@ public class TestDoc extends LuceneTestCase {
       SegmentReader r2 = new SegmentReader(si2, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
 
       final Codec codec = Codec.getDefault();
-      SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, MergeState.CheckAbort.NONE, null, new FieldInfos(new FieldInfos.FieldNumberBiMap()), codec, context);
+      SegmentMerger merger = new SegmentMerger(InfoStream.getDefault(), si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, MergeState.CheckAbort.NONE, null, new MutableFieldInfos(new MutableFieldInfos.FieldNumberBiMap()), codec, context);
 
       merger.add(r1);
       merger.add(r2);
