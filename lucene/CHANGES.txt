@@ -914,7 +914,11 @@ Optimizations
   FST under the hood, which requires less RAM.  NormalizeCharMap no
   longer accepts empty string match (it did previously, but ignored
   it).  (Dawid Weiss, Mike McCandless)
-             
+
+* LUCENE-4061: improve synchronization in DirectoryTaxonomyWriter.addCategory
+  and few general improvements to DirectoryTaxonomyWriter.
+  (Shai Erera, Gilad Barkai)
+  
 Bug fixes
 
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader

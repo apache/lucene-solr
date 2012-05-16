@@ -3,6 +3,7 @@ package org.apache.lucene.facet.taxonomy.directory;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.DiskOrdinalMap;
@@ -32,16 +33,32 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestAddTaxonomy extends LuceneTestCase {
 
-  private void dotest(int ncats, int range) throws Exception {
+  private void dotest(int ncats, final int range) throws Exception {
+    final AtomicInteger numCats = new AtomicInteger(ncats);
     Directory dirs[] = new Directory[2];
-    Random random = random();
     for (int i = 0; i < dirs.length; i++) {
       dirs[i] = newDirectory();
-      DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[i]);
-      for (int j = 0; j < ncats; j++) {
-        String cat = Integer.toString(random.nextInt(range));
-        tw.addCategory(new CategoryPath("a", cat));
+      final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[i]);
+      Thread[] addThreads = new Thread[4];
+      for (int j = 0; j < addThreads.length; j++) {
+        addThreads[j] = new Thread() {
+          @Override
+          public void run() {
+            Random random = random();
+            while (numCats.decrementAndGet() > 0) {
+              String cat = Integer.toString(random.nextInt(range));
+              try {
+                tw.addCategory(new CategoryPath("a", cat));
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
+        };
       }
+      
+      for (Thread t : addThreads) t.start();
+      for (Thread t : addThreads) t.join();
       tw.close();
     }
 
@@ -133,11 +150,9 @@ public class TestAddTaxonomy extends LuceneTestCase {
   }
   
   // A more comprehensive and big random test.
-  @Nightly
   public void testBig() throws Exception {
     dotest(200, 10000);
     dotest(1000, 20000);
-    // really big
     dotest(400000, 1000000);
   }
 

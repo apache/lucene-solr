@@ -3,11 +3,16 @@ package org.apache.lucene.facet.taxonomy.directory;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.InconsistentTaxonomyException;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
+import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache;
+import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -42,11 +47,17 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
 
     NoOpCache() { }
     
+    @Override
     public void close() {}
+    @Override
     public int get(CategoryPath categoryPath) { return -1; }
+    @Override
     public int get(CategoryPath categoryPath, int length) { return get(categoryPath); }
+    @Override
     public boolean put(CategoryPath categoryPath, int ordinal) { return true; }
+    @Override
     public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) { return true; }
+    @Override
     public boolean hasRoom(int numberOfEntries) { return false; }
     
   }
@@ -198,6 +209,49 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
     taxoReader.refresh();
     taxoReader.close();
+    
+    dir.close();
+  }
+
+  public void testConcurrency() throws Exception {
+    int ncats = atLeast(100000); // add many categories
+    final int range = ncats * 3; // affects the categories selection
+    final AtomicInteger numCats = new AtomicInteger(ncats);
+    Directory dir = newDirectory();
+    final ConcurrentHashMap<Integer,Integer> values = new ConcurrentHashMap<Integer,Integer>();
+    TaxonomyWriterCache cache = random().nextBoolean() 
+        ? new Cl2oTaxonomyWriterCache(1024, 0.15f, 3) 
+        : new LruTaxonomyWriterCache(ncats / 10);
+    final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, cache);
+    Thread[] addThreads = new Thread[atLeast(4)];
+    for (int z = 0; z < addThreads.length; z++) {
+      addThreads[z] = new Thread() {
+        @Override
+        public void run() {
+          Random random = random();
+          while (numCats.decrementAndGet() > 0) {
+            try {
+              int value = random.nextInt(range);
+              tw.addCategory(new CategoryPath("a", Integer.toString(value)));
+              values.put(value, value);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        }
+      };
+    }
+    
+    for (Thread t : addThreads) t.start();
+    for (Thread t : addThreads) t.join();
+    tw.close();
+    
+    DirectoryTaxonomyReader dtr = new DirectoryTaxonomyReader(dir);
+    assertEquals(values.size() + 2, dtr.getSize()); // +2 for root category + "a"
+    for (Integer value : values.keySet()) {
+      assertTrue("category not found a/" + value, dtr.getOrdinal(new CategoryPath("a", value.toString())) > 0);
+    }
+    dtr.close();
     
     dir.close();
   }

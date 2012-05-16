@@ -60,16 +60,19 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     }
   }
 
-  public boolean hasRoom(int n) {
-    return n<=(cache.getMaxSize()-cache.getSize());
+  @Override
+  public synchronized boolean hasRoom(int n) {
+    return n <= (cache.getMaxSize() - cache.getSize());
   }
 
-  public void close() {
+  @Override
+  public synchronized void close() {
     cache.clear();
-    cache=null;
+    cache = null;
   }
 
-  public int get(CategoryPath categoryPath) {
+  @Override
+  public synchronized int get(CategoryPath categoryPath) {
     Integer res = cache.get(categoryPath);
     if (res == null) {
       return -1;
@@ -78,7 +81,8 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     return res.intValue();
   }
 
-  public int get(CategoryPath categoryPath, int length) {
+  @Override
+  public synchronized int get(CategoryPath categoryPath, int length) {
     if (length<0 || length>categoryPath.length()) {
       length = categoryPath.length();
     }
@@ -94,7 +98,8 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     return res.intValue();
   }
 
-  public boolean put(CategoryPath categoryPath, int ordinal) {
+  @Override
+  public synchronized boolean put(CategoryPath categoryPath, int ordinal) {
     boolean ret = cache.put(categoryPath, new Integer(ordinal));
     // If the cache is full, we need to clear one or more old entries
     // from the cache. However, if we delete from the cache a recent
@@ -109,7 +114,8 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     return ret;
   }
 
-  public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) {
+  @Override
+  public synchronized boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) {
     boolean ret = cache.put(categoryPath, prefixLen, new Integer(ordinal));
     // If the cache is full, we need to clear one or more old entries
     // from the cache. However, if we delete from the cache a recent
@@ -125,4 +131,3 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
 }
-
