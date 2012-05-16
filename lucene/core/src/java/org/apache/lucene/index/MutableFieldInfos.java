@@ -94,26 +94,7 @@ public final class MutableFieldInfos extends FieldInfos {
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private final FieldNumberBiMap globalFieldNumbers;
   
-  private boolean hasFreq; // only set if readonly
-  private boolean hasProx; // only set if readonly
-  private boolean hasVectors; // only set if readonly
   private long version; // internal use to track changes
-
-  /**
-   * Creates a new read-only FieldInfos: only public to be accessible
-   * from the codecs package
-   * 
-   * @lucene.internal
-   */
-  public MutableFieldInfos(FieldInfo[] infos, boolean hasFreq, boolean hasProx, boolean hasVectors) {
-    this(null);
-    this.hasFreq = hasFreq;
-    this.hasProx = hasProx;
-    this.hasVectors = hasVectors;
-    for (FieldInfo info : infos) {
-      putInternal(info);
-    }
-  }
 
   public MutableFieldInfos() {
     this(new FieldNumberBiMap());
@@ -127,10 +108,9 @@ public final class MutableFieldInfos extends FieldInfos {
 
   /**
    * Creates a new FieldInfos instance with the given {@link FieldNumberBiMap}. 
-   * If the {@link FieldNumberBiMap} is <code>null</code> this instance will be read-only.
-   * @see #isReadOnly()
    */
   MutableFieldInfos(FieldNumberBiMap globalFieldNumbers) {
+    assert globalFieldNumbers != null;
     this.globalFieldNumbers = globalFieldNumbers;
   }
   
@@ -162,9 +142,6 @@ public final class MutableFieldInfos extends FieldInfos {
   @Override
   synchronized public MutableFieldInfos clone() {
     MutableFieldInfos fis = new MutableFieldInfos(globalFieldNumbers);
-    fis.hasFreq = hasFreq;
-    fis.hasProx = hasProx;
-    fis.hasVectors = hasVectors;
     for (FieldInfo fi : this) {
       FieldInfo clone = fi.clone();
       fis.putInternal(clone);
@@ -174,10 +151,6 @@ public final class MutableFieldInfos extends FieldInfos {
 
   /** Returns true if any fields have positions */
   public boolean hasProx() {
-    if (isReadOnly()) {
-      return hasProx;
-    }
-    // mutable FIs must check!
     for (FieldInfo fi : this) {
       if (fi.isIndexed && fi.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
         return true;
@@ -188,10 +161,6 @@ public final class MutableFieldInfos extends FieldInfos {
   
   /** Returns true if any fields have freqs */
   public boolean hasFreq() {
-    if (isReadOnly()) {
-      return hasFreq;
-    }
-    // mutable FIs must check!
     for (FieldInfo fi : this) {
       if (fi.isIndexed && fi.indexOptions != IndexOptions.DOCS_ONLY) {
         return true;
@@ -361,10 +330,6 @@ public final class MutableFieldInfos extends FieldInfos {
    * @return true if at least one field has any vectors
    */
   public boolean hasVectors() {
-    if (isReadOnly()) {
-      return hasVectors;
-    }
-    // mutable FIs must check
     for (FieldInfo fi : this) {
       if (fi.storeTermVector) {
         return true;
@@ -385,17 +350,6 @@ public final class MutableFieldInfos extends FieldInfos {
     return false;
   }
 
-  /**
-   * Returns <code>true</code> iff this instance is not backed by a
-   * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap}. Instances read from a directory via
-   * {@link FieldInfos#FieldInfos(FieldInfo[], boolean, boolean, boolean)} will always be read-only
-   * since no {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} is supplied, otherwise 
-   * <code>false</code>.
-   */
-  public final boolean isReadOnly() {
-    return globalFieldNumbers == null;
-  }
-  
   synchronized final long getVersion() {
     return version;
   }
@@ -430,10 +384,7 @@ public final class MutableFieldInfos extends FieldInfos {
   }
   
   /**
-   * Creates a new {@link FieldInfo} instance from the given instance. If the given instance is
-   * read-only this instance will be read-only too.
-   * 
-   * @see #isReadOnly()
+   * Creates a new instance from the given instance. 
    */
   // nocommit
   static MutableFieldInfos from(MutableFieldInfos other) {
