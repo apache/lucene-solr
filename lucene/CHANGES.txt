@@ -953,6 +953,11 @@ Bug fixes
   offset calculation in PathHierarchyTokenizer. 
   (Mike McCandless, Uwe Schindler, Robert Muir)
 
+* LUCENE-4060: Fix a synchronization bug in 
+  DirectoryTaxonomyWriter.addTaxonomies(). Also, the method has been renamed to
+  addTaxonomy and now takes only one Directory and one OrdinalMap.
+  (Shai Erera, Gilad Barkai)
+
 Documentation
 
 * LUCENE-3958: Javadocs corrections for IndexWriter.
