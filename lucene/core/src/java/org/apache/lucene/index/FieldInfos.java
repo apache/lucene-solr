@@ -339,18 +339,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   }
 
   /**
-   * Return the fieldName identified by its number.
-   * 
-   * @param fieldNumber
-   * @return the fieldName or an empty string when the field
-   * with the given number doesn't exist.
-   */  
-  public String fieldName(int fieldNumber) {
-  	FieldInfo fi = fieldInfo(fieldNumber);
-  	return (fi != null) ? fi.name : "";
-  }
-
-  /**
    * Return the fieldinfo object referenced by the fieldNumber.
    * @param fieldNumber
    * @return the FieldInfo object or null when the given fieldNumber

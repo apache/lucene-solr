@@ -156,7 +156,7 @@ public class TestFieldInfos extends LuceneTestCase {
     assertEquals(modifiable.size(), readOnly.size());
     // assert we can iterate
     for (FieldInfo fi : readOnly) {
-      assertEquals(fi.name, modifiable.fieldName(fi.number));
+      assertEquals(fi.name, modifiable.fieldInfo(fi.number).name);
     }
     
   }

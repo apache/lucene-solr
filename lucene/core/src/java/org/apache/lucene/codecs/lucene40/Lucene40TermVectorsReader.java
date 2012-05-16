@@ -276,7 +276,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
         @Override
         public String next() throws IOException {
           if (fieldNumbers != null && fieldUpto < fieldNumbers.length) {
-            return fieldInfos.fieldName(fieldNumbers[fieldUpto++]);
+            return fieldInfos.fieldInfo(fieldNumbers[fieldUpto++]).name;
           } else {
             return null;
           }
@@ -284,7 +284,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
 
         @Override
         public Terms terms() throws IOException {
-          return TVFields.this.terms(fieldInfos.fieldName(fieldNumbers[fieldUpto-1]));
+          return TVFields.this.terms(fieldInfos.fieldInfo(fieldNumbers[fieldUpto-1]).name);
         }
       };
     }
