@@ -20,7 +20,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * Simple Augmenter that adds the docId
+ * Simple Augmenter that adds the score
  *
  *
  * @since solr 4.0
