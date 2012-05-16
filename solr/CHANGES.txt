@@ -107,7 +107,7 @@ New Features
 * SOLR-2112: Solrj API now supports streaming results. (ryan)
 
 * SOLR-792: Adding PivotFacetComponent for Hierarchical faceting
-  (erik, Jeremy Hinegardner, Thibaut Lassalle, ryan)
+  (ehatcher, Jeremy Hinegardner, Thibaut Lassalle, ryan)
 
 * LUCENE-2507, SOLR-2571, SOLR-2576: Added DirectSolrSpellChecker, which uses Lucene's
   DirectSpellChecker to retrieve correction candidates directly from the term dictionary using
@@ -144,7 +144,7 @@ New Features
 * SOLR-2338: Add support for using <similarity/> in a schema's fieldType,
   for customizing scoring on a per-field basis. (hossman, yonik, rmuir)
   
-* SOLR-2335: New 'field("...")' function syntax for refering to complex 
+* SOLR-2335: New 'field("...")' function syntax for referring to complex
   field names (containing whitespace or special characters) in functions.
 
 * SOLR-2383: /browse improvements: generalize range and date facet display
