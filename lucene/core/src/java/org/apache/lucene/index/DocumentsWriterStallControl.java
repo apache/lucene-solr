@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * Controls the health status of a {@link DocumentsWriter} sessions. This class
@@ -55,11 +56,11 @@ final class DocumentsWriterStallControl {
 
     boolean tryReset() {
       final int oldState = getState();
-      if (oldState == 0)
+      if (oldState == 0) {
         return true;
+      }
       if (compareAndSetState(oldState, 0)) {
-        releaseShared(0);
-        return true;
+        return releaseShared(0);
       }
       return false;
     }
@@ -97,11 +98,11 @@ final class DocumentsWriterStallControl {
    * {@link DocumentsWriterStallControl} to healthy and release all threads waiting on
    * {@link #waitIfStalled()}
    */
-  void updateStalled(DocumentsWriterFlushControl flushControl) {
+  void updateStalled(MemoryController controller) {
     do {
       // if we have more flushing / blocked DWPT than numActiveDWPT we stall!
       // don't stall if we have queued flushes - threads should be hijacked instead
-      while (flushControl.netBytes() > flushControl.stallLimitBytes()) {
+      while (controller.netBytes() > controller.stallLimitBytes()) {
         if (sync.trySetStalled()) {
           assert wasStalled = true;
           return;
@@ -111,10 +112,19 @@ final class DocumentsWriterStallControl {
   }
 
   void waitIfStalled() {
-    sync.acquireShared(0);
+    try {
+      sync.acquireSharedInterruptibly(0);
+    } catch (InterruptedException e) {
+      throw new ThreadInterruptedException(e);
+    }
   }
   
   boolean hasBlocked() { // for tests
     return sync.hasBlockedThreads;
+  }
+  
+  static interface MemoryController {
+    long netBytes();
+    long stallLimitBytes();
   }
 }
