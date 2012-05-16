@@ -204,18 +204,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   }
   
   /**
-   * Adds or updates fields that are indexed. Whether they have termvectors has to be specified.
-   * 
-   * @param names The names of the fields
-   * @param storeTermVectors Whether the fields store term vectors or not
-   */
-  synchronized public void addOrUpdateIndexed(Collection<String> names, boolean storeTermVectors) {
-    for (String name : names) {
-      addOrUpdate(name, true, storeTermVectors);
-    }
-  }
-
-  /**
    * Assumes the fields are not storing term vectors.
    * 
    * @param names The names of the fields
@@ -344,17 +332,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType);
     putInternal(fi);
     return fi;
-  }
-
-  /**
-   * lookup the number of a field by name.
-   * 
-   * @param fieldName field's name
-   * @return number of field, or -1 if it does not exist.
-   */
-  public int fieldNumber(String fieldName) {
-    FieldInfo fi = fieldInfo(fieldName);
-    return (fi != null) ? fi.number : -1;
   }
 
   public FieldInfo fieldInfo(String fieldName) {

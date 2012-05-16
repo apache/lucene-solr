@@ -341,16 +341,6 @@ public final class SegmentInfo implements Cloneable {
    * @deprecated shared doc stores are not supported in >= 4.0
    */
   @Deprecated
-  public void setDocStoreIsCompoundFile(boolean docStoreIsCompoundFile) {
-    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
-    clearFilesCache();
-  }
-
-  /**
-   * @deprecated shared doc stores are not supported in >= 4.0
-   */
-  @Deprecated
   void setDocStore(int offset, String segment, boolean isCompoundFile) {
     // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     docStoreOffset = offset;
@@ -366,25 +356,6 @@ public final class SegmentInfo implements Cloneable {
   public String getDocStoreSegment() {
     // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     return docStoreSegment;
-  }
-
-  /**
-   * @deprecated shared doc stores are not supported in >= 4.0
-   */
-  @Deprecated
-  void setDocStoreOffset(int offset) {
-    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-    docStoreOffset = offset;
-    clearFilesCache();
-  }
-
-  /**
-   * @deprecated shared doc stores are not supported in 4.0
-   */
-  @Deprecated
-  public void setDocStoreSegment(String docStoreSegment) {
-    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
-    this.docStoreSegment = docStoreSegment;
   }
 
   public boolean getHasProx() throws IOException {

@@ -375,19 +375,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     }
   }
 
-  /** Prunes any segment whose docs are all deleted. */
-  public void pruneDeletedSegments() {
-    for(final Iterator<SegmentInfo> it = segments.iterator(); it.hasNext();) {
-      final SegmentInfo info = it.next();
-      if (info.getDelCount() == info.docCount) {
-        it.remove();
-        final boolean didRemove = segmentSet.remove(info);
-        assert didRemove;
-      }
-    }
-    assert segmentSet.size() == segments.size();
-  }
-
   /**
    * Returns a copy of this instance, also copying each
    * SegmentInfo.
