@@ -272,23 +272,17 @@ class ReadersAndLiveDocs {
       // We have new deletes
       assert liveDocs.length() == info.docCount;
 
-      // Save in case we need to rollback on failure:
-      final SegmentInfo sav = info.clone();
-      info.advanceDelGen();
-      info.setDelCount(info.getDelCount() + pendingDeleteCount);
-
       // We can write directly to the actual name (vs to a
       // .tmp & renaming it) because the file is not live
       // until segments file is written:
-      boolean success = false;
-      try {
-        info.getCodec().liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, dir, info, IOContext.DEFAULT);
-        success = true;
-      } finally {
-        if (!success) {
-          info.reset(sav);
-        }
-      }
+      info.getCodec().liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, dir, info, pendingDeleteCount, IOContext.DEFAULT);
+
+      // If we hit an exc in the line above (eg disk full)
+      // then info remains pointing to the previous
+      // (successfully written) del docs:
+      info.advanceDelGen();
+      info.setDelCount(info.getDelCount() + pendingDeleteCount);
+
       pendingDeleteCount = 0;
       return true;
     } else {

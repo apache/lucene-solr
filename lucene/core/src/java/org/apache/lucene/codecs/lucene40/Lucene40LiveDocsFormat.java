@@ -90,10 +90,10 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException {
-    String filename = IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getDelGen());
+  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, int newDelCount, IOContext context) throws IOException {
+    String filename = IndexFileNames.fileNameFromGeneration(info.name, DELETES_EXTENSION, info.getNextDelGen());
     final BitVector liveDocs = (BitVector) bits;
-    assert liveDocs.count() == info.docCount - info.getDelCount();
+    assert liveDocs.count() == info.docCount - info.getDelCount() - newDelCount;
     assert liveDocs.length() == info.docCount;
     liveDocs.write(dir, filename, context);
   }

@@ -105,12 +105,12 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException {
+  public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, int newDelCount, IOContext context) throws IOException {
     BitSet set = ((SimpleTextBits) bits).bits;
     int size = bits.length();
     BytesRef scratch = new BytesRef();
     
-    String fileName = IndexFileNames.fileNameFromGeneration(info.name, LIVEDOCS_EXTENSION, info.getDelGen());
+    String fileName = IndexFileNames.fileNameFromGeneration(info.name, LIVEDOCS_EXTENSION, info.getNextDelGen());
     IndexOutput out = null;
     boolean success = false;
     try {

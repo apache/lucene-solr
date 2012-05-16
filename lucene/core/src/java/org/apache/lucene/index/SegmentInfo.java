@@ -127,35 +127,6 @@ public final class SegmentInfo implements Cloneable {
     this.fieldInfos = fieldInfos;
   }
 
-  /**
-   * Copy everything from src SegmentInfo into our instance.
-   */
-  void reset(SegmentInfo src) {
-    clearFilesCache();
-    version = src.version;
-    name = src.name;
-    docCount = src.docCount;
-    dir = src.dir;
-    delGen = src.delGen;
-    docStoreOffset = src.docStoreOffset;
-    docStoreSegment = src.docStoreSegment;
-    docStoreIsCompoundFile = src.docStoreIsCompoundFile;
-    hasVectors = src.hasVectors;
-    hasProx = src.hasProx;
-    fieldInfos = src.fieldInfos == null ? null : src.fieldInfos.clone();
-    if (src.normGen == null) {
-      normGen = null;
-    } else {
-      normGen = new HashMap<Integer, Long>(src.normGen.size());
-      for (Entry<Integer,Long> entry : src.normGen.entrySet()) {
-        normGen.put(entry.getKey(), entry.getValue());
-      }
-    }
-    isCompoundFile = src.isCompoundFile;
-    delCount = src.delCount;
-    codec = src.codec;
-  }
-
   void setDiagnostics(Map<String, String> diagnostics) {
     this.diagnostics = diagnostics;
   }
@@ -244,6 +215,14 @@ public final class SegmentInfo implements Cloneable {
       delGen++;
     }
     clearFilesCache();
+  }
+
+  public long getNextDelGen() {
+    if (delGen == NO) {
+      return YES;
+    } else {
+      return delGen + 1;
+    }
   }
 
   void clearDelGen() {

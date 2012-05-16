@@ -1996,8 +1996,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (flushedSegment.liveDocs != null) {
         final int delCount = flushedSegment.delCount;
         assert delCount > 0;
-        newSegment.setDelCount(delCount);
-        newSegment.advanceDelGen();
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "flush: write " + delCount + " deletes gen=" + flushedSegment.segmentInfo.getDelGen());
         }
@@ -2010,7 +2008,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           
         SegmentInfo info = flushedSegment.segmentInfo;
         Codec codec = info.getCodec();
-        codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, context);
+        codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, delCount, context);
+        newSegment.setDelCount(delCount);
+        newSegment.advanceDelGen();
       }
 
       success = true;

@@ -68,7 +68,7 @@ public class Lucene3xCodec extends Codec {
   // TODO: this should really be a different impl
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat() {
     @Override
-    public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, IOContext context) throws IOException {
+    public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfo info, int newDelCount, IOContext context) throws IOException {
       throw new UnsupportedOperationException("this codec can only be used for reading");
     }
   };
