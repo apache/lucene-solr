@@ -25,6 +25,11 @@ Bug Fixes
     wrongly used minimum sort buffer resulting in potentially slow FST &
     Dictionary building. (Simon Willnauer) 
 
+ * LUCENE-4060: Fix a synchronization bug in 
+   DirectoryTaxonomyWriter.addTaxonomies(). Also, the method has been renamed to
+   addTaxonomy and now takes only one Directory and one OrdinalMap.
+   (Shai Erera, Gilad Barkai)
+ 
 Tests
  
  * LUCENE-3919, LUCENE-3969, LUCENE-3990: more thorough testing of analysis 

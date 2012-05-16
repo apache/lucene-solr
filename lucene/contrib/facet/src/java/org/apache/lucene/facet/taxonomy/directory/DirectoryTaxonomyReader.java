@@ -189,7 +189,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     int ret = TaxonomyReader.INVALID_ORDINAL;
     try {
       indexReaderLock.readLock().lock();
-      TermDocs docs = indexReader.termDocs(new Term(Consts.FULL, path));
+      TermDocs docs = indexReader.termDocs(Consts.FULL_TERM.createTerm(path));
       if (docs.next()) {
         ret = docs.doc();
       }
@@ -271,8 +271,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
       if (catID<0 || catID>=indexReader.maxDoc()) {
         return null;
       }
-      ret = indexReader.document(catID, Consts.fullPathSelector)
-      .get(Consts.FULL);
+      ret = indexReader.document(catID, Consts.fullPathSelector).get(Consts.FULL);
     } finally {
       indexReaderLock.readLock().unlock();
     }

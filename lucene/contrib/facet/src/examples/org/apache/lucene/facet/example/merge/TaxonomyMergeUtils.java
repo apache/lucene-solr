@@ -81,7 +81,7 @@ public class TaxonomyMergeUtils {
                             OrdinalMap map, IndexWriter destIndexWriter,
                             DirectoryTaxonomyWriter destTaxWriter) throws IOException {
     // merge the taxonomies
-    destTaxWriter.addTaxonomies(new Directory[] { srcTaxDir }, new OrdinalMap[] { map });
+    destTaxWriter.addTaxonomy(srcTaxDir, map);
 
     PayloadProcessorProvider payloadProcessor = new FacetsPayloadProcessorProvider(
         srcIndexDir, map.getMap(), new DefaultFacetIndexingParams());

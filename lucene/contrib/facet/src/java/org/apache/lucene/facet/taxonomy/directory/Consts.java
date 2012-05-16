@@ -2,6 +2,7 @@ package org.apache.lucene.facet.taxonomy.directory;
 
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.index.Term;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,6 +27,12 @@ import org.apache.lucene.document.FieldSelectorResult;
 abstract class Consts {
 
   static final String FULL = "$full_path$";
+  /**
+   * A {@link #FULL} {@link Term} - use it for creating new terms instead of
+   * calling {@link Term#Term(String, String)}, by calling
+   * {@link Term#createTerm(String)} -- the latter does not do string interning.
+   */
+  static final Term FULL_TERM = new Term(FULL);
   static final String FIELD_PAYLOADS = "$payloads$";
   static final String PAYLOAD_PARENT = "p";
   static final char[] PAYLOAD_PARENT_CHARS = PAYLOAD_PARENT.toCharArray();

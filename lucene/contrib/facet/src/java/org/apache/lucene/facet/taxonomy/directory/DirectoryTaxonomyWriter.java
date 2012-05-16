@@ -411,8 +411,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       reader = openReader();
     }
 
-    TermDocs docs = reader.termDocs(new Term(Consts.FULL, categoryPath
-        .toString(delimiter)));
+    TermDocs docs = reader.termDocs(Consts.FULL_TERM.createTerm(categoryPath.toString(delimiter)));
     if (!docs.next()) {
       return -1; // category does not exist in taxonomy
     }
@@ -446,7 +445,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     if (reader == null) {
       reader = openReader();
     }
-    TermDocs docs = reader.termDocs(new Term(Consts.FULL, categoryPath
+    TermDocs docs = reader.termDocs(Consts.FULL_TERM.createTerm(categoryPath
         .toString(delimiter, prefixLen)));
     if (!docs.next()) {
       return -1; // category does not exist in taxonomy
@@ -754,9 +753,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
     CategoryPath cp = new CategoryPath();
     TermDocs td = reader.termDocs();
-    Term fullPathTerm = new Term(Consts.FULL);
-    String field = fullPathTerm.field(); // needed so we can later use !=
-    TermEnum terms = reader.terms(fullPathTerm);
+    String field = Consts.FULL_TERM.field(); // needed so we can later use !=
+    TermEnum terms = reader.terms(Consts.FULL_TERM);
     // The check is done here to avoid checking it on every iteration of the
     // below loop. A null term wlil be returned if there are no terms in the
     // lexicon, or after the Consts.FULL term. However while the loop is
@@ -798,6 +796,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
     return parentArray;
   }
+  
   public int getParent(int ordinal) throws IOException {
     ensureOpen();
     // Note: the following if() just enforces that a user can never ask
@@ -808,154 +807,50 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
     return getParentArray().getArray()[ordinal];
   }
-
+  
   /**
-   * Take all the categories of one or more given taxonomies, and add them to
-   * the main taxonomy (this), if they are not already there.
-   * <P>
-   * Additionally, fill a <I>mapping</I> for each of the added taxonomies,
-   * mapping its ordinals to the ordinals in the enlarged main taxonomy.
-   * These mapping are saved into an array of OrdinalMap objects given by the
-   * user, one for each of the given taxonomies (not including "this", the main
-   * taxonomy). Often the first of these will be a MemoryOrdinalMap and the
-   * others will be a DiskOrdinalMap - see discussion in {OrdinalMap}. 
-   * <P> 
-   * Note that the taxonomies to be added are given as Directory objects,
-   * not opened TaxonomyReader/TaxonomyWriter objects, so if any of them are
-   * currently managed by an open TaxonomyWriter, make sure to commit() (or
-   * close()) it first. The main taxonomy (this) is an open TaxonomyWriter,
-   * and does not need to be commit()ed before this call. 
+   * Takes the categories from the given taxonomy directory, and adds the
+   * missing ones to this taxonomy. Additionally, it fills the given
+   * {@link OrdinalMap} with a mapping from the original ordinal to the new
+   * ordinal.
    */
-  public void addTaxonomies(Directory[] taxonomies, OrdinalMap[] ordinalMaps) throws IOException {
+  public void addTaxonomy(Directory taxoDir, OrdinalMap map) throws IOException {
     ensureOpen();
-    // To prevent us stepping on the rest of this class's decisions on when
-    // to open a reader, and when not, we'll be opening a new reader instead
-    // of using the existing "reader" object:
-    IndexReader mainreader = openReader();
-    TermEnum mainte = mainreader.terms(new Term(Consts.FULL));
-
-    IndexReader[] otherreaders = new IndexReader[taxonomies.length];
-    TermEnum[] othertes = new TermEnum[taxonomies.length];
-    for (int i=0; i<taxonomies.length; i++) {
-      otherreaders[i] = IndexReader.open(taxonomies[i]);
-      othertes[i] = otherreaders[i].terms(new Term(Consts.FULL));
-      // Also tell the ordinal maps their expected sizes:
-      ordinalMaps[i].setSize(otherreaders[i].numDocs());
-    }
-
-    CategoryPath cp = new CategoryPath();
-
-    // We keep a "current" cursor over the alphabetically-ordered list of
-    // categories in each taxonomy. We start the cursor on the first
-    // (alphabetically) category of each taxonomy:
-
-    String currentMain;
-    String[] currentOthers = new String[taxonomies.length];
-    currentMain = nextTE(mainte);
-    int otherTaxonomiesLeft = 0;
-    for (int i=0; i<taxonomies.length; i++) {
-      currentOthers[i] = nextTE(othertes[i]);
-      if (currentOthers[i]!=null) {
-        otherTaxonomiesLeft++;
-      }
-    }
-
-    // And then, at each step look at the first (alphabetically) of the
-    // current taxonomies.
-    // NOTE: The most efficient way we could have done this is using a
-    // PriorityQueue. But for simplicity, and assuming that usually we'll
-    // have a very small number of other taxonomies (often just 1), we use
-    // a more naive algorithm (o(ntaxonomies) instead of o(ln ntaxonomies)
-    // per step)
-
-    while (otherTaxonomiesLeft>0) {
-      String first=null;
-      for (int i=0; i<taxonomies.length; i++) {
-        if (currentOthers[i]==null) continue;
-        if (first==null || first.compareTo(currentOthers[i])>0) {
-          first = currentOthers[i];
-        }
-      }
-      int comp = 0;
-      if (currentMain==null || (comp = currentMain.compareTo(first))>0) {
-        // If 'first' is before currentMain, or currentMain is null,
-        // then 'first' is a new category and we need to add it to the
-        // main taxonomy. Then for all taxonomies with this 'first'
-        // category, we need to add the new category number to their
-        // map, and move to the next category in all of them.
+    IndexReader r = IndexReader.open(taxoDir);
+    try {
+      final int size = r.numDocs();
+      final OrdinalMap ordinalMap = map;
+      ordinalMap.setSize(size);
+      CategoryPath cp = new CategoryPath();
+      TermEnum te = r.terms(Consts.FULL_TERM);
+      TermDocs docs = r.termDocs();
+      // we call next() first, to skip the root category which always exists.
+      while (te.next()) {
+        Term term = te.term();
+        if (term.field() != Consts.FULL) break;
         cp.clear();
-        cp.add(first, delimiter);
-        // We can call internalAddCategory() instead of addCategory()
-        // because we know the category hasn't been seen yet.
-        int newordinal = internalAddCategory(cp, cp.length());
-        // TODO (Facet): we already had this term in our hands before, in nextTE...
-        Term t = new Term(Consts.FULL, first);
-        for (int i=0; i<taxonomies.length; i++) {
-          if (first.equals(currentOthers[i])) {
-            // remember the remapping of this ordinal. Note how
-            // this requires reading a posting list from the index -
-            // but since we do this in lexical order of terms, just
-            // like Lucene's merge works, we hope there are few seeks.
-            // TODO (Facet): is there a quicker way? E.g., not specifying the
-            // next term by name every time?
-            TermDocs td = otherreaders[i].termDocs(t);
-            td.next(); // TODO (Facet): check?
-            int origordinal = td.doc();
-            ordinalMaps[i].addMapping(origordinal, newordinal);
-            // and move to the next category in the i'th taxonomy 
-            currentOthers[i] = nextTE(othertes[i]);
-            if (currentOthers[i]==null) {
-              otherTaxonomiesLeft--;
-            }
-          }
+        cp.add(term.text(), Consts.DEFAULT_DELIMITER);
+        int ordinal = findCategory(cp);
+        if (ordinal < 0) {
+          // NOTE: call addCategory so that it works well in a multi-threaded
+          // environment, in case e.g. a thread just added the category, after
+          // the findCategory() call above failed to find it.
+          ordinal = addCategory(cp);
         }
-      } else if (comp==0) {
-        // 'first' and currentMain are the same, so both the main and some
-        // other taxonomies need to be moved, but a category doesn't need
-        // to be added because it already existed in the main taxonomy.
-
-        // TODO (Facet): Again, is there a quicker way?
-        Term t = new Term(Consts.FULL, first);
-        TermDocs td = mainreader.termDocs(t);
-        td.next(); // TODO (Facet): check?
-        int newordinal = td.doc();
-
-        currentMain = nextTE(mainte);
-        for (int i=0; i<taxonomies.length; i++) {
-          if (first.equals(currentOthers[i])) {
-            // TODO (Facet): again, is there a quicker way?
-            td = otherreaders[i].termDocs(t);
-            td.next(); // TODO (Facet): check?
-            int origordinal = td.doc();
-            ordinalMaps[i].addMapping(origordinal, newordinal);
-
-            // and move to the next category 
-            currentOthers[i] = nextTE(othertes[i]);
-            if (currentOthers[i]==null) {
-              otherTaxonomiesLeft--;
-            }
-          }
-        }
-      } else /* comp > 0 */ {
-        // The currentMain doesn't appear in any of the other taxonomies -
-        // we don't need to do anything, just continue to the next one
-        currentMain = nextTE(mainte);
+        docs.seek(term);
+        docs.next();
+        ordinalMap.addMapping(docs.doc(), ordinal);
       }
-    }
-
-    // Close all the readers we've opened, and also tell the ordinal maps
-    // we're done adding to them
-    mainreader.close();
-    for (int i=0; i<taxonomies.length; i++) {
-      otherreaders[i].close();
-      // We never actually added a mapping for the root ordinal - let's do
-      // it now, just so that the map is complete (every ordinal between 0
-      // and size-1 is remapped)
-      ordinalMaps[i].addMapping(0, 0);
-      ordinalMaps[i].addDone();
+      // we must add the root ordinal map, so that the map will be complete
+      // (otherwise e.g. DiskOrdinalMap may fail because it expects more
+      // categories to exist in the file).
+      ordinalMap.addMapping(0, 0);
+      ordinalMap.addDone();
+    } finally {
+      r.close();
     }
   }
-
+  
   /**
    * Mapping from old ordinal to new ordinals, used when merging indexes 
    * wit separate taxonomies.
@@ -1069,20 +964,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       }
       return map;
     }
-  }
-
-  private static final String nextTE(TermEnum te) throws IOException {
-    if (te.next()) {
-      Term t = te.term();
-      // If our enumeration reached a different field, we're done. Note
-      // how we're allowed compare string references, rather than the
-      // actual string's contents.
-      if (t.field()==Consts.FULL) {
-        return t.text();
-      }
-      return null;
-    } 
-    return null;
   }
 
   /**
