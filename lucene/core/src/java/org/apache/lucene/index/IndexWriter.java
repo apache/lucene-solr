@@ -2290,8 +2290,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       int docCount = mergeState.mergedDocCount;
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, docCount,
                                          SegmentInfo.NO, -1, mergedName, false, null, false, 0,
-                                         mergeState.fieldInfos.hasProx(), codec, null,
-                                         mergeState.fieldInfos.hasVectors());
+                                         mergeState.fieldInfos.hasProx(), codec, null);
                                          
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
@@ -3376,7 +3375,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                                              payloadProcessorProvider, new MutableFieldInfos(globalFieldNumberMap), codec, context);
 
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "merging " + segString(merge.segments) + " mergeVectors=" + merge.info.getHasVectors());
+      infoStream.message("IW", "merging " + segString(merge.segments));
     }
 
     merge.readers = new ArrayList<SegmentReader>();
@@ -3436,7 +3435,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       mergedDocCount = merge.info.docCount = mergeState.mergedDocCount;
 
       // LUCENE-3403: set hasVectors after merge(), so that it is properly set.
-      merge.info.setHasVectors(mergeState.fieldInfos.hasVectors());
       merge.info.setHasProx(mergeState.fieldInfos.hasProx());
 
       // Record which codec was used to write the segment

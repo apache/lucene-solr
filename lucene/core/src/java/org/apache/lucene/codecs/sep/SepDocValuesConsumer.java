@@ -67,6 +67,6 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
   public void abort() {
     Set<String> files = new HashSet<String>();
     files(segmentName, files);
-    IOUtils.deleteFilesIgnoringExceptions(directory, SegmentInfo.findMatchingFiles(directory, files).toArray(new String[0]));
+    IOUtils.deleteFilesIgnoringExceptions(directory, SegmentInfo.findMatchingFiles(segmentName, directory, files).toArray(new String[0]));
   }
 }

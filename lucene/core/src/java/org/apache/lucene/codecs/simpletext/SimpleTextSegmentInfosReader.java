@@ -107,10 +107,6 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
     final boolean hasProx = Boolean.parseBoolean(readString(SI_HASPROX.length, scratch));
 
     SimpleTextUtil.readLine(input, scratch);
-    assert StringHelper.startsWith(scratch, SI_HASVECTORS);
-    final boolean hasVectors = Boolean.parseBoolean(readString(SI_HASVECTORS.length, scratch));
-
-    SimpleTextUtil.readLine(input, scratch);
     assert StringHelper.startsWith(scratch, SI_USECOMPOUND);
     final boolean isCompoundFile = Boolean.parseBoolean(readString(SI_USECOMPOUND.length, scratch));
     
@@ -168,7 +164,7 @@ public class SimpleTextSegmentInfosReader extends SegmentInfosReader {
     
     return new SegmentInfo(directory, version, name, docCount, delGen, dsOffset,
         dsSegment, dsCompoundFile, normGen, isCompoundFile,
-        delCount, hasProx, codec, diagnostics, hasVectors);
+        delCount, hasProx, codec, diagnostics);
   }
   
   private String readString(int offset, BytesRef scratch) {

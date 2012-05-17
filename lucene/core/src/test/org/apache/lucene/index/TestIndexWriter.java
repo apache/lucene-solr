@@ -1547,10 +1547,11 @@ public class TestIndexWriter extends LuceneTestCase {
     DirectoryReader r0 = IndexReader.open(dir);
     for (IndexReader r : r0.getSequentialSubReaders()) {
       SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
-      assertFalse(s.getHasVectors());
+      assertFalse(((SegmentReader) r).getFieldInfos().hasVectors());
       Set<String> files = new HashSet<String>();
       s.getCodec().termVectorsFormat().files(s, files);
-      assertTrue(files.isEmpty());
+      List<String> filesExisting = SegmentInfo.findMatchingFiles(s.name, dir, files);
+      assertTrue(filesExisting.isEmpty());
     }
     
     r0.close();

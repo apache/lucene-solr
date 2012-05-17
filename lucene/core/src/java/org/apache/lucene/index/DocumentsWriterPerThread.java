@@ -478,8 +478,7 @@ class DocumentsWriterPerThread {
       final SegmentInfo newSegment = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, segment, flushState.numDocs,
                                                      SegmentInfo.NO, -1, segment, false, null, false, 0,
                                                      flushState.fieldInfos.hasProx(), flushState.codec,
-                                                     null,
-                                                     flushState.fieldInfos.hasVectors());
+                                                     null);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.delCountOnFlush)) + " deleted docs");
         infoStream.message("DWPT", "new segment has " +

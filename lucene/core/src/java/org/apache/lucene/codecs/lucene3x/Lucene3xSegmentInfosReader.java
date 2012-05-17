@@ -132,6 +132,7 @@ class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     final Codec codec = Codec.forName("Lucene3x");
     final Map<String,String> diagnostics = input.readStringStringMap();
 
+    // nocommit cleane up
     final boolean hasVectors;
     if (format <= SegmentInfos.FORMAT_HAS_VECTORS) {
       hasVectors = input.readByte() == 1;
@@ -148,23 +149,10 @@ class Lucene3xSegmentInfosReader extends SegmentInfosReader {
         storeIsCompoundFile = isCompoundFile;
         ext = IndexFileNames.COMPOUND_FILE_EXTENSION;
       }
-      final Directory dirToTest;
-      if (storeIsCompoundFile) {
-        dirToTest = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(storesSegment, "", ext), IOContext.READONCE, false);
-      } else {
-        dirToTest = dir;
-      }
-      try {
-        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION));
-      } finally {
-        if (isCompoundFile) {
-          dirToTest.close();
-        }
-      }
     }
 
     return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
       docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-      delCount, hasProx, codec, diagnostics, hasVectors);
+      delCount, hasProx, codec, diagnostics);
   }
 }

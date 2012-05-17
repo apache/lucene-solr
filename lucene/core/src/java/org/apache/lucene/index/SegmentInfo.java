@@ -71,6 +71,9 @@ public final class SegmentInfo implements Cloneable {
 
   private boolean isCompoundFile;
 
+  private volatile List<String> files;            // Cached list of files that this segment uses
+                                                  // in the Directory
+
   private volatile long sizeInBytes = -1;         // total byte size of all files (computed on demand)
 
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
@@ -84,7 +87,6 @@ public final class SegmentInfo implements Cloneable {
 
   private int delCount;                           // How many deleted docs in this segment
   
-  private boolean hasVectors;       // True if this segment has any term vectors fields
   private boolean hasProx;          // True if this segment has any fields with positional information
 
   private Codec codec;
@@ -132,7 +134,7 @@ public final class SegmentInfo implements Cloneable {
    */
   public SegmentInfo(Directory dir, String version, String name, int docCount, long delGen, int docStoreOffset,
       String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
-      int delCount, boolean hasProx, Codec codec, Map<String,String> diagnostics, boolean hasVectors) {
+      int delCount, boolean hasProx, Codec codec, Map<String,String> diagnostics) {
     this.dir = dir;
     this.version = version;
     this.name = name;
@@ -144,11 +146,10 @@ public final class SegmentInfo implements Cloneable {
     this.normGen = normGen;
     this.isCompoundFile = isCompoundFile;
     this.delCount = delCount;
+    // nocommit remove these now that we can do regexp instead!
     this.hasProx = hasProx;
     this.codec = codec;
     this.diagnostics = diagnostics;
-    // nocommit remove these now that we can do regexp instead!
-    this.hasVectors = hasVectors;
   }
 
   /**
@@ -172,16 +173,6 @@ public final class SegmentInfo implements Cloneable {
 
   public void setHasProx(boolean hasProx) {
     this.hasProx = hasProx;
-    clearFilesCache();
-  }
-
-  // nocommit: ideally codec stores this info privately:
-  public boolean getHasVectors() throws IOException {
-    return hasVectors;
-  }
-
-  public void setHasVectors(boolean hasVectors) {
-    this.hasVectors = hasVectors;
     clearFilesCache();
   }
 
@@ -230,8 +221,7 @@ public final class SegmentInfo implements Cloneable {
 
     return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
                            docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
-                           delCount, hasProx, codec, new HashMap<String,String>(diagnostics),
-                           hasVectors);
+                           delCount, hasProx, codec, new HashMap<String,String>(diagnostics));
   }
 
   /**
@@ -333,7 +323,7 @@ public final class SegmentInfo implements Cloneable {
   }
 
   // nocommit move elsewhere?  IndexFileNames?
-  public static List<String> findMatchingFiles(Directory dir, Set<String> namesOrPatterns) {
+  public static List<String> findMatchingFiles(String segmentName, Directory dir, Set<String> namesOrPatterns) {
     // nocommit need more efficient way to do this?
     List<String> files = new ArrayList<String>();
     final String[] existingFiles;
@@ -343,6 +333,7 @@ public final class SegmentInfo implements Cloneable {
       // nocommit maybe just throw IOE...? not sure how far up we'd have to change sigs...
       throw new RuntimeException(ioe);
     }
+    List<Pattern> compiledPatterns = new ArrayList<Pattern>();
     for(String nameOrPattern : namesOrPatterns) {
       boolean exists = false;
       try {
@@ -354,9 +345,18 @@ public final class SegmentInfo implements Cloneable {
       if (exists) {
         files.add(nameOrPattern);
       } else {
-        for(String file : existingFiles) {
-          if (Pattern.matches(nameOrPattern, file)) {
+        // nocommit can i test whether the regexp matches only 1 string...?  maybe... make into autamaton and union them all....?
+        compiledPatterns.add(Pattern.compile(nameOrPattern));
+      }
+    }
+
+    // nocommit this is DOG SLOW: try TestBoolean2 w/ seed 1F7F3638C719C665
+    for(String file : existingFiles) {
+      if (file.startsWith(segmentName)) {
+        for(Pattern pattern : compiledPatterns) {
+          if (pattern.matcher(file).matches()) {
             files.add(file);
+            break;
           }
         }
       }
@@ -372,15 +372,20 @@ public final class SegmentInfo implements Cloneable {
    */
 
   public List<String> files() throws IOException {
-    final Set<String> fileSet = new HashSet<String>();
-    codec.files(this, fileSet);
-    return findMatchingFiles(dir, fileSet);
+    if (files == null) {
+      // nocommit can we remove this again....?
+      final Set<String> fileSet = new HashSet<String>();
+      codec.files(this, fileSet);
+      files = findMatchingFiles(name, dir, fileSet);
+    }
+    return files;
   }
 
   /* Called whenever any change is made that affects which
    * files this segment has. */
   private void clearFilesCache() {
     sizeInBytes = -1;
+    files = null;
   }
 
   /** {@inheritDoc} */
@@ -410,19 +415,6 @@ public final class SegmentInfo implements Cloneable {
 
     if (this.dir != dir) {
       s.append('x');
-    }
-    try {
-      if (getHasVectors()) {
-        s.append('v');
-      }
-    } catch (Throwable e) {
-      // Messy: because getHasVectors may be used in an
-      // thread-unsafe way, and may attempt to open an fnm
-      // file that has since (legitimately) been deleted by
-      // IndexWriter, instead of throwing these exceptions
-      // up, just add v? to indicate we don't know if this
-      // segment has vectors:
-      s.append("v?");
     }
     s.append(docCount);
 

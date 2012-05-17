@@ -202,9 +202,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   }
   
   public static void files(SegmentInfo info, Set<String> files) throws IOException {
-    if (info.getHasVectors()) {
-      files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_EXTENSION));
-    }
+    files.add(IndexFileNames.segmentFileName(info.name, "", VECTORS_EXTENSION));
   }
   
   private void readLine() throws IOException {

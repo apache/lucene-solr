@@ -188,7 +188,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     DirectoryReader reader = IndexReader.open(dir);
     for (IndexReader r : reader.getSequentialSubReaders()) {
       SegmentInfo s = ((SegmentReader) r).getSegmentInfo();
-      assertTrue(s.getHasVectors());
+      assertTrue(((SegmentReader) r).getFieldInfos().hasVectors());
       Set<String> files = new HashSet<String>();
       s.getCodec().termVectorsFormat().files(s, files);
       assertFalse(files.isEmpty());

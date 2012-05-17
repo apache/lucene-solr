@@ -706,8 +706,7 @@ public class CheckIndex {
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  // TODO: cutover term vectors to this!
-  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, IndexSearcher searcher) throws IOException {
+  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, IndexSearcher searcher, boolean doPrint) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
@@ -1131,8 +1130,10 @@ public class CheckIndex {
     if (status.termCount != uniqueTermCountAllFields) {
       throw new RuntimeException("termCount mismatch " + uniqueTermCountAllFields + " vs " + (status.termCount));
     }
-    
-    msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
+
+    if (doPrint) {
+      msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
+    }
     
     if (verbose && status.blockTreeStats != null && infoStream != null && status.termCount > 0) {
       for(Map.Entry<String,BlockTreeTermsReader.Stats> ent : status.blockTreeStats.entrySet()) {
@@ -1163,13 +1164,13 @@ public class CheckIndex {
       }
 
       final Fields fields = reader.fields();
-      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, is);
+      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, is, true);
       if (liveDocs != null) {
         if (infoStream != null) {
           infoStream.print("    test (ignoring deletes): terms, freq, prox...");
         }
         // TODO: can we make a IS that ignores all deletes?
-        checkFields(fields, null, maxDoc, fieldInfos, null);
+        checkFields(fields, null, maxDoc, fieldInfos, null, true);
       }
     } catch (Throwable e) {
       msg("ERROR: " + e);
@@ -1386,10 +1387,10 @@ public class CheckIndex {
 
         if (tfv != null) {
           // First run with no deletions:
-          checkFields(tfv, null, 1, fieldInfos, null);
+          checkFields(tfv, null, 1, fieldInfos, null, false);
 
           // Again, with the one doc deleted:
-          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, null);
+          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, null, false);
 
           // Only agg stats if the doc is live:
           final boolean doStats = liveDocs == null || liveDocs.get(j);

@@ -115,8 +115,8 @@ final class SegmentCoreReaders {
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
   
       fieldsReaderOrig = si.getCodec().storedFieldsFormat().fieldsReader(cfsDir, si, fieldInfos, context);
- 
-      if (si.getHasVectors()) { // open term vector files only as needed
+
+      if (fieldInfos.hasVectors()) { // open term vector files only as needed
         termVectorsReaderOrig = si.getCodec().termVectorsFormat().vectorsReader(cfsDir, si, fieldInfos, context);
       } else {
         termVectorsReaderOrig = null;

@@ -98,7 +98,6 @@ public class Lucene40SegmentInfosWriter extends SegmentInfosWriter {
     output.writeByte((byte) (si.getHasProx() ? 1 : 0));
     output.writeString(si.getCodec().getName());
     output.writeStringStringMap(si.getDiagnostics());
-    output.writeByte((byte) (si.getHasVectors() ? 1 : 0));
   }
   
   protected IndexOutput createOutput(Directory dir, String segmentFileName, IOContext context)

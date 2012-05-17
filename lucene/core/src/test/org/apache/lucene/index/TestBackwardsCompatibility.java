@@ -323,11 +323,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           assertEquals("field with non-ascii name", f.stringValue());
         }
 
-        Terms tfv = reader.getTermVectors(i).terms("utf8");
+        Fields tfvFields = reader.getTermVectors(i);
+        assertNotNull("i=" + i, tfvFields);
+        Terms tfv = tfvFields.terms("utf8");
         assertNotNull("docID=" + i + " index=" + oldName, tfv);
-      } else
+      } else {
         // Only ID 7 is deleted
         assertEquals(7, i);
+      }
     }
     
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;

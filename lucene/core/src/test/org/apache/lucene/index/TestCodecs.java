@@ -314,7 +314,7 @@ public class TestCodecs extends LuceneTestCase {
     final SegmentInfo si = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, SEGMENT, 10000, -1, -1,
                                            SEGMENT, false, null, false, 0,
                                            fieldInfos.hasProx(),
-                                           codec, null, fieldInfos.hasVectors());
+                                           codec, null);
 
     if (VERBOSE) {
       System.out.println("TEST: now read postings");

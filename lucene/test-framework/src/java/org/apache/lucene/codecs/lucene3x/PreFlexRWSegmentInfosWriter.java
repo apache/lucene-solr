@@ -95,7 +95,7 @@ class PreFlexRWSegmentInfosWriter extends SegmentInfosWriter {
     output.writeInt(si.getDelCount());
     output.writeByte((byte) (si.getHasProx() ? 1 : 0));
     output.writeStringStringMap(si.getDiagnostics());
-    output.writeByte((byte) (si.getHasVectors() ? 1: 0));
+    output.writeByte((byte) 1);
   }
   
   protected IndexOutput createOutput(Directory dir, String segmentFileName, IOContext context)

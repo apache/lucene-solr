@@ -1284,14 +1284,13 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         w.close();
         IndexReader reader = IndexReader.open(dir);
         assertTrue(reader.numDocs() > 0);
-        reader.close();
         SegmentInfos sis = new SegmentInfos();
         sis.read(dir);
-        for (SegmentInfo segmentInfo : sis) {
-          assertFalse(segmentInfo.getHasVectors());
+        for(AtomicReaderContext context : reader.getTopReaderContext().leaves()) {
+          assertFalse(context.reader().getFieldInfos().hasVectors());
         }
+        reader.close();
         dir.close();
-        
       }
     }
   }

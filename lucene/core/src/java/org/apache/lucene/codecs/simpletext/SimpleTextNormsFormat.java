@@ -131,7 +131,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
       Set<String> files = new HashSet<String>();
       filesInternal(state.segmentName, files, segmentSuffix);
       IOUtils.deleteFilesIgnoringExceptions(state.directory,
-                                            SegmentInfo.findMatchingFiles(state.directory, files).toArray(new String[0]));
+                                            SegmentInfo.findMatchingFiles(state.segmentName, state.directory, files).toArray(new String[0]));
     }
     
     public static void files(SegmentInfo segmentInfo, Set<String> files)
@@ -142,6 +142,9 @@ public class SimpleTextNormsFormat extends NormsFormat {
     
     public static void filesInternal(String segmentName,
         Set<String> files, String segmentSuffix) {
+      // nocommit simplify this: weird that we get suffix as
+      // an arg... it's always a constant
+      assert segmentSuffix.equals(NORMS_SEG_SUFFIX);
       String id = docValuesIdRegexp(segmentName);
       files.add(IndexFileNames.segmentFileName(id, "",
                                                segmentSuffix));

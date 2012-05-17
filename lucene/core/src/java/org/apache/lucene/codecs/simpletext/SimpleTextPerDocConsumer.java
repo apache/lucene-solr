@@ -60,7 +60,7 @@ class SimpleTextPerDocConsumer extends PerDocConsumer {
     Set<String> files = new HashSet<String>();
     files(state.directory, state.segmentName, files, segmentSuffix);
     IOUtils.deleteFilesIgnoringExceptions(state.directory,
-                                          SegmentInfo.findMatchingFiles(state.directory, files).toArray(new String[0]));
+                                          SegmentInfo.findMatchingFiles(state.segmentName, state.directory, files).toArray(new String[0]));
   }
   
   static void files(SegmentInfo info, Set<String> files, String segmentSuffix) {
