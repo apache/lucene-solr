@@ -85,7 +85,7 @@ public class MockSepPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    PostingsReaderBase postingsReader = new SepPostingsReader(state.dir, state.segmentInfo,
+    PostingsReaderBase postingsReader = new SepPostingsReader(state.dir, state.fieldInfos, state.segmentInfo,
         state.context, new MockSingleIntFactory(), state.segmentSuffix);
 
     TermsIndexReaderBase indexReader;

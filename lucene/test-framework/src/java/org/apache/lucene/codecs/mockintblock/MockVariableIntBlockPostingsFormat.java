@@ -179,6 +179,7 @@ public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postingsReader = new SepPostingsReader(state.dir,
+                                                              state.fieldInfos,
                                                               state.segmentInfo,
                                                               state.context,
                                                               new MockIntFactory(baseBlockSize), state.segmentSuffix);

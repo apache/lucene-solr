@@ -123,12 +123,10 @@ public class Lucene40NormsFormat extends NormsFormat {
     }
     
     public static void files(SegmentInfo segmentInfo, Set<String> files) throws IOException {
-      if (segmentInfo.getHasNorms()) {
-        final String normsFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION);
-        final String normsEntriesFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-        files.add(normsFileName);
-        files.add(normsEntriesFileName);
-      }
+      final String normsFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION);
+      final String normsEntriesFileName = IndexFileNames.segmentFileName(segmentInfo.name, NORMS_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+      files.add(normsFileName);
+      files.add(normsEntriesFileName);
     }
   }
 

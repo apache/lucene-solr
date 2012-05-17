@@ -67,19 +67,16 @@ public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
   }
 
   public static void files(SegmentInfo segmentInfo, Set<String> files) throws IOException {
-    if (segmentInfo.getHasDocValues()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-      assert segmentInfo.dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
-      assert segmentInfo.dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
-    }
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, DOC_VALUES_SEGMENT_SUFFIX, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
   }
 
   @Override
   public void abort() {
     try {
       close();
-    } catch (IOException ignored) {}
+    } catch (IOException ignored) {
+    }
     IOUtils.deleteFilesIgnoringExceptions(mainDirectory, IndexFileNames.segmentFileName(
         segmentName, segmentSuffix, IndexFileNames.COMPOUND_FILE_EXTENSION),
         IndexFileNames.segmentFileName(segmentName, segmentSuffix,

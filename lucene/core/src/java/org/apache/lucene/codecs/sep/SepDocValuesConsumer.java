@@ -66,7 +66,6 @@ public class SepDocValuesConsumer extends DocValuesWriterBase {
   @Override
   public void abort() {
     Set<String> files = new HashSet<String>();
-    assert false: "sep is broken for now!!";
     files(segmentName, files);
     IOUtils.deleteFilesIgnoringExceptions(directory, SegmentInfo.findMatchingFiles(directory, files).toArray(new String[0]));
   }

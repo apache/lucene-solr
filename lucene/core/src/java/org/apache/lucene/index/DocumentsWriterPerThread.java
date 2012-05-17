@@ -479,18 +479,15 @@ class DocumentsWriterPerThread {
                                                      SegmentInfo.NO, -1, segment, false, null, false, 0,
                                                      flushState.fieldInfos.hasProx(), flushState.codec,
                                                      null,
-                                                     flushState.fieldInfos.hasVectors(),
-                                                     flushState.fieldInfos.hasDocValues(),
-                                                     flushState.fieldInfos.hasNorms(),
-                                                     flushState.fieldInfos.hasFreq());
+                                                     flushState.fieldInfos.hasVectors());
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.delCountOnFlush)) + " deleted docs");
         infoStream.message("DWPT", "new segment has " +
-                           (newSegment.getHasVectors() ? "vectors" : "no vectors") + "; " +
-                           (newSegment.getHasNorms() ? "norms" : "no norms") + "; " + 
-                           (newSegment.getHasDocValues() ? "docValues" : "no docValues") + "; " + 
-                           (newSegment.getHasProx() ? "prox" : "no prox") + "; " + 
-                           (newSegment.getHasProx() ? "freqs" : "no freqs"));
+                           (flushState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
+                           (flushState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
+                           (flushState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
+                           (flushState.fieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
+                           (flushState.fieldInfos.hasFreq() ? "freqs" : "no freqs"));
         infoStream.message("DWPT", "flushedFiles=" + newSegment.files());
         infoStream.message("DWPT", "flushed codec=" + newSegment.getCodec());
       }

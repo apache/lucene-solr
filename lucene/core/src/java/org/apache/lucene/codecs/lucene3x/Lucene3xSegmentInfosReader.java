@@ -163,9 +163,8 @@ class Lucene3xSegmentInfosReader extends SegmentInfosReader {
       }
     }
 
-    // nocommit 3x always has norms?
     return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
       docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-      delCount, hasProx, codec, diagnostics, hasVectors, false, true, true);
+      delCount, hasProx, codec, diagnostics, hasVectors);
   }
 }

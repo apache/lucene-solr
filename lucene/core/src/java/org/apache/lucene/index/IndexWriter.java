@@ -2291,10 +2291,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, docCount,
                                          SegmentInfo.NO, -1, mergedName, false, null, false, 0,
                                          mergeState.fieldInfos.hasProx(), codec, null,
-                                         mergeState.fieldInfos.hasVectors(),
-                                         mergeState.fieldInfos.hasDocValues(),
-                                         mergeState.fieldInfos.hasNorms(),
-                                         mergeState.fieldInfos.hasFreq());
+                                         mergeState.fieldInfos.hasVectors());
                                          
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
@@ -3441,9 +3438,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // LUCENE-3403: set hasVectors after merge(), so that it is properly set.
       merge.info.setHasVectors(mergeState.fieldInfos.hasVectors());
       merge.info.setHasProx(mergeState.fieldInfos.hasProx());
-      merge.info.setHasFreq(mergeState.fieldInfos.hasFreq());
-      merge.info.setHasDocValues(mergeState.fieldInfos.hasDocValues());
-      merge.info.setHasNorms(mergeState.fieldInfos.hasNorms());
 
       // Record which codec was used to write the segment
 
@@ -3453,11 +3447,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "merge codec=" + codec + " docCount=" + mergedDocCount + "; merged segment has " +
-                           (merge.info.getHasVectors() ? "vectors" : "no vectors") + "; " +
-                           (merge.info.getHasNorms() ? "norms" : "no norms") + "; " + 
-                           (merge.info.getHasDocValues() ? "docValues" : "no docValues") + "; " + 
-                           (merge.info.getHasProx() ? "prox" : "no prox") + "; " + 
-                           (merge.info.getHasProx() ? "freqs" : "no freqs"));
+                           (mergeState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
+                           (mergeState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
+                           (mergeState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
+                           (mergeState.fieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
+                           (mergeState.fieldInfos.hasProx() ? "freqs" : "no freqs"));
       }
 
       // Very important to do this before opening the reader

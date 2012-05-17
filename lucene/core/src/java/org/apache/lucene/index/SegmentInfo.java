@@ -71,10 +71,6 @@ public final class SegmentInfo implements Cloneable {
 
   private boolean isCompoundFile;
 
-  // nocommit should we stop caching the files!?
-  private volatile List<String> files;            // cached list of files that this segment uses
-                                                  // in the Directory
-
   private volatile long sizeInBytes = -1;         // total byte size of all files (computed on demand)
 
   //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
@@ -89,10 +85,7 @@ public final class SegmentInfo implements Cloneable {
   private int delCount;                           // How many deleted docs in this segment
   
   private boolean hasVectors;       // True if this segment has any term vectors fields
-  private boolean hasDocValues;     // True if this segment has any doc values fields
-  private boolean hasFreq;          // True if this segment has any fields with docFreq information
   private boolean hasProx;          // True if this segment has any fields with positional information
-  private boolean hasNorms;         // True if this segment has any fields with norms enabled
 
   private Codec codec;
 
@@ -139,8 +132,7 @@ public final class SegmentInfo implements Cloneable {
    */
   public SegmentInfo(Directory dir, String version, String name, int docCount, long delGen, int docStoreOffset,
       String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
-      int delCount, boolean hasProx, Codec codec, Map<String,String> diagnostics, boolean hasVectors, boolean hasDocValues,
-      boolean hasNorms, boolean hasFreq) {
+      int delCount, boolean hasProx, Codec codec, Map<String,String> diagnostics, boolean hasVectors) {
     this.dir = dir;
     this.version = version;
     this.name = name;
@@ -157,31 +149,20 @@ public final class SegmentInfo implements Cloneable {
     this.diagnostics = diagnostics;
     // nocommit remove these now that we can do regexp instead!
     this.hasVectors = hasVectors;
-    this.hasDocValues = hasDocValues;
-    this.hasNorms = hasNorms;
-    this.hasFreq = hasFreq;
   }
 
   /**
    * Returns total size in bytes of all of files used by this segment
    */
   public long sizeInBytes() throws IOException {
-    long sum = 0;
-    for (final String fileName : files()) {
-      sum += dir.fileLength(fileName);
+    if (sizeInBytes == -1) {
+      long sum = 0;
+      for (final String fileName : files()) {
+        sum += dir.fileLength(fileName);
+      }
+      sizeInBytes = sum;
     }
-    sizeInBytes = sum;
     return sizeInBytes;
-  }
-
-  // nocommit: ideally codec stores this info privately:
-  public boolean getHasFreq() throws IOException {
-    return hasFreq;
-  }
-
-  public void setHasFreq(boolean hasFreq) {
-    this.hasFreq = hasFreq;
-    clearFilesCache();
   }
 
   // nocommit: ideally codec stores this info privately:
@@ -204,26 +185,6 @@ public final class SegmentInfo implements Cloneable {
     clearFilesCache();
   }
 
-  // nocommit: ideally codec stores this info privately:
-  public boolean getHasDocValues() throws IOException {
-    return hasDocValues;
-  }
-
-  public void setHasDocValues(boolean hasDocValues) {
-    this.hasDocValues = hasDocValues;
-    clearFilesCache();
-  }
-  
-  // nocommit: ideally codec stores this info privately:
-  public boolean getHasNorms() throws IOException {
-    return hasNorms;
-  }
-
-  public void setHasNorms(boolean hasNorms) {
-    this.hasNorms = hasNorms;
-    clearFilesCache();
-  }
-  
   public boolean hasDeletions() {
     // Cases:
     //
@@ -270,7 +231,7 @@ public final class SegmentInfo implements Cloneable {
     return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
                            docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
                            delCount, hasProx, codec, new HashMap<String,String>(diagnostics),
-                           hasVectors, hasDocValues, hasNorms, hasFreq);
+                           hasVectors);
   }
 
   /**
@@ -411,21 +372,14 @@ public final class SegmentInfo implements Cloneable {
    */
 
   public List<String> files() throws IOException {
-    if (files == null) {
-      // nocommit maybe don't cache...?
-      // Cache
-      final Set<String> fileSet = new HashSet<String>();
-      codec.files(this, fileSet);
-      files = findMatchingFiles(dir, fileSet);
-    }
-
-    return files;
+    final Set<String> fileSet = new HashSet<String>();
+    codec.files(this, fileSet);
+    return findMatchingFiles(dir, fileSet);
   }
 
   /* Called whenever any change is made that affects which
    * files this segment has. */
   private void clearFilesCache() {
-    files = null;
     sizeInBytes = -1;
   }
 

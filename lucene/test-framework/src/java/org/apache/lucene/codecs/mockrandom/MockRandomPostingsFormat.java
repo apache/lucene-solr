@@ -293,7 +293,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Sep postings");
       }
-      postingsReader = new SepPostingsReader(state.dir, state.segmentInfo,
+      postingsReader = new SepPostingsReader(state.dir, state.fieldInfos, state.segmentInfo,
                                              state.context, new MockIntStreamFactory(random), state.segmentSuffix);
     } else {
       if (LuceneTestCase.VERBOSE) {

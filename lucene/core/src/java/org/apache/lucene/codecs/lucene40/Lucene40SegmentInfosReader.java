@@ -86,13 +86,9 @@ public class Lucene40SegmentInfosReader extends SegmentInfosReader {
     final Codec codec = Codec.forName(input.readString());
     final Map<String,String> diagnostics = input.readStringStringMap();
     final boolean hasVectors = input.readByte() == 1;
-    final boolean hasDocValues = input.readByte() == 1;
-    final boolean hasNorms = input.readByte() == 1;
-    final boolean hasFreq = input.readByte() == 1;
     
     return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
       docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-      delCount, hasProx, codec, diagnostics, hasVectors, hasDocValues, hasNorms,
-      hasFreq);
+      delCount, hasProx, codec, diagnostics, hasVectors);
   }
 }
