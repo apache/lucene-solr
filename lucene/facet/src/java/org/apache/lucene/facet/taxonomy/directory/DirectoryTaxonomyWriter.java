@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -46,7 +45,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 
@@ -232,7 +230,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       // Make sure that the taxonomy always contain the root category
       // with category id 0.
       addCategory(new CategoryPath());
-      refreshReader();
+      refreshInternalReader();
     } else {
       // There are some categories on the disk, which we have not yet
       // read into the cache, and therefore the cache is incomplete.
@@ -288,15 +286,15 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         new KeywordAnalyzer()).setOpenMode(openMode).setMergePolicy(
         new LogByteSizeMergePolicy());
   }
-
-  // Currently overridden by a unit test that verifies that every index we open is close()ed.
-  /**
-   * Open an {@link IndexReader} from the internal {@link IndexWriter}, by
-   * calling {@link IndexReader#open(IndexWriter, boolean)}. Extending classes can override
-   * this method to return their own {@link IndexReader}.
-   */
-  protected DirectoryReader openReader() throws IOException {
-    return DirectoryReader.open(indexWriter, true); 
+  
+  /** Opens a {@link DirectoryReader} from the internal {@link IndexWriter}. */
+  private synchronized void openInternalReader() throws IOException {
+    // verify that the taxo-writer hasn't been closed on us. the method is
+    // synchronized since it may be called from a non sync'ed block, and it
+    // needs to protect against close() happening concurrently.
+    ensureOpen();
+    assert reader == null : "a reader is already open !";
+    reader = DirectoryReader.open(indexWriter, false); 
   }
 
   /**
@@ -398,7 +396,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // We need to get an answer from the on-disk index. If a reader
     // is not yet open, do it now:
     if (reader == null) {
-      reader = openReader();
+      openInternalReader();
     }
 
     int base = 0;
@@ -442,7 +440,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       return cache.get(categoryPath, prefixLen);
     }
     if (reader == null) {
-      reader = openReader();
+      openInternalReader();
     }
     
     int base = 0;
@@ -615,7 +613,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       // Because this is a slow operation, cache implementations are
       // expected not to delete entries one-by-one but rather in bulk
       // (LruTaxonomyWriterCache removes the 2/3rd oldest entries).
-      refreshReader();
+      refreshInternalReader();
       cacheIsComplete = false;
     }
   }
@@ -623,12 +621,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private void addToCache(CategoryPath categoryPath, int prefixLen, int id)
       throws IOException {
     if (cache.put(categoryPath, prefixLen, id)) {
-      refreshReader();
+      refreshInternalReader();
       cacheIsComplete = false;
     }
   }
 
-  protected synchronized void refreshReader() throws IOException {
+  private synchronized void refreshInternalReader() throws IOException {
     if (reader != null) {
       DirectoryReader r2 = DirectoryReader.openIfChanged(reader);
       if (r2 != null) {
@@ -648,7 +646,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public synchronized void commit() throws CorruptIndexException, IOException {
     ensureOpen();
     indexWriter.commit(combinedCommitData(null));
-    refreshReader();
+    refreshInternalReader();
   }
 
   /**
@@ -674,7 +672,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public synchronized void commit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
     ensureOpen();
     indexWriter.commit(combinedCommitData(commitUserData));
-    refreshReader();
+    refreshInternalReader();
   }
   
   /**
@@ -759,7 +757,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // TODO (Facet): we should probably completely clear the cache before starting
     // to read it?
     if (reader == null) {
-      reader = openReader();
+      openInternalReader();
     }
 
     if (!cache.hasRoom(reader.numDocs())) {
@@ -826,7 +824,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private synchronized ParentArray getParentArray() throws IOException {
     if (parentArray==null) {
       if (reader == null) {
-        reader = openReader();
+        openInternalReader();
       }
       parentArray = new ParentArray();
       parentArray.refresh(reader);
@@ -886,18 +884,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     } finally {
       r.close();
     }
-  }
-
-  /**
-   * Expert:  This method is only for expert use.
-   * Note also that any call to refresh() will invalidate the returned reader,
-   * so the caller needs to take care of appropriate locking.
-   * 
-   * @return lucene indexReader
-   */
-  DirectoryReader getInternalIndexReader() {
-    ensureOpen();
-    return this.reader;
   }
 
   /**
