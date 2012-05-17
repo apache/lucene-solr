@@ -42,7 +42,6 @@ import org.apache.lucene.util.Constants;
  * @lucene.experimental
  */
 public final class SegmentInfo implements Cloneable {
-  // TODO: remove with hasVector and hasProx
   public static final int CHECK_FIELDINFO = -2;
   
   // TODO: remove these from this class, for now this is the representation
@@ -87,8 +86,6 @@ public final class SegmentInfo implements Cloneable {
 
   private int delCount;                           // How many deleted docs in this segment
   
-  private boolean hasProx;          // True if this segment has any fields with positional information
-
   private Codec codec;
 
   private Map<String,String> diagnostics;
@@ -134,7 +131,7 @@ public final class SegmentInfo implements Cloneable {
    */
   public SegmentInfo(Directory dir, String version, String name, int docCount, long delGen, int docStoreOffset,
       String docStoreSegment, boolean docStoreIsCompoundFile, Map<Integer,Long> normGen, boolean isCompoundFile,
-      int delCount, boolean hasProx, Codec codec, Map<String,String> diagnostics) {
+      int delCount, Codec codec, Map<String,String> diagnostics) {
     this.dir = dir;
     this.version = version;
     this.name = name;
@@ -146,8 +143,6 @@ public final class SegmentInfo implements Cloneable {
     this.normGen = normGen;
     this.isCompoundFile = isCompoundFile;
     this.delCount = delCount;
-    // nocommit remove these now that we can do regexp instead!
-    this.hasProx = hasProx;
     this.codec = codec;
     this.diagnostics = diagnostics;
   }
@@ -164,16 +159,6 @@ public final class SegmentInfo implements Cloneable {
       sizeInBytes = sum;
     }
     return sizeInBytes;
-  }
-
-  // nocommit: ideally codec stores this info privately:
-  public boolean getHasProx() throws IOException {
-    return hasProx;
-  }
-
-  public void setHasProx(boolean hasProx) {
-    this.hasProx = hasProx;
-    clearFilesCache();
   }
 
   public boolean hasDeletions() {
@@ -221,7 +206,7 @@ public final class SegmentInfo implements Cloneable {
 
     return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
                            docStoreSegment, docStoreIsCompoundFile, clonedNormGen, isCompoundFile,
-                           delCount, hasProx, codec, new HashMap<String,String>(diagnostics));
+                           delCount, codec, new HashMap<String,String>(diagnostics));
   }
 
   /**

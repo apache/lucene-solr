@@ -51,7 +51,6 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
   final static BytesRef SI_VERSION          = new BytesRef("    version ");
   final static BytesRef SI_DOCCOUNT         = new BytesRef("    number of documents ");
   final static BytesRef SI_DELCOUNT         = new BytesRef("    number of deletions ");
-  final static BytesRef SI_HASPROX          = new BytesRef("    has prox ");
   final static BytesRef SI_USECOMPOUND      = new BytesRef("    uses compound file ");
   final static BytesRef SI_DSOFFSET         = new BytesRef("    docstore offset ");
   final static BytesRef SI_DSSEGMENT        = new BytesRef("    docstore segment ");
@@ -143,10 +142,6 @@ public class SimpleTextSegmentInfosWriter extends SegmentInfosWriter {
     
     SimpleTextUtil.write(output, SI_DELCOUNT);
     SimpleTextUtil.write(output, Integer.toString(si.getDelCount()), scratch);
-    SimpleTextUtil.writeNewline(output);
-    
-    SimpleTextUtil.write(output, SI_HASPROX);
-    SimpleTextUtil.write(output, si.getHasProx() ? "true" : "false", scratch);
     SimpleTextUtil.writeNewline(output);
     
     SimpleTextUtil.write(output, SI_USECOMPOUND);

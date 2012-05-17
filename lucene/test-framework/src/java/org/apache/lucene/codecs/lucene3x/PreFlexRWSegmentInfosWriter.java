@@ -93,8 +93,10 @@ class PreFlexRWSegmentInfosWriter extends SegmentInfosWriter {
 
     output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
     output.writeInt(si.getDelCount());
-    output.writeByte((byte) (si.getHasProx() ? 1 : 0));
+    // hasProx:
+    output.writeByte((byte) 1);
     output.writeStringStringMap(si.getDiagnostics());
+    // hasVectors:
     output.writeByte((byte) 1);
   }
   

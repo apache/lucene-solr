@@ -132,7 +132,10 @@ class Lucene3xSegmentInfosReader extends SegmentInfosReader {
     final Codec codec = Codec.forName("Lucene3x");
     final Map<String,String> diagnostics = input.readStringStringMap();
 
-    // nocommit cleane up
+    // nocommit we can use hasProx/hasVectors from the 3.x
+    // si... if we can pass this to the other components...?
+
+    // nocommit clean up
     final boolean hasVectors;
     if (format <= SegmentInfos.FORMAT_HAS_VECTORS) {
       hasVectors = input.readByte() == 1;
@@ -153,6 +156,6 @@ class Lucene3xSegmentInfosReader extends SegmentInfosReader {
 
     return new SegmentInfo(dir, version, name, docCount, delGen, docStoreOffset,
       docStoreSegment, docStoreIsCompoundFile, normGen, isCompoundFile,
-      delCount, hasProx, codec, diagnostics);
+      delCount, codec, diagnostics);
   }
 }

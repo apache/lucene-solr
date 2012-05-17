@@ -70,7 +70,7 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.segmentInfo, state.context, state.segmentSuffix);
+    PostingsReaderBase docsReader = new Lucene40PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
     PostingsReaderBase pulsingReaderInner = new PulsingPostingsReader(docsReader);
     PostingsReaderBase pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
     boolean success = false;

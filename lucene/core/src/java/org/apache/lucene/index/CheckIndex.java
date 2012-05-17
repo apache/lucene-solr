@@ -185,11 +185,6 @@ public class CheckIndex {
       /** Number of fields in this segment. */
       int numFields;
 
-      /** True if at least one of the fields in this segment
-       *  has position data
-       *  @see FieldType#setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions) */
-      public boolean hasProx;
-
       /** Map that includes certain
        *  debugging details that IndexWriter records into
        *  each segment it creates */
@@ -505,8 +500,6 @@ public class CheckIndex {
         segInfoStat.codec = codec;
         msg("    compound=" + info.getUseCompoundFile());
         segInfoStat.compound = info.getUseCompoundFile();
-        msg("    hasProx=" + info.getHasProx());
-        segInfoStat.hasProx = info.getHasProx();
         msg("    numFiles=" + info.files().size());
         segInfoStat.numFiles = info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);

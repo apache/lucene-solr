@@ -2290,7 +2290,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       int docCount = mergeState.mergedDocCount;
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, docCount,
                                          SegmentInfo.NO, -1, mergedName, false, null, false, 0,
-                                         mergeState.fieldInfos.hasProx(), codec, null);
+                                         codec, null);
                                          
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
@@ -3433,9 +3433,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // This is where all the work happens:
       MergeState mergeState = merger.merge();
       mergedDocCount = merge.info.docCount = mergeState.mergedDocCount;
-
-      // LUCENE-3403: set hasVectors after merge(), so that it is properly set.
-      merge.info.setHasProx(mergeState.fieldInfos.hasProx());
 
       // Record which codec was used to write the segment
 
