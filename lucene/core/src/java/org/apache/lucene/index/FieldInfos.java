@@ -25,14 +25,8 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  * Collection of {@link FieldInfo}s (accessible by number or by name).
  *  @lucene.experimental
  */
-public abstract class FieldInfos implements Cloneable,Iterable<FieldInfo> {
+public abstract class FieldInfos implements Iterable<FieldInfo> {
  
-  /**
-   * Returns a deep clone of this FieldInfos instance.
-   */
-  @Override
-  public abstract FieldInfos clone();
-
   /**
    * Return the fieldinfo object referenced by the field name
    * @return the FieldInfo object or null when the given fieldName

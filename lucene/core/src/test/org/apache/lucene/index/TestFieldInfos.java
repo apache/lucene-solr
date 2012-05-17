@@ -104,10 +104,6 @@ public class TestFieldInfos extends LuceneTestCase {
     FieldInfos fieldInfos = createAndWriteFieldInfos(dir, name);
     FieldInfos readOnly = readFieldInfos(dir, name);
     assertReadOnly(readOnly, fieldInfos);
-    FieldInfos readOnlyClone = readOnly.clone();
-    assertNotSame(readOnly, readOnlyClone);
-    // clone is also read only - no global field map
-    assertReadOnly(readOnlyClone, fieldInfos);
     dir.close();
   }
   

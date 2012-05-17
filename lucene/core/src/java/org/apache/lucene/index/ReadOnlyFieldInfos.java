@@ -112,16 +112,4 @@ public final class ReadOnlyFieldInfos extends FieldInfos {
   public FieldInfo fieldInfo(int fieldNumber) {
     return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
-
-  // nocommit: probably unnecessary
-  @Override
-  public ReadOnlyFieldInfos clone() {
-    FieldInfo infos[] = new FieldInfo[size()];
-    int upto = 0;
-    for (FieldInfo info : this) {
-      infos[upto++] = info.clone();
-    }
-    return new ReadOnlyFieldInfos(infos);
-  }
-
 }

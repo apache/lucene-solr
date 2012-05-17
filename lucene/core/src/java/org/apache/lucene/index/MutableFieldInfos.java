@@ -133,19 +133,6 @@ final class MutableFieldInfos extends FieldInfos {
         + " already taken";
     return fieldNumber;
   }
-
-  /**
-   * Returns a deep clone of this FieldInfos instance.
-   */
-  @Override
-  synchronized public MutableFieldInfos clone() {
-    MutableFieldInfos fis = new MutableFieldInfos(globalFieldNumbers);
-    for (FieldInfo fi : this) {
-      FieldInfo clone = fi.clone();
-      fis.putInternal(clone);
-    }
-    return fis;
-  }
   
   /**
    * Assumes the fields are not storing term vectors.
