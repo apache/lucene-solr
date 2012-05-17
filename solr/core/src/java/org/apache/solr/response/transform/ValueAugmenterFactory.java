@@ -37,7 +37,7 @@ public class ValueAugmenterFactory extends TransformerFactory
   public void init(NamedList args) {
     value = args.get( "value" );
     if( value == null ) {
-      defaultValue = args.get( "deaultValue" );
+      defaultValue = args.get( "defaultValue" );
     }
   }
 
