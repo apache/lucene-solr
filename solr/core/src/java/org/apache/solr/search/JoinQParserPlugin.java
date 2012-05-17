@@ -59,11 +59,13 @@ public class JoinQParserPlugin extends QParserPlugin {
         String toField = getParam("to");
         String v = localParams.get("v");
         Query fromQuery;
+        long fromCoreOpenTime = 0;
 
-        if (fromIndex != null) {
+        if (fromIndex != null && !fromIndex.equals(req.getCore().getCoreDescriptor().getName()) ) {
           CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
 
           final SolrCore fromCore = container.getCore(fromIndex);
+          RefCounted<SolrIndexSearcher> fromHolder = null;
 
           if (fromCore == null) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + fromIndex);
@@ -73,9 +75,12 @@ public class JoinQParserPlugin extends QParserPlugin {
           try {
             QParser parser = QParser.getParser(v, "lucene", otherReq);
             fromQuery = parser.getQuery();
+            fromHolder = fromCore.getRegisteredSearcher();
+            if (fromHolder != null) fromCoreOpenTime = fromHolder.get().getOpenTime();
           } finally {
             otherReq.close();
             fromCore.close();
+            if (fromHolder != null) fromHolder.decref();
           }
         } else {
           QParser fromQueryParser = subQuery(v, null);
@@ -83,6 +88,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         }
 
         JoinQuery jq = new JoinQuery(fromField, toField, fromIndex, fromQuery);
+        jq.fromCoreOpenTime = fromCoreOpenTime;
         return jq;
       }
     };
@@ -95,6 +101,7 @@ class JoinQuery extends Query {
   String toField;
   String fromIndex;
   Query q;
+  long fromCoreOpenTime;
 
   public JoinQuery(String fromField, String toField, String fromIndex, Query subQuery) {
     this.fromField = fromField;
@@ -548,12 +555,14 @@ class JoinQuery extends Query {
            && this.toField.equals(other.toField)
            && this.getBoost() == other.getBoost()
            && this.q.equals(other.q)
-           && (this.fromIndex == other.fromIndex || this.fromIndex != null && this.fromIndex.equals(other.fromIndex));
+           && (this.fromIndex == other.fromIndex || this.fromIndex != null && this.fromIndex.equals(other.fromIndex))
+           && this.fromCoreOpenTime == other.fromCoreOpenTime
+        ;
   }
 
   @Override
   public int hashCode() {
-    int h = q.hashCode();
+    int h = q.hashCode() + (int)fromCoreOpenTime;
     h = h * 31 + fromField.hashCode();
     h = h * 31 + toField.hashCode();
     return h;

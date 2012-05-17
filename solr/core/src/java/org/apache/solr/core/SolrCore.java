@@ -1006,11 +1006,23 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   /**
-  * Return the newest normal {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
-  * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
-  * If no searcher is currently open, then if openNew==true a new searcher will be opened,
-  * or null is returned if openNew==false.
+  * Returns the current registered searcher with its reference count incremented, or null if none are registered.
   */
+  public RefCounted<SolrIndexSearcher> getRegisteredSearcher() {
+    synchronized (searcherLock) {
+      if (_searcher != null) {
+        _searcher.incref();
+      }
+      return _searcher;
+    }
+  }
+
+  /**
+   * Return the newest normal {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
+   * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
+   * If no searcher is currently open, then if openNew==true a new searcher will be opened,
+   * or null is returned if openNew==false.
+   */
   public RefCounted<SolrIndexSearcher> getNewestSearcher(boolean openNew) {
     synchronized (searcherLock) {
       if (!_searchers.isEmpty()) {
@@ -1022,7 +1034,6 @@ public final class SolrCore implements SolrInfoMBean {
 
     return openNew ? getRealtimeSearcher() : null;
   }
-
 
   /** Gets the latest real-time searcher w/o forcing open a new searcher if one already exists.
    * The reference count will be incremented.
