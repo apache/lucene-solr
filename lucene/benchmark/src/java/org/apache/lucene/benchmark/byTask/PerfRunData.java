@@ -25,20 +25,20 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.FacetSource;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.benchmark.byTask.stats.Points;
+import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
 import org.apache.lucene.benchmark.byTask.tasks.ReadTask;
 import org.apache.lucene.benchmark.byTask.tasks.SearchTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.FileUtils;
-import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
@@ -80,6 +80,7 @@ public class PerfRunData implements Closeable {
   private Directory directory;
   private Analyzer analyzer;
   private DocMaker docMaker;
+  private ContentSource contentSource;
   private FacetSource facetSource;
   private Locale locale;
 
@@ -105,10 +106,16 @@ public class PerfRunData implements Closeable {
     // analyzer (default is standard analyzer)
     analyzer = NewAnalyzerTask.createAnalyzer(config.get("analyzer",
         "org.apache.lucene.analysis.standard.StandardAnalyzer"));
+
+    // content source
+    String sourceClass = config.get("content.source", "org.apache.lucene.benchmark.byTask.feeds.SingleDocSource");
+    contentSource = Class.forName(sourceClass).asSubclass(ContentSource.class).newInstance();
+    contentSource.setConfig(config);
+
     // doc maker
     docMaker = Class.forName(config.get("doc.maker",
         "org.apache.lucene.benchmark.byTask.feeds.DocMaker")).asSubclass(DocMaker.class).newInstance();
-    docMaker.setConfig(config);
+    docMaker.setConfig(config, contentSource);
     // facet source
     facetSource = Class.forName(config.get("facet.source",
         "org.apache.lucene.benchmark.byTask.feeds.RandomFacetSource")).asSubclass(FacetSource.class).newInstance();
@@ -129,10 +136,11 @@ public class PerfRunData implements Closeable {
     }
   }
   
+  @Override
   public void close() throws IOException {
     IOUtils.close(indexWriter, indexReader, directory, 
                   taxonomyWriter, taxonomyReader, taxonomyDir, 
-                  docMaker, facetSource);
+                  docMaker, facetSource, contentSource);
     
     // close all perf objects that are closeable.
     ArrayList<Closeable> perfObjectsToClose = new ArrayList<Closeable>();
@@ -361,7 +369,12 @@ public class PerfRunData implements Closeable {
     this.analyzer = analyzer;
   }
 
-  /** Returns the docMaker. */
+  /** Returns the ContentSource. */
+  public ContentSource getContentSource() {
+    return contentSource;
+  }
+  
+  /** Returns the DocMaker. */
   public DocMaker getDocMaker() {
     return docMaker;
   }
@@ -393,6 +406,7 @@ public class PerfRunData implements Closeable {
   }
 
   public void resetInputs() throws IOException {
+    contentSource.resetInputs();
     docMaker.resetInputs();
     facetSource.resetInputs();
     for (final QueryMaker queryMaker : readTaskQueryMaker.values()) {

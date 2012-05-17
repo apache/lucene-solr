@@ -22,7 +22,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
@@ -122,15 +124,19 @@ public class ExtractWikipedia {
       } else if (arg.equals("--discardImageOnlyDocs") || arg.equals("-d")) {
         keepImageOnlyDocs = false;
       }
-
     }
-    DocMaker docMaker = new DocMaker();
+    
     Properties properties = new Properties();
-    properties.setProperty("content.source", "org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource");
     properties.setProperty("docs.file", wikipedia.getAbsolutePath());
     properties.setProperty("content.source.forever", "false");
     properties.setProperty("keep.image.only.docs", String.valueOf(keepImageOnlyDocs));
-    docMaker.setConfig(new Config(properties));
+    Config config = new Config(properties);
+
+    ContentSource source = new EnwikiContentSource();
+    source.setConfig(config);
+    
+    DocMaker docMaker = new DocMaker();
+    docMaker.setConfig(config, source);
     docMaker.resetInputs();
     if (wikipedia.exists()) {
       System.out.println("Extracting Wikipedia to: " + outputDir + " using EnwikiContentSource");
